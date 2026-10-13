@@ -15,6 +15,7 @@ against the mirrored HF processor.
 | ---------- | ------- | ---- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
 | `fetch`    | off     | `fetch::MediaFetcher`, a protected http(s)/data: fetcher for untrusted URLs (SSRF policy, redirect revalidation, byte caps); links reqwest and tokio. The trusted-source `fetch_bytes*` helpers in the same module are still stubs |
+| `video-decode` | off | `video_decode`: MP4 / WebM / Matroska demuxing and decoding to RGB frames, through NVDEC or (VP8 / VP9) libvpx, both loaded at runtime; links `matroska-demuxer`. 64-bit Linux only |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
@@ -339,24 +340,32 @@ functions. Fixture settings are mathematical test inputs, not model defaults.
 ## 6. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. For video it has the request arithmetic, without
-decoding:
+for `models::qwen_vl`. For video it decodes to frames and has the request
+arithmetic; no family turns the frames into tensors yet:
 
+- `video_decode` (feature `video-decode`): MP4 / WebM / Matroska demuxing;
+  H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU through
+  libvpx when NVDEC cannot (both loaded at runtime; 64-bit Linux).
+  `decode_frames` keeps the frames the caller names and resizes each to the
+  size a `video_decode::Fit` gives: `FrameResize` for a size chosen already,
+  `models::qwen_vl::Qwen3VlVideoFit` for Qwen3-VL and Cosmos3, or a
+  consumer's own rule for another model. The decoder itself knows no model.
 - `video`: per-request options. `VideoOptions` (`fps`, `max_frames`,
   `num_frames`, vLLM's `media_io_kwargs.video` keys) and `resolve_num_frames`
   give the frame count; `VideoPixelBudget` (`total_pixels`,
   `max_pixels_per_frame`, specific to this crate) carries pixel budgets.
 - `models::qwen_vl::Qwen3VlVideo`: Qwen3-VL video sizing, read from the
-  model's `video_preprocessor_config.json` (only `Qwen3VLVideoProcessor`), and
-  `smart_video_resize`, golden-tested against HF's own function.
+  model's `video_preprocessor_config.json` (`Qwen3VLVideoProcessor`, or
+  Cosmos3-Edge's `Cosmos3EdgeVideoProcessor`), and `smart_video_resize`,
+  golden-tested against HF's own function.
 
 What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
    the feature currently exposes signatures only, and every call returns
    `MmError::Unsupported`.
-2. **Video decoding** — demuxing and decoding to sampled frames; the
-   arithmetic above takes the frame count and size from the consumer.
+2. **Video families** — temporal patchify, timestamp layouts and video
+   M-RoPE on decoded frames (`models::qwen_vl` first).
 3. **Family coverage** — GLM and Kimi are the validated candidates after
    `models::qwen_vl`.
 

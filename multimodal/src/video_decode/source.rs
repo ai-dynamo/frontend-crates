@@ -3,7 +3,9 @@
 
 //! Where the bytes of an encoded video come from.
 
+use std::cell::RefCell;
 use std::io::{self, Read, Seek, SeekFrom};
+use std::rc::Rc;
 
 /// Random access to an encoded video of known length.
 ///
@@ -55,11 +57,32 @@ impl ByteSource for Vec<u8> {
 pub(super) struct SourceReader<'a> {
     source: &'a dyn ByteSource,
     pos: u64,
+    failure: ReadFailure,
+}
+
+/// The first failed read of a [`SourceReader`], kept outside it: a parser
+/// that owns the reader may take a failed read for the end of the file
+/// (`matroska-demuxer` does, on an element header), so the caller checks
+/// this after parsing rather than trusting the parser to report it.
+#[derive(Clone, Default)]
+pub(super) struct ReadFailure(Rc<RefCell<Option<io::Error>>>);
+
+impl ReadFailure {
+    /// The first failed read, if any, once.
+    pub(super) fn take(&self) -> Option<io::Error> {
+        self.0.borrow_mut().take()
+    }
 }
 
 impl<'a> SourceReader<'a> {
-    pub(super) fn new(source: &'a dyn ByteSource) -> Self {
-        Self { source, pos: 0 }
+    pub(super) fn new(source: &'a dyn ByteSource) -> (Self, ReadFailure) {
+        let failure = ReadFailure::default();
+        let reader = Self {
+            source,
+            pos: 0,
+            failure: failure.clone(),
+        };
+        (reader, failure)
     }
 }
 
@@ -68,7 +91,17 @@ impl Read for SourceReader<'_> {
         let remaining = self.source.len().saturating_sub(self.pos);
         let n = usize::try_from(remaining).map_or(buf.len(), |r| r.min(buf.len()));
         if n > 0 {
-            self.source.read_at(self.pos, &mut buf[..n])?;
+            if let Err(e) = self.source.read_at(self.pos, &mut buf[..n]) {
+                // `Interrupted` is not a failure: `read_exact` retries it.
+                // `io::Error` is not `Clone`: keep an equivalent one.
+                if e.kind() != io::ErrorKind::Interrupted {
+                    self.failure
+                        .0
+                        .borrow_mut()
+                        .get_or_insert_with(|| io::Error::new(e.kind(), e.to_string()));
+                }
+                return Err(e);
+            }
             self.pos += n as u64;
         }
         Ok(n)
@@ -120,7 +153,7 @@ mod tests {
     fn the_reader_behaves_like_a_cursor() {
         let data = (0u8..10).collect::<Vec<_>>();
         let source = data.as_slice();
-        let mut reader = SourceReader::new(&source);
+        let (mut reader, failure) = SourceReader::new(&source);
         let mut cursor = io::Cursor::new(data.as_slice());
         let mut a = [0u8; 4];
         let mut b = [0u8; 4];
@@ -138,5 +171,48 @@ mod tests {
         // Past the end reads nothing; before the start is an error.
         assert_eq!(reader.read(&mut a).unwrap(), 0);
         assert!(reader.seek(SeekFrom::Current(-1000)).is_err());
+        assert!(failure.take().is_none());
+    }
+
+    #[test]
+    fn a_failed_read_is_remembered_for_the_caller() {
+        struct Failing;
+        impl ByteSource for Failing {
+            fn len(&self) -> u64 {
+                10
+            }
+            fn read_at(&self, _: u64, _: &mut [u8]) -> io::Result<()> {
+                Err(io::Error::other("disk on fire"))
+            }
+        }
+        let (mut reader, failure) = SourceReader::new(&Failing);
+        let mut buf = [0u8; 4];
+        let err = reader.read(&mut buf).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::Other);
+        let kept = failure.take().unwrap();
+        assert_eq!(
+            (kept.kind(), kept.to_string()),
+            (err.kind(), err.to_string())
+        );
+        assert!(failure.take().is_none());
+        // An interrupted read is retried by `read_exact`, not remembered.
+        struct InterruptsOnce(std::cell::Cell<bool>);
+        impl ByteSource for InterruptsOnce {
+            fn len(&self) -> u64 {
+                4
+            }
+            fn read_at(&self, _: u64, buf: &mut [u8]) -> io::Result<()> {
+                if self.0.replace(false) {
+                    return Err(io::Error::from(io::ErrorKind::Interrupted));
+                }
+                buf.fill(7);
+                Ok(())
+            }
+        }
+        let source = InterruptsOnce(std::cell::Cell::new(true));
+        let (mut reader, failure) = SourceReader::new(&source);
+        reader.read_exact(&mut buf).unwrap();
+        assert_eq!(buf, [7; 4]);
+        assert!(failure.take().is_none());
     }
 }

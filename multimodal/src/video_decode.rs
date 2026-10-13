@@ -5,10 +5,17 @@
 //! VP8 and VP9 also on the CPU through libvpx.
 //!
 //! [`probe`] reads a clip's container and reports its codec, coded size,
-//! duration and frame count. [`decode_sampled`] decodes it and keeps
-//! `num_frames` frames spread evenly over the clip, as [`VideoFrames`]. Both
-//! take the clip as a slice; [`probe_from`] and [`decode_sampled_from`] take
-//! any [`ByteSource`], such as a file or a ranged download.
+//! duration and frame count. [`decode_frames`] decodes it and keeps the frames
+//! the caller names, each resized to one size if asked, as [`VideoFrames`];
+//! [`decode_sampled`] is the common case of `num_frames` frames spread evenly
+//! over the clip. All take the clip as a slice; the `_from` variants take any
+//! [`ByteSource`], such as a file or a ranged download.
+//!
+//! Which frames to keep and what size they should be are the caller's
+//! decisions: a model's sampling rule and pixel budget turn into frame indices
+//! and a [`Fit`], and this module applies them without knowing the model. The resize is the crate's bit-exact [`resize_rgb`], run on each
+//! sampled frame as it is decoded, so full-size frames are never all held at
+//! once.
 //!
 //! Containers: MP4 (ISO BMFF) through this crate's own demuxer (see `mp4`),
 //! WebM and Matroska through `matroska-demuxer`. Codecs: H.264, HEVC, VP8, VP9
@@ -54,6 +61,7 @@
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
 
 use crate::frames::{VideoFrames, VideoTiming};
+use crate::image::resize::{Resample, resize_rgb};
 use crate::{MmError, Result};
 
 mod mp4;
@@ -121,19 +129,61 @@ pub struct VideoDecodeLimits {
     pub max_height: u32,
     /// Cap on the returned RGB frames, in bytes.
     pub max_output_bytes: usize,
+    /// Cap on the compressed video held in memory while a file is demuxed,
+    /// in bytes. Only WebM / Matroska holds its packets (MP4 keeps its sample
+    /// tables and reads packets as they are decoded); `probe` applies the
+    /// default.
+    pub max_input_bytes: usize,
 }
 
 impl Default for VideoDecodeLimits {
-    /// 8192 x 8192 frames and 512 MiB of output, the decoded-frame budget
-    /// `ai-dynamo/dynamo` uses for video.
+    /// 8192 x 8192 frames, 512 MiB of output (the decoded-frame budget
+    /// `ai-dynamo/dynamo` uses for video) and 512 MiB of held input.
     fn default() -> Self {
         Self {
             max_width: 8192,
             max_height: 8192,
             max_output_bytes: 512 << 20,
+            max_input_bytes: 512 << 20,
         }
     }
 }
+
+/// How frames are sized for a model: from the clip's frame size and the
+/// number of frames kept, the one size every returned frame is resized to,
+/// and the resampler to do it with. The decoder applies the answer without
+/// knowing the model. [`FrameResize`] is a size chosen already;
+/// `models::qwen_vl::Qwen3VlVideoFit` is HF's Qwen3-VL (and Cosmos3) rule
+/// under a request budget; a consumer implements this for any other model.
+pub trait Fit {
+    /// `(width, height)` for each of `num_frames` frames of a `width` x
+    /// `height` clip. Bounded by [`VideoDecodeLimits`] like the source.
+    fn fit(&self, num_frames: usize, width: u32, height: u32) -> Result<(u32, u32)>;
+    /// The resampler, which decides the bytes: PIL and torchvision differ.
+    fn filter(&self) -> Resample;
+}
+
+/// A size every returned frame is resized to, chosen by the caller.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FrameResize {
+    pub width: u32,
+    pub height: u32,
+    pub filter: Resample,
+}
+
+impl Fit for FrameResize {
+    fn fit(&self, _num_frames: usize, _width: u32, _height: u32) -> Result<(u32, u32)> {
+        Ok((self.width, self.height))
+    }
+
+    fn filter(&self) -> Resample {
+        self.filter
+    }
+}
+
+/// The most packets a track may have: `mp4::MAX_SAMPLES`, applied to Matroska
+/// too, where packets are read into memory as the file is demuxed.
+const MAX_PACKETS: usize = 1 << 23;
 
 /// Where a packet's bytes are.
 enum Payload {
@@ -219,19 +269,49 @@ pub fn probe(bytes: &[u8]) -> Result<VideoInfo> {
 
 /// [`probe`] for a video in any [`ByteSource`].
 pub fn probe_from(source: &dyn ByteSource) -> Result<VideoInfo> {
-    Ok(demux(source)?.info())
+    Ok(demux_with(source, VideoDecodeLimits::default().max_input_bytes)?.info())
 }
 
-/// Decode `bytes` and keep `num_frames` frames spread evenly over the clip:
-/// frame indices `round(linspace(0, frame_count - 1, num_frames))`.
+/// Decode `bytes` and keep the shown frames at `indices` (counted from 0 in
+/// display order, as [`VideoInfo::frame_count`] counts them), in that order,
+/// each resized to the size `fit` gives, if any. An index may repeat; the
+/// list must not decrease, since frames are kept as they are decoded.
 ///
 /// Errors: [`MmError::Unsupported`] for a stream neither NVDEC (no driver, or
 /// a GPU without the codec) nor, for VP8 and VP9, libvpx (not installed) can
 /// decode here, and for anything other than 8-bit 4:2:0 in a supported colour
-/// matrix; [`MmError::LimitExceeded`] when a frame or the output exceeds
-/// `limits`; [`MmError::InvalidInput`] for an unreadable container or
-/// bitstream, zero frames requested, more frames than the clip shows, or a
-/// resolution change mid-stream.
+/// matrix; [`MmError::LimitExceeded`] when a source or resized frame, or the
+/// output, exceeds `limits`; [`MmError::InvalidInput`] for an unreadable
+/// container or bitstream, no indices, an index past the last frame or out of
+/// order, an empty resize, or a resolution change mid-stream; and whatever
+/// `fit` returns.
+pub fn decode_frames(
+    bytes: &[u8],
+    indices: &[u64],
+    fit: Option<&dyn Fit>,
+    limits: &VideoDecodeLimits,
+) -> Result<VideoFrames> {
+    decode_frames_from(&bytes, indices, fit, limits)
+}
+
+/// [`decode_frames`] for a video in any [`ByteSource`]; same errors, plus
+/// [`MmError::Internal`] when the source itself fails, whether while a packet,
+/// an MP4 box or the Matroska structure is read. A source that ends before its
+/// declared length, and a container the parser cannot read, are
+/// [`MmError::InvalidInput`], as for a slice.
+pub fn decode_frames_from(
+    source: &dyn ByteSource,
+    indices: &[u64],
+    fit: Option<&dyn Fit>,
+    limits: &VideoDecodeLimits,
+) -> Result<VideoFrames> {
+    decode_frames_with(source, indices, fit, limits, decode_track)
+}
+
+/// Decode `bytes` and keep `num_frames` frames spread evenly over the clip,
+/// at the source size: [`decode_frames`] at indices
+/// `round(linspace(0, frame_count - 1, num_frames))`, with its errors (zero
+/// frames, or more than the clip shows, are `InvalidInput`).
 pub fn decode_sampled(
     bytes: &[u8],
     num_frames: u64,
@@ -240,10 +320,8 @@ pub fn decode_sampled(
     decode_sampled_from(&bytes, num_frames, limits)
 }
 
-/// [`decode_sampled`] for a video in any [`ByteSource`]; same errors, plus
-/// [`MmError::Internal`] when the source fails while a packet or an MP4 box is
-/// read. A failure inside a container parser is reported as
-/// [`MmError::InvalidInput`], as for a slice.
+/// [`decode_sampled`] for a video in any [`ByteSource`], with the errors of
+/// [`decode_frames_from`].
 pub fn decode_sampled_from(
     source: &dyn ByteSource,
     num_frames: u64,
@@ -292,45 +370,112 @@ fn decode_sampled_with(
     if num_frames == 0 {
         return Err(MmError::invalid_input("num_frames must be at least 1"));
     }
-    let track = demux(source)?;
+    let track = demux_with(source, limits.max_input_bytes)?;
+    let frame_count = track.info().frame_count;
+    if num_frames > frame_count {
+        return Err(MmError::invalid_input(format!(
+            "cannot sample {num_frames} frames from a video with {frame_count}"
+        )));
+    }
+    let targets = sample_indices(frame_count, num_frames);
+    decode_demuxed(&track, &targets, None, limits, backend)
+}
+
+fn decode_frames_with(
+    source: &dyn ByteSource,
+    indices: &[u64],
+    fit: Option<&dyn Fit>,
+    limits: &VideoDecodeLimits,
+    backend: Backend,
+) -> Result<VideoFrames> {
+    if indices.is_empty() {
+        return Err(MmError::invalid_input("no frame indices given"));
+    }
+    // Keeps the timestamps (8 bytes a frame) within reason whatever the
+    // frame size: no video has more frames than this.
+    if indices.len() > MAX_PACKETS {
+        return Err(MmError::invalid_input(format!(
+            "more than {MAX_PACKETS} frame indices"
+        )));
+    }
+    if indices.windows(2).any(|pair| pair[1] < pair[0]) {
+        return Err(MmError::invalid_input(
+            "frame indices must not decrease (frames are kept in display order)",
+        ));
+    }
+    let track = demux_with(source, limits.max_input_bytes)?;
+    let frame_count = track.info().frame_count;
+    if let Some(&last) = indices.last()
+        && last >= frame_count
+    {
+        return Err(MmError::invalid_input(format!(
+            "frame index {last} is past the last frame of a video with {frame_count}"
+        )));
+    }
+    decode_demuxed(&track, indices, fit, limits, backend)
+}
+
+/// Decode `track` and keep the shown frames at `targets`, resized if asked.
+fn decode_demuxed(
+    track: &Track<'_>,
+    targets: &[u64],
+    fit: Option<&dyn Fit>,
+    limits: &VideoDecodeLimits,
+    backend: Backend,
+) -> Result<VideoFrames> {
     // Refused once here rather than by each decoder in turn.
     track.vp9_colour.get()?;
     let info = track.info();
-    if num_frames > info.frame_count {
-        return Err(MmError::invalid_input(format!(
-            "cannot sample {num_frames} frames from a video with {}",
-            info.frame_count
-        )));
-    }
     check_size(info.width, info.height, limits)?;
+    // The size of every returned frame, asked of `fit` once the source size
+    // is known and checked like the source.
+    let resize = match fit {
+        Some(fit) => {
+            let (width, height) = fit.fit(targets.len(), info.width, info.height)?;
+            check_size(width, height, limits).map_err(|e| match e {
+                MmError::LimitExceeded { .. } => MmError::limit_exceeded(format!(
+                    "{width}x{height} resize target exceeds the {}x{} decode limit",
+                    limits.max_width, limits.max_height
+                )),
+                _ => MmError::invalid_input("resize target has an empty side"),
+            })?;
+            Some(FrameResize {
+                width,
+                height,
+                filter: fit.filter(),
+            })
+        }
+        None => None,
+    };
+    let (out_width, out_height) = resize.map_or((info.width, info.height), |r| (r.width, r.height));
     let too_big = || {
         MmError::limit_exceeded(format!(
-            "{num_frames} frames of {}x{} exceed the {} byte output limit",
-            info.width, info.height, limits.max_output_bytes
+            "{} frames of {out_width}x{out_height} exceed the {} byte output limit",
+            targets.len(),
+            limits.max_output_bytes
         ))
     };
-    let frame_len = (info.width as usize)
-        .checked_mul(info.height as usize)
+    (out_width as usize)
+        .checked_mul(out_height as usize)
         .and_then(|n| n.checked_mul(3))
-        .ok_or_else(too_big)?;
-    frame_len
-        .checked_mul(usize::try_from(num_frames).map_err(|_| too_big())?)
+        .and_then(|n| n.checked_mul(targets.len()))
         .filter(|n| *n <= limits.max_output_bytes)
         .ok_or_else(too_big)?;
-    let targets = sample_indices(info.frame_count, num_frames);
 
     let mut sampler = Sampler {
-        targets: &targets,
+        targets,
         next: 0,
         shown: 0,
         width: info.width,
         height: info.height,
         limits: *limits,
-        // Grows frame by frame: nothing large is reserved before decoding.
+        resize,
+        // Grow frame by frame: nothing large is reserved before decoding.
         rgb: Vec::new(),
+        full: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
     };
-    backend(&track, &mut sampler)?;
+    backend(track, &mut sampler)?;
     if !sampler.done() {
         return Err(MmError::invalid_input(format!(
             "the video decoded to {} displayable frames, fewer than the {} it declares",
@@ -338,8 +483,8 @@ fn decode_sampled_with(
         )));
     }
     VideoFrames::new(
-        info.width as usize,
-        info.height as usize,
+        out_width as usize,
+        out_height as usize,
         sampler.rgb,
         VideoTiming {
             timestamps: sampler.timestamps,
@@ -384,7 +529,11 @@ struct Sampler<'t> {
     width: u32,
     height: u32,
     limits: VideoDecodeLimits,
+    /// The size every kept frame is resized to, if any.
+    resize: Option<FrameResize>,
     rgb: Vec<u8>,
+    /// One frame at the source size, when frames are resized.
+    full: Vec<u8>,
     timestamps: Vec<f64>,
 }
 
@@ -411,8 +560,8 @@ impl Sampler<'_> {
         self.shown += 1;
     }
 
-    /// Account for one displayed frame; convert it if it is a sampled one
-    /// (more than once if the index repeats).
+    /// Account for one displayed frame; convert it, and resize it if asked,
+    /// if it is a sampled one (kept again if the index repeats).
     fn push(&mut self, picture: &Nv12<'_>, pts: f64) -> Result<()> {
         if (picture.width, picture.height) != (self.width, self.height) {
             return Err(MmError::invalid_input(format!(
@@ -422,8 +571,31 @@ impl Sampler<'_> {
         }
         let index = self.shown;
         self.shown += 1;
+        if self.targets.get(self.next) != Some(&index) {
+            return Ok(());
+        }
+        let start = self.rgb.len();
+        match self.resize {
+            None => picture.to_rgb(&mut self.rgb),
+            Some(r) => {
+                self.full.clear();
+                picture.to_rgb(&mut self.full);
+                let resized = resize_rgb(
+                    &self.full,
+                    self.height as usize,
+                    self.width as usize,
+                    r.height as usize,
+                    r.width as usize,
+                    r.filter,
+                );
+                self.rgb.extend_from_slice(&resized);
+            }
+        }
+        let end = self.rgb.len();
+        self.timestamps.push(pts);
+        self.next += 1;
         while self.targets.get(self.next) == Some(&index) {
-            picture.to_rgb(&mut self.rgb);
+            self.rgb.extend_from_within(start..end);
             self.timestamps.push(pts);
             self.next += 1;
         }
@@ -445,7 +617,15 @@ fn read_error(e: std::io::Error, what: &str) -> MmError {
     }
 }
 
+/// [`demux_with`] under the default held-input limit.
+#[cfg(test)]
 fn demux(source: &dyn ByteSource) -> Result<Track<'_>> {
+    demux_with(source, VideoDecodeLimits::default().max_input_bytes)
+}
+
+/// Read the container's video track, holding at most `max_input_bytes` of
+/// its packets in memory (WebM / Matroska; MP4 holds none).
+fn demux_with(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Track<'_>> {
     let mut magic = [0u8; 8];
     let magic = &mut magic[..source.len().min(8) as usize];
     source
@@ -454,7 +634,7 @@ fn demux(source: &dyn ByteSource) -> Result<Track<'_>> {
     let track = if magic.get(4..8) == Some(b"ftyp") {
         demux_mp4(source)?
     } else if magic.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
-        demux_matroska(source)?
+        demux_matroska(source, max_input_bytes)?
     } else {
         return Err(MmError::invalid_input(
             "unrecognised video container: expected MP4, WebM or Matroska",
@@ -527,10 +707,21 @@ fn demux_mp4(source: &dyn ByteSource) -> Result<Track<'_>> {
     })
 }
 
-fn demux_matroska(source: &dyn ByteSource) -> Result<Track<'_>> {
-    use matroska_demuxer::{Frame, MatroskaFile, TrackType};
-    let invalid = |e| MmError::invalid_input_with_source("unreadable WebM / Matroska", e);
-    let mut file = MatroskaFile::open(SourceReader::new(source)).map_err(invalid)?;
+fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Track<'_>> {
+    use matroska_demuxer::{DemuxError, Frame, MatroskaFile, TrackType};
+    let (reader, failure) = SourceReader::new(source);
+    // The demuxer's own failures are bad input. A failure of the source under
+    // it keeps its I/O meaning (a short source is bad input, anything else is
+    // the source's own failure, `Internal`, as for MP4), whether the demuxer
+    // passes it on or reports something else in its place (while opening, it
+    // turns one into "no cluster found"): the reader remembers it.
+    let invalid = |e: DemuxError| match (failure.take(), e) {
+        (Some(io), _) | (None, DemuxError::IoError(io)) => {
+            read_error(io, "the WebM / Matroska file")
+        }
+        (None, e) => MmError::invalid_input_with_source("unreadable WebM / Matroska", e),
+    };
+    let mut file = MatroskaFile::open(reader).map_err(invalid)?;
     let entry = file
         .tracks()
         .iter()
@@ -568,10 +759,27 @@ fn demux_matroska(source: &dyn ByteSource) -> Result<Track<'_>> {
     // The latest end time of a shown frame, when the file says how long frames
     // last (the last packet need not be the last frame when frames reorder).
     let mut last_end: Option<f64> = None;
+    // Bytes of packets held so far, capped by the caller's limit. The demuxer
+    // checks each block's declared size against the bytes left in the file
+    // before it allocates, so no packet outgrows the file, and the packets of
+    // a file never outgrow it either (kept explicit here, with the packet
+    // count under the MP4 sample cap).
+    let mut held: u64 = 0;
     let mut frame = Frame::default();
     while file.next_frame(&mut frame).map_err(invalid)? {
         if frame.track != number {
             continue;
+        }
+        held += frame.data.len() as u64;
+        if packets.len() >= MAX_PACKETS || held > source.len() {
+            return Err(MmError::invalid_input(
+                "WebM / Matroska file has more packets, or packet bytes, than it can hold",
+            ));
+        }
+        if held > max_input_bytes as u64 {
+            return Err(MmError::limit_exceeded(format!(
+                "WebM / Matroska packets exceed the {max_input_bytes} byte input limit"
+            )));
         }
         let pts = frame.timestamp as f64 * scale;
         let displays = packet_displays(codec, &frame.data, &mut vp9_colour)?;
@@ -591,6 +799,12 @@ fn demux_matroska(source: &dyn ByteSource) -> Result<Track<'_>> {
             }
         }
         packets.push(packet);
+    }
+    // The demuxer takes a read that fails on an element header for the end of
+    // the file; the reader remembers it, so a source failure is never a
+    // shorter video.
+    if let Some(e) = failure.take() {
+        return Err(read_error(e, "the WebM / Matroska file"));
     }
     // Timestamps stay player times: a clip whose first frame is at 5 s starts
     // at 5 s (`start_time`) and lasts 1 s, not 6.
@@ -1637,6 +1851,77 @@ mod tests {
         }
         let r = probe_from(&Short(fixture("h264.mp4")));
         assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        // WebM / Matroska keeps the same meaning, mid-stream too: the source
+        // serves the headers and fails in the packets.
+        struct FailsAfter(Vec<u8>, u64);
+        impl ByteSource for FailsAfter {
+            fn len(&self) -> u64 {
+                self.0.len() as u64
+            }
+            fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                if offset + buf.len() as u64 > self.1 {
+                    return Err(std::io::Error::other("disk on fire"));
+                }
+                (&self.0[..]).read_at(offset, buf)
+            }
+        }
+        let webm = fixture("vp9.webm");
+        let r = probe_from(&FailsAfter(webm.clone(), webm.len() as u64 / 2));
+        assert!(matches!(r, Err(MmError::Internal { .. })), "{r:?}");
+        let r = probe_from(&Short(webm.clone()));
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        let r = probe(&webm[..webm.len() / 2]);
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+    }
+
+    #[test]
+    fn a_source_failure_anywhere_in_a_webm_is_internal() {
+        // Wherever the failing read lands (the Cues at the end while opening,
+        // an element header the demuxer would take for the end of the file,
+        // or a packet), the result is the source's failure, never a shorter
+        // clip or a "malformed file".
+        struct FailsIn(Vec<u8>, std::ops::Range<u64>);
+        impl ByteSource for FailsIn {
+            fn len(&self) -> u64 {
+                self.0.len() as u64
+            }
+            fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                let end = offset + buf.len() as u64;
+                if offset < self.1.end && end > self.1.start {
+                    return Err(std::io::Error::other("disk on fire"));
+                }
+                (&self.0[..]).read_at(offset, buf)
+            }
+        }
+        // Bytes the demuxer never reads (elements it seeks past) cannot fail
+        // a read: those positions give the complete clip, nothing else.
+        let bytes = fixture("vp9_altref.webm");
+        let full = probe(&bytes).unwrap();
+        for at in (0..bytes.len() as u64).step_by(5) {
+            match probe_from(&FailsIn(bytes.clone(), at..at + 4)) {
+                Err(MmError::Internal { .. }) => {}
+                Ok(info) if info == full => {}
+                r => panic!("at {at}: {r:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn a_truncated_webm_is_never_a_shorter_video() {
+        // The demuxer takes an I/O error on an element header for the end of
+        // the file, so a cut there could pass as a shorter clip; a finalized
+        // file's Segment size catches it first. Every cut of the file must be
+        // an error, not a success with fewer frames.
+        for name in ["vp9.webm", "vp8.webm", "vp9_altref.webm"] {
+            let bytes = fixture(name);
+            for cut in (1..bytes.len()).step_by(3) {
+                let r = probe(&bytes[..cut]);
+                assert!(
+                    matches!(r, Err(MmError::InvalidInput { .. })),
+                    "{name} cut at {cut}: {r:?}"
+                );
+            }
+        }
     }
 
     // -- NVDEC: needs a GPU ------------------------------------------------
@@ -1899,6 +2184,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     mod libvpx {
         use super::*;
+        use crate::image::resize::Filter;
 
         fn on(backend: Backend, name: &str, num_frames: u64) -> Result<VideoFrames> {
             let bytes = fixture(name);
@@ -1942,6 +2228,210 @@ mod tests {
             assert!(frames.rgb() == cpu("vp9_texture.webm", 10).unwrap().rgb());
         }
 
+        /// `decode_frames` on a fixture, through whichever decoder applies.
+        fn frames_at(name: &str, indices: &[u64], fit: Option<&dyn Fit>) -> Result<VideoFrames> {
+            decode_frames(&fixture(name), indices, fit, &VideoDecodeLimits::default())
+        }
+
+        /// Every frame of `frames` resized with `resize_rgb`, for comparison.
+        fn resized_by_hand(
+            frames: &VideoFrames,
+            width: u32,
+            height: u32,
+            filter: Resample,
+        ) -> Vec<u8> {
+            (0..frames.frame_count())
+                .flat_map(|i| {
+                    resize_rgb(
+                        frames.frame(i).unwrap(),
+                        frames.height(),
+                        frames.width(),
+                        height as usize,
+                        width as usize,
+                        filter,
+                    )
+                })
+                .collect()
+        }
+
+        #[test]
+        fn the_caller_names_the_frames() {
+            // Frame i of vp9.webm is color(i) at i / 10 s; an index may repeat.
+            let frames = frames_at("vp9.webm", &[2, 5, 5, 9], None).unwrap();
+            assert_eq!(frames.frame_count(), 4);
+            for (at, index) in [2, 5, 5, 9].into_iter().enumerate() {
+                assert_frame_color(&frames, at, color(index));
+                assert!((frames.timestamps()[at] - index as f64 * 0.1).abs() < 0.01);
+            }
+            assert!(frames.frame(1) == frames.frame(2));
+            // Evenly spaced sampling is the same call with linspace indices.
+            let sampled = auto("vp9.webm", 4).unwrap();
+            let named = frames_at("vp9.webm", &sample_indices(10, 4), None).unwrap();
+            assert!(sampled.rgb() == named.rgb());
+            assert_eq!(sampled.timestamps(), named.timestamps());
+        }
+
+        #[test]
+        fn frame_indices_are_checked_before_decoding() {
+            let many = vec![0u64; MAX_PACKETS + 1];
+            for indices in [&[][..], &[3, 1], &[10], &[0, 10], &many] {
+                let r = frames_at("vp9.webm", indices, None);
+                assert!(
+                    matches!(r, Err(MmError::InvalidInput { .. })),
+                    "{} indices: {r:?}",
+                    indices.len()
+                );
+            }
+        }
+
+        #[test]
+        fn frames_are_resized_as_resize_rgb_would() {
+            // The decoder's per-frame resize must give the bytes a caller would
+            // get resizing the full frames afterwards, for both kernels, down
+            // and up, and from an odd source size.
+            let cases = [
+                ("vp9.webm", 100, 60, Resample::Pil(Filter::Bicubic)),
+                ("vp9.webm", 100, 60, Resample::AtenU8),
+                ("vp9.webm", 300, 300, Resample::AtenU8),
+                ("vp9_odd.webm", 64, 64, Resample::AtenU8),
+                ("vp8.webm", 128, 128, Resample::Pil(Filter::Bicubic)),
+            ];
+            for (name, width, height, filter) in cases {
+                let n = probe(&fixture(name)).unwrap().frame_count;
+                let indices: Vec<u64> = (0..n).collect();
+                let full = frames_at(name, &indices, None).unwrap();
+                let resize = FrameResize {
+                    width,
+                    height,
+                    filter,
+                };
+                let got = frames_at(name, &indices, Some(&resize)).unwrap();
+                assert_eq!(
+                    (got.width(), got.height()),
+                    (width as usize, height as usize),
+                    "{name}"
+                );
+                assert!(
+                    got.rgb() == resized_by_hand(&full, width, height, filter),
+                    "{name} {width}x{height} {filter:?}: resized frames differ"
+                );
+                assert_eq!(got.timestamps(), full.timestamps(), "{name}");
+            }
+        }
+
+        #[test]
+        fn fit_is_asked_once_with_the_clip_and_frame_count() {
+            // A caller's own rule: half the source size, told how many frames.
+            struct Half(std::cell::Cell<Option<(usize, u32, u32)>>);
+            impl Fit for Half {
+                fn fit(&self, n: usize, w: u32, h: u32) -> Result<(u32, u32)> {
+                    assert!(self.0.get().is_none(), "fit asked twice");
+                    self.0.set(Some((n, w, h)));
+                    Ok((w / 2, h / 2))
+                }
+                fn filter(&self) -> Resample {
+                    Resample::AtenU8
+                }
+            }
+            let half = Half(std::cell::Cell::new(None));
+            let frames = frames_at("vp9.webm", &[0, 4, 9], Some(&half)).unwrap();
+            assert_eq!(half.0.get(), Some((3, 256, 256)));
+            assert_eq!((frames.width(), frames.height()), (128, 128));
+            assert_frame_color(&frames, 1, color(4));
+        }
+
+        #[test]
+        fn held_matroska_input_is_bounded_but_mp4_holds_none() {
+            // 64 bytes: less than the first keyframe of the 843-byte fixture.
+            let tight = VideoDecodeLimits {
+                max_input_bytes: 64,
+                ..VideoDecodeLimits::default()
+            };
+            let webm = fixture("vp9.webm");
+            let r = decode_frames_with(&webm.as_slice(), &[0], None, &tight, vpx::decode);
+            assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+            // The same limit does not touch an MP4, whose packets stay in the
+            // source (it may still fail for want of a GPU, differently).
+            let r = decode_frames(&fixture("h264.mp4"), &[0], None, &tight);
+            assert!(!matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+            // `probe` applies the default, which this file is far under.
+            assert_eq!(probe(&webm).unwrap().frame_count, 10);
+        }
+
+        #[test]
+        fn resize_targets_and_output_are_bounded() {
+            let bicubic = Resample::Pil(Filter::Bicubic);
+            let at = |w, h, limits: &VideoDecodeLimits| {
+                let resize = FrameResize {
+                    width: w,
+                    height: h,
+                    filter: bicubic,
+                };
+                decode_frames(&fixture("vp9.webm"), &[0, 9], Some(&resize), limits)
+            };
+            let limits = VideoDecodeLimits::default();
+            let r = at(0, 64, &limits);
+            assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+            let r = at(limits.max_width + 1, 64, &limits);
+            assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+            // The output limit applies to the resized frames: two 2x2 frames
+            // fit in 24 bytes where two full frames would not.
+            let tight = VideoDecodeLimits {
+                max_output_bytes: 2 * 2 * 2 * 3,
+                ..limits
+            };
+            assert_eq!(at(2, 2, &tight).unwrap().frame_count(), 2);
+            let r = decode_frames(&fixture("vp9.webm"), &[0, 9], None, &tight);
+            assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+        }
+
+        #[test]
+        fn qwen3_vl_and_cosmos3_size_frames_as_hf_does() {
+            // Cosmos3-Nano's video_preprocessor_config.json (Qwen3VLVideoProcessor,
+            // patch 16, merge 2, temporal 2, 4,096..25,165,824 pixels per clip).
+            let nano: crate::models::qwen_vl::Qwen3VlVideo = serde_json::from_str(
+                r#"{"size": {"longest_edge": 25165824, "shortest_edge": 4096},
+                    "patch_size": 16, "temporal_patch_size": 2, "merge_size": 2,
+                    "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+                    "processor_class": "Qwen3VLProcessor",
+                    "video_processor_type": "Qwen3VLVideoProcessor"}"#,
+            )
+            .unwrap();
+            // Ten 256x256 frames under a 163,840-pixel clip budget: HF's
+            // smart_resize scales by sqrt(655,360 / 163,840) = 2 and floors to
+            // the 32-pixel factor, so 128x128.
+            let fit = crate::models::qwen_vl::Qwen3VlVideoFit {
+                video: &nano,
+                budget: crate::video::VideoPixelBudget {
+                    total_pixels: Some(10 * 128 * 128),
+                    max_pixels_per_frame: None,
+                },
+            };
+            let indices: Vec<u64> = (0..10).collect();
+            let frames = frames_at("vp9.webm", &indices, Some(&fit)).unwrap();
+            assert_eq!((frames.width(), frames.height()), (128, 128));
+            let full = frames_at("vp9.webm", &indices, None).unwrap();
+            assert!(frames.rgb() == resized_by_hand(&full, 128, 128, Resample::AtenU8));
+            // An odd count rounds to the temporal patch (9 frames count as 10
+            // against the budget) and a repeated index counts as a frame, as
+            // HF sees the sampled frames; the scale still comes out at 2.
+            let nine = frames_at("vp9.webm", &indices[..9], Some(&fit)).unwrap();
+            assert_eq!((nine.width(), nine.height()), (128, 128));
+            let repeated =
+                frames_at("vp9.webm", &[0, 0, 5, 5, 9, 9, 9, 9, 9, 9], Some(&fit)).unwrap();
+            assert_eq!((repeated.width(), repeated.height()), (128, 128));
+            assert!(repeated.frame(0) == frames.frame(0) && repeated.frame(9) == frames.frame(9));
+            // Without a budget the clip is far under the model's maximum, so
+            // 256 (a multiple of 32) stays.
+            let fit = crate::models::qwen_vl::Qwen3VlVideoFit {
+                video: &nano,
+                budget: crate::video::VideoPixelBudget::default(),
+            };
+            let frames = frames_at("vp9.webm", &indices, Some(&fit)).unwrap();
+            assert_eq!((frames.width(), frames.height()), (256, 256));
+            assert!(frames.rgb() == full.rgb());
+        }
+
         #[test]
         fn vp8_decodes_where_nvdec_cannot() {
             // NVDEC is not used for VP8, so this falls back with or without a GPU.
@@ -1980,7 +2470,9 @@ mod tests {
                         width: info.width,
                         height: info.height,
                         limits: VideoDecodeLimits::default(),
+                        resize: None,
                         rgb: Vec::new(),
+                        full: Vec::new(),
                         timestamps: Vec::new(),
                     };
                     let _ = vpx::decode(&track, &mut sampler);

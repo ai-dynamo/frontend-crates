@@ -873,6 +873,17 @@ fn a_sample_must_lie_in_the_media_data_of_this_file() {
     }
     let r = dref(2, b"url ", 1);
     assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+    // A dref cut after its version and flags, or after its count, is invalid
+    // (the first used to be sliced past its end).
+    let count_only = words(&[1]);
+    for body in [&[][..], &count_only[..]] {
+        let extras = Extras {
+            minf: bx(b"dinf", &full(b"dref", 0, 0, body)),
+            ..Extras::default()
+        };
+        let r = parse(&plain_file(Tables::plain, false, &extras).0).map(|_| ());
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+    }
     let mut second = plain();
     let at = position(&second, b"avc1") + 4 + 6;
     second[at..at + 2].copy_from_slice(&2u16.to_be_bytes());

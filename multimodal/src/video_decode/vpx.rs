@@ -10,6 +10,15 @@
 //! the headers below; a libvpx built with another one refuses it, which is
 //! also reported as unsupported.
 //!
+//! Where libvpx comes from is the deployment's choice. `ai-dynamo/dynamo`'s
+//! images build libvpx v1.14.1 from source (`container/context.yaml`,
+//! `container/templates/wheel_builder.Dockerfile`) and copy `libvpx.so*` into
+//! the runtime image (`container/templates/dynamo_runtime.Dockerfile`): that
+//! is the library this loader finds
+//! there, and the version these definitions were transcribed from. The
+//! crate's CI installs a distro package (Ubuntu's `libvpx9`, 1.14.0, same
+//! ABI) only to run the tests.
+//!
 //! The `#[repr(C)]` definitions below are transcribed from libvpx v1.14.1
 //! (`vpx/vpx_codec.h`, `vpx/vpx_decoder.h`, `vpx/vpx_image.h`); sizes and
 //! offsets are checked against gcc's for those headers on x86_64 (LP64).

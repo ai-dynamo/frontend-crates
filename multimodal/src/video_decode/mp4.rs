@@ -381,8 +381,11 @@ fn check_data_reference(dref: Option<&[u8]>, entry: u16) -> Result<()> {
         return Ok(());
     };
     let (_, _, rest) = full_box(dref, &[0], "dref")?;
+    // The count is read first: a `dref` cut after its version and flags has
+    // no count to slice past.
+    let count = index(be32(rest, 0)?);
     let entries = Boxes::new(&rest[4..]).collect::<Result<Vec<_>>>()?;
-    if entries.is_empty() || entries.len() != index(be32(rest, 0)?) {
+    if entries.is_empty() || entries.len() != count {
         return Err(malformed("dref entries do not match their count"));
     }
     // `url ` or `urn ` (or QuickTime's `alis`) with flag 1: the media data
