@@ -61,11 +61,12 @@ pub fn decode_rgb(data: &[u8], limits: &DecodeLimits) -> Result<(Vec<u8>, usize,
     Ok((rgb, h, w))
 }
 
-/// Like [`decode_rgb`], but apply EXIF orientation as in
+/// Like [`decode_rgb`], but apply the EXIF orientation used by
 /// `PIL.ImageOps.exif_transpose(Image.open(...)).convert("RGB")`.
 ///
 /// Limits apply to transposed dimensions before pixel decoding. Pair with
-/// [`dimensions_exif_transposed`] for token accounting.
+/// [`dimensions_exif_transposed`] for token accounting. XMP-only orientation
+/// is not supported.
 pub fn decode_rgb_exif_transposed(
     data: &[u8],
     limits: &DecodeLimits,
@@ -85,11 +86,13 @@ pub fn decode_rgb_exif_transposed(
     Ok((img.into_rgb8().into_raw(), out_h, out_w))
 }
 
-/// Header-only dimensions after EXIF orientation, matching
-/// `PIL.ImageOps.exif_transpose(Image.open(...)).size` without decoding pixels.
+/// Metadata-only dimensions after EXIF orientation, without decoding pixels.
 ///
-/// Supports JPEG, PNG and WebP EXIF. Missing/malformed TIFF orientation tags
-/// are ignored; container errors propagate. Encoded bytes remain unchanged.
+/// Supports JPEG, PNG and WebP EXIF, including PNG tEXt/zTXt raw profiles.
+/// PNG metadata may follow IDAT; compressed pixels are skipped. Legacy profile
+/// text is capped at 1 MiB. Missing/malformed TIFF orientation tags are ignored;
+/// container errors propagate. XMP-only orientation is not supported.
+/// Encoded bytes remain unchanged.
 pub fn dimensions_exif_transposed(data: &[u8]) -> Result<(usize, usize)> {
     let (h, w) = dimensions(data)?;
     Ok(oriented_dimensions(h, w, exif_orientation(data)?))
@@ -113,7 +116,8 @@ fn exif_orientation(data: &[u8]) -> Result<Orientation> {
                 .and_then(Orientation::from_exif_chunk)
                 .unwrap_or(Orientation::NoTransforms));
         }
-        fmt @ (ImageFormat::Png | ImageFormat::WebP) => {
+        ImageFormat::Png => png_exif(data)?,
+        fmt @ ImageFormat::WebP => {
             let mut reader = image::ImageReader::new(std::io::Cursor::new(data));
             reader.set_format(fmt);
             reader
@@ -132,6 +136,83 @@ fn exif_orientation(data: &[u8]) -> Result<Orientation> {
             Orientation::from_exif_chunk(bytes.strip_prefix(b"Exif\0\0").unwrap_or(bytes))
         })
         .unwrap_or(Orientation::NoTransforms))
+}
+
+const PNG_EXIF_TEXT_LIMIT: usize = 1024 * 1024;
+const PNG_EXIF_KEYWORD: &str = "Raw profile type exif";
+
+fn png_exif(data: &[u8]) -> Result<Option<Vec<u8>>> {
+    let mut decoder = png::Decoder::new(std::io::Cursor::new(data));
+    decoder.set_ignore_iccp_chunk(true);
+    let mut reader = decoder
+        .read_info()
+        .map_err(invalid("png metadata probe failed"))?;
+    if let Some(exif) = &reader.info().exif_metadata {
+        return Ok(Some(exif.to_vec()));
+    }
+    // Scan trailing metadata without inflating pixels. Header-only inputs
+    // retain complete metadata read before EOF; other container errors fail.
+    match reader.finish() {
+        Ok(()) => {}
+        Err(png::DecodingError::IoError(error))
+            if error.kind() == std::io::ErrorKind::UnexpectedEof => {}
+        Err(error) => return Err(invalid("png metadata probe failed")(error)),
+    }
+    png_raw_profile(reader.info())
+}
+
+fn png_raw_profile(info: &png::Info<'_>) -> Result<Option<Vec<u8>>> {
+    let plain = info
+        .uncompressed_latin1_text
+        .iter()
+        .rev()
+        .find(|chunk| chunk.keyword == PNG_EXIF_KEYWORD);
+    let compressed = info
+        .compressed_latin1_text
+        .iter()
+        .rev()
+        .find(|chunk| chunk.keyword == PNG_EXIF_KEYWORD);
+    if plain.is_some() && compressed.is_some() {
+        return Err(MmError::unsupported("png has competing EXIF text profiles"));
+    }
+    let text = if let Some(chunk) = plain {
+        std::borrow::Cow::Borrowed(chunk.text.as_str())
+    } else if let Some(chunk) = compressed {
+        let mut chunk = chunk.clone();
+        chunk
+            .decompress_text_with_limit(PNG_EXIF_TEXT_LIMIT)
+            .map_err(invalid("png EXIF text decode failed"))?;
+        std::borrow::Cow::Owned(
+            chunk
+                .get_text()
+                .map_err(invalid("png EXIF text decode failed"))?,
+        )
+    } else {
+        return Ok(None);
+    };
+    if text.len() > PNG_EXIF_TEXT_LIMIT {
+        return Err(MmError::limit_exceeded("png EXIF text exceeds 1 MiB"));
+    }
+    // Pillow ignores the three-line profile header and its declared byte count.
+    let mut exif = Vec::new();
+    let mut high = None;
+    for byte in text.split('\n').skip(3).flat_map(str::bytes) {
+        if byte.is_ascii_whitespace() {
+            continue;
+        }
+        let nibble = match byte {
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'f' => byte - b'a' + 10,
+            b'A'..=b'F' => byte - b'A' + 10,
+            _ => return Ok(None),
+        };
+        if let Some(previous) = high.take() {
+            exif.push(previous * 16 + nibble);
+        } else {
+            high = Some(nibble);
+        }
+    }
+    Ok(high.is_none().then_some(exif))
 }
 
 fn jpeg_exif(data: &[u8]) -> Option<&[u8]> {
@@ -609,6 +690,111 @@ mod tests {
         assert_eq!(
             decode_rgb(&bytes, &DecodeLimits::default()).unwrap().0,
             PILLOW_RGB
+        );
+    }
+
+    fn png_with_profile(
+        text: &str,
+        compressed: bool,
+        direct: bool,
+        trailing: Option<bool>,
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        let mut encoder = png::Encoder::new(&mut bytes, 6, 4);
+        encoder.set_color(png::ColorType::Rgb);
+        if compressed {
+            encoder
+                .add_ztxt_chunk(PNG_EXIF_KEYWORD.into(), text.into())
+                .unwrap();
+        } else {
+            encoder
+                .add_text_chunk(PNG_EXIF_KEYWORD.into(), text.into())
+                .unwrap();
+        }
+        let mut writer = encoder.write_header().unwrap();
+        if direct {
+            writer
+                .write_chunk(png::chunk::eXIf, &exif(6, false))
+                .unwrap();
+        }
+        writer.write_image_data(&[0; 72]).unwrap();
+        if let Some(compressed) = trailing {
+            let hex = exif(3, false)
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>();
+            let profile = format!("\nexif\n0\n{hex}\n");
+            if compressed {
+                writer
+                    .write_text_chunk(&png::text_metadata::ZTXtChunk::new(
+                        PNG_EXIF_KEYWORD,
+                        profile,
+                    ))
+                    .unwrap();
+            } else {
+                writer
+                    .write_text_chunk(&png::text_metadata::TEXtChunk::new(
+                        PNG_EXIF_KEYWORD,
+                        profile,
+                    ))
+                    .unwrap();
+            }
+        }
+        writer.finish().unwrap();
+        bytes
+    }
+
+    #[test]
+    fn legacy_png_profile_limits_and_malformed_text() {
+        for compressed in [false, true] {
+            let malformed = png_with_profile("\nexif\n1\nnot hex\n", compressed, false, None);
+            assert_eq!(dimensions_exif_transposed(&malformed).unwrap(), (4, 6));
+            let oversized = png_with_profile(
+                &"0".repeat(PNG_EXIF_TEXT_LIMIT + 1),
+                compressed,
+                false,
+                None,
+            );
+            assert!(dimensions_exif_transposed(&oversized).is_err());
+        }
+        let direct = png_with_profile("\nexif\n1\nnot hex\n", false, true, None);
+        assert_eq!(dimensions_exif_transposed(&direct).unwrap(), (6, 4));
+    }
+
+    #[test]
+    fn trailing_png_profiles_override_or_refuse_competing_encodings() {
+        let hex = exif(6, false)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let profile = format!("\nexif\n0\n{hex}\n");
+        let plain = png_with_profile(&profile, false, false, Some(false));
+        assert_eq!(dimensions_exif_transposed(&plain).unwrap(), (4, 6));
+        let competing = png_with_profile(&profile, false, false, Some(true));
+        assert!(matches!(
+            dimensions_exif_transposed(&competing),
+            Err(MmError::Unsupported { .. })
+        ));
+    }
+
+    #[test]
+    fn legacy_png_profiles_do_not_need_compressed_pixels() {
+        for bytes in [
+            include_bytes!("../../tests/fixtures/decode/pillow_raw_exif_tEXt_before_idat.png")
+                .as_slice(),
+            include_bytes!("../../tests/fixtures/decode/pillow_raw_exif_zTXt_before_idat.png")
+                .as_slice(),
+        ] {
+            let idat = bytes.windows(4).position(|chunk| chunk == b"IDAT").unwrap();
+            let header = &bytes[..idat + 4];
+            assert_eq!(dimensions_exif_transposed(header).unwrap(), (6, 4));
+            assert!(decode_rgb(header, &DecodeLimits::default()).is_err());
+        }
+        let plain = encode(&image::DynamicImage::new_rgb8(6, 4), ImageFormat::Png);
+        let idat = plain.windows(4).position(|chunk| chunk == b"IDAT").unwrap();
+        assert_eq!(
+            dimensions_exif_transposed(&plain[..idat + 4]).unwrap(),
+            (4, 6)
         );
     }
 }

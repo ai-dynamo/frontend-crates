@@ -31,6 +31,7 @@ blake3.workspace = true
 gif.workspace = true
 image.workspace = true
 ipnet = { workspace = true, optional = true }
+png.workspace = true
 rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }

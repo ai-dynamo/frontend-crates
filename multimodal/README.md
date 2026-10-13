@@ -242,7 +242,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
 | `image::decode::decode_rgb_exif_transposed` | `PIL.ImageOps.exif_transpose(Image.open(...)).convert("RGB")` | opt-in EXIF orientation; caps checked against transposed dimensions before pixel decoding |
-| `image::decode::dimensions_exif_transposed` | `PIL.ImageOps.exif_transpose(Image.open(...)).size` | header-only oriented geometry for JPEG, PNG and WebP, without pixel decoding |
+| `image::decode::dimensions_exif_transposed` | EXIF-oriented `PIL.ImageOps.exif_transpose(Image.open(...)).size` | metadata-only oriented geometry for JPEG, PNG and WebP, without pixel decoding |
 | `fetch::fetch_bytes` *(signatures only so far)* | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; the protected untrusted-URL path is `fetch::MediaFetcher` |
 | `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
 | `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
@@ -254,6 +254,10 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
 accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
 unchanged; forwarding and raw-content hashing still use the original bytes.
+PNG EXIF includes `eXIf` chunks and legacy `Raw profile type exif` tEXt/zTXt
+profiles, including trailing text metadata, with a 1 MiB profile-text cap.
+Competing tEXt/zTXt profiles are rejected. XMP-only orientation is outside
+these EXIF APIs; Pillow also supports that separate fallback.
 
 
 ## 4. Testing

@@ -1160,6 +1160,7 @@ dependencies = [
  "gif",
  "image",
  "ipnet",
+ "png",
  "rayon",
  "reqwest 0.12.28",
  "serde",
