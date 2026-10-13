@@ -232,7 +232,12 @@
     if (!b) { return '—'; }
     if (b.unavailable != null) {
       // Prose, not payload: these carry n/a rationale and TODO notes.
-      return '<span class="expl">unavailable: ' + escapeHtml(String(b.unavailable)) + '</span>';
+      var unavailable = b.unavailable;
+      var reason = (unavailable && typeof unavailable === 'object')
+        ? (typeof unavailable.detail === 'string' ? unavailable.detail
+          : (typeof unavailable.code === 'string' ? unavailable.code : JSON.stringify(unavailable)))
+        : String(unavailable);
+      return '<span class="expl">unavailable: ' + escapeHtml(reason) + '</span>';
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named

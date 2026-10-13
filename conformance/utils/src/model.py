@@ -105,7 +105,8 @@ tooltip = {
   "duplicate_of": str | None,        # canonical case ID for an intentional duplicate
 }
 
-output_block = {"calls":[...], "normal_text":str, "error":..., "unavailable":str,
+output_block = {"calls":[...], "normal_text":str, "error":...,
+                "unavailable":str|{"code":str,"detail":str},
                 "explanation":str} | None
 per-chunk = {"deltas":[{index,name?,arguments?}], "normal_text":str}
             # one entry per input chunk, aligned to input.chunks (chart rows)

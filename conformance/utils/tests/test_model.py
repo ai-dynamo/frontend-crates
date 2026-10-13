@@ -98,6 +98,59 @@ def _tab(model: dict, tab_id: str) -> dict:
     raise AssertionError(f"tab {tab_id!r} missing; have {[t['id'] for t in model['tabs']]}")
 
 
+def _unavailable_detail(block: dict) -> str:
+    unavailable = block["unavailable"]
+    if isinstance(unavailable, dict):
+        assert isinstance(unavailable.get("code"), str)
+        detail = unavailable.get("detail")
+        assert detail is None or isinstance(detail, str)
+        return detail or unavailable["code"]
+    assert isinstance(unavailable, str)
+    return unavailable
+
+
+def _render_tooltips(tips: list[dict]) -> list[str]:
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_tooltip_renders_structured_and_legacy_unavailable_reasons():
+    tips = [
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": {"code": "vllm_rust_parser_not_registered",
+                            "detail": "No parser for <family>."},
+        }}]},
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": "No parser for this legacy result.",
+        }}]},
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": {"code": "original_request_not_retained"},
+        }}]},
+    ]
+
+    rendered = _render_tooltips(tips)
+
+    assert "unavailable: No parser for &lt;family&gt;." in rendered[0]
+    assert "[object Object]" not in rendered[0]
+    assert "unavailable: No parser for this legacy result." in rendered[1]
+    assert "unavailable: original_request_not_retained" in rendered[2]
+
+
 def test_case_schema_extraction_omits_absent_and_shared_defaults():
     schema = {"type": "object", "properties": {"query": {"type": "string"}}}
     tools = [{"name": "search", "parameters": schema, "description": "Search"}]
@@ -481,24 +534,8 @@ def test_null_case_descriptions_explain_schema_difference(model_v2):
     assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
     assert "request tool schema requires a string" in tips[0]["description"]
     assert "request tool schema permits JSON null" in tips[1]["description"]
-    script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
-vm.runInContext(source.replace('// --- Entry point',
-  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
-const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
-process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
-"""
     tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
-    result = subprocess.run(
-        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
-        input=json.dumps(tips), text=True, capture_output=True, check=True,
-    )
-    rendered = json.loads(result.stdout)
+    rendered = _render_tooltips(tips)
     assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
@@ -559,23 +596,7 @@ def test_minimax_nested_union_fixtures_preserve_history_and_input(
         assert (stimulus["text"] if mode == "batch" else
                 "".join(chunk["delta_text"] for chunk in stimulus["chunks"])) == raw_input
         tips.append(tip)
-    script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
-vm.runInContext(source.replace('// --- Entry point',
-  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
-const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
-process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
-"""
-    result = subprocess.run(
-        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
-        input=json.dumps(tips), text=True, capture_output=True, check=True,
-    )
-    for tip, markup in zip(tips, json.loads(result.stdout)):
+    for tip, markup in zip(tips, _render_tooltips(tips)):
         left = [unescape(re.sub(r"<[^>]+>", "", match))
                 for match in re.findall(r'<td class="cin">(.*?)</td>', markup, re.S)]
         if mode == "batch":
@@ -889,7 +910,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 if not is_unavailable or leaf_cells(row)[scenario]["status"] == "na":
                     continue
                 peer = next(candidate for candidate in leaf_cells(row)[scenario]["tooltip"]["candidates"] if candidate["key"] == key)
-                reason = peer["block"]["unavailable"]
+                reason = _unavailable_detail(peer["block"])
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
@@ -915,7 +936,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
             if key.startswith("vllm_rust"):
                 assert comparison["na"] == 1
                 peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-                assert "no GuidedJson" in peer["block"]["unavailable"]
+                assert "no GuidedJson" in _unavailable_detail(peer["block"])
             else:
                 assert comparison["na"] == 0
 
@@ -1297,7 +1318,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
                 version = tuple(map(int, candidate["key"].split("@", 1)[1].split(".")))
                 if version < (0, 7, 16):
                     assert "unavailable" in candidate["block"]
-                    assert "not captured at" in candidate["block"]["unavailable"]
+                    assert "not captured at" in _unavailable_detail(candidate["block"])
                     assert "events" not in candidate["block"]
                     state, reason = cell_state(shared, candidate)
                     assert state == "empty"
