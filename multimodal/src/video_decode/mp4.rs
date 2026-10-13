@@ -51,7 +51,7 @@ pub(super) struct Sample {
     /// keeps its place (negative before the window), so display order holds.
     pub cts: i64,
     /// Whether the decoder outputs a frame for the sample: set by the caller
-    /// before [`Movie::finish`] (only a VP9 packet may output nothing). A
+    /// before [`Movie::finish`] (only a VP8 or VP9 packet may output nothing). A
     /// sample that outputs nothing takes no place in display order.
     pub displays: bool,
     /// Whether the frame displays inside the edit list's window. Hidden

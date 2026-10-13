@@ -291,7 +291,7 @@ struct Api {
 }
 
 /// Open the first library in `names` that loads.
-fn open(names: &[&CStr]) -> Option<*mut c_void> {
+pub(super) fn open(names: &[&CStr]) -> Option<*mut c_void> {
     names.iter().find_map(|name| {
         // SAFETY: `name` is a NUL-terminated string; dlopen has no other
         // preconditions. The handle is never closed (the API lives as long
@@ -306,7 +306,10 @@ fn open(names: &[&CStr]) -> Option<*mut c_void> {
 /// # Safety
 ///
 /// `F` must be the function-pointer type of `symbol`'s C declaration.
-unsafe fn symbol<F: Copy>(handle: *mut c_void, symbol: &CStr) -> std::result::Result<F, String> {
+pub(super) unsafe fn symbol<F: Copy>(
+    handle: *mut c_void,
+    symbol: &CStr,
+) -> std::result::Result<F, String> {
     // SAFETY: `handle` came from dlopen; `symbol` is NUL-terminated.
     let address = unsafe { dlsym(handle, symbol.as_ptr()) };
     if address.is_null() {

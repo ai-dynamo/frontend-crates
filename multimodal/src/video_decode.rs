@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Video decoding to sampled RGB frames on NVIDIA GPUs, through NVDEC.
+//! Video decoding to sampled RGB frames on NVIDIA GPUs through NVDEC, with
+//! VP8 and VP9 also on the CPU through libvpx.
 //!
 //! [`probe`] reads a clip's container and reports its codec, coded size,
 //! duration and frame count. [`decode_sampled`] decodes it and keeps
@@ -10,15 +11,21 @@
 //! any [`ByteSource`], such as a file or a ranged download.
 //!
 //! Containers: MP4 (ISO BMFF) through this crate's own demuxer (see `mp4`),
-//! WebM and Matroska through `matroska-demuxer`. Codecs: H.264, HEVC, VP9 and
-//! AV1, 8-bit 4:2:0, as far as the GPU's NVDEC supports them (checked at
-//! runtime).
+//! WebM and Matroska through `matroska-demuxer`. Codecs: H.264, HEVC, VP8, VP9
+//! and AV1, 8-bit 4:2:0.
 //!
-//! Decoding runs in NVIDIA's driver: `libcuda.so.1` and `libnvcuvid.so.1` are
-//! loaded at runtime (see `nvdec`), so nothing is linked at build time and no
-//! software decoder ships in this crate. Without a driver, or on a GPU whose
-//! NVDEC does not support the stream, decoding returns
-//! [`MmError::Unsupported`]. GPU 0 is used.
+//! Decoding runs in NVIDIA's driver when it can: `libcuda.so.1` and
+//! `libnvcuvid.so.1` are loaded at runtime (see `nvdec`) and GPU 0 is used.
+//! When NVDEC cannot decode a VP8 or VP9 stream (no driver, a GPU without the
+//! codec, or VP8, which NVDEC is not used for), it is decoded on the calling
+//! thread by libvpx, also loaded at runtime (see `vpx`). Nothing is linked at
+//! build time and no decoder ships in this crate. Without a decoder for the
+//! stream, decoding returns [`MmError::Unsupported`].
+//!
+//! 64-bit Linux only: the driver and libvpx structures are transcribed for
+//! the 64-bit (LP64) layout, and their layout checks fail the build on 32-bit
+//! Linux. On other operating systems decoding returns
+//! [`MmError::Unsupported`].
 //!
 //! YUV to RGB follows the bitstream's colour tags: BT.709, or BT.601 when the
 //! bitstream says BT.601 or nothing (FFmpeg's default for untagged video), in
@@ -34,15 +41,16 @@
 //!
 //! Decoding blocks the calling thread. Every frame up to the last sampled one
 //! goes through the decoder, because frames depend on earlier frames; only the
-//! sampled ones are copied off the GPU.
+//! sampled ones are copied off the GPU and converted.
 //!
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
 //! at a time, so only its index (sample tables) is held. WebM and Matroska
 //! packets are read into memory while the file is demuxed, so those hold the
-//! whole video next to the source. A VP9 clip is also read once in full before
-//! decoding, to find which packets display a frame and what colour it declares.
+//! whole video next to the source. A VP8 or VP9 clip is also read once in full
+//! before decoding, to find which packets display a frame and what colour VP9
+//! declares.
 
-// NVDEC is Linux-only; elsewhere the decode path is compiled out.
+// Decoding is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
 
 use crate::frames::{VideoFrames, VideoTiming};
@@ -52,6 +60,8 @@ mod mp4;
 #[cfg(target_os = "linux")]
 mod nvdec;
 mod source;
+#[cfg(target_os = "linux")]
+mod vpx;
 
 pub use source::ByteSource;
 use source::SourceReader;
@@ -75,15 +85,6 @@ impl VideoCodec {
             Self::Av1 => "AV1",
             Self::H264 => "H.264",
             Self::Hevc => "HEVC",
-        }
-    }
-
-    /// Why this crate cannot decode `self`, or `None` if NVDEC may (whether
-    /// it does depends on the GPU, checked when decoding).
-    fn unsupported_reason(self) -> Option<String> {
-        match self {
-            Self::Vp8 => Some("VP8 is not decoded by this crate".into()),
-            _ => None,
         }
     }
 }
@@ -147,7 +148,7 @@ struct Packet {
     payload: Payload,
     pts: f64,
     /// Whether the decoder will output a frame for this packet. `false` only
-    /// for a VP9 packet whose frames are all hidden (`show_frame = 0`).
+    /// for a VP8 or VP9 packet whose frames are all hidden (`show_frame = 0`).
     displays: bool,
     /// Whether the output frame belongs to the video: `false` for a Matroska
     /// frame marked invisible and for a packet that displays nothing. Every
@@ -218,15 +219,16 @@ pub fn probe(bytes: &[u8]) -> Result<VideoInfo> {
 
 /// [`probe`] for a video in any [`ByteSource`].
 pub fn probe_from(source: &dyn ByteSource) -> Result<VideoInfo> {
-    Ok(demux(source, false)?.info())
+    Ok(demux(source)?.info())
 }
 
 /// Decode `bytes` and keep `num_frames` frames spread evenly over the clip:
 /// frame indices `round(linspace(0, frame_count - 1, num_frames))`.
 ///
-/// Errors: [`MmError::Unsupported`] without an NVIDIA driver, for VP8, for a
-/// stream this GPU's NVDEC cannot decode, and for anything other than 8-bit
-/// 4:2:0 in a supported colour matrix; [`MmError::LimitExceeded`] when a frame or the output exceeds
+/// Errors: [`MmError::Unsupported`] for a stream neither NVDEC (no driver, or
+/// a GPU without the codec) nor, for VP8 and VP9, libvpx (not installed) can
+/// decode here, and for anything other than 8-bit 4:2:0 in a supported colour
+/// matrix; [`MmError::LimitExceeded`] when a frame or the output exceeds
 /// `limits`; [`MmError::InvalidInput`] for an unreadable container or
 /// bitstream, zero frames requested, more frames than the clip shows, or a
 /// resolution change mid-stream.
@@ -247,11 +249,52 @@ pub fn decode_sampled_from(
     num_frames: u64,
     limits: &VideoDecodeLimits,
 ) -> Result<VideoFrames> {
+    decode_sampled_with(source, num_frames, limits, decode_track)
+}
+
+/// A decoder: decodes a track and feeds its displayed frames to the sampler.
+type Backend = fn(&Track<'_>, &mut Sampler<'_>) -> Result<()>;
+
+/// NVDEC, or for VP8 and VP9 libvpx when NVDEC cannot decode the stream. A
+/// broken or oversized stream is not decoded twice: only
+/// [`MmError::Unsupported`] moves to the CPU.
+#[cfg(target_os = "linux")]
+fn decode_track(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()> {
+    match nvdec::decode(track, sampler) {
+        Err(MmError::Unsupported { message, .. })
+            if matches!(track.codec, VideoCodec::Vp8 | VideoCodec::Vp9) =>
+        {
+            sampler.restart();
+            vpx::decode(track, sampler).map_err(|e| match e {
+                MmError::Unsupported { message: cpu, .. } => {
+                    MmError::unsupported(format!("{message}; {cpu}"))
+                }
+                e => e,
+            })
+        }
+        result => result,
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn decode_track(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+    Err(MmError::unsupported(
+        "video decoding is only built on Linux",
+    ))
+}
+
+fn decode_sampled_with(
+    source: &dyn ByteSource,
+    num_frames: u64,
+    limits: &VideoDecodeLimits,
+    backend: Backend,
+) -> Result<VideoFrames> {
     if num_frames == 0 {
         return Err(MmError::invalid_input("num_frames must be at least 1"));
     }
-    // Refuses an undecodable codec before the packets are collected.
-    let track = demux(source, true)?;
+    let track = demux(source)?;
+    // Refused once here rather than by each decoder in turn.
+    track.vp9_colour.get()?;
     let info = track.info();
     if num_frames > info.frame_count {
         return Err(MmError::invalid_input(format!(
@@ -287,12 +330,7 @@ pub fn decode_sampled_from(
         rgb: Vec::new(),
         timestamps: Vec::with_capacity(targets.len()),
     };
-    #[cfg(target_os = "linux")]
-    nvdec::decode(&track, &mut sampler)?;
-    #[cfg(not(target_os = "linux"))]
-    return Err(MmError::unsupported(
-        "NVDEC decoding is only built on Linux",
-    ));
+    backend(&track, &mut sampler)?;
     if !sampler.done() {
         return Err(MmError::invalid_input(format!(
             "the video decoded to {} displayable frames, fewer than the {} it declares",
@@ -355,6 +393,14 @@ impl Sampler<'_> {
         self.next == self.targets.len()
     }
 
+    /// Forget every frame, for a decode that starts over.
+    fn restart(&mut self) {
+        self.next = 0;
+        self.shown = 0;
+        self.rgb.clear();
+        self.timestamps.clear();
+    }
+
     /// Whether the next displayed frame is a sampled one.
     fn wants_next(&self) -> bool {
         self.targets.get(self.next) == Some(&self.shown)
@@ -399,16 +445,16 @@ fn read_error(e: std::io::Error, what: &str) -> MmError {
     }
 }
 
-fn demux(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
+fn demux(source: &dyn ByteSource) -> Result<Track<'_>> {
     let mut magic = [0u8; 8];
     let magic = &mut magic[..source.len().min(8) as usize];
     source
         .read_at(0, magic)
         .map_err(|e| read_error(e, "the container header"))?;
     let track = if magic.get(4..8) == Some(b"ftyp") {
-        demux_mp4(source, require_decodable)?
+        demux_mp4(source)?
     } else if magic.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
-        demux_matroska(source, require_decodable)?
+        demux_matroska(source)?
     } else {
         return Err(MmError::invalid_input(
             "unrecognised video container: expected MP4, WebM or Matroska",
@@ -423,30 +469,34 @@ fn demux(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> 
     Ok(track)
 }
 
-fn refuse_if_undecodable(codec: VideoCodec, require_decodable: bool) -> Result<()> {
-    match codec.unsupported_reason() {
-        Some(reason) if require_decodable => Err(MmError::unsupported(reason)),
-        _ => Ok(()),
+/// Whether a VP8 or VP9 packet outputs a frame (`true` for other codecs), and
+/// for VP9 the colour its keyframes declare.
+fn packet_displays(codec: VideoCodec, packet: &[u8], vp9_colour: &mut Vp9Colour) -> Result<bool> {
+    match codec {
+        VideoCodec::Vp8 => Ok(vp8_packet_displays(packet)),
+        VideoCodec::Vp9 => {
+            vp9_colour.note(packet);
+            vp9_packet_displays(packet)
+        }
+        _ => Ok(true),
     }
 }
 
-fn demux_mp4(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
+fn demux_mp4(source: &dyn ByteSource) -> Result<Track<'_>> {
     let mut movie = mp4::read(source)?;
     let codec = movie.codec;
-    refuse_if_undecodable(codec, require_decodable)?;
-    // Only VP9 needs a look inside the packets, for hidden frames and colour,
-    // before the edit list is applied; the other codecs' packets are not read
-    // until they are decoded.
+    // Only VP8 and VP9 need a look inside the packets, for hidden frames and
+    // colour, before the edit list is applied; the other codecs' packets are
+    // not read until they are decoded.
     let mut vp9_colour = Vp9Colour::default();
-    if codec == VideoCodec::Vp9 {
+    if matches!(codec, VideoCodec::Vp8 | VideoCodec::Vp9) {
         let mut scratch = Vec::new();
         for sample in &mut movie.samples {
             scratch.resize(sample.size as usize, 0);
             source
                 .read_at(sample.offset, &mut scratch)
                 .map_err(|e| read_error(e, "a video packet"))?;
-            sample.displays = vp9_packet_displays(&scratch)?;
-            vp9_colour.note(&scratch);
+            sample.displays = packet_displays(codec, &scratch, &mut vp9_colour)?;
         }
     }
     let video = movie.finish()?;
@@ -477,7 +527,7 @@ fn demux_mp4(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'
     })
 }
 
-fn demux_matroska(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
+fn demux_matroska(source: &dyn ByteSource) -> Result<Track<'_>> {
     use matroska_demuxer::{Frame, MatroskaFile, TrackType};
     let invalid = |e| MmError::invalid_input_with_source("unreadable WebM / Matroska", e);
     let mut file = MatroskaFile::open(SourceReader::new(source)).map_err(invalid)?;
@@ -498,7 +548,6 @@ fn demux_matroska(source: &dyn ByteSource, require_decodable: bool) -> Result<Tr
             )));
         }
     };
-    refuse_if_undecodable(codec, require_decodable)?;
     let size =
         |v: u64| u32::try_from(v).map_err(|_| MmError::invalid_input("video size out of range"));
     let (width, height) = entry
@@ -525,10 +574,7 @@ fn demux_matroska(source: &dyn ByteSource, require_decodable: bool) -> Result<Tr
             continue;
         }
         let pts = frame.timestamp as f64 * scale;
-        let displays = codec != VideoCodec::Vp9 || vp9_packet_displays(&frame.data)?;
-        if codec == VideoCodec::Vp9 {
-            vp9_colour.note(&frame.data);
-        }
+        let displays = packet_displays(codec, &frame.data, &mut vp9_colour)?;
         let packet = Packet::new(
             Payload::Owned(std::mem::take(&mut frame.data)),
             pts,
@@ -653,53 +699,55 @@ impl Nv12<'_> {
 // Decoder input
 // ---------------------------------------------------------------------------
 
-/// The frames of a VP9 packet: a superframe's frames (its index sits in the
-/// packet's last bytes), or the packet itself.
-fn vp9_frames(packet: &[u8]) -> Vec<&[u8]> {
-    let single = || vec![packet];
+/// A VP9 packet's superframe index, read as libvpx reads it: `None` without
+/// one, else the frames in the sizes it lists (the last may run into the index
+/// itself). A last byte that marks an index which is not there, and an index
+/// whose frames overrun the packet, are invalid, as libvpx refuses them.
+fn vp9_superframe(packet: &[u8]) -> Result<Option<Vec<&[u8]>>> {
     let Some(&marker) = packet.last() else {
-        return single();
+        return Ok(None);
     };
     if marker & 0xE0 != 0xC0 {
-        return single();
+        return Ok(None);
     }
+    let invalid = || MmError::invalid_input("malformed VP9 superframe index");
     let count = usize::from(marker & 0x07) + 1;
     let size_bytes = usize::from((marker >> 3) & 0x03) + 1;
-    let index_len = 2 + size_bytes * count;
-    let Some(index_start) = packet.len().checked_sub(index_len) else {
-        return single();
-    };
+    let index_start = packet
+        .len()
+        .checked_sub(2 + size_bytes * count)
+        .ok_or_else(invalid)?;
     if packet[index_start] != marker {
-        return single();
+        return Err(invalid());
     }
     let mut frames = Vec::with_capacity(count);
-    let mut offset = 0;
+    let mut offset = 0usize;
     for i in 0..count {
         let field = &packet[index_start + 1 + i * size_bytes..][..size_bytes];
         let size = field
             .iter()
             .rev()
             .fold(0usize, |n, b| (n << 8) | usize::from(*b));
-        match packet
-            .get(offset..offset + size)
-            .filter(|_| offset + size <= index_start)
-        {
-            Some(frame) => frames.push(frame),
-            None => return single(),
-        }
-        offset += size;
+        let end = offset.checked_add(size).ok_or_else(invalid)?;
+        frames.push(packet.get(offset..end).ok_or_else(invalid)?);
+        offset = end;
     }
-    frames
+    Ok(Some(frames))
+}
+
+/// The frames of a VP9 packet: a superframe's frames, or the packet itself.
+fn vp9_frames(packet: &[u8]) -> Result<Vec<&[u8]>> {
+    Ok(vp9_superframe(packet)?.unwrap_or_else(|| vec![packet]))
 }
 
 /// Whether a VP9 packet outputs a frame: one of its frames has `show_frame`
 /// set. Unparseable headers count as shown, so the decoder's own checks
 /// decide. Refused, because they break the one-output-per-packet mapping: a
 /// packet that shows more than one frame, and `show_existing_frame` (NVDEC
-/// outputs nothing for a standalone one).
+/// outputs nothing for a standalone one), and a malformed superframe index.
 fn vp9_packet_displays(packet: &[u8]) -> Result<bool> {
     let mut shown = 0;
-    for frame in vp9_frames(packet) {
+    for frame in vp9_frames(packet)? {
         let bit = |n: usize| frame.get(n / 8).map(|b| (b >> (7 - n % 8)) & 1);
         // (show_existing_frame, show_frame)
         let header = || -> Option<(bool, bool)> {
@@ -744,18 +792,19 @@ enum Vp9Colour {
 }
 
 impl Vp9Colour {
-    /// Take in the colour `packet` declares, if it is a keyframe. The first
-    /// problem found stays.
+    /// Take in the colour each keyframe in `packet` declares, a superframe's
+    /// later frames included. The first problem found stays. A packet whose
+    /// superframe index is malformed is refused when its frames are counted.
     fn note(&mut self, packet: &[u8]) {
-        let Some(found) = vp9_keyframe_colour(packet) else {
-            return;
-        };
-        *self = match (*self, found) {
-            (Self::Unsupported(_) | Self::Changed, _) => return,
-            (_, Err(space)) => Self::Unsupported(space),
-            (Self::Declared(m, r), Ok(colour)) if (m, r) != colour => Self::Changed,
-            (_, Ok((matrix, full_range))) => Self::Declared(matrix, full_range),
-        };
+        let frames = vp9_frames(packet).unwrap_or_default();
+        for found in frames.into_iter().filter_map(vp9_keyframe_colour) {
+            *self = match (*self, found) {
+                (Self::Unsupported(_) | Self::Changed, _) => return,
+                (_, Err(space)) => Self::Unsupported(space),
+                (Self::Declared(m, r), Ok(colour)) if (m, r) != colour => Self::Changed,
+                (_, Ok((matrix, full_range))) => Self::Declared(matrix, full_range),
+            };
+        }
     }
 
     /// (matrix, full range) to decode with, `None` if no keyframe says.
@@ -773,8 +822,7 @@ impl Vp9Colour {
 
 /// The colour a VP9 keyframe declares: `Some(Ok((matrix, full_range)))` for a
 /// keyframe, `None` for any other frame, and `Some(Err(colour_space))` for a
-/// colour space this crate does not convert (SMPTE 240M, BT.2020, sRGB). The
-/// first frame of a superframe is the one read.
+/// colour space this crate does not convert (SMPTE 240M, BT.2020, sRGB).
 fn vp9_keyframe_colour(frame: &[u8]) -> Option<std::result::Result<(Matrix, bool), u8>> {
     // VP9 uncompressed header: frame_marker (2), profile low/high bits,
     // reserved bit for profile 3, show_existing_frame, frame_type,
@@ -806,6 +854,95 @@ fn vp9_keyframe_colour(frame: &[u8]) -> Option<std::result::Result<(Matrix, bool
         2 => Ok((Matrix::Bt709, full_range)),
         other => Err(other),
     })
+}
+
+/// The frame size a VP9 frame's uncompressed header gives explicitly (a
+/// keyframe, an intra-only frame, or an inter frame that takes no reference's
+/// size), or `None` when it gives none (`show_existing_frame`, or an inter
+/// frame sized like a reference). A header that ends early or is malformed is
+/// refused here rather than left to libvpx, so no size reaches it unchecked.
+fn vp9_frame_size(frame: &[u8]) -> Result<Option<(u32, u32)>> {
+    vp9_read_frame_size(frame)
+        .ok_or_else(|| MmError::invalid_input("truncated or malformed VP9 frame header"))
+}
+
+/// [`vp9_frame_size`], with `None` for a header that cannot be read.
+fn vp9_read_frame_size(frame: &[u8]) -> Option<Option<(u32, u32)>> {
+    let mut pos = 0;
+    let mut read = |n: usize| -> Option<u32> {
+        (0..n).try_fold(0u32, |v, _| {
+            let bit = (frame.get(pos / 8)? >> (7 - pos % 8)) & 1;
+            pos += 1;
+            Some((v << 1) | u32::from(bit))
+        })
+    };
+    if read(2)? != 2 {
+        return None; // frame_marker
+    }
+    let profile = read(1)? | (read(1)? << 1);
+    if profile == 3 {
+        read(1)?;
+    }
+    if read(1)? == 1 {
+        return Some(None); // show_existing_frame
+    }
+    let key = read(1)? == 0;
+    let show = read(1)? == 1;
+    let error_resilient = read(1)? == 1;
+    let intra_only = !key && !show && read(1)? == 1;
+    if !key && !error_resilient {
+        read(2)?; // reset_frame_context
+    }
+    if key || intra_only {
+        if read(24)? != 0x49_83_42 {
+            return None;
+        }
+        if key || profile > 0 {
+            // color_config
+            if profile >= 2 {
+                read(1)?;
+            }
+            let rgb = read(3)? == 7;
+            let subsampling = profile == 1 || profile == 3;
+            read(match (rgb, subsampling) {
+                (false, true) => 4,
+                (false, false) | (true, true) => 1,
+                (true, false) => 0,
+            })?;
+        }
+        if intra_only {
+            read(8)?; // refresh_frame_flags
+        }
+    } else {
+        read(8 + 3 * 4)?; // refresh_frame_flags, ref_frame_idx and sign bias
+        for _ in 0..3 {
+            if read(1)? == 1 {
+                return Some(None); // found_ref: the size of a reference
+            }
+        }
+    }
+    Some(Some((read(16)? + 1, read(16)? + 1)))
+}
+
+/// Whether a VP8 packet's frame header sets `show_frame`. An empty packet
+/// counts as shown, so the decoder's own checks decide.
+fn vp8_packet_displays(packet: &[u8]) -> bool {
+    packet.first().is_none_or(|tag| tag & 0x10 != 0)
+}
+
+/// The frame size a VP8 keyframe declares, or `None` for an inter frame.
+fn vp8_keyframe_size(packet: &[u8]) -> Option<(u32, u32)> {
+    // Frame tag (keyframe when bit 0 is clear), start code, then 14-bit width
+    // and height with 2 scaling bits each, little-endian.
+    if packet.first()? & 1 != 0 || packet.get(3..6)? != [0x9d, 0x01, 0x2a] {
+        return None;
+    }
+    let dimension = |at: usize| {
+        Some(u32::from(
+            u16::from_le_bytes([*packet.get(at)?, *packet.get(at + 1)?]) & 0x3FFF,
+        ))
+    };
+    Some((dimension(6)?, dimension(8)?))
 }
 
 /// Annex B start code.
@@ -981,7 +1118,7 @@ mod tests {
     fn track_of(name: &str) -> (Vec<u8>, VideoCodec, Option<Vec<u8>>) {
         let bytes = fixture(name);
         let (codec, config) = {
-            let track = demux(&bytes, false).unwrap();
+            let track = demux(&bytes).unwrap();
             (track.codec, track.config.clone())
         };
         (bytes, codec, config)
@@ -1029,14 +1166,6 @@ mod tests {
         // sample entry and the bitstream are 256x256.
         let info = probe(&fixture("vp9_sar.mp4")).unwrap();
         assert_eq!((info.width, info.height), (256, 256));
-    }
-
-    #[test]
-    fn vp8_is_refused_before_decoding() {
-        let err =
-            decode_sampled(&fixture("vp8.webm"), 1, &VideoDecodeLimits::default()).unwrap_err();
-        assert!(matches!(err, MmError::Unsupported { .. }), "{err:?}");
-        assert!(format!("{err}").contains("VP8"), "{err}");
     }
 
     #[test]
@@ -1109,7 +1238,7 @@ mod tests {
         assert!((cut.duration - 10.5).abs() < 1e-9, "{}", cut.duration);
         assert_eq!(cut.frame_count, 105);
         let bytes = fixture("cut.mp4");
-        let track = demux(&bytes, false).unwrap();
+        let track = demux(&bytes).unwrap();
         assert_eq!(track.packets.len(), 120);
     }
 
@@ -1153,7 +1282,18 @@ mod tests {
         };
         assert!(vp9_packet_displays(&superframe(&hidden, &shown)).unwrap());
         assert!(!vp9_packet_displays(&superframe(&hidden, &hidden)).unwrap());
-        assert_eq!(vp9_frames(&superframe(&hidden, &shown)).len(), 2);
+        assert_eq!(vp9_frames(&superframe(&hidden, &shown)).unwrap().len(), 2);
+        // libvpx lets the last frame run into the index; it refuses an index
+        // whose frames overrun the packet, and a marker without its index.
+        let mut long = superframe(&hidden, &shown);
+        let at = long.len() - 2;
+        long[at] += 4;
+        assert_eq!(vp9_frames(&long).unwrap()[1].len(), shown.len() + 4);
+        long[at] += 1;
+        for packet in [long, vec![0x80, 0, 0b1100_0000]] {
+            let r = vp9_frames(&packet);
+            assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        }
         // Packets that cannot map to exactly one output are refused.
         for packet in [existing.to_vec(), superframe(&shown, &shown)] {
             let r = vp9_packet_displays(&packet);
@@ -1162,15 +1302,18 @@ mod tests {
         // Real clips: every packet displays, superframes included.
         for name in ["vp9.webm", "vp9_altref.webm"] {
             let bytes = fixture(name);
-            let track = demux(&bytes, false).unwrap();
+            let track = demux(&bytes).unwrap();
             assert!(
                 track.packets.iter().all(|p| p.displays && p.shown),
                 "{name}"
             );
         }
         let bytes = fixture("vp9_altref.webm");
-        let track = demux(&bytes, false).unwrap();
-        assert!((0..track.packets.len()).any(|i| vp9_frames(&packet_data(&track, i)).len() > 1));
+        let track = demux(&bytes).unwrap();
+        assert!(
+            (0..track.packets.len())
+                .any(|i| vp9_frames(&packet_data(&track, i)).unwrap().len() > 1)
+        );
     }
 
     #[test]
@@ -1316,19 +1459,35 @@ mod tests {
     fn vp9_colour_is_read_from_the_keyframe_header() {
         let first = |name: &str| {
             let bytes = fixture(name);
-            let track = demux(&bytes, false).unwrap();
+            let track = demux(&bytes).unwrap();
             vp9_keyframe_colour(&packet_data(&track, 0)).map(|r| r.unwrap())
         };
         assert_eq!(first("vp9_709.webm"), Some((Matrix::Bt709, false)));
         assert_eq!(first("vp9.webm"), Some((Matrix::Bt601, false)));
         // An inter frame carries no colour config.
         let bytes = fixture("vp9.webm");
-        let track = demux(&bytes, false).unwrap();
+        let track = demux(&bytes).unwrap();
         assert_eq!(
             vp9_keyframe_colour(&packet_data(&track, 1)).map(|r| r.is_ok()),
             None
         );
         assert!(vp9_keyframe_colour(&[]).is_none());
+        // A keyframe behind another frame in a superframe is read too, so a
+        // colour change there is not missed.
+        let first = |name: &str, i: usize| packet_data(&demux(&fixture(name)).unwrap(), i);
+        let (inter, bt709) = (first("vp9.webm", 1), first("vp9_709.webm", 0));
+        let mut superframe = [&inter[..], &bt709].concat();
+        let marker = 0b1101_1001; // two frames, 4-byte sizes
+        superframe.push(marker);
+        for frame in [&inter, &bt709] {
+            superframe.extend_from_slice(&u32::try_from(frame.len()).unwrap().to_le_bytes());
+        }
+        superframe.push(marker);
+        let mut colour = Vp9Colour::default();
+        colour.note(&first("vp9.webm", 0));
+        assert_eq!(colour, Vp9Colour::Declared(Matrix::Bt601, false));
+        colour.note(&superframe);
+        assert_eq!(colour, Vp9Colour::Changed);
     }
 
     #[test]
@@ -1345,7 +1504,7 @@ mod tests {
     #[test]
     fn the_first_packet_carries_the_parameter_sets() {
         let bytes = fixture("h264.mp4");
-        let track = demux(&bytes, true).unwrap();
+        let track = demux(&bytes).unwrap();
         let (prefix, length_size) = bitstream_prefix(&track).unwrap();
         let mut buffer = Vec::new();
         let first = to_decoder_input(
@@ -1364,7 +1523,7 @@ mod tests {
         assert!(second.starts_with(&START_CODE) && !second.starts_with(&prefix));
         // VP9 needs no rewriting: the packet is passed through untouched.
         let bytes = fixture("vp9.webm");
-        let track = demux(&bytes, true).unwrap();
+        let track = demux(&bytes).unwrap();
         let (prefix, length_size) = bitstream_prefix(&track).unwrap();
         let packet = packet_data(&track, 1);
         let input = to_decoder_input(&packet, &prefix, length_size, false, &mut buffer).unwrap();
@@ -1506,19 +1665,17 @@ mod tests {
         }
     }
 
-    #[test]
-    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn decodes_every_codec_in_display_order() {
-        for name in [
-            "h264.mp4",
-            "hevc.mp4",
-            "vp9.webm",
-            "vp9.mp4",
-            "av1.mp4",
-            "vp9_sar.mp4",
-        ] {
-            let frames = decode_sampled(&fixture(name), 10, &VideoDecodeLimits::default())
-                .unwrap_or_else(|e| panic!("{name}: {e}"));
+    /// Decodes fixture `name` to `num_frames` frames with the default limits.
+    type Decode = fn(&str, u64) -> Result<VideoFrames>;
+
+    /// As `decode_sampled` picks the decoder.
+    fn auto(name: &str, num_frames: u64) -> Result<VideoFrames> {
+        decode_sampled(&fixture(name), num_frames, &VideoDecodeLimits::default())
+    }
+
+    fn assert_display_order(decode: Decode, names: &[&str]) {
+        for name in names {
+            let frames = decode(name, 10).unwrap_or_else(|e| panic!("{name}: {e}"));
             assert_eq!(frames.frame_count(), 10, "{name}");
             for i in 0..10 {
                 assert_frame_color(&frames, i, color(i as u64));
@@ -1528,17 +1685,37 @@ mod tests {
         }
     }
 
-    #[test]
-    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn samples_evenly_and_keeps_their_timestamps() {
-        for name in ["h264.mp4", "vp9.webm"] {
-            let frames = decode_sampled(&fixture(name), 4, &VideoDecodeLimits::default()).unwrap();
+    fn assert_even_samples(decode: Decode, names: &[&str]) {
+        for name in names {
+            let frames = decode(name, 4).unwrap_or_else(|e| panic!("{name}: {e}"));
             assert_eq!(frames.frame_count(), 4);
             for (at, index) in [0, 3, 6, 9].into_iter().enumerate() {
                 assert_frame_color(&frames, at, color(index));
                 assert!((frames.timestamps()[at] - index as f64 * 0.1).abs() < 0.01);
             }
         }
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn decodes_every_codec_in_display_order() {
+        assert_display_order(
+            auto,
+            &[
+                "h264.mp4",
+                "hevc.mp4",
+                "vp9.webm",
+                "vp9.mp4",
+                "av1.mp4",
+                "vp9_sar.mp4",
+            ],
+        );
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn samples_evenly_and_keeps_their_timestamps() {
+        assert_even_samples(auto, &["h264.mp4", "vp9.webm"]);
     }
 
     #[test]
@@ -1556,31 +1733,33 @@ mod tests {
         assert!(worst <= Some(1), "max channel difference {worst:?}");
     }
 
-    #[test]
-    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn bt709_tagged_streams_convert_with_bt709() {
+    fn assert_bt709(decode: Decode, names: &[&str]) {
         // Encoded with the BT.709 matrix and tagged so; read as BT.601 the
         // colour would shift by more than 15 (generate.py checks that). VP9
         // reports its own colour codes, H.264 the H.273 ones.
-        for name in ["vp9_709.webm", "h264_709.mp4"] {
-            let frames = decode_sampled(&fixture(name), 1, &VideoDecodeLimits::default())
-                .unwrap_or_else(|e| panic!("{name}: {e}"));
+        for name in names {
+            let frames = decode(name, 1).unwrap_or_else(|e| panic!("{name}: {e}"));
             assert_frame_color(&frames, 0, [220, 40, 200]);
         }
     }
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn invisible_frames_are_decoded_but_not_shown() {
+    fn bt709_tagged_streams_convert_with_bt709() {
+        assert_bt709(auto, &["vp9_709.webm", "h264_709.mp4"]);
+    }
+
+    fn assert_invisible_frames_hidden(decode: Decode) {
         // vp9_invisible.webm is vp9_texture.webm with its third block flagged
         // invisible. The texture moves, so frames are predicted from their
         // predecessor: the shown frames must equal the original clip's frames
         // bit for bit, which only holds if the hidden frame was decoded.
-        let limits = VideoDecodeLimits::default();
-        let full = decode_sampled(&fixture("vp9_texture.webm"), 10, &limits).unwrap();
-        let bytes = fixture("vp9_invisible.webm");
-        assert_eq!(probe(&bytes).unwrap().frame_count, 9);
-        let hidden = decode_sampled(&bytes, 9, &limits).unwrap();
+        let full = decode("vp9_texture.webm", 10).unwrap();
+        assert_eq!(
+            probe(&fixture("vp9_invisible.webm")).unwrap().frame_count,
+            9
+        );
+        let hidden = decode("vp9_invisible.webm", 9).unwrap();
         let shown: Vec<usize> = (0..10).filter(|i| *i != 2).collect();
         for (at, index) in shown.into_iter().enumerate() {
             assert!(
@@ -1592,11 +1771,13 @@ mod tests {
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn frames_larger_than_the_container_are_refused_before_allocation() {
-        // A VP9 keyframe claiming 16384x16384 in a 256x256 container, and an
-        // AV1 stream of 256x256 whose container claims 128x128.
-        for name in ["vp9_huge.webm", "av1_small_container.mp4"] {
-            let r = decode_sampled(&fixture(name), 1, &VideoDecodeLimits::default());
+    fn invisible_frames_are_decoded_but_not_shown() {
+        assert_invisible_frames_hidden(auto);
+    }
+
+    fn assert_refused_before_allocation(decode: Decode, names: &[&str]) {
+        for name in names {
+            let r = decode(name, 1);
             assert!(
                 matches!(r, Err(MmError::LimitExceeded { .. })),
                 "{name}: {r:?}"
@@ -1606,13 +1787,14 @@ mod tests {
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn matroska_timestamps_are_player_times() {
-        let frames = decode_sampled(
-            &fixture("vp9_offset.webm"),
-            2,
-            &VideoDecodeLimits::default(),
-        )
-        .unwrap();
+    fn frames_larger_than_the_container_are_refused_before_allocation() {
+        // A VP9 keyframe claiming 16384x16384 in a 256x256 container, and an
+        // AV1 stream of 256x256 whose container claims 128x128.
+        assert_refused_before_allocation(auto, &["vp9_huge.webm", "av1_small_container.mp4"]);
+    }
+
+    fn assert_player_times(decode: Decode) {
+        let frames = decode("vp9_offset.webm", 2).unwrap();
         assert_eq!(frames.source_start(), 5.0);
         assert_eq!(frames.timestamps()[0], 5.0);
         assert!(
@@ -1620,6 +1802,12 @@ mod tests {
             "{:?}",
             frames.timestamps()
         );
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn matroska_timestamps_are_player_times() {
+        assert_player_times(auto);
     }
 
     /// The solid grey of frame `i` in delay.mp4 and cut.mp4.
@@ -1659,14 +1847,8 @@ mod tests {
         assert_frame_color(&frames, 104, edit_grey(119));
     }
 
-    #[test]
-    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn odd_sized_frames_match_the_reference_conversion() {
-        // 130x129: NVDEC needs an even output size, so the frame is decoded
-        // one row taller and cropped; the chroma plane starts after that even
-        // row count. Compared with a software decoder's planes.
-        let frames =
-            decode_sampled(&fixture("vp9_odd.webm"), 1, &VideoDecodeLimits::default()).unwrap();
+    fn assert_odd_size_matches_the_reference(decode: Decode) {
+        let frames = decode("vp9_odd.webm", 1).unwrap();
         assert_eq!((frames.width(), frames.height()), (130, 129));
         let expected = fixture("vp9_odd.rgb");
         let got = frames.frame(0).unwrap();
@@ -1677,17 +1859,19 @@ mod tests {
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn alt_ref_superframes_keep_frames_and_timestamps_together() {
+    fn odd_sized_frames_match_the_reference_conversion() {
+        // 130x129: NVDEC needs an even output size, so the frame is decoded
+        // one row taller and cropped; the chroma plane starts after that even
+        // row count. Compared with a software decoder's planes.
+        assert_odd_size_matches_the_reference(auto);
+    }
+
+    fn assert_alt_refs_in_step(decode: Decode) {
         // Frame i of vp9_altref.webm has a grey bar of 20 + 10 i (generate.py)
         // and starts at i / 10 s. Superframes carrying a hidden alt-ref make
         // NVDEC's timestamps slip by one, so every frame is checked against
         // its own timestamp.
-        let frames = decode_sampled(
-            &fixture("vp9_altref.webm"),
-            20,
-            &VideoDecodeLimits::default(),
-        )
-        .unwrap();
+        let frames = decode("vp9_altref.webm", 20).unwrap();
         for (i, ts) in frames.timestamps().iter().enumerate() {
             assert!(
                 (ts - i as f64 * 0.1).abs() < 0.01,
@@ -1702,6 +1886,156 @@ mod tests {
             let grey = bar.iter().sum::<u64>() / bar.len() as u64;
             assert!(grey.abs_diff(20 + 10 * i as u64) <= 3, "frame {i}: {grey}");
         }
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn alt_ref_superframes_keep_frames_and_timestamps_together() {
+        assert_alt_refs_in_step(auto);
+    }
+
+    // -- libvpx: needs libvpx installed (libvpx9 or the like) ----------------
+
+    #[cfg(target_os = "linux")]
+    mod libvpx {
+        use super::*;
+
+        fn on(backend: Backend, name: &str, num_frames: u64) -> Result<VideoFrames> {
+            let bytes = fixture(name);
+            let limits = VideoDecodeLimits::default();
+            decode_sampled_with(&bytes.as_slice(), num_frames, &limits, backend)
+        }
+
+        /// On the CPU, as when NVDEC cannot decode the stream.
+        fn cpu(name: &str, num_frames: u64) -> Result<VideoFrames> {
+            on(vpx::decode, name, num_frames)
+        }
+
+        #[test]
+        fn vp8_and_vp9_decode_on_the_cpu() {
+            let names = ["vp8.webm", "vp9.webm", "vp9.mp4", "vp9_sar.mp4"];
+            assert_display_order(cpu, &names);
+            assert_even_samples(cpu, &["vp8.webm", "vp9.webm"]);
+            assert_bt709(cpu, &["vp9_709.webm"]);
+            assert_odd_size_matches_the_reference(cpu);
+            assert_player_times(cpu);
+        }
+
+        #[test]
+        fn the_cpu_keeps_hidden_frames_out_of_the_output() {
+            assert_invisible_frames_hidden(cpu);
+            assert_alt_refs_in_step(cpu);
+        }
+
+        #[test]
+        fn the_cpu_refuses_frames_larger_than_the_container_before_decoding() {
+            assert_refused_before_allocation(cpu, &["vp9_huge.webm"]);
+        }
+
+        #[test]
+        fn vp9_decodes_with_or_without_a_gpu() {
+            // Through NVDEC on a GPU host; on one without (CI) through the
+            // fallback to libvpx. Either way the frames are libvpx's.
+            assert_display_order(auto, &["vp9.webm", "vp9.mp4"]);
+            assert_alt_refs_in_step(auto);
+            let frames = auto("vp9_texture.webm", 10).unwrap();
+            assert!(frames.rgb() == cpu("vp9_texture.webm", 10).unwrap().rgb());
+        }
+
+        #[test]
+        fn vp8_decodes_where_nvdec_cannot() {
+            // NVDEC is not used for VP8, so this falls back with or without a GPU.
+            let frames = auto("vp8.webm", 10).unwrap();
+            assert!(frames.rgb() == cpu("vp8.webm", 10).unwrap().rgb());
+        }
+
+        #[test]
+        fn corrupt_vp8_and_vp9_are_errors_not_crashes() {
+            // libvpx runs in this process: damaged frames must come back as an
+            // error or as frames, never as a crash. The packets are damaged
+            // past their first bytes, so most damage lands in frame data.
+            for name in ["vp8.webm", "vp9.webm", "vp9_altref.webm", "vp9_odd.webm"] {
+                let bytes = fixture(name);
+                let info = probe(&bytes).unwrap();
+                let targets: Vec<u64> = (0..info.frame_count).collect();
+                for seed in 0..64u64 {
+                    let mut track = demux(&bytes).unwrap();
+                    let mut state = seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1;
+                    for _ in 0..8 {
+                        state ^= state << 13;
+                        state ^= state >> 7;
+                        state ^= state << 17;
+                        let i = (state as usize) % track.packets.len();
+                        if let Payload::Owned(data) = &mut track.packets[i].payload
+                            && data.len() > 8
+                        {
+                            let at = 8 + (state >> 16) as usize % (data.len() - 8);
+                            data[at] ^= (state >> 40) as u8 | 1;
+                        }
+                    }
+                    let mut sampler = Sampler {
+                        targets: &targets,
+                        next: 0,
+                        shown: 0,
+                        width: info.width,
+                        height: info.height,
+                        limits: VideoDecodeLimits::default(),
+                        rgb: Vec::new(),
+                        timestamps: Vec::new(),
+                    };
+                    let _ = vpx::decode(&track, &mut sampler);
+                }
+            }
+        }
+
+        #[test]
+        fn other_codecs_are_not_decoded_on_the_cpu() {
+            let r = cpu("h264.mp4", 1);
+            assert!(matches!(r, Err(MmError::Unsupported { .. })), "{r:?}");
+        }
+
+        #[test]
+        #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+        fn nvdec_and_the_cpu_decode_vp9_identically() {
+            // VP9 decoding is exact, and both decoders share the YUV-to-RGB step.
+            for name in [
+                "vp9.webm",
+                "vp9_texture.webm",
+                "vp9_altref.webm",
+                "vp9_odd.webm",
+                "vp9_709.webm",
+            ] {
+                let n = probe(&fixture(name)).unwrap().frame_count;
+                let gpu = on(nvdec::decode, name, n).unwrap();
+                let cpu = cpu(name, n).unwrap();
+                assert!(gpu.rgb() == cpu.rgb(), "{name}: frames differ");
+                assert_eq!(gpu.timestamps(), cpu.timestamps(), "{name}");
+            }
+        }
+    }
+
+    #[test]
+    fn frame_sizes_are_read_from_vp8_and_vp9_headers() {
+        let packet = |name: &str, i: usize| packet_data(&demux(&fixture(name)).unwrap(), i);
+        let size = |p: &[u8]| vp9_frame_size(p).unwrap();
+        assert_eq!(size(&packet("vp9.webm", 0)), Some((256, 256)));
+        assert_eq!(size(&packet("vp9_huge.webm", 0)), Some((16384, 16384)));
+        // An inter frame takes a reference's size.
+        assert_eq!(size(&packet("vp9.webm", 1)), None);
+        assert!(vp9_frame_size(&[]).is_err());
+        assert_eq!(vp8_keyframe_size(&packet("vp8.webm", 0)), Some((256, 256)));
+        assert_eq!(vp8_keyframe_size(&packet("vp8.webm", 1)), None);
+    }
+
+    #[test]
+    fn hidden_vp8_frames_do_not_count_as_displayed() {
+        let bytes = fixture("vp8.webm");
+        let track = demux(&bytes).unwrap();
+        assert!(track.packets.iter().all(|p| p.displays));
+        let mut hidden = packet_data(&track, 1);
+        hidden[0] &= !0x10; // show_frame
+        assert!(!vp8_packet_displays(&hidden));
+        assert!(vp8_packet_displays(&[]));
     }
 
     #[test]

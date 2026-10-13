@@ -25,8 +25,10 @@ fetch = ["dep:base64", "dep:ipnet", "dep:reqwest", "dep:tokio", "dep:url"]
 # rayon from the dependency graph and force the inline path at compile time.
 parallel = ["dep:rayon"]
 # `video_decode`: MP4 / WebM / Matroska demuxing, probing, frame sampling, and
-# hardware decoding through NVDEC. NVIDIA's driver libraries are loaded at
-# runtime when present; nothing is linked at build time. No software decoder.
+# hardware decoding through NVDEC, with VP8 / VP9 on the CPU through libvpx
+# when NVDEC cannot. NVIDIA's driver libraries and libvpx are loaded at runtime
+# when present; nothing is linked at build time. Decodes on 64-bit Linux only
+# (32-bit Linux does not build with this feature).
 video-decode = ["dep:matroska-demuxer"]
 
 [dependencies]
