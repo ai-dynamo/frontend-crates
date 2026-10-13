@@ -914,17 +914,7 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     }
 
     // One colour for the whole stream: the decoder is created with it.
-    let mut vp9_colour = None;
-    if track.codec == VideoCodec::Vp9 {
-        for packet in &track.packets {
-            if let Some(colour) = super::vp9_keyframe_colour(&packet.data).transpose()? {
-                if vp9_colour.is_some_and(|c| c != colour) {
-                    return Err(MmError::invalid_input("VP9 colour changed mid-stream"));
-                }
-                vp9_colour = Some(colour);
-            }
-        }
-    }
+    let vp9_colour = track.vp9_colour.get()?;
 
     let state = StateBox(Box::into_raw(Box::new(State {
         api,
@@ -967,15 +957,20 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     )?;
     let parser = Parser { api, handle };
 
-    let mut buffer = Vec::new();
+    let (mut raw, mut buffer) = (Vec::new(), Vec::new());
     for (index, packet) in track.packets.iter().enumerate() {
         // SAFETY: no callback runs between parse calls; a short-lived read
         // through the one pointer.
         if unsafe { (*state.0).sampler.done() } {
             break;
         }
-        let payload =
-            super::to_decoder_input(packet, &prefix, length_size, index == 0, &mut buffer)?;
+        let payload = super::to_decoder_input(
+            track.packet_bytes(packet, &mut raw)?,
+            &prefix,
+            length_size,
+            index == 0,
+            &mut buffer,
+        )?;
         let mut data = SourceDataPacket {
             flags: if packet.displays { PKT_TIMESTAMP } else { 0 },
             payload_size: payload.len() as TcuUlong,

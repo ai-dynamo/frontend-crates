@@ -20,7 +20,12 @@ Clips:
   inside a 256x256 container; av1_small_container.mp4 is av1.mp4 whose sample
   entry claims 128x128 (both must be refused before a decoder allocates);
 * vp9_offset.webm is vp9.webm with its first frame at 5 s (the decoder
-  reports time from the first frame, as for MP4);
+  keeps player times: the clip starts at 5 s and lasts 1 s);
+* delay.mp4 is forty frames behind an edit list that delays them 1.5 s (an
+  empty edit, then the media); cut.mp4 is 120 frames cut at 1.5 s without
+  re-encoding, so its edit list hides the first 15, which are still decoded
+  as references. Frame i is solid grey `edit_grey(i)`. Both come from the
+  ffmpeg CLI, whose MP4 muxer writes the edit lists;
 * vp9_709.webm and h264_709.mp4 are two frames of `COLOR_709` encoded with the
   BT.709 matrix (limited range) and tagged BT.709, which the decoder must
   honour (read as BT.601 the colour shifts visibly);
@@ -39,7 +44,8 @@ Clips:
   implements (H.264 decoding is bit-exact, so NVDEC must match it).
 
 Requires PyAV (tested with av 19.0.1, whose wheels bundle the encoders),
-numpy, and for vp9_altref.webm the ffmpeg CLI with libvpx (tested with 6.1.1):
+numpy, and for vp9_altref.webm, delay.mp4 and cut.mp4 the ffmpeg CLI with
+libvpx and libx264 (tested with 6.1.1):
 
     python multimodal/tests/fixtures/video_decode/generate.py
 """
@@ -158,6 +164,34 @@ def write_altref(path: Path, size=128, count=20) -> None:
     with av.open(str(path)) as container:
         packets = [bytes(p) for p in container.demux(video=0) if p.size]
     assert any(p[-1] & 0xE0 == 0xC0 for p in packets), "no superframes"
+
+
+def edit_grey(i: int) -> int:
+    return 16 + 2 * i
+
+
+def write_edit_lists(here: Path) -> None:
+    def encode(path: Path, count: int, extra: list) -> None:
+        raw = b"".join(bytes([edit_grey(i)]) * (SIZE * SIZE * 3) for i in range(count))
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
+             "-s", f"{SIZE}x{SIZE}", "-r", str(FPS), "-i", "-",
+             "-c:v", "libx264", "-crf", "10", "-g", "1000", "-pix_fmt", "yuv420p",
+             *extra, str(path)],
+            input=raw,
+            check=True,
+        )
+
+    encode(here / "delay.mp4", 40, ["-output_ts_offset", "1.5"])
+    with tempfile.TemporaryDirectory() as tmp:
+        # One keyframe, so the cut keeps every frame and hides the first 15.
+        full = Path(tmp) / "full.mp4"
+        encode(full, 120, [])
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-ss", "1.5", "-i", str(full),
+             "-c", "copy", str(here / "cut.mp4")],
+            check=True,
+        )
 
 
 def read_vint(data: bytes, pos: int, keep_marker: bool) -> tuple[int, int]:
@@ -315,6 +349,7 @@ def main() -> None:
     (here / "vp9_odd.rgb").write_bytes(reference_rgb(here / "vp9_odd.webm"))
     write_altref(here / "vp9_altref.webm")
     write(here / "av1_odd.mp4", "mp4", "libsvtav1", CLIPS[3][3], frames=quadrant_frame(130, 129))
+    write_edit_lists(here)
     for path in sorted(here.glob("*.*")):
         if path.suffix in (".mp4", ".webm"):
             print(f"{path.name}: {path.stat().st_size} bytes")

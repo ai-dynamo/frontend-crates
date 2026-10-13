@@ -5,11 +5,14 @@
 //!
 //! [`probe`] reads a clip's container and reports its codec, coded size,
 //! duration and frame count. [`decode_sampled`] decodes it and keeps
-//! `num_frames` frames spread evenly over the clip, as [`VideoFrames`].
+//! `num_frames` frames spread evenly over the clip, as [`VideoFrames`]. Both
+//! take the clip as a slice; [`probe_from`] and [`decode_sampled_from`] take
+//! any [`ByteSource`], such as a file or a ranged download.
 //!
-//! Containers: MP4 (ISO BMFF) through `re_mp4`, WebM and Matroska through
-//! `matroska-demuxer`. Codecs: H.264, HEVC, VP9 and AV1, 8-bit 4:2:0, as far as
-//! the GPU's NVDEC supports them (checked at runtime).
+//! Containers: MP4 (ISO BMFF) through this crate's own demuxer (see `mp4`),
+//! WebM and Matroska through `matroska-demuxer`. Codecs: H.264, HEVC, VP9 and
+//! AV1, 8-bit 4:2:0, as far as the GPU's NVDEC supports them (checked at
+//! runtime).
 //!
 //! Decoding runs in NVIDIA's driver: `libcuda.so.1` and `libnvcuvid.so.1` are
 //! loaded at runtime (see `nvdec`), so nothing is linked at build time and no
@@ -23,20 +26,35 @@
 //! Container-level colour tags (MP4 `colr`, Matroska `Colour`) are not read.
 //! Interlaced content is not deinterlaced.
 //!
+//! Times are player times: the first shown frame is at
+//! [`VideoInfo::start_time`], which an MP4 edit list's delay or a WebM /
+//! Matroska clip's first timestamp sets. An MP4 edit list also hides the
+//! frames it cuts; one that a player would have to seek within (rows that go
+//! back, repeat or skip media, or a rate other than 1) is refused.
+//!
 //! Decoding blocks the calling thread. Every frame up to the last sampled one
 //! goes through the decoder, because frames depend on earlier frames; only the
 //! sampled ones are copied off the GPU.
+//!
+//! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
+//! at a time, so only its index (sample tables) is held. WebM and Matroska
+//! packets are read into memory while the file is demuxed, so those hold the
+//! whole video next to the source. A VP9 clip is also read once in full before
+//! decoding, to find which packets display a frame and what colour it declares.
 
 // NVDEC is Linux-only; elsewhere the decode path is compiled out.
 #![cfg_attr(not(target_os = "linux"), allow(dead_code))]
 
-use std::borrow::Cow;
-
 use crate::frames::{VideoFrames, VideoTiming};
 use crate::{MmError, Result};
 
+mod mp4;
 #[cfg(target_os = "linux")]
 mod nvdec;
+mod source;
+
+pub use source::ByteSource;
+use source::SourceReader;
 
 /// A video codec found in a container.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -79,7 +97,12 @@ pub struct VideoInfo {
     /// the display size, which differs for non-square pixels).
     pub width: u32,
     pub height: u32,
-    /// Seconds.
+    /// Player time of the first shown frame, in seconds: the delay an MP4 edit
+    /// list puts before the media, or a WebM / Matroska clip's first
+    /// timestamp; 0 when the video starts at once. Frame timestamps are
+    /// player times, so the first is `start_time`.
+    pub start_time: f64,
+    /// Seconds the shown frames last, from `start_time`.
     pub duration: f64,
     /// Frames per second, from the frame count and duration.
     pub fps: f64,
@@ -111,9 +134,17 @@ impl Default for VideoDecodeLimits {
     }
 }
 
+/// Where a packet's bytes are.
+enum Payload {
+    /// In the video source, read when the packet is decoded.
+    Source { offset: u64, len: usize },
+    /// Already read, by a demuxer that cannot say where they are.
+    Owned(Vec<u8>),
+}
+
 /// One compressed frame, in decode order.
-struct Packet<'a> {
-    data: Cow<'a, [u8]>,
+struct Packet {
+    payload: Payload,
     pts: f64,
     /// Whether the decoder will output a frame for this packet. `false` only
     /// for a VP9 packet whose frames are all hidden (`show_frame = 0`).
@@ -124,15 +155,14 @@ struct Packet<'a> {
     shown: bool,
 }
 
-impl<'a> Packet<'a> {
-    fn new(codec: VideoCodec, data: Cow<'a, [u8]>, pts: f64, invisible: bool) -> Result<Self> {
-        let displays = codec != VideoCodec::Vp9 || vp9_packet_displays(&data)?;
-        Ok(Self {
-            data,
+impl Packet {
+    fn new(payload: Payload, pts: f64, displays: bool, invisible: bool) -> Self {
+        Self {
+            payload,
             pts,
             displays,
             shown: displays && !invisible,
-        })
+        }
     }
 }
 
@@ -141,20 +171,39 @@ struct Track<'a> {
     codec: VideoCodec,
     width: u32,
     height: u32,
+    start_time: f64,
     duration: f64,
     /// The codec configuration record: `avcC` (H.264), `hvcC` (HEVC) or `av1C`
     /// (AV1), from the MP4 sample entry or Matroska `CodecPrivate`.
     config: Option<Vec<u8>>,
-    packets: Vec<Packet<'a>>,
+    packets: Vec<Packet>,
+    /// What a VP9 track's keyframes declare, found while demuxing.
+    vp9_colour: Vp9Colour,
+    source: &'a dyn ByteSource,
 }
 
 impl Track<'_> {
+    /// The bytes of `packet`: its own, or read from the source into `buffer`.
+    fn packet_bytes<'b>(&'b self, packet: &'b Packet, buffer: &'b mut Vec<u8>) -> Result<&'b [u8]> {
+        match &packet.payload {
+            Payload::Owned(data) => Ok(data),
+            Payload::Source { offset, len } => {
+                buffer.resize(*len, 0);
+                self.source
+                    .read_at(*offset, buffer)
+                    .map_err(|e| read_error(e, "a video packet"))?;
+                Ok(buffer)
+            }
+        }
+    }
+
     fn info(&self) -> VideoInfo {
         let frame_count = self.packets.iter().filter(|p| p.shown).count() as u64;
         VideoInfo {
             codec: self.codec,
             width: self.width,
             height: self.height,
+            start_time: self.start_time,
             duration: self.duration,
             fps: frame_count as f64 / self.duration,
             frame_count,
@@ -164,7 +213,12 @@ impl Track<'_> {
 
 /// Read the container and describe its first video track.
 pub fn probe(bytes: &[u8]) -> Result<VideoInfo> {
-    Ok(demux(bytes, false)?.info())
+    probe_from(&bytes)
+}
+
+/// [`probe`] for a video in any [`ByteSource`].
+pub fn probe_from(source: &dyn ByteSource) -> Result<VideoInfo> {
+    Ok(demux(source, false)?.info())
 }
 
 /// Decode `bytes` and keep `num_frames` frames spread evenly over the clip:
@@ -181,11 +235,23 @@ pub fn decode_sampled(
     num_frames: u64,
     limits: &VideoDecodeLimits,
 ) -> Result<VideoFrames> {
+    decode_sampled_from(&bytes, num_frames, limits)
+}
+
+/// [`decode_sampled`] for a video in any [`ByteSource`]; same errors, plus
+/// [`MmError::Internal`] when the source fails while a packet or an MP4 box is
+/// read. A failure inside a container parser is reported as
+/// [`MmError::InvalidInput`], as for a slice.
+pub fn decode_sampled_from(
+    source: &dyn ByteSource,
+    num_frames: u64,
+    limits: &VideoDecodeLimits,
+) -> Result<VideoFrames> {
     if num_frames == 0 {
         return Err(MmError::invalid_input("num_frames must be at least 1"));
     }
     // Refuses an undecodable codec before the packets are collected.
-    let track = demux(bytes, true)?;
+    let track = demux(source, true)?;
     let info = track.info();
     if num_frames > info.frame_count {
         return Err(MmError::invalid_input(format!(
@@ -240,6 +306,7 @@ pub fn decode_sampled(
         VideoTiming {
             timestamps: sampler.timestamps,
             source_fps: info.fps,
+            source_start: info.start_time,
             source_duration: info.duration,
         },
     )
@@ -322,17 +389,26 @@ impl Sampler<'_> {
 // Demux
 // ---------------------------------------------------------------------------
 
-fn demux(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
-    let track = if bytes.get(4..8) == Some(b"ftyp") {
-        // re_mp4 trusts the sample tables: it expands their counts before we
-        // can check anything (a 1 KB file can ask for 2^31 samples) and panics
-        // on some inconsistencies. Bound the tables first; keep catching its
-        // panics as a backstop. A caught panic still reaches the panic hook.
-        validate_mp4_tables(bytes)?;
-        std::panic::catch_unwind(|| demux_mp4(bytes, require_decodable))
-            .unwrap_or_else(|_| Err(MmError::invalid_input("malformed MP4")))?
-    } else if bytes.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
-        demux_matroska(bytes, require_decodable)?
+/// A failed read from the source: a short source is a bad file, anything else
+/// is the source's own failure.
+fn read_error(e: std::io::Error, what: &str) -> MmError {
+    if e.kind() == std::io::ErrorKind::UnexpectedEof {
+        MmError::invalid_input_with_source(format!("{what} lies outside the video"), e)
+    } else {
+        MmError::internal_with_source(format!("cannot read {what} from the video source"), e)
+    }
+}
+
+fn demux(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
+    let mut magic = [0u8; 8];
+    let magic = &mut magic[..source.len().min(8) as usize];
+    source
+        .read_at(0, magic)
+        .map_err(|e| read_error(e, "the container header"))?;
+    let track = if magic.get(4..8) == Some(b"ftyp") {
+        demux_mp4(source, require_decodable)?
+    } else if magic.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) {
+        demux_matroska(source, require_decodable)?
     } else {
         return Err(MmError::invalid_input(
             "unrecognised video container: expected MP4, WebM or Matroska",
@@ -347,151 +423,6 @@ fn demux(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
     Ok(track)
 }
 
-/// Refuse MP4 sample tables the file cannot back, before re_mp4 expands them.
-///
-/// Every sample needs at least one byte of the file, so the samples of all
-/// tracks and fragments together may not outnumber the file's bytes; every
-/// table must fit inside its box; and a track's duration may not end before
-/// its last sample starts (re_mp4 subtracts the two).
-fn validate_mp4_tables(bytes: &[u8]) -> Result<()> {
-    let limit = bytes.len() as u64;
-    let malformed = |what: &str| MmError::invalid_input(format!("malformed MP4: {what}"));
-    // Running totals over the whole file, per kind of table re_mp4 expands:
-    // sample sizes (stsz, stz2, trun), decode times (stts), offsets (ctts).
-    let (mut sizes, mut times, mut offsets) = (0u64, 0u64, 0u64);
-    let add = |total: &mut u64, count: u64| -> Result<()> {
-        *total = total.saturating_add(count);
-        if *total > limit {
-            return Err(malformed("more samples than the file has bytes"));
-        }
-        Ok(())
-    };
-    let field = |body: &[u8], at: usize| -> Result<u64> {
-        body.get(at..at + 4)
-            .map(|b| u64::from(u32::from_be_bytes([b[0], b[1], b[2], b[3]])))
-            .ok_or_else(|| malformed("truncated box"))
-    };
-    // Entries of `width` bytes after the version/flags and count fields.
-    let table = |body: &[u8], width: u64| -> Result<u64> {
-        let count = field(body, 4)?;
-        if 8 + count * width > body.len() as u64 {
-            return Err(malformed("table larger than its box"));
-        }
-        Ok(count)
-    };
-    let mut track_duration: Option<u64> = None;
-    walk_mp4_boxes(bytes, 0, bytes.len(), 0, &mut |kind, body| {
-        match kind {
-            b"mdhd" => {
-                let duration = match body.first() {
-                    Some(1) => body
-                        .get(24..32)
-                        .map(|b| u64::from_be_bytes(b.try_into().unwrap_or_default())),
-                    _ => field(body, 16).ok(),
-                };
-                track_duration = Some(duration.ok_or_else(|| malformed("truncated mdhd"))?);
-            }
-            b"stsz" => {
-                let (size, count) = (field(body, 4)?, field(body, 8)?);
-                add(&mut sizes, count)?;
-                if size == 0 && 12 + count * 4 > body.len() as u64 {
-                    return Err(malformed("sample size table"));
-                }
-            }
-            b"stz2" | b"trun" => {
-                add(
-                    &mut sizes,
-                    field(body, if kind == b"trun" { 4 } else { 8 })?,
-                )?;
-            }
-            b"stts" | b"ctts" => {
-                let entries = table(body, 8)?;
-                let (mut samples, mut start, mut last) = (0u64, 0u128, 0u128);
-                for i in 0..entries as usize {
-                    let (n, delta) = (field(body, 8 + i * 8)?, field(body, 12 + i * 8)?);
-                    samples += n;
-                    if n > 0 {
-                        start += u128::from(n) * u128::from(delta);
-                        last = u128::from(delta);
-                    }
-                }
-                add(
-                    if kind == b"stts" {
-                        &mut times
-                    } else {
-                        &mut offsets
-                    },
-                    samples,
-                )?;
-                if kind == b"stts"
-                    && let Some(duration) = track_duration
-                    && samples > 0
-                    && start - last > u128::from(duration)
-                {
-                    return Err(malformed("track duration ends before its last sample"));
-                }
-            }
-            b"stsc" => {
-                for i in 0..table(body, 12)? as usize {
-                    if field(body, 12 + i * 12)? > limit {
-                        return Err(malformed("samples per chunk larger than the file"));
-                    }
-                }
-            }
-            b"stco" | b"stss" => {
-                table(body, 4)?;
-            }
-            b"co64" => {
-                table(body, 8)?;
-            }
-            _ => {}
-        }
-        Ok(())
-    })
-}
-
-/// Call `visit` with the type and body of every leaf box, descending into the
-/// container boxes that hold sample tables.
-fn walk_mp4_boxes<F: FnMut(&[u8; 4], &[u8]) -> Result<()>>(
-    bytes: &[u8],
-    start: usize,
-    end: usize,
-    depth: u32,
-    visit: &mut F,
-) -> Result<()> {
-    let malformed = || MmError::invalid_input("malformed MP4: box size");
-    if depth > 16 {
-        return Err(MmError::invalid_input(
-            "malformed MP4: boxes nested too deeply",
-        ));
-    }
-    let mut pos = start;
-    while pos + 8 <= end {
-        let word = |at: usize| u32::from_be_bytes(bytes[at..at + 4].try_into().unwrap_or_default());
-        let kind: [u8; 4] = bytes[pos + 4..pos + 8].try_into().unwrap_or_default();
-        let (header, size) = match word(pos) {
-            0 => (8, (end - pos) as u64),
-            1 => {
-                let large = bytes.get(pos + 8..pos + 16).ok_or_else(malformed)?;
-                (16, u64::from_be_bytes(large.try_into().unwrap_or_default()))
-            }
-            n => (8, u64::from(n)),
-        };
-        let size = usize::try_from(size)
-            .ok()
-            .filter(|s| *s >= header && pos.checked_add(*s).is_some_and(|e| e <= end))
-            .ok_or_else(malformed)?;
-        let body = (pos + header, pos + size);
-        match &kind {
-            b"moov" | b"trak" | b"mdia" | b"minf" | b"stbl" | b"moof" | b"traf" | b"mvex"
-            | b"edts" => walk_mp4_boxes(bytes, body.0, body.1, depth + 1, visit)?,
-            _ => visit(&kind, &bytes[body.0..body.1])?,
-        }
-        pos += size;
-    }
-    Ok(())
-}
-
 fn refuse_if_undecodable(codec: VideoCodec, require_decodable: bool) -> Result<()> {
     match codec.unsupported_reason() {
         Some(reason) if require_decodable => Err(MmError::unsupported(reason)),
@@ -499,71 +430,57 @@ fn refuse_if_undecodable(codec: VideoCodec, require_decodable: bool) -> Result<(
     }
 }
 
-fn demux_mp4(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
-    use re_mp4::StsdBoxContent as Entry;
-    let mp4 = re_mp4::Mp4::read_bytes(bytes)
-        .map_err(|e| MmError::invalid_input_with_source("unreadable MP4", e))?;
-    let track = mp4
-        .tracks()
-        .values()
-        .find(|t| t.kind == Some(re_mp4::TrackKind::Video))
-        .ok_or_else(|| MmError::invalid_input("MP4 has no video track"))?;
-    // The sample entry carries the coded size; the track header's size is the
-    // display size, which differs when pixels are not square.
-    let (codec, width, height) = match &track.trak(&mp4).mdia.minf.stbl.stsd.contents {
-        Entry::Vp08(b) => (VideoCodec::Vp8, b.width, b.height),
-        Entry::Vp09(b) => (VideoCodec::Vp9, b.width, b.height),
-        Entry::Av01(b) => (VideoCodec::Av1, b.width, b.height),
-        Entry::Avc1(b) => (VideoCodec::H264, b.width, b.height),
-        Entry::Hev1(b) | Entry::Hvc1(b) => (VideoCodec::Hevc, b.width, b.height),
-        _ => {
-            return Err(MmError::unsupported(format!(
-                "unsupported MP4 video codec {}",
-                track
-                    .codec_string(&mp4)
-                    .unwrap_or_else(|| "(unknown)".into())
-            )));
-        }
-    };
+fn demux_mp4(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
+    let mut movie = mp4::read(source)?;
+    let codec = movie.codec;
     refuse_if_undecodable(codec, require_decodable)?;
-    let config = match codec {
-        VideoCodec::H264 | VideoCodec::Hevc | VideoCodec::Av1 => track.raw_codec_config(&mp4),
-        _ => None,
-    };
-    let timescale = track.timescale.max(1) as f64;
-    // Samples are in decode order, which is what the decoders need.
-    let mut packets = Vec::with_capacity(track.samples.len());
-    for sample in &track.samples {
-        let data = usize::try_from(sample.offset)
-            .ok()
-            .zip(usize::try_from(sample.size).ok())
-            .and_then(|(start, len)| bytes.get(start..start.checked_add(len)?))
-            .ok_or_else(|| MmError::invalid_input("MP4 sample lies outside the file"))?;
-        let pts = sample.composition_timestamp.max(0) as f64 / timescale;
-        packets.push(Packet::new(codec, Cow::Borrowed(data), pts, false)?);
+    // Only VP9 needs a look inside the packets, for hidden frames and colour,
+    // before the edit list is applied; the other codecs' packets are not read
+    // until they are decoded.
+    let mut vp9_colour = Vp9Colour::default();
+    if codec == VideoCodec::Vp9 {
+        let mut scratch = Vec::new();
+        for sample in &mut movie.samples {
+            scratch.resize(sample.size as usize, 0);
+            source
+                .read_at(sample.offset, &mut scratch)
+                .map_err(|e| read_error(e, "a video packet"))?;
+            sample.displays = vp9_packet_displays(&scratch)?;
+            vp9_colour.note(&scratch);
+        }
     }
-    let mut duration = track.duration as f64 / timescale;
-    if duration.is_nan() || duration <= 0.0 {
-        duration = track
-            .samples
-            .iter()
-            .map(|s| (s.composition_timestamp.max(0) as f64 + s.duration as f64) / timescale)
-            .fold(0.0, f64::max);
+    let video = movie.finish()?;
+    let timescale = video.timescale as f64;
+    // Samples are in decode order, which is what the decoders need.
+    let mut packets = Vec::with_capacity(video.samples.len());
+    for sample in &video.samples {
+        let payload = Payload::Source {
+            offset: sample.offset,
+            len: sample.size as usize,
+        };
+        let pts = video.start_time + sample.cts as f64 / timescale;
+        packets.push(Packet::new(payload, pts, sample.displays, !sample.shown));
     }
     Ok(Track {
         codec,
-        width: u32::from(width),
-        height: u32::from(height),
-        duration,
-        config,
+        width: video.width,
+        height: video.height,
+        start_time: video.start_time,
+        duration: video.duration,
+        config: match codec {
+            VideoCodec::H264 | VideoCodec::Hevc | VideoCodec::Av1 => video.config,
+            _ => None,
+        },
         packets,
+        vp9_colour,
+        source,
     })
 }
 
-fn demux_matroska(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
+fn demux_matroska(source: &dyn ByteSource, require_decodable: bool) -> Result<Track<'_>> {
     use matroska_demuxer::{Frame, MatroskaFile, TrackType};
     let invalid = |e| MmError::invalid_input_with_source("unreadable WebM / Matroska", e);
-    let mut file = MatroskaFile::open(std::io::Cursor::new(bytes)).map_err(invalid)?;
+    let mut file = MatroskaFile::open(SourceReader::new(source)).map_err(invalid)?;
     let entry = file
         .tracks()
         .iter()
@@ -598,6 +515,7 @@ fn demux_matroska(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
     let declared = file.info().duration().map(|d| d * scale);
 
     let mut packets = Vec::new();
+    let mut vp9_colour = Vp9Colour::default();
     // The latest end time of a shown frame, when the file says how long frames
     // last (the last packet need not be the last frame when frames reorder).
     let mut last_end: Option<f64> = None;
@@ -607,12 +525,16 @@ fn demux_matroska(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
             continue;
         }
         let pts = frame.timestamp as f64 * scale;
+        let displays = codec != VideoCodec::Vp9 || vp9_packet_displays(&frame.data)?;
+        if codec == VideoCodec::Vp9 {
+            vp9_colour.note(&frame.data);
+        }
         let packet = Packet::new(
-            codec,
-            Cow::Owned(std::mem::take(&mut frame.data)),
+            Payload::Owned(std::mem::take(&mut frame.data)),
             pts,
+            displays,
             frame.is_invisible,
-        )?;
+        );
         if packet.shown {
             let end = frame
                 .duration
@@ -624,17 +546,17 @@ fn demux_matroska(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
         }
         packets.push(packet);
     }
-    // Report time from the first shown frame, as re_mp4 does for MP4, so a
-    // clip that starts at 5 s has timestamps from 0 and a 1 s duration, not 6.
+    // Timestamps stay player times: a clip whose first frame is at 5 s starts
+    // at 5 s (`start_time`) and lasts 1 s, not 6.
     let shown: Vec<f64> = packets.iter().filter(|p| p.shown).map(|p| p.pts).collect();
     let first = shown.iter().copied().fold(f64::INFINITY, f64::min);
     let first = if first.is_finite() { first } else { 0.0 };
-    for packet in &mut packets {
-        packet.pts = (packet.pts - first).max(0.0);
+    if first < 0.0 {
+        return Err(MmError::invalid_input("video starts before time 0"));
     }
     let last = shown.iter().copied().fold(first, f64::max) - first;
     // The segment duration and block end times are measured from the segment
-    // start, so they shift with the timestamps.
+    // start; the duration is measured from the first shown frame.
     let duration = matroska_duration(
         declared.map(|d| d - first),
         last_end.map(|end| end - first),
@@ -645,9 +567,12 @@ fn demux_matroska(bytes: &[u8], require_decodable: bool) -> Result<Track<'_>> {
         codec,
         width,
         height,
+        start_time: first,
         duration,
         config,
         packets,
+        vp9_colour,
+        source,
     })
 }
 
@@ -806,11 +731,51 @@ fn vp9_packet_displays(packet: &[u8]) -> Result<bool> {
     Ok(shown == 1)
 }
 
+/// The one colour a VP9 stream's keyframes declare. The decoder is created
+/// with it, so it may not change mid-stream.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+enum Vp9Colour {
+    #[default]
+    Undeclared,
+    Declared(Matrix, bool),
+    /// A colour space this crate does not convert, by its VP9 code.
+    Unsupported(u8),
+    Changed,
+}
+
+impl Vp9Colour {
+    /// Take in the colour `packet` declares, if it is a keyframe. The first
+    /// problem found stays.
+    fn note(&mut self, packet: &[u8]) {
+        let Some(found) = vp9_keyframe_colour(packet) else {
+            return;
+        };
+        *self = match (*self, found) {
+            (Self::Unsupported(_) | Self::Changed, _) => return,
+            (_, Err(space)) => Self::Unsupported(space),
+            (Self::Declared(m, r), Ok(colour)) if (m, r) != colour => Self::Changed,
+            (_, Ok((matrix, full_range))) => Self::Declared(matrix, full_range),
+        };
+    }
+
+    /// (matrix, full range) to decode with, `None` if no keyframe says.
+    fn get(self) -> Result<Option<(Matrix, bool)>> {
+        match self {
+            Self::Undeclared => Ok(None),
+            Self::Declared(matrix, full_range) => Ok(Some((matrix, full_range))),
+            Self::Unsupported(space) => Err(MmError::unsupported(format!(
+                "VP9 colour space {space} is not supported"
+            ))),
+            Self::Changed => Err(MmError::invalid_input("VP9 colour changed mid-stream")),
+        }
+    }
+}
+
 /// The colour a VP9 keyframe declares: `Some(Ok((matrix, full_range)))` for a
-/// keyframe, `None` for any other frame, and an error for a colour space this
-/// crate does not convert (SMPTE 240M, BT.2020, sRGB). The first frame of a
-/// superframe is the one read.
-fn vp9_keyframe_colour(frame: &[u8]) -> Option<Result<(Matrix, bool)>> {
+/// keyframe, `None` for any other frame, and `Some(Err(colour_space))` for a
+/// colour space this crate does not convert (SMPTE 240M, BT.2020, sRGB). The
+/// first frame of a superframe is the one read.
+fn vp9_keyframe_colour(frame: &[u8]) -> Option<std::result::Result<(Matrix, bool), u8>> {
     // VP9 uncompressed header: frame_marker (2), profile low/high bits,
     // reserved bit for profile 3, show_existing_frame, frame_type,
     // show_frame, error_resilient_mode, then for a keyframe the sync code
@@ -839,9 +804,7 @@ fn vp9_keyframe_colour(frame: &[u8]) -> Option<Result<(Matrix, bool)>> {
     Some(match color_space {
         0 | 1 | 3 => Ok((Matrix::Bt601, full_range)),
         2 => Ok((Matrix::Bt709, full_range)),
-        other => Err(MmError::unsupported(format!(
-            "VP9 colour space {other} is not supported"
-        ))),
+        other => Err(other),
     })
 }
 
@@ -947,26 +910,26 @@ fn length_prefixed_to_annexb(sample: &[u8], length_size: usize, out: &mut Vec<u8
     Ok(())
 }
 
-/// The bytes to hand the decoder for `packet`: the prefix before the first
-/// one, length-prefixed NAL units rewritten as Annex B. Borrows the packet
-/// when nothing changes, otherwise builds into `buffer`.
+/// The bytes to hand the decoder for a packet whose bytes are `data`: the
+/// prefix before the first one, length-prefixed NAL units rewritten as Annex B.
+/// Borrows `data` when nothing changes, otherwise builds into `buffer`.
 fn to_decoder_input<'b>(
-    packet: &'b Packet<'_>,
+    data: &'b [u8],
     prefix: &[u8],
     length_size: Option<usize>,
     first: bool,
     buffer: &'b mut Vec<u8>,
 ) -> Result<&'b [u8]> {
     if length_size.is_none() && (!first || prefix.is_empty()) {
-        return Ok(&packet.data);
+        return Ok(data);
     }
     buffer.clear();
     if first {
         buffer.extend_from_slice(prefix);
     }
     match length_size {
-        Some(size) => length_prefixed_to_annexb(&packet.data, size, buffer)?,
-        None => buffer.extend_from_slice(&packet.data),
+        Some(size) => length_prefixed_to_annexb(data, size, buffer)?,
+        None => buffer.extend_from_slice(data),
     }
     Ok(buffer)
 }
@@ -1005,6 +968,14 @@ mod tests {
                 "frame {at} channel {c}: mean {got}, expected {want}"
             );
         }
+    }
+
+    /// The bytes of packet `i`, wherever the demuxer keeps them.
+    fn packet_data(track: &Track<'_>, i: usize) -> Vec<u8> {
+        track
+            .packet_bytes(&track.packets[i], &mut Vec::new())
+            .unwrap()
+            .to_vec()
     }
 
     fn track_of(name: &str) -> (Vec<u8>, VideoCodec, Option<Vec<u8>>) {
@@ -1088,8 +1059,8 @@ mod tests {
 
     #[test]
     fn malformed_mp4_sample_tables_are_errors_not_panics() {
-        // Each of these panics inside re_mp4 (index or arithmetic overflow);
-        // `demux` must turn that into an error.
+        // Tables that name no chunk or no chunk run: an error, never an
+        // out-of-range index.
         for (fourcc, offset) in [(b"stco", 8), (b"stsc", 8)] {
             let mut bytes = fixture("vp9.mp4");
             patch_mp4(&mut bytes, fourcc, offset, 0);
@@ -1099,8 +1070,7 @@ mod tests {
                 "{fourcc:?}: {r:?}"
             );
         }
-        // A track duration that ends before the last sample starts makes
-        // re_mp4 subtract into an underflow.
+        // A track duration that ends before the last sample starts.
         let mut bytes = fixture("vp9.mp4");
         // mdhd version 0: version/flags, creation, modification, timescale, duration.
         patch_mp4(&mut bytes, b"mdhd", 20, 1);
@@ -1110,8 +1080,9 @@ mod tests {
 
     #[test]
     fn sample_counts_the_file_cannot_back_are_refused_up_front() {
-        // A small file asking for 2^31 samples would make re_mp4 allocate
-        // ~15 GB; the table check must refuse it first.
+        // A small file asking for 2^31 samples is refused at once: by `stsz`
+        // before anything is sized by its count, and by `stts` once its runs
+        // outlast the samples.
         for (fourcc, offset) in [(b"stsz", 12), (b"stts", 12)] {
             let mut bytes = fixture("vp9.mp4");
             patch_mp4(&mut bytes, fourcc, offset, 0x7FFF_FFFF);
@@ -1126,8 +1097,26 @@ mod tests {
     }
 
     #[test]
+    fn edit_lists_set_the_start_and_which_frames_show() {
+        // ffprobe on the same files: start 1.5 s, 4 s, 40 frames; and start
+        // 0, 10.5 s, 105 of 120 frames.
+        let delay = probe(&fixture("delay.mp4")).unwrap();
+        assert_eq!(delay.start_time, 1.5);
+        assert!((delay.duration - 4.0).abs() < 1e-9, "{}", delay.duration);
+        assert_eq!(delay.frame_count, 40);
+        let cut = probe(&fixture("cut.mp4")).unwrap();
+        assert_eq!(cut.start_time, 0.0);
+        assert!((cut.duration - 10.5).abs() < 1e-9, "{}", cut.duration);
+        assert_eq!(cut.frame_count, 105);
+        let bytes = fixture("cut.mp4");
+        let track = demux(&bytes, false).unwrap();
+        assert_eq!(track.packets.len(), 120);
+    }
+
+    #[test]
     fn matroska_time_starts_at_the_first_frame() {
         let info = probe(&fixture("vp9_offset.webm")).unwrap();
+        assert_eq!(info.start_time, 5.0);
         assert!((info.duration - 1.0).abs() < 0.05, "{}", info.duration);
         assert!((info.fps - 10.0).abs() < 0.5, "{}", info.fps);
     }
@@ -1181,33 +1170,7 @@ mod tests {
         }
         let bytes = fixture("vp9_altref.webm");
         let track = demux(&bytes, false).unwrap();
-        assert!(track.packets.iter().any(|p| vp9_frames(&p.data).len() > 1));
-    }
-
-    #[test]
-    fn sample_counts_are_bounded_across_tracks() {
-        // Two fixed-size stsz tables, each declaring 60% of the file's length
-        // in samples: each fits on its own, together they do not.
-        let stsz = |count: u32| {
-            let mut b = 20u32.to_be_bytes().to_vec();
-            b.extend_from_slice(b"stsz");
-            b.extend_from_slice(&[0; 4]); // version, flags
-            b.extend_from_slice(&1u32.to_be_bytes()); // every sample is 1 byte
-            b.extend_from_slice(&count.to_be_bytes());
-            b
-        };
-        let len = 1000u32;
-        let free = |size: u32| {
-            let mut b = size.to_be_bytes().to_vec();
-            b.extend_from_slice(b"free");
-            b.resize(size as usize, 0);
-            b
-        };
-        let one = [stsz(600), free(len - 20)].concat();
-        assert!(validate_mp4_tables(&one).is_ok());
-        let two = [stsz(600), stsz(600), free(len - 40)].concat();
-        let r = validate_mp4_tables(&two);
-        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        assert!((0..track.packets.len()).any(|i| vp9_frames(&packet_data(&track, i)).len() > 1));
     }
 
     #[test]
@@ -1354,7 +1317,7 @@ mod tests {
         let first = |name: &str| {
             let bytes = fixture(name);
             let track = demux(&bytes, false).unwrap();
-            vp9_keyframe_colour(&track.packets[0].data).map(|r| r.unwrap())
+            vp9_keyframe_colour(&packet_data(&track, 0)).map(|r| r.unwrap())
         };
         assert_eq!(first("vp9_709.webm"), Some((Matrix::Bt709, false)));
         assert_eq!(first("vp9.webm"), Some((Matrix::Bt601, false)));
@@ -1362,7 +1325,7 @@ mod tests {
         let bytes = fixture("vp9.webm");
         let track = demux(&bytes, false).unwrap();
         assert_eq!(
-            vp9_keyframe_colour(&track.packets[1].data).map(|r| r.is_ok()),
+            vp9_keyframe_colour(&packet_data(&track, 1)).map(|r| r.is_ok()),
             None
         );
         assert!(vp9_keyframe_colour(&[]).is_none());
@@ -1385,23 +1348,163 @@ mod tests {
         let track = demux(&bytes, true).unwrap();
         let (prefix, length_size) = bitstream_prefix(&track).unwrap();
         let mut buffer = Vec::new();
-        let first = to_decoder_input(&track.packets[0], &prefix, length_size, true, &mut buffer)
-            .unwrap()
-            .to_vec();
+        let first = to_decoder_input(
+            &packet_data(&track, 0),
+            &prefix,
+            length_size,
+            true,
+            &mut buffer,
+        )
+        .unwrap()
+        .to_vec();
         assert!(first.starts_with(&prefix));
+        let second_packet = packet_data(&track, 1);
         let second =
-            to_decoder_input(&track.packets[1], &prefix, length_size, false, &mut buffer).unwrap();
+            to_decoder_input(&second_packet, &prefix, length_size, false, &mut buffer).unwrap();
         assert!(second.starts_with(&START_CODE) && !second.starts_with(&prefix));
         // VP9 needs no rewriting: the packet is passed through untouched.
         let bytes = fixture("vp9.webm");
         let track = demux(&bytes, true).unwrap();
         let (prefix, length_size) = bitstream_prefix(&track).unwrap();
-        let packet = &track.packets[1];
-        let input = to_decoder_input(packet, &prefix, length_size, false, &mut buffer).unwrap();
-        assert_eq!(input, &packet.data[..]);
+        let packet = packet_data(&track, 1);
+        let input = to_decoder_input(&packet, &prefix, length_size, false, &mut buffer).unwrap();
+        assert_eq!(input, &packet[..]);
+    }
+
+    /// A source that is not a slice and records every read.
+    struct Recording<'a> {
+        bytes: &'a [u8],
+        reads: std::cell::RefCell<Vec<(u64, usize)>>,
+    }
+
+    impl<'a> Recording<'a> {
+        fn new(bytes: &'a [u8]) -> Self {
+            Self {
+                bytes,
+                reads: Default::default(),
+            }
+        }
+    }
+
+    impl ByteSource for Recording<'_> {
+        fn len(&self) -> u64 {
+            self.bytes.len() as u64
+        }
+
+        fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+            self.reads.borrow_mut().push((offset, buf.len()));
+            (&self.bytes).read_at(offset, buf)
+        }
+    }
+
+    /// The byte range of the top-level box `name` in an MP4.
+    fn mp4_box_range(bytes: &[u8], name: &[u8; 4]) -> (u64, u64) {
+        let mut pos = 0usize;
+        while pos + 8 <= bytes.len() {
+            // The fixtures use 32-bit box sizes.
+            let size = u64::from(u32::from_be_bytes(bytes[pos..pos + 4].try_into().unwrap()));
+            let header = 8;
+            assert!(size >= header, "box size {size}");
+            if &bytes[pos + 4..pos + 8] == name {
+                return (pos as u64 + header, pos as u64 + size);
+            }
+            pos += size as usize;
+        }
+        panic!("no {} box", String::from_utf8_lossy(name));
+    }
+
+    #[test]
+    fn an_mp4_is_probed_without_reading_its_media_data() {
+        for name in ["h264.mp4", "hevc.mp4", "av1.mp4"] {
+            let bytes = fixture(name);
+            let source = Recording::new(&bytes);
+            assert_eq!(
+                probe_from(&source).unwrap(),
+                probe(&bytes).unwrap(),
+                "{name}"
+            );
+            let (start, end) = mp4_box_range(&bytes, b"mdat");
+            let reads = source.reads.borrow();
+            assert!(!reads.is_empty());
+            assert!(
+                reads
+                    .iter()
+                    .all(|&(at, len)| at + len as u64 <= start || at >= end),
+                "{name}: read inside mdat {start}..{end}: {reads:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn every_container_probes_the_same_from_a_source() {
+        for name in [
+            "h264.mp4",
+            "hevc.mp4",
+            "av1.mp4",
+            "vp9.webm",
+            "vp9_altref.webm",
+        ] {
+            let bytes = fixture(name);
+            assert_eq!(
+                probe_from(&Recording::new(&bytes)).unwrap(),
+                probe(&bytes).unwrap(),
+                "{name}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_source_that_fails_is_an_internal_error_and_a_short_one_is_invalid() {
+        struct Failing(u64);
+        impl ByteSource for Failing {
+            fn len(&self) -> u64 {
+                self.0
+            }
+            fn read_at(&self, _: u64, _: &mut [u8]) -> std::io::Result<()> {
+                Err(std::io::Error::other("disk on fire"))
+            }
+        }
+        let r = probe_from(&Failing(1000));
+        assert!(matches!(r, Err(MmError::Internal { .. })), "{r:?}");
+        // A source that claims more bytes than it has.
+        struct Short(Vec<u8>);
+        impl ByteSource for Short {
+            fn len(&self) -> u64 {
+                self.0.len() as u64 + 100
+            }
+            fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                (&self.0[..]).read_at(offset, buf)
+            }
+        }
+        let r = probe_from(&Short(fixture("h264.mp4")));
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
     }
 
     // -- NVDEC: needs a GPU ------------------------------------------------
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn a_source_decodes_like_a_slice_and_never_reads_the_whole_file() {
+        for name in [
+            "h264.mp4",
+            "hevc.mp4",
+            "av1.mp4",
+            "vp9.webm",
+            "vp9_altref.webm",
+        ] {
+            let bytes = fixture(name);
+            let limits = VideoDecodeLimits::default();
+            let want = decode_sampled(&bytes, 4, &limits).unwrap();
+            let source = Recording::new(&bytes);
+            let got = decode_sampled_from(&source, 4, &limits).unwrap();
+            assert_eq!(got.rgb(), want.rgb(), "{name}");
+            assert_eq!(got.timestamps(), want.timestamps(), "{name}");
+            let biggest = source.reads.borrow().iter().map(|r| r.1).max().unwrap();
+            if name.ends_with(".mp4") {
+                assert!(biggest < bytes.len(), "{name}: one read of {biggest} bytes");
+            }
+        }
+    }
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
@@ -1503,19 +1606,57 @@ mod tests {
 
     #[test]
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
-    fn matroska_timestamps_start_at_zero() {
+    fn matroska_timestamps_are_player_times() {
         let frames = decode_sampled(
             &fixture("vp9_offset.webm"),
             2,
             &VideoDecodeLimits::default(),
         )
         .unwrap();
-        assert_eq!(frames.timestamps()[0], 0.0);
+        assert_eq!(frames.source_start(), 5.0);
+        assert_eq!(frames.timestamps()[0], 5.0);
         assert!(
-            (frames.timestamps()[1] - 0.9).abs() < 0.01,
+            (frames.timestamps()[1] - 5.9).abs() < 0.01,
             "{:?}",
             frames.timestamps()
         );
+    }
+
+    /// The solid grey of frame `i` in delay.mp4 and cut.mp4.
+    fn edit_grey(i: u64) -> [u8; 3] {
+        let g = 16 + 2 * i as u8;
+        [g, g, g]
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn an_edit_list_delay_moves_the_frames_later() {
+        let frames =
+            decode_sampled(&fixture("delay.mp4"), 2, &VideoDecodeLimits::default()).unwrap();
+        assert_eq!(frames.source_start(), 1.5);
+        assert!((frames.source_duration() - 4.0).abs() < 1e-9);
+        assert_eq!(frames.timestamps()[0], 1.5);
+        assert!(
+            (frames.timestamps()[1] - 5.4).abs() < 1e-9,
+            "{:?}",
+            frames.timestamps()
+        );
+        assert_frame_color(&frames, 0, edit_grey(0));
+        assert_frame_color(&frames, 1, edit_grey(39));
+    }
+
+    #[test]
+    #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+    fn frames_an_edit_list_cuts_are_decoded_but_not_returned() {
+        // The first 15 frames are references for the rest, never shown.
+        let frames =
+            decode_sampled(&fixture("cut.mp4"), 105, &VideoDecodeLimits::default()).unwrap();
+        assert_eq!(frames.frame_count(), 105);
+        for (at, t) in frames.timestamps().iter().enumerate() {
+            assert!((t - at as f64 * 0.1).abs() < 1e-9, "{at}: {t}");
+        }
+        assert_frame_color(&frames, 0, edit_grey(15));
+        assert_frame_color(&frames, 104, edit_grey(119));
     }
 
     #[test]

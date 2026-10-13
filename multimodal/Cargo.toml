@@ -27,7 +27,7 @@ parallel = ["dep:rayon"]
 # `video_decode`: MP4 / WebM / Matroska demuxing, probing, frame sampling, and
 # hardware decoding through NVDEC. NVIDIA's driver libraries are loaded at
 # runtime when present; nothing is linked at build time. No software decoder.
-video-decode = ["dep:matroska-demuxer", "dep:re_mp4"]
+video-decode = ["dep:matroska-demuxer"]
 
 [dependencies]
 base64 = { workspace = true, optional = true }
@@ -39,7 +39,6 @@ matroska-demuxer = { workspace = true, optional = true }
 png.workspace = true
 rayon = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
-re_mp4 = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, optional = true, features = ["net", "time"] }
