@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-multimodal"
 readme = "README.md"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 description = "Shared multimodal input processing, prompt geometry, token accounting, and content identity for LLM inference serving."
 authors.workspace = true
