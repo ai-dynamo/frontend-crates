@@ -41,6 +41,7 @@ pub enum MatchResult {
 
 /// Efficient multi-pattern matcher with partial suffix detection
 pub struct MarkerMatcher {
+    pub(crate) protect_code_examples: bool,
     /// All patterns we're looking for
     patterns: Vec<String>,
     /// Aho-Corasick matcher for complete patterns
@@ -70,6 +71,7 @@ impl MarkerMatcher {
         let prefix_trie = PrefixTrie::new(&patterns);
 
         Ok(Self {
+            protect_code_examples: false,
             patterns,
             complete_matcher,
             prefix_trie,
@@ -109,6 +111,40 @@ impl MarkerMatcher {
         } else {
             format!("{}{}", partial_buffer, chunk)
         };
+
+        if self.protect_code_examples {
+            use crate::tool_calling::code_spans::{MarkerSearch, find_marker};
+            let patterns: Vec<_> = self.patterns.iter().map(String::as_str).collect();
+            match find_marker(&combined, &patterns, false) {
+                MarkerSearch::Found(pos, index) => {
+                    let marker = self.patterns[index].clone();
+                    return MatchResult::Complete {
+                        prefix: combined[..pos].to_string(),
+                        suffix: combined[pos + marker.len()..].to_string(),
+                        marker,
+                        marker_start: pos,
+                    };
+                }
+                MarkerSearch::Pending(pos) => {
+                    return MatchResult::Partial {
+                        prefix: combined[..pos].to_string(),
+                        partial: combined[pos..].to_string(),
+                        possible_patterns: vec![],
+                    };
+                }
+                MarkerSearch::None => {
+                    // Closed examples cannot contain an executable marker.
+                    if let Some((pos, partial, patterns)) = self.find_partial_suffix(&combined) {
+                        return MatchResult::Partial {
+                            prefix: combined[..pos].to_string(),
+                            partial: partial.to_string(),
+                            possible_patterns: patterns,
+                        };
+                    }
+                    return MatchResult::None { content: combined };
+                }
+            }
+        }
 
         // First check for complete markers
         if let Some(mat) = self.complete_matcher.find(&combined) {

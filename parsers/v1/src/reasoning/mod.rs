@@ -430,6 +430,119 @@ mod tests {
     }
 
     #[test]
+    fn nemotron_new_reasoning_block_preserves_prior_tool_candidate() {
+        let tool =
+            "<tool_call><function=read><parameter=path>a.txt</parameter></function></tool_call>";
+        let input = format!("inspect{tool}<think>private reasoning</think>done");
+        for alias in ["nemotron3", "nemotron_v3"] {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+            let batch = parser.detect_and_parse_reasoning(&input, &[]);
+            assert_eq!(batch.reasoning_text, "inspectprivate reasoning");
+            assert_eq!(batch.normal_text, format!("{tool}done"));
+            for split in 0..=input.len() {
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                let mut reasoning = String::new();
+                let mut content = String::new();
+                for chunk in [&input[..split], &input[split..]] {
+                    let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                    reasoning.push_str(&result.reasoning_text);
+                    content.push_str(&result.normal_text);
+                }
+                let tail = parser.finish_reasoning_stream();
+                reasoning.push_str(&tail.reasoning_text);
+                content.push_str(&tail.normal_text);
+                assert_eq!(reasoning, batch.reasoning_text, "{alias}: {split}");
+                assert_eq!(content, batch.normal_text, "{alias}: {split}");
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn nemotron_new_reasoning_block_recovers_tool_through_public_api() {
+        let input = "inspect<tool_call><function=read><parameter=path>a.txt</parameter></function></tool_call><think>private reasoning</think>done";
+        for alias in ["nemotron3", "nemotron_v3"] {
+            // None exercises batch; every byte boundary exercises two chunks.
+            for split in std::iter::once(None).chain((0..=input.len()).map(Some)) {
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                let (reasoning, normal) = if let Some(split) = split {
+                    let mut reasoning = String::new();
+                    let mut normal = String::new();
+                    for chunk in [&input[..split], &input[split..]] {
+                        let part = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                        reasoning.push_str(&part.reasoning_text);
+                        normal.push_str(&part.normal_text);
+                    }
+                    let part = parser.finish_reasoning_stream();
+                    reasoning.push_str(&part.reasoning_text);
+                    normal.push_str(&part.normal_text);
+                    (reasoning, normal)
+                } else {
+                    let part = parser.detect_and_parse_reasoning(input, &[]);
+                    (part.reasoning_text, part.normal_text)
+                };
+                assert_eq!(reasoning, "inspectprivate reasoning", "{alias} {split:?}");
+                let (calls, _) =
+                    crate::detect_and_parse_tool_call(&normal, Some("qwen3_coder"), None)
+                        .await
+                        .unwrap();
+                assert_eq!(calls.len(), 1, "{alias} {split:?}");
+                assert_eq!(calls[0].function.name, "read");
+                let args: serde_json::Value =
+                    serde_json::from_str(&calls[0].function.arguments).unwrap();
+                assert_eq!(args, serde_json::json!({"path": "a.txt"}));
+            }
+        }
+    }
+
+    #[test]
+    fn nemotron_quoted_parameter_does_not_shield_later_reasoning_close() {
+        let tool = "<tool_call><function=echo><parameter=text>literal ` </think> data</parameter></function></tool_call>";
+        for quoted in [
+            "A `<parameter=text>` child.",
+            "A ``<parameter=text> ` </think>`` child.",
+            "A ```<parameter=text>``` child.",
+            "Example:\n```xml\n<parameter=text>\n</think>\n```\n",
+        ] {
+            let input = format!("inspect</think>{quoted}</think>{tool}");
+            let expected = format!("{quoted}{tool}");
+            for alias in ["nemotron3", "nemotron_v3"] {
+                let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                let batch = parser.detect_and_parse_reasoning(&input, &[]);
+                assert_eq!(batch.reasoning_text, "inspect");
+                assert_eq!(batch.normal_text, expected);
+                for split in 0..=input.len() {
+                    let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+                    let mut reasoning = String::new();
+                    let mut content = String::new();
+                    for chunk in [&input[..split], &input[split..]] {
+                        let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                        reasoning.push_str(&result.reasoning_text);
+                        content.push_str(&result.normal_text);
+                    }
+                    let tail = parser.finish_reasoning_stream();
+                    reasoning.push_str(&tail.reasoning_text);
+                    content.push_str(&tail.normal_text);
+                    assert_eq!(reasoning, "inspect", "{alias}: {split}");
+                    assert_eq!(content, expected, "{alias}: {split}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nemotron_repeated_reasoning_examples_preserve_all_spans() {
+        let example = "example:<tool_call><function=f></function></tool_call>";
+        let block = format!("<think>{example}</think>answer");
+        let input = block.repeat(2048);
+        for alias in ["nemotron3", "nemotron_v3"] {
+            let mut parser = ReasoningParserType::get_reasoning_parser_from_name(alias);
+            let result = parser.detect_and_parse_reasoning(&input, &[]);
+            assert_eq!(result.reasoning_text, example.repeat(2048));
+            assert_eq!(result.normal_text, "answer".repeat(2048));
+        }
+    }
+
+    #[test]
     fn nemotron_implicit_tool_boundary_batch_and_every_stream_split() {
         assert_nemotron_tool_boundary("");
     }
@@ -550,27 +663,20 @@ mod tests {
                         crate::detect_and_parse_tool_call(&normal, Some("qwen3_coder"), None)
                             .await
                             .unwrap();
-                    assert_eq!(calls.len(), 1);
-                    assert_eq!(calls[0].function.name, "read");
-                    let args: serde_json::Value =
-                        serde_json::from_str(&calls[0].function.arguments).unwrap();
                     if boundary.starts_with("</function>") {
+                        assert_eq!(calls.len(), 1);
+                        assert_eq!(calls[0].function.name, "read");
+                        let args: serde_json::Value =
+                            serde_json::from_str(&calls[0].function.arguments).unwrap();
                         assert_eq!(args["path"], "a.txt");
+                        // Batch tool parsing suppresses narration after a call.
+                        assert!(content.unwrap_or_default().is_empty());
                     } else {
-                        // Do not change native recovery semantics when both
-                        // inner closes are absent; only separate reasoning.
-                        let (native, _) = crate::detect_and_parse_tool_call(
-                            &chunks[1],
-                            Some("qwen3_coder"),
-                            None,
-                        )
-                        .await
-                        .unwrap();
-                        assert_eq!(calls[0].function.arguments, native[0].function.arguments);
+                        // Separating reasoning must not make an unterminated
+                        // parameter into an executable call.
+                        assert!(calls.is_empty());
+                        assert_eq!(content.as_deref(), Some("done"));
                     }
-                    // Batch tool parsing suppresses trailing narration; the
-                    // streaming jail integration separately verifies `done`.
-                    assert!(content.unwrap_or_default().is_empty());
                     assert!(normal.ends_with("done"));
                     assert!(!normal.contains("private reasoning"));
                 }

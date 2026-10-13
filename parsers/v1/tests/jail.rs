@@ -997,6 +997,133 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn xml_bare_call_does_not_enable_quoted_function_recovery() {
+        let input = "<function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call> Quoted `<function=...>` and `<parameter=city>` are examples. <tool_call><function=lookup_weather><parameter=city>Paris</parameter></function></tool_call>";
+        let (calls, _) =
+            dynamo_parsers::detect_and_parse_tool_call(input, Some("qwen3_coder"), None)
+                .await
+                .unwrap();
+        assert_eq!(calls.len(), 2);
+        for (call, city) in calls.iter().zip(["Oslo", "Paris"]) {
+            assert_eq!(call.function.name, "lookup_weather");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&call.function.arguments).unwrap(),
+                serde_json::json!({"city":city})
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn xml_outer_close_cannot_complete_an_unterminated_argument() {
+        // An outer wrapper alone is not evidence that an inner argument ended.
+        // Keep the following complete call, but do not manufacture an argument
+        // out of prose containing protocol fragments.
+        let input = "<tool_call> wrapper containing <function=lookup_weather> with a <parameter=city> example value and </tool_call>. <tool_call><function=lookup_weather><parameter=city>Paris</parameter></function></tool_call>";
+        for family in ["qwen3_coder", "nemotron_nano"] {
+            let (calls, _) = dynamo_parsers::detect_and_parse_tool_call(input, Some(family), None)
+                .await
+                .unwrap();
+            assert_eq!(calls.len(), 1, "{family} batch");
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&calls[0].function.arguments).unwrap(),
+                json!({"city": "Paris"})
+            );
+            for width in [1, 7, 64, 4096] {
+                let mut chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|c| create_mock_response_chunk(String::from_utf8(c.to_vec()).unwrap(), 0))
+                    .collect();
+                chunks.push(create_final_response_chunk(0));
+                let results: Vec<_> = JailedStream::builder()
+                    .tool_call_parser(family)
+                    .build()
+                    .apply_with_finish_reason(stream::iter(chunks))
+                    .collect()
+                    .await;
+                let mut calls = Vec::new();
+                for result in results {
+                    assert!(result.error.is_none());
+                    for choice in result.data.unwrap().choices {
+                        calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                    }
+                }
+                assert_eq!(calls.len(), 1, "{family} width {width}");
+                let function = calls[0].function.as_ref().unwrap();
+                assert_eq!(function.name.as_deref(), Some("lookup_weather"));
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(
+                        function.arguments.as_deref().unwrap()
+                    )
+                    .unwrap(),
+                    json!({"city": "Paris"})
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn xml_inline_examples_preserve_the_following_real_call() {
+        for quoted in [
+            "Example opening `<tool_call><function=lookup_weather>`, parameter `<parameter=city>Oslo</parameter>`, closing `</tool_call>`.",
+            "Example:\n```xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n```\n",
+            "Example:\n~~~xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n~~~\n",
+            "Example ``literal ` <tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call> ``.",
+            "Unmatched `",
+        ] {
+            let input = format!(
+                "{quoted}<tool_call><function=lookup_weather><parameter=city>Paris</parameter></function></tool_call>"
+            );
+            let (calls, content) =
+                dynamo_parsers::detect_and_parse_tool_call(&input, Some("qwen3_coder"), None)
+                    .await
+                    .unwrap();
+            assert_eq!(content.as_deref(), Some(quoted));
+            assert_eq!(calls.len(), 1);
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(&calls[0].function.arguments).unwrap(),
+                serde_json::json!({"city": "Paris"})
+            );
+            for width in [1, 7, 64, 4096] {
+                let mut chunks: Vec<_> = input
+                    .as_bytes()
+                    .chunks(width)
+                    .map(|c| create_mock_response_chunk(String::from_utf8(c.to_vec()).unwrap(), 0))
+                    .collect();
+                chunks.push(create_final_response_chunk(0));
+                let results: Vec<_> = JailedStream::builder()
+                    .tool_call_parser("qwen3_coder")
+                    .build()
+                    .apply_with_finish_reason(stream::iter(chunks))
+                    .collect()
+                    .await;
+                let mut content = String::new();
+                let mut calls = Vec::new();
+                for result in results {
+                    assert!(result.error.is_none());
+                    for choice in result.data.unwrap().choices {
+                        if let Some(text) = choice.delta.content {
+                            content.push_str(test_utils::extract_text(&text));
+                        }
+                        calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                    }
+                }
+                assert_eq!(content, quoted, "chunk width {width}");
+                assert_eq!(calls.len(), 1, "chunk width {width}");
+                let function = calls[0].function.as_ref().unwrap();
+                assert_eq!(function.name.as_deref(), Some("lookup_weather"));
+                assert_eq!(
+                    serde_json::from_str::<serde_json::Value>(
+                        function.arguments.as_deref().unwrap()
+                    )
+                    .unwrap(),
+                    serde_json::json!({"city": "Paris"})
+                );
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn nemotron_captured_reasoning_examples_do_not_execute() {
         use dynamo_parsers::ReasoningParser;
         // Captured Super NVFP4 output, not a reconstructed tool-call example.

@@ -1752,6 +1752,13 @@ impl ChoiceJailState {
 
     /// Finalize any remaining content when stream ends
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
+        if !self.is_jailed
+            && jail_stream.marker_matcher.protect_code_examples
+            && jail_stream.should_start_jail(&self.partial_match_buffer)
+        {
+            let remaining = std::mem::take(&mut self.partial_match_buffer);
+            self.begin_jail(remaining, None);
+        }
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
@@ -2407,6 +2414,14 @@ impl JailedStream {
     }
 
     fn should_start_jail(&self, content: &str) -> bool {
+        if self.marker_matcher.protect_code_examples {
+            return self
+                .jail_start_sequences
+                .iter()
+                .any(|marker| super::code_spans::find_unquoted(content, marker).is_some())
+                || detect_tool_call_start(content, self.tool_call_parser.as_deref())
+                    .unwrap_or(false);
+        }
         // Path 1: Check configured start sequences
         let sequence_match = !self.jail_start_sequences.is_empty()
             && self
@@ -3479,7 +3494,7 @@ impl JailedStreamBuilder {
         }
 
         // Create the marker matcher (fallback to empty patterns if none configured)
-        let marker_matcher = if all_patterns.is_empty() {
+        let mut marker_matcher = if all_patterns.is_empty() {
             // If no patterns, create a dummy matcher that never matches
             MarkerMatcher::new(vec!["__NEVER_MATCH__".to_string()])
                 .expect("Failed to create dummy MarkerMatcher")
@@ -3488,6 +3503,9 @@ impl JailedStreamBuilder {
             MarkerMatcher::new(all_patterns)
                 .expect("Failed to create MarkerMatcher with configured patterns")
         };
+        marker_matcher.protect_code_examples = matches!(
+            parser_config, Some(ParserConfig::Xml(config)) if config.protect_code_examples
+        );
 
         JailedStream {
             jail_start_sequences: self.jail_start_sequences,
