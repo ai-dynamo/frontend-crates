@@ -1,0 +1,47 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    git_commit: 3f48393f31571679819dea0c90c15644627b4342
+    source_sha256: 8aebfa40bd4d4c4419c883112edcb9b310b864c7585e2d8551ed02ff7b72dec2
+document:
+  mode: unified
+changes:
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: echo
+            arguments: '{"value":"é"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value":"Café"}'
+            complete: true
+    stimulus:
+      ref: current
+      semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
+metadata_changes: {}
+document_overrides:
+  malformed_json_then_two_valid_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        source_sha256: 8aebfa40bd4d4c4419c883112edcb9b310b864c7585e2d8551ed02ff7b72dec2
+        git_commit: 3f48393f31571679819dea0c90c15644627b4342
+      inherited_from: null

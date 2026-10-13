@@ -16,21 +16,29 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [features]
 default = ["parallel"]
-# Trusted-source compatibility helper (data:/base64/file/http), not an
-# untrusted URL security boundary. Still a stub; its implementation wires the
-# deps: `fetch = ["dep:ureq", "dep:base64"]`.
-fetch = []
+# `fetch::MediaFetcher`: a protected http(s)/data: fetcher (SSRF policy, size
+# caps, redirect revalidation). The trusted-source `fetch_bytes*` helpers in the
+# same module are still stubs.
+fetch = ["dep:base64", "dep:ipnet", "dep:reqwest", "dep:tokio", "dep:url"]
 # Links rayon; kernels still run inline until `execution::init_pool` arms the
 # crate-owned pool at runtime. Opt out (`default-features = false`) to drop
 # rayon from the dependency graph and force the inline path at compile time.
 parallel = ["dep:rayon"]
 
 [dependencies]
+base64 = { workspace = true, optional = true }
 blake3.workspace = true
 gif.workspace = true
 image.workspace = true
+ipnet = { workspace = true, optional = true }
 rayon = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+tokio = { workspace = true, optional = true, features = ["net", "time"] }
 turbojpeg.workspace = true
+url = { workspace = true, optional = true }
 xxhash-rust.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["io-util", "macros", "net", "rt", "time"] }

@@ -88,6 +88,12 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
 
+      - name: Run multimodal tests with all features
+        run: cargo test -p dynamo-multimodal --all-targets --all-features --locked
+
+      - name: Run parser recovery work-bound tests
+        run: cargo test --locked -p dynamo-parsers-v2 --features test-utils --test gemma4_native_recovery
+
       - name: Run doctests
         run: cargo test --workspace --doc --locked
 

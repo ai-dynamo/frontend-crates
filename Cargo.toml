@@ -53,6 +53,7 @@ image = { version = "0.25", default-features = false, features = [
     "gif",
     "bmp",
 ] }
+ipnet = "2"
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
@@ -66,6 +67,7 @@ rstest = "0.25"
 rustc-hash = "1.1"
 ruff-python-ast = { package = "rustpython-ruff_python_ast", version = "0.15.8" }
 ruff-python-parser = { package = "rustpython-ruff_python_parser", version = "0.15.8" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = "1"
 serde_json = "1"
 strum = "0.27"
