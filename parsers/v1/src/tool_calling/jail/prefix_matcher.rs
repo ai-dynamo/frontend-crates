@@ -104,7 +104,17 @@ impl MarkerMatcher {
     }
 
     /// Process a chunk with an optional partial buffer from previous chunk
+    #[cfg(test)]
     pub fn process_chunk(&self, chunk: &str, partial_buffer: &str) -> MatchResult {
+        self.process_chunk_with_indent(chunk, partial_buffer, 0)
+    }
+
+    pub(crate) fn process_chunk_with_indent(
+        &self,
+        chunk: &str,
+        partial_buffer: &str,
+        initial_indent: usize,
+    ) -> MatchResult {
         // Combine buffer with new chunk
         let combined = if partial_buffer.is_empty() {
             chunk.to_string()
@@ -113,9 +123,9 @@ impl MarkerMatcher {
         };
 
         if self.protect_code_examples {
-            use crate::tool_calling::code_spans::{MarkerSearch, find_marker};
+            use crate::tool_calling::code_spans::{MarkerSearch, find_marker_with_indent};
             let patterns: Vec<_> = self.patterns.iter().map(String::as_str).collect();
-            match find_marker(&combined, &patterns, false) {
+            match find_marker_with_indent(&combined, &patterns, false, initial_indent) {
                 MarkerSearch::Found(pos, index) => {
                     let marker = self.patterns[index].clone();
                     return MatchResult::Complete {

@@ -1064,61 +1064,106 @@ mod tests {
 
     #[tokio::test]
     async fn xml_inline_examples_preserve_the_following_real_call() {
-        for quoted in [
-            "Example opening `<tool_call><function=lookup_weather>`, parameter `<parameter=city>Oslo</parameter>`, closing `</tool_call>`.",
-            "Example:\n```xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n```\n",
-            "Example:\n~~~xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n~~~\n",
-            "Example ``literal ` <tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call> ``.",
-            "Unmatched `",
-        ] {
-            let input = format!(
-                "{quoted}<tool_call><function=lookup_weather><parameter=city>Paris</parameter></function></tool_call>"
-            );
-            let (calls, content) =
-                dynamo_parsers::detect_and_parse_tool_call(&input, Some("qwen3_coder"), None)
-                    .await
-                    .unwrap();
-            assert_eq!(content.as_deref(), Some(quoted));
-            assert_eq!(calls.len(), 1);
-            assert_eq!(
-                serde_json::from_str::<serde_json::Value>(&calls[0].function.arguments).unwrap(),
-                serde_json::json!({"city": "Paris"})
-            );
-            for width in [1, 7, 64, 4096] {
-                let mut chunks: Vec<_> = input
-                    .as_bytes()
-                    .chunks(width)
-                    .map(|c| create_mock_response_chunk(String::from_utf8(c.to_vec()).unwrap(), 0))
-                    .collect();
-                chunks.push(create_final_response_chunk(0));
-                let results: Vec<_> = JailedStream::builder()
-                    .tool_call_parser("qwen3_coder")
-                    .build()
-                    .apply_with_finish_reason(stream::iter(chunks))
-                    .collect()
-                    .await;
-                let mut content = String::new();
-                let mut calls = Vec::new();
-                for result in results {
-                    assert!(result.error.is_none());
-                    for choice in result.data.unwrap().choices {
-                        if let Some(text) = choice.delta.content {
-                            content.push_str(test_utils::extract_text(&text));
+        for family in ["qwen3_coder", "nemotron_nano"] {
+            for leading in [
+                "",
+                "<tool_call><function=lookup_weather><parameter=city>Rome</parameter></function></tool_call>",
+            ] {
+                let call_count = if leading.is_empty() { 1 } else { 2 };
+                for quoted in [
+                    "Example opening `<tool_call><function=lookup_weather>`, parameter `<parameter=city>Oslo</parameter>`, closing `</tool_call>`.",
+                    "Example:\n```xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n```\n",
+                    "Example:\n~~~xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n~~~\n",
+                    "Example ``literal ` <tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call> ``.",
+                    "Example ```<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>```.",
+                    "    ```<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>```.",
+                    "Example:\n   ```xml\n<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>\n   ```\n",
+                    "Example ````<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>````.",
+                    "Unmatched `",
+                    "Escaped \\` before example `<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>`.",
+                    "Even escape \\\\`<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>`.",
+                    "Trailing escape \\",
+                    "Unicode café 東京 ```<tool_call><function=lookup_weather><parameter=city>Oslo</parameter></function></tool_call>```.",
+                ] {
+                    let input = format!(
+                        "{leading}{quoted}<tool_call><function=lookup_weather><parameter=city>Paris</parameter></function></tool_call>"
+                    );
+                    let (calls, content) =
+                        dynamo_parsers::detect_and_parse_tool_call(&input, Some(family), None)
+                            .await
+                            .unwrap();
+                    // The batch API deliberately drops prose after the first call;
+                    // the jail still must not execute examples in that prose.
+                    assert_eq!(
+                        content.as_deref(),
+                        Some(if leading.is_empty() { quoted } else { "" })
+                    );
+                    assert_eq!(calls.len(), call_count);
+                    assert_eq!(
+                        serde_json::from_str::<serde_json::Value>(
+                            &calls.last().unwrap().function.arguments
+                        )
+                        .unwrap(),
+                        serde_json::json!({"city": "Paris"})
+                    );
+                    let splits = (0..=input.len())
+                        .filter(|&split| input.is_char_boundary(split))
+                        .map(|split| vec![input[..split].to_string(), input[split..].to_string()]);
+                    let widths = [1, 7, 64, 4096].into_iter().map(|width| {
+                        input
+                            .chars()
+                            .collect::<Vec<_>>()
+                            .chunks(width)
+                            .map(|c| c.iter().collect::<String>())
+                            .collect::<Vec<_>>()
+                    });
+                    for (partition, pieces) in splits.chain(widths).enumerate() {
+                        let mut chunks: Vec<_> = pieces
+                            .into_iter()
+                            .map(|c| create_mock_response_chunk(c, 0))
+                            .collect();
+                        chunks.push(create_final_response_chunk(0));
+                        let results: Vec<_> = JailedStream::builder()
+                            .tool_call_parser(family)
+                            .build()
+                            .apply_with_finish_reason(stream::iter(chunks))
+                            .collect()
+                            .await;
+                        let mut content = String::new();
+                        let mut calls = Vec::new();
+                        for result in results {
+                            assert!(result.error.is_none());
+                            for choice in result.data.unwrap().choices {
+                                if let Some(text) = choice.delta.content {
+                                    content.push_str(test_utils::extract_text(&text));
+                                }
+                                calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                            }
                         }
-                        calls.extend(choice.delta.tool_calls.unwrap_or_default());
+                        assert_eq!(content, quoted, "partition {partition}");
+                        assert_eq!(calls.len(), call_count, "partition {partition}");
+                        if !leading.is_empty() {
+                            let first = calls[0].function.as_ref().unwrap();
+                            assert_eq!(first.name.as_deref(), Some("lookup_weather"));
+                            assert_eq!(
+                                serde_json::from_str::<serde_json::Value>(
+                                    first.arguments.as_deref().unwrap()
+                                )
+                                .unwrap(),
+                                json!({"city": "Rome"})
+                            );
+                        }
+                        let function = calls.last().unwrap().function.as_ref().unwrap();
+                        assert_eq!(function.name.as_deref(), Some("lookup_weather"));
+                        assert_eq!(
+                            serde_json::from_str::<serde_json::Value>(
+                                function.arguments.as_deref().unwrap()
+                            )
+                            .unwrap(),
+                            serde_json::json!({"city": "Paris"})
+                        );
                     }
                 }
-                assert_eq!(content, quoted, "chunk width {width}");
-                assert_eq!(calls.len(), 1, "chunk width {width}");
-                let function = calls[0].function.as_ref().unwrap();
-                assert_eq!(function.name.as_deref(), Some("lookup_weather"));
-                assert_eq!(
-                    serde_json::from_str::<serde_json::Value>(
-                        function.arguments.as_deref().unwrap()
-                    )
-                    .unwrap(),
-                    serde_json::json!({"city": "Paris"})
-                );
             }
         }
     }

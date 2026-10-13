@@ -50,6 +50,20 @@ pub(crate) fn find_marker_with_indent(
             return MarkerSearch::Found(cursor, index);
         }
         let delimiter = bytes[cursor];
+        // Keep an unfinished escape run with the next chunk. Otherwise a
+        // following backtick is reinterpreted as a code opener after its
+        // backslash has already been emitted.
+        if delimiter == b'\\' {
+            let run = bytes[cursor..]
+                .iter()
+                .take_while(|&&byte| byte == b'\\')
+                .count();
+            if !final_input && cursor + run == text.len() {
+                return MarkerSearch::Pending(cursor);
+            }
+            cursor += run;
+            continue;
+        }
         if delimiter != b'`' && delimiter != b'~' {
             cursor += text[cursor..].chars().next().unwrap().len_utf8();
             continue;
@@ -58,14 +72,15 @@ pub(crate) fn find_marker_with_indent(
             .iter()
             .take_while(|&&b| b == delimiter)
             .count();
-        if bytes[..cursor]
+        let escape_len = bytes[..cursor]
             .iter()
             .rev()
             .take_while(|&&b| b == b'\\')
-            .count()
-            % 2
-            == 1
-        {
+            .count();
+        if escape_len % 2 == 1 {
+            if !final_input && cursor + run == text.len() {
+                return MarkerSearch::Pending(cursor - escape_len);
+            }
             cursor += run;
             continue;
         }
