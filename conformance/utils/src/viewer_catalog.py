@@ -461,6 +461,7 @@ def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check
             handle.write(document)
             handle.flush()
             os.fsync(handle.fileno())
+        os.chmod(temporary, 0o644)
         os.replace(temporary, destination)
         unified_history._fsync_directory(destination.parent)
     finally:

@@ -146,6 +146,7 @@ def test_catalog_root_and_staged_resource_urls(tmp_path, monkeypatch):
     assert result["snapshot"] == "staged"
     assert result["metadata"]["source_root"] == str(tmp_path)
     assert result["sources"]["archives"][0]["path"] == "conformance/fixtures/input.tar.gz"
+    assert output.stat().st_mode & 0o004, "published catalog must be readable by the static site server"
     assert json.loads((conformance / "viewer-catalog.json").read_text())["snapshot"] == "old"
 
 
