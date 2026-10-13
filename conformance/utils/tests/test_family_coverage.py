@@ -30,7 +30,7 @@ if str(UTILS) not in sys.path:
 
 import check_family_coverage as cfc  # noqa: E402
 import markers as markers_mod  # noqa: E402
-from tables import markup  # noqa: E402
+from conformance.utils.tests.viewer_test_support import colorize_markup  # noqa: E402
 
 
 def _ensure_fixtures() -> Path:
@@ -177,9 +177,9 @@ def test_declared_tokens_render_non_orphan() -> None:
     registry = _registry()
     for fam, decl in registry["markers"].items():
         for open_tok, close_tok in decl.get("pairs") or []:
-            assert "tt-orphan" not in markup.colorize_markup(f"{open_tok}x{close_tok}", family=fam), (fam, open_tok)
+            assert "tt-orphan" not in colorize_markup(f"{open_tok}x{close_tok}", family=fam, markers=_registry()["markers"]), (fam, open_tok)
         for tok in decl.get("singletons") or []:
-            assert "tt-orphan" not in markup.colorize_markup(str(tok), family=fam), (fam, tok)
+            assert "tt-orphan" not in colorize_markup(str(tok), family=fam, markers=_registry()["markers"]), (fam, tok)
 
 
 def test_kimi_k3_composite_markers_render_as_longest_declared_tokens() -> None:
@@ -193,7 +193,7 @@ def test_kimi_k3_composite_markers_render_as_longest_declared_tokens() -> None:
         "<|close|> message <|sep|>",
     ]
     for text in cases:
-        rendered = markup.colorize_markup(text, family="kimi_k3")
+        rendered = colorize_markup(text, family="kimi_k3", markers=_registry()["markers"])
         assert "tt-orphan" not in rendered, text
         expected_markers = text.count("<|open|>") + text.count("<|close|>")
         assert rendered.count("<span") == expected_markers
@@ -212,7 +212,7 @@ def test_kimi_k3_opaque_composite_regions_keep_marker_text_as_data() -> None:
         "<|close|>json<|sep|>"
     )
     for text in (typed, raw_json):
-        rendered = markup.colorize_markup(text, family="kimi_k3")
+        rendered = colorize_markup(text, family="kimi_k3", markers=_registry()["markers"])
         assert "tt-orphan" not in rendered
         assert rendered.count("&lt;|close|&gt;") == text.count("<|close|>")
 
@@ -236,4 +236,4 @@ def test_undeclared_pipe_token_still_orphans() -> None:
     """The declared-marker lookup is per-family and exact: an Inkling-style token
     that is NOT declared keeps rendering as tt-orphan (the lint, not the colorizer,
     is what forces registration)."""
-    assert "tt-orphan" in markup.colorize_markup("<|message_model|>hello<|end_message|>", family="hermes")
+    assert "tt-orphan" in colorize_markup("<|message_model|>hello<|end_message|>", family="hermes", markers=_registry()["markers"])

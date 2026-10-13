@@ -542,7 +542,7 @@ fn render_unified_conformance_html() {
     let mut dynamo_red = 0usize;
     let mut vllm_red = 0usize;
     let mut total = 0usize;
-    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    // Capture tooling consumes this feed; the browser reads packaged YAML directly.
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
@@ -745,7 +745,7 @@ fn render_unified_conformance_html() {
         }
     }
 
-    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // Machine-readable capture feed consumed by explode_unified_fixtures.py.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).

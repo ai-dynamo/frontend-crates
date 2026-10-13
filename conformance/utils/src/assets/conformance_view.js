@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// Conformance page VIEW (DIS-2434): build the tabs + table + compare bar + popups
-// from the inlined JSON model (`<script id="conformance-model">`). This runs at
-// parse time, BEFORE conformance.js, and produces the exact DOM (classes/attrs)
-// that conformance.js queries — so the interactivity script wires against it
-// unmodified. The template emits only the page skeleton + the model blob; this
-// view is the sole renderer of the tabs bar and panels.
+// Maintained matrix view: mount the catalog shell, then update active tab models.
 (function () {
   // --- Theme (light / dark) --------------------------------------------------
   // The page was light while every popup was dark, so the two surfaces disagreed. One
@@ -53,7 +48,7 @@
   // Every plain-text value from the model is escaped before insertion. Fields
   // whose name ends in `_html` (label_html, model_label_html, legend_html,
   // toolbar_desc_html, parser.html, candidate.label_html) are already-safe HTML
-  // produced by Python and are inserted verbatim.
+  // produced by the shared tab model and are inserted verbatim.
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;')
@@ -81,7 +76,7 @@
     if (Object.prototype.toString.call(v) === '[object Array]') {
       return v.map(function (x) { return String(x); }).join('\n');
     }
-    if (typeof v === 'object') { return JSON.stringify(v); }
+    if (typeof v === 'object') { return window.__formatConformanceValue(v, 0); }
     return String(v);
   }
   // Escape text and turn embedded URLs into anchors (mirrors common.linkify_text_html).
@@ -173,6 +168,9 @@
     const id = tooltipIds.get(model) || String(++_ttipSeq);
     tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
+    td.dataset.popupKey = td.classList.contains('cell')
+      ? `cell:${td.dataset.family}:${td.dataset.sub}:${td.dataset.caseId}`
+      : `grammar:${model.popupCase?.sub || model.head}`;
     _ttipModels[id] = model;
   }
 
@@ -229,16 +227,7 @@
     }
     var ctl = panel.querySelector('.cmpctl');
     if (!ctl) { return; }
-    var box = ctl.querySelector('input.cmp-on');
-    if (!box) { return; }
-    var ev;
-    try {
-      ev = new Event('change', { bubbles: true });
-    } catch (e) {
-      ev = document.createEvent('Event');
-      ev.initEvent('change', true, false);
-    }
-    box.dispatchEvent(ev);
+    window.__conformanceController?.refreshPanel(panel);
   }
 
   // --- Output block rendering (mirrors _format_output_block_html) ------------
@@ -261,14 +250,14 @@
       return 'exception: ' + escapeHtml(String(b.exception)) + producerNote;
     }
     if (b.error != null) {
-      var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
+      var e = (typeof b.error === 'string') ? b.error : window.__formatConformanceValue(b.error, 0);
       return 'error: ' + escapeHtml(e) + producerNote;
     }
     if (b.batch_final != null) {
       const fields = b.batch_final;
       return '<span class="fldl">reasoning_text=</span>' + colorize(fields.reasoning_text, family, ctx)
         + '\n<span class="fldl">normal_text=</span>' + colorize(fields.normal_text, family, ctx)
-        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(fields.calls), ctx)
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(fields.calls, 0), ctx)
         + '\n\n<span class="expl">Order/chunk not applicable for batch. Final assembly is compared to ordered GOLDEN; lost interleaving is a mismatch.</span>'
         + (b.verdict && b.verdict !== 'MATCH' ? '\n<span class="expl">diverges: ' + escapeHtml(b.verdict) + '</span>' : '')
         + producerNote;
@@ -286,7 +275,7 @@
           // Colorize the name + args like the streaming deltas do (word hues shared with
           // the input), instead of plain-escaping — so the assembled row matches.
           return '<span class="fldl">tool_call=</span>' + colorizeWords(ev.name || '', ctx)
-            + '(' + colorizeWords(JSON.stringify(ev.arguments || {}), ctx) + ')';
+            + '(' + colorizeWords(window.__formatConformanceValue(ev.arguments || {}, 0), ctx) + ')';
         }
         return '';
       });
@@ -332,7 +321,7 @@
       var calls = b.calls || [];
       out = '<span class="fldl">normal_text=\'</span>' + colorize(nt, family, ctx)
         + '<span class="fldl">\'</span>'
-        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(calls), ctx);
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(calls, 0), ctx);
     }
     if (b.explanation) {
       // Blank line before the prose: `explanation:` ran straight on from the `calls=`
@@ -592,7 +581,7 @@
         ? '<div class="schema-variant-label">' + escapeHtml(associations) + '</div>'
         : '';
       return label + '<pre class="case-schema-json">'
-        + escapeHtml(JSON.stringify(variant.tools || [], null, 2)) + '</pre>';
+        + escapeHtml(window.__formatConformanceValue(variant.tools || [], 2)) + '</pre>';
     }).join('');
     return '<details class="case-schema"><summary class="case-schema-toggle">'
       + '<span aria-hidden="true">{ }</span> Schema</summary>'
@@ -1004,6 +993,9 @@
     }
     // kind 'cell' or 'missing': a real (comparable) cell.
     td.className = ('cell ' + (cell.band || '') + groupClass).trim();
+    td.dataset.caseId = cell.case_id || '';
+    td.dataset.sub = cell.sub || '';
+    td.dataset.fixture = cell.fixture_href || '';
     td.setAttribute('data-col-hide-group', cell.col_group || '');
     // data-family drives ONLY the reference-aware "not implemented for family X" note
     // (the PARSER_NI path). Emit it only on pages that carry a parser_ni map (the v2
@@ -1074,6 +1066,7 @@
     var tr = document.createElement('tr');
     var modelTd = document.createElement('td');
     modelTd.className = 'model';
+    modelTd.dataset.popupKey = `model:${row.family}`;
     modelTd.setAttribute('data-col-hide-group', 'model');
     modelTd.innerHTML = row.model_label_html || '';
     tr.appendChild(modelTd);
@@ -1083,6 +1076,7 @@
     if (!tab.no_parser_col) {
       if (row.parser && row.parser.html) {
         var ptd = parseTdHtml(row.parser.html);
+        if (ptd) ptd.dataset.popupKey = `parser:${row.family}`;
         tr.appendChild(ptd || emptyParserTd());
       } else {
         tr.appendChild(emptyParserTd());
@@ -1195,7 +1189,7 @@
       + 'Both are compared as ordered events with the same call names and arguments. Lost reasoning/text/tool-call interleaving remains a mismatch.</p></div>';
   }
 
-  // Copied verbatim from conformance_table.html.j2 so conformance.js finds the
+  // Stable legend anchors let the controller update model-derived counts in the
   // same data-overview-count spans it writes tallies into.
   function summaryLegendHtml() {
     // Prefer the page-supplied summary legend (each generator emits its own so the v1
@@ -1308,86 +1302,50 @@
     return tmp.firstChild;
   }
 
-  // --- Schema-2 hydration (mirror of model.py hydrate_page) -------------------
-  // The blob is COMPACTED (model.py _compact_page): repeated long strings live once
-  // in page.strings (slots hold int indexes), per-cell tooltip-candidate meta lives
-  // once per tab in tab.cand_meta, fixture_hrefs keep only their suffix under
-  // tab.fixture_href_base, and the standard "<case_id> — <family>" head is dropped.
-  // Hydrating once right after JSON.parse restores the schema-1 shape in memory, so
-  // every builder below (and conformance.js) is untouched by the compaction.
-  // KEEP THE SLOT LIST IN SYNC with model.py _iter_intern_slots.
-  function hydratePage(page) {
-    var strings = page.strings || [];
-    function S(container, key) {
-      if (typeof container[key] === 'number') { container[key] = strings[container[key]]; }
+  // Models arrive from the shared engine; no embedded-model hydration is needed.
+  function prepare(tab) {
+    const columns = new Map((tab.columns || []).map(column => [column.sub, column]));
+    for (const row of tab.rows || []) for (const [sub, cell] of Object.entries(row.cells || {})) {
+      if (cell.tooltip) {
+        cell.tooltip.popupCase = columns.get(sub);
+        cell.tooltip.family = cell.family;
+      }
     }
-    (page.tabs || []).forEach(function (tab) {
-      var meta = tab.cand_meta || {};
-      var base = tab.fixture_href_base || '';
-      const columnsBySub = new Map((tab.columns || []).map(col => [col.sub, col]));
-      (tab.rows || []).forEach(function (row) {
-        var cells = row.cells || {};
-        Object.keys(cells).forEach(function (sub) {
-          var cell = cells[sub];
-          if (base && cell.fixture_href) { cell.fixture_href = base + cell.fixture_href; }
-          (cell.facts || []).forEach(function (f) { S(f, 'reason'); });
-          var tip = cell.tooltip;
-          if (!tip) { return; }
-          tip.popupCase = columnsBySub.get(sub);
-          tip.family = cell.family;
-          if (typeof cell.duplicate_of === 'number') { cell.duplicate_of = strings[cell.duplicate_of]; }
-          S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
-          if (typeof tip.duplicate_of === 'number') { tip.duplicate_of = strings[tip.duplicate_of]; }
-          if (tip.input) { S(tip.input, 'text'); }
-          (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });
-          (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });
-          var blocks = (tip.candidates || []).map(function (c) { return c.block; });
-          if (tip.baseline) { blocks.push(tip.baseline.block); }
-          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); S(b, 'exception'); } });
-          (tip.candidates || []).forEach(function (c) {
-            var fields = meta[c.key] || {};
-            for (var f in fields) {
-              if (!(f in c)) { c[f] = fields[f]; }
-            }
-          });
-          if (!('head' in tip) && cell.case_id && cell.family) {
-            tip.head = cell.case_id + ' — ' + cell.family;
-          }
-        });
-      });
+    return tab;
+  }
+  function disposePanel(panel) {
+    panel.querySelectorAll('[data-ttip-id]').forEach(cell => {
+      delete _ttipModels[cell.getAttribute('data-ttip-id')];
     });
-    return page;
   }
-
-  // --- Entry point -----------------------------------------------------------
-  try {
-    var modelEl = document.getElementById('conformance-model');
-    if (!modelEl) { return; }  // no model blob; nothing to build.
-    var page = hydratePage(JSON.parse(modelEl.textContent));
-    if (!page || !page.tabs || !page.tabs.length) { return; }
-    window.__CONFORMANCE_PAGE = page;
-
-    _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);
-    _familyMarkers = page.family_markers || {};
-    _summaryLegendHtml = (page.meta && page.meta.summary_legend_html) || null;
-
-    var multiTab = page.tabs.length > 1;
-    var newNodes = [];
-    newNodes.push(buildTabsBar(page));
-    page.tabs.forEach(function (tab) { newNodes.push(buildPanel(tab, page, multiTab)); });
-
-    // Replace the server-rendered tabs bar + panels in place with model-built
-    // ones. Insert the new nodes ahead of the first existing tabs/panel (or the
-    // model script if the server rendered neither), then drop the old ones.
-    var oldTabs = document.querySelector('.tabs');
-    var oldPanels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
-    var anchor = oldTabs || oldPanels[0] || modelEl;
-    var parent = anchor ? anchor.parentNode : document.body;
-    newNodes.forEach(function (n) { parent.insertBefore(n, anchor); });
-    if (oldTabs && oldTabs.parentNode) { oldTabs.parentNode.removeChild(oldTabs); }
-    oldPanels.forEach(function (p) { if (p.parentNode) { p.parentNode.removeChild(p); } });
-  } catch (err) {
-    // On any failure, leave the server-rendered DOM intact — never blank the page.
-    console.error('conformance_view: failed to build DOM from model', err);
-  }
+  window.ConformanceView = {
+    initialize(page, root) {
+      _usesFamily = !!Object.keys(page.parser_ni || {}).length;
+      _familyMarkers = page.family_markers || {};
+      _summaryLegendHtml = page.meta?.summary_legend_html || null;
+      const heading = document.createElement('h1');
+      heading.textContent = page.meta.title;
+      document.title = page.meta.title;
+      const header = [heading];
+      if (page.meta.sha) {
+        const revision = document.createElement('p');
+        revision.className = 'generated';
+        const link = document.createElement('a');
+        link.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + page.meta.sha;
+        link.textContent = page.meta.short_sha;
+        revision.append('Source revision ', link);
+        header.push(revision);
+      }
+      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, true)));
+    },
+    update(panel, tab, page) {
+      disposePanel(panel);
+      const next = buildPanel(prepare(tab), page, true);
+      // Candidate controls and their event handlers survive asynchronous data updates.
+      for (const child of [...panel.children]) if (!child.matches('.cmpctl')) child.remove();
+      for (const child of [...next.children]) if (!child.matches('.cmpctl')) panel.appendChild(child);
+    },
+    dispose: disposePanel,
+    buildTooltip: buildTooltipInto,
+  };
 })();

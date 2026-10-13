@@ -71,7 +71,7 @@ A delta is `{index, name?, arguments?}`. The v2 Rust core delta does not include
 - `unavailable.<impl>` or `expected.<impl>.unavailable` records a parser that does not exist, cannot run, or failed before output was available.
 - `expected.<impl>.error` records a parser exception that is expected for the case.
 
-Every parser-failure marker in the generated HTML must have the exact error text in YAML. Do not rely on renderer inference for v2 parser failures.
+Every parser-failure marker in the browser matrix must have the exact error text in YAML. Do not rely on renderer inference for v2 parser failures.
 
 ## Families
 
@@ -107,5 +107,6 @@ Use `capture.sh stream` for all-family captures; do not add a second wrapper for
 ```bash
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
-conformance/utils/render_table_v2.sh
+python3 conformance/utils/src/viewer_catalog.py
+python3 conformance/utils/src/viewer_catalog.py --check
 ```

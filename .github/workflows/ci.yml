@@ -14,7 +14,9 @@ permissions:
   contents: read
 
 jobs:
-  # Parser and conformance changes activate the render, utility and browser jobs.
+  # Decide which optional jobs need to run for this change. `conformance-table`
+  # is expensive (downloads the private fixture dataset, renders both charts) and
+  # is only affected by conformance/parser changes, so skip it otherwise.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -80,13 +82,11 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      - name: Check workspace
+        run: cargo check --workspace --all-targets --locked
+
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
-
-      # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
-      # decode with it (runners have no GPU, so NVDEC's tests are ignored).
-      - name: Install libvpx
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvpx9
 
       - name: Run multimodal tests with all features
         run: cargo test -p dynamo-multimodal --all-targets --all-features --locked
@@ -106,8 +106,8 @@ jobs:
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
 
-  # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
-  # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
+  # Validate the maintained conformance viewer and its source resources.
+  # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
   conformance-table:
     needs: changes
@@ -138,56 +138,21 @@ jobs:
         id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
-      # Rendering and utility tests use separate runners to stay within each job's budget.
-      - name: Conformance report and lint
-        env:
-          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+      # Single stable entry point: validate the browser catalog, fixture coverage,
+      # legacy storage, and invariant tests.
+      # Add/change conformance gates in check.sh's run_ci(), NOT here — this
+      # workflow step should never need another edit for a new gate.
+      - name: Conformance gate (catalog + lint + invariants)
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
-          render_args=()
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            test -n "$PAGES_BASE_URL"
-            render_args=(
-              --github-repository "$GITHUB_REPOSITORY"
-              --github-revision "$GITHUB_SHA"
-              --fixture-base-url "${PAGES_BASE_URL%/}/fixtures/"
-            )
-          fi
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-render "${render_args[@]}"
-
-      - name: Upload conformance matrix
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: conformity-html
-          path: conformance/utils/CONFORMITY.html
-          retention-days: 14
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci
 
       - name: Prepare GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           set -euo pipefail
-          site="$RUNNER_TEMP/pages"
-          fixtures_root="$(python3 conformance/utils/src/extract_fixtures.py)"
-          mkdir -p "$site"
-          cp conformance/CONFORMANCE_v2.html "$site/index.html"
-          for relative in \
-            toolcalling/fixtures-batch-v1/inputs \
-            toolcalling/fixtures-stream-v1/inputs \
-            reasoning/fixtures-v1/inputs
-          do
-            test -d "$fixtures_root/$relative"
-            mkdir -p "$site/fixtures/$(dirname "$relative")"
-            cp -R "$fixtures_root/$relative" "$site/fixtures/$relative"
-          done
-          if find "$site" -type l -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain symbolic links" >&2
-            exit 1
-          fi
-          if find "$site" -type f -links +1 -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain hard links" >&2
-            exit 1
-          fi
+          python3 conformance/utils/src/publish_viewer.py --output "$RUNNER_TEMP/pages" --revision "$GITHUB_SHA"
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -203,51 +168,11 @@ jobs:
           PR_NUMBER="${GITHUB_REF_NAME#pull-request/}"
           gh pr comment "$PR_NUMBER" \
             --edit-last --create-if-none \
-            --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
-  conformance-utils:
-    needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Run utility tests
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-tests
-
-  conformance-browser:
-    needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Install browser test dependencies
-        run: |
-          python3 -m venv /tmp/browser-venv
-          /tmp/browser-venv/bin/pip install --quiet pyyaml jinja2 pytest selenium
-          google-chrome --version
-          node --version
-
-      - name: Run comparison matrix browser regressions
-        run: PATH="/tmp/browser-venv/bin:$PATH" python3 -m pytest conformance/utils/tests/test_browser_comparison_layout.py conformance/utils/tests/test_browser_unified_only.py conformance/utils/tests/test_comparison_status.py -q
+            --body "📊 **Parser conformance viewer** validated — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
-    needs: [conformance-table, conformance-utils]
+    needs: conformance-table
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10

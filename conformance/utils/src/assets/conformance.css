@@ -1,6 +1,6 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
 /* SPDX-License-Identifier: Apache-2.0 */
-/* Conformance matrix styles (audit B7). Inlined at render by generate_conformance_table.py;
+/* Maintained conformance matrix styles;
    the per-impl status/marker rules are appended from _impl_status_css() (B6). */
 body { font-family: -apple-system, system-ui, sans-serif; margin: 1.5em; }
 table { border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 13px; }
@@ -348,7 +348,7 @@ body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
 .view-details td.cell.na:not([data-cmp]) > a,
 .view-details td.cell.missing:not([data-cmp]) { color: #9aa1a9; }
 /* The .view-details.parity-mode hide-marker rule is emitted by _impl_status_css()
-   (generate_conformance_table.py), not here: it must be ordered right after the
+   (the shared tab model), not here: it must be ordered right after the
    per-engine status-marker show rules to win the specificity tie. See audit B7. */
 .view-details td.cell a { color: transparent; }
 .view-details td.cell a:hover { background: rgba(255,255,255,0.35); }

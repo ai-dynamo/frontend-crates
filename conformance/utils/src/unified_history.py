@@ -843,6 +843,8 @@ def _fsync_regular_file(path: Path) -> None:
 
 
 def _fsync_candidate_payload(candidate: Path) -> None:
+    if candidate.is_symlink():
+        raise ValueError(f"transaction candidate must be a regular file or directory: {candidate}")
     if candidate.is_file():
         _fsync_regular_file(candidate)
     elif candidate.is_dir():

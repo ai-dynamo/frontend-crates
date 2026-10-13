@@ -212,7 +212,7 @@ In order:
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
 8. Add or update fixture files (see "Which Fixture Do I Edit?"). What "complete" means is machine-readable: `conformance/case-taxonomy.yaml` lists every case group and sub-case with requiredness. Run `conformance/utils/check.sh coverage --family <family>` — its FAIL list IS your fixture TODO list; a case your grammar cannot express gets a placeholder entry with an `explanation:` instead of silence.
 9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
-10. Verify (`conformance/utils/check.sh`), render the HTML matrix (`conformance/utils/render_table_v2.sh`), and record any intentional divergence (see "How To Record Divergences").
+10. Verify (`conformance/utils/check.sh`), refresh the catalog (`python3 conformance/utils/src/viewer_catalog.py`), reload the root browser viewer over HTTP, and record any intentional divergence (see "How To Record Divergences").
 
 ### Unified parser hard gate
 
@@ -302,10 +302,11 @@ conformance/utils/capture.sh batch-on-stream \
   --capture-dynamo-rust-json /tmp/dynamo_batch_on_stream.json
 ```
 
-Generate the HTML matrix after code or fixture changes:
+Refresh the catalog after fixture or source-metadata changes, then reload the root browser viewer over HTTP:
 
 ```bash
-conformance/utils/render_table_v2.sh
+python3 conformance/utils/src/viewer_catalog.py
+python3 conformance/utils/src/viewer_catalog.py --check
 ```
 
 Run the table and marker regression tests:
@@ -316,7 +317,7 @@ python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
 
 ## Reasoning Migration TODO
 
-Reasoning fixtures are still v1 today. They use `expected.dynamo`, `expected.vllm`, and `expected.sglang`, and the current HTML renderer infers some Python parser exceptions from v1 n/a stubs with no `model_text`.
+Reasoning fixtures are still v1 today. They use `expected.dynamo`, `expected.vllm`, and `expected.sglang`, and the shared JavaScript model preserves inference of some Python parser exceptions from v1 n/a stubs with no `model_text`.
 
 TODO for reasoning v2 migration: move reasoning fixtures to the v2 explicit implementation format before treating the table as the source of truth. The migrated YAML must record parser failures directly, for example:
 

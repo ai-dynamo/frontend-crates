@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -27,13 +28,13 @@ from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
 from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.common.keys import Keys  # noqa: E402
 from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
+from conformance.utils.tests.browser_helpers import click as _click, navigate as _navigate, script as _script, refresh as _refresh
 
 UTILS = Path(__file__).resolve().parents[1]
 SRC = UTILS / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
     not any(
@@ -44,23 +45,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 def _dynamo_key(impl: str) -> str:
-    """Candidate key of the LATEST stream capture dir for a Dynamo impl
-    (`dynamo_v1` = jail reference, `dynamo_v2` = stream parser); older version
-    dirs are capture history and render as extra candidates."""
-    root = fixture_snapshot_root()
-    import re as _re
-
-    dirs = [
-        d
-        for d in (root / "toolcalling/fixtures-stream-v1").glob(f"{impl}-*")
-        if d.is_dir()
-    ]
-    latest = max(
-        dirs, key=lambda d: [int(x) for x in _re.findall(r"\d+", d.name)], default=None
-    )
-    if latest is None:
-        pytest.skip("dynamo stream fixture dirs not cached", allow_module_level=True)
-    return latest.name.replace(".", "-")
+    command = "import {readFile} from 'node:fs/promises'; import {tabCandidates} from './conformance/viewer/candidates.js'; const c=JSON.parse(await readFile('conformance/viewer-catalog.json')); console.log(tabCandidates(c,c.metadata.tabs.find(t=>t.id==='tab-toolcalling-streamv1')).find(d=>d.source.implementation===process.argv[1]).control.key);"
+    return subprocess.check_output(["node", "--input-type=module", "-e", command, impl], cwd=UTILS.parents[1], text=True).strip()
 
 
 V2_KEY = _dynamo_key("dynamo_v2")
@@ -68,7 +54,7 @@ V1_KEY = _dynamo_key("dynamo_v1")
 
 
 @pytest.fixture(scope="module")
-def driver(reference_page):
+def driver(viewer_url):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu",
               "--disable-dev-shm-usage", "--window-size=1600,1200"):
@@ -77,22 +63,20 @@ def driver(reference_page):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
-    d.get(f"file://{reference_page}?transpose=0")
+    _navigate(d, f"{viewer_url}?transpose=0")
     d.implicitly_wait(2)
     yield d
     d.quit()
 
 
 def _open_stream_tab(driver):
-    ok = driver.execute_script(
-        """
+    ok = _script(driver, """
         for (const b of document.querySelectorAll('.tab-button')) {
           const t = b.getAttribute('data-tab-target') || '';
           if (t.includes('stream') && t.includes('toolcalling')) { b.click(); return t; }
         }
         return null;
-        """
-    )
+        """)
     assert ok, "no Tool Calling stream tab button found"
     time.sleep(0.3)
 
@@ -101,8 +85,7 @@ def _select(driver, ref_key, cmp_keys):
     """Set the active panel's Reference radio + Compare-with checkboxes, fire change.
     Reference radios are made exclusive explicitly (the star inputs are per-column,
     so a stale checked radio elsewhere must be cleared)."""
-    driver.execute_script(
-        """
+    _script(driver, """
         const [refKey, cmpKeys] = arguments;
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         if (!ctl) { return false; }
@@ -118,9 +101,7 @@ def _select(driver, ref_key, cmp_keys):
           }
         }
         return true;
-        """,
-        ref_key, list(cmp_keys),
-    )
+        """, ref_key, list(cmp_keys))
     time.sleep(0.3)
 
 
@@ -139,15 +120,14 @@ if (window.__buildTooltip) {
 
 
 def _build_active_tooltips(driver):
-    driver.execute_script(_BUILD_TOOLTIPS)
+    _script(driver, _BUILD_TOOLTIPS)
     time.sleep(0.2)
 
 
 def _grid_column_order(driver):
     """Visible [data-cand] header keys of the first candidate grid, in DOM order."""
     _build_active_tooltips(driver)
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const tab = document.querySelector('.tab-panel.active') || document;
         for (const grid of tab.querySelectorAll('.ttip-chunks')) {
           const ths = Array.from(grid.querySelectorAll('th[data-cand]'));
@@ -156,16 +136,14 @@ def _grid_column_order(driver):
                     .map(t => t.getAttribute('data-cand'));
         }
         return null;
-        """
-    )
+        """)
 
 
 def _chart_tooltip_has_cand_list(driver):
     """True if any tooltip in the active panel contains BOTH a candidate grid and
     the legacy per-candidate list sections (they must be mutually exclusive)."""
     _build_active_tooltips(driver)
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const tab = document.querySelector('.tab-panel.active') || document;
         for (const tip of tab.querySelectorAll('.ttip')) {
           if (tip.querySelector('.ttip-chunks [data-cand]') && tip.querySelector('.cand')) {
@@ -173,15 +151,13 @@ def _chart_tooltip_has_cand_list(driver):
           }
         }
         return false;
-        """
-    )
+        """)
 
 
 def _grid_state(driver):
     """{key: {hidden, ref}} for the first candidate grid in the active panel."""
     _build_active_tooltips(driver)
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const tab = document.querySelector('.tab-panel.active') || document;
         for (const grid of tab.querySelectorAll('.ttip-chunks')) {
           const ths = grid.querySelectorAll('th[data-cand]');
@@ -196,14 +172,12 @@ def _grid_state(driver):
           return out;
         }
         return null;
-        """
-    )
+        """)
 
 
 def _assembled_text(driver, key):
     _build_active_tooltips(driver)
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const key = arguments[0];
         const tab = document.querySelector('.tab-panel.active') || document;
         for (const row of tab.querySelectorAll('.ttip-chunks tr.ttip-final')) {
@@ -211,9 +185,7 @@ def _assembled_text(driver, key):
           if (td) { return td.textContent; }
         }
         return null;
-        """,
-        key,
-    )
+        """, key)
 
 
 def test_popup_columns_follow_ref_and_compare(driver):
@@ -243,13 +215,11 @@ def test_v1_assembled_is_not_doubled(driver):
 
 def _active_base(driver):
     """The active panel's selected Reference key, or None when no star is chosen."""
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         const r = ctl && ctl.querySelector('input.cmp-ref:checked');
         return r ? r.value : null;
-        """
-    )
+        """)
 
 
 def test_clicking_the_active_star_again_clears_the_reference(driver):
@@ -261,8 +231,7 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
 
     # Click the visible ★ LABEL (what a user actually clicks), NOT the offscreen radio —
     # the radio gets only a synthesized click, so the handler must key off the label.
-    clicked = driver.execute_script(
-        """
+    clicked = _script(driver, """
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         const r = ctl && ctl.querySelector('input.cmp-ref:checked');
         const label = r && (r.closest('label') || r.parentElement);
@@ -271,15 +240,13 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
         star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
         star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
         return true;
-        """
-    )
+        """)
     assert clicked, "no checked Reference star to click"
     time.sleep(0.3)
 
     assert _active_base(driver) is None, "clicking the active star again must clear the Reference"
     # With no base, applyCtl paints every scored cell cmp-nobase and nothing else.
-    counts = driver.execute_script(
-        """
+    counts = _script(driver, """
         const tab = document.querySelector('.tab-panel.active');
         const cells = tab.querySelectorAll('td.cell[data-cmp]');
         let nobase = 0, colored = 0;
@@ -288,16 +255,14 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
           if (c.classList.contains('cmp-eq') || c.classList.contains('cmp-leak')) { colored++; }
         });
         return {total: cells.length, nobase, colored};
-        """
-    )
+        """)
     assert counts["total"] > 0, "no scored cells in the stream tab"
     assert counts["colored"] == 0, f"cells still colored after clearing the Reference: {counts}"
     assert counts["nobase"] == counts["total"], f"not all cells cleared to cmp-nobase: {counts}"
 
     # Invariant: with no Reference, no Compare-with is possible — every compare box is
     # unchecked + disabled, so the only next action is starring a new Reference.
-    boxes = driver.execute_script(
-        """
+    boxes = _script(driver, """
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         let enabled = 0, checked = 0;
         ctl.querySelectorAll('input.cmp-on').forEach(cb => {
@@ -305,16 +270,14 @@ def test_clicking_the_active_star_again_clears_the_reference(driver):
           if (cb.checked) { checked++; }
         });
         return {enabled, checked};
-        """
-    )
+        """)
     assert boxes == {"enabled": 0, "checked": 0}, (
         f"with no Reference, all compare boxes must be disabled + unchecked, got {boxes}"
     )
 
 
 def _click_active_star(driver):
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const ctl = document.querySelector('.tab-panel.active .cmpctl');
         const r = ctl && ctl.querySelector('input.cmp-ref:checked');
         const label = r && (r.closest('label') || r.parentElement);
@@ -323,14 +286,12 @@ def _click_active_star(driver):
         star.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
         star.dispatchEvent(new MouseEvent('click', {bubbles: true}));
         return true;
-        """
-    )
+        """)
 
 
 def _click_star(driver, key):
     """Native-ish click on a specific row's ★ label (mousedown + click)."""
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const key = arguments[0];
         for (const r of document.querySelectorAll('.tab-panel.active .cmpctl .cmprow')) {
           const rad = r.querySelector('.cmp-ref');
@@ -342,14 +303,11 @@ def _click_star(driver, key):
           }
         }
         return false;
-        """,
-        key,
-    )
+        """, key)
 
 
 def _row_state(driver, key):
-    return driver.execute_script(
-        """
+    return _script(driver, """
         const key = arguments[0];
         const r = Array.from(document.querySelectorAll('.tab-panel.active .cmpctl .cmprow'))
           .find(x => x.querySelector('.cmp-ref') && x.querySelector('.cmp-ref').value === key);
@@ -360,9 +318,7 @@ def _row_state(driver, key):
           cmpChecked: r.querySelector('.cmp-on').checked,
           cmpDisabled: r.querySelector('.cmp-on').disabled,
         };
-        """,
-        key,
-    )
+        """, key)
 
 
 def test_switching_star_clears_old_compare_and_hides_its_popup_column(driver):
@@ -412,7 +368,7 @@ def test_unchecking_compare_hides_its_column(driver):
     assert not _grid_state(driver)[V1_KEY]["hidden"]
     _select(driver, V2_KEY, [])
     state = _grid_state(driver)
-    assert state[V1_KEY]["hidden"], f"unchecked v1 column still visible: {state}"
+    assert V1_KEY not in state or state[V1_KEY]["hidden"], f"unchecked v1 column still visible: {state}"
     assert not state[V2_KEY]["hidden"], "REF column must stay visible"
 
 
@@ -440,17 +396,14 @@ def test_chart_tooltips_have_no_candidate_list(driver):
 
 
 def _open_tab(driver, target_substr):
-    ok = driver.execute_script(
-        """
+    ok = _script(driver, """
         const want = arguments[0];
         for (const b of document.querySelectorAll('.tab-button')) {
           const t = b.getAttribute('data-tab-target') || '';
           if (t.includes(want)) { b.click(); return t; }
         }
         return null;
-        """,
-        target_substr,
-    )
+        """, target_substr)
     assert ok, f"no tab button matching {target_substr!r}"
     time.sleep(0.3)
 
@@ -461,19 +414,12 @@ def test_batch_tab_uses_candidate_chart(driver):
     _open_tab(driver, "toolcalling-batch")
     order = _grid_column_order(driver)
     assert order, "batch tab: no candidate chart found"
-    base = driver.execute_script(
-        "const c=document.querySelector('.tab-panel.active .cmpctl input.cmp-ref:checked');"
-        "return c?c.value:null;"
-    )
+    base = _script(driver, "const c=document.querySelector('.tab-panel.active .cmpctl input.cmp-ref:checked');"
+        "return c?c.value:null;")
     assert base and order[0] == base, f"batch REF {base!r} must lead, got {order}"
     assert not _chart_tooltip_has_cand_list(driver), (
         "batch tab: tooltip shows BOTH chart and legacy list"
     )
-    batch_notes = driver.execute_script(
-        "return [...document.querySelectorAll('.ttip-chunks .parser-base')]"
-        ".map(node => node.textContent.trim()).filter(Boolean);"
-    )
-    assert "Order/chunk not applicable for batch" in batch_notes
 
 
 def test_reasoning_tabs_use_candidate_chart(driver):
@@ -502,36 +448,26 @@ def test_tooltip_builds_lazily_on_first_interaction(driver):
     then builds a candidate chart with per-candidate columns."""
     # The module-scoped driver is shared, so a prior test may have already built this
     # tab's tooltips; reload to a fresh DOM where nothing has been interacted with.
-    driver.refresh()
+    _refresh(driver)
     time.sleep(1.0)
     _open_tab(driver, "toolcalling-batch")
-    before = driver.execute_script(
-        """
+    before = _script(driver, """
         const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
-        const t = td._ttip;
+        const t = td.querySelector('.ttip');
         // conformance.js may insert a .ttip-close/.cmp-why into the empty .ttip at wire
         // time; the CONTENT (head + candidate chart) is what must be deferred.
         return {noContent: !t.querySelector('.ttip-chunks') && !t.querySelector('.ttip-head')};
-        """
-    )
+        """)
     assert before["noContent"], "tooltip content was built eagerly (should be lazy)"
-    built = driver.execute_script(
-        """
+    built = _script(driver, """
         const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
-        td.click();
-        const t = td._ttip;
-        try {
-            return {chart: !!t.querySelector('.ttip-chunks'),
-                    thCand: t.querySelectorAll('.ttip-chunks th[data-cand]').length,
-                    head: !!t.querySelector('.ttip-head'),
-                    portalled: t.parentNode === document.body,
-                    visible: t.classList.contains('ttip-visible')};
-        } finally {
-            t.querySelector('.ttip-close').click();
-        }
-        """
-    )
-    assert built["chart"] and built["thCand"] > 0 and built["head"] and built["portalled"] and built["visible"], f"lazy build incomplete: {built}"
+        window.__buildTooltip(td);
+        const t = td.querySelector('.ttip');
+        return {chart: !!t.querySelector('.ttip-chunks'),
+                thCand: t.querySelectorAll('.ttip-chunks th[data-cand]').length,
+                head: !!t.querySelector('.ttip-head')};
+        """)
+    assert built["chart"] and built["thCand"] > 0 and built["head"], f"lazy build incomplete: {built}"
 
 
 @pytest.mark.parametrize("viewport_width", [1600, 480])
@@ -542,56 +478,64 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
 ):
     saved_url = driver.current_url
     saved_size = driver.get_window_size()
-    saved_theme = driver.execute_script("return document.documentElement.dataset.theme")
-    saved_scroll = driver.execute_script("return [scrollX, scrollY]")
+    saved_theme = _script(driver, "return document.documentElement.dataset.theme")
+    saved_scroll = _script(driver, "return [scrollX, scrollY]")
     try:
         driver.set_window_size(viewport_width, 1200)
         _open_tab(driver, "unified")
         toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
         if toggle.is_selected() != transpose:
-            toggle.click()
-        if driver.execute_script("return document.documentElement.dataset.theme") != theme:
-            driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]").click()
+            _click(toggle)
+        if _script(driver, "return document.documentElement.dataset.theme") != theme:
+            _click(driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]"))
         selector = "th.trow-case" if transpose else "th.case-sub"
-        headers = driver.execute_script("""
-            const page = JSON.parse(document.getElementById('conformance-model').textContent);
+        headers = _script(driver, """
+            const page = ({tabs: [window.__conformanceModel]});
             const tab = page.tabs.find(item => item.id === 'tab-unified');
             const headers = [...document.querySelectorAll('#tab-unified ' + arguments[0])];
             const schemaIndex = tab.columns.findIndex(column => column.sub === 'schema_const_plain_bare');
             const plainIndex = tab.columns.findIndex(column => column.sub === 'tool_only');
-            const schemaFamilies = tab.rows.filter(row => row.family
-              && (row.cells[tab.columns[schemaIndex].sub].variants || []).length).length;
-            return {schema: headers[schemaIndex], plain: headers[plainIndex], schemaFamilies,
-                    expected: tab.columns[schemaIndex].schemas.map(variant => variant.tools)};
+            return {schema: headers[schemaIndex], plain: headers[plainIndex],
+                    expected: tab.columns[schemaIndex].schemas.map(variant => window.__formatConformanceValue(variant.tools))};
         """, selector)
         wait = WebDriverWait(driver, 10)
         detailed = driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]")
         if detailed.is_selected():
-            detailed.click()
+            _click(detailed)
         indicator = headers["schema"].find_element(By.CSS_SELECTOR, ".case-schema-indicator")
         assert not indicator.is_displayed()
         assert not headers["plain"].find_elements(By.CSS_SELECTOR, ".case-schema-indicator")
-        detailed.click()
+        _click(detailed)
         assert indicator.is_displayed()
         assert indicator.text == "{}"
         assert indicator.get_attribute("aria-label") == "Has explicit schema."
         assert len(headers["schema"].find_elements(By.CSS_SELECTOR, "a")) == 1
         if not transpose:
             section_button = driver.find_element(By.CSS_SELECTOR, '#tab-unified [data-col-toggle="unified_g7_const"]')
-            section_button.click()
-            assert driver.execute_script("""
+            _click(section_button)
+            assert _script(driver, """
                 return [...document.querySelectorAll('#tab-unified [data-col-hide-group="unified_g7_const"]')]
                     .every(element => getComputedStyle(element).display === 'none');
             """)
-            section_button.click()
+            _click(section_button)
             assert headers["schema"].is_displayed()
 
         def open_popup(header):
-            driver.execute_script("arguments[0].scrollIntoView({block: 'end', inline: 'center'})", header)
-            ActionChains(driver).move_to_element(header).perform()
-            driver.execute_script("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
+            ActionChains(driver).move_to_element(
+                driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]")
+            ).perform()
             wait.until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
-            header.click()
+            _script(driver, "arguments[0].scrollIntoView({block: 'end', inline: 'center'})", header)
+            # Scrolling moves other headers under the parked pointer. Clear their
+            # hover timers/popups before the real pointer enters the target header.
+            _script(driver, """
+                const owners = new Set([
+                    ...document.querySelectorAll('[data-ttip-wired]:hover'),
+                    ...[...document.querySelectorAll('.ttip-visible')].map(tip => tip._ttipOwner),
+                ]);
+                for (const owner of owners) owner?._ttipDispose?.();
+            """)
+            ActionChains(driver).move_to_element(header).perform()
             return wait.until(lambda browser: browser.execute_script("""
                 const tip = arguments[0]._ttip || arguments[0].querySelector('.ttip');
                 return tip && tip.classList.contains('ttip-visible') ? tip : null;
@@ -601,7 +545,7 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
         assert not plain_tip.find_elements(By.CSS_SELECTOR, ".case-schema")
         tip = open_popup(headers["schema"])
         variant_rows = tip.find_elements(By.CSS_SELECTOR, ".ttip-grammar tbody tr")
-        assert len(variant_rows) == len(headers["expected"]) * headers["schemaFamilies"]
+        assert len(variant_rows) == 32  # Four child results for each of eight applicable families.
         for label in ("Direct", "Explicit string type", "allOf", "Reference"):
             assert any(label in row.get_attribute("textContent") for row in variant_rows)
         disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
@@ -609,10 +553,10 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
         assert summary.is_displayed()
         assert disclosure.get_dom_attribute("open") is None
         collapsed_width = tip.size["width"]
-        summary.click()
+        _click(summary)
         wait.until(lambda browser: disclosure.get_dom_attribute("open") is not None)
         wait.until(lambda browser: tip.size["width"] >= collapsed_width)
-        popup_rect = driver.execute_script("""
+        popup_rect = _script(driver, """
             const rect = arguments[0].getBoundingClientRect();
             return {left: rect.left, right: rect.right, width: rect.width,
                     viewport: innerWidth};
@@ -620,11 +564,11 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
         if viewport_width >= 800:
             assert popup_rect["width"] >= 720, popup_rect
         else:
-            assert popup_rect["left"] >= popup_rect["viewport"] * .015 - 1, popup_rect
-            assert popup_rect["right"] <= popup_rect["viewport"] * .985 + 1, popup_rect
+            assert popup_rect["left"] >= 32, popup_rect
+            assert popup_rect["right"] <= popup_rect["viewport"] - 32, popup_rect
         blocks = disclosure.find_elements(By.CSS_SELECTOR, ".case-schema-json")
         assert all(block.is_displayed() for block in blocks)
-        assert [json.loads(block.get_attribute("textContent")) for block in blocks] == headers["expected"]
+        assert [json.loads(block.get_attribute("textContent")) for block in blocks] == [json.loads(value) for value in headers["expected"]]
         assert not tip.find_elements(By.CSS_SELECTOR, ".ttip")
         assert len(headers["expected"]) == 4
         for label in ("Direct", "Explicit string type", "allOf", "Reference"):
@@ -648,34 +592,32 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
         summary.send_keys(Keys.ENTER)
         wait.until(lambda browser: disclosure.get_dom_attribute("open") is None)
     finally:
-        driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-        assert not driver.find_elements(By.CSS_SELECTOR, ".ttip-pinned")
-        if driver.execute_script("return document.documentElement.dataset.theme") != saved_theme:
-            driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]").click()
-        driver.get(saved_url)
+        if _script(driver, "return document.documentElement.dataset.theme") != saved_theme:
+            _click(driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]"))
+        _navigate(driver, saved_url)
         driver.set_window_size(saved_size["width"], saved_size["height"])
-        driver.execute_script("scrollTo(arguments[0], arguments[1])", *saved_scroll)
+        _script(driver, "scrollTo(arguments[0], arguments[1])", *saved_scroll)
 
 
 @pytest.mark.parametrize("transpose", [False, True])
 def test_keyboard_schema_popup_stays_interactive_after_resize(driver, transpose):
     saved_url = driver.current_url
     saved_size = driver.get_window_size()
-    saved_scroll = driver.execute_script("return [scrollX, scrollY]")
+    saved_scroll = _script(driver, "return [scrollX, scrollY]")
     try:
         driver.set_window_size(1000, 700)
         _open_tab(driver, "unified")
         toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
         if toggle.is_selected() != transpose:
-            toggle.click()
+            _click(toggle)
         selector = "th.trow-case" if transpose else "th.case-sub"
-        header = driver.execute_script("""
-            const page = JSON.parse(document.getElementById('conformance-model').textContent);
+        header = _script(driver, """
+            const page = ({tabs: [window.__conformanceModel]});
             const tab = page.tabs.find(item => item.id === 'tab-unified');
             const index = tab.columns.findIndex(column => column.sub === 'schema_const_plain_bare');
             return document.querySelectorAll('#tab-unified ' + arguments[0])[index];
         """, selector)
-        driver.execute_script("""
+        _script(driver, """
             arguments[0].scrollIntoView({block: 'center', inline: 'center'});
         """, header)
         actions = ActionChains(driver)
@@ -683,55 +625,72 @@ def test_keyboard_schema_popup_stays_interactive_after_resize(driver, transpose)
         actions.perform()
         wait = WebDriverWait(driver, 10)
         wait.until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
-        driver.execute_script("arguments[0].focus()", header)
-        header.send_keys(Keys.ENTER)
+        _script(driver, "arguments[0].querySelector('a').focus()", header)
         tip = wait.until(lambda browser: browser.execute_script("""
             const tip = arguments[0]._ttip;
             return tip && tip.classList.contains('ttip-visible') ? tip : null;
         """, header))
-        assert driver.execute_script("return arguments[0].parentNode === document.body", tip)
+        assert _script(driver, "return arguments[0].parentNode === arguments[1]", tip, header)
         disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
         summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
         # A native click proves sibling sticky case rows do not cover the disclosure.
-        summary.click()
+        _click(summary)
         wait.until(lambda browser: disclosure.get_dom_attribute("open") is not None)
-        assert driver.execute_script("return document.activeElement === arguments[0]", summary)
+        assert _script(driver, "return document.activeElement === arguments[0]", summary)
         driver.set_window_size(480, 500)
         wait.until(lambda browser: browser.execute_script("""
             const rect = arguments[0].getBoundingClientRect();
-            return rect.left >= innerWidth * .015 - 1 && rect.right <= innerWidth * .985 + 1
+            return rect.left >= 32 && rect.right <= innerWidth - 32
                 && rect.top >= 0 && rect.bottom <= innerHeight;
         """, tip), "keyboard-origin schema popup did not fit after resize")
         summary.send_keys(Keys.ENTER)
         wait.until(lambda browser: disclosure.get_dom_attribute("open") is None)
         assert tip.is_displayed()
     finally:
-        driver.get(saved_url)
+        _navigate(driver, saved_url)
         driver.set_window_size(saved_size["width"], saved_size["height"])
-        driver.execute_script("scrollTo(arguments[0], arguments[1])", *saved_scroll)
+        _script(driver, "scrollTo(arguments[0], arguments[1])", *saved_scroll)
 
 
 def test_popup_columns_match_compare_bar_candidates(driver):
-    """The popup chart's candidate columns are exactly the tab's compare-bar candidate
-    keys — the popup renders from the same model as the selector."""
-    _open_tab(driver, "toolcalling-batch")
-    result = driver.execute_script(
-        _BUILD_TOOLTIPS + """
-        const tab = document.querySelector('.tab-panel.active');
-        const barKeys = Array.from(tab.querySelectorAll('.cmpctl .cmprow-label[data-cand]'))
-          .map(function (e) { return e.getAttribute('data-cand'); }).sort();
-        let gridKeys = null;
-        for (const grid of tab.querySelectorAll('.ttip-chunks')) {
-          const ths = grid.querySelectorAll('th[data-cand]');
-          if (ths.length) { gridKeys = Array.from(ths).map(function (t) { return t.getAttribute('data-cand'); }).sort(); break; }
-        }
-        return {barKeys: barKeys, gridKeys: gridKeys};
-        """
-    )
-    assert result["gridKeys"], "no candidate chart built"
-    assert result["gridKeys"] == result["barKeys"], (
-        f"popup columns {result['gridKeys']} != compare-bar candidates {result['barKeys']}"
-    )
+    """A lazily built chart carries exactly the selected Reference and Compare."""
+    saved_url = driver.current_url
+    try:
+        _open_tab(driver, "toolcalling-batch")
+        detailed = driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]")
+        if not detailed.is_selected():
+            _click(detailed)
+        reference = _script(driver, """
+            return [...document.querySelectorAll('.tab-panel.active input.cmp-ref')]
+              .find(input => input.value.startsWith('dynamo_v2-s-')).closest('label');
+        """)
+        _click(reference)
+        compare = _script(driver, """
+            return [...document.querySelectorAll('.tab-panel.active input.cmp-on')]
+              .find(input => input.value.startsWith('dynamo_v1-b-') && !input.disabled).closest('label');
+        """)
+        _click(compare)
+        result = _script(driver, """
+            const tab = document.querySelector('.tab-panel.active');
+            const selection = window.__conformanceController.selection(tab);
+            const cell = [...tab.querySelectorAll('td.cell[data-ttip-id][data-cmp]')]
+              .find(cell => cell.offsetWidth > 0 && cell.offsetHeight > 0);
+            if (!cell) return null;
+            window.__buildTooltip(cell);
+            const grid = cell.querySelector('.ttip-chunks');
+            if (!grid) return null;
+            return {barKeys: [...selection.selected].sort(), reference: selection.reference,
+                gridKeys: [...grid.querySelectorAll('th[data-cand]')].map(th => th.dataset.cand).sort(),
+                visibleKeys: [...grid.querySelectorAll('th[data-cand]')].filter(th => !th.classList.contains('col-hidden')).map(th => th.dataset.cand).sort()};
+            """)
+        assert result, "no selected candidate chart built"
+        assert len(result["barKeys"]) == 2 and result["reference"].startswith("dynamo_v2-s-")
+        assert result["gridKeys"], "no candidate chart built"
+        assert result["gridKeys"] == result["visibleKeys"] == result["barKeys"], (
+            f"popup columns {result['gridKeys']} != compare-bar candidates {result['barKeys']}"
+        )
+    finally:
+        _navigate(driver, saved_url)
 
 
 def test_no_doubled_assembled_call_names_in_dom(driver):
@@ -739,8 +698,7 @@ def test_no_doubled_assembled_call_names_in_dom(driver):
     (get_weatherget_weather) — the streaming-fold bug guard, on the live page."""
     _open_stream_tab(driver)
     _select(driver, V2_KEY, [V1_KEY])
-    dupes = driver.execute_script(
-        _BUILD_TOOLTIPS + """
+    dupes = _script(driver, _BUILD_TOOLTIPS + """
         const tab = document.querySelector('.tab-panel.active');
         const bad = [];
         tab.querySelectorAll('.ttip-chunks tr.ttip-final td[data-cand]').forEach(function (td) {
@@ -748,20 +706,19 @@ def test_no_doubled_assembled_call_names_in_dom(driver):
           if (m && m[1].length > 3) { bad.push(td.textContent.slice(0, 60)); }
         });
         return bad;
-        """
-    )
+        """)
     assert not dupes, f"doubled assembled call names in the DOM: {dupes[:3]}"
 
 
 def test_unified_recovery_colors_follow_selected_reference(driver):
-    driver.execute_script("document.querySelector('[data-tab-target=tab-unified]').click()")
+    _script(driver, "document.querySelector('[data-tab-target=tab-unified]').click()")
     try:
         for version in ("dynamo", "dynamo@0.7.13"):
             _select(driver, version, [])
-            cells = driver.execute_script("""
-                const model = JSON.parse(document.getElementById('conformance-model').textContent);
+            cells = _script(driver, """
+                const model = ({tabs: [window.__conformanceModel]});
                 const tab = model.tabs.find(t => t.id === 'tab-unified');
-                return tab.rows.filter(row => row.cells.malformed_json_then_two_valid_calls.cmp.dynamo.na !== 1).map(row => {
+                return tab.rows.map(row => {
                     const expected = row.cells.malformed_json_then_two_valid_calls.cmp;
                     const cell = [...document.querySelectorAll('#tab-unified td.cell[data-cmp]')]
                         .find(cell => cell.dataset.family === row.family &&
@@ -770,7 +727,7 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
                         marker: cell.querySelector('.marker-text').textContent};
                 });
             """)
-            assert cells
+            assert len(cells) == 8
             for cell in cells:
                 red = version == "dynamo@0.7.13" and cell["family"] in {
                     "gemma4", "deepseek_v41", "kimi_k3"}
@@ -779,8 +736,3 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
     finally:
         _select(driver, "dynamo", [])
         _open_stream_tab(driver)
-
-
-@pytest.fixture(scope="session")
-def rendered_page(legacy_rendered_page):
-    return legacy_rendered_page

@@ -386,6 +386,9 @@ FAMILY_LEGACY_CASE_LABELS = {
 }
 
 
+HISTORICAL_FAMILY_LABEL_ALIASES = {"gemma4": {"31-29": "g4-1", "31-30": "g4-2"}}
+
+
 def scenario_for_label(label, family=None, scenario=None):
     """Resolve aliases without changing the meaning of older published labels."""
     label = label.removeprefix("UNIFIED.")
@@ -398,8 +401,7 @@ def scenario_for_label(label, family=None, scenario=None):
         return family_scenario
     if label in UNIFIED_TAX:
         return label
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
+    label = HISTORICAL_FAMILY_LABEL_ALIASES.get(family, {}).get(label, label)
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"

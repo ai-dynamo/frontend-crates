@@ -39,6 +39,7 @@ from dynamo_version import capture_source_fingerprint
 import fixture_disposition
 import stream_capture_archive
 import unified_history
+import viewer_catalog
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -697,7 +698,7 @@ def package_snapshot(
         loose_root.mkdir()
         blobs_dir.mkdir()
 
-        with unified_history._store_mutation_lock(UNIFIED_HISTORY_DIR):
+        with viewer_catalog.catalog_generation(ROOT) as generation:
             print("\nStaging fixture trees…")
             trees = (
                 ["toolcalling/fixtures-stream-v1"]
@@ -782,9 +783,15 @@ def package_snapshot(
                 print(f"\n[dry-run] validated candidate manifest for: {manifest_path}")
                 return
 
+            candidate_catalog = transaction_root / "viewer-catalog.json"
+            viewer_catalog.refresh_catalog(
+                ROOT, destination=candidate_catalog, fixtures=candidate_fixtures,
+                unified=candidate_history, manifest=candidate_manifest, generation=generation,
+            )
             publish_paths = [
                 (candidate_fixtures, FIXTURES_DIR),
                 (candidate_manifest, manifest_path),
+                (candidate_catalog, conformance_root / "viewer-catalog.json"),
             ]
             if not stream_only:
                 publish_paths.insert(0, (candidate_history, UNIFIED_HISTORY_DIR))
