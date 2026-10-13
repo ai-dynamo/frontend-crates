@@ -256,6 +256,7 @@ accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
 unchanged; forwarding and raw-content hashing still use the original bytes.
 PNG EXIF includes `eXIf` chunks and legacy `Raw profile type exif` tEXt/zTXt
 profiles, including trailing text metadata, with a 1 MiB profile-text cap.
+The cap applies to both encodings; for plain tEXt it is stricter than Pillow.
 Competing tEXt/zTXt profiles are rejected. XMP-only orientation is outside
 these EXIF APIs; Pillow also supports that separate fallback.
 

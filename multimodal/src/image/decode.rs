@@ -797,4 +797,47 @@ mod tests {
             (4, 6)
         );
     }
+
+    #[test]
+    fn legacy_png_metadata_skips_corrupt_idat_before_checking_limits() {
+        let hex = exif(6, false)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
+        let profile = format!("\nexif\n0\n{hex}\n");
+        for compressed in [false, true] {
+            let mut bytes = Vec::new();
+            let mut encoder = png::Encoder::new(&mut bytes, 6, 4);
+            encoder.set_color(png::ColorType::Rgb);
+            let mut writer = encoder.write_header().unwrap();
+            // The writer supplies a correct CRC for deliberately invalid zlib.
+            writer.write_chunk(png::chunk::IDAT, b"not zlib").unwrap();
+            if compressed {
+                writer
+                    .write_text_chunk(&png::text_metadata::ZTXtChunk::new(
+                        PNG_EXIF_KEYWORD,
+                        &profile,
+                    ))
+                    .unwrap();
+            } else {
+                writer
+                    .write_text_chunk(&png::text_metadata::TEXtChunk::new(
+                        PNG_EXIF_KEYWORD,
+                        &profile,
+                    ))
+                    .unwrap();
+            }
+            writer.finish().unwrap();
+            assert!(decode_rgb(&bytes, &DecodeLimits::default()).is_err());
+            assert_eq!(dimensions_exif_transposed(&bytes).unwrap(), (6, 4));
+            let limits = DecodeLimits {
+                max_height: Some(5),
+                ..DecodeLimits::default()
+            };
+            assert!(matches!(
+                decode_rgb_exif_transposed(&bytes, &limits),
+                Err(MmError::LimitExceeded { .. })
+            ));
+        }
+    }
 }
