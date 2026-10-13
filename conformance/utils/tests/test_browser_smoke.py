@@ -81,7 +81,7 @@ observer.observe(document, {childList: true, subtree: true, attributes: true});
 """
 
 
-def _chrome(rendered_page, force_hover):
+def _chrome(reference_page, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
@@ -91,20 +91,20 @@ def _chrome(rendered_page, force_hover):
         pytest.skip(f"could not start Chrome webdriver: {exc}")
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    d.get(f"file://{rendered_page}?transpose=0")
+    d.get(f"file://{reference_page}?transpose=0")
     d.implicitly_wait(2)
     return d
 
 
 @pytest.fixture(scope="module")
-def driver(rendered_page):
-    d = _chrome(rendered_page, force_hover=True)
+def driver(reference_page):
+    d = _chrome(reference_page, force_hover=True)
     yield d
     d.quit()
 
 
 @pytest.fixture(scope="module")
-def unforced_driver(rendered_page):
+def unforced_driver(reference_page):
     """Chrome with its REAL media-query values — no matchMedia patch.
 
     Headless Chrome reports `(hover: hover)` and `(any-hover: hover)` false, which is
@@ -112,13 +112,13 @@ def unforced_driver(rendered_page):
     other lane forces those true and therefore cannot observe that failure. This is the
     negative control: it must pass while the browser claims no hover capability.
     """
-    d = _chrome(rendered_page, force_hover=False)
+    d = _chrome(reference_page, force_hover=False)
     yield d
     d.quit()
 
 
 @pytest.fixture(scope="module")
-def touch_driver(rendered_page):
+def touch_driver(reference_page):
     """A driver on the TOUCH branch — no matchMedia patch, so `(hover: hover)` is false.
 
     Tap-to-pin only exists here: pinning is modal, so a mouse click must never pin or it
@@ -129,7 +129,7 @@ def touch_driver(rendered_page):
     emulation was tried first and deadlocks ActionChains. This fixture is what keeps the
     pin machinery under test.
     """
-    d = _chrome(rendered_page, force_hover=False)
+    d = _chrome(reference_page, force_hover=False)
     yield d
     d.quit()
 
@@ -282,6 +282,7 @@ def test_hover_shows_tooltip(driver):
 
 
 def test_column_toggle_hint_is_anchored_to_the_button(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -303,6 +304,7 @@ def test_column_toggle_hint_is_anchored_to_the_button(driver):
 
 
 def test_column_toggle_hover_opens_its_tooltip(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -426,6 +428,7 @@ def test_focus_tooltip_stays_in_tab_order(driver):
 
 
 def test_column_toggle_reuses_its_portalled_tooltip(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -680,8 +683,8 @@ def _set_transpose(driver, on):
 
 @pytest.mark.parametrize("override,expected", [("", False), ("1", True), ("true", True),
                                                ("0", False), ("false", False)])
-def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_page, override, expected):
-    url = f"file://{rendered_page}?tab=tab-unified"
+def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, reference_page, override, expected):
+    url = f"file://{reference_page}?tab=tab-unified"
     try:
         driver.get(url + ("&transpose=" + override if override else ""))
         toggle = driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]')
@@ -698,20 +701,20 @@ def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_pa
             assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
             assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == selected
     finally:
-        driver.get(f"file://{rendered_page}?transpose=0")
+        driver.get(f"file://{reference_page}?transpose=0")
 
 
 @pytest.mark.parametrize("override,expected", [("", "horizontal"), ("1", "transpose"),
                                                ("true", "transpose"), ("0", "horizontal"),
                                                ("false", "horizontal")])
-def test_first_visible_matrix_matches_transpose_url(rendered_page, override, expected):
-    d = _chrome(rendered_page, force_hover=False)
+def test_first_visible_matrix_matches_transpose_url(reference_page, override, expected):
+    d = _chrome(reference_page, force_hover=False)
     try:
         d.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS},
         )
-        url = f"file://{rendered_page}" + ("?transpose=" + override if override else "")
+        url = f"file://{reference_page}" + ("?transpose=" + override if override else "")
         d.get(url)
         first = d.execute_script("return window.__firstVisibleMatrix")
         insertion = d.execute_script("return window.__firstMatrixInsertion")
@@ -732,9 +735,9 @@ def test_first_visible_matrix_matches_transpose_url(rendered_page, override, exp
         d.quit()
 
 
-def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rendered_page):
+def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, reference_page):
     try:
-        driver.get(f"file://{rendered_page}?tab=tab-unified")
+        driver.get(f"file://{reference_page}?tab=tab-unified&view=details")
         header = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a")
         full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
         short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
@@ -867,7 +870,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             assert cell.value_of_css_property("text-align") == "left"
             assert cell.value_of_css_property("padding-left") == "8px"
     finally:
-        driver.get(f"file://{rendered_page}?transpose=0")
+        driver.get(f"file://{reference_page}?transpose=0")
 
 
 def test_transpose_builds_mirror_and_colors(driver):
@@ -1309,8 +1312,8 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
 
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
-def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
-    driver.get(f"file://{rendered_page}?view=details&transpose=0")
+def test_matrix_labels_stay_visible_when_scrolled(driver, reference_page, transposed):
+    driver.get(f"file://{reference_page}?tab=tab-toolcalling-batch&view=details&transpose=0")
     if transposed:
         toggled = driver.execute_script(
             """
@@ -1363,13 +1366,13 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transpo
         assert abs(result["afterLeft"] - result["headerLeft"]) < 2
         assert result["labelWidth"] > 0 and result["headerWidth"] > 0
     finally:
-        driver.get(f"file://{rendered_page}")
+        driver.get(f"file://{reference_page}")
 
 
-def test_popup_headings_include_compact_references(driver, rendered_page):
+def test_popup_headings_include_compact_references(driver, reference_page):
     try:
         for transpose in ("0", "1"):
-            driver.get(f"file://{rendered_page}?tab=tab-unified&transpose={transpose}")
+            driver.get(f"file://{reference_page}?tab=tab-unified&transpose={transpose}")
             table = "#tab-unified table[data-transpose-table]" if transpose == "1" else "#tab-unified table:not([data-transpose-table])"
             header_selector = "th.trow-case" if transpose == "1" else "th.case-sub"
             for prefix in ("1-", "deepseek_v41-", "7-arg_json_null"):
@@ -1405,4 +1408,4 @@ def test_popup_headings_include_compact_references(driver, rendered_page):
                     assert float(number.value_of_css_property("font-size")[:-2]) < float(heading.value_of_css_property("font-size")[:-2])
                     assert heading.find_element(By.CSS_SELECTOR, "span[title]").get_attribute("title").startswith("UNIFIED.")
     finally:
-        driver.get(f"file://{rendered_page}?tab=tab-unified&transpose=0")
+        driver.get(f"file://{reference_page}?tab=tab-unified&transpose=0")

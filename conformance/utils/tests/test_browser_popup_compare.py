@@ -68,7 +68,7 @@ V1_KEY = _dynamo_key("dynamo_v1")
 
 
 @pytest.fixture(scope="module")
-def driver(rendered_page):
+def driver(reference_page):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu",
               "--disable-dev-shm-usage", "--window-size=1600,1200"):
@@ -77,7 +77,7 @@ def driver(rendered_page):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
-    d.get(f"file://{rendered_page}?transpose=0")
+    d.get(f"file://{reference_page}?transpose=0")
     d.implicitly_wait(2)
     yield d
     d.quit()

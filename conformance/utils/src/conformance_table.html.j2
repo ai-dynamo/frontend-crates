@@ -5,6 +5,10 @@
 <title>{{ title|e }}</title>
 <script>
 (function () {
+  {% if comparison_layout_js is defined and comparison_layout_js %}
+  window.__comparisonLayoutEnabled = true;
+  document.documentElement.classList.add('comparison-page', 'comparison-pending');
+  {% endif %}
   const params = new URLSearchParams(window.location.search);
   const requested = params.get('transpose');
   if (requested === '1' || requested === 'true') {
@@ -42,5 +46,10 @@
 <script>
 {{ conformance_js|safe }}
 </script>
+{% if comparison_layout_js is defined and comparison_layout_js %}
+<script>
+{{ comparison_layout_js|safe }}
+</script>
+{% endif %}
 </body>
 </html>

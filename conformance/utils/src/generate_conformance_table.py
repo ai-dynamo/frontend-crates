@@ -1948,18 +1948,36 @@ def _input_model(case: dict) -> dict:
 
 
 def _toolcalling_tooltip_model(case: dict, output_kind: str, cand_meta: list[dict],
-                               dyn: object) -> dict:
+                               dyn: object, cmp_blocks: dict) -> dict:
     family = case.get("__family")
     case_id = case.get("__case_id", "")
     head = f"{case_id} — {family}" if (case_id and family) else (case_id or str(family or ""))
     impl_keys = _impl_keys_for_output_kind(output_kind)
     baseline = baseline_impl(impl_keys)
-    reasons = [
-        {"impl": f["impl"], "label": _IMPL_DISPLAY.get(f["impl"], f["impl"]),
-         "reason": f["reason"], "intentional": f["intentional"]}
-        for f in markers.comparison_facts(case, impl_keys, baseline)
-        if f["impl"] != baseline and f["agrees"] is False and f["reason"]
-    ]
+    expected = _expected(case)
+    reason_impls = set(impl_keys) | {BASELINE_BATCH_IMPL, BASELINE_STREAM_IMPL}
+    reason_cmp = markers.cmp_model({**cmp_blocks, **{
+        "__reason_" + impl: _impl_get(expected, impl) for impl in sorted(reason_impls)
+    }})
+    reason_entries = {impl: reason_cmp["__reason_" + impl] for impl in reason_impls}
+    reasons = _model.comparison_reasons(
+        markers.comparison_facts(case, impl_keys, baseline), _IMPL_DISPLAY, baseline, reason_entries,
+    )
+    if case.get("__known_divergence"):
+        batch_key = next((key for key in cmp_blocks if key.startswith(BASELINE_BATCH_IMPL + "-b-")), None)
+        for stream_key, stream_block in cmp_blocks.items():
+            if not batch_key or not stream_key.startswith(BASELINE_STREAM_IMPL + "-s-"):
+                continue
+            note = _explanation(stream_block)
+            if not note:
+                continue
+            pair_entries = {BASELINE_BATCH_IMPL: reason_cmp[batch_key],
+                            BASELINE_STREAM_IMPL: reason_cmp[stream_key]}
+            known_reasons = _model.comparison_reasons(
+                [{"impl": BASELINE_STREAM_IMPL, "agrees": False, "reason": note, "intentional": True}],
+                _IMPL_DISPLAY, BASELINE_BATCH_IMPL, pair_entries,
+            )
+            reasons.extend(reason for reason in known_reasons if reason not in reasons)
     dyn_leak = _dynamo_tool_call_leak(dyn) if isinstance(dyn, dict) else None
     baseline_block = None
     dyn_batch = _impl_get(case.get("batch_expected") or {}, BASELINE_BATCH_IMPL)
@@ -2011,7 +2029,7 @@ def _toolcalling_cell_model(case: dict | None, mode: str, family: str, sub: str,
                                 sub=sub, col_group=col_group, band=band, fixture_href=href,
                                 status=status, cmp=cmp, facts=facts, tooltip=tooltip,
                                 known_divergence=bool(case.get("__known_divergence")))
-    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn or {})
+    tooltip = _toolcalling_tooltip_model(case, output_kind, cand_meta, dyn or {}, cmp_blocks)
     return _model.make_cell(kind="cell", case_id=case.get("__case_id"), family=family,
                             sub=sub, col_group=col_group, band=band, fixture_href=href,
                             status=status, cmp=cmp, facts=facts, tooltip=tooltip,
@@ -3099,7 +3117,9 @@ def build_combined_model(output_path: Path | None = None,
         tabs.append(unified_tab)
 
     if tabs:
-        tabs[0]["active"] = True
+        default_tab = next((tab for tab in tabs if tab["id"] == "tab-unified"), tabs[0])
+        for tab in tabs:
+            tab["active"] = tab is default_tab
 
     meta = {
         "title": "Dynamo Parser v2 Conformance Table",
@@ -3198,6 +3218,7 @@ def render_combined_html(
             conformance_js=_read_asset("conformance.js"),
             colorize_js=_read_asset("colorize.js"),
             conformance_view_js=_read_asset("conformance_view.js"),
+            comparison_layout_js=_read_asset("comparison_layout.js"),
             sha=sha,
             short_sha=sha[:12] if sha else "",
             command="conformance/utils/render_table_v2.sh",

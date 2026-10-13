@@ -208,6 +208,28 @@ jobs:
             --edit-last --create-if-none \
             --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
+  conformance-browser:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Install browser test dependencies
+        run: |
+          python3 -m venv /tmp/browser-venv
+          /tmp/browser-venv/bin/pip install --quiet pyyaml jinja2 pytest selenium
+          google-chrome --version
+          node --version
+
+      - name: Run comparison matrix browser regressions
+        run: PATH="/tmp/browser-venv/bin:$PATH" python3 -m pytest conformance/utils/tests/test_browser_comparison_layout.py conformance/utils/tests/test_comparison_status.py -q
+
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
     needs: conformance-table

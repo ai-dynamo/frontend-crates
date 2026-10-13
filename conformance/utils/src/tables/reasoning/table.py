@@ -1485,12 +1485,9 @@ def _reasoning_cell_model(
                 "block": _reasoning_output_model(expected.get(impl)),
                 "leak": bool(_block_leak_reason(expected.get(impl), family)),
             })
-    reasons = [
-        {"impl": f["impl"], "label": _REASONING_ENGINE_RUNTIME.get(f["impl"], f["impl"]),
-         "reason": f["reason"], "intentional": f["intentional"]}
-        for f in _reasoning_facts(case, family)
-        if f["impl"] != "dynamo_v1" and f["agrees"] is False and f["reason"]
-    ]
+    reasons = model.comparison_reasons(
+        _reasoning_facts(case, family), _REASONING_ENGINE_RUNTIME, "dynamo_v1", cmp or {},
+    )
     # Batch cases carry `model_text`; stream cases carry `chunks` as raw delta STRINGS
     # (e.g. ["<mm:thi", "nk>reason</mm:think>answer"]). The streamed input is their
     # concatenation — join it so the reasoning-stream input cell isn't blank.

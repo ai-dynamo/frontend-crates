@@ -276,7 +276,8 @@ def test_v2_all_tabs_present(model_v2):
     ids = [t["id"] for t in model_v2["tabs"]]
     assert ids == [
         "tab-toolcalling-batch", "tab-toolcalling-streamv1",
-        "tab-reasoning-batch", "tab-reasoning-stream", "tab-unified",
+        "tab-reasoning-batch", "tab-reasoning-stream",
+        "tab-unified",
     ], ids
 
 
@@ -333,7 +334,8 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
 
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
-    assert model_v2["tabs"][0]["active"] is True
+    assert model_v2["tabs"][-1]["id"] == "tab-unified"
+    assert model_v2["tabs"][-1]["active"] is True
 
 
 # ---- candidates (compare bar) -------------------------------------------------
@@ -1573,3 +1575,62 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
             assert len(cell["variants"]) == 4
             assert column["schemas"]
     assert found == expected
+
+
+def test_documented_reasons_bind_source_and_normalized_reference():
+    facts = [
+        {"impl": "dynamo_v1", "agrees": True, "reason": None, "intentional": False},
+        {"impl": "vllm_python", "agrees": False, "reason": "intentional recovery", "intentional": True},
+        {"impl": "sglang_python", "agrees": False, "reason": None, "intentional": False},
+    ]
+    entries = {"dynamo_v1": {"sig": 0}, "vllm_python": {"sig": 1}, "sglang_python": {"sig": 2}}
+    assert model_mod.comparison_reasons(facts, {"vllm_python": "vLLM Python"}, "dynamo_v1", entries) == [
+        {"impl": "vllm_python", "label": "vLLM Python", "reason": "intentional recovery", "intentional": True,
+         "candidate_sig": 1, "reference_impl": "dynamo_v1", "reference_sig": 0},
+    ]
+
+
+def test_merged_documented_pair_survives_producer_and_reference_reversal():
+    batch_key = "dynamo_v1-b-10-0-1"
+    stream_key = "dynamo_v2-s-0-7-21"
+    peer_key = "vllm_python-b-0-26-0"
+    batch = {"calls": [], "normal_text": " "}
+    stream = {"calls": [], "normal_text": "", "explanation": "documented batch/stream difference"}
+    peer = {"calls": [], "normal_text": "peer output"}
+    captures = [
+        {"key": batch_key, "label": "Dynamo v1 Rust 10.0.1 (batch)", "block": batch},
+        {"key": stream_key, "label": "Dynamo v2 Rust 0.7.21 (stream)", "block": stream},
+        {"key": peer_key, "label": "vLLM Python 0.26.0 (batch)", "block": peer},
+    ]
+    case = {
+        "__family": "deepseek_v4", "__case_id": "TOOLCALLING.batch.9.b",
+        "__known_divergence": True, "model_text": " ",
+        "expected": {"dynamo_v1": batch, "vllm_python": peer}, "__cmp": captures,
+    }
+    cell = table._toolcalling_cell_model(case, "batch", "deepseek_v4", "9.b", "batch", "engines", str)
+    assert cell["tooltip"]["reasons"], "merged stream documentation was lost because it is outside case.expected"
+    source = UTILS / "src/assets/comparison_layout.js"
+    script = r"""
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const context = vm.createContext({});
+vm.runInContext(source.slice(source.indexOf('  function tooltipCandidate('),
+  source.indexOf('  function makeHeader(')), context);
+const cell = JSON.parse(process.argv[2]);
+const [batch, stream, peer] = JSON.parse(process.argv[3]);
+for (const [candidate, reference, expected] of [
+  [stream, batch, 'documented'], [batch, stream, 'documented'],
+  [peer, batch, 'diverge'], [peer, stream, 'diverge'],
+  [batch, peer, 'diverge'], [stream, peer, 'diverge'],
+]) {
+  assert.equal(context.outputStatus({id: 'tab-toolcalling-batch'}, cell,
+    {key: candidate}, reference), expected, candidate + ' vs ' + reference);
+}
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(source), json.dumps(cell), json.dumps([batch_key, stream_key, peer_key])],
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
