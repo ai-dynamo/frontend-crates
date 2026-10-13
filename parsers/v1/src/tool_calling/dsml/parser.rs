@@ -80,8 +80,8 @@ pub fn find_complete_tool_call_end_position_dsml(
 ///
 /// Returns `(parsed_tool_calls, normal_text_content)`. `normal_text` is the
 /// text BEFORE the first `<｜DSML｜tool_calls>` / `<｜DSML｜function_calls>`
-/// start marker, minus the one [`super::super::config::DSML_BLOCK_SEPARATOR`] the encoder places
-/// between content and the block. Text between blocks, after the last block, and any
+/// start marker, minus the one `\n\n` separator the encoder places between
+/// content and the block. Text between blocks, after the last block, and any
 /// back-to-back-block content are all dropped — matching upstream vLLM
 /// (`vllm/tool_parsers/deepseek_v4_tool_parser.py` and the V3.2 sibling),
 /// which compute `content = model_output[:content_end]` where
@@ -139,7 +139,7 @@ pub fn try_tool_call_parse_dsml(
 
     // Extract tool calls blocks. Finalize paths can opt into EOF recovery so
     // a missing outer block end still yields any complete inner invokes.
-    let tool_calls = extract_tool_calls(trimmed, config)?;
+    let (tool_calls, leading_recovered) = extract_tool_calls(trimmed, config)?;
 
     // Whether or not invokes parsed, normal_text is the prefix before the
     // first block_start — mirrors vLLM's success path. On no-invokes the
@@ -148,7 +148,7 @@ pub fn try_tool_call_parse_dsml(
     let pre_block_text = if let Some(idx) = first_orphan_dsml_marker_index(pre_block_span, config)
         .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
     {
-        if recover_orphan_invokes_in_span(pre_block_span, config)?.is_some() {
+        if leading_recovered {
             strip_tool_separator(&message[..leading_offset + idx], config).to_string()
         } else {
             pre_block_span[..idx].trim_end().to_string()
@@ -217,11 +217,13 @@ fn first_orphan_dsml_marker_index(text: &str, config: &DsmlParserConfig) -> Opti
 }
 
 /// Extract all tool calls from DSML formatted text.
+/// Also reports whether bare invokes before the first block were recovered.
 fn extract_tool_calls(
     text: &str,
     config: &DsmlParserConfig,
-) -> anyhow::Result<Vec<ToolCallResponse>> {
+) -> anyhow::Result<(Vec<ToolCallResponse>, bool)> {
     let mut tool_calls = Vec::new();
+    let mut leading_recovered = false;
     let mut cursor = 0;
 
     while cursor < text.len() {
@@ -237,6 +239,7 @@ fn extract_tool_calls(
         if let Some((_, mut recovered)) =
             recover_orphan_invokes_in_span(&text[cursor..abs_start], config)?
         {
+            leading_recovered |= cursor == 0;
             tool_calls.append(&mut recovered);
         }
 
@@ -261,7 +264,7 @@ fn extract_tool_calls(
         cursor = next_cursor;
     }
 
-    Ok(tool_calls)
+    Ok((tool_calls, leading_recovered))
 }
 
 fn recover_orphan_invokes_in_span(

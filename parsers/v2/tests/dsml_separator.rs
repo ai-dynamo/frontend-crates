@@ -332,6 +332,36 @@ fn emitter_errors_leave_separator_and_call_recoverable() {
 }
 
 #[test]
+fn reset_keeps_deferred_block_after_bare_recovery() {
+    let malformed = |wrapped: bool, name: &str, value: &str| {
+        native_call("deepseek_v41", wrapped, value)
+            .replace("string=\"true\"", "string=\"false\"")
+            .replace("name=\"run\"", &format!("name=\"{name}\""))
+    };
+    let first = malformed(true, "first", r#"{"a":"#);
+    let second = malformed(false, "second", r#"{"b":"#);
+    for gap in ["\n\n", "x"] {
+        let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                ..Default::default()
+            })
+            .unwrap();
+        let mut output = UnifiedParserOutput::default();
+        let parsed = parser
+            .parse_into(&format!("{first}{gap}{second}"), &mut output)
+            .and_then(|()| parser.finish().map(|_| ()));
+        assert!(parsed.is_err(), "gap={gap:?}");
+        let pending = parser.reset();
+        assert!(
+            pending.contains(&first) && pending.contains(&second),
+            "gap={gap:?} pending={pending:?}"
+        );
+    }
+}
+
+#[test]
 fn reset_returns_uncommitted_separator_and_reuses_the_parser() {
     for family in FAMILIES {
         for wrapped in [true, false] {

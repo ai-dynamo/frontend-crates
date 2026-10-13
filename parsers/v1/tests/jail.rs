@@ -301,6 +301,92 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_held_text_records_stay_aligned_after_contentless_chunks() {
+        let chunk = |text: Option<&str>, tokens: &[&str]| {
+            let mut chunk =
+                test_utils::create_mock_response_chunk(text.unwrap_or_default().to_string(), 0);
+            let choice = &mut chunk.data.as_mut().unwrap().choices[0];
+            if text.is_none() {
+                choice.delta.role = None;
+                choice.delta.content = None;
+                choice.delta.reasoning_content = Some("thinking".to_string());
+            }
+            let records = tokens
+                .iter()
+                .map(|token| ChatCompletionTokenLogprob {
+                    token: token.to_string(),
+                    logprob: -0.5,
+                    token_id: None,
+                    bytes: Some(token.as_bytes().to_vec()),
+                    top_logprobs: Vec::new(),
+                })
+                .collect();
+            choice.logprobs = Some(ChatChoiceLogprobs {
+                content: Some(records),
+                refusal: None,
+            });
+            chunk
+        };
+        let mut k3_last = chunk(Some("x<|close|>mes"), &["x", "<|close|>", "mes"]);
+        k3_last.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        let cases = [
+            (
+                "deepseek_v4",
+                vec![
+                    chunk(Some("A\n\n"), &["A", "\n\n"]),
+                    chunk(None, &["r"]),
+                    chunk(Some("B\n"), &["B", "\n"]),
+                    chunk(Some("C"), &["C"]),
+                ],
+                vec!["A", "\n\n", "r", "B", "\n", "C"],
+            ),
+            (
+                "kimi_k3",
+                vec![
+                    chunk(Some("<|close|>mes"), &["<|close|>", "mes"]),
+                    chunk(None, &["thinking"]),
+                    k3_last,
+                ],
+                vec!["<|close|>", "mes", "thinking", "x"],
+            ),
+        ];
+        for (parser, chunks, expected) in cases {
+            let results: Vec<_> = JailedStream::builder()
+                .tool_call_parser(parser)
+                .build()
+                .apply_with_finish_reason(stream::iter(chunks))
+                .collect()
+                .await;
+            let choices: Vec<_> = results
+                .iter()
+                .flat_map(|chunk| &chunk.data.as_ref().unwrap().choices)
+                .collect();
+            let tokens = |choice: &ChatChoiceStream| -> Vec<String> {
+                choice
+                    .logprobs
+                    .iter()
+                    .flat_map(|lp| lp.content.iter().flatten())
+                    .map(|record| record.token.clone())
+                    .collect()
+            };
+            let all: Vec<_> = choices.iter().flat_map(|choice| tokens(choice)).collect();
+            assert_eq!(all, expected, "parser={parser}");
+            for choice in &choices {
+                if let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
+                    &choice.delta.content
+                {
+                    // Records may lead held text, but never cover another chunk's text.
+                    let covered: String = tokens(choice)
+                        .into_iter()
+                        .filter(|token| !["r", "thinking"].contains(&token.as_str()))
+                        .collect();
+                    assert!(text.ends_with(&covered), "parser={parser} text={text:?}");
+                }
+            }
+        }
+    }
+
+    #[tokio::test]
     async fn test_dsml_split_metadata_has_one_owner() {
         let invoke = "<｜DSML｜invoke name=\"test\"></｜DSML｜invoke>";
         let end = "</｜DSML｜tool_calls>";

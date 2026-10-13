@@ -1475,10 +1475,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         else {
             return 0;
         };
+        if !self.buffer[..at].ends_with(framing.separator) {
+            return 0;
+        }
         let tail = &self.buffer[at..];
-        let is_tool_opener = self.spec.block_starts.iter().any(|m| tail.starts_with(m))
-            || self.find_invoke_start(tail) == Some(0);
-        if is_tool_opener && self.buffer[..at].ends_with(framing.separator) {
+        if self.spec.block_starts.iter().any(|m| tail.starts_with(m))
+            || self.find_invoke_start(tail) == Some(0)
+        {
             framing.separator.len()
         } else {
             0
@@ -1967,7 +1970,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped incomplete bare invoke at EOF"
                             );
                             self.consume_buffer_prefix(self.buffer.len());
-                            self.uncommitted_block.clear();
+                            self.clear_uncommitted_block();
                         }
                         break;
                     };
@@ -1975,7 +1978,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // Emit before consuming — same recovery contract as the wrapped site.
                     let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
                     self.consume_buffer_prefix(end);
-                    self.uncommitted_block.clear();
+                    self.clear_uncommitted_block();
                     self.reset_invoke_boundary();
                     if let Some(deltas) = emitted {
                         tracing::warn!(

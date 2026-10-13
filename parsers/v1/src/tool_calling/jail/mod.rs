@@ -348,8 +348,11 @@ struct ChoiceJailState {
     partial_match_buffer: String,
     /// Logprob records held with `partial_match_buffer` until it emits or enters jail.
     partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
-    /// Contentless records retained if EOF suppresses the reserved partial marker.
-    partial_passthrough_logprobs: Option<ChatChoiceLogprobs>,
+    /// Leading held characters whose records were already emitted.
+    partial_released_chars: usize,
+    /// Records from contentless chunks that follow the held text. They cover no
+    /// characters, so they stay out of the char-aligned `partial_logprobs_buffer`.
+    held_contentless_logprobs: Option<ChatChoiceLogprobs>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
     /// Whole token records belonging to the held suffix.
@@ -677,7 +680,8 @@ impl ChoiceJailState {
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
             partial_logprobs_buffer: None,
-            partial_passthrough_logprobs: None,
+            partial_released_chars: 0,
+            held_contentless_logprobs: None,
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
@@ -702,17 +706,34 @@ impl ChoiceJailState {
     /// token that crosses the boundary stays pending for the next
     /// emission.
     fn consume_pending_entries(&mut self, chars: usize) -> Option<ChatChoiceLogprobs> {
+        let released = self.partial_released_chars.min(chars);
+        self.partial_released_chars -= released;
         let available = self.partial_logprobs_buffer.take()?;
-        let (front, rest) = split_logprobs_at_chars(&Some(available), chars);
+        let (front, rest) = split_logprobs_at_chars(&Some(available), chars - released);
         self.partial_logprobs_buffer = rest;
         front
+    }
+
+    /// Take every held record, in source order, as the held text resolves.
+    fn take_held_entries(&mut self) -> Option<ChatChoiceLogprobs> {
+        self.partial_released_chars = 0;
+        let mut logprobs = self.partial_logprobs_buffer.take();
+        append_logprobs(&mut logprobs, self.held_contentless_logprobs.take());
+        logprobs
+    }
+
+    /// Emit held records ahead of a later chunk's while their text stays held.
+    fn release_held_entries(&mut self) -> Option<ChatChoiceLogprobs> {
+        let logprobs = self.take_held_entries();
+        self.partial_released_chars = self.partial_match_buffer.chars().count();
+        logprobs
     }
 
     fn begin_jail(&mut self, content: String, logprobs: Option<ChatChoiceLogprobs>) {
         self.is_jailed = true;
         self.accumulated_content = content;
         self.accumulated_logprobs = logprobs;
-        self.partial_passthrough_logprobs = None;
+        self.held_contentless_logprobs = None;
         self.completion_progress.reset();
     }
 
@@ -746,20 +767,17 @@ impl ChoiceJailState {
             self.take_accumulated_logprobs()
         } else if self.has_reserved_partial_marker(policy) {
             if self.stream_finish_reason.is_none() {
-                append_logprobs(&mut self.partial_logprobs_buffer, extra.clone());
-                append_logprobs(&mut self.partial_passthrough_logprobs, extra);
+                append_logprobs(&mut self.held_contentless_logprobs, extra);
                 return None;
             }
             if self.stream_finish_reason == Some(FinishReason::Length) {
                 self.partial_logprobs_buffer = None;
-                self.partial_passthrough_logprobs.take()
+                self.held_contentless_logprobs.take()
             } else {
-                self.partial_passthrough_logprobs = None;
-                self.partial_logprobs_buffer.take()
+                self.release_held_entries()
             }
         } else {
-            self.partial_passthrough_logprobs = None;
-            self.partial_logprobs_buffer.take()
+            self.release_held_entries()
         };
         append_logprobs(&mut logprobs, extra);
         logprobs
@@ -792,7 +810,7 @@ impl ChoiceJailState {
     fn end_jail(&mut self) -> String {
         self.is_jailed = false;
         self.accumulated_logprobs = None;
-        self.partial_passthrough_logprobs = None;
+        self.held_contentless_logprobs = None;
         self.completion_progress.reset();
         // The cursor's byte offsets describe THIS payload. Carrying them into a
         // second jailed value would suppress its arguments as already streamed.
@@ -874,10 +892,13 @@ impl ChoiceJailState {
         }
     }
 
+    /// `logprobs` are the records this trailing text owns, which excludes any
+    /// already emitted with the completed jail.
     fn handle_trailing_content(
         &mut self,
         content: &str,
         choice: &ChatChoiceStream,
+        logprobs: Option<ChatChoiceLogprobs>,
         jail_stream: &JailedStream,
         emissions: &mut Vec<ChoiceEmission>,
     ) {
@@ -901,7 +922,7 @@ impl ChoiceJailState {
             &held_text
         };
 
-        self.feed_entries(choice.logprobs.clone());
+        self.feed_entries(logprobs);
 
         match jail_stream.marker_matcher.process_chunk(content, "") {
             MatchResult::Partial {
@@ -978,10 +999,10 @@ impl ChoiceJailState {
             }
             self.partial_match_buffer = partial.to_string();
         } else if jail_stream.should_start_jail(content) {
-            let remaining = self.partial_logprobs_buffer.take();
+            let remaining = self.take_held_entries();
             self.begin_jail(content.to_string(), remaining);
         } else {
-            let all = self.partial_logprobs_buffer.take();
+            let all = self.take_held_entries();
             #[allow(deprecated)]
             let trailing_choice = create_choice_stream(
                 choice.index,
@@ -1189,11 +1210,7 @@ impl ChoiceJailState {
 
         self.end_jail();
         // The jail emission above already carries this chunk's logprob records.
-        let trailing_choice = ChatChoiceStream {
-            logprobs: None,
-            ..choice.clone()
-        };
-        self.handle_trailing_content(&trailing_owned, &trailing_choice, jail_stream, emissions);
+        self.handle_trailing_content(&trailing_owned, choice, None, jail_stream, emissions);
     }
 
     /// Process incoming content and return what should be emitted (if anything)
@@ -1205,6 +1222,19 @@ impl ChoiceJailState {
     ) -> Vec<ChoiceEmission> {
         let mut emissions = Vec::new();
         if !self.is_jailed {
+            if self.held_contentless_logprobs.is_some() {
+                // Deferred contentless records precede this chunk's records.
+                let mut records = create_choice_stream(
+                    choice.index,
+                    None,
+                    "",
+                    None,
+                    None,
+                    self.release_held_entries(),
+                );
+                records.delta.content = None;
+                emissions.push(ChoiceEmission::PassThrough(records));
+            }
             self.feed_entries(choice.logprobs.clone());
 
             // Use the marker matcher to detect complete/partial markers
@@ -1245,7 +1275,7 @@ impl ChoiceJailState {
                         format!("{}{}", marker, suffix)
                     };
 
-                    let remaining = self.partial_logprobs_buffer.take();
+                    let remaining = self.take_held_entries();
                     self.begin_jail(full_content, remaining);
                     let completion = jail_stream
                         .check_jail_completion(
@@ -1269,7 +1299,7 @@ impl ChoiceJailState {
                     if is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                         && contains_harmony_protocol(&prefix)
                     {
-                        let remaining = self.partial_logprobs_buffer.take();
+                        let remaining = self.take_held_entries();
                         self.begin_jail(format!("{}{}", prefix, partial), remaining);
                         self.partial_match_buffer.clear();
                         return emissions;
@@ -1320,12 +1350,12 @@ impl ChoiceJailState {
                         }
                         self.partial_match_buffer = partial.to_string();
                     } else if jail_stream.should_start_jail(&content) {
-                        let remaining = self.partial_logprobs_buffer.take();
+                        let remaining = self.take_held_entries();
                         self.begin_jail(content, remaining);
                         self.partial_match_buffer.clear();
                     } else {
                         // No markers - emit everything
-                        let all = self.partial_logprobs_buffer.take();
+                        let all = self.take_held_entries();
                         if !content.is_empty()
                             || all.is_some()
                             || self.pending_reasoning_content.is_some()
@@ -1344,9 +1374,6 @@ impl ChoiceJailState {
                         self.partial_match_buffer.clear();
                     }
                 }
-            }
-            if !emissions.is_empty() {
-                self.partial_passthrough_logprobs = None;
             }
         } else {
             // Already jailed - accumulate content AND logprobs, then check for unjail
@@ -1570,10 +1597,9 @@ impl ChoiceJailState {
                 // Still emit its terminal chunk with the original finish reason.
                 content.clear();
                 self.partial_logprobs_buffer = None;
-                self.partial_passthrough_logprobs.take()
+                self.held_contentless_logprobs.take()
             } else {
-                self.partial_passthrough_logprobs = None;
-                self.partial_logprobs_buffer.take()
+                self.take_held_entries()
             };
             let mut choice = create_choice_stream(
                 self.index,
@@ -1897,10 +1923,7 @@ impl JailedStream {
                             } else if choice_state.is_jailed {
                                 append_logprobs(&mut choice_state.accumulated_logprobs, choice.logprobs.clone());
                             } else {
-                                if choice_state.has_reserved_partial_marker(self.terminal_marker_policy) {
-                                    append_logprobs(&mut choice_state.partial_passthrough_logprobs, choice.logprobs.clone());
-                                }
-                                append_logprobs(&mut choice_state.partial_logprobs_buffer, choice.logprobs.clone());
+                                append_logprobs(&mut choice_state.held_contentless_logprobs, choice.logprobs.clone());
                             }
                         }
                     }
@@ -4721,12 +4744,14 @@ mod tests {
         state.handle_trailing_content(
             "answer < ",
             &choice(&["answer", " ", "<", " "]),
+            lp(&["answer", " ", "<", " "]),
             &jail_stream,
             &mut emissions,
         );
         state.handle_trailing_content(
             "more < ",
             &choice(&["more", " ", "<", " "]),
+            lp(&["more", " ", "<", " "]),
             &jail_stream,
             &mut emissions,
         );

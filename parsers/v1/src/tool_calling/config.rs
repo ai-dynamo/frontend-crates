@@ -187,7 +187,7 @@ impl XmlParserConfig {
 /// parser consumes it with the block, and re-rendering a message whose content
 /// still ends with it doubles it, so the re-rendered history no longer matches
 /// the generated tokens.
-pub const DSML_BLOCK_SEPARATOR: &str = "\n\n";
+pub(crate) const DSML_BLOCK_SEPARATOR: &str = "\n\n";
 
 /// Configuration for DSML-style tool call parser (DeepSeek V3.2+)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
