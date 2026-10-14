@@ -4246,6 +4246,71 @@ fahrenheit
         );
     }
 
+    /// A multi-token delta (e.g. under speculative decoding) can close one
+    /// call and carry the full start marker of the next. The trailing content
+    /// must be re-jailed from that marker instead of emitting it as content.
+    #[tokio::test]
+    async fn test_gemma4_next_call_start_marker_in_trailing_content_is_jailed() {
+        async fn run(chunks: Vec<String>) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+            let input_chunks = chunks
+                .into_iter()
+                .map(|chunk| test_utils::create_mock_response_chunk(chunk, 0))
+                .chain(std::iter::once(test_utils::create_final_response_chunk(0)));
+            let jail = JailedStream::builder().tool_call_parser("gemma4").build();
+            jail.apply_with_finish_reason(stream::iter(input_chunks))
+                .collect()
+                .await
+        }
+
+        // ai-dynamo/dynamo#16383: the 4th delta ends call `f` and starts call `g`.
+        let results = run([
+            "<|tool_call>call",
+            ":f{",
+            "a:<|\"|>1<|\"|>",
+            "}<tool_call|><|tool_call>ca",
+            "ll:g{",
+            "b:",
+            "<|\"|>2<|\"|>}<tool_call|>",
+        ]
+        .map(str::to_string)
+        .to_vec())
+        .await;
+        assert_eq!(
+            tool_call_names(&results),
+            vec!["f".to_string(), "g".to_string()]
+        );
+        assert_eq!(test_utils::reconstruct_content(&results), "");
+
+        // Every chunking whose middle delta straddles the end of call `g` and the
+        // start of call `h` must parse all three calls and leak no markup.
+        let call = |name: &str, arg: &str| {
+            format!("<|tool_call>call:{name}{{x:<|\"|>{arg}<|\"|>}}<tool_call|>")
+        };
+        let text = format!("{}{}{}", call("f", "1"), call("g", "2"), call("h", "3"));
+        let g_end = text.find("}<tool_call|><|tool_call>call:h").unwrap();
+        let h_start = g_end + "}<tool_call|>".len();
+        for first_cut in g_end.saturating_sub(4)..h_start {
+            for second_cut in h_start + 1..=h_start + "<|tool_call>call:h{".len() {
+                let chunks = vec![
+                    text[..first_cut].to_string(),
+                    text[first_cut..second_cut].to_string(),
+                    text[second_cut..].to_string(),
+                ];
+                let results = run(chunks.clone()).await;
+                assert_eq!(
+                    tool_call_names(&results),
+                    vec!["f".to_string(), "g".to_string(), "h".to_string()],
+                    "chunks: {chunks:?}"
+                );
+                assert_eq!(
+                    test_utils::reconstruct_content(&results),
+                    "",
+                    "chunks: {chunks:?}"
+                );
+            }
+        }
+    }
+
     #[tokio::test]
     async fn test_split_bare_recovery_markers_are_jailed() {
         let cases = [
