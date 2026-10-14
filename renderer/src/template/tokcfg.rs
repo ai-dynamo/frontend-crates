@@ -166,11 +166,12 @@ pub fn python_methods(
             "strip" | "lstrip" | "rstrip" => {
                 let (chars,): (Option<&str>,) = from_args(args)?;
                 if chars.is_none() {
-                    return Ok(Value::from(match method {
+                    let trimmed = match method {
                         "strip" => s.trim_matches(is_python_space),
                         "lstrip" => s.trim_start_matches(is_python_space),
                         _ => s.trim_end_matches(is_python_space),
-                    }));
+                    };
+                    return Ok(StringInput::new(state, value)?.preserve_safety(trimmed.to_owned()));
                 }
             }
             "split" => {

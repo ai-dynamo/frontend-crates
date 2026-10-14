@@ -962,7 +962,27 @@ mod tests {
         );
     }
 
-    /// Splitting a safe string must preserve its safety through an explicit escape.
+    #[test]
+    fn test_strip_preserves_string_safety() {
+        for (method, expected) in [
+            ("strip", "<b> &|&lt;b&gt; &amp;"),
+            ("lstrip", "<b> & \u{1f}|&lt;b&gt; &amp; \u{1f}"),
+            ("rstrip", "\u{1c} <b> &|\u{1c} &lt;b&gt; &amp;"),
+        ] {
+            for args in ["", "none"] {
+                let template = format!(
+                    "{{{{ (s | safe).{method}({args}) | escape }}}}|\
+                     {{{{ s.{method}({args}) | escape }}}}"
+                );
+                assert_eq!(
+                    render_hf(&template, context! { s => "\u{1c} <b> & \u{1f}" }),
+                    expected,
+                    "{method}({args})"
+                );
+            }
+        }
+    }
+
     #[test]
     fn test_split_preserves_string_safety() {
         for (args, expected) in [
