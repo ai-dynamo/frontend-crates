@@ -948,7 +948,6 @@ mod tests {
         );
     }
 
-    /// HF strips, splits and trims with Python's whitespace, which includes U+001C..U+001F.
     #[test]
     fn test_string_methods_use_python_whitespace() {
         let template = "[{{ s.strip() }}][{{ s | trim }}][{{ s.lstrip() }}][{{ s.rstrip() }}]\
@@ -1009,6 +1008,16 @@ mod tests {
                 context! { s => "\u{1c}<b>\u{1f}hi" }
             ),
             "<b>|&lt;b&gt;"
+        );
+    }
+
+    #[test]
+    fn test_splitlines_preserves_string_safety() {
+        let template = "{% for part in (s | safe).splitlines() %}[{{ part | escape }}]{% endfor %}|\
+            {% for part in s.splitlines() %}[{{ part | escape }}]{% endfor %}";
+        assert_eq!(
+            render_hf(template, context! { s => "<b>\r\n&\u{2028}hi" }),
+            "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"
         );
     }
 

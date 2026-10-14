@@ -194,7 +194,13 @@ pub fn python_methods(
                 let (keepends,): (Option<bool>,) = from_args(args)?;
                 return Ok(python_splitlines(s, keepends.unwrap_or(false))
                     .into_iter()
-                    .map(Value::from)
+                    .map(|part| {
+                        if value.is_safe() {
+                            Value::from_safe_string(part.to_owned())
+                        } else {
+                            Value::from(part)
+                        }
+                    })
                     .collect());
             }
             "isspace" => {
