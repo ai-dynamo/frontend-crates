@@ -1151,3 +1151,105 @@ fn fragments_of_other_tracks_are_skipped_but_their_data_is_not_followed() {
     // track's, which is not tracked.
     assert_unsupported(&after_another_track(0), "inherited base offset");
 }
+
+fn sync_of(video: &Mp4Video) -> Vec<bool> {
+    video.samples.iter().map(|s| s.sync).collect()
+}
+
+#[test]
+fn keyframes_come_from_stss_as_ffmpeg_reads_it() {
+    let stss = |numbers: &[u32]| {
+        full(
+            b"stss",
+            0,
+            0,
+            &cat(&[&words(&[numbers.len() as u32]), &words(numbers)]),
+        )
+    };
+    let sync = |extra: Vec<u8>| sync_of(&parse(&with(|t| t.extra = extra)).unwrap());
+    // Without stss every sample is a keyframe.
+    assert_eq!(sync_of(&parse(&plain()).unwrap()), [true; 5]);
+    assert_eq!(sync(stss(&[1, 4])), [true, false, false, true, false]);
+    // An empty one: none. Entries that name no sample are dropped.
+    assert_eq!(sync(stss(&[])), [false; 5]);
+    assert_eq!(sync(stss(&[0, 3, 9])), [false, false, true, false, false]);
+    // A table given twice, or one its box cannot hold: none, and the file
+    // still reads (it decoded before keyframes were read).
+    assert_eq!(sync([stss(&[1]), stss(&[1])].concat()), [false; 5]);
+    assert_eq!(sync(full(b"stss", 0, 0, &words(&[2, 1]))), [false; 5]);
+}
+
+/// Which samples of [`fragmented`] are keyframes, given the `trex` default
+/// flags, the `tfhd` default flags, the `trun` first-sample flags and each
+/// sample's own flags.
+fn fragment_sync(
+    trex: u32,
+    tfhd: Option<u32>,
+    first: Option<u32>,
+    own: Option<[u32; 5]>,
+) -> Vec<bool> {
+    let moov = fragmented_moov(&[full(b"trex", 0, 0, &words(&[1, 1, 0, 0, trex]))], &[]);
+    let moof = |data_offset: u32| {
+        let (mut tfhd_flags, mut tfhd_body) = (0x2_0000, words(&[1]));
+        if let Some(flags) = tfhd {
+            tfhd_flags |= 0x20;
+            tfhd_body.extend(words(&[flags]));
+        }
+        let tfhd = full(b"tfhd", 0, tfhd_flags, &tfhd_body);
+        let tfdt = full(b"tfdt", 1, 0, &0u64.to_be_bytes());
+        let mut trun_flags = 0x1 | 0x100 | 0x200 | 0x800;
+        let mut run = words(&[5, data_offset]);
+        if let Some(flags) = first {
+            trun_flags |= 0x4;
+            run.extend(words(&[flags]));
+        }
+        if own.is_some() {
+            trun_flags |= 0x400;
+        }
+        for (i, (size, shift)) in SIZES.iter().zip(SHIFTS).enumerate() {
+            // Duration, size, flags, composition offset.
+            run.extend(words(&[DURATION, *size]));
+            if let Some(own) = own {
+                run.extend(words(&[own[i]]));
+            }
+            run.extend(words(&[shift as u32]));
+        }
+        let trun = full(b"trun", 0, trun_flags, &run);
+        bx(
+            b"moof",
+            &cat(&[
+                &full(b"mfhd", 0, 0, &words(&[1])),
+                &bx(b"traf", &cat(&[&tfhd, &tfdt, &trun])),
+            ]),
+        )
+    };
+    let moof_len = moof(0).len() as u32;
+    let payload = vec![7u8; SIZES.iter().sum::<u32>() as usize];
+    let file = cat(&[&FTYP, &moov, &moof(moof_len + 8), &bx(b"mdat", &payload)]);
+    sync_of(&parse(&file).unwrap())
+}
+
+#[test]
+fn fragment_keyframes_come_from_sample_flags_as_ffmpeg_reads_them() {
+    const NOT_SYNC: u32 = 0x1_0000;
+    const DEPENDS: u32 = 0x100_0000;
+    assert_eq!(fragment_sync(0, None, None, None), [true; 5]);
+    assert_eq!(fragment_sync(NOT_SYNC, None, None, None), [false; 5]);
+    assert_eq!(fragment_sync(0, Some(DEPENDS), None, None), [false; 5]);
+    // tfhd's defaults replace trex's; the first-sample flags, the first's.
+    assert_eq!(fragment_sync(NOT_SYNC, Some(0), None, None), [true; 5]);
+    assert_eq!(
+        fragment_sync(NOT_SYNC, None, Some(0), None),
+        [true, false, false, false, false]
+    );
+    // A sample's own flags win over the first-sample flags.
+    assert_eq!(
+        fragment_sync(
+            NOT_SYNC,
+            None,
+            Some(NOT_SYNC),
+            Some([0, NOT_SYNC, DEPENDS, 0, NOT_SYNC])
+        ),
+        [true, false, false, true, false]
+    );
+}

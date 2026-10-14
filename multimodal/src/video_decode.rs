@@ -46,9 +46,11 @@
 //! frames it cuts; one that a player would have to seek within (rows that go
 //! back, repeat or skip media, or a rate other than 1) is refused.
 //!
-//! Decoding blocks the calling thread. Every frame up to the last sampled one
-//! goes through the decoder, because frames depend on earlier frames; only the
-//! sampled ones are copied off the GPU and converted.
+//! Decoding blocks the calling thread. Frames depend on earlier frames, so a
+//! sampled frame is decoded from the last keyframe before it; groups of
+//! pictures that hold no sampled frame are skipped, never read or decoded
+//! (keyframes are checked in the bitstream first, else the whole stream is
+//! decoded). Only the sampled frames are copied off the GPU and converted.
 //!
 //! Memory: MP4 is read through the [`ByteSource`] as it is decoded, one packet
 //! at a time, so only its index (sample tables) is held. WebM and Matroska
@@ -67,6 +69,8 @@ use crate::{MmError, Result};
 mod mp4;
 #[cfg(target_os = "linux")]
 mod nvdec;
+#[cfg(target_os = "linux")]
+mod seek;
 mod source;
 #[cfg(target_os = "linux")]
 mod vpx;
@@ -202,17 +206,21 @@ struct Packet {
     displays: bool,
     /// Whether the output frame belongs to the video: `false` for a Matroska
     /// frame marked invisible and for a packet that displays nothing. Every
-    /// packet is decoded, since later frames may reference it.
+    /// packet a decode passes is decoded, since later frames may reference it.
     shown: bool,
+    /// Whether the container marks the packet a keyframe, where a decode may
+    /// start. Unchecked until a decode starts there (see `seek`).
+    sync: bool,
 }
 
 impl Packet {
-    fn new(payload: Payload, pts: f64, displays: bool, invisible: bool) -> Self {
+    fn new(payload: Payload, pts: f64, displays: bool, invisible: bool, sync: bool) -> Self {
         Self {
             payload,
             pts,
             displays,
             shown: displays && !invisible,
+            sync,
         }
     }
 }
@@ -227,6 +235,10 @@ struct Track<'a> {
     /// The codec configuration record: `avcC` (H.264), `hvcC` (HEVC) or `av1C`
     /// (AV1), from the MP4 sample entry or Matroska `CodecPrivate`.
     config: Option<Vec<u8>>,
+    /// Whether H.264 / HEVC parameter sets may also travel in the packets: an
+    /// MP4 `hev1` sample entry, or Matroska (`avc1` and `hvc1` keep them all
+    /// in the configuration record).
+    inband_parameter_sets: bool,
     packets: Vec<Packet>,
     /// What a VP9 track's keyframes declare, found while demuxing.
     vp9_colour: Vp9Colour,
@@ -465,7 +477,6 @@ fn decode_demuxed(
     let mut sampler = Sampler {
         targets,
         next: 0,
-        shown: 0,
         width: info.width,
         height: info.height,
         limits: *limits,
@@ -476,10 +487,10 @@ fn decode_demuxed(
         timestamps: Vec::with_capacity(targets.len()),
     };
     backend(track, &mut sampler)?;
-    if !sampler.done() {
+    if let Some(missing) = sampler.targets.get(sampler.next) {
         return Err(MmError::invalid_input(format!(
-            "the video decoded to {} displayable frames, fewer than the {} it declares",
-            sampler.shown, info.frame_count
+            "frame {missing} of the {} the video declares did not decode",
+            info.frame_count
         )));
     }
     VideoFrames::new(
@@ -521,11 +532,13 @@ fn sample_indices(total: u64, n: u64) -> Vec<u64> {
         .collect()
 }
 
-/// Collects the sampled frames as displayed frames arrive in order.
+/// Collects the sampled frames as displayed frames arrive, each with its
+/// index among the video's shown frames. A decode that skips ahead (see
+/// `seek`) never delivers a frame it skipped, and any frame it delivers that
+/// is not the next sampled one is ignored.
 struct Sampler<'t> {
     targets: &'t [u64],
     next: usize,
-    shown: u64,
     width: u32,
     height: u32,
     limits: VideoDecodeLimits,
@@ -545,33 +558,25 @@ impl Sampler<'_> {
     /// Forget every frame, for a decode that starts over.
     fn restart(&mut self) {
         self.next = 0;
-        self.shown = 0;
         self.rgb.clear();
         self.timestamps.clear();
     }
 
-    /// Whether the next displayed frame is a sampled one.
-    fn wants_next(&self) -> bool {
-        self.targets.get(self.next) == Some(&self.shown)
+    /// Whether shown frame `index` is the next sampled one.
+    fn wants(&self, index: u64) -> bool {
+        self.targets.get(self.next) == Some(&index)
     }
 
-    /// Count a displayed frame that is not sampled.
-    fn skip(&mut self) {
-        self.shown += 1;
-    }
-
-    /// Account for one displayed frame; convert it, and resize it if asked,
-    /// if it is a sampled one (kept again if the index repeats).
-    fn push(&mut self, picture: &Nv12<'_>, pts: f64) -> Result<()> {
+    /// Take shown frame `index`: convert it, and resize it if asked, if it is
+    /// the next sampled one (kept again if the index repeats).
+    fn push(&mut self, picture: &Nv12<'_>, pts: f64, index: u64) -> Result<()> {
         if (picture.width, picture.height) != (self.width, self.height) {
             return Err(MmError::invalid_input(format!(
                 "frame size changed mid-stream from {}x{} to {}x{}",
                 self.width, self.height, picture.width, picture.height
             )));
         }
-        let index = self.shown;
-        self.shown += 1;
-        if self.targets.get(self.next) != Some(&index) {
+        if !self.wants(index) {
             return Ok(());
         }
         let start = self.rgb.len();
@@ -689,7 +694,13 @@ fn demux_mp4(source: &dyn ByteSource) -> Result<Track<'_>> {
             len: sample.size as usize,
         };
         let pts = video.start_time + sample.cts as f64 / timescale;
-        packets.push(Packet::new(payload, pts, sample.displays, !sample.shown));
+        packets.push(Packet::new(
+            payload,
+            pts,
+            sample.displays,
+            !sample.shown,
+            sample.sync,
+        ));
     }
     Ok(Track {
         codec,
@@ -701,6 +712,7 @@ fn demux_mp4(source: &dyn ByteSource) -> Result<Track<'_>> {
             VideoCodec::H264 | VideoCodec::Hevc | VideoCodec::Av1 => video.config,
             _ => None,
         },
+        inband_parameter_sets: video.inband_parameter_sets,
         packets,
         vp9_colour,
         source,
@@ -788,6 +800,8 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
             pts,
             displays,
             frame.is_invisible,
+            // A Block in a BlockGroup has no keyframe flag: not a start.
+            frame.is_keyframe == Some(true),
         );
         if packet.shown {
             let end = frame
@@ -830,6 +844,7 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
         start_time: first,
         duration,
         config,
+        inband_parameter_sets: matches!(codec, VideoCodec::H264 | VideoCodec::Hevc),
         packets,
         vp9_colour,
         source,
@@ -2466,7 +2481,6 @@ mod tests {
                     let mut sampler = Sampler {
                         targets: &targets,
                         next: 0,
-                        shown: 0,
                         width: info.width,
                         height: info.height,
                         limits: VideoDecodeLimits::default(),
@@ -2536,5 +2550,159 @@ mod tests {
         // NVDEC would scale it to an even size rather than crop it.
         let r = decode_sampled(&fixture("av1_odd.mp4"), 1, &VideoDecodeLimits::default());
         assert!(matches!(r, Err(MmError::Unsupported { .. })), "{r:?}");
+    }
+
+    // -- Keyframe seeking: the same frames as decoding everything ------------
+
+    #[cfg(target_os = "linux")]
+    mod seeking {
+        use super::*;
+
+        /// Every frame on its own, and sets of frames, decode to the same bytes
+        /// and times with seeking as in one decode of the whole stream.
+        fn assert_seeking_changes_nothing(backend: Backend, name: &str) {
+            let bytes = fixture(name);
+            let limits = VideoDecodeLimits::default();
+            let n = probe(&bytes).unwrap().frame_count;
+            let decode = |indices: &[u64], seek: bool| {
+                seek::DISABLED.set(!seek);
+                let frames = decode_frames_with(&bytes.as_slice(), indices, None, &limits, backend);
+                seek::DISABLED.set(false);
+                frames.unwrap_or_else(|e| panic!("{name} {indices:?}: {e}"))
+            };
+            let all: Vec<u64> = (0..n).collect();
+            let whole = decode(&all, false);
+            // Checked against the source too, not only against the whole
+            // decode: frame i of a gop_* clip has grey level `16 + 5 i` in
+            // its left 32 columns (see generate.py).
+            if name.starts_with("gop_") {
+                for i in 0..n {
+                    let grey = band_grey(whole.frame(i as usize).unwrap(), whole.width());
+                    assert!(
+                        grey.abs_diff(16 + 5 * i) <= 6,
+                        "{name} frame {i}: grey {grey}"
+                    );
+                }
+            }
+            let mut sets: Vec<Vec<u64>> = (0..n).map(|i| vec![i]).collect();
+            sets.extend([
+                sample_indices(n, 4),
+                sample_indices(n, n.min(16)),
+                vec![0, n - 1],
+                vec![n / 2, n / 2, n - 1],
+                all.clone(),
+            ]);
+            for set in sets {
+                let frames = decode(&set, true);
+                for (k, &i) in set.iter().enumerate() {
+                    assert!(
+                        frames.frame(k) == whole.frame(i as usize),
+                        "{name}: frame {i} differs when decoding {set:?}"
+                    );
+                    assert_eq!(
+                        frames.timestamps()[k],
+                        whole.timestamps()[i as usize],
+                        "{name}: frame {i} time, decoding {set:?}"
+                    );
+                }
+            }
+        }
+
+        /// The mean of the left 32 columns of an RGB frame `width` wide.
+        fn band_grey(frame: &[u8], width: usize) -> u64 {
+            let rows = frame.chunks(width * 3);
+            let count = rows.len() as u64 * 32 * 3;
+            let sum: u64 = rows
+                .flat_map(|row| &row[..32 * 3])
+                .map(|&v| u64::from(v))
+                .sum();
+            sum / count
+        }
+
+        #[test]
+        #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+        fn nvdec_frames_are_the_same_with_seeking() {
+            for name in [
+                "gop_h264.mp4",
+                "gop_frag.mp4",
+                "gop_h264_open.mp4",
+                "gop_hevc.mp4",
+                "gop_hev1.mp4",
+                "gop_vp9.webm",
+                "gop_av1.mp4",
+                "h264.mp4",
+                "hevc.mp4",
+                "av1.mp4",
+                "cut.mp4",
+                "delay.mp4",
+                "vp9_altref.webm",
+                "vp9_invisible.webm",
+            ] {
+                assert_seeking_changes_nothing(nvdec::decode, name);
+            }
+        }
+
+        #[test]
+        #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
+        fn a_stream_that_starts_at_a_cra_picture_leaves_out_its_rasl_pictures() {
+            // gop_hevc.mp4 from its CRA picture at frame 24, as a cut or a
+            // segment would start: the two RASL pictures after it reference
+            // frames that are gone. Shown, they cannot be decoded; hidden (as
+            // an edit list from the CRA picture hides them), every frame is
+            // the one a decode of the whole clip gives, with seeking or not.
+            let bytes = fixture("gop_hevc.mp4");
+            let slice = bytes.as_slice();
+            let limits = VideoDecodeLimits::default();
+            let full = demux(&slice).unwrap();
+            let cra = (0..full.packets.len())
+                .filter(|&i| full.packets[i].sync)
+                .nth(3)
+                .unwrap();
+            let all: Vec<u64> = (0..full.info().frame_count).collect();
+            let whole = decode_demuxed(&full, &all, None, &limits, nvdec::decode).unwrap();
+            let originals = seek::Order::new(&full).shown[cra..].to_vec();
+            for hidden in [false, true] {
+                let mut track = demux(&slice).unwrap();
+                track.packets.drain(..cra);
+                if hidden {
+                    track.packets[1].shown = false;
+                    track.packets[2].shown = false;
+                }
+                let order = seek::Order::new(&track);
+                for seek in [false, true] {
+                    seek::DISABLED.set(!seek);
+                    for k in 0..track.info().frame_count {
+                        let packet = (0..track.packets.len())
+                            .find(|&i| order.shown[i] == Some(k))
+                            .unwrap();
+                        let r = decode_demuxed(&track, &[k], None, &limits, nvdec::decode);
+                        if packet == 1 || packet == 2 {
+                            assert!(r.is_err(), "RASL picture {k} decoded");
+                            continue;
+                        }
+                        let frames = r.unwrap_or_else(|e| panic!("frame {k}: {e}"));
+                        let original = originals[packet].unwrap() as usize;
+                        assert!(
+                            frames.frame(0) == whole.frame(original),
+                            "frame {k} (hidden {hidden}, seek {seek}) is not frame {original}"
+                        );
+                        assert_eq!(frames.timestamps()[0], whole.timestamps()[original]);
+                    }
+                    seek::DISABLED.set(false);
+                }
+            }
+        }
+
+        #[test]
+        fn cpu_frames_are_the_same_with_seeking() {
+            for name in [
+                "gop_vp8.webm",
+                "gop_vp9.webm",
+                "vp9_altref.webm",
+                "vp9_invisible.webm",
+            ] {
+                assert_seeking_changes_nothing(vpx::decode, name);
+            }
+        }
     }
 }

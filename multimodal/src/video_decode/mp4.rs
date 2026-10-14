@@ -4,8 +4,15 @@
 //! MP4 (ISO BMFF) demuxing: the sample table of the first video track.
 //!
 //! Only what the decoder needs is read, and everything else is skipped by box
-//! size, never parsed: `udta`, `meta`, `emsg`, sample groups, `sdtp`, `stss`,
+//! size, never parsed: `udta`, `meta`, `emsg`, sample groups, `sdtp`, `stps`,
 //! audio and text tracks.
+//!
+//! Keyframes are read as FFmpeg reads them: the samples `stss` lists, every
+//! sample when there is no `stss`, and in a fragment those whose flags do not
+//! say "not a sync sample" or "depends on others". They only tell the decoder
+//! where it may start (see `seek`), which checks each one in the bitstream
+//! first, so an `stss` that does not parse turns seeking off instead of
+//! refusing a file that decodes.
 //!
 //! Times are player times. The video track's edit list (`edts/elst`) decides
 //! which frames show and when: frames outside its window are decoded (later
@@ -57,6 +64,8 @@ pub(super) struct Sample {
     /// Whether the frame displays inside the edit list's window. Hidden
     /// frames are still decoded: later frames may reference them.
     pub shown: bool,
+    /// Whether the container marks the sample a keyframe (a sync sample).
+    pub sync: bool,
 }
 
 /// The video track once [`Movie::finish`] has applied the edit list. Its
@@ -67,6 +76,9 @@ pub(super) struct Mp4Video {
     pub height: u32,
     /// The payload of `avcC`, `hvcC` or `av1C`.
     pub config: Option<Vec<u8>>,
+    /// Whether the sample entry lets parameter sets travel in the samples
+    /// (`hev1`; `avc1` and `hvc1` keep them in the configuration record).
+    pub inband_parameter_sets: bool,
     /// Media timescale: units per second.
     pub timescale: u64,
     /// Seconds before the first shown frame: an edit list's leading empty
@@ -404,11 +416,13 @@ pub(super) struct Movie {
     width: u32,
     height: u32,
     config: Option<Vec<u8>>,
+    inband_parameter_sets: bool,
     track_id: u32,
     timescale: u32,
     duration: u64,
     default_duration: u32,
     default_size: u32,
+    default_flags: u32,
     /// The video track's edit list, the movie timescale its durations use,
     /// and whether the file is fragmented.
     edits: Vec<Edit>,
@@ -471,11 +485,13 @@ impl Movie {
             width: 0,
             height: 0,
             config: None,
+            inband_parameter_sets: false,
             track_id: trak.id,
             timescale: trak.timescale,
             duration: trak.duration,
             default_duration: 0,
             default_size: 0,
+            default_flags: 0,
             edits: trak.elst.map(edits).transpose()?.unwrap_or_default(),
             movie_timescale: movie_timescale.unwrap_or(0),
             fragmented,
@@ -494,6 +510,7 @@ impl Movie {
                 }
                 movie.default_duration = be32(rest, 8)?;
                 movie.default_size = be32(rest, 12)?;
+                movie.default_flags = be32(rest, 16)?;
             }
         }
         movie.read_stbl(stbl, trak.dref)?;
@@ -504,6 +521,7 @@ impl Movie {
     fn read_stbl(&mut self, stbl: &[u8], dref: Option<&[u8]>) -> Result<()> {
         let (mut stsd, mut stts, mut ctts, mut stsz) = (None, None, None, None);
         let (mut stsc, mut stco, mut co64) = (None, None, None);
+        let mut stss = Vec::new();
         for child in Boxes::new(stbl) {
             let (kind, body) = child?;
             match &kind {
@@ -514,6 +532,7 @@ impl Movie {
                 b"stsc" => set_once(&mut stsc, body, "stsc")?,
                 b"stco" => set_once(&mut stco, body, "stco")?,
                 b"co64" => set_once(&mut co64, body, "co64")?,
+                b"stss" => stss.push(body),
                 b"stz2" => {
                     return Err(MmError::unsupported("MP4 compact sample sizes (stz2)"));
                 }
@@ -532,7 +551,36 @@ impl Movie {
             (None, Some(body)) => Chunks::new(body, 8, "co64")?,
             (None, None) => return Err(malformed("sample table without stco or co64")),
         };
-        self.read_samples(stts, ctts, stsz, stsc, &chunks)
+        self.read_samples(stts, ctts, stsz, stsc, &chunks)?;
+        if !stss.is_empty() {
+            self.mark_sync(&stss);
+        }
+        Ok(())
+    }
+
+    /// Keep only the keyframes `stss` lists (FFmpeg's reading: an empty one
+    /// leaves none, so decoding starts at the first sample). Entries that do
+    /// not parse or name no sample, and every entry of a table given twice,
+    /// are dropped, which can only stop the decoder from skipping ahead.
+    fn mark_sync(&mut self, stss: &[&[u8]]) {
+        for sample in &mut self.samples {
+            sample.sync = false;
+        }
+        let entries = match stss {
+            [stss] => full_box(stss, &[0], "stss")
+                .and_then(|(_, _, rest)| table(rest, 4, "stss"))
+                .map_or(&[][..], |(_, entries)| entries),
+            _ => &[],
+        };
+        for entry in entries.chunks_exact(4) {
+            let number = u32::from_be_bytes([entry[0], entry[1], entry[2], entry[3]]);
+            if let Some(sample) = index(number)
+                .checked_sub(1)
+                .and_then(|i| self.samples.get_mut(i))
+            {
+                sample.sync = true;
+            }
+        }
     }
 
     fn read_sample_entry(&mut self, stsd: &[u8], dref: Option<&[u8]>) -> Result<()> {
@@ -569,6 +617,7 @@ impl Movie {
             .ok_or_else(|| malformed("short sample entry"))?;
         check_data_reference(dref, be16(body, 6)?)?;
         self.codec = codec;
+        self.inband_parameter_sets = &kind == b"hev1";
         self.width = u32::from(be16(body, 24)?);
         self.height = u32::from(be16(body, 26)?);
         let mut config = None;
@@ -679,7 +728,7 @@ impl Movie {
                         ),
                         None => 0,
                     };
-                    self.push(offset, size, duration, dts, shift)?;
+                    self.push(offset, size, duration, dts, shift, true)?;
                     last_dts = dts;
                     dts = dts
                         .checked_add(i64::from(duration))
@@ -706,7 +755,15 @@ impl Movie {
 
     /// Append a sample, refusing one with no bytes or too many. [`read`]
     /// checks that it lies within the media data, once every box is known.
-    fn push(&mut self, offset: u64, size: u32, duration: u32, dts: i64, shift: i64) -> Result<()> {
+    fn push(
+        &mut self,
+        offset: u64,
+        size: u32,
+        duration: u32,
+        dts: i64,
+        shift: i64,
+        sync: bool,
+    ) -> Result<()> {
         if size == 0 {
             return Err(malformed("empty sample"));
         }
@@ -725,6 +782,7 @@ impl Movie {
             cts,
             displays: true,
             shown: true,
+            sync,
         });
         let latest = self.last_displayed.and_then(|i| self.samples.get(i));
         if latest.is_none_or(|latest| cts >= latest.cts) {
@@ -798,7 +856,7 @@ impl Movie {
         }
         let default_duration = field(DURATION, false)?.map_or(self.default_duration, |v| v as u32);
         let default_size = field(SIZE, false)?.map_or(self.default_size, |v| v as u32);
-        field(FLAGS, false)?;
+        let default_flags = field(FLAGS, false)?.map_or(self.default_flags, |v| v as u32);
 
         let base = match explicit_base {
             Some(base) => base,
@@ -832,7 +890,7 @@ impl Movie {
                 base,
                 cursor,
                 &mut dts,
-                (default_duration, default_size),
+                (default_duration, default_size, default_flags),
             )?;
         }
         self.next_dts = dts;
@@ -866,7 +924,7 @@ impl Movie {
         base: u64,
         cursor: u64,
         dts: &mut i64,
-        (default_duration, default_size): (u32, u32),
+        (default_duration, default_size, default_flags): (u32, u32, u32),
     ) -> Result<u64> {
         const KNOWN_TRUN: u32 = 0x1 | 0x4 | 0x100 | 0x200 | 0x400 | 0x800;
         const DATA_OFFSET: u32 = 0x1;
@@ -875,6 +933,9 @@ impl Movie {
         const SIZE: u32 = 0x200;
         const FLAGS: u32 = 0x400;
         const CTS: u32 = 0x800;
+        // Sample flags that rule out starting a decode at the sample, as in
+        // FFmpeg: `sample_is_non_sync_sample`, and `sample_depends_on` = 1.
+        const NOT_SYNC: u32 = 0x1_0000 | 0x100_0000;
 
         let (_, flags, rest) = full_box(trun, &[0, 1], "trun")?;
         if flags & !KNOWN_TRUN != 0 {
@@ -890,8 +951,9 @@ impl Movie {
                 .ok_or_else(|| malformed("trun data offset out of range"))?;
             at += 4;
         }
+        let mut first_flags = None;
         if flags & FIRST_FLAGS != 0 {
-            bytes::<4>(rest, at)?;
+            first_flags = Some(be32(rest, at)?);
             at += 4;
         }
         let record = 4 * (flags & (DURATION | SIZE | FLAGS | CTS)).count_ones() as usize;
@@ -904,7 +966,7 @@ impl Movie {
             return Err(malformed("more samples than the file can hold"));
         }
         let mut next = at;
-        for _ in 0..count {
+        for i in 0..count {
             let mut take = |flag: u32| -> Result<Option<u32>> {
                 if flags & flag == 0 {
                     return Ok(None);
@@ -915,10 +977,22 @@ impl Movie {
             };
             let duration = take(DURATION)?.unwrap_or(default_duration);
             let size = take(SIZE)?.unwrap_or(default_size);
-            take(FLAGS)?;
+            let sample_flags = take(FLAGS)?;
+            // As FFmpeg reads them: a sample's own flags, else the run's
+            // first-sample flags for its first, else the defaults.
+            let sample_flags = sample_flags
+                .or(first_flags.filter(|_| i == 0))
+                .unwrap_or(default_flags);
             // Signed in both versions, as for `ctts`.
             let shift = take(CTS)?.map_or(0, |v| i64::from(v as i32));
-            self.push(cursor, size, duration, *dts, shift)?;
+            self.push(
+                cursor,
+                size,
+                duration,
+                *dts,
+                shift,
+                sample_flags & NOT_SYNC == 0,
+            )?;
             cursor = cursor
                 .checked_add(u64::from(size))
                 .ok_or_else(|| malformed("sample offset overflow"))?;
@@ -1019,6 +1093,7 @@ impl Movie {
             width: self.width,
             height: self.height,
             config: self.config,
+            inband_parameter_sets: self.inband_parameter_sets,
             timescale: u64::from(self.timescale),
             start_time,
             duration,

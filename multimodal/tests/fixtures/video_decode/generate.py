@@ -38,14 +38,19 @@ Clips:
   `altref_grey(i)`, so each output frame can be matched to its timestamp;
 * av1_odd.mp4 is one 130x129 AV1 frame, which NVDEC resamples rather than
   crops (it must be refused);
+* gop_*.mp4 / gop_*.webm are forty 160x160 frames with a keyframe every
+  eight, for keyframe seeking (see `write_gops`): closed-GOP H.264 with
+  B-frames (and gop_frag.mp4, the same remuxed as a fragmented MP4),
+  open-GOP H.264 and HEVC, HEVC with in-band parameter sets (gop_hev1.mp4),
+  VP8, VP9 and AV1;
 * h264_quad.mp4 is one 96x64 frame of four coloured quadrants (`QUADRANTS`);
   h264_quad.rgb is its exact RGB: a software decoder's YUV planes converted
   with BT.601 limited range and nearest chroma, the conversion the crate
   implements (H.264 decoding is bit-exact, so NVDEC must match it).
 
 Requires PyAV (tested with av 19.0.1, whose wheels bundle the encoders),
-numpy, and for vp9_altref.webm, delay.mp4 and cut.mp4 the ffmpeg CLI with
-libvpx and libx264 (tested with 6.1.1):
+numpy, and for vp9_altref.webm, delay.mp4, cut.mp4 and the gop_* clips the
+ffmpeg CLI with libvpx, libx264, libx265 and libsvtav1 (tested with 6.1.1):
 
     python multimodal/tests/fixtures/video_decode/generate.py
 """
@@ -192,6 +197,75 @@ def write_edit_lists(here: Path) -> None:
              "-c", "copy", str(here / "cut.mp4")],
             check=True,
         )
+
+
+def gop_grey(i: int) -> int:
+    return 16 + 5 * i
+
+
+# (name, ffmpeg output options): forty frames, a keyframe every eight.
+GOP_CLIPS = [
+    # Closed GOPs with B-frames: every keyframe is an IDR picture.
+    ("gop_h264.mp4", ["-c:v", "libx264", "-crf", "40", "-g", "8", "-keyint_min", "8",
+                      "-sc_threshold", "0", "-bf", "2"]),
+    # Open GOPs: keyframes after the first are I pictures with a recovery
+    # point, not IDR pictures, which the decoder cannot start at.
+    ("gop_h264_open.mp4", ["-c:v", "libx264", "-crf", "40", "-bf", "2",
+                           "-x264-params", "keyint=8:min-keyint=8:scenecut=0:open-gop=1"]),
+    # Open GOPs: CRA keyframes, each followed by RASL pictures that display
+    # before it and reference the GOP before.
+    ("gop_hevc.mp4", ["-c:v", "libx265", "-crf", "40", "-tag:v", "hvc1", "-x265-params",
+                      "keyint=8:min-keyint=8:scenecut=0:open-gop=1:bframes=2:log-level=error"]),
+    # hev1: the parameter sets also travel in the samples, repeated at each
+    # keyframe.
+    ("gop_hev1.mp4", ["-c:v", "libx265", "-crf", "40", "-tag:v", "hev1", "-x265-params",
+                      "keyint=8:min-keyint=8:scenecut=0:bframes=2:repeat-headers=1:log-level=error"]),
+    ("gop_vp8.webm", ["-c:v", "libvpx", "-crf", "50", "-b:v", "100k", "-g", "8",
+                      "-keyint_min", "8"]),
+    ("gop_vp9.webm", ["-c:v", "libvpx-vp9", "-crf", "50", "-b:v", "0", "-g", "8",
+                      "-keyint_min", "8"]),
+    ("gop_av1.mp4", ["-c:v", "libsvtav1", "-crf", "50", "-g", "8", "-preset", "8"]),
+]
+
+
+def write_gops(here: Path, size=160, count=40) -> None:
+    """Clips of several GOPs, for keyframe seeking.
+
+    Frame i is the moving texture with its left 32 columns at grey level
+    `gop_grey(i)`, so a frame decoded from the wrong references shows. Each
+    clip has a keyframe every 8 frames; gop_frag.mp4 is gop_h264.mp4 remuxed
+    as a fragmented MP4 (keyframes from `trun` flags rather than `stss`).
+    """
+    # Smoother than texture_frames(), to keep the clips small; 160 px is above
+    # NVDEC's HEVC minimum of 144.
+    y, x = np.mgrid[0 : size + count, 0 : size + count]
+    base = np.stack(
+        [
+            128 + 100 * np.sin(x / 9.0) * np.cos(y / 13.0),
+            128 + 100 * np.sin((x + y) / 11.0),
+            128 + 100 * np.cos(x / 15.0 - y / 7.0),
+        ],
+        axis=-1,
+    ).astype(np.uint8)
+    raw = b""
+    for i in range(count):
+        rgb = base[i : i + size, i : i + size].copy()
+        rgb[:, :32] = gop_grey(i)
+        raw += rgb.tobytes()
+    for name, options in GOP_CLIPS:
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
+             "-s", f"{size}x{size}", "-r", str(FPS), "-i", "-", *options,
+             "-pix_fmt", "yuv420p", str(here / name)],
+            input=raw,
+            check=True,
+        )
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(here / "gop_h264.mp4"), "-c", "copy",
+         "-movflags", "frag_keyframe+empty_moov+default_base_moof",
+         str(here / "gop_frag.mp4")],
+        check=True,
+    )
 
 
 def read_vint(data: bytes, pos: int, keep_marker: bool) -> tuple[int, int]:
@@ -350,6 +424,7 @@ def main() -> None:
     write_altref(here / "vp9_altref.webm")
     write(here / "av1_odd.mp4", "mp4", "libsvtav1", CLIPS[3][3], frames=quadrant_frame(130, 129))
     write_edit_lists(here)
+    write_gops(here)
     for path in sorted(here.glob("*.*")):
         if path.suffix in (".mp4", ".webm"):
             print(f"{path.name}: {path.stat().st_size} bytes")

@@ -39,6 +39,7 @@
 use std::ffi::{CStr, c_char, c_int, c_uint, c_void};
 use std::sync::OnceLock;
 
+use super::seek::{self, Leading, Order, Run};
 use super::{Matrix, Nv12, Sampler, Track, VideoCodec, check_size};
 use crate::{MmError, Result};
 
@@ -504,10 +505,10 @@ struct Surface {
 struct State<'s, 'sp, 't, 'p> {
     api: &'static Api,
     track: &'t Track<'p>,
-    /// Indices of the packets that display a frame, in presentation order;
-    /// see `decode`.
-    order: Vec<usize>,
-    /// Frames displayed so far.
+    /// The packets in display order; see `decode`.
+    order: Order,
+    /// Frames displayed so far, counted from the start of the stream: a run
+    /// that starts later starts the count at its first packet's place.
     displayed: usize,
     /// VP9 colour from the first keyframe header (NVDEC does not report it).
     vp9_colour: Option<(Matrix, bool)>,
@@ -785,16 +786,16 @@ impl State<'_, '_, '_, '_> {
             _ => Some(self.displayed),
         };
         self.displayed += 1;
-        let packet = index
-            .and_then(|i| self.order.get(i))
-            .map(|&i| &self.track.packets[i])
+        let packet_index = index
+            .and_then(|i| self.order.displayed.get(i))
+            .copied()
             .ok_or_else(|| MmError::internal("NVDEC displayed a frame from an unknown packet"))?;
-        if !packet.shown {
+        let packet = &self.track.packets[packet_index];
+        let Some(shown) = self.order.shown[packet_index] else {
             return Ok(());
-        }
-        // Count frames that are not sampled without copying them off the GPU.
-        if !self.sampler.wants_next() {
-            self.sampler.skip();
+        };
+        // Pass over frames that are not sampled without copying them off the GPU.
+        if !self.sampler.wants(shown) {
             return Ok(());
         }
         let (width, height, target_height, matrix, full_range) = self
@@ -837,7 +838,7 @@ impl State<'_, '_, '_, '_> {
             matrix,
             full_range,
         };
-        self.sampler.push(&picture, packet.pts)
+        self.sampler.push(&picture, packet.pts, shown)
     }
 
     /// Copy the displayed part of a mapped NV12 surface to the host buffers.
@@ -905,16 +906,8 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     // Only packets that display a frame carry a timestamp: one that displays
     // nothing (a hidden VP9 frame) must not take a place in the sorted order.
     // VP9 and AV1 display in decode order, which `order` keeps.
-    let mut order: Vec<usize> = (0..track.packets.len())
-        .filter(|&i| track.packets[i].displays)
-        .collect();
-    if matches!(track.codec, VideoCodec::H264 | VideoCodec::Hevc) {
-        order.sort_by(|&a, &b| track.packets[a].pts.total_cmp(&track.packets[b].pts));
-    }
-    let mut rank = vec![0usize; track.packets.len()];
-    for (r, &i) in order.iter().enumerate() {
-        rank[i] = r;
-    }
+    let order = Order::new(track);
+    let runs = seek::plan(track, &order, sampler.targets)?;
 
     // One colour for the whole stream: the decoder is created with it.
     let vp9_colour = track.vp9_colour.get()?;
@@ -934,6 +927,47 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
         host_uv: Vec::new(),
         error: None,
     })));
+    let (mut raw, mut buffer) = (Vec::new(), Vec::new());
+    for run in &runs {
+        // SAFETY: no callback runs between parse calls; a short-lived access
+        // through the one pointer.
+        unsafe {
+            if (*state.0).sampler.done() {
+                break;
+            }
+            let order = &(*state.0).order;
+            (*state.0).displayed = order.displayed.partition_point(|&i| i < run.start);
+        }
+        decode_run(
+            api,
+            codec_type,
+            &state,
+            run,
+            &prefix,
+            length_size,
+            &mut raw,
+            &mut buffer,
+        )?;
+    }
+    Ok(())
+}
+
+/// Feed the packets of `run` to a new parser, which starts at the run's
+/// keyframe with no state from earlier runs (the decoder, whose surfaces
+/// it reuses, keeps none either), then flush it.
+#[allow(clippy::too_many_arguments)]
+fn decode_run(
+    api: &'static Api,
+    codec_type: c_uint,
+    state: &StateBox<'_, '_, '_, '_>,
+    run: &Run,
+    prefix: &[u8],
+    length_size: Option<usize>,
+    raw: &mut Vec<u8>,
+    buffer: &mut Vec<u8>,
+) -> Result<()> {
+    // SAFETY: as in `decode`.
+    let track = unsafe { (*state.0).track };
     let mut params = ParserParams {
         codec_type,
         max_num_decode_surfaces: 1,
@@ -952,33 +986,38 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
         ext_video_info: std::ptr::null_mut(),
     };
     let mut handle: CuVideoParser = std::ptr::null_mut();
-    // SAFETY: valid params; the state outlives the parser (`parser` is
-    // declared after `state`, so it is dropped first).
+    // SAFETY: valid params; the state outlives the parser, which is dropped
+    // before this function returns.
     check(
         unsafe { (api.create_parser)(&mut handle, &mut params) },
         "cuvidCreateVideoParser",
     )?;
     let parser = Parser { api, handle };
 
-    let (mut raw, mut buffer) = (Vec::new(), Vec::new());
-    for (index, packet) in track.packets.iter().enumerate() {
+    // The codec configuration, then any parameter sets the packets before
+    // the run carried, go before its first packet.
+    let run_prefix = [prefix, &run.parameter_sets].concat();
+    let mut leading = Leading::new(track);
+    for index in run.start..run.end {
         // SAFETY: no callback runs between parse calls; a short-lived read
         // through the one pointer.
         if unsafe { (*state.0).sampler.done() } {
             break;
         }
-        let payload = super::to_decoder_input(
-            track.packet_bytes(packet, &mut raw)?,
-            &prefix,
-            length_size,
-            index == 0,
-            &mut buffer,
-        )?;
+        let packet = &track.packets[index];
+        let data = track.packet_bytes(packet, raw)?;
+        if leading.skips(data, index == run.start) {
+            continue;
+        }
+        let payload =
+            super::to_decoder_input(data, &run_prefix, length_size, index == run.start, buffer)?;
+        // SAFETY: as above.
+        let rank = unsafe { (&(*state.0).order.rank)[index] };
         let mut data = SourceDataPacket {
             flags: if packet.displays { PKT_TIMESTAMP } else { 0 },
             payload_size: payload.len() as TcuUlong,
             payload: payload.as_ptr(),
-            timestamp: rank[index] as i64,
+            timestamp: rank as i64,
         };
         // SAFETY: `payload` lives until the call returns; the parser copies
         // what it keeps. Callbacks run inside this call.

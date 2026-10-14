@@ -55,6 +55,7 @@ use std::ffi::{CStr, c_char, c_int, c_long, c_uint, c_void};
 use std::sync::OnceLock;
 
 use super::nvdec::{open, symbol};
+use super::seek::{self, Order};
 use super::{Matrix, Nv12, Sampler, Track, VideoCodec};
 use crate::{MmError, Result};
 
@@ -358,7 +359,12 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
     };
     let mut decoder = Decoder::new(api()?, track.codec)?;
     let (mut raw, mut framed, mut uv) = (Vec::new(), Vec::new(), Vec::new());
-    for packet in &track.packets {
+    // Each run starts at a key frame, which libvpx decodes without the
+    // references it replaces, so the skipped packets need no reset.
+    let order = Order::new(track);
+    let runs = seek::plan(track, &order, sampler.targets)?;
+    for index in runs.iter().flat_map(|run| run.start..run.end) {
+        let packet = &track.packets[index];
         if sampler.done() {
             break;
         }
@@ -412,15 +418,14 @@ pub(super) fn decode(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()>
             // SAFETY: non-null, valid until the next decode call.
             let image = unsafe { &*image };
             check_image(image, sampler.width, sampler.height)?;
-            if !packet.shown {
+            let Some(shown) = order.shown[index] else {
                 continue;
-            }
-            if !sampler.wants_next() {
-                sampler.skip();
+            };
+            if !sampler.wants(shown) {
                 continue;
             }
             let picture = to_nv12(image, matrix, full_range, &mut uv)?;
-            sampler.push(&picture, packet.pts)?;
+            sampler.push(&picture, packet.pts, shown)?;
         }
         if outputs == 0 && packet.displays {
             return Err(MmError::invalid_input(
