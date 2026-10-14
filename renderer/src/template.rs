@@ -10,6 +10,7 @@ use super::PromptContextMixin;
 
 mod context;
 mod formatters;
+mod minimax_m2;
 mod oai;
 mod tokcfg;
 
