@@ -83,61 +83,89 @@ fn write_python_float<W: ?Sized + io::Write>(writer: &mut W, value: f64) -> io::
     writer.write_all(python_float_repr(value).as_bytes())
 }
 
-/// Formatter matching Python `json.dumps` default output: `", "` and `": "`
-/// separators, and Python float spelling. serde_json's `CompactFormatter` writes
-/// `","`/`":"` instead, and chat templates embed these strings directly into the
-/// prompt, so the separator choice is model-visible.
-pub(crate) struct PyJsonFormatter;
+/// Formatter matching Python `json.dumps` output for the given `separators`, `indent`
+/// and `ensure_ascii`, with Python float spelling. Python's default separators are
+/// `", "` and `": "`; serde_json's `CompactFormatter` writes `","`/`":"` instead, and
+/// chat templates embed these strings directly into the prompt, so the separator
+/// choice is model-visible.
+pub(crate) struct PyJsonFormatter<'a> {
+    item_sep: &'a str,
+    key_sep: &'a str,
+    /// Python `indent`: each item starts on a new line, indented by one copy of this
+    /// per nesting level.
+    indent: Option<&'a str>,
+    level: usize,
+    has_value: bool,
+    ensure_ascii: bool,
+}
 
-impl Formatter for PyJsonFormatter {
-    fn write_f64<W: ?Sized + io::Write>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
-        write_python_float(writer, value)
+impl<'a> PyJsonFormatter<'a> {
+    pub(crate) fn new(
+        item_sep: &'a str,
+        key_sep: &'a str,
+        indent: Option<&'a str>,
+        ensure_ascii: bool,
+    ) -> Self {
+        Self {
+            item_sep,
+            key_sep,
+            indent,
+            level: 0,
+            has_value: false,
+            ensure_ascii,
+        }
     }
 
-    fn begin_array_value<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        if !first {
-            writer.write_all(b", ")?;
+    fn newline_indent<W: ?Sized + io::Write>(&self, writer: &mut W) -> io::Result<()> {
+        if let Some(indent) = self.indent {
+            writer.write_all(b"\n")?;
+            for _ in 0..self.level {
+                writer.write_all(indent.as_bytes())?;
+            }
         }
         Ok(())
     }
 
-    fn begin_object_key<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        if !first {
-            writer.write_all(b", ")?;
-        }
-        Ok(())
+    fn open<W: ?Sized + io::Write>(&mut self, writer: &mut W, bracket: &[u8]) -> io::Result<()> {
+        self.level += 1;
+        self.has_value = false;
+        writer.write_all(bracket)
     }
 
-    fn begin_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
-    where
-        W: ?Sized + io::Write,
-    {
-        writer.write_all(b": ")
+    fn close<W: ?Sized + io::Write>(&mut self, writer: &mut W, bracket: &[u8]) -> io::Result<()> {
+        self.level -= 1;
+        if self.has_value {
+            self.newline_indent(writer)?;
+        }
+        writer.write_all(bracket)
+    }
+
+    fn begin_item<W: ?Sized + io::Write>(&mut self, writer: &mut W, first: bool) -> io::Result<()> {
+        if !first {
+            writer.write_all(self.item_sep.as_bytes())?;
+        }
+        self.newline_indent(writer)
     }
 }
 
-/// Adds Python float spelling to another formatter, e.g. `PrettyFormatter` for
-/// `json.dumps(indent=n)`. Only the array, object, and separator hooks are delegated
-/// to the wrapped formatter; every other hook uses serde_json's default.
-pub(crate) struct PyFloats<F>(pub(crate) F);
+/// Python's `json.dumps(x, ensure_ascii=False)`.
+impl Default for PyJsonFormatter<'static> {
+    fn default() -> Self {
+        Self::new(", ", ": ", None, false)
+    }
+}
 
-impl<F: Formatter> Formatter for PyFloats<F> {
+impl Formatter for PyJsonFormatter<'_> {
     fn write_f64<W: ?Sized + io::Write>(&mut self, writer: &mut W, value: f64) -> io::Result<()> {
         write_python_float(writer, value)
     }
 
     fn begin_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_array(writer)
+        self.open(writer, b"[")
     }
 
     fn end_array<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_array(writer)
+        self.close(writer, b"]")
     }
 
     fn begin_array_value<W: ?Sized + io::Write>(
@@ -145,19 +173,20 @@ impl<F: Formatter> Formatter for PyFloats<F> {
         writer: &mut W,
         first: bool,
     ) -> io::Result<()> {
-        self.0.begin_array_value(writer, first)
+        self.begin_item(writer, first)
     }
 
-    fn end_array_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_array_value(writer)
+    fn end_array_value<W: ?Sized + io::Write>(&mut self, _writer: &mut W) -> io::Result<()> {
+        self.has_value = true;
+        Ok(())
     }
 
     fn begin_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_object(writer)
+        self.open(writer, b"{")
     }
 
     fn end_object<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_object(writer)
+        self.close(writer, b"}")
     }
 
     fn begin_object_key<W: ?Sized + io::Write>(
@@ -165,19 +194,40 @@ impl<F: Formatter> Formatter for PyFloats<F> {
         writer: &mut W,
         first: bool,
     ) -> io::Result<()> {
-        self.0.begin_object_key(writer, first)
-    }
-
-    fn end_object_key<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_object_key(writer)
+        self.begin_item(writer, first)
     }
 
     fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.begin_object_value(writer)
+        writer.write_all(self.key_sep.as_bytes())
     }
 
-    fn end_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-        self.0.end_object_value(writer)
+    fn end_object_value<W: ?Sized + io::Write>(&mut self, _writer: &mut W) -> io::Result<()> {
+        self.has_value = true;
+        Ok(())
+    }
+
+    // serde_json already escaped control characters, `"` and `\`. Python's
+    // `ensure_ascii` additionally escapes everything outside `' '..='~'` as
+    // `\uXXXX`, using UTF-16 surrogate pairs above the BMP.
+    fn write_string_fragment<W: ?Sized + io::Write>(
+        &mut self,
+        writer: &mut W,
+        fragment: &str,
+    ) -> io::Result<()> {
+        if !self.ensure_ascii {
+            return writer.write_all(fragment.as_bytes());
+        }
+        let mut start = 0;
+        for (i, c) in fragment.char_indices() {
+            if !(' '..='~').contains(&c) {
+                writer.write_all(&fragment.as_bytes()[start..i])?;
+                for unit in c.encode_utf16(&mut [0; 2]) {
+                    write!(writer, "\\u{unit:04x}")?;
+                }
+                start = i + c.len_utf8();
+            }
+        }
+        writer.write_all(&fragment.as_bytes()[start..])
     }
 }
 

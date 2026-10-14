@@ -136,7 +136,7 @@ pub(crate) fn to_json(value: &JsonValue) -> String {
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
     let mut buf = Vec::with_capacity(64);
-    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter::default());
     value
         .serialize(&mut ser)
         .expect("JsonValue serialization to Vec<u8> is infallible");
