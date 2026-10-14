@@ -6,10 +6,6 @@ document:
   mode: unified
 changes:
   glm_ref_encoded_targets:
-    case_key: UNIFIED.7-11
-    stimulus:
-      ref: current
-      semantic_sha256: aea6e9c28d188bc2b6933fe5fd4ef79168e0bd6c43554fd6ca18352b35f44dbe
     observation:
       value:
         assembled:
@@ -31,10 +27,6 @@ changes:
             arguments: '", "pointer": "42"}'
         - expected: []
   glm_ref_scalar_types:
-    case_key: UNIFIED.7-13
-    stimulus:
-      ref: current
-      semantic_sha256: 0a07669ea0593004bec44e5c5fa94dd28739c053b0794988c3aca5121a48cc07
     observation:
       value:
         assembled:
@@ -57,10 +49,6 @@ changes:
             arguments: '", "narrowed": 42}'
         - expected: []
   guided_json_bare_tool_header_recovers_inside_a_thought:
-    case_key: UNIFIED.34-7
-    stimulus:
-      ref: current
-      semantic_sha256: 4edc44e87bea1a320951e52c311932071ee1b283b4f0f5bd7a203938dbdd406b
     observation:
       value:
         assembled:
@@ -85,10 +73,6 @@ changes:
             arguments: '"}'
         - expected: []
   guided_json_gt_in_argument_trailing_close:
-    case_key: UNIFIED.30-11
-    stimulus:
-      ref: current
-      semantic_sha256: dd198cf86a3c2ecb84f2d7058f53be2a7e4fe7db6d3b91106a1bcadffbf3cd88
     observation:
       value:
         assembled:
@@ -101,10 +85,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_gt_in_argument_wrapped:
-    case_key: UNIFIED.30-12
-    stimulus:
-      ref: current
-      semantic_sha256: 74558661262e71bc6c61640ae90f387ab6b1a531c5ce7f7aed539123439db29e
     observation:
       value:
         assembled:
@@ -124,10 +104,6 @@ changes:
             arguments: '"}'
         - expected: []
   guided_json_narrated_invoke_in_reasoning:
-    case_key: UNIFIED.34-1
-    stimulus:
-      ref: current
-      semantic_sha256: a763d97fab458aab00a9dcef865a8b3513626104f7f922373db174f7901ba8f0
     observation:
       value:
         assembled:
@@ -154,10 +130,6 @@ changes:
             name: null
             arguments: '"}'
   guided_json_orphan_tool_close_before_payload:
-    case_key: UNIFIED.32-4
-    stimulus:
-      ref: current
-      semantic_sha256: 055ea272cb56ad1bec86ca7ec3a0ea7f3a2ed9c1eae215009d1ecbeb4159cd6e
     observation:
       value:
         assembled:
@@ -170,10 +142,6 @@ changes:
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
         - expected: []
   guided_json_schema_error_nameless_element_trailing_close:
-    case_key: UNIFIED.33-7
-    stimulus:
-      ref: current
-      semantic_sha256: 0c02849ef7b5351c5bd4a1dd7abf5165703464351c7b05b8b84fdc0e2aafd4c1
     observation:
       value:
         assembled:
@@ -186,10 +154,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_schema_error_nameless_element_wrapped:
-    case_key: UNIFIED.33-8
-    stimulus:
-      ref: current
-      semantic_sha256: 1f18129a07608a9e243bdd85832acba06731734f29dd930f7688ef6a13dac640
     observation:
       value:
         assembled:
@@ -210,10 +174,6 @@ changes:
             arguments: '{}}'
         - expected: []
   guided_json_schema_error_not_a_call_trailing_close:
-    case_key: UNIFIED.33-4
-    stimulus:
-      ref: current
-      semantic_sha256: 6845df0b3b185eb6d023880aaa8367965b5ae65ac2fb98eea6659bd8f5e7fe86
     observation:
       value:
         assembled:
@@ -226,10 +186,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_schema_error_not_a_call_wrapped:
-    case_key: UNIFIED.33-5
-    stimulus:
-      ref: current
-      semantic_sha256: 28440c9ce213144693ac47e7e946578d0f89057eb77df05609f3a167de285b07
     observation:
       value:
         assembled:
@@ -245,10 +201,6 @@ changes:
             arguments: '{}'
         - expected: []
   guided_json_syntax_error_trailing_close:
-    case_key: UNIFIED.33-1
-    stimulus:
-      ref: current
-      semantic_sha256: ea109388279bd1cb01cb404a182557428cb68ef683c94dc977e29a1cea9362bc
     observation:
       value:
         assembled:
@@ -261,10 +213,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_syntax_error_wrapped:
-    case_key: UNIFIED.33-2
-    stimulus:
-      ref: current
-      semantic_sha256: 7caa4ace30c76409c12f09c248bcb54f7b65c1c94f7cc052d1d3ce2bfa34a78a
     observation:
       value:
         assembled:
@@ -284,10 +232,6 @@ changes:
             arguments: '{"\"city\"": ""}'
         - expected: []
   guided_json_tool_close_after_payload:
-    case_key: UNIFIED.32-2
-    stimulus:
-      ref: current
-      semantic_sha256: 2a32d03db1f9fdc43e3e96ed4822e260ae64a53de607e28e3fec05b24a6f58ba
     observation:
       value:
         assembled:
@@ -300,10 +244,6 @@ changes:
         - expected: []
         - expected: []
   guided_json_tool_open_before_payload:
-    case_key: UNIFIED.32-1
-    stimulus:
-      ref: current
-      semantic_sha256: 007c353777be65875f99bcfd6f5036830a81dc7ffb01a30db004d7336370bb86
     observation:
       value:
         assembled:
@@ -322,10 +262,6 @@ changes:
             name: null
             arguments: '"}'
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    case_key: UNIFIED.34-6
-    stimulus:
-      ref: current
-      semantic_sha256: 4db81e40a68f0a6f49155f506a746a17e9ab982b136d786a708b695d53f38b31
     observation:
       value:
         assembled:
@@ -351,10 +287,6 @@ changes:
             arguments: '"}'
         - expected: []
   guided_json_wrapped_in_tool_markup:
-    case_key: UNIFIED.32-3
-    stimulus:
-      ref: current
-      semantic_sha256: ae1670690ee81b195124d43406bd94b4816f0a5fbc7c6483dd1269a6f3a41cbc
     observation:
       value:
         assembled:
@@ -374,10 +306,6 @@ changes:
             arguments: '"}'
         - expected: []
   guided_response_quoted_control_braces_named:
-    case_key: UNIFIED.35-3
-    stimulus:
-      ref: current
-      semantic_sha256: 9281cf51cf6688061f08561e117b6cb15c8f69174d987ac091f30aad761928b1
     observation:
       value:
         assembled:
@@ -397,10 +325,6 @@ changes:
             name: ' "Paris"}'
             arguments: '{}'
   guided_response_quoted_control_braces_required:
-    case_key: UNIFIED.35-4
-    stimulus:
-      ref: current
-      semantic_sha256: 24c1b9fd2268b585d947594b40e6076676fe7174d142ff72150ce89b489648f2
     observation:
       value:
         assembled:
@@ -424,10 +348,6 @@ changes:
             name: null
             arguments: '"}'
   native_quoted_control_in_response:
-    case_key: UNIFIED.8-6
-    stimulus:
-      ref: current
-      semantic_sha256: 2045e2019bd341cdb201d694560bb6d6e7493fe39be9e2eff1613f6f9ba5fde8
     observation:
       value:
         assembled:
@@ -441,10 +361,6 @@ changes:
         - expected: []
         - expected: []
   native_single_quote_contraction_response:
-    case_key: UNIFIED.8-11
-    stimulus:
-      ref: current
-      semantic_sha256: 0bc6378eee6d141fdedb57ad461d745436a32d6a8dd56fbdf8211f2f66d916c8
     observation:
       value:
         assembled:
@@ -458,10 +374,6 @@ changes:
         - expected: []
         - expected: []
   native_single_quoted_word_control:
-    case_key: UNIFIED.8-7
-    stimulus:
-      ref: current
-      semantic_sha256: 4961d36eac601e405dfcac5aae2d2141ba3767bed8138b8b10aaedb85268b667
     observation:
       value:
         assembled:
@@ -475,10 +387,6 @@ changes:
         - expected: []
         - expected: []
   orphan_close_after_prose:
-    case_key: UNIFIED.5-3
-    stimulus:
-      ref: current
-      semantic_sha256: 1ff23ac88de3bbdcbb7fe7b43a4e8f01ff6c451df97d96960e8191ad77328d0d
     observation:
       value:
         assembled:
@@ -492,9 +400,6 @@ changes:
         - expected: []
   retired__31_40:
     case_key: UNIFIED.34-11
-    stimulus:
-      ref: current
-      semantic_sha256: ba81199d539b82da21bd430b60c9889ad69faaec7d4534359121a58f763b716e
     observation:
       value:
         assembled:
@@ -547,10 +452,6 @@ changes:
   retired__muse_1:
     absent: true
   schema_declared_array:
-    case_key: schema_declared_array
-    stimulus:
-      ref: current
-      semantic_sha256: 87d694327b1c609912516581bde8f00a99b331c22376d52b73e75040bbe8bea0
     observation:
       value:
         assembled:
@@ -574,10 +475,6 @@ changes:
             arguments: '["1", "2"]}'
         - expected: []
   schema_union_anyof_array_reverse_typed:
-    case_key: schema_union_anyof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 8f6398d15f53749c02f23f646932663eeb61ca2ced0741df9e4bd0adf16ca3d9
     observation:
       value:
         assembled:
@@ -601,10 +498,6 @@ changes:
             arguments: '["1", "2"]}'
         - expected: []
   schema_union_anyof_array_typed:
-    case_key: schema_union_anyof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 076c7581dce676d8d021249e9299a2bd3175dba8f5acf0d5c3e2125e9a7640a3
     observation:
       value:
         assembled:
@@ -628,10 +521,6 @@ changes:
             arguments: '["1", "2"]}'
         - expected: []
   schema_union_oneof_array_reverse_typed:
-    case_key: schema_union_oneof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 94af7d522de62823115e422a71e0fc3214da878a16f8d97bbf389ebd20e5ccb3
     observation:
       value:
         assembled:
@@ -655,10 +544,6 @@ changes:
             arguments: '["1", "2"]}'
         - expected: []
   schema_union_oneof_array_typed:
-    case_key: schema_union_oneof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 1c152863799109da3a451202e375716a3ef0ab2e33e78bd31a6773ecd928abcf
     observation:
       value:
         assembled:
@@ -682,10 +567,6 @@ changes:
             arguments: '["1", "2"]}'
         - expected: []
   tool_block_never_closed_then_text:
-    case_key: UNIFIED.4-1
-    stimulus:
-      ref: current
-      semantic_sha256: fc271244d7b7eecb94b3623b67cd19fbff6cb2e464938f2eaec8b4157088d4dc
     observation:
       value:
         assembled: []
@@ -694,10 +575,6 @@ changes:
         - expected: []
         - expected: []
   tool_markup_only_emits_nothing:
-    case_key: UNIFIED.4-2
-    stimulus:
-      ref: current
-      semantic_sha256: 5a0f3bb63a12976d1160453fdf9b24beec19c128be60cd46d2b52d7a0312f7b2
     observation:
       value:
         assembled: []
@@ -705,10 +582,6 @@ changes:
         - expected: []
         - expected: []
   two_reason_spans:
-    case_key: UNIFIED.10-3
-    stimulus:
-      ref: current
-      semantic_sha256: eb6787821fca4c0172d5b2f68e5948390cc99df12bcbd5ddaab97923fa5cd282
     observation:
       value:
         assembled:
@@ -737,10 +610,6 @@ changes:
             text: done
         - expected: []
   unused_reference_graph_parameter_types:
-    case_key: UNIFIED.7-14
-    stimulus:
-      ref: current
-      semantic_sha256: 9603cdf67cd25be8e223b8f32b68a6a93db72d7f7ce42e33e78c82f9b96a7b55
     observation:
       value:
         assembled:
@@ -1571,84 +1440,6 @@ metadata_changes:
       adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
       job_sha256: 603b43455eb26a350f464dd7737c6f7241ba42ea79abfe8c4b8f9a939f0080f3
 document_overrides:
-  arg_json_null_anyof:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_json_null_const:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_json_null_nullable:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_json_null_oneof:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_const:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_enum:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_sibling_anyof:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_sibling_oneof:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_union:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  arg_string_null_untyped_branch:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  deepseek_v41_mixed_control_text_in_string:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  glm_ref_encoded_targets:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   glm_ref_json_looking_strings:
     capture_provenance:
       captured_with:
@@ -1656,102 +1447,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   glm_ref_object:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  glm_ref_scalar_types:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_bare_tool_header_recovers_inside_a_thought:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_gt_in_argument_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_gt_in_argument_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_narrated_invoke_in_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_orphan_tool_close_before_payload:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_nameless_element_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_nameless_element_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_not_a_call_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_not_a_call_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_syntax_error_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_syntax_error_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_tool_close_after_payload:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_tool_open_before_payload:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_unterminated_reasoning_then_wrapped_payload:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_wrapped_in_tool_markup:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
@@ -1769,37 +1464,13 @@ document_overrides:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  guided_response_quoted_control_braces_named:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  guided_response_quoted_control_braces_required:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   local_schema_id_preserves_type:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  malformed_json_then_two_valid_calls:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
   native_quoted_control_in_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  native_quoted_control_in_response:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
@@ -1823,18 +1494,6 @@ document_overrides:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  native_single_quote_contraction_response:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  native_single_quoted_word_control:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   native_unmatched_quote_then_call:
     capture_provenance:
       captured_with:
@@ -1842,24 +1501,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   nullable_reference_alias_literals:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  orphan_close_after_prose:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  qwen_string_null:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.27.1
-      capture_origin: null
-      inherited_from: 0.27.1
-  retired__31_40:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
@@ -2105,12 +1746,6 @@ document_overrides:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  schema_declared_array:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   schema_declared_boolean:
     capture_provenance:
       captured_with:
@@ -2267,19 +1902,7 @@ document_overrides:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  schema_union_anyof_array_reverse_typed:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_array_string:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_typed:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
@@ -2411,19 +2034,7 @@ document_overrides:
         vllm_python: 0.31.0
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_array_reverse_typed:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
   schema_union_oneof_array_string:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_typed:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0
@@ -2544,30 +2155,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   schema_union_oneof_object_typed:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  tool_block_never_closed_then_text:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  tool_markup_only_emits_nothing:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  two_reason_spans:
-    capture_provenance:
-      captured_with:
-        vllm_python: 0.31.0
-      capture_origin: null
-      inherited_from: null
-  unused_reference_graph_parameter_types:
     capture_provenance:
       captured_with:
         vllm_python: 0.31.0

@@ -234,7 +234,7 @@
       // Prose, not payload: these carry n/a rationale and TODO notes.
       var unavailable = b.unavailable;
       var reason = (unavailable && typeof unavailable === 'object')
-        ? (typeof unavailable.detail === 'string' ? unavailable.detail
+        ? (typeof unavailable.detail === 'string' && unavailable.detail ? unavailable.detail
           : (typeof unavailable.code === 'string' ? unavailable.code : JSON.stringify(unavailable)))
         : String(unavailable);
       return '<span class="expl">unavailable: ' + escapeHtml(reason) + '</span>';

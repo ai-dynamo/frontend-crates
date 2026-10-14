@@ -1300,10 +1300,6 @@ changes:
   retired__51_b:
     absent: true
   schema_integer_const_ambiguous:
-    case_key: schema_integer_const_ambiguous
-    stimulus:
-      ref: current
-      semantic_sha256: 27a464b91c038ea1179eaff30403b99d94757abdbe9b0150f494ebb30c33b050
     observation:
       value:
         assembled:
@@ -1337,10 +1333,6 @@ changes:
         - expected: []
         - expected: []
   schema_intersection_anyof:
-    case_key: schema_intersection_anyof
-    stimulus:
-      ref: current
-      semantic_sha256: 23263330a8965c7f60897292468c2b6b78a808bf2b7e9ab35f57b639759923be
     observation:
       value:
         assembled:
@@ -1374,10 +1366,6 @@ changes:
         - expected: []
         - expected: []
   schema_intersection_oneof:
-    case_key: schema_intersection_oneof
-    stimulus:
-      ref: current
-      semantic_sha256: 78229d9ecd1d594439a97f09d56cb6ccd6c9a3bf75b7c837a8aa50478e4ccbf5
     observation:
       value:
         assembled:
@@ -1411,10 +1399,6 @@ changes:
         - expected: []
         - expected: []
   schema_object_const_union:
-    case_key: schema_object_const_union
-    stimulus:
-      ref: current
-      semantic_sha256: c466b250bb1e91e3fe25811d10939d409df8ff0fb105dfb8194b3fa3fc0904c0
     observation:
       value:
         assembled:
@@ -1449,10 +1433,6 @@ changes:
         - expected: []
         - expected: []
   schema_type_array_string_integer:
-    case_key: schema_type_array_string_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 5f96a726890f2241b9ad60230257de84bb84d31d9a9e9ff8ef5056c5930cd265
     observation:
       value:
         assembled:
@@ -1486,10 +1466,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_reverse_typed:
-    case_key: schema_union_anyof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: a7c3cc5cbeaf2b2406f57a9ab935775734075087546d56fbfbfbd88ae33dc4f7
     observation:
       value:
         assembled:
@@ -1525,10 +1501,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_array_typed:
-    case_key: schema_union_anyof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 58dc8e6836b7adda11fc52062300d01c3fe2e2bac3988d1785d83b1c682f97ce
     observation:
       value:
         assembled:
@@ -1564,10 +1536,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_reverse_string:
-    case_key: schema_union_anyof_boolean_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 64ef63cedc9c75b71687eb09c6da0d1097663b7510c6cdee869d32f001f0440a
     observation:
       value:
         assembled:
@@ -1601,10 +1569,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_reverse_typed:
-    case_key: schema_union_anyof_boolean_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: d5aa853f4adbbf80c259e52f6c54f3dadb55b5d9d7d077b3353536c7a9c261bc
     observation:
       value:
         assembled:
@@ -1638,10 +1602,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_string:
-    case_key: schema_union_anyof_boolean_string
-    stimulus:
-      ref: current
-      semantic_sha256: 62f06900cba1be61108f08596230e42b51e31ac47a01de1977f6429e62ee8bec
     observation:
       value:
         assembled:
@@ -1675,10 +1635,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_boolean_typed:
-    case_key: schema_union_anyof_boolean_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 968e30487d500fa48da19668b46428e9c981de05b504a7167a2ffefdeb9d8d3d
     observation:
       value:
         assembled:
@@ -1712,10 +1668,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_reverse_typed:
-    case_key: schema_union_anyof_integer_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 1cb27030d89e1416f0beaa8a79e170c4f6bc6be617c7e9b18cbaad562f7a6be6
     observation:
       value:
         assembled:
@@ -1749,10 +1701,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_integer_typed:
-    case_key: schema_union_anyof_integer_typed
-    stimulus:
-      ref: current
-      semantic_sha256: bbfac19cf6dcc22b642480f741bcfbffd149948b17d29e08f8a1b2386f8b2a21
     observation:
       value:
         assembled:
@@ -1786,10 +1734,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_reverse_typed:
-    case_key: schema_union_anyof_number_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 7d27ff8855481e5889285ab32b2d10b1d704b18643f37f6bab9186c539fb4ce8
     observation:
       value:
         assembled:
@@ -1823,10 +1767,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_number_typed:
-    case_key: schema_union_anyof_number_typed
-    stimulus:
-      ref: current
-      semantic_sha256: ee01cccfc0a8ca7f95e3cc70f14f8100cdfeedc3710048bac122695afae3b47c
     observation:
       value:
         assembled:
@@ -1860,10 +1800,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_reverse_typed:
-    case_key: schema_union_anyof_object_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: e88dd80b7ab2ce5b891cf29960f45d5a10c8fa4ff9fdc03ebbaaf59baf3764a1
     observation:
       value:
         assembled:
@@ -1898,10 +1834,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_anyof_object_typed:
-    case_key: schema_union_anyof_object_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 0ddc0b00d31af1a2c22a059bfee866ad08a320cb5b1b16412ae98f2b75c41018
     observation:
       value:
         assembled:
@@ -1936,10 +1868,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_reverse_typed:
-    case_key: schema_union_oneof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 5bdd8f7dad3c0ff8f7a4ba322b6df4ae4fa6e95edbb56d706ed01861167af976
     observation:
       value:
         assembled:
@@ -1975,10 +1903,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_array_typed:
-    case_key: schema_union_oneof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 89af00139c6495253dae4f9decfe25cc1a776550bc45123f450adaf8c27f7073
     observation:
       value:
         assembled:
@@ -2014,10 +1938,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_reverse_string:
-    case_key: schema_union_oneof_boolean_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 60eb286009c3320cf76f68bdbddab5f227e0ec66d2c9c56b74aaadfd9915f210
     observation:
       value:
         assembled:
@@ -2051,10 +1971,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_reverse_typed:
-    case_key: schema_union_oneof_boolean_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 7ea13a40fdc751b5dec553c5b75933a0b772c603ffff7bae52b8543079ab213a
     observation:
       value:
         assembled:
@@ -2088,10 +2004,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_string:
-    case_key: schema_union_oneof_boolean_string
-    stimulus:
-      ref: current
-      semantic_sha256: 25ea2710f561570aa31464bc5b331188aa11157e3bef6fa2b3a8106a114bf8f0
     observation:
       value:
         assembled:
@@ -2125,10 +2037,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_boolean_typed:
-    case_key: schema_union_oneof_boolean_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 444666535348792a50a0b656b2eedd7a02910cd4c9b238528314a799a429546d
     observation:
       value:
         assembled:
@@ -2162,10 +2070,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_reverse_typed:
-    case_key: schema_union_oneof_integer_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 86a2a2e213bad0f3b7fab0ac22f6cf9a6d9d194f5d7ce59971bad72d4c43af1b
     observation:
       value:
         assembled:
@@ -2199,10 +2103,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_integer_typed:
-    case_key: schema_union_oneof_integer_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 744f07185bf9a3a0151253a6e72e45d831629da3bbe8350515c44068c971f6e8
     observation:
       value:
         assembled:
@@ -2236,10 +2136,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_reverse_typed:
-    case_key: schema_union_oneof_number_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 31f7f0da59693e9a2e0a83e7732271a65ef2ae0d82eda8f43902752c5fae5ce9
     observation:
       value:
         assembled:
@@ -2273,10 +2169,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_number_typed:
-    case_key: schema_union_oneof_number_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 95716498bef04397dce955d41fb1d61d4d13cab4b391db631db055ef46679a1f
     observation:
       value:
         assembled:
@@ -2310,10 +2202,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_reverse_typed:
-    case_key: schema_union_oneof_object_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 272a319c9b7dd5f8d246d4b08a52795dcf3401b0265d9829fbe8d50574bffa34
     observation:
       value:
         assembled:
@@ -2348,10 +2236,6 @@ changes:
         - expected: []
         - expected: []
   schema_union_oneof_object_typed:
-    case_key: schema_union_oneof_object_typed
-    stimulus:
-      ref: current
-      semantic_sha256: e04ed1031b1a8b4d8051e5f0050c1273dc92857af5992df9f906000845d9346a
     observation:
       value:
         assembled:
@@ -5708,12 +5592,6 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  arg_marker_in_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   arg_string_null_const:
     capture_provenance:
       captured_with:
@@ -5756,31 +5634,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  arg_unicode:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  content_then_reason:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  content_then_reason_then_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   deepseek_v41_mixed_control_text_in_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  empty_args:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -5810,115 +5664,13 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  guided_json_after_reasoning:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_array_argument:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   guided_json_bare_tool_header_recovers_inside_a_thought:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  guided_json_escaped_string_args:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_gt_in_argument_bare_opener:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_gt_in_argument_trailing_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_gt_in_argument_wrapped:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_invalid_call:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_list_with_broken_element:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_malformed_json:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_marker_inside_argument:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_named_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_narrated_invoke_in_reasoning:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_narrated_prefix_inside_reasoning:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   guided_json_native_markup_only:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_orphan_reason_close_before_payload:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_orphan_tool_close_before_payload:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_partial_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_prose_before_reasoning:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -5936,97 +5688,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  guided_json_required_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_nameless_element_bare_opener:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_nameless_element_trailing_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_nameless_element_wrapped:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_not_a_call_bare_opener:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_not_a_call_trailing_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_schema_error_not_a_call_wrapped:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_stray_prefix_before_reasoning:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_syntax_error_bare_opener:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_syntax_error_trailing_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_syntax_error_wrapped:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_tool_close_after_payload:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_tool_open_before_payload:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_two_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   guided_json_unterminated_reasoning_then_wrapped_payload:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  guided_json_wrapped_in_tool_markup:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6056,12 +5718,6 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  interstitial_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   local_schema_id_preserves_type:
     capture_provenance:
       captured_with:
@@ -6069,12 +5725,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   malformed_json_then_two_valid_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  narrated_calls:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6134,54 +5784,6 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  orphan_close_after_prose:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_redundant_opener:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_then_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_then_text_then_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_truncated:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_with_guided_json:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_reasoning_with_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  prefilled_response_reasoning_markers_literal:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   qwen_nullable_string_null:
     capture_provenance:
       captured_with:
@@ -6189,72 +5791,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   qwen_string_null:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_after_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_between_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_interleaved:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_markup_in_arg:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_markup_in_arg_with_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_only:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_then_content:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_then_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_tool_reason_tool_reason:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_tool_text_reason_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  reason_unterminated:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6614,24 +6150,6 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_integer_const_ambiguous:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_intersection_anyof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_intersection_oneof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_null_union_ambiguous:
     capture_provenance:
       captured_with:
@@ -6639,12 +6157,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   schema_nullable_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_object_const_union:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6698,19 +6210,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_type_array_string_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_array_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_reverse_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6722,55 +6222,13 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_anyof_array_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_integer_reverse_string:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_anyof_integer_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_integer_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_integer_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6806,19 +6264,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_anyof_number_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_number_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_number_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6830,19 +6276,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_anyof_object_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_anyof_object_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_object_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6854,43 +6288,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_array_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_oneof_array_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6902,19 +6300,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_integer_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_oneof_integer_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_integer_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6950,19 +6336,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_number_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_oneof_number_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_number_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6974,121 +6348,13 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_object_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_union_oneof_object_string:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_union_oneof_object_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  text_before_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  text_between_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  text_only:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  text_reason_tool_text_reason_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  text_sandwich:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_block_never_closed_then_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_in_reason:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_in_reason_with_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_markup_only_emits_nothing:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_no_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  tool_only:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  trailing_text_after_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  truncated_tool_eof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   two_adjacent_reason_spans:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  two_calls:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  two_calls_same_name:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  two_reason_spans:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21

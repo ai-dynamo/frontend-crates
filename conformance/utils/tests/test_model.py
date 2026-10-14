@@ -1660,3 +1660,31 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
             assert len(cell["variants"]) == 4
             assert column["schemas"]
     assert found == expected
+
+
+@pytest.mark.parametrize(("unavailable", "reason"), [
+    ({"code": "missing_result"}, "missing_result"),
+    ({"code": "missing_result", "detail": ""}, "missing_result"),
+    ({"code": "missing_result", "detail": "No retained capture."}, "No retained capture."),
+    ("legacy explanation", "legacy explanation"),
+    ({"code": "<missing>&", "detail": ""}, "&lt;missing&gt;&amp;"),
+    ({"code": "missing", "detail": "<script>&\\\"'"}, "&lt;script&gt;&amp;\\&quot;&#39;"),
+])
+def test_unavailable_popup_renders_detail_or_code(unavailable, reason):
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {outputBlock};\n// --- Entry point'), context);
+const unavailable = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(context.window.audit.outputBlock({unavailable}, 'gemma4', {}, []));
+"""
+    rendered = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(unavailable), text=True, capture_output=True, check=True,
+    ).stdout
+    assert rendered == f'<span class="expl">unavailable: {reason}</span>'

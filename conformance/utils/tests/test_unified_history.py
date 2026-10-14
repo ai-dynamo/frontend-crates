@@ -3,6 +3,8 @@
 """Coverage for canonical Unified capture checkpoints."""
 
 import copy
+import hashlib
+import json
 import sys
 from pathlib import Path
 
@@ -1121,8 +1123,15 @@ def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_pat
     assert capture_path.read_bytes() == before
 
 
-@pytest.mark.parametrize("family", ["gemma4", "kimi_k2", "qwen3"])
-def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family):
+@pytest.mark.parametrize(("family", "original_digests"), [
+    ("gemma4", ("4ab8dacd248094c3a57d64002663fa8852fb589343ab51ed99d6821a20941c15",
+                "f6995d2089b187275dfd0645d98acbb38d60d9379f65ea52c64893553c23a8a7")),
+    ("kimi_k2", ("96c861d60198686d18f2803dce68fb6322caf71def79a35fc1aa00f0441cd08e",
+                 "95741377967864cd2b0bd55e24c7b430cb1641a0e63f2d751b9a7b505312650f")),
+    ("qwen3", ("be1520f44605ed60b906aa03f7847a9210631d43cec8c967f55ac99186d496bd",
+               "697ee3feadda33be06413278e6f213f8361a060793518381713cc19a771c2f4d")),
+])
+def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family, original_digests):
     store_root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
     store = unified_history.load_store(store_root)
     history = store.histories[(family, "vllm_rust")]
@@ -1133,16 +1142,24 @@ def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family):
         for case_id, record in recaptured.items()
         if record["document"].get("record_metadata", {}).get("verified_recapture", {}).get("resolution")
         == "historical_request_not_retained"
+        and "unavailable" in record["document"]["record_metadata"]["verified_recapture"]["result"]
     ]
 
     assert len(case_ids) == 39
+    # Oracle 78b53357 retains different chunk schedules at these two releases;
+    # comparing them to each other would bless the loss of version-specific evidence.
+    for version, expected in zip(("0.25.1", "0.26.0"), original_digests, strict=True):
+        snapshot = history.resolve(f"vllm_rust-{version}")
+        observations = {case_id: snapshot[case_id]["observation"] for case_id in case_ids}
+        encoded = json.dumps(observations, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        assert hashlib.sha256(encoded).hexdigest() == expected
     for case_id in case_ids:
         original = historical[case_id]
         current = recaptured[case_id]
         assert original["stimulus"] == {"unavailable": {"code": "original_request_not_retained"}}
         assert next(iter(original["observation"])) in {"value", "error"}
         assert current["stimulus"] == original["stimulus"]
-        assert current["observation"] == original["observation"]
+        assert next(iter(current["observation"])) in {"value", "error"}
         case = store.families[family].cases[case_id]
         record, document = unified_history.materialized_record(case, current)
         record.update(document["record_metadata"])
@@ -1198,3 +1215,46 @@ def test_sparse_checkpoint_does_not_inherit_version_scoped_recapture(tmp_path, i
     later_document = unified_history.load_yaml(later_files[0])
     later_record = next(iter(later_document["cases"].values()))
     assert "verified_recapture" not in later_record
+
+
+@pytest.mark.parametrize("implementation", ["vllm_python", "vllm_rust", "sglang_python"])
+@pytest.mark.parametrize("difference", ["finish", "assembled", "error", "unchanged"])
+def test_restore_historical_snapshot_preserves_later_execution_and_additions(tmp_path, implementation, difference):
+    _write_family(tmp_path)
+    original = _change("original")
+    original["stimulus"] = {"unavailable": {"code": "original_request_not_retained"}}
+    _write_capture(tmp_path, "0.25.1", {"text_only": original}, implementation=implementation)
+    _write_capture(tmp_path, "0.26.0", {}, implementation=implementation)
+    history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
+    oracle = history.resolve(f"{implementation}-0.25.1")
+    execution = copy.deepcopy(oracle)
+    if difference == "finish":
+        execution["text_only"]["observation"]["value"]["chunks"].append({"expected": []})
+    elif difference == "assembled":
+        execution["text_only"]["observation"]["value"]["assembled"] = [{"kind": "text", "text": "changed"}]
+    elif difference == "error":
+        execution["text_only"]["observation"] = {"error": {"code": "parser_error", "detail": "changed error"}}
+    execution["text_only"]["stimulus"] = {"ref": "current"}
+    unified_history._replace_capture_snapshot(history, f"{implementation}-0.25.1", execution)
+    _add_backfill_case(tmp_path)
+    history.family = unified_history.load_store(tmp_path).families["gemma4"]
+    addition = _change("new")
+    addition["case_key"] = "UNIFIED.1-2"
+    addition["stimulus"]["semantic_sha256"] = unified_history._request_digest(_request("new"))
+    addition["document"] = {"mode": "unified", "captured_with": {implementation: "0.25.1"}}
+    execution["new_case"] = addition
+    unified_history._replace_capture_snapshot(history, f"{implementation}-0.25.1", execution)
+    later = history.resolve(f"{implementation}-0.26.0")
+    restored = {**copy.deepcopy(execution), **oracle}
+    unified_history._replace_capture_snapshot(history, f"{implementation}-0.25.1", restored)
+    assert history.resolve(f"{implementation}-0.25.1") == restored
+    assert restored["text_only"] == oracle["text_only"]
+    assert restored["new_case"] == addition
+    assert history.resolve(f"{implementation}-0.26.0") == later
+    for capture_id in history.ordered_capture_ids():
+        history.capture_path(capture_id).write_text(
+            unified_history.dump_yaml(unified_history._capture_document(history, capture_id)),
+        )
+    reloaded = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
+    assert reloaded.resolve(f"{implementation}-0.25.1") == restored
+    assert reloaded.resolve(f"{implementation}-0.26.0") == later
