@@ -6,10 +6,6 @@ document:
   mode: unified
 changes:
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -24,10 +20,6 @@ changes:
             arguments: '{"city": "Paris"}'
         - expected: []
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -49,10 +41,6 @@ changes:
             arguments: '{"cmd": "git log"}'
         - expected: []
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:

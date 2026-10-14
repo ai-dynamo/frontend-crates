@@ -44,6 +44,13 @@ def _shard(path, sha256, size=1):
     return {"path": path, "sha256": sha256, "size": size}
 
 
+def test_history_format_change_invalidates_extracted_snapshot(monkeypatch):
+    shards = [_shard("fixtures-unified", "same-source-bytes")]
+    current = extract_fixtures.fixtures_identity(shards)
+    monkeypatch.setattr(extract_fixtures.unified_history, "MATERIALIZED_FORMAT", "legacy_history")
+    assert extract_fixtures.fixtures_identity(shards) != current
+
+
 def _fake_extract_tarball(_tarball_path, dest_dir, verbose=False):
     """Stand-in for the real tar extraction: writes one marker file so the
     directory is non-empty and distinguishable, without needing a real

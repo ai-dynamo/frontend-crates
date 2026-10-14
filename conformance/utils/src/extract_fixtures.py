@@ -39,6 +39,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import fixture_disposition
+import dynamo_version
 import unified_history
 
 # The only errnos `Path.rename()` onto an existing directory is expected to
@@ -116,6 +117,8 @@ def fixtures_identity(shards, inactive=()):
     """
     pinned = sorted(shard_hash_map(shards).items())
     identity = {"shards": pinned, "inactive_shards": fixture_disposition.canonical_inactive_shards(inactive)}
+    # A renamed materialized format must not reuse a snapshot with the old marker.
+    identity["unified_history_format"] = unified_history.MATERIALIZED_FORMAT
     return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -379,6 +382,7 @@ def materialize_shard(
             source,
             dest_dir / "unified",
             derived_release_versions=derived_release_versions,
+            current_capture_id=f"dynamo_v2-{dynamo_version.dynamo_v2_label(ROOT)}",
         )
     else:
         extract_tarball(source, dest_dir, verbose=verbose)

@@ -88,7 +88,12 @@ fn render_message(
         "system" => {
             let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
             prompt.push_str(content);
-            if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
+            // Like the reference's `if tools:`, an empty list renders no tools section.
+            if let Some(tools) = msg
+                .get("tools")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 prompt.push_str("\n\n");
                 prompt.push_str(&encoding.render_tools(tools));
             }
@@ -110,7 +115,11 @@ fn render_message(
             prompt.push_str(tokens::USER_START);
             prompt.push_str(content);
 
-            if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
+            if let Some(tools) = msg
+                .get("tools")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 prompt.push_str("\n\n");
                 prompt.push_str(&encoding.render_tools(tools));
             }
@@ -602,29 +611,49 @@ mod tests {
     }
 
     #[test]
-    fn test_user_task_preserved_when_merged_after_tool_result() {
-        let messages = json!([
-            {"role": "assistant", "content": "", "tool_calls": [{
-                "id": "c1", "type": "function",
-                "function": {"name": "search", "arguments": "{}"}
-            }]},
-            {"role": "tool", "tool_call_id": "c1", "content": "RESULT"},
-            {"role": "user", "content": "Search", "task": "action"},
-            {"role": "assistant", "content": "OK"}
-        ]);
-
-        let out = encode_messages(messages.as_array().unwrap(), ThinkingMode::Chat, true).unwrap();
-        assert!(
-            out.contains(&format!(
-                "{}Search{}{}{}OK",
-                "<tool_result>RESULT</tool_result>\n\n",
-                tokens::ASSISTANT_START,
-                tokens::THINKING_END,
-                tokens::TASK_ACTION
-            )),
-            "expected merged user text to keep the action task transition, got:\n{}",
-            out
+    fn test_empty_tool_lists_and_merged_user_task_match_reference() {
+        let call = |id: &str| json!({"id": id, "type": "function", "function": {"name": "search", "arguments": "{}"}});
+        let invoke = "<｜DSML｜invoke name=\"search\">\n\n</｜DSML｜invoke>";
+        let calls = format!(
+            "<｜Assistant｜></think>\n\n<｜DSML｜tool_calls>\n{invoke}\n{invoke}\n</｜DSML｜tool_calls><｜end▁of▁sentence｜>"
         );
+        // Expected prompts come from the official DeepSeek-V4-Flash encoding_dsv4.py.
+        for (messages, expected) in [
+            (
+                json!([{"role": "system", "content": "S", "tools": []}, {"role": "user", "content": "Hi"}]),
+                "<｜begin▁of▁sentence｜>S<｜User｜>Hi<｜Assistant｜></think>".to_owned(),
+            ),
+            (
+                json!([
+                    {"role": "user", "content": "q"},
+                    {"role": "assistant", "content": "", "tool_calls": [call("a"), call("b")]},
+                    {"role": "assistant", "content": "x", "tool_calls": []},
+                    {"role": "tool", "tool_call_id": "b", "content": "B"},
+                    {"role": "tool", "tool_call_id": "a", "content": "A"}
+                ]),
+                format!(
+                    "<｜begin▁of▁sentence｜><｜User｜>q{calls}x<｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\n<tool_result>B</tool_result><｜Assistant｜></think>"
+                ),
+            ),
+            (
+                json!([
+                    {"role": "user", "content": "q"},
+                    {"role": "assistant", "content": "", "tool_calls": [call("a"), call("b")]},
+                    {"role": "tool", "tool_call_id": "b", "content": "B"},
+                    {"role": "user", "content": "Search", "task": "action"},
+                    {"role": "user", "content": "More"},
+                    {"role": "tool", "tool_call_id": "a", "content": "A"},
+                    {"role": "assistant", "content": "OK"}
+                ]),
+                format!(
+                    "<｜begin▁of▁sentence｜><｜User｜>q{calls}<｜User｜><tool_result>A</tool_result>\n\nSearch\n\nMore\n\n<tool_result>B</tool_result><｜Assistant｜></think>OK<｜end▁of▁sentence｜>"
+                ),
+            ),
+        ] {
+            let out =
+                encode_messages(messages.as_array().unwrap(), ThinkingMode::Chat, true).unwrap();
+            assert_eq!(out, expected);
+        }
     }
 
     #[test]

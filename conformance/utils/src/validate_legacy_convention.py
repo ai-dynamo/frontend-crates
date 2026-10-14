@@ -20,6 +20,9 @@ OLD_TO_NEW = {
     "stream" + "v2": "streamv1",
 }
 OLD_TOKENS = tuple(OLD_TO_NEW)
+IGNORED_TEXT_DIRS = {".git", ".pytest_cache"}
+
+
 def _stored_legacy_archives(repo: Path) -> set[str]:
     store = repo / "conformance/fixtures/toolcalling"
     return {
@@ -79,7 +82,11 @@ def _text_errors(repo: Path) -> list[str]:
     errors = []
     ignored = {"validate_legacy_convention.py"}
     for path in repo.glob("**/*"):
-        if not path.is_file() or ".git" in path.parts or path.name in ignored:
+        if (
+            not path.is_file()
+            or any(part in IGNORED_TEXT_DIRS for part in path.parts)
+            or path.name in ignored
+        ):
             continue
         if path.suffix in {".tar", ".gz", ".so", ".o", ".rlib"}:
             continue

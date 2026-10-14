@@ -7,139 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: quoted
-        - kind: text
-          text: " <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>"
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: reasoning
-            text: quoted
-        - expected: []
-        - expected:
-          - kind: text
-            text: ' '
-        - expected:
-          - kind: text
-            text: <atem:function_calls>
-        - expected:
-          - kind: text
-            text: ' '
-        - expected:
-          - kind: text
-            text: </atem:function_calls>
-        - expected:
-          - kind: text
-            text: ' '
-        - expected: []
-        - expected:
-          - kind: text
-            text: " &amp; \"x\"\\\n "
-        - expected:
-          - kind: text
-            text: </atem:parameter>
-        - expected:
-          - kind: text
-            text: '
-
-              '
-        - expected: []
-        - expected:
-          - kind: text
-            text: '
-
-              '
-        - expected:
-          - kind: text
-            text: </atem:function_calls>
-        - expected: []
-        - expected: []
-  qwen_string_null:
-    case_key: UNIFIED.7-4
-    stimulus:
-      ref: current
-      semantic_sha256: 57debb41560aeb1cc4038801e858fc46a0b1a780a37bf4c438ffa2112f3c1e7f
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-  arg_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: 152bb15f3a7f3244e746b17072a03af9b15d2281b878d55fbe760a26049dcb6c
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
   arg_json_null_anyof:
     case_key: UNIFIED.7-4.anyof
     stimulus:
@@ -267,6 +134,39 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 152bb15f3a7f3244e746b17072a03af9b15d2281b878d55fbe760a26049dcb6c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
             complete: true
         - expected: []
         - expected: []
@@ -465,6 +365,106 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+        - kind: text
+          text: " <atem:function_calls> </atem:function_calls>  &amp; \"x\"\\\n </atem:parameter>\n\n</atem:function_calls>"
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: <atem:function_calls>
+        - expected:
+          - kind: text
+            text: ' '
+        - expected:
+          - kind: text
+            text: </atem:function_calls>
+        - expected:
+          - kind: text
+            text: ' '
+        - expected: []
+        - expected:
+          - kind: text
+            text: " &amp; \"x\"\\\n "
+        - expected:
+          - kind: text
+            text: </atem:parameter>
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected:
+          - kind: text
+            text: </atem:function_calls>
+        - expected: []
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 57debb41560aeb1cc4038801e858fc46a0b1a780a37bf4c438ffa2112f3c1e7f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
             complete: true
         - expected: []
         - expected: []

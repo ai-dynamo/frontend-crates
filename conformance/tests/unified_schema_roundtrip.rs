@@ -39,6 +39,8 @@ struct GoldenCase {
     finish_reason: Option<String>,
     /// Raw streamed model text.
     input: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    input_chunks: Option<Vec<String>>,
     /// Per-case request schema for cases whose argument typing differs from the shared corpus schema.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     tools: Option<serde_json::Value>,
@@ -128,6 +130,7 @@ fn every_case_is_well_formed() {
                 file.family
             );
             assert!(!case.input.is_empty(), "{path}: `{id}` has empty input");
+            common::unified_capture::input_chunks(&case.input, case.input_chunks.as_deref());
             if let Some(tools) = &case.tools {
                 assert!(tools.is_array(), "{path}: `{id}` tools must be an array");
             }

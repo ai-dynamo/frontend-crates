@@ -6,6 +6,7 @@
 //! consumer selects one by its typed [`ProcessorSpec`] or by serializing a
 //! spec (`{"family": ..., resolved processor params}`).
 
+use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
 use serde_json::Value;
@@ -18,6 +19,8 @@ use serde_json::Value;
 #[non_exhaustive]
 pub enum ProcessorSpec {
     QwenVl(QwenVlSpec),
+    /// Metadata-only image accounting and layout; pixel processing is unsupported.
+    DeepseekV41(DeepseekV41Spec),
 }
 
 /// Build a family processor from a typed spec. `Err` when the family
@@ -29,6 +32,7 @@ pub fn build_processor(
         ProcessorSpec::QwenVl(spec) => Ok(Box::new(crate::models::qwen_vl::QwenVlProcessor::new(
             spec,
         )?)),
+        ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
     }
 }
 
@@ -63,11 +67,58 @@ pub fn spec_from_hf_configs(
         Some(
             "qwen2_vl" | "qwen2_5_vl" | "qwen3_vl" | "qwen3_vl_moe" | "qwen3_5" | "qwen3_5_moe",
         ) => Ok(ProcessorSpec::QwenVl(resolve_qwen_vl(&config, &pre)?)),
+        Some("deepseek_v4" | "deepseek_v41") => Ok(ProcessorSpec::DeepseekV41(
+            resolve_deepseek_v41(&config, &pre)?,
+        )),
         Some(other) => Err(MmError::unsupported(format!(
             "no native processor for model_type {other:?}"
         ))),
         None => Err(MmError::invalid_input("config.json is missing model_type")),
     }
+}
+
+fn resolve_deepseek_v41(config: &Value, pre: &Value) -> Result<DeepseekV41Spec> {
+    let knobs = pre
+        .as_object()
+        .ok_or_else(|| MmError::invalid_input("preprocessor_config.json is not an object"))?;
+    // This planner mirrors the checkpoint-config-driven SGLang processor, not
+    // a pixel pipeline selected by preprocessor_config.json. Refuse overrides
+    // rather than silently applying unrelated resize/crop arithmetic.
+    for (name, value) in knobs {
+        if name != "processor_class" && !value.is_null() {
+            return Err(MmError::unsupported(format!(
+                "deepseek_v41 metadata planner cannot honor preprocessor knob {name}"
+            )));
+        }
+    }
+    // Match the checkpoint adapter's flat-vs-nested discriminator. Optional
+    // root-level fields alone must not mask a complete nested vision config.
+    let vision = if config.get("vision_patch_size").is_some() {
+        config
+    } else {
+        config.get("vision_config").unwrap_or(config)
+    };
+    if !vision.is_object() {
+        return Err(MmError::invalid_input(
+            "deepseek_v41 vision_config must be an object",
+        ));
+    }
+    let geometry: DeepseekV41GeometrySpec =
+        serde_json::from_value(vision.clone()).map_err(|error| {
+            MmError::invalid_input_with_source("invalid deepseek_v41 vision config", error)
+        })?;
+    geometry.validate()?;
+    let image_token_id = config["image_token_id"]
+        .as_i64()
+        .and_then(|id| i32::try_from(id).ok())
+        .filter(|id| *id >= 0)
+        .ok_or_else(|| {
+            MmError::invalid_input("config.json needs a nonnegative i32 image_token_id")
+        })?;
+    Ok(DeepseekV41Spec {
+        image_token_id,
+        geometry,
+    })
 }
 
 /// [`spec_from_hf_configs`] over a local model directory (reads `config.json`
@@ -270,7 +321,10 @@ mod tests {
     }"#;
 
     fn qwen_spec(config: &str, pre: &str) -> Result<QwenVlSpec> {
-        spec_from_hf_configs(config, pre).map(|ProcessorSpec::QwenVl(spec)| spec)
+        spec_from_hf_configs(config, pre).map(|spec| match spec {
+            ProcessorSpec::QwenVl(spec) => spec,
+            _ => panic!("expected Qwen spec"),
+        })
     }
 
     #[test]
@@ -428,7 +482,9 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("config.json"), QWEN25_CONFIG).unwrap();
         std::fs::write(dir.join("preprocessor_config.json"), QWEN25_PREPROCESSOR).unwrap();
-        let ProcessorSpec::QwenVl(spec) = spec_from_model_dir(&dir).unwrap();
+        let ProcessorSpec::QwenVl(spec) = spec_from_model_dir(&dir).unwrap() else {
+            panic!("expected Qwen spec");
+        };
         assert_eq!(spec.max_pixels, 12845056);
         std::fs::remove_dir_all(&dir).unwrap();
 

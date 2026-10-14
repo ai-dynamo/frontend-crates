@@ -34,10 +34,15 @@
 #   stream_vs_batch = KNOWN v1-batch vs v2-stream divergence on a TOOLCALLING.batch.*
 #        case. Consumed by BOTH:
 #          - conformance/tests/conformance_toolcalling_batch_via_stream.rs — the entries
-#            ARE the allowlist (an undocumented divergence fails; a stale entry
-#            fails; an entry with an empty note fails), and
+#            document legitimate parity differences. Live v2 must also match its
+#            pinned capture exactly; missing, changed, stale or unvisited entries fail.
 #          - the batch-on-stream tab — the cell gets a muted `≠` known-divergence
 #            suffix and the v2 candidate's popup block carries the note.
+#   baseline_defect = FIXME-labeled pre-existing v2 defect, shown as a diagnostic
+#        without the intended-difference badge. baseline_defect_actual pins its
+#        exact JSON result independently of recaptured expectations. This follows
+#        unified-known-divergences.yaml: defects stay visible while changed output
+#        or stale entries fail CI. Authored GOLDEN values are never rewritten.
 
 # case 7 is the typed-argument test: the v1 XML path emits every parameter
 # value as a raw string and never applies the tool's JSON-Schema types; v2
@@ -69,6 +74,29 @@ deepseek_v4:
     stream_vs_batch: &svb-whitespace-only >-
       Whitespace-only input: v2 passes the bare whitespace through as
       normal_text; v1 batch returns "". Intended.
+
+  TOOLCALLING.batch.11.b:
+    baseline_defect: >-
+      FIXME (v2 defect): the DS4 native header parser accepts an empty tool
+      name and emits {name: "", arguments: {value: 1}}; v1 correctly drops
+      this invocation. This exact PR-head observation is preserved to assess
+      the scoped GLM change; it remains a parser defect, not intended behavior.
+    baseline_defect_actual: >-
+      {"calls":[{"name":"","arguments":{"value":1}}],"normal_text":""}
+  TOOLCALLING.batch.30.c:
+    stream_vs_batch: &svb-literal-markers >-
+      FIXME (v1 defect): v1 mistakes native call/channel markers inside a string argument for structural delimiters and loses argument data or the call. v2 keeps those bytes inside the value and also preserves subsequent calls.
+  TOOLCALLING.batch.31.a:
+    stream_vs_batch: *svb-literal-markers
+  TOOLCALLING.batch.7.p.const_space_allof:
+    stream_vs_batch: &svb-literal-whitespace >-
+      FIXME (v1 defect): v1 trims the string constant from "  spaced  " to "spaced". v2 preserves its whitespace and satisfies the original const schema.
+  TOOLCALLING.batch.7.p.const_space_bare:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.p.const_space_ref:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.p.const_space_typed:
+    stream_vs_batch: *svb-literal-whitespace
 
 gemma4:
   TOOLCALLING.batch.2.c:
@@ -147,6 +175,26 @@ kimi_k2:
   TOOLCALLING.batch.9.b:
     stream_vs_batch: *svb-whitespace-only
 
+kimi_k3:
+  TOOLCALLING.batch.2.b:
+    stream_vs_batch: &svb-kimi-channels >-
+      FIXME (v1 defect): v1 stops after the first Kimi tools channel and loses a later complete call. v2 returns to idle after each channel and extracts every closed call.
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.30.c:
+    stream_vs_batch: *svb-literal-markers
+  TOOLCALLING.batch.31.a:
+    stream_vs_batch: *svb-literal-markers
+  TOOLCALLING.batch.4.b:
+    stream_vs_batch: &svb-invalid-json-recovery >-
+      Malformed raw JSON recovery is implementation-defined (TOOLCALLING_CASES.md, batch.4). v1 surfaces the invalid JSON bytes as a raw argument string; v2 validates the raw object and drops the malformed call. Both recovery choices are permitted.
+  TOOLCALLING.batch.5.b:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-surrounding-text
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-kimi-channels
+
 minimax_m2:
   TOOLCALLING.batch.2.b:
     stream_vs_batch: *svb-surrounding-text
@@ -171,6 +219,30 @@ minimax_m2:
   TOOLCALLING.streamv1.7.f:
     jail: *jail-stringifies-bigint
 
+  TOOLCALLING.batch.7.p.const_null_allof:
+    stream_vs_batch: &svb-literal-null >-
+      FIXME (v1 defect): v1 interprets the string constant "null" as JSON null. v2 preserves the literal string required by the const schema.
+  TOOLCALLING.batch.7.p.const_null_bare:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_null_ref:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_null_typed:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.s.ref_union_anyOf_integer:
+    stream_vs_batch: &svb-constrained-integer >-
+      FIXME (v1 defect): v1 misses the integer constraint through references, intersections, or a nullable type array and returns a string. v2 returns the integer required by the original schema.
+  TOOLCALLING.batch.7.s.ref_union_oneOf_integer:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.t.intersection_anyOf:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.t.intersection_oneOf:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.v.type_array_integer_null:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.v.type_array_string_integer:
+    stream_vs_batch: &svb-string-integer-ambiguity >-
+      The type array permits either string "42" or integer 42. v1 prefers the string and v2 prefers the integer; both satisfy the original schema. The independent family golden retains its explicitly authored interpretation.
+
 minimax_m3:
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
@@ -178,30 +250,6 @@ minimax_m3:
     stream_vs_batch: *svb-recovery
   TOOLCALLING.batch.5.g:
     stream_vs_batch: *svb-recovery
-  TOOLCALLING.batch.7-4.const:
-    stream_vs_batch: >-
-      Known v2 defect: an anyOf branch with const: null and no type is ignored,
-      returning the string "null". The v1 batch parser correctly returns JSON
-      null. These fixtures cover the v1 fix in PR #269; the v2 correction is a
-      separate follow-up.
-  TOOLCALLING.batch.7-5.sibling_anyof:
-    stream_vs_batch: &svb-minimax-null-intersection >-
-      Known v2 defect: null is accepted by one part of the schema even though
-      another constraint excludes it, returning JSON null instead of "null".
-      The v1 batch parser preserves the string under the full schema.
-      These fixtures cover the v1 fix in PR #269; v2 needs a separate follow-up.
-  TOOLCALLING.batch.7-5.sibling_oneof:
-    stream_vs_batch: *svb-minimax-null-intersection
-  TOOLCALLING.batch.7-5.untyped_branch:
-    stream_vs_batch: *svb-minimax-null-intersection
-  TOOLCALLING.batch.7-5.untyped_const:
-    stream_vs_batch: &svb-minimax-null-value-constraint >-
-      Known v2 defect: when const or enum has no accompanying type, the parser
-      coerces to JSON null even when only the string "null" satisfies the constraint.
-      The v1 batch parser preserves that string. These fixtures cover the v1
-      fix in PR #269; the v2 correction is a separate follow-up.
-  TOOLCALLING.batch.7-5.untyped_enum:
-    stream_vs_batch: *svb-minimax-null-value-constraint
   TOOLCALLING.batch.8.b:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.8.c:
@@ -257,3 +305,40 @@ qwen3_coder:
     jail: *jail-stringifies-scalars
   TOOLCALLING.streamv1.7.f:
     jail: *jail-stringifies-bigint
+  TOOLCALLING.batch.7.p.const_entity_allof:
+    stream_vs_batch: &svb-literal-entity >-
+      FIXME (v1 defect): v1 entity-decodes the string constant "&lt;" into "<". v2 preserves the exact literal required by the const schema.
+  TOOLCALLING.batch.7.p.const_entity_bare:
+    stream_vs_batch: *svb-literal-entity
+  TOOLCALLING.batch.7.p.const_entity_ref:
+    stream_vs_batch: *svb-literal-entity
+  TOOLCALLING.batch.7.p.const_entity_typed:
+    stream_vs_batch: *svb-literal-entity
+  TOOLCALLING.batch.7.p.const_null_allof:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_null_bare:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_null_ref:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_null_typed:
+    stream_vs_batch: *svb-literal-null
+  TOOLCALLING.batch.7.p.const_space_allof:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.p.const_space_bare:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.p.const_space_ref:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.p.const_space_typed:
+    stream_vs_batch: *svb-literal-whitespace
+  TOOLCALLING.batch.7.s.ref_union_anyOf_integer:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.s.ref_union_oneOf_integer:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.t.intersection_anyOf:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.t.intersection_oneOf:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.v.type_array_integer_null:
+    stream_vs_batch: *svb-constrained-integer
+  TOOLCALLING.batch.7.v.type_array_string_integer:
+    stream_vs_batch: *svb-string-integer-ambiguity

@@ -48,6 +48,8 @@ use crate::unified::{
     UnifiedParser, count_guided_prefix_bytes,
 };
 
+use crate::tool_calling::gemma4::is_call_name_char;
+
 const REASONING_START: &str = "<|channel>";
 const REASONING_END: &str = "<channel|>";
 /// The role label the tokenizer writes inside the channel, analogous to the
@@ -69,30 +71,16 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
     let Some(after_prefix) = suffix.strip_prefix("call:") else {
         return GuidedPrefix::NoMatch;
     };
-    if context.followed_by_competing_marker {
-        return GuidedPrefix::Strip("call:".len());
-    }
-    if !context.outside_reasoning
-        && after_prefix
-            .chars()
-            .next()
-            .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    {
-        return GuidedPrefix::Strip("call:".len());
-    }
-    if !context.outside_reasoning
-        || !context.payload_is_empty
-        || !context.text[..context.at].trim().is_empty()
-    {
-        return GuidedPrefix::NoMatch;
+    if let Some(disposition) = guided_prefix_context(context, after_prefix) {
+        return disposition;
     }
     match after_prefix.as_bytes().first() {
         None => GuidedPrefix::Pending,
         Some(b'{') | Some(b'[') => GuidedPrefix::Match,
         Some(_) => {
-            let name_len = after_prefix.char_indices().find_map(|(at, ch)| {
-                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.')).then_some(at)
-            });
+            let name_len = after_prefix
+                .char_indices()
+                .find_map(|(at, ch)| (!is_call_name_char(ch)).then_some(at));
             match name_len {
                 None => GuidedPrefix::Pending,
                 Some(at) if at > 0 && after_prefix.as_bytes()[at] == b'[' => GuidedPrefix::Match,
@@ -100,6 +88,26 @@ fn guided_call_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
             }
         }
     }
+}
+
+fn guided_prefix_context(
+    context: GuidedPrefixContext<'_>,
+    after_prefix: &str,
+) -> Option<GuidedPrefix> {
+    if context.followed_by_competing_marker {
+        return Some(GuidedPrefix::Strip("call:".len()));
+    }
+    if !context.outside_reasoning && after_prefix.chars().next().is_some_and(is_call_name_char) {
+        return Some(GuidedPrefix::Strip("call:".len()));
+    }
+    if !context.outside_reasoning
+        || !context.payload_is_empty
+        || context.preceded_by_response_text
+        || !context.text[..context.at].trim().is_empty()
+    {
+        return Some(GuidedPrefix::NoMatch);
+    }
+    None
 }
 
 #[derive(Default)]
@@ -125,22 +133,8 @@ impl GuidedPrefixScanner for GemmaGuidedPrefix {
         let Some(after_prefix) = candidate.strip_prefix("call:") else {
             return guided_call_prefix(context);
         };
-        if context.followed_by_competing_marker {
-            return GuidedPrefix::Strip("call:".len());
-        }
-        if !context.outside_reasoning
-            && after_prefix
-                .chars()
-                .next()
-                .is_some_and(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-        {
-            return GuidedPrefix::Strip("call:".len());
-        }
-        if !context.outside_reasoning
-            || !context.payload_is_empty
-            || !context.text[..context.at].trim().is_empty()
-        {
-            return GuidedPrefix::NoMatch;
+        if let Some(disposition) = guided_prefix_context(context, after_prefix) {
+            return disposition;
         }
         if after_prefix.starts_with(['{', '[']) {
             return GuidedPrefix::Match;
@@ -152,10 +146,9 @@ impl GuidedPrefixScanner for GemmaGuidedPrefix {
                 .max(append_start.saturating_sub("call:".len()));
             let scanned = &after_prefix[scan_from..];
             count_guided_prefix_bytes(scanned.len());
-            self.name_end = scanned.char_indices().find_map(|(at, ch)| {
-                (!ch.is_ascii_alphanumeric() && !matches!(ch, '_' | '-' | '.'))
-                    .then_some(scan_from + at)
-            });
+            self.name_end = scanned
+                .char_indices()
+                .find_map(|(at, ch)| (!is_call_name_char(ch)).then_some(scan_from + at));
             self.scan_from = after_prefix.len();
         }
         match self.name_end {
@@ -716,6 +709,50 @@ mod tests {
                 "split={split}"
             );
         }
+    }
+
+    #[test]
+    fn eof_recovery_keeps_tool_markers_inside_a_valid_string_as_data() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:<|\"|>unfinished}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>quoted <|tool_call>call:fake{}<tool_call|><|\"|>}<tool_call|>",
+        );
+        let expected = vec![call(
+            "echo",
+            serde_json::json!({
+                "value": "quoted <|tool_call>call:fake{}<tool_call|>"
+            }),
+        )];
+        for split in 0..=input.len() {
+            let mut parser = gemma4_unified(&[]);
+            let mut deltas = parser.push(&input[..split]).expect("push");
+            deltas.extend(parser.push(&input[split..]).expect("push"));
+            assert!(
+                !assemble(&deltas)
+                    .iter()
+                    .any(|event| matches!(event, UnifiedEvent::ToolCall { .. })),
+                "ambiguous recovery emitted a call before EOF at split={split}"
+            );
+            deltas.extend(parser.finish().expect("finish").events);
+            assert_eq!(assemble(&deltas), expected, "split={split}");
+        }
+    }
+
+    #[test]
+    fn recovered_closed_call_is_emitted_before_finish() {
+        let mut parser = gemma4_unified(&[]);
+        let mut deltas = parser
+            .push("<|tool_call>call:broken{note:<|\"|>x<|\"|>}")
+            .expect("push");
+        deltas.extend(
+            parser
+                .push("<|tool_call>call:echo{value:<|\"|>y<|\"|>}<tool_call|>")
+                .expect("push"),
+        );
+        assert_eq!(
+            assemble(&deltas),
+            vec![call("echo", serde_json::json!({"value": "y"}))]
+        );
     }
 
     #[test]

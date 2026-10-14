@@ -1,0 +1,22 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.13
+    source_sha256: f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8
+    git_commit: 47ef952237deefe0643f94025272a558f249687d
+document:
+  mode: unified
+changes:
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 1f44f2373df80ee7f4cd7c29c6a0305efe6064847cb22a0f451574d1ae99196c
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

@@ -33,14 +33,19 @@
 //! exact JSON string in the model-emitted order (the order vLLM's Rust parser also
 //! preserves), so order has to be pinned to source order.
 
+use std::cell::RefCell;
+
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
     WrappedBlockScanner, WrappedBlockSpec, reorder_arguments,
 };
 use crate::tool_calling::v1core::ToolDefinition;
 use crate::tool_calling::v1core::gemma4::{
-    has_bare_call_body_start_gemma4, is_call_prefix_boundary, parse_one_tool_call_gemma4,
+    has_recoverable_tool_call_boundaries_gemma4, is_call_prefix_boundary,
+    parse_one_tool_call_gemma4,
 };
+
+pub(crate) use crate::tool_calling::v1core::gemma4::is_call_name_char;
 
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 
@@ -52,12 +57,14 @@ const STRING_DELIM: &str = "<|\"|>";
 #[cfg(any(test, feature = "test-utils"))]
 std::thread_local! {
     static BOUNDARY_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static INCOMPLETE_HEADER_EXAMINED_BYTES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
 #[cfg(any(test, feature = "test-utils"))]
 #[doc(hidden)]
 pub fn reset_boundary_examined_bytes() {
     BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(0));
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(|examined| examined.set(0));
 }
 
 #[cfg(any(test, feature = "test-utils"))]
@@ -66,9 +73,22 @@ pub fn boundary_examined_bytes() -> usize {
     BOUNDARY_EXAMINED_BYTES.with(std::cell::Cell::get)
 }
 
+#[cfg(any(test, feature = "test-utils"))]
+#[doc(hidden)]
+pub fn incomplete_header_examined_bytes() -> usize {
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(std::cell::Cell::get)
+}
+
 fn count_boundary_bytes(bytes: usize) {
     #[cfg(any(test, feature = "test-utils"))]
     BOUNDARY_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
+    #[cfg(not(any(test, feature = "test-utils")))]
+    let _ = bytes;
+}
+
+fn count_incomplete_header_bytes(bytes: usize) {
+    #[cfg(any(test, feature = "test-utils"))]
+    INCOMPLETE_HEADER_EXAMINED_BYTES.with(|examined| examined.set(examined.get() + bytes));
     #[cfg(not(any(test, feature = "test-utils")))]
     let _ = bytes;
 }
@@ -102,7 +122,7 @@ impl Gemma4InvokeProgress {
                 if self.depth == 0 {
                     if ch == '{' && self.name_started {
                         self.depth = 1;
-                    } else if ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.') {
+                    } else if is_call_name_char(ch) {
                         self.name_started = true;
                     } else {
                         self.invalid = true;
@@ -156,13 +176,63 @@ impl Gemma4InvokeProgress {
     }
 }
 
+#[derive(Clone, Copy)]
+struct BareCallHeader {
+    start: usize,
+    name_len: usize,
+}
+
+impl BareCallHeader {
+    fn discard_prefix(header: &mut Option<Self>, bytes: usize) {
+        *header = header.and_then(|mut candidate| {
+            candidate.start = candidate.start.checked_sub(bytes)?;
+            Some(candidate)
+        });
+    }
+}
+
 #[derive(Default)]
 struct Gemma4InvokeBoundary {
     progress: Gemma4InvokeProgress,
     candidate: String,
+    opener_header: RefCell<Option<BareCallHeader>>,
+    holdback_header: RefCell<Option<BareCallHeader>>,
+    unified_holdback_header: RefCell<Option<BareCallHeader>>,
     resync_cursor: usize,
+    resync_pending_header_start: Option<usize>,
     resync_in_string: bool,
+    resync_candidate_in_string: bool,
     resync_candidate: Option<(usize, usize)>,
+    resync_candidate_ambiguous: bool,
+    resync_candidate_context: Vec<Gemma4ResyncContext>,
+    resync_recovery_start: Option<usize>,
+    resync_outer_close_at: Option<usize>,
+    resync_outer_close_candidate_start: Option<usize>,
+    resync_force_outer_close_at: Option<usize>,
+}
+
+#[derive(Clone, Copy)]
+enum Gemma4ResyncContext {
+    ObjectKey,
+    ObjectKeyName,
+    ObjectValue,
+    ObjectAfterValue,
+    ArrayValue,
+    ArrayAfterValue,
+}
+
+impl Gemma4ResyncContext {
+    fn expects_string_value(self) -> bool {
+        matches!(self, Self::ObjectValue | Self::ArrayValue)
+    }
+
+    fn after_string(self) -> Option<Self> {
+        match self {
+            Self::ObjectValue => Some(Self::ObjectAfterValue),
+            Self::ArrayValue => Some(Self::ArrayAfterValue),
+            _ => None,
+        }
+    }
 }
 
 impl InvokeBoundary for Gemma4InvokeBoundary {
@@ -174,61 +244,140 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
         _tool_index: usize,
     ) -> Option<usize> {
         self.candidate.push_str(append);
-        self.progress.end(&self.candidate, flush)
+        let end = self.progress.end(&self.candidate, flush);
+        if end.is_some() {
+            self.opener_header.replace(None);
+            self.holdback_header.replace(None);
+            self.unified_holdback_header.replace(None);
+        }
+        end
     }
 
     fn opens(&self, text: &str, at: usize) -> bool {
-        opens_bare_call(text, at)
+        opens_bare_call(text, at, &self.opener_header)
+    }
+
+    fn accepts_buffer_start(&self, previous: Option<char>) -> bool {
+        previous.is_none_or(|ch| !is_call_name_char(ch))
+    }
+
+    fn discard_prefix(&mut self, bytes: usize) {
+        BareCallHeader::discard_prefix(self.opener_header.get_mut(), bytes);
+        BareCallHeader::discard_prefix(self.holdback_header.get_mut(), bytes);
+    }
+
+    fn discard_unified_prefix(&mut self, bytes: usize) {
+        BareCallHeader::discard_prefix(self.opener_header.get_mut(), bytes);
+        BareCallHeader::discard_prefix(self.unified_holdback_header.get_mut(), bytes);
     }
 
     fn holdback(&self, text: &str) -> usize {
-        partial_bare_opener_suffix_len(text)
+        partial_bare_opener_suffix_len(text, &self.holdback_header)
+    }
+
+    fn holdback_for_unified_input(&self, text: &str) -> usize {
+        partial_bare_opener_suffix_len(text, &self.unified_holdback_header)
     }
 
     fn resync(&mut self, input: &str, flush: bool, _tool_index: usize) -> Option<usize> {
         if self.resync_cursor > input.len() {
-            self.resync_cursor = 0;
-            self.resync_in_string = false;
-            self.resync_candidate = None;
+            self.reset_resynchronizer();
         }
         while self.resync_cursor < input.len() {
             let cursor = self.resync_cursor;
             let rest = &input[cursor..];
-            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() {
+            if let Some(header_start) = self.resync_pending_header_start {
+                let name_start = header_start + TOOL_CALL_START.len() + CALL_PREFIX.len();
+                let ch = rest.chars().next()?;
+                if ch == '{' && cursor > name_start {
+                    if self.resync_candidate.is_none() || !self.resync_candidate_in_string {
+                        self.resync_candidate = Some((header_start, 1));
+                        self.resync_candidate_ambiguous = self.resync_in_string;
+                        self.resync_candidate_in_string = false;
+                        self.resync_candidate_context = vec![Gemma4ResyncContext::ObjectKey];
+                    }
+                    self.resync_pending_header_start = None;
+                    self.resync_cursor += ch.len_utf8();
+                    count_boundary_bytes(ch.len_utf8());
+                    count_incomplete_header_bytes(ch.len_utf8());
+                    continue;
+                }
+                if is_call_name_char(ch) {
+                    self.resync_cursor += ch.len_utf8();
+                    count_boundary_bytes(ch.len_utf8());
+                    count_incomplete_header_bytes(ch.len_utf8());
+                    continue;
+                }
+                self.resync_pending_header_start = None;
+            }
+            if STRING_DELIM.starts_with(rest) && rest.len() < STRING_DELIM.len() && !flush {
                 return None;
             }
-            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() {
+            if TOOL_CALL_START.starts_with(rest) && rest.len() < TOOL_CALL_START.len() && !flush {
                 return None;
             }
             if rest.starts_with(STRING_DELIM) {
-                self.resync_in_string = !self.resync_in_string;
+                if self.resync_candidate.is_some() {
+                    if self.resync_candidate_in_string {
+                        self.resync_candidate_in_string = false;
+                        if let Some(context) = self.resync_candidate_context.last_mut()
+                            && let Some(after_string) = (*context).after_string()
+                        {
+                            *context = after_string;
+                        }
+                    } else if self.resync_force_outer_close_at == Some(cursor)
+                        || (self.resync_candidate_ambiguous
+                            && (!self
+                                .resync_candidate_context
+                                .last()
+                                .copied()
+                                .is_some_and(Gemma4ResyncContext::expects_string_value)))
+                    {
+                        if self.resync_in_string {
+                            // This interpretation assigns the delimiter to the
+                            // malformed outer string. Value-position candidates
+                            // get a separate bounded pass with this ownership.
+                            self.resync_in_string = false;
+                            self.resync_recovery_start = None;
+                        }
+                    } else {
+                        if self.resync_force_outer_close_at.is_none()
+                            && self.resync_candidate_ambiguous
+                            && self.resync_in_string
+                            && self
+                                .resync_candidate_context
+                                .last()
+                                .copied()
+                                .is_some_and(Gemma4ResyncContext::expects_string_value)
+                        {
+                            self.resync_outer_close_at.get_or_insert(cursor);
+                            if let Some((candidate_start, _)) = self.resync_candidate {
+                                self.resync_outer_close_candidate_start
+                                    .get_or_insert(candidate_start);
+                            }
+                        }
+                        self.resync_candidate_in_string = true;
+                    }
+                } else {
+                    // Candidate string delimiters are independent of the quoted
+                    // malformed value that made their opener ambiguous.
+                    self.resync_in_string = !self.resync_in_string;
+                    if !self.resync_in_string {
+                        self.resync_recovery_start = None;
+                    }
+                }
                 self.resync_cursor += STRING_DELIM.len();
                 count_boundary_bytes(STRING_DELIM.len());
                 continue;
             }
-            if !self.resync_in_string && cursor > 0 && rest.starts_with(TOOL_CALL_START) {
+            if cursor > 0 && rest.starts_with(TOOL_CALL_START) {
                 let after_marker = &rest[TOOL_CALL_START.len()..];
-                if CALL_PREFIX.starts_with(after_marker) {
+                if CALL_PREFIX.starts_with(after_marker) && !flush {
                     return None;
                 }
-                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
-                    && after_prefix.find('{').is_none()
-                    && after_prefix
-                        .chars()
-                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-                {
-                    return None;
-                }
-                if let Some(after_prefix) = after_marker.strip_prefix(CALL_PREFIX)
-                    && let Some(name_len) = after_prefix
-                        .char_indices()
-                        .find_map(|(at, ch)| (ch == '{' && at > 0).then_some(at))
-                    && after_prefix[..name_len]
-                        .chars()
-                        .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-                {
-                    self.resync_candidate = Some((cursor, 1));
-                    let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len() + name_len + 1;
+                if after_marker.strip_prefix(CALL_PREFIX).is_some() {
+                    let consumed = TOOL_CALL_START.len() + CALL_PREFIX.len();
+                    self.resync_pending_header_start = Some(cursor);
                     self.resync_cursor += consumed;
                     count_boundary_bytes(consumed);
                     continue;
@@ -237,16 +386,40 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
             if let Some((start, depth)) = self.resync_candidate {
                 if depth == 0 {
                     if rest.starts_with(TOOL_CALL_END) {
-                        return Some(start);
+                        if self.resync_candidate_ambiguous {
+                            let end = cursor + TOOL_CALL_END.len();
+                            count_boundary_bytes(end - start);
+                            if has_recoverable_tool_call_boundaries_gemma4(&input[start..end]) {
+                                if self.resync_outer_close_candidate_start == Some(start) {
+                                    // The candidate whose value delimiter was
+                                    // ambiguous forms a complete call under the
+                                    // candidate-string interpretation. Keep its
+                                    // marker-like value data opaque.
+                                    self.resync_outer_close_at = None;
+                                    self.resync_outer_close_candidate_start = None;
+                                }
+                                self.resync_recovery_start.get_or_insert(start);
+                            }
+                            self.clear_recovery_candidate();
+                            self.resync_cursor += TOOL_CALL_END.len();
+                            count_boundary_bytes(TOOL_CALL_END.len());
+                            continue;
+                        }
+                        return Some(
+                            self.earlier_alternate(input, Some(start), flush, _tool_index)
+                                .unwrap_or(start),
+                        );
                     }
-                    if TOOL_CALL_END.starts_with(rest) {
+                    if TOOL_CALL_END.starts_with(rest) && !flush {
                         return None;
                     }
                     if !rest.chars().next()?.is_whitespace() {
-                        self.resync_candidate = None;
+                        self.clear_recovery_candidate();
                     }
-                } else if !self.resync_in_string {
-                    self.resync_candidate = match rest.chars().next()? {
+                } else if !self.resync_candidate_in_string {
+                    let ch = rest.chars().next()?;
+                    self.advance_candidate_context(ch);
+                    self.resync_candidate = match ch {
                         '{' => Some((start, depth + 1)),
                         '}' => Some((start, depth - 1)),
                         _ => self.resync_candidate,
@@ -257,20 +430,142 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
             self.resync_cursor += consumed;
             count_boundary_bytes(consumed);
         }
-        flush
-            .then(|| {
-                self.resync_candidate
-                    .and_then(|(start, depth)| (depth == 0).then_some(start))
-            })
-            .flatten()
+        if flush {
+            let recovery_start = self.resync_recovery_start.filter(|_| self.resync_in_string);
+            let candidate_start = self
+                .resync_candidate
+                .filter(|(_, depth)| *depth == 0)
+                .filter(|_| !self.resync_candidate_ambiguous || self.resync_in_string)
+                .map(|(start, _)| start);
+            let primary_start = recovery_start.into_iter().chain(candidate_start).min();
+            return self.earlier_alternate(input, primary_start, true, _tool_index);
+        }
+        None
     }
 
     fn reset(&mut self) {
         self.progress.reset();
         self.candidate.clear();
-        self.resync_cursor = 0;
-        self.resync_in_string = false;
+        self.opener_header.replace(None);
+        self.holdback_header.replace(None);
+        self.unified_holdback_header.replace(None);
+        self.reset_resynchronizer();
+    }
+}
+
+impl Gemma4InvokeBoundary {
+    fn earlier_alternate(
+        &self,
+        input: &str,
+        primary_start: Option<usize>,
+        flush: bool,
+        tool_index: usize,
+    ) -> Option<usize> {
+        // A value delimiter in a candidate inside an already-open malformed
+        // string has two viable owners. Keep the candidate-string interpretation
+        // first so a complete quoted candidate retains its marker data. If that
+        // pass only finds a later candidate, run one bounded alternate pass with
+        // the delimiter closing the malformed outer string and keep the earlier
+        // recoverable candidate.
+        let Some(close_at) = self.resync_outer_close_at else {
+            return primary_start;
+        };
+        if self.resync_force_outer_close_at.is_some()
+            || primary_start.is_some_and(|start| close_at >= start)
+        {
+            return primary_start;
+        }
+
+        let mut alternate = Self {
+            resync_force_outer_close_at: Some(close_at),
+            ..Self::default()
+        };
+        match (primary_start, alternate.resync(input, flush, tool_index)) {
+            (Some(primary), Some(alternate)) => Some(primary.min(alternate)),
+            (Some(primary), None) => Some(primary),
+            (None, alternate) => alternate,
+        }
+    }
+
+    fn clear_recovery_candidate(&mut self) {
         self.resync_candidate = None;
+        self.resync_candidate_ambiguous = false;
+        self.resync_candidate_in_string = false;
+        self.resync_candidate_context.clear();
+    }
+
+    fn reset_resynchronizer(&mut self) {
+        self.clear_recovery_candidate();
+        self.resync_cursor = 0;
+        self.resync_pending_header_start = None;
+        self.resync_in_string = false;
+        self.resync_recovery_start = None;
+        self.resync_outer_close_at = None;
+        self.resync_outer_close_candidate_start = None;
+        self.resync_force_outer_close_at = None;
+    }
+
+    fn advance_candidate_context(&mut self, ch: char) {
+        use Gemma4ResyncContext as Context;
+
+        let Some(context) = self.resync_candidate_context.last_mut() else {
+            return;
+        };
+        match *context {
+            Context::ObjectKey => {
+                if is_call_name_char(ch) {
+                    *context = Context::ObjectKeyName;
+                } else if ch == '}' {
+                    self.resync_candidate_context.pop();
+                }
+            }
+            Context::ObjectKeyName => {
+                if ch == ':' {
+                    *context = Context::ObjectValue;
+                }
+            }
+            Context::ObjectValue => match ch {
+                ch if ch.is_whitespace() => {}
+                '{' => {
+                    *context = Context::ObjectAfterValue;
+                    self.resync_candidate_context.push(Context::ObjectKey);
+                }
+                '[' => {
+                    *context = Context::ObjectAfterValue;
+                    self.resync_candidate_context.push(Context::ArrayValue);
+                }
+                _ => *context = Context::ObjectAfterValue,
+            },
+            Context::ObjectAfterValue => match ch {
+                ',' => *context = Context::ObjectKey,
+                '}' => {
+                    self.resync_candidate_context.pop();
+                }
+                _ => {}
+            },
+            Context::ArrayValue => match ch {
+                ch if ch.is_whitespace() => {}
+                ']' => {
+                    self.resync_candidate_context.pop();
+                }
+                '{' => {
+                    *context = Context::ArrayAfterValue;
+                    self.resync_candidate_context.push(Context::ObjectKey);
+                }
+                '[' => {
+                    *context = Context::ArrayAfterValue;
+                    self.resync_candidate_context.push(Context::ArrayValue);
+                }
+                _ => *context = Context::ArrayAfterValue,
+            },
+            Context::ArrayAfterValue => match ch {
+                ',' => *context = Context::ArrayValue,
+                ']' => {
+                    self.resync_candidate_context.pop();
+                }
+                _ => {}
+            },
+        }
     }
 }
 
@@ -321,8 +616,42 @@ pub(crate) fn gemma4_scanner(tools: &[Tool]) -> WrappedBlockScanner<Gemma4Invoke
 ///
 /// Without the second test, "I will call: you tomorrow" would be buffered as an
 /// invoke that never closes and then dropped at EOF — losing ordinary prose.
-fn opens_bare_call(text: &str, at: usize) -> bool {
-    is_call_prefix_boundary(text, at) && has_bare_call_body_start_gemma4(&text[at..])
+fn opens_bare_call(text: &str, at: usize, cached_header: &RefCell<Option<BareCallHeader>>) -> bool {
+    is_call_prefix_boundary(text, at) && scan_bare_header(text, at, cached_header) == Some(true)
+}
+
+/// `None` retains an incomplete name; `{` commits only a nonempty ASCII name.
+fn scan_bare_header(
+    text: &str,
+    at: usize,
+    cached_header: &RefCell<Option<BareCallHeader>>,
+) -> Option<bool> {
+    if !text.get(at..)?.starts_with(CALL_PREFIX) {
+        cached_header.replace(None);
+        return Some(false);
+    }
+    let mut header = cached_header
+        .borrow()
+        .filter(|header| {
+            header.start == at
+                && text
+                    .get(at + CALL_PREFIX.len() + header.name_len..)
+                    .is_some()
+        })
+        .unwrap_or(BareCallHeader {
+            start: at,
+            name_len: 0,
+        });
+    for ch in text[at + CALL_PREFIX.len() + header.name_len..].chars() {
+        count_incomplete_header_bytes(ch.len_utf8());
+        if ch == '{' || !is_call_name_char(ch) {
+            cached_header.replace(None);
+            return Some(ch == '{' && header.name_len > 0);
+        }
+        header.name_len += ch.len_utf8();
+    }
+    cached_header.replace(Some(header));
+    None
 }
 
 pub(crate) fn is_gemma_call_prefix_boundary(text: &str, at: usize) -> bool {
@@ -368,6 +697,45 @@ mod boundary_tests {
     use super::*;
 
     #[test]
+    fn reset_discards_ambiguous_scan_state_and_restarts_tool_indices() {
+        let ambiguous = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unfinished",
+            "<|tool_call>call:a{value:<|\"|>OLD<|\"|>}<tool_call|>",
+        );
+        for finish_first in [false, true] {
+            let mut scanner = gemma4_scanner(&[]);
+            assert_eq!(scanner.push(ambiguous).unwrap(), ToolParseResult::default());
+            if finish_first {
+                let recovered = scanner.finish().unwrap().coalesce_calls();
+                assert_eq!(recovered.calls[0].tool_index, 0);
+                assert_eq!(recovered.calls[0].arguments, "{\"value\":\"OLD\"}");
+            }
+            scanner.reset();
+            let output = scanner
+                .push("call:a{value:<|\"|>é<|\"|>}<tool_call|>")
+                .unwrap();
+            assert_eq!(output.normal_text, "");
+            assert_eq!(
+                output.calls,
+                vec![ToolCallDelta {
+                    tool_index: 0,
+                    name: Some("a".into()),
+                    arguments: "{\"value\":\"é\"}".into(),
+                    complete: true,
+                }]
+            );
+            assert_eq!(scanner.finish().unwrap(), ToolParseResult::default());
+        }
+        let mut scanner = gemma4_scanner(&[]);
+        assert_eq!(scanner.push("a").unwrap().normal_text, "a");
+        scanner.reset();
+        assert_eq!(
+            scanner.push("call:a{}<tool_call|>").unwrap().calls[0].tool_index,
+            0
+        );
+    }
+
+    #[test]
     fn gemma_exposes_its_request_local_boundary() {
         let scanner = gemma4_scanner(&[]);
         let factory = scanner
@@ -400,6 +768,41 @@ mod boundary_tests {
             boundary.resync(&input, true, 0),
             Some(input.rfind(TOOL_CALL_START).unwrap())
         );
+    }
+
+    #[test]
+    fn resync_recovers_complete_candidates_after_the_malformed_open_string() {
+        let input = concat!(
+            "<|tool_call>call:bad{value:{x:<|\"|>unfinished}}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
+            "<|tool_call>call:echo{value:<|\"|>Café<|\"|>}<tool_call|>",
+        );
+        let first_echo = input.find("<|tool_call>call:echo").unwrap();
+        let mut boundary = Gemma4InvokeBoundary::default();
+
+        assert_eq!(boundary.resync(input, false, 0), None);
+        assert_eq!(
+            boundary.resync(input, true, 0),
+            Some(first_echo),
+            "candidate={:?}, ambiguous={}, outer_string={}, candidate_string={}",
+            boundary.resync_candidate,
+            boundary.resync_candidate_ambiguous,
+            boundary.resync_in_string,
+            boundary.resync_candidate_in_string
+        );
+    }
+
+    #[test]
+    fn value_delimiter_alternate_close_recovers_a_later_candidate() {
+        let input = concat!(
+            "<|tool_call>call:broken{note:<|\"|>outer",
+            "<|tool_call>call:fake{x:<|\"|>}",
+            "<|tool_call>call:echo{value:<|\"|>é<|\"|>}<tool_call|>",
+        );
+        let expected = input.find("<|tool_call>call:echo").unwrap();
+        let mut boundary = Gemma4InvokeBoundary::default();
+        let recovered = boundary.resync(input, true, 0);
+        assert_eq!(recovered, Some(expected));
     }
 
     #[test]
@@ -474,19 +877,40 @@ impl InvokeEmitter for Gemma4InvokeEmitter {
 /// arrives, the scanner's candidate-local opener probe recognizes it directly.
 /// Held-back bytes are flushed on the next chunk (or at EOF), so the
 /// concatenated output is unchanged — only its chunk boundaries shift.
-fn partial_bare_opener_suffix_len(text: &str) -> usize {
+fn partial_bare_opener_suffix_len(
+    text: &str,
+    cached_header: &RefCell<Option<BareCallHeader>>,
+) -> usize {
+    let cached = *cached_header.borrow();
+    if let Some(header) = cached
+        && text
+            .get(header.start..)
+            .is_some_and(|tail| tail.starts_with(CALL_PREFIX))
+        && is_call_prefix_boundary(text, header.start)
+        && scan_bare_header(text, header.start, cached_header).is_none()
+    {
+        return text.len() - header.start;
+    }
+    cached_header.replace(None);
     for len in (1..=CALL_PREFIX.len()).rev() {
         if text.ends_with(&CALL_PREFIX[..len]) && is_call_prefix_boundary(text, text.len() - len) {
+            if len == CALL_PREFIX.len() {
+                cached_header.replace(Some(BareCallHeader {
+                    start: text.len() - len,
+                    name_len: 0,
+                }));
+            }
             return len;
         }
     }
-    if let Some(idx) = text.rfind(CALL_PREFIX)
-        && is_call_prefix_boundary(text, idx)
-        && text[idx + CALL_PREFIX.len()..]
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
-    {
-        return text.len() - idx;
+    for (idx, _) in text.char_indices().rev() {
+        if text[idx..].starts_with(CALL_PREFIX) && is_call_prefix_boundary(text, idx) {
+            return if scan_bare_header(text, idx, cached_header).is_none() {
+                text.len() - idx
+            } else {
+                0
+            };
+        }
     }
     0
 }
@@ -574,7 +998,7 @@ fn source_key_order(block: &str) -> Vec<String> {
 }
 
 fn is_key_byte(b: u8) -> bool {
-    b.is_ascii_alphanumeric() || b == b'_' || b == b'-' || b == b'.'
+    is_call_name_char(char::from(b))
 }
 
 /// Byte width of a UTF-8 code point from its leading byte.
@@ -603,14 +1027,85 @@ mod tests {
         }]
     }
 
-    fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
-        let mut parser = Gemma4ToolStreamParser::new(tools);
+    fn drive_tool(parser: &mut dyn ToolParser, chunks: &[&str]) -> ToolParseResult {
         let mut out = ToolParseResult::default();
         for chunk in chunks {
             out.append(parser.push(chunk).expect("push"));
         }
         out.append(parser.finish().expect("finish"));
         out
+    }
+
+    fn parse_chunks(tools: &[Tool], chunks: &[&str]) -> ToolParseResult {
+        drive_tool(&mut Gemma4ToolStreamParser::new(tools), chunks)
+    }
+
+    fn assert_exact_tool_calls(output: ToolParseResult, text: &str, values: &[&str]) {
+        let output = output.coalesce_calls();
+        assert_eq!(output.normal_text, text);
+        let calls: Vec<_> = output
+            .calls
+            .iter()
+            .map(|call| {
+                (
+                    call.tool_index,
+                    call.name.as_deref(),
+                    serde_json::from_str::<serde_json::Value>(&call.arguments).expect("arguments"),
+                    call.complete,
+                )
+            })
+            .collect();
+        let expected: Vec<_> = values
+            .iter()
+            .enumerate()
+            .map(|(index, value)| {
+                (
+                    index,
+                    Some("get_weather"),
+                    serde_json::json!({"location": value}),
+                    true,
+                )
+            })
+            .collect();
+        assert_eq!(calls, expected);
+    }
+
+    #[test]
+    fn ambiguous_recovery_scanner_reset_restarts_tool_adapter_indices() {
+        // ToolParser has no public reset API; its private scanner owns reset.
+        // The adapter's tool indexes/completion are not exposed by UnifiedEvent.
+        let ambiguous = concat!(
+            "<|tool_call>call:broken{note:<|\"|>unfinished",
+            "<|tool_call>call:get_weather{location:<|\"|>OLD<|\"|>}<tool_call|>",
+        );
+        for finish_first in [false, true] {
+            let mut parser = Gemma4ToolStreamParser::new(&weather_tools());
+            assert_exact_tool_calls(
+                ToolParser::push(&mut parser, ambiguous).expect("push"),
+                "",
+                &[],
+            );
+            if finish_first {
+                assert_exact_tool_calls(
+                    ToolParser::finish(&mut parser).expect("finish"),
+                    "",
+                    &["OLD"],
+                );
+            }
+            parser.scanner.reset();
+            assert_exact_tool_calls(
+                drive_tool(
+                    &mut parser,
+                    &[
+                        "fresh",
+                        "<|tool_call>call:get_weather{location:<|\"|>NYC<|\"|>}<tool_call|>",
+                        "<|tool_call>call:get_weather{location:<|\"|>Paris<|\"|>}<tool_call|>",
+                    ],
+                ),
+                "fresh",
+                &["NYC", "Paris"],
+            );
+        }
     }
 
     #[test]

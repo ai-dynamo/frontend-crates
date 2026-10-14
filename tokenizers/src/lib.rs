@@ -23,7 +23,7 @@ pub use cache::{
     CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats, SharedTokenizerCache,
     SharedTokenizerCacheStats,
 };
-pub use fastokens::FastTokenizer;
+pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;

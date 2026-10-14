@@ -86,6 +86,7 @@ fn message_order<'a>(messages: impl Iterator<Item = OrderMessage<'a>>) -> Vec<us
     let mut calls = std::collections::HashMap::new();
     let mut slots = Vec::new();
     let mut group_has_task = false;
+    let mut in_group = false;
     fn flush(order: &mut [usize], slots: &mut Vec<(usize, usize)>) {
         let mut sorted = slots.clone();
         sorted.sort_by_key(|&(_, rank)| rank);
@@ -96,18 +97,30 @@ fn message_order<'a>(messages: impl Iterator<Item = OrderMessage<'a>>) -> Vec<us
     for (index, message) in messages.enumerate() {
         order.push(index);
         match message {
-            OrderMessage::Tool(id) => slots.push((index, *calls.get(id).unwrap_or(&0))),
+            OrderMessage::Tool(id) => {
+                slots.push((index, *calls.get(id).unwrap_or(&0)));
+                in_group = true;
+            }
             OrderMessage::User { has_task } => {
                 // A task stays on the merged group until the next user starts a new one.
                 if group_has_task {
                     flush(&mut order, &mut slots);
+                    in_group = false;
                 }
-                group_has_task = has_task;
+                // A user merged into the group drops its task, as in the reference.
+                if !in_group {
+                    group_has_task = has_task;
+                }
+                in_group = true;
             }
             boundary => {
                 flush(&mut order, &mut slots);
                 group_has_task = false;
-                if let OrderMessage::Assistant(Some(ids)) = boundary {
+                in_group = false;
+                // As in the reference, an empty tool_calls list keeps the previous ranks.
+                if let OrderMessage::Assistant(Some(ids)) = boundary
+                    && !ids.is_empty()
+                {
                     calls.clear();
                     for (rank, id) in ids.into_iter().enumerate() {
                         if !id.is_empty() {

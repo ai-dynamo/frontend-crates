@@ -27,7 +27,7 @@ def _write_case(root, directory, key, body):
     )
 
 
-def _write_input_and_golden(root, key="UNIFIED.1-1"):
+def _write_input_and_golden(root, key="UNIFIED.3-text_only"):
     _write_case(
         root,
         "inputs",
@@ -43,7 +43,7 @@ def test_sparse_semantic_checkpoints_carry_a_family_forward_to_current_release(t
     _write_case(
         tmp_path,
         "dynamo_v2-0.6.0",
-        "UNIFIED.1-1",
+        "UNIFIED.3-text_only",
         {"assembled": [{"kind": "text", "text": "text"}], "chunks": []},
     )
 
@@ -62,10 +62,10 @@ def test_explicit_current_error_is_not_replaced_by_an_older_success(tmp_path, mo
     _write_case(
         tmp_path,
         "dynamo_v2-0.6.0",
-        "UNIFIED.1-1",
+        "UNIFIED.3-text_only",
         {"assembled": [{"kind": "text", "text": "text"}], "chunks": []},
     )
-    _write_case(tmp_path, "dynamo_v2-0.6.1", "UNIFIED.1-1", {"error": "capture failed"})
+    _write_case(tmp_path, "dynamo_v2-0.6.1", "UNIFIED.3-text_only", {"error": "capture failed"})
 
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
 
@@ -77,7 +77,7 @@ def test_explicit_current_error_is_not_replaced_by_an_older_success(tmp_path, mo
 def test_renderer_ignores_nonsemantic_capture_directories(tmp_path, monkeypatch, directory):
     monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
     _write_input_and_golden(tmp_path)
-    _write_case(tmp_path, directory, "UNIFIED.1-1", {"assembled": [], "chunks": []})
+    _write_case(tmp_path, directory, "UNIFIED.3-text_only", {"assembled": [], "chunks": []})
 
     cases, _caps, versions = table._load_unified_fixtures(tmp_path)
 

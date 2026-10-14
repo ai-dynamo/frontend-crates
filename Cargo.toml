@@ -21,7 +21,7 @@ repository = "https://github.com/ai-dynamo/frontend-crates.git"
 [workspace.dependencies]
 aho-corasick = "1"
 anyhow = "1"
-async-openai = { version = "0.41", default-features = false }
+async-openai = { version = "0.42", default-features = false }
 async-stream = "0.3"
 axum = "0.8"
 base64 = "0.22"
@@ -36,10 +36,10 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "9.2.9" }
-dynamo-protocols = { path = "protocols", version = "6.1.0" }
-dynamo-renderer = { path = "renderer", version = "7.0.0" }
-dynamo-tokenizers = { path = "tokenizers", version = "3.0.0" }
+dynamo-parsers = { path = "parsers/v1", version = "10.0.4" }
+dynamo-protocols = { path = "protocols", version = "8.1.0" }
+dynamo-renderer = { path = "renderer", version = "8.0.1" }
+dynamo-tokenizers = { path = "tokenizers", version = "3.1.0" }
 either = { version = "1.13", features = ["serde"] }
 fastokens = "0.3.1"
 futures = "0.3"
@@ -53,12 +53,14 @@ image = { version = "0.25", default-features = false, features = [
     "gif",
     "bmp",
 ] }
+ipnet = "2"
 minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
 openai-harmony = "0.0.8"
 percent-encoding = "2.3"
+png = "0.18"
 pyo3 = { version = "0.22", features = ["extension-module"] }
 rayon = "1"
 regex = "1"
@@ -66,6 +68,7 @@ rstest = "0.25"
 rustc-hash = "1.1"
 ruff-python-ast = { package = "rustpython-ruff_python_ast", version = "0.15.8" }
 ruff-python-parser = { package = "rustpython-ruff_python_parser", version = "0.15.8" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 serde = "1"
 serde_json = "1"
 strum = "0.27"

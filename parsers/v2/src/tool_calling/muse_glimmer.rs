@@ -29,7 +29,8 @@ use std::sync::OnceLock;
 use regex::Regex;
 
 use crate::tool_calling::scan::{
-    InvokeEmitter, marker_prefix_suffix_len, push_run, reorder_arguments,
+    InvokeEmitter, ProseControl, ProseControlState, ProseGrammarSpan, marker_prefix_suffix_len,
+    push_run, reorder_arguments,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
@@ -72,24 +73,28 @@ fn invoke_open_re() -> &'static Regex {
     RE.get_or_init(|| Regex::new(r#"<atem:invoke\b[^>]*?\bname="(?P<name>[^"]+)"[^>]*?>"#).unwrap())
 }
 
-/// One complete ATEM parameter element, capturing key + raw value, under the same `>`
-/// bound as `invoke_open_re`.
+const PARAMETER_OPEN_PATTERN: &str = r#"<atem:parameter\b[^>]*?\bname="(?P<key>[^"]+)"[^>]*?>"#;
+const PARAMETER_CLOSE: &str = "</atem:parameter>";
+
+fn parameter_open_re() -> &'static Regex {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    RE.get_or_init(|| Regex::new(PARAMETER_OPEN_PATTERN).unwrap())
+}
+
+/// Both boundary scanning and decoding use the same parameter header grammar.
 fn parameter_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
-        Regex::new(
-            r#"(?s)<atem:parameter\b[^>]*?\bname="(?P<key>[^"]+)"[^>]*?>(?P<value>.*?)</atem:parameter>"#,
-        )
+        Regex::new(&format!(
+            "(?s){PARAMETER_OPEN_PATTERN}(?P<value>.*?){PARAMETER_CLOSE}"
+        ))
         .unwrap()
     })
 }
 
 /// An open parameter owns its bytes until its closer arrives, including framed channel headers.
 fn outside_parameter(text: &str, marker: &str, at_eof: bool) -> Option<usize> {
-    static OPEN: OnceLock<Regex> = OnceLock::new();
-    let open =
-        OPEN.get_or_init(|| Regex::new(r#"<atem:parameter\b[^>]*?\bname="[^"]+"[^>]*?>"#).unwrap());
-    const CLOSE: &str = "</atem:parameter>";
+    let open = parameter_open_re();
     let mut cursor = 0;
     loop {
         let tail = &text[cursor..];
@@ -101,10 +106,10 @@ fn outside_parameter(text: &str, marker: &str, at_eof: bool) -> Option<usize> {
             return Some(cursor + at);
         }
         let value_start = cursor + parameter.end();
-        let Some(end) = text[value_start..].find(CLOSE) else {
+        let Some(end) = text[value_start..].find(PARAMETER_CLOSE) else {
             return at_eof.then_some(cursor + at);
         };
-        cursor = value_start + end + CLOSE.len();
+        cursor = value_start + end + PARAMETER_CLOSE.len();
     }
 }
 
@@ -712,6 +717,7 @@ fn normalize_name(emitted: &str, tools: &[ToolDefinition]) -> String {
 pub(crate) struct MuseChannelScanner {
     emitter: MuseInvokeEmitter,
     buffer: String,
+    prose: ProseControlState,
     state: State,
     /// Whether the next header may resolve WITHOUT `<|start|>` framing. True at
     /// turn start (the prompt consumed `<|start|>assistant`) and after a reasoning
@@ -755,6 +761,7 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
             tools: tools.iter().map(ToolDefinition::from).collect(),
         },
         buffer: String::new(),
+        prose: ProseControlState::default(),
         state: State::Idle,
         allow_bare_header: true,
         last_body_char: None,
@@ -786,7 +793,7 @@ impl MuseChannelScanner {
     ) -> anyhow::Result<()> {
         self.started = true;
         self.buffer.push_str(chunk);
-        self.drain(out, false)
+        self.drain(false, out)
     }
 
     /// Apply the channel state the prompt left this stream in, before any byte is
@@ -820,7 +827,7 @@ impl MuseChannelScanner {
         let mut out = Vec::new();
         // EOF releases channel framing hidden by a parameter that never closed.
         // The invoke scan still requires complete parameters, so it drops the call.
-        self.drain(&mut out, true)?;
+        self.drain(true, &mut out)?;
         self.flush(&mut out);
         Ok(out)
     }
@@ -852,7 +859,12 @@ impl MuseChannelScanner {
     /// reading is deliberate — the conformance suite will score these two cases as
     /// divergences until the engines follow.
     fn emit_reasoning(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) -> bool {
+        self.prose.consume(text);
+        let grammar_prose = self.prose_invoke_depth > 0 || text.contains(INVOKE_OPEN_PREFIX);
         let text = stripped_prose(text, &mut self.prose_invoke_depth);
+        if grammar_prose {
+            self.prose.clear();
+        }
         if text.is_empty() {
             return false;
         }
@@ -869,7 +881,12 @@ impl MuseChannelScanner {
     /// route into text, content bodies included, so a quoted `to=x<|message|>` never
     /// leaks its marker.
     fn emit_text(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) {
+        self.prose.consume(text);
+        let grammar_prose = self.prose_invoke_depth > 0 || text.contains(INVOKE_OPEN_PREFIX);
         let text = stripped_prose(text, &mut self.prose_invoke_depth);
+        if grammar_prose {
+            self.prose.clear();
+        }
         if text.is_empty() {
             return;
         }
@@ -889,10 +906,10 @@ impl MuseChannelScanner {
     /// Byte offset where the OPEN body ends, ignoring the bare-header recovery
     /// (which applies to reasoning only): the earliest terminator or framed
     /// header, else the buffer end.
-    fn tool_body_limit(&self, at_eof: bool) -> usize {
+    fn tool_body_limit(&self, flush: bool) -> usize {
         [EOM, EOT, START]
             .iter()
-            .filter_map(|m| outside_parameter(&self.buffer, m, at_eof))
+            .filter_map(|m| outside_parameter(&self.buffer, m, flush))
             .min()
             .unwrap_or(self.buffer.len())
     }
@@ -912,8 +929,68 @@ impl MuseChannelScanner {
     ///
     /// Every state change `continue`s rather than breaking, so one push of a
     /// multi-channel delta emits every complete call before the terminal chunk.
-    fn drain(&mut self, out: &mut Vec<UnifiedParserEvent>, at_eof: bool) -> anyhow::Result<()> {
+    fn drain(&mut self, flush: bool, out: &mut Vec<UnifiedParserEvent>) -> anyhow::Result<()> {
         loop {
+            if self.state != State::InToolChannel && self.prose_invoke_depth == 0 {
+                let control = self.prose.classify(
+                    &self.buffer,
+                    PROSE_HOLDBACK_MARKERS,
+                    flush,
+                    |text, at, flush| {
+                        let suffix = &text[at..];
+                        if !flush && INVOKE_OPEN_PREFIX.starts_with(suffix) {
+                            return ProseGrammarSpan::Pending;
+                        }
+                        if !suffix.starts_with(INVOKE_OPEN_PREFIX) {
+                            return ProseGrammarSpan::NotOwned;
+                        }
+                        if !flush {
+                            return ProseGrammarSpan::Pending;
+                        }
+                        let Some(open) = invoke_open_re()
+                            .find(suffix)
+                            .filter(|open| open.start() == 0)
+                        else {
+                            return ProseGrammarSpan::Pending;
+                        };
+                        outside_parameter(&suffix[open.end()..], INVOKE_CLOSE, flush)
+                            .map(|close| {
+                                ProseGrammarSpan::Owned(open.end() + close + INVOKE_CLOSE.len())
+                            })
+                            .unwrap_or(ProseGrammarSpan::Pending)
+                    },
+                );
+                let (length, waiting, unmatched) = match control {
+                    ProseControl::Literal(length) => (length, false, false),
+                    ProseControl::Pending(at) => (at, true, false),
+                    ProseControl::Unmatched(at) => (at, false, true),
+                    ProseControl::Ordinary => (0, false, false),
+                };
+                if length > 0 {
+                    let text: String = self.buffer.drain(..length).collect();
+                    self.prose.consume(&text);
+                    if self.state == State::InReasoning {
+                        if std::mem::take(&mut self.reasoning_join_armed) {
+                            push_run(out, Kind::Reasoning, "\n");
+                        }
+                        push_run(out, Kind::Reasoning, &text);
+                        self.reasoning_body_emitted = true;
+                    } else {
+                        push_run(out, Kind::Text, &text);
+                        self.pending_reasoning_join = false;
+                        self.reasoning_join_armed = false;
+                    }
+                }
+                if waiting {
+                    return Ok(());
+                }
+                if unmatched {
+                    self.prose.clear();
+                } else if length > 0 {
+                    continue;
+                }
+            }
+
             if self.state == State::Idle {
                 if self.buffer.is_empty() {
                     return Ok(());
@@ -928,7 +1005,7 @@ impl MuseChannelScanner {
             // A complete invoke inside the OPEN tool body emits as soon as its
             // close has streamed, before the channel terminator arrives.
             if self.state == State::InToolChannel
-                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(at_eof))
+                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush))
             {
                 let invoke = self.buffer[start..end].to_string();
                 self.buffer.drain(..end);
@@ -945,11 +1022,11 @@ impl MuseChannelScanner {
 
             let terminator = [EOM, EOT]
                 .iter()
-                .filter_map(|t| self.body_marker(t, at_eof).map(|p| (p, t.len())))
+                .filter_map(|t| self.body_marker(t, flush).map(|p| (p, t.len())))
                 .min_by_key(|(p, _)| *p);
             // Framed headers outside parameters cut a body; bare headers cut only reasoning
             // (missing-`<|eom|>` recovery).
-            let start_pos = self.body_marker(START, at_eof);
+            let start_pos = self.body_marker(START, flush);
             let bare_pos = if self.state == State::InReasoning {
                 bare_header_pos(&self.buffer, self.last_body_char)
             } else {
@@ -992,6 +1069,7 @@ impl MuseChannelScanner {
                     State::Idle => unreachable!("Idle is handled above"),
                 }
                 self.prose_invoke_depth = 0;
+                self.prose.clear();
                 self.state = State::Idle;
                 continue;
             }
@@ -1002,7 +1080,8 @@ impl MuseChannelScanner {
             if self.state == State::InToolChannel {
                 return Ok(());
             }
-            let mut hold = marker_prefix_suffix_len(&self.buffer, PROSE_HOLDBACK_MARKERS);
+            let mut hold = marker_prefix_suffix_len(&self.buffer, PROSE_HOLDBACK_MARKERS)
+                .max(self.prose.punctuation_holdback(&self.buffer));
             if self.state == State::InReasoning {
                 hold = hold.max(open_header_tail(&self.buffer));
             }
@@ -1039,6 +1118,7 @@ impl MuseChannelScanner {
         self.buffer.drain(..msg_pos + MESSAGE.len());
         self.emit_text(out, &prefix);
         self.prose_invoke_depth = 0;
+        self.prose.clear();
         self.allow_bare_header = false;
         self.last_body_char = None;
         match recipient.as_deref() {
@@ -1094,6 +1174,7 @@ impl MuseChannelScanner {
     /// leak its opening call as content; a stale `next_index` would file that stream's
     /// first call under an index the abandoned one already dispatched.
     fn take_stream_state(&mut self) -> (String, State) {
+        self.prose.clear();
         self.allow_bare_header = true;
         self.last_body_char = None;
         self.pending_reasoning_join = false;

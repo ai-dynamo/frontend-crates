@@ -13,6 +13,25 @@ import fill_streamv1
 import refresh_dynamo_captures as refresh
 
 
+def test_refresh_batch_on_stream_collects_new_file_for_existing_family(tmp_path, monkeypatch):
+    inputs = tmp_path / "batch" / "inputs" / "glm47"
+    inputs.mkdir(parents=True)
+    source = inputs / "TOOLCALLING.batch.7.schema.yaml"
+    source.write_text("family: glm47\nmode: batch\ncases:\n  TOOLCALLING.batch.7.q.integer:\n    model_text: wire\n")
+    overlay = tmp_path / "overlay"
+    (overlay / "glm47").mkdir(parents=True)
+    monkeypatch.setattr(refresh, "ensure_tree", lambda name: overlay if name == "fixtures-batch-on-stream-v1" else inputs.parents[1])
+    monkeypatch.setattr(refresh, "V2_FAMILIES", ["glm47"])
+    result = {"calls": [{"name": "probe", "arguments": {"value": 42}}], "normal_text": ""}
+    monkeypatch.setattr(refresh, "run_bin", lambda *_args: json.dumps({"TOOLCALLING.batch.7.q.integer": result}))
+
+    refresh.refresh_batch_on_stream("0.7.20")
+
+    captured = yaml.safe_load((overlay / "glm47" / source.name).read_text())
+    assert captured["captured_with"] == {"dynamo_v2": "0.7.20"}
+    assert captured["cases"]["TOOLCALLING.batch.7.q.integer"]["dynamo_v2"] == result
+
+
 def test_refresh_stream_preserves_canonical_dynamo_unavailable(tmp_path, monkeypatch):
     tree = tmp_path / "fixtures-stream-v1"
     source = tree / "inputs" / "deepseek_v4" / "TOOLCALLING.streamv1.11.yaml"

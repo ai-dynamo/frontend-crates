@@ -37,6 +37,7 @@ pub use dynamo_tokenizers;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
+mod python;
 mod template;
 
 pub use template::{
@@ -122,6 +123,15 @@ impl RenderedSegment {
 pub struct RenderedPrompt {
     text: String,
     segments: Option<Vec<RenderedSegment>>,
+    /// Number of trailing segments that form the assistant generation stub.
+    ///
+    /// Some reference APIs (Moonshot's Kimi K3) render a channel-opening stub
+    /// such as `<|open|>response<|sep|>` after the conversation so the model
+    /// starts inside the right channel, but exclude those tokens from the
+    /// reported `usage.prompt_tokens`. The renderer records how many trailing
+    /// segments belong to that stub so callers can apply the same convention
+    /// without hardcoding a token count. Zero for every other prompt.
+    pending_segments: usize,
 }
 
 impl RenderedPrompt {
@@ -129,10 +139,27 @@ impl RenderedPrompt {
         Self {
             text,
             segments: None,
+            pending_segments: 0,
         }
     }
 
     pub fn segmented(segments: Vec<RenderedSegment>) -> Self {
+        Self::segmented_with_pending(segments, 0)
+    }
+
+    /// Build a segmented prompt whose last `pending_segments` segments are the
+    /// assistant generation stub (see [`RenderedPrompt::pending_segments`]).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `pending_segments` exceeds the number of segments; a renderer
+    /// that claims more pending segments than it produced is a bug.
+    pub fn segmented_with_pending(segments: Vec<RenderedSegment>, pending_segments: usize) -> Self {
+        assert!(
+            pending_segments <= segments.len(),
+            "pending_segments ({pending_segments}) exceeds rendered segments ({})",
+            segments.len()
+        );
         let text = segments
             .iter()
             .map(|segment| segment.text.as_str())
@@ -140,6 +167,7 @@ impl RenderedPrompt {
         Self {
             text,
             segments: Some(segments),
+            pending_segments,
         }
     }
 
@@ -154,6 +182,29 @@ impl RenderedPrompt {
     pub fn encode_segments(&self) -> Option<Vec<dynamo_tokenizers::EncodeSegment<'_>>> {
         Some(
             self.segments()?
+                .iter()
+                .map(RenderedSegment::as_encode_segment)
+                .collect(),
+        )
+    }
+
+    /// Number of trailing segments that form the assistant generation stub.
+    ///
+    /// Zero when the prompt is unsegmented, when no generation prompt was
+    /// added, or when the renderer has no stub convention to report.
+    pub fn pending_segments(&self) -> usize {
+        self.pending_segments
+    }
+
+    /// The trailing generation-stub segments, or `None` for unsegmented prompts.
+    ///
+    /// Callers that report usage under the reference API's convention encode
+    /// these and subtract their token count from the physical prompt length.
+    pub fn pending_encode_segments(&self) -> Option<Vec<dynamo_tokenizers::EncodeSegment<'_>>> {
+        let segments = self.segments()?;
+        let start = segments.len() - self.pending_segments;
+        Some(
+            segments[start..]
                 .iter()
                 .map(RenderedSegment::as_encode_segment)
                 .collect(),
@@ -429,5 +480,46 @@ mod rendered_prompt_tests {
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("message-level `tools`")
         ));
+    }
+
+    #[test]
+    fn rendered_prompt_pending_segments_default_to_zero() {
+        let prompt = RenderedPrompt::segmented(vec![RenderedSegment::new("a", false)]);
+        assert_eq!(prompt.pending_segments(), 0);
+        assert!(prompt.pending_encode_segments().unwrap().is_empty());
+        assert_eq!(RenderedPrompt::text("a".to_string()).pending_segments(), 0);
+        assert!(
+            RenderedPrompt::text("a".to_string())
+                .pending_encode_segments()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn rendered_prompt_exposes_trailing_pending_segments() {
+        let prompt = RenderedPrompt::segmented_with_pending(
+            vec![
+                RenderedSegment::new("prompt", false),
+                RenderedSegment::new("<|open|>", true),
+                RenderedSegment::new("response", false),
+                RenderedSegment::new("<|sep|>", true),
+            ],
+            3,
+        );
+        assert_eq!(prompt.as_str(), "prompt<|open|>response<|sep|>");
+        assert_eq!(prompt.pending_segments(), 3);
+        let pending: Vec<&str> = prompt
+            .pending_encode_segments()
+            .unwrap()
+            .iter()
+            .map(|segment| segment.text)
+            .collect();
+        assert_eq!(pending, ["<|open|>", "response", "<|sep|>"]);
+    }
+
+    #[test]
+    #[should_panic(expected = "pending_segments")]
+    fn rendered_prompt_rejects_more_pending_than_segments() {
+        RenderedPrompt::segmented_with_pending(vec![RenderedSegment::new("a", false)], 2);
     }
 }

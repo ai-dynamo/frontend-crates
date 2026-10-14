@@ -1,0 +1,101 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.9
+    git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
+    source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
+document:
+  mode: unified
+changes:
+  deepseek_v41_json_invocation_body:
+    case_key: UNIFIED.deepseek-1
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-4
+    stimulus:
+      ref: current
+      semantic_sha256: 61d536ca9fe65eb0c49176b10d101a9b0aefba8764029036f16828565a8a2630
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-3
+    stimulus:
+      ref: current
+      semantic_sha256: 46fb2c2084d7954751c6b46f466ba999eb0839e39d5988fdb47961425e98b780
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-1
+    stimulus:
+      ref: current
+      semantic_sha256: d5733330030cd194595aed86b64593d79441ccbef41795c20f8bd508d9f11ed2
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

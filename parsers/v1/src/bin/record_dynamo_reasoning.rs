@@ -58,31 +58,61 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut out: BTreeMap<String, CaseOut> = BTreeMap::new();
     for (case_id, case) in input.cases {
-        // A fresh parser per case: these are independent turns, and several parsers keep
-        // state across chunks (buffering a split marker) that must not leak between cases.
-        let mut parser = ReasoningParserType::get_reasoning_parser_from_name(&input.family);
-        let result = if input.mode == "stream" {
-            let mut reasoning = String::new();
-            let mut normal = String::new();
-            for chunk in &case.chunks {
-                let r = parser.parse_reasoning_streaming_incremental(chunk, &[]);
-                reasoning.push_str(&r.reasoning_text);
-                normal.push_str(&r.normal_text);
-            }
-            CaseOut {
-                reasoning_text: reasoning,
-                normal_text: normal,
-            }
-        } else {
-            let r = parser.detect_and_parse_reasoning(&case.model_text, &[]);
-            CaseOut {
-                reasoning_text: r.reasoning_text,
-                normal_text: r.normal_text,
-            }
-        };
+        let result = record_case(&input.family, &input.mode, &case);
         out.insert(case_id, result);
     }
 
     println!("{}", serde_json::to_string(&out)?);
     Ok(())
+}
+
+fn record_case(family: &str, mode: &str, case: &CaseIn) -> CaseOut {
+    // A fresh parser per case: these are independent turns, and several parsers keep
+    // state across chunks (buffering a split marker) that must not leak between cases.
+    let mut parser = ReasoningParserType::get_reasoning_parser_from_name(family);
+    if mode != "stream" {
+        let result = parser.detect_and_parse_reasoning(&case.model_text, &[]);
+        return CaseOut {
+            reasoning_text: result.reasoning_text,
+            normal_text: result.normal_text,
+        };
+    }
+
+    let mut reasoning = String::new();
+    let mut normal = String::new();
+    for chunk in &case.chunks {
+        let result = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+        reasoning.push_str(&result.reasoning_text);
+        normal.push_str(&result.normal_text);
+    }
+    // Streaming parsers may retain a partial marker or ambiguous prefix until EOF.
+    // Captures must exercise the same finish path as serving and parity tests.
+    let result = parser.finish_reasoning_stream();
+    reasoning.push_str(&result.reasoning_text);
+    normal.push_str(&result.normal_text);
+    CaseOut {
+        reasoning_text: reasoning,
+        normal_text: normal,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stream_capture_flushes_buffered_minimax_m3_text_at_eof() {
+        for text in ["plain text", "plain <"] {
+            let result = record_case(
+                "minimax_m3",
+                "stream",
+                &CaseIn {
+                    model_text: String::new(),
+                    chunks: vec![text.to_string()],
+                },
+            );
+            assert_eq!(result.reasoning_text, "");
+            assert_eq!(result.normal_text, text);
+        }
+    }
 }

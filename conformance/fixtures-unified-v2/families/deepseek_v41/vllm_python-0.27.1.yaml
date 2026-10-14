@@ -1,0 +1,1992 @@
+provenance:
+  status: legacy
+  captured_with:
+    vllm_python: 0.27.1
+document:
+  mode: unified
+changes:
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: c975b0b50c52fdd0e1ef7fc4ae0f7075a95665762fd8baf9b16e2dc41df64652
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: ' marker'' stays quoted.{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal 'doesn't
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-4
+    stimulus:
+      inline:
+        input: no tool needed</think>The answer is 42.
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: no tool needed
+        - delta_text: </think>
+        - delta_text: The answer is 42.
+        - delta_text: ‹finish›
+      semantic_sha256: c87985e9e8482bb4719d32cadff8be7e01e824d142d81535661f166836155d54
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-3
+    stimulus:
+      inline:
+        input: 'weighing options</think>Here''s what I found: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: weighing options
+        - delta_text: </think>
+        - delta_text: 'Here''s what I found: '
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: 42ca86432ea240c9189feb81163559881fd880ea813b92c5c5d442c244c897d8
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-1
+    stimulus:
+      inline:
+        input: checking weather</think><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        - name: f
+          parameters:
+            type: object
+            properties:
+              x:
+                type: string
+        - name: g
+          parameters:
+            type: object
+            properties:
+              y:
+                type: string
+        - name: run
+          parameters:
+            type: object
+            properties:
+              cmd:
+                type: string
+        - name: log
+          parameters:
+            type: object
+            properties:
+              note:
+                type: string
+        - name: sum_values
+          parameters:
+            type: object
+            properties:
+              values:
+                type: array
+                items:
+                  type: number
+        - name: functions.
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: checking weather
+        - delta_text: </think>
+        - delta_text: <｜DSML｜ calls>
+        - delta_text: <｜DSML｜ invoke name="get_weather">
+        - delta_text: <｜DSML｜ parameter name="city" string="true">
+        - delta_text: Paris
+        - delta_text: </｜DSML｜ parameter>
+        - delta_text: </｜DSML｜ invoke>
+        - delta_text: </｜DSML｜ calls>
+        - delta_text: ‹finish›
+      semantic_sha256: f5e9972b0e37d55110facd78625152e1924867b9045dac5349e07b1cf1fe7724
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'Peer harness supports only native/default initialization and stop termination; unsupported request: init'
+metadata_changes:
+  arg_json_null_anyof: {}
+  arg_json_null_const: {}
+  arg_json_null_nullable: {}
+  arg_json_null_oneof: {}
+  arg_string_null: {}
+  arg_string_null_const: {}
+  arg_string_null_enum: {}
+  arg_string_null_sibling_anyof: {}
+  arg_string_null_sibling_oneof: {}
+  arg_string_null_union: {}
+  arg_string_null_untyped_branch: {}
+  deepseek_v41_json_invocation_body: {}
+  glm_ref_encoded_targets: {}
+  glm_ref_json_looking_strings: {}
+  glm_ref_object: {}
+  glm_ref_scalar_types: {}
+  guided_quoted_reasoning_closer_named: {}
+  guided_quoted_reasoning_closer_required: {}
+  guided_response_quoted_control_braces_named: {}
+  guided_response_quoted_control_braces_required: {}
+  local_schema_id_preserves_type: {}
+  malformed_json_then_two_valid_calls: {}
+  native_quoted_control_in_reasoning: {}
+  native_quoted_control_in_response: {}
+  native_quoted_control_then_call: {}
+  native_quoted_incomplete_header: {}
+  native_single_quote_contraction_reasoning: {}
+  native_single_quote_contraction_response: {}
+  native_single_quoted_word_control: {}
+  native_unmatched_quote_then_call: {}
+  nullable_reference_alias_literals: {}
+  qwen_string_null: {}
+  schema_const_array_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_array_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_array_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_array_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_boolean_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_boolean_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_boolean_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_boolean_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_entity_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_entity_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_entity_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_entity_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_null_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_null_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_null_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_null_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_number_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_number_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_number_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_number_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_object_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_object_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_object_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_object_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_plain_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_plain_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_plain_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_plain_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_quoted_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_quoted_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_quoted_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_quoted_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_space_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_space_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_space_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_space_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_unicode_allof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_unicode_bare:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_unicode_ref:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_const_unicode_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_array:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_boolean:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_null:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_number:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_object:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_declared_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_enum_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_enum_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_escaped_ref_const:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_id_direct_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_integer_const_ambiguous:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_intersection_anyof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_intersection_oneof:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_null_union_ambiguous:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_nullable_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_object_const_union:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_percent_ref_const:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_ref_sibling_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_ref_union_anyof_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_ref_union_anyof_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_ref_union_oneof_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_ref_union_oneof_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_type_array_integer_null:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_type_array_integer_null_null:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_type_array_string_integer:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_array_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_array_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_array_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_array_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_boolean_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_boolean_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_boolean_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_boolean_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_integer_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_integer_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_integer_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_integer_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_null_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_null_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_null_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_null_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_number_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_number_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_number_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_number_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_object_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_object_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_object_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_anyof_object_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_array_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_array_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_array_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_array_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_boolean_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_boolean_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_boolean_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_boolean_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_integer_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_integer_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_integer_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_integer_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_null_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_null_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_null_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_null_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_number_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_number_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_number_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_number_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_object_reverse_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_object_reverse_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_object_string:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  schema_union_oneof_object_typed:
+    vllm_capture_provenance:
+      implementation: vllm_python
+      version: 0.27.1
+      source_sha256: 68e9656a0286a3de12f052e11ec9bbb9a8ee2418a8a884afcf45885479bd80b5
+      adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
+      job_sha256: ef67101e2a0e70a9d1018a13075a6c8b2b9c8c49aa611397e35a51556f1ad69a
+  unused_reference_graph_parameter_types: {}
+document_overrides:
+  arg_json_null_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_json_null_const:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_json_null_nullable:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_json_null_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_const:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_enum:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_sibling_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_sibling_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_union:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  arg_string_null_untyped_branch:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  deepseek_v41_json_invocation_body:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  guided_quoted_reasoning_closer_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  malformed_json_then_two_valid_calls:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  prefilled_reasoning_then_text:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  prefilled_reasoning_then_text_then_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  prefilled_reasoning_with_tool:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  qwen_string_null:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_array_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_array_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_array_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_boolean_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_boolean_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_boolean_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_entity_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_entity_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_entity_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_entity_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_null_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_null_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_null_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_number_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_number_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_number_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_object_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_object_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_object_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_plain_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_plain_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_plain_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_plain_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_quoted_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_quoted_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_quoted_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_quoted_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_space_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_space_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_space_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_space_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_unicode_allof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_unicode_bare:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_unicode_ref:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_const_unicode_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_array:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_boolean:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_null:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_number:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_object:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_declared_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_enum_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_enum_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_escaped_ref_const:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_id_direct_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_integer_const_ambiguous:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_intersection_anyof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_intersection_oneof:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_null_union_ambiguous:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_nullable_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_object_const_union:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_percent_ref_const:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_ref_sibling_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_ref_union_anyof_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_ref_union_anyof_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_ref_union_oneof_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_ref_union_oneof_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_type_array_integer_null:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_type_array_integer_null_null:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_type_array_string_integer:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_array_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_boolean_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_integer_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_integer_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_null_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_number_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_object_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_anyof_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_array_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_array_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_array_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_array_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_boolean_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_boolean_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_boolean_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_integer_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_integer_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_integer_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_integer_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_null_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_null_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_null_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_null_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_number_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_number_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_number_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_number_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_object_reverse_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_object_reverse_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_object_string:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  schema_union_oneof_object_typed:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        vllm_python: 0.27.1
+      capture_origin: null
+      inherited_from: null

@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from dynamo_version import validate_capture_provenance  # noqa: E402
 from capture_stimulus import capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
+import unified_history  # noqa: E402
 
 CONF = Path(__file__).resolve().parents[2]   # <repo>/conformance
 REPO = Path(__file__).resolve().parents[3]   # <repo>
@@ -46,25 +47,103 @@ def _dump(doc, path):
 
 
 def _case_key(case_id):
-    # "UNIFIED.arg_marker_in_string.gemma4" -> numbered id "UNIFIED.7-2", family, slug
+    # Internal scenario keys stay stable while the taxonomy owns published labels.
     fam = case_id.rsplit(".", 1)[1]
     scenario = case_id[len("UNIFIED."):].rsplit(".", 1)[0]
     return numbered_id(scenario), fam, scenario
 
 
-def _peer_cell(result):
-    """Store a peer failure instead of its partial output."""
+def _normalize_peer_value(
+    result, expected_chunk_count=None, *, require_assembled=False
+):
+    assembled = result.get("assembled")
+    chunks = result.get("chunks")
+    if not isinstance(assembled, list):
+        if require_assembled:
+            raise ValueError("raw peer result assembled must be a list")
+        assembled = []
+    if not isinstance(chunks, list):
+        raise ValueError("raw peer result chunks must be a list")
+    if expected_chunk_count is not None and len(chunks) != expected_chunk_count:
+        raise ValueError(
+            "raw peer result chunk count differs from authored request: "
+            f"expected={expected_chunk_count} actual={len(chunks)}"
+        )
+    for index, events in enumerate(chunks):
+        if not isinstance(events, list):
+            raise ValueError(f"raw peer result chunk {index} must be a list")
+        for event in events:
+            if not isinstance(event, dict):
+                raise ValueError(f"raw peer result chunk {index} contains a non-mapping event")
+            if "expected" in event:
+                raise ValueError(
+                    "raw peer result contains canonical expected wrapper; "
+                    "double-wrapping is not allowed"
+                )
+    return {
+        "assembled": assembled,
+        "chunks": [{"expected": events} for events in chunks],
+    }
+
+
+def _peer_cell(result, expected_chunk_count=None, *, require_assembled=False):
+    """Keep parser failures separate from partial streaming evidence."""
     if result.get("unavailable"):
         record = {"unavailable": result["unavailable"]}
     elif result.get("error"):
         record = {"error": result["error"]}
     else:
-        record = {
-            "assembled": result.get("assembled") or [],
-            "chunks": [{"expected": events or []} for events in (result.get("chunks") or [])],
-        }
+        record = _normalize_peer_value(
+            result,
+            expected_chunk_count,
+            require_assembled=require_assembled,
+        )
+    if "partial_chunks" in result:
+        if not result.get("error"):
+            raise ValueError("partial chunk evidence requires a parser error")
+        record["partial_chunks"] = _normalize_peer_value({"chunks": result["partial_chunks"]})["chunks"]
+    if "error_traceback" in result:
+        if not result.get("error") or not isinstance(result["error_traceback"], str):
+            raise ValueError("error traceback evidence requires a parser error and string traceback")
+        record["error_traceback"] = result["error_traceback"]
     if "capture_input" in result:
         record["capture_input"] = result["capture_input"]
+    if "capture_stimulus" in result:
+        record["capture_stimulus"] = result["capture_stimulus"]
+    if "capture_observation" in result:
+        record["capture_observation"] = result["capture_observation"]
+    return record
+
+
+def _history_peer_cell(store, implementation, capture_id, family, scenario, request):
+    """Reuse an immutable peer observation omitted from the scratch capture feed."""
+    history = store.histories.get((family, implementation))
+    if history is None or capture_id not in history.captures:
+        return None
+    matching = [
+        case_id
+        for case_id, case in history.family.cases.items()
+        if case["scenario"] == scenario
+    ]
+    if len(matching) != 1:
+        return None
+    case_id = matching[0]
+    change = history.resolve(capture_id).get(case_id)
+    if change is None:
+        return None
+    stimulus = change["stimulus"]
+    if "ref" in stimulus:
+        captured_request = history.family.cases[case_id]["request"]
+    elif "inline" in stimulus:
+        captured_request = stimulus["inline"]
+    else:
+        return None
+    if captured_request != request:
+        return None
+    record, document = unified_history.materialized_record(
+        history.family.cases[case_id], change
+    )
+    record.update(document.get("record_metadata", {}))
     return record
 
 
@@ -103,6 +182,7 @@ def main():
 
     # A version dir is written once; accumulate cases into per-(dir, family) docs.
     docs = {}  # (dirname, family) -> {family, mode, [model_label|captured_with], cases:{}}
+    active_cases = {}
 
     def slot(dirname, family, captured_with=None, model_label=None):
         k = (dirname, family)
@@ -125,6 +205,8 @@ def main():
         cid = c["id"]
         key, fam, scenario = _case_key(cid)
         chunks = c.get("chunks") or []
+        request = capture_input(c)
+        active_cases[(fam, scenario)] = (key, request)
 
         slot("inputs", fam, model_label=fam)[key] = {
             "scenario": scenario,
@@ -147,10 +229,13 @@ def main():
         # dynamo_v2-<ver>/<family>/<key>.yaml — LIVE dynamo (assembled + per-chunk)
         ddir = f"dynamo_v2-{ver['dynamo_v2']}"
         slot(ddir, fam, captured_with={"dynamo_v2": provenance["crate_version"]})[key] = {
-            "capture_input": capture_input(c),
+            "capture_input": request,
             "assembled": c.get("dynamo") or [],
             "chunks": [{"expected": ch.get("dynamo") or []} for ch in chunks],
         }
+
+        if c.get("dynamo_error"):
+            slot(ddir, fam)[key] = {"capture_input": capture_input(c), "error": c["dynamo_error"]}
 
         # peer engine overlays
         for impl in ("vllm_python", "vllm_rust", "sglang_python"):
@@ -159,7 +244,27 @@ def main():
                 continue
             vdir = f"{impl}-{ver[impl]}"
             entry = slot(vdir, fam, captured_with={impl: ver[impl]})
-            entry[key] = _peer_cell(res)
+            entry[key] = _peer_cell(
+                res,
+                expected_chunk_count=len(chunks),
+                require_assembled=impl in {"vllm_python", "vllm_rust"},
+            )
+
+    # The scratch peer feeds are ignored build products and can predate a restored
+    # case. Preserve the exact checked-in observation when its scenario and request
+    # still match; a changed request deliberately falls through to package validation.
+    store = unified_history.load_store(CONF / "fixtures-unified-v2")
+    for (fam, scenario), (key, request) in active_cases.items():
+        for impl in ("vllm_python", "vllm_rust", "sglang_python"):
+            capture_id = f"{impl}-{ver[impl]}"
+            existing = docs.get((capture_id, fam), {}).get("cases", {})
+            if key in existing:
+                continue
+            record = _history_peer_cell(
+                store, impl, capture_id, fam, scenario, request
+            )
+            if record is not None:
+                slot(capture_id, fam, captured_with={impl: ver[impl]})[key] = record
 
     # Rebuild generated views from canonical captures.
     _clear_generated_dirs()

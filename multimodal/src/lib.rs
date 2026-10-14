@@ -11,10 +11,12 @@
 //! over pre-resolved. The crate also carries what routers and engines must
 //! agree on: token accounting and content-hash identity
 //! ([`content_hash_bytes`], [`content_hash_canonical_image`]). The
-//! feature-gated `fetch` module exposes signatures only and currently returns
-//! [`MmError::Unsupported`]. Request orchestration — concurrency, caps, URL security policy,
-//! failure policy, packing — stays in the consumer's driver, as on the Python
-//! path; the README maps the boundary.
+//! feature-gated `fetch` module offers `MediaFetcher`, a protected http(s)/data:
+//! fetcher with the SSRF policy and byte caps; its trusted-source `fetch_bytes*`
+//! helpers are still stubs that return [`MmError::Unsupported`]. Request
+//! orchestration — concurrency, whole-request caps, failure policy, packing —
+//! stays in the consumer's driver, as on the Python path; the README maps the
+//! boundary.
 //!
 //! Bit-exactness is the contract: the resize kernels ([`image::resize`]) and
 //! each family's normalize/patchify reproduce the mirrored HF processor's
@@ -30,11 +32,13 @@
 pub mod execution;
 #[cfg(feature = "fetch")]
 pub mod fetch;
+pub mod frames;
 pub mod image;
 pub mod models;
 pub mod processor;
 pub mod registry;
 pub mod token_layout;
+pub mod video;
 
 /// A multimodal preprocessing failure.
 #[derive(Debug)]

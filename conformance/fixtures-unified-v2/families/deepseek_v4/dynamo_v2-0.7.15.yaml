@@ -1,0 +1,37 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.15
+    git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+    source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+document:
+  mode: unified
+changes:
+  guided_quoted_reasoning_closer_named:
+    absent: true
+  guided_quoted_reasoning_closer_required:
+    absent: true
+  guided_response_quoted_control_braces_named:
+    absent: true
+  guided_response_quoted_control_braces_required:
+    absent: true
+  guided_response_rejected_header_quote_ownership:
+    absent: true
+  native_quoted_control_in_reasoning:
+    absent: true
+  native_quoted_control_in_response:
+    absent: true
+  native_quoted_control_then_call:
+    absent: true
+  native_quoted_incomplete_header:
+    absent: true
+  native_single_quote_contraction_reasoning:
+    absent: true
+  native_single_quote_contraction_response:
+    absent: true
+  native_single_quoted_word_control:
+    absent: true
+  native_unmatched_quote_then_call:
+    absent: true
+metadata_changes: {}
+document_overrides: {}

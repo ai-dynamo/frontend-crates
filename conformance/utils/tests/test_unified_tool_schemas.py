@@ -14,7 +14,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
-from unified_tools import unified_tools
+from unified_tools import openai_tools, unified_tools
 
 
 def _assert_value(value, schema):
@@ -82,12 +82,17 @@ def test_schema_guard_corpus_keywords(schema, valid, invalid):
 
 
 def _assert_golden_schemas(cases, tools):
-    for case in cases.values():
+    for case_id, case in cases.items():
         offered_tools = case.get("tools", tools)
         schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
         assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
+                if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
+                    family = case_id.rsplit(".", 1)[1]
+                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer"}
+                    assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
+                    continue
                 _assert_value(event["arguments"], schemas[event["name"]])
 
 
@@ -122,20 +127,35 @@ def test_string_arguments_and_open_additional_properties_are_preserved():
     _assert_value({}, schemas["get_weather"])
 
 
+def test_schema_oracle_enforces_required_properties():
+    schema = {
+        "type": "object",
+        "properties": {"count": {"type": "integer"}},
+        "required": ["count"],
+    }
+    _assert_value({"count": 42}, schema)
+    with pytest.raises(AssertionError):
+        _assert_value({}, schema)
+
+
 @pytest.mark.parametrize("script", ["capture_vllm_unified.py", "capture_sglang_unified.py"])
 def test_peer_request_schema_projection_matches_shared_definition(script):
     tree = ast.parse((SRC / script).read_text())
     assignments = [node for node in tree.body if isinstance(node, ast.Assign)
                    and any(isinstance(target, ast.Name) and target.id in {"TOOLS", "TOOL_SCHEMAS"} for target in node.targets)]
-    namespace = {"unified_tools": unified_tools, "Tool": SimpleNamespace, "Function": SimpleNamespace}
+    namespace = {
+        "unified_tools": unified_tools,
+        "openai_tools": openai_tools,
+        "Tool": SimpleNamespace,
+        "Function": SimpleNamespace,
+    }
     exec(compile(ast.Module(body=assignments, type_ignores=[]), script, "exec"), namespace)
-    projected = namespace["TOOLS"]
     if script == "capture_sglang_unified.py":
-        actual = [vars(tool.function) for tool in projected]
-        assert all(tool.type == "function" for tool in projected)
-    else:
-        actual = [tool["function"] for tool in projected]
-        assert all(tool["type"] == "function" for tool in projected)
+        assert namespace["TOOL_SCHEMAS"] == unified_tools()
+        return
+    projected = namespace["TOOLS"]
+    actual = [tool["function"] for tool in projected]
+    assert all(tool["type"] == "function" for tool in projected)
     assert actual == unified_tools()
 
 
@@ -147,7 +167,7 @@ def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     assert "schemas.cloned().unwrap_or_else(unified_tool_schemas)" in common
     for name in ("unified_render.rs", "unified_parity.rs", "capture_cross_version.rs"):
         source = (tests / name).read_text()
-        assert "unified_tools as tools" in source
+        assert "unified_tools as tools" in source or "unified_tools_for_schemas" in source
         assert "fn tools()" not in source
     render = (tests / "unified_render.rs").read_text()
     parity = (tests / "unified_parity.rs").read_text()
@@ -157,8 +177,10 @@ def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     assert "unified_tool_schemas_for_case(case.tools.as_ref())" in render
     assert "unified_tool_schemas_for_case(tool_schema_json.as_ref())" in cross_version
     peer = (SRC / "capture_vllm_rust_unified.py").read_text()
-    assert 'serde_json::from_str(include_str!("unified_tools.json"))' in peer
-    assert '(crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())' in peer
+    assert "tools: Vec<Tool>" in peer
+    assert "make_parser(&case.family, &case.tools)" in peer
+    assert "supports_tools=True" in peer
+    assert "schema_bytes = SCHEMA_PATH.read_bytes()" in peer
 
 
 def test_recovery_successor_respects_string_schema():
@@ -166,3 +188,10 @@ def test_recovery_successor_respects_string_schema():
     assert case["golden"] == [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
     assert G.k3_argument("y", "string", "2") in case["input"]
     assert G.k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument" in case["input"]
+
+
+def test_required_schema_rejects_missing_value():
+    schema = {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}
+    assert matches_schema({"value": "é"}, schema)
+    assert not matches_schema({}, schema)
+    assert not matches_schema({"value": None}, schema)

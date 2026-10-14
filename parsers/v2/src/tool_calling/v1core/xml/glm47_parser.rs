@@ -449,7 +449,7 @@ fn get_param_schema_type<'a>(
         });
     }
     // Prefer string in unions because JSON-looking text is ambiguous.
-    if schema_has_type(schema, param, "string") {
+    if schema_has_type(schema, param, "string", raw) {
         return Some("string");
     }
     if let Some(schema_type) = param.get("type").and_then(Value::as_str) {
@@ -477,7 +477,7 @@ fn get_param_schema_type<'a>(
     candidates
         .iter()
         .copied()
-        .find(|candidate| schema_has_type(schema, param, candidate))
+        .find(|candidate| schema_has_type(schema, param, candidate, raw))
 }
 
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
@@ -499,13 +499,13 @@ fn intersect_null_matches(left: Option<bool>, right: Option<bool>) -> Option<boo
     }
 }
 
-fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
+pub(super) fn has_unsupported_schema_ref_scope(schema: &Value) -> bool {
     ["$id", "$dynamicRef", "$recursiveRef"]
         .iter()
         .any(|keyword| schema.get(*keyword).and_then(Value::as_str).is_some())
 }
 
-fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
+pub(super) fn resolve_local_schema_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> {
     // URI percent-decoding precedes JSON Pointer's ~0/~1 decoding.
     let pointer = reference.strip_prefix('#')?;
     let decoded;
@@ -634,9 +634,9 @@ fn schema_null_match<'a>(
     permits
 }
 
-fn schema_has_type(root: &Value, schema: &Value, expected: &str) -> bool {
+fn schema_has_type(root: &Value, schema: &Value, expected: &str, raw: &str) -> bool {
     let mut remaining = 1024;
-    let matched = schema_type_match(root, schema, expected, 0, &mut remaining);
+    let matched = schema_type_match(root, schema, expected, raw, 0, &mut remaining);
     remaining > 0 && matched == Some(true)
 }
 
@@ -645,6 +645,7 @@ fn schema_type_match(
     root: &Value,
     schema: &Value,
     expected: &str,
+    raw: &str,
     depth: usize,
     remaining: &mut usize,
 ) -> Option<bool> {
@@ -663,7 +664,7 @@ fn schema_type_match(
         .get("$ref")
         .and_then(Value::as_str)
         .and_then(|reference| resolve_local_schema_ref(reference, root))
-        .and_then(|target| schema_type_match(root, target, expected, depth + 1, remaining));
+        .and_then(|target| schema_type_match(root, target, expected, raw, depth + 1, remaining));
     let matches = |ty: &Value| {
         ty.as_str() == Some(expected) || (expected == "integer" && ty.as_str() == Some("number"))
     };
@@ -671,6 +672,14 @@ fn schema_type_match(
         ty.as_array()
             .map_or_else(|| matches(ty), |types| types.iter().any(matches))
     });
+    // A string constant preserves literal XML text only when this value
+    // matches it. Otherwise a union's numeric/structured alternative must
+    // remain available. Intersect with types, refs, and composition siblings.
+    if expected == "string"
+        && let Some(value) = schema.get("const")
+    {
+        hint = Some(hint.unwrap_or(true) && value.as_str() == Some(raw));
+    }
     // Modern JSON Schema applies $ref siblings as additional constraints.
     hint = match (hint, reference_hint) {
         (Some(left), Some(right)) => Some(left && right),
@@ -682,7 +691,7 @@ fn schema_type_match(
         };
         let branches = options
             .iter()
-            .map(|option| schema_type_match(root, option, expected, depth, remaining));
+            .map(|option| schema_type_match(root, option, expected, raw, depth, remaining));
         let branch_hint = if keyword == "allOf" {
             branches.flatten().reduce(|left, right| left && right)
         } else {
@@ -820,6 +829,197 @@ mod tests {
         Glm47ParserConfig::default()
     }
 
+    fn parse_schema_value(parameter: Value, raw: &str) -> Value {
+        let tools = vec![ToolDefinition {
+            name: "probe".into(),
+            parameters: Some(serde_json::json!({
+                "type": "object", "properties": {"value": parameter}
+            })),
+        }];
+        let wire = format!(
+            "<tool_call>probe<arg_key>value</arg_key><arg_value>{raw}</arg_value></tool_call>"
+        );
+        let (calls, _) =
+            try_tool_call_parse_glm47(&wire, &get_test_config(), Some(&tools)).unwrap();
+        assert_eq!(calls.len(), 1);
+        let arguments: Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
+        arguments["value"].clone()
+    }
+
+    #[test]
+    fn string_constant_unions_select_matching_values() {
+        for keyword in ["anyOf", "oneOf"] {
+            for reverse in [false, true] {
+                for (kind, raw, expected) in [
+                    ("integer", "42", serde_json::json!(42)),
+                    ("integer", "-7", serde_json::json!(-7)),
+                    ("number", "3.5", serde_json::json!(3.5)),
+                    ("boolean", "true", serde_json::json!(true)),
+                    ("object", "{\"x\":1}", serde_json::json!({"x": 1})),
+                    ("array", "[1,2]", serde_json::json!([1, 2])),
+                    ("null", "null", serde_json::json!(null)),
+                ] {
+                    let mut branches = vec![
+                        serde_json::json!({"const": "auto"}),
+                        serde_json::json!({"type": kind}),
+                    ];
+                    if reverse {
+                        branches.reverse();
+                    }
+                    let parameter = serde_json::json!({keyword: branches});
+                    assert_eq!(
+                        parse_schema_value(parameter.clone(), raw),
+                        expected,
+                        "{keyword}, reverse={reverse}, kind={kind}, raw={raw}"
+                    );
+                    assert_eq!(
+                        parse_schema_value(parameter, "auto"),
+                        serde_json::json!("auto"),
+                        "{keyword}, reverse={reverse}, kind={kind}, string branch"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn string_constants_preserve_literal_text() {
+        for raw in [
+            "auto",
+            "\"hello\"",
+            "{\"x\":1}",
+            "[1,2]",
+            "42",
+            "\n42\t",
+            "null",
+        ] {
+            for parameter in [
+                serde_json::json!({"const": raw}),
+                serde_json::json!({"anyOf": [{"const": raw}, {"type": "integer"}]}),
+                serde_json::json!({"allOf": [{"const": raw}, {"minLength": 1}]}),
+            ] {
+                assert_eq!(
+                    parse_schema_value(parameter.clone(), raw),
+                    serde_json::json!(raw),
+                    "schema={parameter}, raw={raw:?}"
+                );
+            }
+        }
+        assert_eq!(
+            parse_schema_value(
+                serde_json::json!({"anyOf": [{"const": "42"}, {"type": "integer"}]}),
+                " 42 "
+            ),
+            serde_json::json!(42),
+            "a string constant must match raw text, not its trimmed spelling"
+        );
+    }
+
+    #[test]
+    fn string_constant_hints_follow_refs_and_intersect_constraints() {
+        let schema = serde_json::json!({
+            "$defs": {
+                "Literal": {"const": "\"hello\""},
+                "Alias": {"$ref": "#/$defs/Literal"},
+                "a/b~c": {"const": "\"hello\""},
+                "Integer": {"type": "integer"},
+                "Choice": {"anyOf": [{"const": "auto"}, {"type": "integer"}]}
+            }
+        });
+        for (parameter, raw, expected) in [
+            (
+                serde_json::json!({"$ref": "#/$defs/Alias"}),
+                "\"hello\"",
+                true,
+            ),
+            (
+                serde_json::json!({"$ref": "#/$defs/a~1b~0c"}),
+                "\"hello\"",
+                true,
+            ),
+            (
+                serde_json::json!({"$ref": "#/$defs/Alias", "type": "integer"}),
+                "\"hello\"",
+                false,
+            ),
+            (
+                serde_json::json!({"$ref": "#/$defs/Integer", "const": "42"}),
+                "42",
+                false,
+            ),
+            (
+                serde_json::json!({"type": "integer", "const": "42"}),
+                "42",
+                false,
+            ),
+            (
+                serde_json::json!({"allOf": [{"const": "42"}, {"type": "integer"}]}),
+                "42",
+                false,
+            ),
+            (
+                serde_json::json!({"allOf": [{"$ref": "#/$defs/Literal"}, {"type": "string"}]}),
+                "\"hello\"",
+                true,
+            ),
+            (
+                serde_json::json!({"allOf": [{"$ref": "#/$defs/Choice"}, {"minimum": 0}]}),
+                "42",
+                false,
+            ),
+            (serde_json::json!({"$ref": "#/$defs/Choice"}), "auto", true),
+            (serde_json::json!({"$ref": "#/$defs/Choice"}), "42", false),
+        ] {
+            assert_eq!(
+                schema_has_type(&schema, &parameter, "string", raw),
+                expected,
+                "schema={parameter}, raw={raw:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn string_constant_unions_keep_existing_ambiguity_rules() {
+        for (parameter, raw, expected) in [
+            (
+                serde_json::json!({"anyOf": [{"type": "string"}, {"type": "integer"}]}),
+                "42",
+                serde_json::json!("42"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": "42"}, {"type": "integer"}]}),
+                "42",
+                serde_json::json!("42"),
+            ),
+            (
+                serde_json::json!({"anyOf": [{"const": "null"}, {"type": "null"}]}),
+                "null",
+                serde_json::json!(null),
+            ),
+            (
+                serde_json::json!({"const": "null"}),
+                "null",
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": ["string", "null"], "const": "null"}),
+                "null",
+                serde_json::json!("null"),
+            ),
+            (
+                serde_json::json!({"type": "string", "enum": ["\"hello\""]}),
+                "\"hello\"",
+                serde_json::json!("\"hello\""),
+            ),
+        ] {
+            assert_eq!(
+                parse_schema_value(parameter.clone(), raw),
+                expected,
+                "schema={parameter}, raw={raw:?}"
+            );
+        }
+    }
+
     #[test]
     fn inline_unions_preserve_string_hints_within_node_budget() {
         let mut parameter = serde_json::json!({"type": "string"});
@@ -879,6 +1079,7 @@ mod tests {
                 &schema,
                 &schema["properties"]["value"],
                 "string",
+                "value",
                 0,
                 &mut remaining
             ),

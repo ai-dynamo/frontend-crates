@@ -62,6 +62,7 @@ from dynamo_version import dynamo_v2_label
 from fixtures import _version_sort_key
 from unified_history import load_store
 from unified_taxonomy import numbered_id
+from validate_conformance_status import load_model, validate_unified_known_divergences
 
 root = Path("conformance/fixtures-unified-v2")
 current = json.loads(Path("conformance/CONFORMANCE_v2.json").read_text())
@@ -72,14 +73,11 @@ expected = {
     }
     for family in golden.FAMILIES
 }
-expected_red = {
-    family: {
-        key[len("UNIFIED."):].rsplit(".", 1)[0]
-        for key, case in golden.build_cases(family).items()
-        if case.get("expect", {}).get("dynamo_current", {}).get("verdict") == "diverge"
-    }
-    for family in golden.FAMILIES
-}
+validate_unified_known_divergences(
+    load_model(Path("conformance/CONFORMANCE_v2.html")),
+    Path("conformance/unified-known-divergences.yaml"),
+    golden.FAMILIES,
+)
 
 current_version = dynamo_v2_label(Path.cwd())
 store = load_store(root)
@@ -121,16 +119,9 @@ for report in current["reports"]:
         continue
     family = report["model"]
     seen_reports.add(family)
-    actual_red = {
-        issue["scenario"]
-        for issue in report.get("issues", [])
-        if issue.get("state") == "red"
-    }
-    if report["empty"] or actual_red != expected_red[family]:
+    if report["empty"]:
         raise SystemExit(
-            f"Unified display differs from documented current-Dynamo expectations for {family}: "
-            f"empty={report['empty']} expected_red={sorted(expected_red[family])} "
-            f"actual_red={sorted(actual_red)}"
+            f"Unified display has empty current-Dynamo cells for {family}: {report['empty']}"
         )
 if seen_reports != set(golden.FAMILIES):
     raise SystemExit(

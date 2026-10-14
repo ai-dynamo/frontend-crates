@@ -1229,5 +1229,131 @@
     "effort": 100,
     "drop_thinking": true,
     "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 100 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>Inspect the screenshot.<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"screenshot\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>Result\n\n<｜deepseek_image｜>\n\nEnd</tool_result><｜Assistant｜><think>"
+  },
+  {
+    "name": "empty_system_tools",
+    "messages": [
+      {
+        "role": "system",
+        "content": "S",
+        "tools": []
+      },
+      {
+        "role": "user",
+        "content": "Hi"
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\nS<｜User｜>Hi<｜Assistant｜><think>"
+  },
+  {
+    "name": "empty_tool_calls_keep_call_order",
+    "messages": [
+      {
+        "role": "user",
+        "content": "q"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "a",
+            "type": "function",
+            "function": {
+              "name": "search",
+              "arguments": "{}"
+            }
+          },
+          {
+            "id": "b",
+            "type": "function",
+            "function": {
+              "name": "search",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": "x",
+        "tool_calls": []
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "b",
+        "content": "B"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "a",
+        "content": "A"
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>q<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜>x<｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\n<tool_result>B</tool_result><｜Assistant｜><think>"
+  },
+  {
+    "name": "merged_user_drops_task",
+    "messages": [
+      {
+        "role": "user",
+        "content": "q"
+      },
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "a",
+            "type": "function",
+            "function": {
+              "name": "search",
+              "arguments": "{}"
+            }
+          },
+          {
+            "id": "b",
+            "type": "function",
+            "function": {
+              "name": "search",
+              "arguments": "{}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "b",
+        "content": "B"
+      },
+      {
+        "role": "user",
+        "content": "Search",
+        "task": "action"
+      },
+      {
+        "role": "user",
+        "content": "More"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "a",
+        "content": "A"
+      },
+      {
+        "role": "assistant",
+        "content": "OK"
+      }
+    ],
+    "thinking": true,
+    "effort": 50,
+    "drop_thinking": true,
+    "expected": "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: 50 (range 1-100, the higher the value, the more thorough the reasoning)\n\n<｜User｜>q<｜Assistant｜></think>\n\n<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"search\">\n\n</｜DSML｜ invoke>\n</｜DSML｜ calls><｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\nSearch\n\nMore\n\n<tool_result>B</tool_result><｜Assistant｜><think></think>OK<｜end▁of▁sentence｜>"
   }
 ]

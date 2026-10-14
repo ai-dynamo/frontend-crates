@@ -69,3 +69,14 @@ def test_validate_rejects_unmanifested_stale_archive(tmp_path: Path) -> None:
     errors = validator.validate(repo)
     assert any("archive store: stale path" in error for error in errors)
     assert any("archive store: unmanifested archive" in error for error in errors)
+
+
+def test_text_scan_ignores_pytest_cache_but_rejects_stale_source(tmp_path: Path) -> None:
+    cache = tmp_path / ".pytest_cache/v/cache/nodeids"
+    cache.parent.mkdir(parents=True)
+    stale_token = "stream" + "v2"
+    cache.write_text(json.dumps([f"test_old_{stale_token}_case"]))
+    source = tmp_path / "fixture.yaml"
+    source.write_text(f"mode: {stale_token}\n")
+
+    assert validator._text_errors(tmp_path) == [f"{source}: stale {stale_token}"]

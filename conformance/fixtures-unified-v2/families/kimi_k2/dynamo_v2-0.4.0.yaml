@@ -6,74 +6,6 @@ document:
   mode: unified
 changes:
   retired__31_40:
-    case_key: UNIFIED.31-40
-    stimulus:
-      inline:
-        input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        init:
-          starting_state: None
-          tool_output_mode: GuidedJson
-          named_tool: null
-        finish_reason: stop
-        tools:
-        - name: get_weather
-          parameters:
-            type: object
-            properties:
-              city:
-                type: string
-        - name: f
-          parameters:
-            type: object
-            properties:
-              x:
-                type: string
-        - name: g
-          parameters:
-            type: object
-            properties:
-              y:
-                type: string
-        - name: run
-          parameters:
-            type: object
-            properties:
-              cmd:
-                type: string
-        - name: log
-          parameters:
-            type: object
-            properties:
-              note:
-                type: string
-        - name: sum_values
-          parameters:
-            type: object
-            properties:
-              values:
-                type: array
-                items:
-                  type: number
-        - name: functions.
-          parameters:
-            type: object
-            properties: {}
-        chunks:
-        - delta_text: <think>
-        - delta_text: 'before '
-        - delta_text: <|tool_call_begin|>
-        - delta_text: functions.f:0
-        - delta_text: <|tool_call_argument_begin|>
-        - delta_text: '{"x": "'
-        - delta_text: <think>
-        - delta_text: quoted
-        - delta_text: </think>
-        - delta_text: '"}'
-        - delta_text: <|tool_call_end|>
-        - delta_text: ' after'
-        - delta_text: </think>
-        - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
-        - delta_text: ‹finish›
     observation:
       value:
         assembled:
@@ -115,10 +47,6 @@ changes:
             arguments: '{"city": "Paris"}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -143,10 +71,6 @@ changes:
             arguments: '{"city":"Paris"}'
         - expected: []
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -157,10 +81,6 @@ changes:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -171,10 +91,6 @@ changes:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -190,10 +106,6 @@ changes:
         - expected: []
         - expected: []
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:

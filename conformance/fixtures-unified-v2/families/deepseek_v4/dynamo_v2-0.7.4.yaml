@@ -7,103 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  deepseek_v41_mixed_control_text_in_string:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: ea6ae376587011bb11a7758790e5023b84742e182b7fd2e34c2722ca6ff0ea98
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: " <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"x":" <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "}'
-            complete: true
-        - expected: []
-        - expected: []
-  qwen_string_null:
-    case_key: UNIFIED.7-4
-    stimulus:
-      ref: current
-      semantic_sha256: 36b7490bd67a9e93c4f25a0cd21ac02915cf3110c589e25108e8b8838bc4ccbc
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-        - expected: []
-  arg_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: fa5b682c79c28e393dd3d7944fb6a3237e44bc10d0dfbefe5368368d01175ba9
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: ''
-            complete: false
-          - kind: tool_call
-            name: null
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
   arg_json_null_anyof:
     case_key: UNIFIED.7-4.anyof
     stimulus:
@@ -217,6 +120,35 @@ changes:
           - kind: tool_call
             name: null
             arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: fa5b682c79c28e393dd3d7944fb6a3237e44bc10d0dfbefe5368368d01175ba9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"null"}'
             complete: true
         - expected: []
         - expected: []
@@ -391,6 +323,95 @@ changes:
           - kind: tool_call
             name: null
             arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: ea6ae376587011bb11a7758790e5023b84742e182b7fd2e34c2722ca6ff0ea98
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":" <think>quoted</think> <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_response_rejected_header_quote_ownership:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: f"x
+        - kind: tool_call
+          name: f
+          arguments:
+            x: ok
+        chunks:
+        - expected:
+          - kind: text
+            text: f"
+        - expected:
+          - kind: text
+            text: x
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"ok"}'
+            complete: true
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 36b7490bd67a9e93c4f25a0cd21ac02915cf3110c589e25108e8b8838bc4ccbc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":null}'
             complete: true
         - expected: []
         - expected: []

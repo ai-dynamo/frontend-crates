@@ -14,7 +14,7 @@ against the mirrored HF processor.
 | feature    | default | adds |
 | ---------- | ------- | ---- |
 | `parallel` | **on**  | links rayon; kernels still run inline until `execution::init_pool` arms the crate-owned pool |
-| `fetch`    | off     | trusted-source data:/base64/file/http compatibility helper (**signatures only so far**); API frontends should use their protected fetcher for untrusted URLs |
+| `fetch`    | off     | `fetch::MediaFetcher`, a protected http(s)/data: fetcher for untrusted URLs (SSRF policy, redirect revalidation, byte caps); links reqwest and tokio. The trusted-source `fetch_bytes*` helpers in the same module are still stubs |
 
 **The boundary.** The crate carries what HF ships, plus what a router and an
 engine must compute *identically* or routing keys and token accounting
@@ -73,7 +73,7 @@ prompt length (token costs)         │
 | `registry` | family selection from a typed/JSON spec, or resolved straight from the HF config files (the `AutoProcessor` entry) |
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
-| `fetch` *(feature, stub)* | planned trusted-source compatibility helper (data:/base64/file/http, `requests`-parity proxy semantics, streaming byte budgets); currently returns `MmError::Unsupported`; not for untrusted request URLs |
+| `fetch` *(feature)* | `MediaFetcher`: protected fetcher for untrusted http(s)/data: URLs. Also a planned trusted-source helper (`fetch_bytes*`: data:/base64/file/http, `requests`-parity proxy semantics) that is still a stub returning `MmError::Unsupported` and is not for untrusted request URLs |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -133,7 +133,7 @@ pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 | --- | --- | --- |
 | boot, per model | `registry::spec_from_model_dir` | config dir (hub download is the router's concern) → `ProcessorSpec`; `Err` = model unsupported |
 | boot, per model | `registry::build_processor` | `ProcessorSpec` → `Box<dyn MmFamilyProcessor>` |
-| per media part | consumer's protected fetcher | untrusted media source → raw bytes |
+| per media part | `fetch::MediaFetcher::fetch` *(feature `fetch`)*, or the consumer's own protected fetcher | untrusted media source → raw bytes, under the SSRF policy and a byte cap |
 | per trusted media part | `fetch::fetch_bytes` *(feature `fetch`, stub)* | trusted media source → raw bytes once implemented; currently returns `MmError::Unsupported` |
 | per decoded image | `content_hash_canonical_image` | shape + dtype + RGB bytes → Dynamo-compatible identity |
 | per image part | `image::decode::dimensions` | bytes → `MediaMetadata::Image` dimensions — header probe, no pixel decode |
@@ -241,13 +241,24 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | normalize LUT (family-internal) | slow path `rescale→normalize` vs fast path `_fuse_mean_std_and_rescale_factor` | **bitwise** — the roundings differ on 128 of 256 u8 inputs; the spec selects which to mirror |
 | `image::decode::decode_rgb` | `PIL.Image.open(...).convert("RGB")` | same accepted formats; >8-bit samples rejected rather than silently diverging (PIL clips, Rust would rescale) |
 | `image::decode::dimensions` | lazy `PIL.Image.open(...).size` | header-only probe |
-| `fetch::fetch_bytes` *(signatures only so far)* | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; untrusted URL policy stays in the frontend |
+| `image::decode::decode_rgb_exif_transposed` | `PIL.ImageOps.exif_transpose(Image.open(...)).convert("RGB")` | opt-in EXIF orientation; caps checked against transposed dimensions before pixel decoding |
+| `image::decode::dimensions_exif_transposed` | EXIF-oriented `PIL.ImageOps.exif_transpose(Image.open(...)).size` | metadata-only oriented geometry for JPEG, PNG and WebP, without pixel decoding |
+| `fetch::fetch_bytes` *(signatures only so far)* | `transformers.image_utils.load_image` (`requests` proxy + `NO_PROXY` semantics, source precedence) | optional trusted-source compatibility behavior, plus streaming byte caps; the protected untrusted-URL path is `fetch::MediaFetcher` |
 | `content_hash_bytes` | SGLang Rust tokenizer fallback | BLAKE3 over encoded bytes |
 | `content_hash_canonical_image` | Dynamo decoded-image identity | XXH3-64 over rank, dimensions, dtype, and contiguous RGB bytes |
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
+
+For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
+accounting with `decode_rgb_exif_transposed` for pixels. Raw APIs remain
+unchanged; forwarding and raw-content hashing still use the original bytes.
+PNG EXIF includes `eXIf` chunks and legacy `Raw profile type exif` tEXt/zTXt
+profiles, including trailing text metadata, with a 1 MiB profile-text cap.
+The cap applies to both encodings; for plain tEXt it is stricter than Pillow.
+Competing tEXt/zTXt profiles are rejected. XMP-only orientation is outside
+these EXIF APIs; Pillow also supports that separate fallback.
 
 
 ## 4. Testing
@@ -275,15 +286,78 @@ Three layers, all pinned to bitwise-equality:
    (a systematic skew reads as fluent text; only the benchmark catches it
    end-to-end).
 
-## 5. Roadmap
+## 5. DSV4.1 geometry planning
+
+`models::deepseek_v41::plan_image_grid(width, height, &spec)` returns resized
+dimensions, ViT/LLM grids, and the full `llm_height * (llm_width + 1) + 2`
+placeholder span, including row separators and boundary positions. Supply
+the same resolved `DeepseekV41GeometrySpec` on the frontend and encoder.
+
+The pixel-free planner mirrors [pinned SGLang](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py).
+Invalid inputs/settings and unrepresentable `u32` output dimensions return
+errors.
+
+The registry also exposes **metadata-only** DSV4.1 planning:
+`ProcessorSpec::DeepseekV41` / `{"family": "deepseek_v41", ...}` accept
+`image_token_id` and the geometry fields above. `spec_from_hf_configs` selects
+this family for `deepseek_v4` and `deepseek_v41`; it accepts flat `vision_*`
+fields or nested `vision_config` aliases (`patch_size`, `downsample_ratio`,
+`min_pixels`, `max_image_tokens`, `max_wh_ratio`). Required geometry fields
+and the image id must be present; there are no serving defaults. The
+preprocessor config must be an object with no non-null processing overrides
+(the inert `processor_class` field is allowed). Preserve the checkpoint's
+original `model_type`: a config serialized as `deepseek_v3` is unsupported.
+
+Use `num_media_tokens` and `layout_from_metadata`, then pass the counts and
+layout to `token_layout::apply_layout` with the context limit.
+See the compiled example on [`DeepseekV41Processor`](src/models/deepseek_v41.rs).
+
+
+Every expanded position uses the same vocabulary `image_token_id`, including
+boundaries and row separators. The model supplies embeddings for the entire
+span, so `feature_ranges` includes those positions too.
+`DeepseekV41ImagePlan::token_types()` separately iterates the pinned processor's
+START/IMAGE/ROW_SEPARATOR/END types (0/1/2/3); these are not vocabulary ids.
+Adjacent images retain distinct item offsets even when their repeated ids
+form one contiguous run. Consumers must pass those offsets to workers rather
+than rediscovering items by scanning token ids.
+
+`process_item` and processed-item `layout` explicitly return `Unsupported`.
+Full pixel processing and frontend/worker integration remain separate work;
+this registration does not make a DSV4.1 image encoding pipeline available.
+
+Regenerate/check the Python-derived fixtures with:
+
+```sh
+python3 multimodal/tests/fixtures/deepseek_v41/generate.py
+python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
+```
+
+The stdlib-only generator executes the pinned source's pure geometry
+functions. Fixture settings are mathematical test inputs, not model defaults.
+
+## 6. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
-for `models::qwen_vl`. What remains:
+for `models::qwen_vl`. For video it has the request arithmetic, without
+decoding:
+
+- `video`: per-request options. `VideoOptions` (`fps`, `max_frames`,
+  `num_frames`, vLLM's `media_io_kwargs.video` keys) and `resolve_num_frames`
+  give the frame count; `VideoPixelBudget` (`total_pixels`,
+  `max_pixels_per_frame`, specific to this crate) carries pixel budgets.
+- `models::qwen_vl::Qwen3VlVideo`: Qwen3-VL video sizing, read from the
+  model's `video_preprocessor_config.json` (only `Qwen3VLVideoProcessor`), and
+  `smart_video_resize`, golden-tested against HF's own function.
+
+What remains:
 
 1. **`fetch`** — the trusted-source compatibility helper is still a stub;
    the feature currently exposes signatures only, and every call returns
    `MmError::Unsupported`.
-2. **Family coverage** — GLM and Kimi are the validated candidates after
+2. **Video decoding** — demuxing and decoding to sampled frames; the
+   arithmetic above takes the frame count and size from the consumer.
+3. **Family coverage** — GLM and Kimi are the validated candidates after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout
@@ -291,8 +365,9 @@ for `models::qwen_vl`. What remains:
 ```
 src/
   image/                 as today
+  video.rs               as today: request options, frame count, pixel budgets
   video/
-    sample.rs            frame-sampling policies (Qwen smart_nframes, GLM fps
+    sample.rs            further sampling policies (Qwen smart_nframes, GLM fps
                          windows) — pure index/timestamp math, no decoders
   audio/                 (feature `audio`)
     decode.rs            container decode + resample to mono f32 (symphonia)

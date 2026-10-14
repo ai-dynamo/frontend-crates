@@ -168,6 +168,35 @@ fn stream_dynamo_dirs(sv1: &Path) -> Vec<std::path::PathBuf> {
 }
 
 #[test]
+fn minimax_m3_required_stream_cases_have_captured_expectations() {
+    let root = common::ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let inputs = root.join("inputs");
+    let captures = stream_dynamo_dirs(&root);
+    for suffix in [
+        "2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c",
+        "8.d", "50",
+    ] {
+        let id = format!("TOOLCALLING.streamv1.{suffix}");
+        let relative = std::path::PathBuf::from(format!("minimax_m3/{id}.yaml"));
+        let mut fixture: Fixture =
+            serde_yaml::from_str(&std::fs::read_to_string(inputs.join(&relative)).unwrap())
+                .unwrap();
+        for capture in &captures {
+            merge_dynamo(&mut fixture, capture, &relative);
+        }
+        let case = &fixture.cases[&id];
+        assert!(!case.chunks.is_empty(), "{id}: missing real input");
+        assert!(!dynamo_unavailable(&case.unavailable), "{id}: unavailable");
+        for (index, chunk) in case.chunks.iter().enumerate() {
+            assert!(
+                chunk.expected.contains_key("dynamo_v2"),
+                "{id} chunk {index}: missing captured expectation"
+            );
+        }
+    }
+}
+
+#[test]
 fn stream_dynamo_dirs_include_only_the_explicit_current_tag() {
     let root = std::env::temp_dir().join(format!(
         "dynamo-stream-dirs-{}-{}",
