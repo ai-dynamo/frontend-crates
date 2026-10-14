@@ -4,7 +4,8 @@
 use std::sync::Arc;
 
 use super::tokcfg::{
-    ChatTemplate, fromjson, python_formatter, python_string, raise_exception, strftime_now, tojson,
+    ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
+    raise_exception, strftime_now, tojson,
 };
 use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
@@ -582,7 +583,8 @@ impl HfTokenizerConfigJsonFormatter {
 
         // add pycompat
         // todo: should we use this: minijinja_contrib::add_to_environment(&mut env);
-        env.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
+        env.set_unknown_method_callback(python_methods);
+        env.add_filter("trim", python_trim);
 
         env.add_filter("tojson", tojson);
         env.add_filter("string", python_string);
@@ -943,6 +945,79 @@ mod tests {
                 context! { v => json!({"a": 1e-6, "b": [1e16, 2]}) }
             ),
             "{\n  \"a\": 1e-06,\n  \"b\": [\n    1e+16,\n    2\n  ]\n}"
+        );
+    }
+
+    #[test]
+    fn test_string_methods_use_python_whitespace() {
+        let template = "[{{ s.strip() }}][{{ s | trim }}][{{ s.lstrip() }}][{{ s.rstrip() }}]\
+            [{{ s.split() | join(',') }}][{{ s.splitlines() | length }}]\
+            [{% if s.isspace() %}space{% endif %}][{% if ''.isspace() %}empty{% endif %}]\
+            [{{ s.strip(' ') }}][{{ s.split('n') | length }}]";
+        assert_eq!(
+            render_hf(template, context! { s => "\u{1c} answer \u{1f}" }),
+            "[answer][answer][answer \u{1f}][\u{1c} answer][answer][2][][]\
+             [\u{1c} answer \u{1f}][2]"
+        );
+    }
+
+    #[test]
+    fn test_strip_preserves_string_safety() {
+        for (method, expected) in [
+            ("strip", "<b> &|&lt;b&gt; &amp;"),
+            ("lstrip", "<b> & \u{1f}|&lt;b&gt; &amp; \u{1f}"),
+            ("rstrip", "\u{1c} <b> &|\u{1c} &lt;b&gt; &amp;"),
+        ] {
+            for args in ["", "none"] {
+                let template = format!(
+                    "{{{{ (s | safe).{method}({args}) | escape }}}}|\
+                     {{{{ s.{method}({args}) | escape }}}}"
+                );
+                assert_eq!(
+                    render_hf(&template, context! { s => "\u{1c} <b> & \u{1f}" }),
+                    expected,
+                    "{method}({args})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_split_preserves_string_safety() {
+        for (args, expected) in [
+            ("", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, -1", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, 1", "[<b>][& hi]|[&lt;b&gt;][&amp; hi]"),
+            ("none, 0", "[<b> & hi]|[&lt;b&gt; &amp; hi]"),
+            ("' '", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+        ] {
+            let template = format!(
+                "{{% for part in (s | safe).split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}|\
+                 {{% for part in s.split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}"
+            );
+            assert_eq!(
+                render_hf(&template, context! { s => "<b> & hi" }),
+                expected,
+                "split({args})"
+            );
+        }
+        assert_eq!(
+            render_hf(
+                "{{ (s | safe).split()[0] | escape }}|{{ s.split()[0] | escape }}",
+                context! { s => "\u{1c}<b>\u{1f}hi" }
+            ),
+            "<b>|&lt;b&gt;"
+        );
+    }
+
+    #[test]
+    fn test_splitlines_preserves_string_safety() {
+        let template = "{% for part in (s | safe).splitlines() %}[{{ part | escape }}]{% endfor %}|\
+            {% for part in s.splitlines() %}[{{ part | escape }}]{% endfor %}";
+        assert_eq!(
+            render_hf(template, context! { s => "<b>\r\n&\u{2028}hi" }),
+            "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"
         );
     }
 

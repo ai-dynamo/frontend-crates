@@ -181,6 +181,66 @@ impl<F: Formatter> Formatter for PyFloats<F> {
     }
 }
 
+/// Python's `str.isspace` for one character: Rust's `char::is_whitespace` plus
+/// U+001C..U+001F, which Python also counts as whitespace.
+pub(crate) fn is_python_space(c: char) -> bool {
+    c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
+}
+
+/// Python's `str.split()` with no separator: whitespace runs separate the words,
+/// and after `maxsplit` splits the rest is one word, its trailing whitespace kept.
+pub(crate) fn python_split_whitespace(s: &str, maxsplit: Option<usize>) -> Vec<&str> {
+    let mut words = Vec::new();
+    let mut rest = s;
+    loop {
+        rest = rest.trim_start_matches(is_python_space);
+        if rest.is_empty() {
+            return words;
+        }
+        if maxsplit == Some(words.len()) {
+            words.push(rest);
+            return words;
+        }
+        let end = rest.find(is_python_space).unwrap_or(rest.len());
+        words.push(&rest[..end]);
+        rest = &rest[end..];
+    }
+}
+
+/// Python's `str.splitlines`: `\r\n` and each of `\n \r \v \f \x1c \x1d \x1e \x85
+/// U+2028 U+2029` end a line, kept with `keepends`.
+pub(crate) fn python_splitlines(s: &str, keepends: bool) -> Vec<&str> {
+    let mut lines = Vec::new();
+    let mut start = 0;
+    let mut chars = s.char_indices().peekable();
+    while let Some((i, c)) = chars.next() {
+        if !matches!(
+            c,
+            '\n' | '\r'
+                | '\u{b}'
+                | '\u{c}'
+                | '\u{1c}'
+                | '\u{1d}'
+                | '\u{1e}'
+                | '\u{85}'
+                | '\u{2028}'
+                | '\u{2029}'
+        ) {
+            continue;
+        }
+        let mut end = i + c.len_utf8();
+        if c == '\r' && chars.next_if(|&(_, next)| next == '\n').is_some() {
+            end += 1;
+        }
+        lines.push(&s[start..if keepends { end } else { i }]);
+        start = end;
+    }
+    if start < s.len() {
+        lines.push(&s[start..]);
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,5 +271,61 @@ mod tests {
         ] {
             assert_eq!(python_float_repr(value), python, "{value:?}");
         }
+    }
+
+    /// Expected values from CPython 3.12's `str.split()`, `str.splitlines()` and `str.isspace()`.
+    #[test]
+    fn whitespace_matches_python() {
+        let all_breaks = "a\rb\r\nc\u{b}d\u{c}e\u{1c}f\u{1d}g\u{1e}h\u{85}i\u{2028}j\u{2029}k\nl\n";
+        let split: &[(&str, Option<usize>, &[&str])] = &[
+            ("\u{1c} answer \u{1f}", None, &["answer"]),
+            ("  a  b \u{1c} c\u{1d}", None, &["a", "b", "c"]),
+            ("  a  b \u{1c} c\u{1d}", Some(1), &["a", "b \u{1c} c\u{1d}"]),
+            ("  lead and trail  ", Some(1), &["lead", "and trail  "]),
+            ("  lead and trail  ", Some(0), &["lead and trail  "]),
+            ("\u{85}\u{2028}x\u{2029}\u{3000}", None, &["x"]),
+            ("\u{1c}\u{1d}\u{1e}\u{1f}", None, &[]),
+            ("", None, &[]),
+        ];
+        for &(s, maxsplit, words) in split {
+            assert_eq!(
+                python_split_whitespace(s, maxsplit),
+                words,
+                "{s:?} {maxsplit:?}"
+            );
+        }
+        let splitlines: &[(&str, &[&str], &[&str])] = &[
+            (
+                all_breaks,
+                &["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"],
+                &[
+                    "a\r",
+                    "b\r\n",
+                    "c\u{b}",
+                    "d\u{c}",
+                    "e\u{1c}",
+                    "f\u{1d}",
+                    "g\u{1e}",
+                    "h\u{85}",
+                    "i\u{2028}",
+                    "j\u{2029}",
+                    "k\n",
+                    "l\n",
+                ],
+            ),
+            (
+                "\u{1c} answer \u{1f}",
+                &["", " answer \u{1f}"],
+                &["\u{1c}", " answer \u{1f}"],
+            ),
+            ("plain text", &["plain text"], &["plain text"]),
+            ("", &[], &[]),
+        ];
+        for &(s, lines, kept) in splitlines {
+            assert_eq!(python_splitlines(s, false), lines, "{s:?}");
+            assert_eq!(python_splitlines(s, true), kept, "{s:?}");
+        }
+        assert!("\u{1c}\u{1d}\u{1e}\u{1f}".chars().all(is_python_space));
+        assert!(!"\u{200b}".chars().all(is_python_space));
     }
 }
