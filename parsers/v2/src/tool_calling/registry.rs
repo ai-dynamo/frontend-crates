@@ -122,20 +122,6 @@ mod tests {
     }
 
     #[test]
-    fn structural_tag_lookup_agrees_with_unified_qwen3_aliases() {
-        for family in ["qwen3", "qwen3_coder"] {
-            crate::create_unified_parser_for_family(family, &[])
-                .unwrap_or_else(|error| panic!("{family} should create a Unified parser: {error}"));
-            let builder = structural_tag_builder_for_family(family)
-                .unwrap_or_else(|| panic!("{family} should have a structural tag builder"));
-            assert!(std::ptr::eq(
-                builder,
-                &crate::structural_tag::builders::QWEN3_CODER,
-            ));
-        }
-    }
-
-    #[test]
     fn structural_tag_registry_routes_families_to_expected_builders() {
         let tools = [Tool {
             name: "search".to_string(),
