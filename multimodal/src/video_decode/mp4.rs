@@ -34,12 +34,24 @@
 //!
 //! Boxes nest to a fixed depth (`moov/trak/mdia/minf/stbl`), so the parser is
 //! not recursive. Only `moov` and `moof` bodies are read, each into memory.
+//! What a file may cost is capped whatever it declares: top-level boxes
+//! ([`MAX_BOXES`]), a movie box ([`MAX_BOX_BODY`]), samples ([`MAX_SAMPLES`])
+//! and a sample ([`MAX_SAMPLE_SIZE`]). More boxes or a larger sample than
+//! the cap is [`MmError::LimitExceeded`]; a movie box or a sample count past
+//! its cap is malformed, as no file this parser accepts holds one.
 
 use std::collections::HashSet;
 
 use super::{ByteSource, VideoCodec, read_error};
 use crate::{MmError, Result};
 
+/// Most top-level boxes: each costs a header read, and each `mdat` a 16-byte
+/// entry in the media list, before any sample cap applies, so a file costs
+/// at most this many reads and 16 MiB whatever its length. A fragment is two
+/// boxes (four with CMAF's `styp` and `sidx`), so this is 2^19 fragments: a
+/// fragment for every 16 samples at [`MAX_SAMPLES`], or two to five hours of
+/// one frame per fragment at 30 fps.
+const MAX_BOXES: u64 = 1 << 20;
 /// Largest `moov` or `moof` body read into memory.
 const MAX_BOX_BODY: u64 = 256 << 20;
 /// Most samples in a track: a sample table costs memory per sample.
@@ -217,6 +229,7 @@ pub(super) fn read(source: &dyn ByteSource) -> Result<Movie> {
     // The media data boxes' bodies, in file order.
     let mut media = Vec::new();
     let mut pos = 0u64;
+    let mut boxes = 0u64;
     let header_read = |at: u64, buf: &mut [u8]| {
         source
             .read_at(at, buf)
@@ -235,6 +248,12 @@ pub(super) fn read(source: &dyn ByteSource) -> Result<Movie> {
                 break;
             }
             return Err(malformed("bytes after the last box"));
+        }
+        boxes += 1;
+        if boxes > MAX_BOXES {
+            return Err(MmError::limit_exceeded(format!(
+                "MP4 with more than {MAX_BOXES} top-level boxes"
+            )));
         }
         header_read(pos, &mut head[..8])?;
         let (header, size) = match u32::from_be_bytes([head[0], head[1], head[2], head[3]]) {

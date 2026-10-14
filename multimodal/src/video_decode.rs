@@ -382,7 +382,8 @@ pub fn decode_frames_from(
 /// Decode `bytes` and keep `num_frames` frames spread evenly over the clip,
 /// at the source size: [`decode_frames`] at indices
 /// `round(linspace(0, frame_count - 1, num_frames))`, with its errors (zero
-/// frames, or more than the clip shows, are `InvalidInput`).
+/// frames, more than the clip shows or more than the frame cap are
+/// `InvalidInput`).
 pub fn decode_sampled(
     bytes: &[u8],
     num_frames: u64,
@@ -449,24 +450,23 @@ fn check_count(num_frames: u64) -> Result<()> {
     if num_frames == 0 {
         return Err(MmError::invalid_input("num_frames must be at least 1"));
     }
+    // As for a list of indices: no video has more frames than this.
+    if num_frames > MAX_PACKETS as u64 {
+        return Err(MmError::invalid_input(format!(
+            "more than {MAX_PACKETS} frames requested"
+        )));
+    }
     Ok(())
 }
 
-/// Decode `num_frames` (already checked by [`check_count`]) evenly spaced
-/// frames of a demuxed track.
+/// Decode `num_frames` evenly spaced frames of a demuxed track.
 fn decode_count(
     track: &Track<'_>,
     num_frames: u64,
     limits: &VideoDecodeLimits,
     backend: Backend,
 ) -> Result<VideoFrames> {
-    let frame_count = track.info().frame_count;
-    if num_frames > frame_count {
-        return Err(MmError::invalid_input(format!(
-            "cannot sample {num_frames} frames from a video with {frame_count}"
-        )));
-    }
-    let targets = sample_indices(frame_count, num_frames);
+    let targets = sample_indices(track.info().frame_count, num_frames)?;
     decode_demuxed(track, &targets, None, limits, backend)
 }
 
@@ -619,15 +619,24 @@ fn check_size(width: u32, height: u32, limits: &VideoDecodeLimits) -> Result<()>
 
 /// The `n` frame indices [`decode_sampled`] keeps out of `total`:
 /// `round(linspace(0, total - 1, n))`, ties to even, as the HF and Dynamo
-/// samplers pick frames. For `n` up to `total`.
-pub fn sample_indices(total: u64, n: u64) -> Vec<u64> {
+/// samplers pick frames. `n` must be at least 1 and at most `total` (and the
+/// frame cap), else [`MmError::InvalidInput`].
+pub fn sample_indices(total: u64, n: u64) -> Result<Vec<u64>> {
+    check_count(n)?;
+    if n > total {
+        return Err(MmError::invalid_input(format!(
+            "cannot sample {n} frames from a video with {total}"
+        )));
+    }
     if n == 1 {
-        return vec![0];
+        return Ok(vec![0]);
     }
     let last = (total - 1) as f64;
-    (0..n)
+    Ok((0..n)
         .map(|i| (last * i as f64 / (n - 1) as f64).round_ties_even() as u64)
-        .collect()
+        // `last` is rounded to an f64 (from 2^53 up), which may round up.
+        .map(|index| index.min(total - 1))
+        .collect())
 }
 
 /// Collects the sampled frames as displayed frames arrive, each with its
@@ -1460,13 +1469,35 @@ mod tests {
 
     #[test]
     fn sample_indices_spread_evenly() {
-        assert_eq!(sample_indices(10, 1), vec![0]);
-        assert_eq!(sample_indices(10, 2), vec![0, 9]);
-        assert_eq!(sample_indices(10, 4), vec![0, 3, 6, 9]);
-        assert_eq!(sample_indices(10, 10), (0..10).collect::<Vec<_>>());
-        assert_eq!(sample_indices(5, 3), vec![0, 2, 4]);
-        // linspace(0, 1, 3) = [0, 0.5, 1]; 0.5 rounds to even.
-        assert_eq!(sample_indices(2, 3), vec![0, 0, 1]);
+        let sample = |total, n| sample_indices(total, n).unwrap();
+        assert_eq!(sample(10, 1), vec![0]);
+        assert_eq!(sample(10, 2), vec![0, 9]);
+        assert_eq!(sample(10, 4), vec![0, 3, 6, 9]);
+        assert_eq!(sample(10, 10), (0..10).collect::<Vec<_>>());
+        assert_eq!(sample(5, 3), vec![0, 2, 4]);
+        assert_eq!(sample(1, 1), vec![0]);
+        // linspace(0, 5, 3) = [0, 2.5, 5]; 2.5 rounds to even.
+        assert_eq!(sample(6, 3), vec![0, 2, 5]);
+        // A count outside 1..=total, or past the frame cap, is refused before
+        // anything is allocated.
+        for (total, n) in [
+            (10, 0),
+            (0, 1),
+            (10, 11),
+            (0, 0),
+            (u64::MAX, u64::MAX),
+            (u64::MAX, MAX_PACKETS as u64 + 1),
+        ] {
+            let r = sample_indices(total, n);
+            assert!(
+                matches!(r, Err(MmError::InvalidInput { .. })),
+                "{total} {n}: {r:?}"
+            );
+        }
+        // Past 2^53 the f64 arithmetic rounds; an index still never reaches
+        // `total`.
+        assert_eq!(sample(u64::MAX, 2), vec![0, u64::MAX - 1]);
+        assert_eq!(sample(1 << 54, 2), vec![0, (1 << 54) - 1]);
     }
 
     #[test]
@@ -2384,7 +2415,7 @@ mod tests {
             assert!(frames.frame(1) == frames.frame(2));
             // Evenly spaced sampling is the same call with linspace indices.
             let sampled = auto("vp9.webm", 4).unwrap();
-            let named = frames_at("vp9.webm", &sample_indices(10, 4), None).unwrap();
+            let named = frames_at("vp9.webm", &sample_indices(10, 4).unwrap(), None).unwrap();
             assert!(sampled.rgb() == named.rgb());
             assert_eq!(sampled.timestamps(), named.timestamps());
         }
@@ -2775,8 +2806,8 @@ mod tests {
             }
             let mut sets: Vec<Vec<u64>> = (0..n).map(|i| vec![i]).collect();
             sets.extend([
-                sample_indices(n, 4),
-                sample_indices(n, n.min(16)),
+                sample_indices(n, 4).unwrap(),
+                sample_indices(n, n.min(16)).unwrap(),
                 vec![0, n - 1],
                 vec![n / 2, n / 2, n - 1],
                 all.clone(),

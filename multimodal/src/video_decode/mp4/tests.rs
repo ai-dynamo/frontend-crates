@@ -444,6 +444,54 @@ fn boxes_that_do_not_fit_are_invalid() {
     assert_invalid(&cat(&[&FTYP, b"\0\0\0\x01mdat"]), "short 64-bit size");
 }
 
+/// A file of nothing but empty boxes of one kind, as many as `len` holds,
+/// made up as it is read: no byte of it exists before a read asks for it.
+struct EmptyBoxes {
+    kind: &'static [u8; 4],
+    len: u64,
+    reads: std::cell::Cell<u64>,
+}
+
+impl ByteSource for EmptyBoxes {
+    fn len(&self) -> u64 {
+        self.len
+    }
+    fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+        assert!(offset + buf.len() as u64 <= self.len, "read past the end");
+        self.reads.set(self.reads.get() + 1);
+        let header = bx(self.kind, &[]);
+        for (i, b) in buf.iter_mut().enumerate() {
+            *b = header[(offset as usize + i) % 8];
+        }
+        Ok(())
+    }
+}
+
+#[test]
+fn a_file_of_many_tiny_boxes_is_refused_after_a_bounded_number_of_reads() {
+    for kind in [b"mdat", b"free"] {
+        // One box too many: refused at the cap, with one header read per box
+        // allowed and nothing read for the rest of the file.
+        let over = EmptyBoxes {
+            kind,
+            len: (MAX_BOXES + 1) * 8,
+            reads: Default::default(),
+        };
+        let r = read(&over).map(|_| ());
+        assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+        assert_eq!(over.reads.get(), MAX_BOXES);
+        // Exactly the cap is walked to the end (and then has no moov box).
+        let at = EmptyBoxes {
+            kind,
+            len: MAX_BOXES * 8,
+            reads: Default::default(),
+        };
+        let r = read(&at).map(|_| ());
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+        assert_eq!(at.reads.get(), MAX_BOXES);
+    }
+}
+
 #[test]
 fn a_movie_needs_one_moov_and_a_video_track() {
     let bytes = plain();

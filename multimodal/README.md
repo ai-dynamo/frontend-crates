@@ -260,7 +260,7 @@ let limits = VideoDecodeLimits::default();
 let video = Video::open(&bytes, &limits)?;                                        // per request
 let info = video.info();
 let n = resolve_num_frames(&options, info.duration, info.frame_count)?;
-let indices = video_decode::sample_indices(info.frame_count, n); // evenly spaced, or the model's own rule
+let indices = video_decode::sample_indices(info.frame_count, n)?; // evenly spaced, or the model's own rule
 let fit = Qwen3VlVideoFit { video: &model, budget };        // `budget`: the request's VideoPixelBudget
 let frames = video.decode(&indices, Some(&fit), &limits)?;
 // frames.frame(i) is Some(RGB) at frames.width() x frames.height(); frames.timestamps()[i] its time
