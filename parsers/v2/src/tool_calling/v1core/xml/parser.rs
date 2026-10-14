@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
+use super::glm47_parser::{has_unsupported_schema_ref_scope, resolve_local_schema_ref};
 use super::parsed_value::{
     ParsedValue, coerce_integer_literal, is_integer_literal, raw_number_literal,
 };
@@ -425,11 +426,11 @@ pub fn parse_qwen_invoke(
 }
 
 /// Extract argument configuration for a function from the tool definitions.
-/// Returns a HashMap of parameter names to their schema definitions.
+/// Returns bounded coercion hints for each parameter without expanding references.
 fn get_arguments_config(
     func_name: &str,
     tools: Option<&[ToolDefinition]>,
-) -> HashMap<String, Value> {
+) -> HashMap<String, SchemaCoercion> {
     let Some(tools) = tools else {
         return HashMap::new();
     };
@@ -442,14 +443,14 @@ fn get_arguments_config(
                     if let Some(props_obj) = properties.as_object() {
                         return props_obj
                             .iter()
-                            .map(|(k, v)| (k.clone(), v.clone()))
+                            .map(|(k, v)| (k.clone(), SchemaCoercion::new(v, params, &mut 4096)))
                             .collect();
                     }
                 } else if let Some(params_obj) = params.as_object() {
                     // If no "properties" field, treat the whole thing as the config
                     return params_obj
                         .iter()
-                        .map(|(k, v)| (k.clone(), v.clone()))
+                        .map(|(k, v)| (k.clone(), SchemaCoercion::new(v, params, &mut 4096)))
                         .collect();
                 }
             }
@@ -459,6 +460,30 @@ fn get_arguments_config(
 
     tracing::warn!("Tool '{}' is not defined in the tools list.", func_name);
     HashMap::new()
+}
+
+#[derive(Debug, Clone)]
+struct SchemaCoercion {
+    direct_type: Option<String>,
+    allowed_types: HashSet<SchemaType>,
+}
+
+impl SchemaCoercion {
+    fn new(schema: &Value, root: &Value, remaining: &mut usize) -> Self {
+        let direct_type = schema
+            .get("type")
+            .and_then(Value::as_str)
+            .map(str::to_lowercase);
+        Self {
+            direct_type,
+            allowed_types: collect_allowed_types(root, schema, remaining),
+        }
+    }
+
+    #[cfg(test)]
+    fn local(schema: &Value) -> Self {
+        Self::new(schema, schema, &mut 4096)
+    }
 }
 
 /// Convert parameter value based on its type in the schema.
@@ -545,7 +570,7 @@ fn get_arguments_config(
 fn convert_param_value(
     param_value: &str,
     param_name: &str,
-    param_config: &HashMap<String, Value>,
+    param_config: &HashMap<String, SchemaCoercion>,
     func_name: &str,
 ) -> ParsedValue {
     convert_prepared_param_value(
@@ -559,13 +584,13 @@ fn convert_param_value(
 fn convert_prepared_param_value(
     param_value: String,
     param_name: &str,
-    param_config: &HashMap<String, Value>,
+    param_config: &HashMap<String, SchemaCoercion>,
     func_name: &str,
 ) -> ParsedValue {
     if param_value.trim().eq_ignore_ascii_case("null") {
         if param_config.get(param_name).is_some_and(|schema| {
-            let allowed = collect_allowed_types(schema);
-            allowed.contains(&SchemaType::String) && !allowed.contains(&SchemaType::Null)
+            schema.allowed_types.contains(&SchemaType::String)
+                && !schema.allowed_types.contains(&SchemaType::Null)
         }) {
             return Value::String(param_value).into();
         }
@@ -585,9 +610,22 @@ fn convert_prepared_param_value(
     // Get the type from schema.
     let param_schema = param_config.get(param_name);
     let direct_type = param_schema
-        .and_then(|v| v.get("type"))
-        .and_then(|t| t.as_str())
-        .map(|t| t.to_lowercase());
+        .and_then(|schema| schema.direct_type.clone())
+        .filter(|name| {
+            categorize_type(name).is_some_and(|category| {
+                param_schema.is_some_and(|schema| schema.allowed_types.contains(&category))
+            })
+        })
+        // References and allOf can leave a single effective boolean type without
+        // a direct local `type`. Preserve the legacy malformed-boolean fallback
+        // (`yes` -> false) for that constrained case.
+        .or_else(|| {
+            param_schema.and_then(|schema| {
+                (schema.allowed_types.len() == 1
+                    && schema.allowed_types.contains(&SchemaType::Boolean))
+                .then(|| "boolean".to_string())
+            })
+        });
 
     let param_type = match direct_type {
         Some(t) => t,
@@ -599,9 +637,9 @@ fn convert_prepared_param_value(
             // must stay the string "42", not become the JSON number 42. When no
             // union is present, fall back to the documented string behavior.
             if let Some(schema) = param_schema {
-                let allowed = collect_allowed_types(schema);
+                let allowed = &schema.allowed_types;
                 if !allowed.is_empty() {
-                    return coerce_union_value(&param_value, &allowed);
+                    return coerce_union_value(&param_value, allowed);
                 }
             }
             "string".to_string()
@@ -765,12 +803,39 @@ fn categorize_type(name: &str) -> Option<SchemaType> {
 
 /// Collect the set of types a (possibly union) schema allows, walking
 /// `type`, `const`/`enum`, `anyOf`/`oneOf` branches, and OpenAPI `nullable`.
-fn collect_allowed_types(schema: &Value) -> HashSet<SchemaType> {
-    collect_type_constraints(schema).unwrap_or_default()
+fn collect_allowed_types(
+    root: &Value,
+    schema: &Value,
+    remaining: &mut usize,
+) -> HashSet<SchemaType> {
+    let mut active_refs = HashSet::new();
+    collect_type_constraints(
+        root,
+        schema,
+        0,
+        remaining,
+        &mut active_refs,
+        false,
+        !has_unsupported_schema_ref_scope(root),
+    )
+    .unwrap_or_default()
 }
 
 // None is an absent type constraint, not an empty intersection.
-fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
+fn collect_type_constraints(
+    root: &Value,
+    schema: &Value,
+    depth: usize,
+    remaining: &mut usize,
+    active_refs: &mut HashSet<String>,
+    inherited_nullable: bool,
+    refs_allowed: bool,
+) -> Option<HashSet<SchemaType>> {
+    *remaining = remaining.checked_sub(1)?;
+    if depth >= 16 || !schema.is_object() {
+        return None;
+    }
+    let refs_allowed = refs_allowed && !has_unsupported_schema_ref_scope(schema);
     let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
@@ -788,7 +853,12 @@ fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
     if out.contains(&SchemaType::Number) {
         out.insert(SchemaType::Integer);
     }
-    if schema.get("nullable").and_then(Value::as_bool) == Some(true) {
+    let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
+    // On a $ref sibling, nullable extends the target's type alternatives; it is
+    // not a separate `null` constraint to intersect with the referenced type.
+    if (inherited_nullable && !out.is_empty())
+        || (nullable && (schema.get("$ref").is_none() || schema.get("type").is_some()))
+    {
         out.insert(SchemaType::Null);
     }
     let mut constraints = Vec::new();
@@ -801,13 +871,55 @@ fn collect_type_constraints(schema: &Value) -> Option<HashSet<SchemaType>> {
     if let Some(values) = schema.get("enum").and_then(Value::as_array) {
         constraints.push(values.iter().flat_map(literal_type_constraints).collect());
     }
+    if refs_allowed
+        && let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+        && active_refs.insert(reference.to_string())
+    {
+        if let Some(target) = resolve_local_schema_ref(reference, root)
+            && let Some(target_types) = collect_type_constraints(
+                root,
+                target,
+                depth + 1,
+                remaining,
+                active_refs,
+                inherited_nullable || nullable,
+                refs_allowed,
+            )
+        {
+            constraints.push(target_types);
+        }
+        active_refs.remove(reference);
+    }
     for key in ["anyOf", "oneOf"] {
         if let Some(options) = schema.get(key).and_then(Value::as_array) {
-            let branches = options.iter().map(collect_type_constraints);
+            let branches = options.iter().map(|option| {
+                collect_type_constraints(
+                    root,
+                    option,
+                    depth + 1,
+                    remaining,
+                    active_refs,
+                    inherited_nullable,
+                    refs_allowed,
+                )
+            });
             if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
                 constraints.push(alternatives.into_iter().flatten().collect());
             }
         }
+    }
+    if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
+        constraints.extend(branches.iter().filter_map(|branch| {
+            collect_type_constraints(
+                root,
+                branch,
+                depth + 1,
+                remaining,
+                active_refs,
+                inherited_nullable,
+                refs_allowed,
+            )
+        }));
     }
     constraints.into_iter().reduce(|mut left, right| {
         left.retain(|ty| right.contains(ty));
@@ -1108,9 +1220,9 @@ mod coderabbit_fix_tests {
     use super::*;
     use serde_json::json;
 
-    fn one_param(name: &str, schema: Value) -> HashMap<String, Value> {
+    fn one_param(name: &str, schema: Value) -> HashMap<String, SchemaCoercion> {
         let mut m = HashMap::new();
-        m.insert(name.to_string(), schema);
+        m.insert(name.to_string(), SchemaCoercion::local(&schema));
         m
     }
 
@@ -1199,6 +1311,48 @@ mod coderabbit_fix_tests {
             json!({"anyOf": [{"type": "boolean"}, {"type": "null"}]}),
         );
         assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+    }
+
+    #[test]
+    fn ref_siblings_intersect_without_copying_the_target_schema() {
+        let parameters = json!({
+            "type": "object",
+            "$defs": {"Text": {"type": ["string", "null"]}},
+            "properties": {
+                "x": {"$ref": "#/$defs/Text", "type": "string", "nullable": true}
+            }
+        });
+        let tool = ToolDefinition {
+            name: "f".into(),
+            parameters: Some(parameters.clone()),
+        };
+        let config = get_arguments_config("f", Some(&[tool]));
+        assert_eq!(ser(&convert_param_value("null", "x", &config, "f")), "null");
+        assert_eq!(ser(&convert_param_value("42", "x", &config, "f")), "\"42\"");
+    }
+
+    #[test]
+    fn direct_type_remains_authoritative_with_unconstrained_all_of() {
+        let config = one_param(
+            "x",
+            json!({
+                "type": "boolean", "allOf": [{"description": "flag"}]
+            }),
+        );
+        assert_eq!(ser(&convert_param_value("yes", "x", &config, "f")), "false");
+    }
+
+    #[test]
+    fn all_of_type_intersection_rejects_a_fractional_number_hint() {
+        let config = one_param(
+            "x",
+            json!({"type": "number", "allOf": [{"type": "integer"}]}),
+        );
+        assert_eq!(ser(&convert_param_value("1", "x", &config, "f")), "1");
+        assert_eq!(
+            ser(&convert_param_value("1.25", "x", &config, "f")),
+            "\"1.25\""
+        );
     }
 
     fn bare_config() -> XmlParserConfig {

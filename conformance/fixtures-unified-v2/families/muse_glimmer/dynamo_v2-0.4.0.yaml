@@ -6,10 +6,6 @@ document:
   mode: unified
 changes:
   retired__50_a:
-    case_key: UNIFIED.50.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -45,10 +41,6 @@ changes:
         - expected: []
         - expected: []
   retired__50_b:
-    case_key: UNIFIED.50.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -59,10 +51,6 @@ changes:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
   retired__50_c:
-    case_key: UNIFIED.50.c
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -73,10 +61,6 @@ changes:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
   retired__51_a:
-    case_key: UNIFIED.51.a
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:
@@ -99,10 +83,6 @@ changes:
         - expected: []
         - expected: []
   retired__51_b:
-    case_key: UNIFIED.51.b
-    stimulus:
-      unavailable:
-        code: original_request_not_retained
     observation:
       value:
         assembled:

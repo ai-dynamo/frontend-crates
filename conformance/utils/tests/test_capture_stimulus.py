@@ -60,15 +60,12 @@ def test_old_fx_capture_is_not_scored_against_new_run_cmd_input(tmp_path, monkey
     model = table._unified_tab_model(tmp_path, {})
     row = next(row for row in model["rows"] if row["family"] == "deepseek_v41")
     cell = row["cells"]["arg_marker_in_string"]
-    candidate = {"dynamo_v2": "dynamo", "vllm_python": "vllm", "vllm_rust": "vllm_rust", "sglang_python": "sglang"}[engine.split("-", 1)[0]]
+    candidate = {"dynamo_v2": "dynamo", "vllm_python": "vllm", "vllm_rust": "vllm_rust", "sglang_python": "sglang_python@" + engine.split("-", 1)[1]}[engine.split("-", 1)[0]]
     popups = {item["key"]: item["block"] for item in cell["tooltip"]["candidates"]}
-    if candidate in popups:
-        popup = popups[candidate]
-        assert "stimulus mismatch" in popup["unavailable"]
-        assert "verdict" not in popup and "events" not in popup
-        assert all(chunk["expected"][candidate] == [] for chunk in cell["tooltip"]["input"]["chunks"])
-    else:
-        assert engine.startswith("sglang_python-")
+    popup = popups[candidate]
+    assert "stimulus mismatch" in popup["unavailable"]
+    assert "verdict" not in popup and "events" not in popup
+    assert all(chunk["expected"][candidate] == [] for chunk in cell["tooltip"]["input"]["chunks"])
     _write(tmp_path, "inputs", original | {"scenario": "arg_marker_in_string"})
     cases, _caps, _versions = table._load_unified_fixtures(tmp_path)
     record = (cases[0]["dynamo_by_ver"]["0.5.3"] if engine.startswith("dynamo_v2")
@@ -151,41 +148,14 @@ def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
-@pytest.mark.parametrize("version", ["0.6.0", "0.7.0-rc.1"])
-def test_source_snapshot_selection_is_numeric_and_never_promotes_release_patch(tmp_path, version):
-    source = tmp_path / (f"dynamo_v2-{version}+source." + "a" * 64)
-    source.mkdir()
-    for suffix in (".patch10", ".patch2", ".patch1"):
-        path = source.with_name(source.name + suffix)
-        path.mkdir()
-        (path / "capture-snapshot.json").write_text('{"schema_version":1,"records":[]}')
-    assert capture_stimulus.current_source_snapshot(source).name.endswith(".patch10")
-    release = tmp_path / f"dynamo_v2-{version}"
-    release.mkdir()
-    release.with_name(release.name + ".patch1").mkdir()
-    assert capture_stimulus.current_source_snapshot(release) == release
-
-
-def test_current_release_overlays_replace_invalid_records_and_add_cases(tmp_path):
+def test_current_version_validates_exact_version_records(tmp_path):
     current = _input("same") | {"tools": unified_tools()}
     record = {"capture_input": capture_stimulus.capture_input(current),
               "assembled": [{"kind": "text", "text": "same"}], "chunks": []}
     base = "dynamo_v2-0.6.0"
     for key in ("UNIFIED.31-1", "retained", "added"):
         _write(tmp_path, "inputs", current, key)
-    # The renamed base record is both unbound and unsuccessful. Only its effective
-    # replacement may be validated; the other base case still needs its own sidecar.
-    _write(tmp_path, base, {"error": "obsolete output"}, "UNIFIED.31-1")
-    retained = _write(tmp_path, base, {"assembled": record["assembled"], "chunks": []}, "retained")
-    (tmp_path / base / "capture-inputs.json").write_text(json.dumps({
-        "schema_version": 1, "records": {"deepseek_v41/retained.yaml": {
-            "capture_sha256": hashlib.sha256(retained.read_bytes()).hexdigest(),
-            "capture_input": record["capture_input"],
-        }},
-    }))
-    _write(tmp_path, base + ".patch2", {"error": "also obsolete"}, "UNIFIED.31-1")
-    _write(tmp_path, base + ".patch10", record, "UNIFIED.31-1")
-    _write(tmp_path, base + ".patch10", record, "added")
+        _write(tmp_path, base, record, key)
     assert capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"]) == 3
     docs = capture_stimulus.validated_current_capture_docs(tmp_path / base, [tmp_path / "inputs"])
     assert len(docs) == 1
@@ -198,29 +168,23 @@ def test_current_release_overlays_replace_invalid_records_and_add_cases(tmp_path
         check=True, capture_output=True, text=True,
     )
     assert json.loads(result.stdout) == docs
-    # A bad binding on the surviving base case must still fail.
-    retained.write_bytes(retained.read_bytes() + b"\n")
-    with pytest.raises(ValueError, match="capture bytes"):
-        capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"])
 
 
 @pytest.mark.parametrize("invalid", [{"error": "failed"}, {"unavailable": "missing"},
                                      {"capture_input": _input("other")}])
 def test_current_release_rejects_surviving_invalid_records(tmp_path, invalid):
     current = _input("same") | {"tools": unified_tools()}
-    record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []}
+    record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []} | invalid
     base = "dynamo_v2-0.6.0"
     _write(tmp_path, "inputs", current)
-    _write(tmp_path, "inputs", current, "added")
-    _write(tmp_path, base, record | invalid)
-    _write(tmp_path, base + ".patch1", record, "added")
+    _write(tmp_path, base, record)
     with pytest.raises(ValueError, match="did not succeed|stimulus mismatch"):
         capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"])
 
 
 @pytest.mark.parametrize("selected_patch", [False, True])
 @pytest.mark.parametrize("version", ["0.6.0", "0.7.0-rc.1"])
-def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_patch, version):
+def test_current_capture_does_not_fold_removed_source_snapshot_patches(tmp_path, selected_patch, version):
     current = _input("same") | {"tools": unified_tools()}
     record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []}
     base = f"dynamo_v2-{version}+source." + "a" * 64
@@ -233,7 +197,21 @@ def test_current_source_uses_only_complete_snapshot_records(tmp_path, selected_p
             "schema_version": 1, "records": [f"deepseek_v41/{key}.yaml"],
         }))
     selected = tmp_path / (base + ".patch10" if selected_patch else base)
+    if not selected_patch:
+        with pytest.raises(ValueError, match="current capture/input sets differ"):
+            capture_stimulus.validate_current_capture(selected, [tmp_path / "inputs"])
+        return
     assert capture_stimulus.validate_current_capture(selected, [tmp_path / "inputs"]) == 1
     assert capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"]) == [
         {"family": "deepseek_v41", "cases": {"UNIFIED.7-2": record}},
     ]
+
+
+def test_recorded_error_for_resolved_divergence_is_rejected(tmp_path):
+    current = _input("same") | {"scenario": "malformed_json_then_two_valid_calls"}
+    error = "native push: EOF while parsing a string at line 1 column 16"
+    record = {"capture_input": capture_stimulus.capture_input(current), "error": error}
+    _write(tmp_path, "inputs", current, "UNIFIED.5-4")
+    _write(tmp_path, "capture", record, "UNIFIED.5-4")
+    with pytest.raises(ValueError, match="unexpected error"):
+        capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])

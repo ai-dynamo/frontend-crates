@@ -196,11 +196,7 @@ impl InvokeBoundary for Glm47Boundary {
         };
         let invoke = &invoke[..end];
         let name = invoke.strip_suffix(BLOCK_END).unwrap_or(invoke).trim();
-        !name.is_empty()
-            && !name.ends_with('.')
-            && name
-                .chars()
-                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.'))
+        !name.is_empty() && !name.ends_with('.') && name.chars().all(is_tool_identifier_char)
     }
 
     fn bare_invoke_uses_eof_boundary(&self) -> bool {
@@ -250,6 +246,14 @@ impl InvokeBoundary for Glm47Boundary {
 
     fn opens(&self, _text: &str, _at: usize) -> bool {
         true
+    }
+
+    fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
+        let Some(body) = text[at..].strip_prefix(BLOCK_START) else {
+            return false;
+        };
+        let name = body.split('<').next().unwrap_or(body).trim();
+        !name.is_empty() && name.chars().all(is_tool_identifier_char)
     }
 
     fn holdback(&self, text: &str) -> usize {
@@ -315,6 +319,10 @@ impl ToolParser for Glm47ToolStreamParser {
     }
 }
 
+fn is_tool_identifier_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')
+}
+
 fn find_bare_invoke_start(text: &str) -> Option<usize> {
     let marker_idx = ORPHAN_ANCHORS
         .iter()
@@ -334,11 +342,7 @@ fn find_bare_invoke_start(text: &str) -> Option<usize> {
         .map(|(idx, ch)| idx + ch.len_utf8())
         .unwrap_or(0);
     let candidate = before[name_start..].trim();
-    (!candidate.is_empty()
-        && candidate
-            .chars()
-            .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '_' | '-' | '.')))
-    .then_some(name_start)
+    (!candidate.is_empty() && candidate.chars().all(is_tool_identifier_char)).then_some(name_start)
 }
 
 fn trailing_holdback_len(text: &str) -> usize {

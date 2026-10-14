@@ -1,0 +1,506 @@
+{
+  "transformers_version": "5.12.1",
+  "jinja2_version": "3.1.6",
+  "cases": [
+    {
+      "name": "inline",
+      "template": "before {% generation %}answer{% endgeneration %} after",
+      "expected": "before answer after"
+    },
+    {
+      "name": "compact",
+      "template": "before{%generation%}answer{%endgeneration%}after",
+      "expected": "beforeanswerafter"
+    },
+    {
+      "name": "multiline",
+      "template": "before\n  {% generation %}\n  answer\n  {% endgeneration %}\nafter",
+      "expected": "before\n  answer\nafter"
+    },
+    {
+      "name": "tag_whitespace",
+      "template": "before{%\t generation\n%}answer{%\nendgeneration\t%}after",
+      "expected": "beforeanswerafter"
+    },
+    {
+      "name": "scope",
+      "template": "{% set value = 'outer' %}{% generation %}{% set value = 'inner' %}{{ value }}{% endgeneration %}{{ value }}",
+      "expected": "innerouter"
+    },
+    {
+      "name": "raw",
+      "template": "{% raw %}{%- generation %}literal{% endgeneration -%}{% endraw %}",
+      "expected": "{%- generation %}literal{% endgeneration -%}"
+    },
+    {
+      "name": "raw_unmatched_quote",
+      "template": "{% raw %}{% set value = 'unclosed %}{% endraw %}{%- generation -%}answer{% endgeneration %}",
+      "expected": "{% set value = 'unclosed %}answer"
+    },
+    {
+      "name": "raw_unclosed_tag",
+      "template": "{% raw %}{% unclosed {% endraw %}{%- generation -%}answer{% endgeneration %}",
+      "expected": "{% unclosed answer"
+    },
+    {
+      "name": "raw_lookalike_end",
+      "template": "{% raw %}{% endraw nope %}{%generation%}literal{%endgeneration%}{% endraw %}",
+      "expected": "{% endraw nope %}{%generation%}literal{%endgeneration%}"
+    },
+    {
+      "name": "nested_dict_literal_tags",
+      "template": "{{ {\"x\": {}} and \"{%generation%}answer{%endgeneration%}\" }}",
+      "expected": "{%generation%}answer{%endgeneration%}"
+    },
+    {
+      "name": "comment",
+      "template": "before{# {% generation %} ignored {% endgeneration %} #}after",
+      "expected": "beforeafter"
+    },
+    {
+      "name": "quoted_expression",
+      "template": "{{ '{% generation %}literal{% endgeneration %}' }}",
+      "expected": "{% generation %}literal{% endgeneration %}"
+    },
+    {
+      "name": "quoted_statement",
+      "template": "{% set value = '%} {% generation %}literal{% endgeneration %}' %}{{ value }}",
+      "expected": "%} {% generation %}literal{% endgeneration %}"
+    },
+    {
+      "name": "quoted_expression_close",
+      "template": "{{ '}} {% generation %}literal{% endgeneration %}' }}",
+      "expected": "}} {% generation %}literal{% endgeneration %}"
+    },
+    {
+      "name": "quoted_escaped",
+      "template": "{% set value = 'escaped\\' %} {% generation %}literal{% endgeneration %}' %}{{ value }}",
+      "expected": "escaped' %} {% generation %}literal{% endgeneration %}"
+    },
+    {
+      "name": "loop",
+      "template": "{% for value in ['one', 'two'] %}{%- generation -%}{{ loop.index }}:{{ value }}{% endgeneration %}{% endfor %}",
+      "expected": "1:one2:two"
+    },
+    {
+      "name": "macro",
+      "template": "{% macro reply(value) %}{%- generation -%}{{ value }}{% endgeneration %}{% endmacro %}{{ reply('answer') }}",
+      "expected": "answer"
+    },
+    {
+      "name": "multiple",
+      "template": "{% generation %}one{% endgeneration %}|{% generation %}two{% endgeneration %}",
+      "expected": "one|two"
+    },
+    {
+      "name": "unicode",
+      "template": "你好 \n{%- generation %} café\n{% endgeneration -%}\n τέλος",
+      "expected": "你好 café\nτέλος"
+    },
+    {
+      "name": "controls_default_default_default_default",
+      "template": "before\n  {% generation %}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_default_default_-",
+      "template": "before\n  {% generation %}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n  answer\nafter"
+    },
+    {
+      "name": "controls_default_default_default_+",
+      "template": "before\n  {% generation %}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n  answer\n\n  after"
+    },
+    {
+      "name": "controls_default_default_-_default",
+      "template": "before\n  {% generation %}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n  answer  after"
+    },
+    {
+      "name": "controls_default_default_-_-",
+      "template": "before\n  {% generation %}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n  answerafter"
+    },
+    {
+      "name": "controls_default_default_-_+",
+      "template": "before\n  {% generation %}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_default_+_default",
+      "template": "before\n  {% generation %}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n  answer\n    after"
+    },
+    {
+      "name": "controls_default_default_+_-",
+      "template": "before\n  {% generation %}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_default_+_+",
+      "template": "before\n  {% generation %}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  \n  after"
+    },
+    {
+      "name": "controls_default_-_default_default",
+      "template": "before\n  {% generation -%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\nanswer\n  after"
+    },
+    {
+      "name": "controls_default_-_default_-",
+      "template": "before\n  {% generation -%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\nanswer\nafter"
+    },
+    {
+      "name": "controls_default_-_default_+",
+      "template": "before\n  {% generation -%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\nanswer\n\n  after"
+    },
+    {
+      "name": "controls_default_-_-_default",
+      "template": "before\n  {% generation -%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\nanswer  after"
+    },
+    {
+      "name": "controls_default_-_-_-",
+      "template": "before\n  {% generation -%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\nanswerafter"
+    },
+    {
+      "name": "controls_default_-_-_+",
+      "template": "before\n  {% generation -%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\nanswer\n  after"
+    },
+    {
+      "name": "controls_default_-_+_default",
+      "template": "before\n  {% generation -%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\nanswer\n    after"
+    },
+    {
+      "name": "controls_default_-_+_-",
+      "template": "before\n  {% generation -%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\nanswer\n  after"
+    },
+    {
+      "name": "controls_default_-_+_+",
+      "template": "before\n  {% generation -%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\nanswer\n  \n  after"
+    },
+    {
+      "name": "controls_default_+_default_default",
+      "template": "before\n  {% generation +%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_+_default_-",
+      "template": "before\n  {% generation +%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n\n  answer\nafter"
+    },
+    {
+      "name": "controls_default_+_default_+",
+      "template": "before\n  {% generation +%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n\n  answer\n\n  after"
+    },
+    {
+      "name": "controls_default_+_-_default",
+      "template": "before\n  {% generation +%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n\n  answer  after"
+    },
+    {
+      "name": "controls_default_+_-_-",
+      "template": "before\n  {% generation +%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n\n  answerafter"
+    },
+    {
+      "name": "controls_default_+_-_+",
+      "template": "before\n  {% generation +%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_+_+_default",
+      "template": "before\n  {% generation +%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n\n  answer\n    after"
+    },
+    {
+      "name": "controls_default_+_+_-",
+      "template": "before\n  {% generation +%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n\n  answer\n  after"
+    },
+    {
+      "name": "controls_default_+_+_+",
+      "template": "before\n  {% generation +%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n\n  answer\n  \n  after"
+    },
+    {
+      "name": "controls_-_default_default_default",
+      "template": "before\n  {%- generation %}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before  answer\n  after"
+    },
+    {
+      "name": "controls_-_default_default_-",
+      "template": "before\n  {%- generation %}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before  answer\nafter"
+    },
+    {
+      "name": "controls_-_default_default_+",
+      "template": "before\n  {%- generation %}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before  answer\n\n  after"
+    },
+    {
+      "name": "controls_-_default_-_default",
+      "template": "before\n  {%- generation %}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before  answer  after"
+    },
+    {
+      "name": "controls_-_default_-_-",
+      "template": "before\n  {%- generation %}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before  answerafter"
+    },
+    {
+      "name": "controls_-_default_-_+",
+      "template": "before\n  {%- generation %}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before  answer\n  after"
+    },
+    {
+      "name": "controls_-_default_+_default",
+      "template": "before\n  {%- generation %}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before  answer\n    after"
+    },
+    {
+      "name": "controls_-_default_+_-",
+      "template": "before\n  {%- generation %}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before  answer\n  after"
+    },
+    {
+      "name": "controls_-_default_+_+",
+      "template": "before\n  {%- generation %}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before  answer\n  \n  after"
+    },
+    {
+      "name": "controls_-_-_default_default",
+      "template": "before\n  {%- generation -%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "beforeanswer\n  after"
+    },
+    {
+      "name": "controls_-_-_default_-",
+      "template": "before\n  {%- generation -%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "beforeanswer\nafter"
+    },
+    {
+      "name": "controls_-_-_default_+",
+      "template": "before\n  {%- generation -%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "beforeanswer\n\n  after"
+    },
+    {
+      "name": "controls_-_-_-_default",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "beforeanswer  after"
+    },
+    {
+      "name": "controls_-_-_-_-",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "beforeanswerafter"
+    },
+    {
+      "name": "controls_-_-_-_+",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "beforeanswer\n  after"
+    },
+    {
+      "name": "controls_-_-_+_default",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "beforeanswer\n    after"
+    },
+    {
+      "name": "controls_-_-_+_-",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "beforeanswer\n  after"
+    },
+    {
+      "name": "controls_-_-_+_+",
+      "template": "before\n  {%- generation -%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "beforeanswer\n  \n  after"
+    },
+    {
+      "name": "controls_-_+_default_default",
+      "template": "before\n  {%- generation +%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_-_+_default_-",
+      "template": "before\n  {%- generation +%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n  answer\nafter"
+    },
+    {
+      "name": "controls_-_+_default_+",
+      "template": "before\n  {%- generation +%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n  answer\n\n  after"
+    },
+    {
+      "name": "controls_-_+_-_default",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n  answer  after"
+    },
+    {
+      "name": "controls_-_+_-_-",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n  answerafter"
+    },
+    {
+      "name": "controls_-_+_-_+",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_-_+_+_default",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n  answer\n    after"
+    },
+    {
+      "name": "controls_-_+_+_-",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_-_+_+_+",
+      "template": "before\n  {%- generation +%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  \n  after"
+    },
+    {
+      "name": "controls_+_default_default_default",
+      "template": "before\n  {%+ generation %}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n    answer\n  after"
+    },
+    {
+      "name": "controls_+_default_default_-",
+      "template": "before\n  {%+ generation %}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n    answer\nafter"
+    },
+    {
+      "name": "controls_+_default_default_+",
+      "template": "before\n  {%+ generation %}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n    answer\n\n  after"
+    },
+    {
+      "name": "controls_+_default_-_default",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n    answer  after"
+    },
+    {
+      "name": "controls_+_default_-_-",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n    answerafter"
+    },
+    {
+      "name": "controls_+_default_-_+",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n    answer\n  after"
+    },
+    {
+      "name": "controls_+_default_+_default",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n    answer\n    after"
+    },
+    {
+      "name": "controls_+_default_+_-",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n    answer\n  after"
+    },
+    {
+      "name": "controls_+_default_+_+",
+      "template": "before\n  {%+ generation %}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n    answer\n  \n  after"
+    },
+    {
+      "name": "controls_+_-_default_default",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_+_-_default_-",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n  answer\nafter"
+    },
+    {
+      "name": "controls_+_-_default_+",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n  answer\n\n  after"
+    },
+    {
+      "name": "controls_+_-_-_default",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n  answer  after"
+    },
+    {
+      "name": "controls_+_-_-_-",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n  answerafter"
+    },
+    {
+      "name": "controls_+_-_-_+",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_+_-_+_default",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n  answer\n    after"
+    },
+    {
+      "name": "controls_+_-_+_-",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n  answer\n  after"
+    },
+    {
+      "name": "controls_+_-_+_+",
+      "template": "before\n  {%+ generation -%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n  answer\n  \n  after"
+    },
+    {
+      "name": "controls_+_+_default_default",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {% endgeneration %}\n  after",
+      "expected": "before\n  \n  answer\n  after"
+    },
+    {
+      "name": "controls_+_+_default_-",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {% endgeneration -%}\n  after",
+      "expected": "before\n  \n  answer\nafter"
+    },
+    {
+      "name": "controls_+_+_default_+",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {% endgeneration +%}\n  after",
+      "expected": "before\n  \n  answer\n\n  after"
+    },
+    {
+      "name": "controls_+_+_-_default",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%- endgeneration %}\n  after",
+      "expected": "before\n  \n  answer  after"
+    },
+    {
+      "name": "controls_+_+_-_-",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%- endgeneration -%}\n  after",
+      "expected": "before\n  \n  answerafter"
+    },
+    {
+      "name": "controls_+_+_-_+",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%- endgeneration +%}\n  after",
+      "expected": "before\n  \n  answer\n  after"
+    },
+    {
+      "name": "controls_+_+_+_default",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%+ endgeneration %}\n  after",
+      "expected": "before\n  \n  answer\n    after"
+    },
+    {
+      "name": "controls_+_+_+_-",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%+ endgeneration -%}\n  after",
+      "expected": "before\n  \n  answer\n  after"
+    },
+    {
+      "name": "controls_+_+_+_+",
+      "template": "before\n  {%+ generation +%}\n  answer\n  {%+ endgeneration +%}\n  after",
+      "expected": "before\n  \n  answer\n  \n  after"
+    }
+  ]
+}

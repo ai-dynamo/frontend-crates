@@ -153,6 +153,7 @@ def check_suite(
     if exemption:
         return
     gaps = set((taxonomy.get("known_gaps") or {}).get(suite, {}).get(family, []))
+    retired = set((taxonomy.get("retired_subcases") or {}).get(suite, []))
     subdir, prefix = SUITE_INPUTS[suite]
     cases = load_family_cases(root, suite, family)
     if cases is None:
@@ -164,9 +165,13 @@ def check_suite(
 
     by_group: dict[str, dict[str, str]] = {}
     for suffix, case in cases.items():
+        if suffix in retired:
+            continue
         by_group.setdefault(group_of(suffix), {})[sub_of(suffix)] = case_status(case)
 
     for suffix, case in sorted(cases.items()):
+        if suffix in retired:
+            continue
         status = case_status(case)
         if status == "bad":
             report.fail(

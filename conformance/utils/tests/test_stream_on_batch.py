@@ -960,6 +960,8 @@ def test_transpose_feature_is_wired() -> None:
     # toolbar checkbox + case-axis data attrs the mirror's corner label reads
     # (the JS view builds the toolbar + table; the template is a skeleton)
     assert "data-transpose-toggle" in view
+    assert "data-compact-cols-toggle" not in view
+    assert "case-label-short" in view and "case-label-full" in view
     assert "data-case-prefix" in view and "data-mode" in view
     # JS builder + integration with the compare engine
     assert "buildTransposed" in js and "data-transpose-table" in js
@@ -967,4 +969,5 @@ def test_transpose_feature_is_wired() -> None:
     assert "!cell.closest('[data-transpose-table]')" in js     # don't double-count
     # CSS shows the mirror in transpose mode and hides the original
     assert "body.transpose-mode" in css and ".transpose-table" in css
+    assert "body.transpose-mode .transpose-table .case-label-full" in css
     assert "sideways-lr" in css  # rotated bottom-up model headers

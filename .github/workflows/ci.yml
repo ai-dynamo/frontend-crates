@@ -41,7 +41,7 @@ jobs:
 
   rust:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     env:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
@@ -88,8 +88,17 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
 
+      - name: Run multimodal tests with all features
+        run: cargo test -p dynamo-multimodal --all-targets --all-features --locked
+
+      - name: Run parser recovery work-bound tests
+        run: cargo test --locked -p dynamo-parsers-v2 --features test-utils --test gemma4_native_recovery
+
       - name: Run doctests
         run: cargo test --workspace --doc --locked
+
+      - name: Run protocol schema tests
+        run: cargo test -p dynamo-protocols --features protocol-schema --locked
 
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings

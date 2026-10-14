@@ -115,7 +115,7 @@ mod tests {
 
     /// Same malformed shape, but at true EOF with no `<|tool_calls_section_end|>`
     /// ever arriving -- the second (valid) call must still recover via the
-    /// same best-effort EOF path `UNIFIED.5-2` already covers, not get lost
+    /// same best-effort EOF path `UNIFIED.5-tool_no_close` already covers, not get lost
     /// because the first invoke's bytes were merged into its span.
     #[test]
     fn bare_close_before_argument_begin_still_recovers_the_second_call_at_finish() {
@@ -286,7 +286,7 @@ mod tests {
             .collect()
     }
 
-    /// `UNIFIED.5-2` (`tool_no_close`): the JSON argument body is complete but
+    /// `UNIFIED.5-tool_no_close` (`tool_no_close`): the JSON argument body is complete but
     /// `<|tool_call_end|>` never streams before EOF. Best-effort recovery
     /// (policy P2 sibling) must still emit the call at `finish`, identically
     /// for a single push and for every chunk-split point -- not just recover
@@ -321,7 +321,7 @@ mod tests {
         assert_eq!(got, vec![], "truncated body must still drop, got {got:?}");
     }
 
-    /// `UNIFIED.7-2` (`arg_marker_in_string`): a `<|tool_call_end|>`-looking
+    /// `UNIFIED.7-arg_marker_in_string` (`arg_marker_in_string`): a `<|tool_call_end|>`-looking
     /// byte sequence sits INSIDE the quoted JSON string argument. Invariant
     /// I7 -- it is data, preserved byte-exact, never mistaken for the real
     /// closer -- identically for a single push and every chunk-split point,
@@ -341,7 +341,7 @@ mod tests {
         }
     }
 
-    /// `UNIFIED.7-2` (`arg_marker_in_string`) with ordinary whitespace between
+    /// `UNIFIED.7-arg_marker_in_string` (`arg_marker_in_string`) with ordinary whitespace between
     /// the JSON body and the real `<|tool_call_end|>`. The byte-exact override
     /// in `parse_section_block` (v1core) used to require the closer to
     /// immediately abut the JSON (`starts_with`, no whitespace tolerance),
@@ -366,7 +366,7 @@ mod tests {
         }
     }
 
-    /// The corpus case `UNIFIED.11-2`: a thought, a call, a second thought, an
+    /// The corpus case `UNIFIED.11-reason_after_tool`: a thought, a call, a second thought, an
     /// answer. This is the ordering the split path cannot represent — it hoists
     /// both thoughts to the front and fuses them.
     #[test]
@@ -555,6 +555,78 @@ mod tests {
             .enumerate()
         {
             assert_eq!(got, want, "split at byte {i}, got {got:?}");
+        }
+    }
+
+    #[test]
+    fn malformed_uuid_header_and_repeated_calls_keep_native_ids_across_reuse() {
+        let malformed = "<|tool_calls_section_begin|><|tool_call_begin|>call-5ec3039f-cc26-4d27-bd09-deedbe2b0c7b<|tool_call_argument_begin|>{\"city\":\"Paris\"}<|tool_call_end|><|tool_calls_section_end|>";
+        for state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+        ] {
+            for valid_count in [0, 1, 3] {
+                let reason = if state == UnifiedParserStartingState::Reasoning {
+                    "check</think>"
+                } else {
+                    "<think>check</think>"
+                };
+                let mut input = format!("{reason}before {malformed} after ");
+                for index in 0..valid_count {
+                    input.push_str(&format!("<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:{}<|tool_call_argument_begin|>{{\"city\":\"Paris\"}}<|tool_call_end|><|tool_calls_section_end|>", 7 + index * 2));
+                }
+                let mut expected = vec![
+                    UnifiedEvent::Reasoning {
+                        text: "check".into(),
+                    },
+                    UnifiedEvent::Text {
+                        text: "before  after ".into(),
+                    },
+                ];
+                for _ in 0..valid_count {
+                    expected.push(UnifiedEvent::ToolCall {
+                        name: "get_weather".into(),
+                        arguments: serde_json::json!({"city":"Paris"}),
+                    });
+                }
+                for split in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+                    let mut parser = kimi_k2_unified(&tools());
+                    for _ in 0..2 {
+                        parser
+                            .initialize_request(UnifiedParserInit {
+                                starting_state: state,
+                                ..Default::default()
+                            })
+                            .unwrap();
+                        let mut events = parser.push(&input[..split]).unwrap();
+                        events.extend(parser.push(&input[split..]).unwrap());
+                        assert_eq!(
+                            assemble(&events),
+                            expected,
+                            "state {state:?}, split {split}"
+                        );
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(assemble(&events), expected);
+                        let calls: Vec<_> = events
+                            .iter()
+                            .filter_map(|event| match event {
+                                UnifiedParserEvent::ToolCall(call) => Some(call),
+                                _ => None,
+                            })
+                            .collect();
+                        assert_eq!(calls.len(), valid_count);
+                        for (index, call) in calls.iter().enumerate() {
+                            assert_eq!(call.tool_index, index);
+                            assert_eq!(
+                                parser.tool_call_id(index),
+                                Some(format!("functions.get_weather:{}", 7 + index * 2).as_str())
+                            );
+                        }
+                        parser.reset();
+                        assert_eq!(parser.tool_call_id(0), None);
+                    }
+                }
+            }
         }
     }
 

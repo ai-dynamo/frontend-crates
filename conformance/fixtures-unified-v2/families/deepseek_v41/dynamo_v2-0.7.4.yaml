@@ -7,91 +7,6 @@ provenance:
 document:
   mode: unified
 changes:
-  retired__7_3:
-    case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: a65bfb3467013e75c26a53ab1ca362ab1cff6a85f8b05208d6c5cf9d6369e3ae
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: " <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":" <think>quoted</think> <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n "}'
-            complete: true
-        - expected: []
-        - expected: []
-  qwen_string_null:
-    case_key: UNIFIED.7-4
-    stimulus:
-      ref: current
-      semantic_sha256: a39e389d59259cb26df2c2056fe5d8ac921373e0e7fc496ea6ca961e3c935976
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-        - expected: []
-  arg_string_null:
-    case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: b0111315a321565ea6f3d9ff89f66654eda4df62b736919afa5fefefce794f50
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
   arg_json_null_anyof:
     case_key: UNIFIED.7-4.anyof
     stimulus:
@@ -189,6 +104,31 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: b0111315a321565ea6f3d9ff89f66654eda4df62b736919afa5fefefce794f50
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
             complete: true
         - expected: []
         - expected: []
@@ -339,6 +279,31 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: a39e389d59259cb26df2c2056fe5d8ac921373e0e7fc496ea6ca961e3c935976
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
             complete: true
         - expected: []
         - expected: []

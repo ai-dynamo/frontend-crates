@@ -18,8 +18,8 @@ use super::{
 /// Most tiktoken-based models reserve 256 IDs above the base vocabulary for special tokens.
 const DEFAULT_NUM_RESERVED_SPECIAL_TOKENS: u32 = 256;
 
-/// Kimi BPE pattern from moonshotai/Kimi-K2-Instruct/tokenization_kimi.py
-const KIMI_PATTERN: &str = r#"[\p{Han}]+|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]*[\p{Ll}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]+[\p{Ll}\p{Lm}\p{Lo}\p{M}&&[^\p{Han}]]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"#;
+/// Kimi BPE pattern. `fastokens` takes its Kimi scanner fast path only for this exact string.
+const KIMI_PATTERN: &str = fastokens::tiktoken::KIMI_PATTERN;
 
 pub struct TikTokenTokenizer {
     bpe: CoreBPE,
@@ -27,7 +27,7 @@ pub struct TikTokenTokenizer {
     special_tokens: Vec<String>,
 }
 
-fn sorted_special_token_strings(special_tokens: &FxHashMap<String, u32>) -> Vec<String> {
+pub(crate) fn sorted_special_token_strings(special_tokens: &FxHashMap<String, u32>) -> Vec<String> {
     let mut strings: Vec<String> = special_tokens.keys().cloned().collect();
     strings.sort();
     strings.dedup();
@@ -180,7 +180,7 @@ impl Tokenizer for TikTokenTokenizer {
 }
 
 /// Parse a tiktoken model file (base64-encoded token + rank per line).
-fn parse_tiktoken_file(path: &str) -> Result<FxHashMap<Vec<u8>, u32>> {
+pub(crate) fn parse_tiktoken_file(path: &str) -> Result<FxHashMap<Vec<u8>, u32>> {
     let contents = std::fs::read_to_string(path)
         .map_err(|err| Error::msg(format!("Failed to read tiktoken file '{path}': {err}")))?;
 
@@ -214,7 +214,7 @@ fn parse_tiktoken_file(path: &str) -> Result<FxHashMap<Vec<u8>, u32>> {
 }
 
 /// Detect the BPE pattern for a model by reading `model_type` from `config.json`.
-fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
+pub(crate) fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
     let model_type: String = crate::file_json_field(&directory.join("config.json"), "model_type")
         .map_err(|err| {
         Error::msg(format!("Failed to read model_type from config.json: {err}"))
@@ -243,7 +243,10 @@ fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
 ///
 /// Reads the `added_tokens_decoder` field which maps string token IDs to token definitions.
 /// Falls back to generating `<|reserved_token_{id}|>` names for unmapped IDs.
-fn load_special_tokens(directory: &Path, num_base_tokens: usize) -> Result<FxHashMap<String, u32>> {
+pub(crate) fn load_special_tokens(
+    directory: &Path,
+    num_base_tokens: usize,
+) -> Result<FxHashMap<String, u32>> {
     let config_path = directory.join("tokenizer_config.json");
     let mut special_tokens = FxHashMap::default();
 

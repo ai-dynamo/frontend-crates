@@ -36,9 +36,9 @@ Engines (`--impl`):
                 capture_driver.VLLM_RUST.
 
 All engine versions are read LIVE at capture time (container `__version__` /
-source tag), never hardcoded. Only cases that DIVERGE from the anchor are written;
-cases that error in-container / have no parser are logged and carried forward,
-never fabricated. Existing version dirs are never touched (append-only).
+source tag), never hardcoded. Only cases that DIVERGE from the anchor are written,
+unless `--replace-stream-case` explicitly records a recaptured stream case. Existing
+version dirs are never touched; a same-version stream recapture writes the next `.patchN` overlay.
 
 Usage:
   python3 capture_peer_versions.py --corpus batch                       # all impls
@@ -50,6 +50,7 @@ Usage:
 import argparse
 import glob
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -66,6 +67,7 @@ if HERE not in sys.path:
 
 import capture_driver as cd  # noqa: E402  (parser maps + container/probe capture plumbing)
 import capture_reasoning as cr  # noqa: E402  (reasoning worker + _container_run + _blocks_match)
+import fixture_disposition  # noqa: E402  (append-only capture layer ordering)
 import resolve_fixtures  # noqa: E402  (batch anchor resolution)
 import resolve_stream_fixtures  # noqa: E402  (stream anchor staging)
 import validate  # noqa: E402  (run_container ships the tool-calling parity adapter)
@@ -147,7 +149,7 @@ def _report(impl, version, n_cases, n_files, families_touched, n_errored):
 _STAGED_VERSION_ROOTS: dict[str, str] = {}
 
 
-def _version_outdir(fixtures_root, impl, version, family):
+def _version_outdir(fixtures_root, impl, version, family, append_patch=False):
     """The `<family>/` dir to write for this run's `<impl>-<version>` capture.
 
     Version dirs are append-only, and publication is ATOMIC: a run writes its whole
@@ -167,6 +169,14 @@ def _version_outdir(fixtures_root, impl, version, family):
     corpus would be published as a bogus shard.
     """
     root = os.path.join(fixtures_root, f"{impl}-{version}")
+    if append_patch and os.path.exists(root):
+        base_root, _base_patch = fixture_disposition.capture_layer_sort_key(os.path.basename(root))
+        existing_patches = [
+            fixture_disposition.capture_layer_sort_key(os.path.basename(path))[1]
+            for path in glob.glob(f"{root}.patch*")
+            if os.path.isdir(path)
+        ]
+        root = os.path.join(fixtures_root, f"{base_root}.patch{max(existing_patches, default=0) + 1}")
     staging_root = _STAGED_VERSION_ROOTS.get(root)
     if staging_root is None:
         if os.path.exists(root):
@@ -509,9 +519,15 @@ def _anchor_chunk_impl(chunk, impl):
     return _ov_norm_deltas(exp.get(impl)), (nt.get(impl) or "")
 
 
-def _changed_stream_cases(anchor_doc, captured_cases, impl):
-    """{cid: {chunks: [{expected, normal_text?}]}} for cases whose newly captured
-    per-chunk output differs from the anchor, plus the errored cids.
+def _stream_capture_cases(anchor_doc, force_case_ids):
+    # The packager permits only explicitly approved cases in a correction patch.
+    for cid, case in (anchor_doc.get("cases") or {}).items():
+        if not force_case_ids or cid in force_case_ids:
+            yield cid, case
+
+
+def _changed_stream_cases(anchor_doc, captured_cases, impl, force_case_ids=frozenset()):
+    """Return changed cases, or only explicitly requested corrections, plus error IDs.
 
     FULL chunk lists, not just the differing indices. resolve_stream_fixtures folds a
     version dir by CLEARING the impl from every anchor chunk and then applying that
@@ -521,7 +537,7 @@ def _changed_stream_cases(anchor_doc, captured_cases, impl):
     writer emits, so both stream writers serialize identically.
     """
     changed_cases, errored = {}, []
-    for cid, case in (anchor_doc.get("cases") or {}).items():
+    for cid, case in _stream_capture_cases(anchor_doc, force_case_ids):
         if impl in (case.get("unavailable") or {}):
             continue
         cap = captured_cases.get(cid)
@@ -543,7 +559,7 @@ def _changed_stream_cases(anchor_doc, captured_cases, impl):
             chunks.append(entry)
             if c_deltas != a_deltas or c_nt != a_nt:
                 differs = True
-        if differs:
+        if differs or cid in force_case_ids:
             changed_cases[cid] = {"chunks": chunks}
     return changed_cases, errored
 
@@ -588,6 +604,8 @@ def _run_stream_container(engine, args):
 
     n_files = n_cases = n_errored = 0
     families_touched = set()
+    forced_cases_written = set()
+    force_case_ids = set(args.replace_stream_case)
     for fp, family in job_family.items():
         entry = caps.get(fp, {})
         if "cases" not in entry:
@@ -596,11 +614,14 @@ def _run_stream_container(engine, args):
             n_errored += 1
             continue
         anchor_doc = yaml.safe_load(open(fp))
-        changed_cases, errored = _changed_stream_cases(anchor_doc, entry["cases"], engine.name)
+        changed_cases, errored = _changed_stream_cases(
+            anchor_doc, entry["cases"], engine.name, force_case_ids
+        )
+        forced_cases_written.update(force_case_ids & changed_cases.keys())
         n_errored += len(errored)
         if not changed_cases:
             continue
-        outdir = _version_outdir(sv1_root, engine.name, version, family)
+        outdir = _version_outdir(sv1_root, engine.name, version, family, append_patch=True)
         out = {
             "family": family, "mode": "streamv1",
             "captured_with": {engine.name: version},
@@ -615,6 +636,9 @@ def _run_stream_container(engine, args):
               f"({len(changed_cases)} changed case(s))", file=sys.stderr)
 
     _report(engine.name, version, n_cases, n_files, families_touched, n_errored)
+    missing_forced_cases = force_case_ids - forced_cases_written
+    if missing_forced_cases:
+        raise SystemExit(f"requested stream cases were not captured: {sorted(missing_forced_cases)}")
 
 
 # --- vllm_rust: full-chunk changed-case streamv1 dir --- #
@@ -640,18 +664,19 @@ def _rust_norm_deltas(deltas):
 
 
 def _rust_anchor_case_form(case):
-    """Comparable form of a vllm_rust anchor case. `unavailable` (no such parser) folds
-    by wording-independent identity; an `exception` (parser ran and threw) carries its
-    verbatim message so a changed error message across versions is a real divergence."""
-    if "unavailable" in case:
+    """Comparable form of vllm_rust's projection of one resolved anchor case."""
+    unavailable = case.get("unavailable") or {}
+    if "vllm_rust" in unavailable:
         return ("unavail",)
-    if "exception" in case:
-        return ("exception", case["exception"])
-    chunks = [
-        (_rust_norm_deltas(ch.get("expected")), ch.get("normal_text") or "")
-        for ch in (case.get("chunks") or [])
-        if isinstance(ch, dict)
-    ]
+    exception = (case.get("exception") or {}).get("vllm_rust")
+    if exception is not None:
+        return ("exception", exception)
+    chunks = []
+    for chunk in case.get("chunks") or []:
+        if not isinstance(chunk, dict):
+            continue
+        deltas, normal_text = _anchor_chunk_impl(chunk, "vllm_rust")
+        chunks.append((_rust_norm_deltas(deltas), normal_text))
     return ("chunks", chunks)
 
 
@@ -687,9 +712,10 @@ def _run_stream_rust(engine, args):
         raise SystemExit("--vllm-rust-source or VLLM_RUST_SOURCE is required for vllm_rust")
     sv1 = os.path.join(args.root, STREAM_ROOT_REL)
     inputs_root = os.path.join(sv1, "inputs")
-    anchor_root = _lowest_impl_dir(sv1, "vllm_rust")
     work = args.work or tempfile.mkdtemp(prefix="vllm_rust_ver_")
     os.makedirs(work, exist_ok=True)
+    anchor_root = os.path.join(work, "anchor")
+    resolve_stream_fixtures.resolve(sv1, anchor_root, [])
 
     families = sorted(engine.tc_map)
     if args.family:
@@ -712,6 +738,8 @@ def _run_stream_rust(engine, args):
 
     n_files = n_cases = n_errored = n_missing_anchor = 0
     families_touched = set()
+    forced_cases_written = set()
+    force_case_ids = set(args.replace_stream_case)
     for fp, (family, base) in job_meta.items():
         entry = caps.get(fp, {})
         if "cases" not in entry:
@@ -726,16 +754,20 @@ def _run_stream_rust(engine, args):
             continue
         anchor_doc = yaml.safe_load(open(anchor_fp))
         changed = {}
-        for cid, anchor_case in (anchor_doc.get("cases") or {}).items():
+        for cid, anchor_case in _stream_capture_cases(anchor_doc, force_case_ids):
             cap = entry["cases"].get(cid)
             if cap is None:
                 continue
-            if _rust_captured_case_form(cap) != _rust_anchor_case_form(anchor_case):
+            if (
+                _rust_captured_case_form(cap) != _rust_anchor_case_form(anchor_case)
+                or cid in force_case_ids
+            ):
                 changed[cid] = ({"unavailable": GEMMA4_UNAVAILABLE} if family == "gemma4"
                                 else _rust_captured_case_doc(cap))
+                forced_cases_written.update(force_case_ids & {cid})
         if not changed:
             continue
-        outdir = _version_outdir(sv1, "vllm_rust", version, family)
+        outdir = _version_outdir(sv1, "vllm_rust", version, family, append_patch=True)
         doc = {
             "family": family, "mode": "streamv1",
             "captured_with": {"vllm_rust": version}, "cases": changed,
@@ -749,6 +781,9 @@ def _run_stream_rust(engine, args):
     print(f"[vllm_rust] wrote vllm_rust-{version}: {n_cases} changed case(s) across {n_files} "
           f"file(s) in {len(families_touched)} family(ies); {n_missing_anchor} without an anchor",
           file=sys.stderr)
+    missing_forced_cases = force_case_ids - forced_cases_written
+    if missing_forced_cases:
+        raise SystemExit(f"requested stream cases were not captured: {sorted(missing_forced_cases)}")
 
 
 def _run_stream(engine: EngineSpec, args):
@@ -775,7 +810,26 @@ def main():
     ap.add_argument("--sglang-container", default="sglang-localdev")
     ap.add_argument("--vllm-rust-source", help="vLLM source checkout root; defaults to VLLM_RUST_SOURCE")
     ap.add_argument("--work", help="work dir (default: a fresh temp dir)")
+    ap.add_argument(
+        "--replace-stream-case",
+        action="append",
+        default=[],
+        metavar="CASE_ID",
+        help="force this stream result into the next append-only patch for its existing capture version",
+    )
     args = ap.parse_args()
+
+    invalid_replacements = [
+        case_id
+        for case_id in args.replace_stream_case
+        if re.fullmatch(r"TOOLCALLING\.streamv1\.\d+(?:-\d+)?(?:\.[a-z][a-z0-9_-]*)*", case_id) is None
+    ]
+    if args.replace_stream_case and args.corpus != "stream":
+        ap.error("--replace-stream-case requires --corpus stream")
+    if args.replace_stream_case and not args.family:
+        ap.error("--replace-stream-case requires --family because case IDs recur across model families")
+    if invalid_replacements:
+        ap.error(f"invalid stream case IDs: {invalid_replacements}")
 
     corpus = args.corpus
     if args.impl:
