@@ -9,7 +9,10 @@
 //! the caller names, each resized to one size if asked, as [`VideoFrames`];
 //! [`decode_sampled`] is the common case of `num_frames` frames spread evenly
 //! over the clip. All take the clip as a slice; the `_from` variants take any
-//! [`ByteSource`], such as a file or a ranged download.
+//! [`ByteSource`], such as a file or a ranged download. A caller that needs
+//! the clip's [`VideoInfo`] to choose its frames opens a [`Video`] once and
+//! decodes from it, so the container is demuxed once, not once to probe and
+//! again to decode.
 //!
 //! Which frames to keep and what size they should be are the caller's
 //! decisions: a model's sampling rule and pixel budget turn into frame indices
@@ -133,16 +136,19 @@ pub struct VideoDecodeLimits {
     pub max_height: u32,
     /// Cap on the returned RGB frames, in bytes.
     pub max_output_bytes: usize,
-    /// Cap on the compressed video held in memory while a file is demuxed,
-    /// in bytes. Only WebM / Matroska holds its packets (MP4 keeps its sample
-    /// tables and reads packets as they are decoded); `probe` applies the
-    /// default.
+    /// Largest WebM / Matroska file accepted, in bytes: its demuxer allocates
+    /// each block as it reads it and holds the video packets, so a file over
+    /// this is refused before it is opened. Peak memory while such a file is
+    /// open is a small multiple of its size (the demuxer's element tables and
+    /// the packet list come on top of the packets), not this value itself.
+    /// MP4 is not bound by it (it keeps its sample tables and reads packets
+    /// as they are decoded); `probe` applies the default.
     pub max_input_bytes: usize,
 }
 
 impl Default for VideoDecodeLimits {
     /// 8192 x 8192 frames, 512 MiB of output (the decoded-frame budget
-    /// `ai-dynamo/dynamo` uses for video) and 512 MiB of held input.
+    /// `ai-dynamo/dynamo` uses for video) and a 512 MiB WebM / Matroska file.
     fn default() -> Self {
         Self {
             max_width: 8192,
@@ -281,7 +287,60 @@ pub fn probe(bytes: &[u8]) -> Result<VideoInfo> {
 
 /// [`probe`] for a video in any [`ByteSource`].
 pub fn probe_from(source: &dyn ByteSource) -> Result<VideoInfo> {
-    Ok(demux_with(source, VideoDecodeLimits::default().max_input_bytes)?.info())
+    Ok(Video::open(source, &VideoDecodeLimits::default())?.info())
+}
+
+/// A video whose container has been read: its [`VideoInfo`], and the frames
+/// it decodes to. Open once, decide which frames to keep from `info`, then
+/// `decode`; [`probe`] followed by [`decode_frames`] reads the container
+/// twice (for WebM / Matroska, every packet twice).
+///
+/// `limits.max_input_bytes` applies when the video is opened; the frame-size
+/// and output limits apply to each decode.
+pub struct Video<'a> {
+    track: Track<'a>,
+}
+
+impl<'a> Video<'a> {
+    /// Read the container of a video in any [`ByteSource`] (for one in
+    /// memory, `&bytes`), which the decode reads packets from later. Errors
+    /// as [`decode_frames_from`] before decoding: an unreadable container, or
+    /// a source that ends before its declared length, is
+    /// [`MmError::InvalidInput`]; a source whose reads fail
+    /// [`MmError::Internal`]; a codec the crate does not handle
+    /// [`MmError::Unsupported`]; a WebM / Matroska file over
+    /// `limits.max_input_bytes` [`MmError::LimitExceeded`].
+    pub fn open(source: &'a dyn ByteSource, limits: &VideoDecodeLimits) -> Result<Self> {
+        Ok(Self {
+            track: demux_with(source, limits.max_input_bytes)?,
+        })
+    }
+
+    /// What [`probe`] reports.
+    pub fn info(&self) -> VideoInfo {
+        self.track.info()
+    }
+
+    /// [`decode_frames`] of this video.
+    pub fn decode(
+        &self,
+        indices: &[u64],
+        fit: Option<&dyn Fit>,
+        limits: &VideoDecodeLimits,
+    ) -> Result<VideoFrames> {
+        check_indices(indices)?;
+        decode_indices(&self.track, indices, fit, limits, decode_track)
+    }
+
+    /// [`decode_sampled`] of this video.
+    pub fn decode_sampled(
+        &self,
+        num_frames: u64,
+        limits: &VideoDecodeLimits,
+    ) -> Result<VideoFrames> {
+        check_count(num_frames)?;
+        decode_count(&self.track, num_frames, limits, decode_track)
+    }
 }
 
 /// Decode `bytes` and keep the shown frames at `indices` (counted from 0 in
@@ -379,10 +438,28 @@ fn decode_sampled_with(
     limits: &VideoDecodeLimits,
     backend: Backend,
 ) -> Result<VideoFrames> {
+    // Checked before the container is read: a bad count is a cheap error.
+    check_count(num_frames)?;
+    let track = demux_with(source, limits.max_input_bytes)?;
+    decode_count(&track, num_frames, limits, backend)
+}
+
+/// What a frame count must satisfy before any video is known.
+fn check_count(num_frames: u64) -> Result<()> {
     if num_frames == 0 {
         return Err(MmError::invalid_input("num_frames must be at least 1"));
     }
-    let track = demux_with(source, limits.max_input_bytes)?;
+    Ok(())
+}
+
+/// Decode `num_frames` (already checked by [`check_count`]) evenly spaced
+/// frames of a demuxed track.
+fn decode_count(
+    track: &Track<'_>,
+    num_frames: u64,
+    limits: &VideoDecodeLimits,
+    backend: Backend,
+) -> Result<VideoFrames> {
     let frame_count = track.info().frame_count;
     if num_frames > frame_count {
         return Err(MmError::invalid_input(format!(
@@ -390,7 +467,7 @@ fn decode_sampled_with(
         )));
     }
     let targets = sample_indices(frame_count, num_frames);
-    decode_demuxed(&track, &targets, None, limits, backend)
+    decode_demuxed(track, &targets, None, limits, backend)
 }
 
 fn decode_frames_with(
@@ -400,6 +477,14 @@ fn decode_frames_with(
     limits: &VideoDecodeLimits,
     backend: Backend,
 ) -> Result<VideoFrames> {
+    // Checked before the container is read: a bad list is a cheap error.
+    check_indices(indices)?;
+    let track = demux_with(source, limits.max_input_bytes)?;
+    decode_indices(&track, indices, fit, limits, backend)
+}
+
+/// What a list of frame indices must satisfy before any video is known.
+fn check_indices(indices: &[u64]) -> Result<()> {
     if indices.is_empty() {
         return Err(MmError::invalid_input("no frame indices given"));
     }
@@ -415,7 +500,18 @@ fn decode_frames_with(
             "frame indices must not decrease (frames are kept in display order)",
         ));
     }
-    let track = demux_with(source, limits.max_input_bytes)?;
+    Ok(())
+}
+
+/// Decode the frames at `indices` (already checked by [`check_indices`]) of a
+/// demuxed track.
+fn decode_indices(
+    track: &Track<'_>,
+    indices: &[u64],
+    fit: Option<&dyn Fit>,
+    limits: &VideoDecodeLimits,
+    backend: Backend,
+) -> Result<VideoFrames> {
     let frame_count = track.info().frame_count;
     if let Some(&last) = indices.last()
         && last >= frame_count
@@ -424,7 +520,7 @@ fn decode_frames_with(
             "frame index {last} is past the last frame of a video with {frame_count}"
         )));
     }
-    decode_demuxed(&track, indices, fit, limits, backend)
+    decode_demuxed(track, indices, fit, limits, backend)
 }
 
 /// Decode `track` and keep the shown frames at `targets`, resized if asked.
@@ -521,8 +617,10 @@ fn check_size(width: u32, height: u32, limits: &VideoDecodeLimits) -> Result<()>
     Ok(())
 }
 
-/// `round(linspace(0, total - 1, n))`, as the HF and Dynamo samplers pick frames.
-fn sample_indices(total: u64, n: u64) -> Vec<u64> {
+/// The `n` frame indices [`decode_sampled`] keeps out of `total`:
+/// `round(linspace(0, total - 1, n))`, ties to even, as the HF and Dynamo
+/// samplers pick frames. For `n` up to `total`.
+pub fn sample_indices(total: u64, n: u64) -> Vec<u64> {
     if n == 1 {
         return vec![0];
     }
@@ -622,14 +720,14 @@ fn read_error(e: std::io::Error, what: &str) -> MmError {
     }
 }
 
-/// [`demux_with`] under the default held-input limit.
+/// [`demux_with`] under the default input limit.
 #[cfg(test)]
 fn demux(source: &dyn ByteSource) -> Result<Track<'_>> {
     demux_with(source, VideoDecodeLimits::default().max_input_bytes)
 }
 
-/// Read the container's video track, holding at most `max_input_bytes` of
-/// its packets in memory (WebM / Matroska; MP4 holds none).
+/// Read the container's video track. A WebM / Matroska file, whose packets
+/// are held in memory, must be at most `max_input_bytes`; MP4 holds none.
 fn demux_with(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Track<'_>> {
     let mut magic = [0u8; 8];
     let magic = &mut magic[..source.len().min(8) as usize];
@@ -733,6 +831,16 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
         }
         (None, e) => MmError::invalid_input_with_source("unreadable WebM / Matroska", e),
     };
+    // The demuxer allocates every block it reads, of any track, and every
+    // binary or string field, checking each declared size only against the
+    // bytes left in the file. Bounding the file before it is opened bounds
+    // each of those payloads (its own bookkeeping it sizes as it goes).
+    if source.len() > max_input_bytes as u64 {
+        return Err(MmError::limit_exceeded(format!(
+            "{} byte WebM / Matroska file exceeds the {max_input_bytes} byte input limit",
+            source.len()
+        )));
+    }
     let mut file = MatroskaFile::open(reader).map_err(invalid)?;
     let entry = file
         .tracks()
@@ -771,11 +879,11 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
     // The latest end time of a shown frame, when the file says how long frames
     // last (the last packet need not be the last frame when frames reorder).
     let mut last_end: Option<f64> = None;
-    // Bytes of packets held so far, capped by the caller's limit. The demuxer
-    // checks each block's declared size against the bytes left in the file
-    // before it allocates, so no packet outgrows the file, and the packets of
-    // a file never outgrow it either (kept explicit here, with the packet
-    // count under the MP4 sample cap).
+    // Bytes of packets held so far. The demuxer checks each block's declared
+    // size against the bytes left in the file before it allocates, so no
+    // packet outgrows the file, and the packets of a file never outgrow it
+    // either (kept explicit here, with the packet count under the MP4 sample
+    // cap); the file itself is under `max_input_bytes`, checked above.
     let mut held: u64 = 0;
     let mut frame = Frame::default();
     while file.next_frame(&mut frame).map_err(invalid)? {
@@ -787,11 +895,6 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
             return Err(MmError::invalid_input(
                 "WebM / Matroska file has more packets, or packet bytes, than it can hold",
             ));
-        }
-        if held > max_input_bytes as u64 {
-            return Err(MmError::limit_exceeded(format!(
-                "WebM / Matroska packets exceed the {max_input_bytes} byte input limit"
-            )));
         }
         let pts = frame.timestamp as f64 * scale;
         let displays = packet_displays(codec, &frame.data, &mut vp9_colour)?;
@@ -2287,6 +2390,55 @@ mod tests {
         }
 
         #[test]
+        fn an_open_video_is_demuxed_once() {
+            let limits = VideoDecodeLimits::default();
+            let webm = fixture("vp9.webm");
+            let source = Recording::new(&webm);
+            let video = Video::open(&source, &limits).unwrap();
+            assert_eq!(video.info(), probe(&webm).unwrap());
+            // Opening is one probe's worth of reads, and WebM packets are
+            // held once opened: decoding reads nothing more.
+            let opened = source.reads.borrow().len();
+            let probed = Recording::new(&webm);
+            probe_from(&probed).unwrap();
+            assert_eq!(opened, probed.reads.borrow().len());
+            let named = video.decode(&[2, 5, 5, 9], None, &limits).unwrap();
+            let sampled = video.decode_sampled(4, &limits).unwrap();
+            assert_eq!(source.reads.borrow().len(), opened);
+            let one_shot = frames_at("vp9.webm", &[2, 5, 5, 9], None).unwrap();
+            assert!(named.rgb() == one_shot.rgb());
+            assert_eq!(named.timestamps(), one_shot.timestamps());
+            let one_shot = auto("vp9.webm", 4).unwrap();
+            assert!(sampled.rgb() == one_shot.rgb());
+            assert_eq!(sampled.timestamps(), one_shot.timestamps());
+            // An MP4 keeps its packets in the source: opening reads the index
+            // only, each decode reads packets, and nothing outside `mdat`.
+            let mp4 = fixture("vp9.mp4");
+            let source = Recording::new(&mp4);
+            let video = Video::open(&source, &limits).unwrap();
+            let (start, end) = mp4_box_range(&mp4, b"mdat");
+            let opened = source.reads.borrow().len();
+            let frames = video.decode(&[0, 9], None, &limits).unwrap();
+            assert_eq!(frames.frame_count(), 2);
+            let reads = source.reads.borrow();
+            assert!(reads.len() > opened);
+            assert!(
+                reads[opened..]
+                    .iter()
+                    .all(|&(at, len)| at >= start && at + len as u64 <= end),
+                "decode read outside mdat {start}..{end}: {:?}",
+                &reads[opened..]
+            );
+            // The same checks as the free functions, from the same handle.
+            let r = video.decode(&[3, 1], None, &limits);
+            assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+            let r = video.decode_sampled(0, &limits);
+            assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+            // A video in memory opens the same way.
+            assert_eq!(Video::open(&webm, &limits).unwrap().info(), video.info());
+        }
+
+        #[test]
         fn frame_indices_are_checked_before_decoding() {
             let many = vec![0u64; MAX_PACKETS + 1];
             for indices in [&[][..], &[3, 1], &[10], &[0, 10], &many] {
@@ -2356,14 +2508,51 @@ mod tests {
         }
 
         #[test]
-        fn held_matroska_input_is_bounded_but_mp4_holds_none() {
-            // 64 bytes: less than the first keyframe of the 843-byte fixture.
+        fn matroska_files_are_bounded_before_they_are_opened_but_mp4_is_not() {
+            // 64 bytes: less than the 843-byte fixture.
             let tight = VideoDecodeLimits {
                 max_input_bytes: 64,
                 ..VideoDecodeLimits::default()
             };
             let webm = fixture("vp9.webm");
             let r = decode_frames_with(&webm.as_slice(), &[0], None, &tight, vpx::decode);
+            assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+            // Refused before the demuxer opens the file, so before it can
+            // allocate a block: a source over the default cap is read only
+            // for its container header. The fixture's bytes stand in for the
+            // start of a long file.
+            struct Claims<'a> {
+                bytes: &'a [u8],
+                len: u64,
+                reads: std::cell::RefCell<Vec<(u64, usize)>>,
+            }
+            impl ByteSource for Claims<'_> {
+                fn len(&self) -> u64 {
+                    self.len
+                }
+                fn read_at(&self, offset: u64, buf: &mut [u8]) -> std::io::Result<()> {
+                    self.reads.borrow_mut().push((offset, buf.len()));
+                    self.bytes.read_at(offset, buf)
+                }
+            }
+            let long = Claims {
+                bytes: &webm,
+                len: VideoDecodeLimits::default().max_input_bytes as u64 + 1,
+                reads: Default::default(),
+            };
+            let r = probe_from(&long);
+            assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
+            assert_eq!(*long.reads.borrow(), [(0, 8)]);
+            // The cap is inclusive: a file of exactly the cap opens.
+            let exact = |max_input_bytes: usize| {
+                let limits = VideoDecodeLimits {
+                    max_input_bytes,
+                    ..VideoDecodeLimits::default()
+                };
+                Video::open(&webm, &limits).map(|v| v.info().frame_count)
+            };
+            assert_eq!(exact(webm.len()).unwrap(), 10);
+            let r = exact(webm.len() - 1);
             assert!(matches!(r, Err(MmError::LimitExceeded { .. })), "{r:?}");
             // The same limit does not touch an MP4, whose packets stay in the
             // source (it may still fail for want of a GPU, differently).

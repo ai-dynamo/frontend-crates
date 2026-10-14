@@ -75,6 +75,9 @@ prompt length (token costs)         │
 | `models/` | one module per family — `models::qwen_vl` first |
 | `image/` | decode (8-bit only, PIL-matching), header-only dimension probe, bit-exact resize kernels, transforms |
 | `fetch` *(feature)* | `MediaFetcher`: protected fetcher for untrusted http(s)/data: URLs. Also a planned trusted-source helper (`fetch_bytes*`: data:/base64/file/http, `requests`-parity proxy semantics) that is still a stub returning `MmError::Unsupported` and is not for untrusted request URLs |
+| `video_decode` *(feature)* | `Video` (open once: `info`, `decode`, `decode_sampled`) and the one-shot `probe`, `decode_frames`, `decode_sampled`: MP4 / WebM / Matroska to the RGB frames a caller names, through NVDEC or libvpx, each frame resized by a `Fit` as it is decoded (§2.4) |
+| `video` | per-request video inputs: `VideoOptions` (`fps`, `max_frames`, `num_frames`) → `resolve_num_frames`; `VideoPixelBudget` |
+| `frames` | `VideoFrames`, what a decoder hands over (RGB + timestamps), and `encode_jpeg_frames` for a backend that takes images but not video |
 | `token_layout` | validating placeholder expansion of the *already tokenized* prompt |
 | `execution` | the crate's only parallelism seam: inline by default, a runtime-armed crate-owned rayon pool otherwise |
 
@@ -228,6 +231,41 @@ ids:  [ …,  <|vision_start|>, <|image_pad|>, <|vision_end|>,     … ]
 The engine scatters the ViT's 12 output embeddings into positions `2..14`
 (from `feature_ranges`) and feeds `positions` to the model's rotary path.
 
+### 2.4 Video (feature `video-decode`)
+
+| when | API | in → out |
+| --- | --- | --- |
+| boot, per model | `serde_json::from_str::<Qwen3VlVideo>` | `video_preprocessor_config.json` → the Qwen3-VL / Cosmos3 sizing rule |
+| boot | `VideoDecodeLimits::default()` | operator caps: 8192² frames, 512 MiB output, 512 MiB WebM / Matroska file |
+| per video | `video_decode::Video::open` | `&bytes` or any `ByteSource` (a file, a ranged download) + limits → the demuxed video; `info()` gives `VideoInfo` (codec, size, duration, fps, frame count) without decoding |
+| per video | `video::resolve_num_frames` | request `VideoOptions` (`fps` / `max_frames` / `num_frames`) + duration + frame count → frames to keep |
+| per video | `Video::decode` | indices (display order, non-decreasing) + `Option<&dyn Fit>` + limits → `VideoFrames` |
+| per video, no rule | `Video::decode_sampled` | `num_frames` + limits → evenly spaced frames at source size (`sample_indices` gives the same indices for `decode`) |
+| one-shot | `video_decode::probe`, `decode_frames`, `decode_sampled` (+ `_from`) | the same on bytes or a `ByteSource`, each reading the container itself |
+| image-only backends | `frames::encode_jpeg_frames` | `VideoFrames` + JPEG quality → one JPEG per frame with its timestamp |
+
+`fit` is optional: `None` keeps the selected frames at the source size;
+`FrameResize` is a fixed size, `models::qwen_vl::Qwen3VlVideoFit` the
+Qwen3-VL / Cosmos3 rule under a request `VideoPixelBudget`, and a consumer
+implements `Fit` for any other model.
+
+```rust
+use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
+use dynamo_multimodal::video::resolve_num_frames;
+use dynamo_multimodal::video_decode::{self, Video, VideoDecodeLimits};
+
+let model: Qwen3VlVideo = serde_json::from_str(&video_preprocessor_config_json)?; // boot
+let limits = VideoDecodeLimits::default();
+
+let video = Video::open(&bytes, &limits)?;                                        // per request
+let info = video.info();
+let n = resolve_num_frames(&options, info.duration, info.frame_count)?;
+let indices = video_decode::sample_indices(info.frame_count, n); // evenly spaced, or the model's own rule
+let fit = Qwen3VlVideoFit { video: &model, budget };        // `budget`: the request's VideoPixelBudget
+let frames = video.decode(&indices, Some(&fit), &limits)?;
+// frames.frame(i) is Some(RGB) at frames.width() x frames.height(); frames.timestamps()[i] its time
+```
+
 ## 3. Python-parity map
 
 Each item reproduces a specific Python behavior, most of them **bit-exactly**:
@@ -343,13 +381,11 @@ The crate implements and golden-tests the image pipeline end to end
 for `models::qwen_vl`. For video it decodes to frames and has the request
 arithmetic; no family turns the frames into tensors yet:
 
-- `video_decode` (feature `video-decode`): MP4 / WebM / Matroska demuxing;
-  H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU through
-  libvpx when NVDEC cannot (both loaded at runtime; 64-bit Linux).
+- `video_decode` (feature `video-decode`, §2.4): MP4 / WebM / Matroska
+  demuxing; H.264, HEVC, VP9 and AV1 through NVDEC, VP8 and VP9 on the CPU
+  through libvpx when NVDEC cannot (both loaded at runtime; 64-bit Linux).
   `decode_frames` keeps the frames the caller names and resizes each to the
-  size a `video_decode::Fit` gives: `FrameResize` for a size chosen already,
-  `models::qwen_vl::Qwen3VlVideoFit` for Qwen3-VL and Cosmos3, or a
-  consumer's own rule for another model. The decoder itself knows no model.
+  size a `video_decode::Fit` gives. The decoder itself knows no model.
 - `video`: per-request options. `VideoOptions` (`fps`, `max_frames`,
   `num_frames`, vLLM's `media_io_kwargs.video` keys) and `resolve_num_frames`
   give the frame count; `VideoPixelBudget` (`total_pixels`,
