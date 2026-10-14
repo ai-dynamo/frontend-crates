@@ -32,13 +32,17 @@
 //! parameter sets of every packet before it, so the decoder starts the run
 //! with the state a whole decode would have.
 
+use std::collections::HashMap;
+
 use super::{
-    Track, VideoCodec, bitstream_prefix, vp8_keyframe_size, vp9_frames, vp9_keyframe_colour,
+    START_CODE, Track, VideoCodec, bitstream_prefix, vp8_keyframe_size, vp9_frames,
+    vp9_keyframe_colour,
 };
 use crate::{MmError, Result};
 
-/// Most bytes of in-band parameter sets carried to a run; past it the plan is
-/// the whole stream.
+/// Most bytes of in-band parameter sets, as Annex B, carried to the runs
+/// together (each run gets its own copy); past it the plan is the whole
+/// stream. A stream's sets are typically a few hundred bytes.
 const MAX_PARAMETER_SET_BYTES: usize = 1 << 20;
 
 /// The packets that display a frame, in display order, and each packet's place
@@ -196,12 +200,16 @@ pub(super) fn plan(track: &Track<'_>, order: &Order, targets: &[u64]) -> Result<
     if nal.inband && runs.iter().any(|run| run.start != 0) {
         let mut sets = ParameterSets::default();
         let mut scanned = 0;
+        let mut carried = 0usize;
         for run in &mut runs {
             for index in scanned..run.start {
-                nal.parameter_sets(index, &mut sets)?;
+                if !nal.parameter_sets(index, &mut sets)? {
+                    return Ok(whole());
+                }
             }
             scanned = scanned.max(run.start);
-            if sets.bytes > MAX_PARAMETER_SET_BYTES {
+            carried = carried.saturating_add(sets.bytes);
+            if carried > MAX_PARAMETER_SET_BYTES {
                 return Ok(whole());
             }
             run.parameter_sets = sets.annexb();
@@ -215,25 +223,37 @@ pub(super) fn plan(track: &Track<'_>, order: &Order, targets: &[u64]) -> Result<
 /// the same id, so the decoder must see it last).
 #[derive(Default)]
 struct ParameterSets {
-    nals: Vec<Vec<u8>>,
+    /// Each NAL unit, and when it last appeared.
+    last: HashMap<Vec<u8>, usize>,
+    added: usize,
+    /// Their size as Annex B.
     bytes: usize,
 }
 
 impl ParameterSets {
-    fn add(&mut self, nal: &[u8]) {
-        if let Some(at) = self.nals.iter().position(|n| n == nal) {
-            let nal = self.nals.remove(at);
-            self.nals.push(nal);
-        } else {
-            self.bytes += nal.len();
-            self.nals.push(nal.to_vec());
+    /// Keep `nal`; `false`, keeping nothing, when it would take the sets past
+    /// the cap.
+    fn add(&mut self, nal: &[u8]) -> bool {
+        self.added += 1;
+        if let Some(at) = self.last.get_mut(nal) {
+            *at = self.added;
+            return true;
         }
+        let bytes = self.bytes + START_CODE.len() + nal.len();
+        if bytes > MAX_PARAMETER_SET_BYTES {
+            return false;
+        }
+        self.bytes = bytes;
+        self.last.insert(nal.to_vec(), self.added);
+        true
     }
 
     fn annexb(&self) -> Vec<u8> {
-        let mut out = Vec::with_capacity(self.bytes + 4 * self.nals.len());
-        for nal in &self.nals {
-            out.extend_from_slice(&super::START_CODE);
+        let mut nals: Vec<_> = self.last.iter().collect();
+        nals.sort_unstable_by_key(|&(_, &at)| at);
+        let mut out = Vec::with_capacity(self.bytes);
+        for (nal, _) in nals {
+            out.extend_from_slice(&START_CODE);
             out.extend_from_slice(nal);
         }
         out
@@ -305,18 +325,19 @@ impl<'t, 'p> NalReader<'t, 'p> {
         })
     }
 
-    /// Add packet `index`'s parameter set NAL units to `sets`.
-    fn parameter_sets(&mut self, index: usize, sets: &mut ParameterSets) -> Result<()> {
+    /// Add packet `index`'s parameter set NAL units to `sets`; `false` once
+    /// they are past the cap.
+    fn parameter_sets(&mut self, index: usize, sets: &mut ParameterSets) -> Result<bool> {
         let (codec, length_size) = (self.track.codec, self.length_size);
         let Some(size) = length_size else {
-            return Ok(());
+            return Ok(true);
         };
         for nal in nals(self.bytes(index)?, size) {
-            if nal.first().is_some_and(|&h| parameter_set(codec, h)) {
-                sets.add(nal);
+            if nal.first().is_some_and(|&h| parameter_set(codec, h)) && !sets.add(nal) {
+                return Ok(false);
             }
         }
-        Ok(())
+        Ok(true)
     }
 }
 
@@ -485,7 +506,7 @@ fn av1_key_frame(data: &[u8], reduced: bool) -> bool {
 mod tests {
     use std::cell::Cell;
 
-    use super::super::{ByteSource, demux};
+    use super::super::{ByteSource, Packet, Payload, demux};
     use super::*;
 
     fn fixture(name: &str) -> Vec<u8> {
@@ -739,6 +760,69 @@ mod tests {
                 .iter()
                 .all(Vec::is_empty)
         );
+    }
+
+    /// The track of `gop_hev1.mp4` (in `source`) with `count` made-up packets
+    /// at 30 fps, each a slice led by the NAL units `sets` gives for it: an
+    /// IDR picture every eight packets, else a trailing picture.
+    fn hevc_track<'a>(
+        source: &'a dyn ByteSource,
+        count: usize,
+        sets: impl Fn(usize) -> Vec<Vec<u8>>,
+    ) -> Track<'a> {
+        let mut track = demux(source).unwrap();
+        assert!(track.inband_parameter_sets);
+        assert_eq!(bitstream_prefix(&track).unwrap().1, Some(4));
+        let prefixed = |nal: &[u8]| [&(nal.len() as u32).to_be_bytes()[..], nal].concat();
+        track.packets = (0..count)
+            .map(|i| {
+                let key = i % 8 == 0;
+                let slice = if key {
+                    [0x26, 0x01, 0x80]
+                } else {
+                    [0x02, 0x01, 0x80]
+                };
+                let mut data: Vec<u8> = sets(i).iter().flat_map(|n| prefixed(n)).collect();
+                data.extend(prefixed(&slice));
+                Packet::new(Payload::Owned(data), i as f64 / 30.0, true, false, key)
+            })
+            .collect();
+        track
+    }
+
+    fn spans(track: &Track<'_>, targets: &[u64]) -> Vec<(usize, usize)> {
+        let order = Order::new(track);
+        let runs = plan(track, &order, targets).unwrap();
+        runs.iter().map(|r| (r.start, r.end)).collect()
+    }
+
+    #[test]
+    fn many_different_parameter_sets_stop_the_scan_at_the_cap() {
+        // A different PPS in every packet: past the cap after about 100,000,
+        // found as each is added (adding is not a search of those before).
+        let bytes = fixture("gop_hev1.mp4");
+        let source = bytes.as_slice();
+        let count = 1 << 17;
+        let pps = |i: usize| vec![[&[0x44, 0x01][..], &(i as u32).to_be_bytes()].concat()];
+        let track = hevc_track(&source, count, pps);
+        assert_eq!(spans(&track, &[count as u64 - 1]), [(0, count)]);
+    }
+
+    #[test]
+    fn parameter_sets_are_capped_across_the_runs_they_are_copied_to() {
+        // One 400 KB PPS in the first packet, copied to every later run.
+        let bytes = fixture("gop_hev1.mp4");
+        let source = bytes.as_slice();
+        let big = [&[0x44, 0x01][..], &[7; 400_000]].concat();
+        let track = hevc_track(
+            &source,
+            64,
+            |i| {
+                if i == 0 { vec![big.clone()] } else { vec![] }
+            },
+        );
+        assert_eq!(spans(&track, &[20, 44]), [(16, 21), (40, 45)]);
+        assert_eq!(spans(&track, &[20, 44, 60]), [(0, 64)]);
     }
 
     #[test]

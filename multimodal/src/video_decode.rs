@@ -69,6 +69,7 @@ use crate::frames::{VideoFrames, VideoTiming};
 use crate::image::resize::{Resample, resize_rgb};
 use crate::{MmError, Result};
 
+mod matroska;
 mod mp4;
 #[cfg(target_os = "linux")]
 mod nvdec;
@@ -138,9 +139,10 @@ pub struct VideoDecodeLimits {
     pub max_output_bytes: usize,
     /// Largest WebM / Matroska file accepted, in bytes: its demuxer allocates
     /// each block as it reads it and holds the video packets, so a file over
-    /// this is refused before it is opened. Peak memory while such a file is
-    /// open is a small multiple of its size (the demuxer's element tables and
-    /// the packet list come on top of the packets), not this value itself.
+    /// this is refused before it is opened. While such a file is open the
+    /// packets take about its size; the packet list (at most 2^23 entries)
+    /// and the demuxer's index tables (read from at most 1 MiB of the file)
+    /// come on top.
     /// MP4 is not bound by it (it keeps its sample tables and reads packets
     /// as they are decoded); `probe` applies the default.
     pub max_input_bytes: usize,
@@ -850,6 +852,9 @@ fn demux_matroska(source: &dyn ByteSource, max_input_bytes: usize) -> Result<Tra
             source.len()
         )));
     }
+    // What the demuxer would loop on, panic on or index without bound, while
+    // opening the file or reading its frames.
+    matroska::check(source)?;
     let mut file = MatroskaFile::open(reader).map_err(invalid)?;
     let entry = file
         .tracks()
@@ -2071,6 +2076,85 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// `vp9.webm`, whose segment data starts at 48 with its SeekHead. The
+    /// SeekHead's first two Seek entries keep a 4-byte SeekID at 59 and 73
+    /// and a 1-byte SeekPosition at 66 and 80; a 98-byte Void follows at 111.
+    fn vp9_webm_seek_head() -> Vec<u8> {
+        let bytes = fixture("vp9.webm");
+        assert_eq!(bytes[48..52], SEEK_HEAD_ID);
+        assert_eq!(bytes[111], 0xEC);
+        bytes
+    }
+
+    const SEEK_HEAD_ID: [u8; 4] = [0x11, 0x4D, 0x9B, 0x74];
+
+    /// Point Seek entry `n` (0 or 1) of [`vp9_webm_seek_head`] at a SeekHead
+    /// `position` bytes into the segment data.
+    fn seek_to_seek_head(bytes: &mut [u8], n: usize, position: u8) {
+        let (id, pos) = [(59, 66), (73, 80)][n];
+        bytes[id..id + 4].copy_from_slice(&SEEK_HEAD_ID);
+        bytes[pos] = position;
+    }
+
+    #[test]
+    fn a_seek_head_that_loops_or_points_at_two_seek_heads_is_refused() {
+        // matroska-demuxer 0.8.1 follows a SeekHead's reference to another
+        // SeekHead with no record of those it has read: a SeekHead that
+        // points at itself loops forever, and one that points at two
+        // SeekHeads panics.
+        let mut cycle = vp9_webm_seek_head();
+        seek_to_seek_head(&mut cycle, 0, 0);
+        let mut twice = cycle.clone();
+        seek_to_seek_head(&mut twice, 1, 0);
+        for (what, bytes) in [("a loop", cycle), ("two references", twice)] {
+            let r = probe(&bytes);
+            assert!(
+                matches!(r, Err(MmError::InvalidInput { .. })),
+                "{what}: {r:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_segment_that_starts_with_a_crc_32_element_is_refused() {
+        // The demuxer skips such an element by reading it again, forever.
+        // Here it replaces the SeekHead's header and runs to the Void.
+        let mut bytes = vp9_webm_seek_head();
+        bytes[48..50].copy_from_slice(&[0xBF, 0x80 | 61]);
+        let r = probe(&bytes);
+        assert!(matches!(r, Err(MmError::Unsupported { .. })), "{r:?}");
+    }
+
+    #[test]
+    fn a_block_timestamp_the_demuxer_cannot_take_the_absolute_value_of_is_refused() {
+        // The first SimpleBlock's data starts at 449: track 1, then its
+        // 16-bit timestamp, -32768 here (the demuxer calls `abs` on it).
+        let mut bytes = fixture("vp9.webm");
+        assert_eq!(bytes[447..452], [0xA3, 0xC1, 0x81, 0x00, 0x00]);
+        bytes[450..452].copy_from_slice(&i16::MIN.to_be_bytes());
+        let r = probe(&bytes);
+        assert!(matches!(r, Err(MmError::InvalidInput { .. })), "{r:?}");
+    }
+
+    #[test]
+    fn a_seek_head_that_points_at_a_second_one_still_opens() {
+        // Write a second SeekHead into the Void, holding the first entry
+        // (Info, at 209, 161 into the segment), and point the first entry at
+        // it (63 into the segment): the chain the format allows.
+        let original = vp9_webm_seek_head();
+        let mut bytes = original.clone();
+        let seek = [
+            &[0x4D, 0xBB, 0x8B, 0x53, 0xAB, 0x84][..],
+            &[0x15, 0x49, 0xA9, 0x66, 0x53, 0xAC, 0x81, 161],
+        ]
+        .concat();
+        let second = [&SEEK_HEAD_ID[..], &[0x80 | 14], &seek].concat();
+        let void = [&[0xEC, 0x80 | 77][..], &[0; 77]].concat();
+        bytes[111..209].copy_from_slice(&[second, void].concat());
+        seek_to_seek_head(&mut bytes, 0, 63);
+        assert_eq!(probe(&bytes).unwrap(), probe(&original).unwrap());
     }
 
     // -- NVDEC: needs a GPU ------------------------------------------------
