@@ -2,8 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! OpenAI Decisions types, pinned to openai-python 4e152cdefe1844c2d5d78653310e9b9c0195c44e.
-use super::ChoiceValue;
 use serde::{Deserialize, Serialize};
+
+pub use crate::types::decisions as openai;
+pub use crate::types::systemone;
+
+/// Choice values retain their JSON type; `true` differs from `"true"`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "utoipa", schema(as = DecisionSharedChoiceValue))]
+pub enum ChoiceValue {
+    String(String),
+    Bool(bool),
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,7 +45,13 @@ pub enum Input {
 pub struct InputMessage {
     pub role: UserRole,
     pub content: Content,
-    #[serde(default, rename = "type", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        default,
+        rename = "type",
+        deserialize_with = "optional_nonnull",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
     pub kind: Option<MessageType>,
 }
 
@@ -50,6 +68,17 @@ pub enum UserRole {
 #[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiMessageType))]
 pub enum MessageType {
     Message,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiImageDetail))]
+pub enum ImageDetail {
+    Low,
+    High,
+    Auto,
+    Original,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -72,7 +101,7 @@ pub enum InputPart {
     InputImage {
         image_url: String,
         #[serde(default)]
-        detail: Option<String>,
+        detail: Option<ImageDetail>,
     },
 }
 
@@ -88,6 +117,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
+        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
         name: Option<String>,
     },
     Choice {
@@ -97,6 +127,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
+        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
         name: Option<String>,
         choices: Vec<ChoiceOption>,
     },
@@ -107,6 +138,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
+        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
         name: Option<String>,
         levels: Vec<ScoreLevel>,
     },
@@ -123,6 +155,7 @@ pub struct ChoiceOption {
         deserialize_with = "optional_nonnull",
         skip_serializing_if = "Option::is_none"
     )]
+    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
     pub description: Option<String>,
 }
 
@@ -137,13 +170,14 @@ pub struct ScoreLevel {
         deserialize_with = "optional_nonnull",
         skip_serializing_if = "Option::is_none"
     )]
+    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
     pub description: Option<String>,
 }
 
-fn optional_nonnull<'de, D: serde::Deserializer<'de>>(
+fn optional_nonnull<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
-) -> Result<Option<String>, D::Error> {
-    String::deserialize(deserializer).map(Some)
+) -> Result<Option<T>, D::Error> {
+    T::deserialize(deserializer).map(Some)
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

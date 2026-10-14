@@ -14,6 +14,7 @@ pub mod decisions;
 mod embeddings;
 pub mod realtime;
 pub mod responses;
+pub mod systemone;
 
 // --- Local type re-exports ---
 pub use chat::*;
