@@ -121,7 +121,7 @@ impl Tokenizer for FastTokenizer {
 /// [`TikTokenTokenizer::from_file_auto`](crate::TikTokenTokenizer::from_file_auto).
 ///
 /// Plain-text prefix caching ([`CachedTokenizer`](crate::CachedTokenizer)) is rejected for
-/// this backend pending validation of the full cache matrix. In fastokens 0.3.3, the
+/// this backend pending validation of the full cache matrix. In fastokens 0.3.4, the
 /// known Unicode contraction case is consistent across a special-token boundary, but
 /// still differs from tiktoken-rs. Segmented encodes are unaffected by the cache gate:
 /// every segment is encoded on its own with or without a cache.
@@ -602,7 +602,7 @@ mod tiktoken_parity_tests {
         assert!(error.contains("fastokens"), "{error}");
     }
 
-    /// Fastokens 0.3.3 is consistent across this special-token boundary, but still
+    /// Fastokens 0.3.4 is consistent across this special-token boundary, but still
     /// differs from tiktoken-rs on the Unicode case folding of `(?i:'s)` (`'ſ`).
     /// This single case does not establish the full plain-text prefix-cache contract.
     #[test]

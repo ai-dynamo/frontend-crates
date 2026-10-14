@@ -136,7 +136,7 @@ through `fastokens` without a converted `tokenizer.json`:
 `FastTikTokenTokenizer::from_file_auto("/path/to/tiktoken.model")` loads the
 same ranks, regex, and special tokens as `TikTokenTokenizer::from_file_auto`.
 It currently rejects the plain-text prefix cache (`CachedTokenizer::new`
-returns an error) pending validation of the full cache matrix. Fastokens 0.3.3
+returns an error) pending validation of the full cache matrix. Fastokens 0.3.4
 is consistent across a special-token boundary for the known Unicode contraction
 case (`'ſ`, U+017F), but its token IDs still differ from tiktoken-rs for that case.
 Segmented encodes are unaffected by the cache gate.
