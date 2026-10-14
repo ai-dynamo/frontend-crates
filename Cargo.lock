@@ -1221,11 +1221,12 @@ dependencies = [
 
 [[package]]
 name = "dynamo-protocols"
-version = "8.1.0"
+version = "8.2.0"
 dependencies = [
  "async-openai",
  "derive_builder",
  "futures",
+ "indexmap 2.14.0",
  "jsonschema",
  "serde",
  "serde_json",
