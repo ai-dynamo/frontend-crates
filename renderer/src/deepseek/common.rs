@@ -6,6 +6,8 @@
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
 
+use crate::python::PyJsonFormatter;
+
 /// Special tokens for DeepSeek prompt formatting.
 pub mod tokens {
     pub const BOS: &str = "<｜begin▁of▁sentence｜>";
@@ -93,11 +95,6 @@ Here are the functions available in JSONSchema format:
 </functions>
 "#;
 
-pub(crate) const TOOL_CALL_TEMPLATE: &str =
-    "<{dsml_token}invoke name=\"{name}\">\n{arguments}\n</{dsml_token}invoke>";
-
-pub(crate) const TOOL_OUTPUT_TEMPLATE: &str = "\n<result>{content}</result>";
-
 pub(crate) const REASONING_EFFORT_HIGH: &str = "Reasoning Effort: Absolute maximum with no shortcuts permitted.\nYou MUST be very thorough in your thinking and comprehensively decompose the problem to resolve the root cause, rigorously stress-testing your logic against all potential paths, edge cases, and adversarial scenarios.\nExplicitly write out your entire deliberation process, documenting every intermediate step, considered alternative, and rejected hypothesis to ensure absolutely no assumption is left unchecked.\n\n";
 
 pub(crate) const REASONING_EFFORT_MAX: &str = "Reasoning Effort: Beyond maximum — exhaustive, relentless, and uncompromising.\nYou MUST reason with the utmost depth and rigor, leaving absolutely nothing to chance: exhaustively decompose the problem into its most fundamental components, trace every causal chain to its root, and resolve the underlying cause rather than any surface symptom.\nDo not stop reasoning until you have independently verified the solution from multiple angles and are certain that no assumption remains unchecked and no error remains undiscovered.\n\n";
@@ -131,49 +128,15 @@ pub(crate) enum NormalizeNonText {
     LeaveUntouched,
 }
 
-// Serialize a JSON value to match Python's `json.dumps(ensure_ascii=False)` spacing.
-// Python's default separators are `(', ', ': ')`; we use a custom `Formatter`
-// so escape sequences inside strings can't confuse state tracking.
+// Serialize a JSON value to match Python's `json.dumps(ensure_ascii=False)` spacing
+// and float spelling. We use a custom `Formatter` so escape sequences inside strings
+// can't confuse state tracking.
 pub(crate) fn to_json(value: &JsonValue) -> String {
     use serde::Serialize;
-    use serde_json::ser::Formatter;
-    use std::io;
-
-    struct PythonFormatter;
-
-    impl Formatter for PythonFormatter {
-        fn begin_array_value<W: ?Sized + io::Write>(
-            &mut self,
-            writer: &mut W,
-            first: bool,
-        ) -> io::Result<()> {
-            if first {
-                Ok(())
-            } else {
-                writer.write_all(b", ")
-            }
-        }
-
-        fn begin_object_key<W: ?Sized + io::Write>(
-            &mut self,
-            writer: &mut W,
-            first: bool,
-        ) -> io::Result<()> {
-            if first {
-                Ok(())
-            } else {
-                writer.write_all(b", ")
-            }
-        }
-
-        fn begin_object_value<W: ?Sized + io::Write>(&mut self, writer: &mut W) -> io::Result<()> {
-            writer.write_all(b": ")
-        }
-    }
 
     // Serializing a JsonValue into Vec<u8> is infallible; the output is always UTF-8.
     let mut buf = Vec::with_capacity(64);
-    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PythonFormatter);
+    let mut ser = serde_json::Serializer::with_formatter(&mut buf, PyJsonFormatter);
     value
         .serialize(&mut ser)
         .expect("JsonValue serialization to Vec<u8> is infallible");
@@ -242,10 +205,11 @@ pub(crate) fn normalize_message_contents(messages: &mut [JsonValue], non_text: N
         let Some(content) = msg.get("content") else {
             continue;
         };
-        if !content.is_string()
-            && !content.is_array()
-            && non_text == NormalizeNonText::LeaveUntouched
-        {
+        // Text content is already normalized. Keep its allocation in place.
+        if content.is_string() {
+            continue;
+        }
+        if !content.is_array() && non_text == NormalizeNonText::LeaveUntouched {
             continue;
         }
         let normalized = extract_visible_text(content);
@@ -316,19 +280,32 @@ fn preserve_user_fields(target: &mut JsonValue, source: &JsonValue) {
 }
 
 // Merge `tool` role messages into preceding user `content_blocks` and collapse
-// consecutive user turns, matching Python's `merge_tool_messages`.
-pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
+// consecutive user turns with Python-compatible rendering. The internal user
+// representation keeps text only in content_blocks, without Python's duplicate
+// content field.
+pub(crate) fn merge_tool_messages(messages: Vec<JsonValue>) -> Vec<JsonValue> {
     let mut merged: Vec<JsonValue> = Vec::with_capacity(messages.len());
 
-    for msg in messages {
+    for mut msg in messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
 
         if role == "tool" {
-            let tool_block = serde_json::json!({
-                "type": "tool_result",
-                "tool_use_id": msg.get("tool_call_id").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
-                "content": msg.get("content").cloned().unwrap_or_else(|| JsonValue::String(String::new())),
-            });
+            let obj = msg
+                .as_object_mut()
+                .expect("a message with a role is an object");
+            let tool_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("tool_result".into())),
+                (
+                    "tool_use_id".into(),
+                    obj.remove("tool_call_id")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+                (
+                    "content".into(),
+                    obj.remove("content")
+                        .unwrap_or_else(|| JsonValue::String(String::new())),
+                ),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -348,18 +325,22 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                     blocks.push(tool_block);
                 }
             } else {
-                merged.push(serde_json::json!({
-                    "role": "user",
-                    "content_blocks": [tool_block],
-                }));
+                merged.push(JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![tool_block])),
+                ])));
             }
         } else if role == "user" {
             let text = msg
-                .get("content")
-                .and_then(|c| c.as_str())
-                .unwrap_or("")
-                .to_string();
-            let text_block = serde_json::json!({ "type": "text", "text": text });
+                .as_object_mut()
+                .expect("a message with a role is an object")
+                .remove("content")
+                .filter(JsonValue::is_string)
+                .unwrap_or_else(|| JsonValue::String(String::new()));
+            let text_block = JsonValue::Object(serde_json::Map::from_iter([
+                ("type".into(), JsonValue::String("text".into())),
+                ("text".into(), text),
+            ]));
 
             let can_merge = merged
                 .last()
@@ -371,29 +352,26 @@ pub(crate) fn merge_tool_messages(messages: &[JsonValue]) -> Vec<JsonValue> {
                 .unwrap_or(false);
 
             if can_merge {
-                let last = merged.last_mut().unwrap();
-                let appended = last
-                    .as_object_mut()
-                    .and_then(|o| o.get_mut("content_blocks"))
+                // The reference appends only the text; the merged user's own fields are dropped.
+                if let Some(blocks) = merged
+                    .last_mut()
+                    .and_then(|last| last.get_mut("content_blocks"))
                     .and_then(|v| v.as_array_mut())
-                    .map(|blocks| {
-                        blocks.push(text_block);
-                    })
-                    .is_some();
-                if appended {
-                    preserve_user_fields(last, msg);
+                {
+                    blocks.push(text_block);
                 }
             } else {
-                let mut new_msg = serde_json::json!({
-                    "role": "user",
-                    "content": text,
-                    "content_blocks": [text_block],
-                });
-                preserve_user_fields(&mut new_msg, msg);
+                // Rendering reads content_blocks; retaining content would copy
+                // the entire user message for an unused second representation.
+                let mut new_msg = JsonValue::Object(serde_json::Map::from_iter([
+                    ("role".into(), JsonValue::String("user".into())),
+                    ("content_blocks".into(), JsonValue::Array(vec![text_block])),
+                ]));
+                preserve_user_fields(&mut new_msg, &msg);
                 merged.push(new_msg);
             }
         } else {
-            merged.push(msg.clone());
+            merged.push(msg);
         }
     }
 
@@ -409,7 +387,12 @@ pub(crate) fn sort_tool_results_by_call_order(mut messages: Vec<JsonValue>) -> V
     for msg in &mut messages {
         let role = msg.get("role").and_then(|r| r.as_str()).unwrap_or("");
         if role == "assistant" {
-            if let Some(tcs) = msg.get("tool_calls").and_then(|t| t.as_array()) {
+            // Like the reference's `if msg.get("tool_calls")`, an empty list keeps the order.
+            if let Some(tcs) = msg
+                .get("tool_calls")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 last_order.clear();
                 for (idx, tc) in tcs.iter().enumerate() {
                     let id = tc
@@ -594,8 +577,42 @@ pub(crate) fn inject_tools_and_response_format(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn to_json_writes_python_floats() {
+        let value = serde_json::json!({"a": 0.000001, "b": [1e16, 3]});
+        assert_eq!(to_json(&value), r#"{"a": 1e-06, "b": [1e+16, 3]}"#);
+    }
+
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn merged_users_drop_their_metadata_like_the_reference() {
+        // Expected output comes from the official DeepSeek-V4-Flash encoding_dsv4.py:
+        // a user merged into a group drops its fields; a group's task stops merging.
+        let merged = merge_tool_messages(vec![
+            json!({"role": "tool", "tool_call_id": "c1", "content": "result"}),
+            json!({"role": "user", "content": "one", "wo_eos": true, "mask": [1, 0]}),
+            json!({"role": "user", "content": "two", "task": "action"}),
+            json!({"role": "assistant", "content": "a"}),
+            json!({"role": "user", "content": "three", "task": "action"}),
+            json!({"role": "user", "content": "four", "wo_eos": true}),
+        ]);
+        assert_eq!(
+            merged,
+            [
+                json!({"role": "user", "content_blocks": [
+                    {"type": "tool_result", "tool_use_id": "c1", "content": "result"},
+                    {"type": "text", "text": "one"},
+                    {"type": "text", "text": "two"}
+                ]}),
+                json!({"role": "assistant", "content": "a"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "three"}], "task": "action"}),
+                json!({"role": "user", "content_blocks": [{"type": "text", "text": "four"}], "wo_eos": true}),
+            ]
+        );
+    }
 
     #[test]
     fn test_extract_visible_text_from_content_array() {

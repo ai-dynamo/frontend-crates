@@ -1,0 +1,197 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+import ast
+import copy
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+from conformance.utils.tests.schema_oracle import matches_schema
+
+SRC = Path(__file__).resolve().parents[1] / "src"
+sys.path.insert(0, str(SRC))
+
+import gen_unified_golden as G
+from unified_tools import openai_tools, unified_tools
+
+
+def _assert_value(value, schema):
+    assert matches_schema(value, schema), (value, schema)
+
+
+@pytest.mark.parametrize("kind, valid, invalid", [
+    ("integer", [0, -2, 3, 2.0], [True, False, 1.5, "2", [], {}]),
+    ("number", [0, -2, 1.5], [True, False, "2", [], {}]),
+    ("string", ["", "text"], [0, 1.5, True, [], {}]),
+    ("boolean", [True, False], [0, 1, "true", [], {}]),
+    ("object", [{}, {"x": 2}], [0, "", True, []]),
+    ("array", [[], [2, None]], [0, "", True, {}]),
+])
+@pytest.mark.parametrize("nullable", [False, True])
+def test_schema_guard_valid_and_invalid_values(kind, valid, invalid, nullable):
+    schema = {"type": [kind, "null"] if nullable else kind}
+    if kind == "object":
+        schema["properties"] = {"x": {"type": "integer"}}
+    elif kind == "array":
+        schema["items"] = {"type": ["integer", "null"]}
+    for value in valid + ([None] if nullable else []):
+        _assert_value(value, schema)
+    for value in invalid + ([] if nullable else [None]):
+        with pytest.raises(AssertionError):
+            _assert_value(value, schema)
+
+
+def test_schema_guard_null_type():
+    _assert_value(None, {"type": "null"})
+    for value in (False, 0, "", [], {}):
+        with pytest.raises(AssertionError):
+            _assert_value(value, {"type": "null"})
+
+
+@pytest.mark.parametrize("value, schema", [
+    ({"x": True}, {"type": ["null", "object"], "properties": {"x": {"type": "integer"}}}),
+    ([1.5], {"type": ["null", "array"], "items": {"type": "integer"}}),
+    (None, {"type": ["null", "unsupported"]}),
+    (None, {"type": ["null", "integer"], "minimum": 0}),
+])
+def test_schema_guard_rejects_nested_values_and_unsupported_constraints(value, schema):
+    with pytest.raises(AssertionError):
+        _assert_value(value, schema)
+
+
+@pytest.mark.parametrize("schema, valid, invalid", [
+    ({"anyOf": [{"type": "string"}, {"type": "null"}]}, ["text", None], [1, False, []]),
+    ({"oneOf": [{"type": "integer"}, {"type": "null"}]}, [2, 2.0, None], [1.5, True, "2"]),
+    ({"oneOf": [{"type": "number"}, {"type": "integer"}]}, [1.5], [2, 2.0, None]),
+    ({"const": None}, [None], ["null", 0, False]),
+    ({"enum": [None, "text"]}, [None, "text"], ["other", 0, False]),
+    ({"type": "integer", "nullable": True}, [2, None], [1.5, True, "2"]),
+    ({"type": "string", "nullable": False}, ["text"], [None, 2]),
+    ({"type": ["string", "null"], "minLength": 2}, ["ok", None], ["", "x", 2]),
+])
+def test_schema_guard_corpus_keywords(schema, valid, invalid):
+    # Exercise the same nested argument path as authored tool calls.
+    tool_schema = {"type": "object", "properties": {"value": schema}}
+    for value in valid:
+        _assert_value({"value": value}, tool_schema)
+    for value in invalid:
+        with pytest.raises(AssertionError):
+            _assert_value({"value": value}, tool_schema)
+
+
+def _assert_golden_schemas(cases, tools):
+    for case_id, case in cases.items():
+        offered_tools = case.get("tools", tools)
+        schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
+        assert len(schemas) == len(offered_tools)
+        for event in case["golden"]:
+            if event["kind"] == "tool_call":
+                if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
+                    family = case_id.rsplit(".", 1)[1]
+                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer"}
+                    assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
+                    continue
+                _assert_value(event["arguments"], schemas[event["name"]])
+
+
+@pytest.mark.parametrize("family", G.FAMILIES)
+def test_all_authored_successful_calls_match_offered_schemas(family):
+    _assert_golden_schemas(G.build_cases(family), unified_tools())
+
+
+@pytest.mark.parametrize("family", G.FAMILIES)
+def test_schema_guard_rejects_old_array_as_string_declaration(family):
+    tools = unified_tools()
+    next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas(G.build_cases(family), tools)
+
+
+def test_schema_guard_rejects_old_numeric_string_successor():
+    cases = copy.deepcopy(G.build_cases("kimi_k3"))
+    cases["UNIFIED.kimi_k3_malformed_call_then_valid.kimi_k3"]["golden"][0]["arguments"]["y"] = 2
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas(cases, unified_tools())
+
+
+def test_string_arguments_and_open_additional_properties_are_preserved():
+    schemas = {tool["name"]: tool["parameters"] for tool in unified_tools()}
+    assert set(schemas) == {"get_weather", "f", "g", "run", "log", "sum_values", "functions."}
+    for name, key in (("get_weather", "city"), ("f", "x"), ("g", "y"), ("run", "cmd"), ("log", "note")):
+        assert schemas[name] == {"type": "object", "properties": {key: {"type": "string"}}}
+    assert schemas["sum_values"]["properties"]["values"] == {"type": "array", "items": {"type": "number"}}
+    assert schemas["functions."] == {"type": "object", "properties": {}}
+    _assert_value({"cmd": "echo ok", "count": 2, "force": True}, schemas["run"])
+    _assert_value({}, schemas["get_weather"])
+
+
+def test_schema_oracle_enforces_required_properties():
+    schema = {
+        "type": "object",
+        "properties": {"count": {"type": "integer"}},
+        "required": ["count"],
+    }
+    _assert_value({"count": 42}, schema)
+    with pytest.raises(AssertionError):
+        _assert_value({}, schema)
+
+
+@pytest.mark.parametrize("script", ["capture_vllm_unified.py", "capture_sglang_unified.py"])
+def test_peer_request_schema_projection_matches_shared_definition(script):
+    tree = ast.parse((SRC / script).read_text())
+    assignments = [node for node in tree.body if isinstance(node, ast.Assign)
+                   and any(isinstance(target, ast.Name) and target.id in {"TOOLS", "TOOL_SCHEMAS"} for target in node.targets)]
+    namespace = {
+        "unified_tools": unified_tools,
+        "openai_tools": openai_tools,
+        "Tool": SimpleNamespace,
+        "Function": SimpleNamespace,
+    }
+    exec(compile(ast.Module(body=assignments, type_ignores=[]), script, "exec"), namespace)
+    if script == "capture_sglang_unified.py":
+        assert namespace["TOOL_SCHEMAS"] == unified_tools()
+        return
+    projected = namespace["TOOLS"]
+    actual = [tool["function"] for tool in projected]
+    assert all(tool["type"] == "function" for tool in projected)
+    assert actual == unified_tools()
+
+
+def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
+    tests = SRC.parents[1] / "tests"
+    common = (tests / "common/mod.rs").read_text()
+    assert 'include_str!("../../utils/src/unified_tools.json")' in common
+    assert 'serde_json::from_value(unified_tool_schemas())' in common
+    assert "schemas.cloned().unwrap_or_else(unified_tool_schemas)" in common
+    for name in ("unified_render.rs", "unified_parity.rs", "capture_cross_version.rs"):
+        source = (tests / name).read_text()
+        assert "unified_tools as tools" in source or "unified_tools_for_schemas" in source
+        assert "fn tools()" not in source
+    render = (tests / "unified_render.rs").read_text()
+    parity = (tests / "unified_parity.rs").read_text()
+    cross_version = (tests / "capture_cross_version.rs").read_text()
+    assert "unified_tools_for_schemas(case.tools.as_ref())" in render
+    assert "unified_tools_for_schemas(case.tools.as_ref())" in parity
+    assert "unified_tool_schemas_for_case(case.tools.as_ref())" in render
+    assert "unified_tool_schemas_for_case(tool_schema_json.as_ref())" in cross_version
+    peer = (SRC / "capture_vllm_rust_unified.py").read_text()
+    assert "tools: Vec<Tool>" in peer
+    assert "make_parser(&case.family, &case.tools)" in peer
+    assert "supports_tools=True" in peer
+    assert "schema_bytes = SCHEMA_PATH.read_bytes()" in peer
+
+
+def test_recovery_successor_respects_string_schema():
+    case = G.build_cases("kimi_k3")["UNIFIED.kimi_k3_malformed_call_then_valid.kimi_k3"]
+    assert case["golden"] == [{"kind": "tool_call", "name": "g", "arguments": {"y": "2"}}]
+    assert G.k3_argument("y", "string", "2") in case["input"]
+    assert G.k3_open("call", [("tool", "bad"), ("index", "1")]) + "not-an-argument" in case["input"]
+
+
+def test_required_schema_rejects_missing_value():
+    schema = {"type": "object", "properties": {"value": {"type": "string"}}, "required": ["value"]}
+    assert matches_schema({"value": "é"}, schema)
+    assert not matches_schema({}, schema)
+    assert not matches_schema({"value": None}, schema)

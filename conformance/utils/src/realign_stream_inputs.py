@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Re-align stream-v2 inputs to their batch source after batch text was normalized.
+"""Re-align stream-v1 inputs to their batch source after batch text was normalized.
 
-A `streamv2` case is the chunked form of a `batch` case (`ref: derived from ...`), so the
+A `streamv1` case is the chunked form of a `batch` case (`ref: derived from ...`), so the
 joined `delta_text` must equal the batch `model_text`. Normalizing the batch payload text
 without touching the stream corpus broke that for 21 cases.
 
@@ -86,7 +86,7 @@ def resplit(deltas, target):
 
 changed = files = 0
 report = []
-for f in sorted(STREAM.glob("*/TOOLCALLING.streamv2*.yaml")):
+for f in sorted(STREAM.glob("*/TOOLCALLING.streamv1*.yaml")):
     fam = f.parent.name
     doc = yaml.safe_load(f.read_text()) or {}
     touched = False

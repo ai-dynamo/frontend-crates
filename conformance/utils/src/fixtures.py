@@ -16,6 +16,8 @@ from pathlib import Path
 
 import yaml
 
+from null_cases import null_group
+from fixture_disposition import canonical_toolcalling_case_key
 from fixture_snapshot import fixture_snapshot_root
 from impls import IMPL_DISPLAY, IMPL_KEYS, PEER_IMPL_KEYS
 from markers import (
@@ -276,7 +278,7 @@ BATCH_SUB_CASE_GROUPS = [
             "5.e",
             "5.f",
             "5.g",
-            # streamv2.5.h (split orphan close) is streaming-only but shares the 5.*
+            # streamv1.5.h (split orphan close) is streaming-only but shares the 5.*
             # Malformed band. TODO: group by parent number (5) instead of listing every
             # 5.<letter>, and dedup this list against tests/parity/toolcalling/table.py
             # (two copies of BATCH_SUB_CASE_GROUPS drift — a new sub-case must be added
@@ -296,6 +298,25 @@ BATCH_SUB_CASE_GROUPS = [
             "7.d",
             "7.e",
             "7.f",
+            "7-4",
+            "7-5",
+            "7-6",
+            "7-7",
+            "7-8",
+            "7-9",
+            "7-10",
+            "7-11",
+            "7-12",
+            "7-13",
+            "7.g",
+            "7.h",
+            "7.i",
+            "7.j",
+            "7.k",
+            "7.l",
+            "7.m",
+            "7.n",
+            "7.o", "7.p", "7.q", "7.r", "7.s", "7.t", "7.u", "7.v", "7.w",
         ),
     ),
     ("Text interleaving", ("8.a", "8.b", "8.c", "8.d")),
@@ -317,17 +338,18 @@ SPLIT_PARENT_SUBCASES = {
     "13": ("13.a",),
 }
 
-# Streaming taxonomy: TOOLCALLING.streamv2.<batch#> mirrors the batch taxonomy
-# 1:1 (streamv2.1 == batch.1, etc.), so the columns group exactly like the batch
+# Streaming taxonomy: TOOLCALLING.streamv1.<batch#> mirrors the batch taxonomy
+# 1:1 (streamv1.1 == batch.1, etc.), so the columns group exactly like the batch
 # tab. Only sub-cases that actually exist in fixtures become columns; the rest
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
     ("Partial-token", ("50",)),
+    ("Reasoning projection", ("51.a", "51.b")),
 ]
 
 SUB_CASE_GROUPS_BY_MODE = {
     "batch": BATCH_SUB_CASE_GROUPS,
-    "streamv2": STREAM_SUB_CASE_GROUPS,
+    "streamv1": STREAM_SUB_CASE_GROUPS,
 }
 
 _SUB_CASE_GROUP_KEY_BY_LABEL_BY_MODE = {
@@ -368,35 +390,42 @@ def _group_by_sub(mode: str) -> dict[str, str]:
     return {sub: label for label, subs in SUB_CASE_GROUPS_BY_MODE[mode] for sub in subs}
 
 
-def _natural_sub_sort_key(sub: str) -> tuple[int, str]:
-    """`8.a` → (8, 'a'); `9` → (9, '')."""
-    parts = sub.split(".")
-    return (int(parts[0]), parts[1] if len(parts) > 1 else "")
+def _natural_sub_sort_key(sub: str) -> tuple[int, int, str]:
+    """Order historical `8.a` and numeric `8-2` / `8-10` suffixes naturally."""
+    parent, _, suffix = sub.partition(".")
+    group, _, number = parent.partition("-")
+    return (int(group), int(number) if number else 0, suffix)
 
 
 def _sub_sort_key(mode: str, sub: str) -> tuple[int, int, int, str]:
     """Sort known cases by semantic display group, future cases naturally last."""
-    display_order = _display_order(mode).get(sub)
+    display_order = _display_order(mode).get(null_group(sub) or sub)
     if display_order is not None:
         group_idx, sub_idx = display_order
-        return (0, group_idx, sub_idx, "")
-    num, suffix = _natural_sub_sort_key(sub)
-    return (1, num, 0, suffix)
+        return (0, group_idx, sub_idx, sub)
+    num, number, suffix = _natural_sub_sort_key(sub)
+    return (1, num, number, suffix)
 
 
 def _subcase_band_class(mode: str, sub: str) -> str:
-    group_idx = _group_index_by_sub(mode).get(sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
+    group_idx = _group_index_by_sub(mode).get(null_group(sub) or sub, len(SUB_CASE_GROUPS_BY_MODE[mode]))
     return f"case-band-{group_idx % 2}"
 
 
 def _subcase_group_key(mode: str, sub: str) -> str:
-    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(sub, "other")
+    return _SUB_CASE_GROUP_KEY_BY_SUB_BY_MODE[mode].get(null_group(sub) or sub, "other")
 
 
 def _discover_sub_cases(mode: str, cases: dict) -> list[str]:
     """Union of sub-case IDs across all loaded fixtures, in stable order."""
+    taxonomy = yaml.safe_load((REPO_ROOT / "case-taxonomy.yaml").read_text())
+    suite = "toolcalling.stream" if mode == "streamv1" else "toolcalling.batch"
+    retired = set((taxonomy.get("retired_subcases") or {}).get(suite, []))
+    hidden_groups = set((taxonomy.get("hidden_subcase_groups") or {}).get(suite, []))
     return sorted(
-        {sub for _fam, sub in cases.keys()}, key=lambda s: _sub_sort_key(mode, s)
+        {sub for _fam, sub in cases.keys()
+         if sub not in retired and null_group(sub) not in hidden_groups},
+        key=lambda s: _sub_sort_key(mode, s),
     )
 
 
@@ -502,7 +531,7 @@ def _iter_mode_docs(mode: str, docs: dict | None = None):
 
 
 def load_all_cases(
-    mode: str, docs: dict | None = None
+    mode: str, docs: dict | None = None, *, implementations=None
 ) -> tuple[dict[tuple[str, str], dict], dict[str, str]]:
     """Load every fixture YAML for one parser mode.
 
@@ -517,10 +546,12 @@ def load_all_cases(
     `docs` — pre-resolved in-memory docs (see `_iter_mode_docs`). NOTE: the case dicts
     inside are annotated and rewritten in place, so pass a set of docs that belongs to
     this call alone (resolve_docs() hands back a fresh copy per selection).
+    `implementations` limits stream assembly without filtering the shared inventory.
     """
     cases: dict[tuple[str, str], dict] = {}
     labels: dict[str, str] = {}
     captured_with: dict[str, str] = {}
+    taxonomy = None
     script_dir = Path(__file__).resolve().parent
     for fp, doc in _iter_mode_docs(mode, docs):
         if doc.get("mode") != mode:
@@ -531,9 +562,20 @@ def load_all_cases(
             labels.setdefault(family, doc["model_label"])
         for impl, ver in (doc.get("captured_with") or {}).items():
             captured_with.setdefault(_canonical_impl_key(str(impl)), str(ver))
-        for cid, case in doc["cases"].items():
+        for recorded_id, case in doc["cases"].items():
+            cid = canonical_toolcalling_case_key(recorded_id)
             case["__family"] = family
             sub = cid.replace(f"TOOLCALLING.{mode}.", "")
+            if "." in sub and null_group(sub) is None:
+                # Archived prose stays immutable; canonical and aliased IDs use
+                # the same current taxonomy claim in report popups.
+                if taxonomy is None:
+                    taxonomy = yaml.safe_load((REPO_ROOT / "case-taxonomy.yaml").read_text())
+                suite = "toolcalling.stream" if mode == "streamv1" else "toolcalling.batch"
+                group, suffix = sub.split(".", 1)
+                group_spec = taxonomy["suites"][suite]["groups"].get(group)
+                if group_spec is not None and suffix in group_spec["cases"]:
+                    case["description"] = group_spec["cases"][suffix]["desc"]
             case["__fixture_path"] = rel
             case["__case_id"] = cid
             # Stream fixtures use the per-chunk format: each chunk carries
@@ -541,21 +583,23 @@ def load_all_cases(
             # Derive a case-level `expected` (assembled calls + normal_text per
             # impl, or {unavailable}) so the rest of the generator — which expects
             # the batch-style {calls, normal_text} shape — works unchanged.
-            if mode == "streamv2":
-                case["expected"] = _derive_stream_expected(case)
+            if mode == "streamv1":
+                case["expected"] = _derive_stream_expected(case, implementations=implementations)
             elif isinstance(case.get("expected"), dict):
                 case["expected"] = _normalize_impl_mapping(case["expected"])
+            if (family, sub) in cases:
+                raise ValueError(f"duplicate case after ID normalization: {family}/{cid}")
             cases[(family, sub)] = case
     _CAPTURED_WITH_BY_MODE[mode] = captured_with
-    if mode == "streamv2":
-        _attach_streamv2_batch_expected(cases, docs)
+    if mode == "streamv1":
+        _attach_streamv1_batch_expected(cases, docs)
     return _normalize_split_parent_cases(cases), labels
 
 
-def _attach_streamv2_batch_expected(cases: dict, docs: dict | None = None) -> None:
-    """For each streamv2 case, attach `batch_expected[impl]` from the matching batch
+def _attach_streamv1_batch_expected(cases: dict, docs: dict | None = None) -> None:
+    """For each streamv1 case, attach `batch_expected[impl]` from the matching batch
     case (same family + sub), so the stream tab can color each engine's stream
-    against its own batch (streamv2.<sub> mirrors batch.<sub>).
+    against its own batch (streamv1.<sub> mirrors batch.<sub>).
 
     Reads the same source as its caller: with in-memory `docs` from a stream-only
     resolve there are no batch docs to match, exactly as when the caller staged a
@@ -576,7 +620,7 @@ def _attach_streamv2_batch_expected(cases: dict, docs: dict | None = None) -> No
             case["batch_expected"] = batch_exp.get((family, sub), {})
 
 
-def _derive_stream_expected(case: dict) -> dict:
+def _derive_stream_expected(case: dict, *, implementations=None) -> dict:
     """Assemble case-level {impl: {calls, normal_text}} (or {unavailable}) from
     the per-chunk `expected.<impl>` deltas and `normal_text.<impl>` fragments.
 
@@ -585,11 +629,23 @@ def _derive_stream_expected(case: dict) -> dict:
     (kept as a raw string if not valid JSON — e.g. a truncated body)."""
     unavailable = case.get("unavailable", {}) or {}
     exception = case.get("exception", {}) or {}
-    chunks = case.get("chunks", []) or []
+    chunks = []
+    for chunk in case.get("chunks", []) or []:
+        if not isinstance(chunk, dict):
+            continue
+        raw_normal = chunk.get("normal_text") or {}
+        normal = _normalize_impl_mapping(raw_normal)
+        # Text lookup historically prefers a canonical key over its legacy alias;
+        # expected-delta normalization keeps the first key in source order.
+        if isinstance(raw_normal, dict):
+            normal.update((impl, raw_normal[impl]) for impl in IMPL_KEYS if impl in raw_normal)
+        chunks.append((_normalize_impl_mapping(chunk.get("expected") or {}), normal))
     derived: dict = {}
     unavailable = _normalize_impl_mapping(unavailable)
     exception = _normalize_impl_mapping(exception)
     for impl in IMPL_KEYS:
+        if implementations is not None and impl not in implementations:
+            continue
         if impl in unavailable:
             derived[impl] = {"unavailable": unavailable[impl]}
             continue
@@ -599,23 +655,22 @@ def _derive_stream_expected(case: dict) -> dict:
             derived[impl] = {"exception": exception[impl]}
             continue
         has_chunk_data = any(
-            impl in _normalize_impl_mapping((chunk.get("expected") or {}))
-            or impl in _normalize_impl_mapping((chunk.get("normal_text") or {}))
-            for chunk in chunks
-            if isinstance(chunk, dict)
+            impl in expected or impl in normal_text
+            for expected, normal_text in chunks
         )
-        if impl == "vllm_rust" and not has_chunk_data:
-            derived[impl] = {"unavailable": VLLM_RUST_UNAVAILABLE}
+        if not has_chunk_data:
+            derived[impl] = {"unavailable": (
+                VLLM_RUST_UNAVAILABLE if impl == "vllm_rust"
+                else "No recorded capture for this case."
+            )}
             continue
-        # impl is not in `unavailable` → it was run for this case. Always emit a
-        # {calls, normal_text} block, even if empty (emitting zero calls is a real
-        # result that may diverge from another impl, not a "not applicable").
+        # An explicit empty chunk is a recorded zero-call result; an absent
+        # implementation is unrecorded and must not become a successful empty output.
         names: dict[int, str] = {}
         args: dict[int, str] = {}
         order: list[int] = []
         normal = ""
-        for chunk in chunks:
-            chunk_expected = _normalize_impl_mapping(chunk.get("expected") or {})
+        for chunk_expected, chunk_normal_text in chunks:
             for d in _impl_get(chunk_expected, impl, []) or []:
                 idx = d["index"]
                 if idx not in order:
@@ -624,7 +679,7 @@ def _derive_stream_expected(case: dict) -> dict:
                     names[idx] = names.get(idx, "") + d["name"]
                 if d.get("arguments") is not None:
                     args[idx] = args.get(idx, "") + d["arguments"]
-            nt = _impl_get(chunk.get("normal_text") or {}, impl)
+            nt = _impl_get(chunk_normal_text, impl)
             if nt:
                 normal += nt
         calls = []

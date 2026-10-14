@@ -9,6 +9,7 @@
 
 use anyhow::{Context, Result};
 use serde_json::Value as JsonValue;
+use std::fmt::Write;
 
 use super::common::{
     NormalizeNonText, REASONING_EFFORT_HIGH, REASONING_EFFORT_MAX, RESPONSE_FORMAT_TEMPLATE,
@@ -18,15 +19,55 @@ use super::common::{
 };
 pub use super::common::{ReasoningEffort, ThinkingMode, tokens};
 
+#[derive(Clone, Copy)]
+pub(super) enum Encoding {
+    V4(Option<ReasoningEffort>),
+    V41(u8),
+}
+
+impl Encoding {
+    fn is_v41(self) -> bool {
+        matches!(self, Self::V41(_))
+    }
+
+    fn tag(self, v4: &'static str, v41: &'static str) -> &'static str {
+        if self.is_v41() { v41 } else { v4 }
+    }
+
+    fn reasoning_prefix(self) -> String {
+        match self {
+            Self::V4(Some(ReasoningEffort::High)) => REASONING_EFFORT_HIGH.to_string(),
+            Self::V4(Some(ReasoningEffort::Max)) => REASONING_EFFORT_MAX.to_string(),
+            Self::V4(None) => String::new(),
+            Self::V41(effort) => format!(
+                "Reasoning Effort: {effort} (range 1-100, the higher the value, the more thorough the reasoning)\n\n"
+            ),
+        }
+    }
+
+    fn render_tools(self, tools: &[JsonValue]) -> String {
+        let template = if self.is_v41() {
+            TOOLS_TEMPLATE
+                .replace("{dsml_token}tool_calls", "{dsml_token} calls")
+                .replace("{dsml_token}invoke", "{dsml_token} invoke")
+                .replace("{dsml_token}parameter", "{dsml_token} parameter")
+        } else {
+            TOOLS_TEMPLATE.to_string()
+        };
+        render_tools(&template, tools)
+    }
+}
+
 /// Render a single message at the given index.
 fn render_message(
+    prompt: &mut String,
     index: usize,
     messages: &[JsonValue],
     thinking_mode: ThinkingMode,
     drop_thinking: bool,
-    reasoning_effort: Option<ReasoningEffort>,
+    encoding: Encoding,
     last_user_idx: Option<usize>,
-) -> Result<String> {
+) -> Result<()> {
     let msg = &messages[index];
 
     let role = msg
@@ -34,25 +75,27 @@ fn render_message(
         .and_then(|r| r.as_str())
         .context("Missing 'role' field")?;
 
-    let mut prompt = String::new();
-
-    // Reasoning effort prefix (only at index 0 in thinking mode). Low is the
-    // reference encoder's no-prefix baseline.
+    if encoding.is_v41()
+        && (role == "system" || (index == 0 && thinking_mode == ThinkingMode::Thinking))
+    {
+        prompt.push_str("<｜System｜>");
+    }
     if index == 0 && thinking_mode == ThinkingMode::Thinking {
-        match reasoning_effort {
-            Some(ReasoningEffort::High) => prompt.push_str(REASONING_EFFORT_HIGH),
-            Some(ReasoningEffort::Max) => prompt.push_str(REASONING_EFFORT_MAX),
-            None => {}
-        }
+        prompt.push_str(&encoding.reasoning_prefix());
     }
 
     match role {
         "system" => {
             let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
             prompt.push_str(content);
-            if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
+            // Like the reference's `if tools:`, an empty list renders no tools section.
+            if let Some(tools) = msg
+                .get("tools")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
                 prompt.push_str("\n\n");
-                prompt.push_str(&render_tools(TOOLS_TEMPLATE, tools));
+                prompt.push_str(&encoding.render_tools(tools));
             }
             if let Some(response_format) = msg.get("response_format") {
                 prompt.push_str("\n\n");
@@ -69,48 +112,51 @@ fn render_message(
                 .filter(|s| !s.is_empty())
                 .context("Developer role requires content")?;
 
-            let mut content_developer = String::from(tokens::USER_START);
-            content_developer.push_str(content);
+            prompt.push_str(tokens::USER_START);
+            prompt.push_str(content);
 
-            if let Some(tools) = msg.get("tools").and_then(|t| t.as_array()) {
-                content_developer.push_str("\n\n");
-                content_developer.push_str(&render_tools(TOOLS_TEMPLATE, tools));
+            if let Some(tools) = msg
+                .get("tools")
+                .and_then(|t| t.as_array())
+                .filter(|t| !t.is_empty())
+            {
+                prompt.push_str("\n\n");
+                prompt.push_str(&encoding.render_tools(tools));
             }
             if let Some(response_format) = msg.get("response_format") {
-                content_developer.push_str("\n\n");
-                content_developer.push_str(
+                prompt.push_str("\n\n");
+                prompt.push_str(
                     &RESPONSE_FORMAT_TEMPLATE.replace("{schema}", &to_json(response_format)),
                 );
             }
-            prompt.push_str(&content_developer);
         }
 
         "user" => {
             prompt.push_str(tokens::USER_START);
             if let Some(blocks) = msg.get("content_blocks").and_then(|b| b.as_array()) {
-                let mut parts: Vec<String> = Vec::with_capacity(blocks.len());
-                for block in blocks {
+                for (block_idx, block) in blocks.iter().enumerate() {
+                    if block_idx > 0 {
+                        prompt.push_str("\n\n");
+                    }
                     let block_type = block.get("type").and_then(|v| v.as_str()).unwrap_or("");
                     match block_type {
                         "text" => {
                             let text = block.get("text").and_then(|v| v.as_str()).unwrap_or("");
-                            parts.push(text.to_string());
+                            prompt.push_str(text);
                         }
                         "tool_result" => {
-                            let rendered = render_tool_result_content(
+                            prompt.push_str("<tool_result>");
+                            render_tool_result_content(
+                                prompt,
                                 block.get("content").unwrap_or(&JsonValue::Null),
-                            );
-                            parts.push(format!("<tool_result>{}</tool_result>", rendered));
+                            )?;
+                            prompt.push_str("</tool_result>");
                         }
                         other => {
-                            parts.push(format!("[Unsupported {}]", other));
+                            write!(prompt, "[Unsupported {}]", other)?;
                         }
                     }
                 }
-                prompt.push_str(&parts.join("\n\n"));
-            } else {
-                let content = msg.get("content").and_then(|c| c.as_str()).unwrap_or("");
-                prompt.push_str(content);
             }
         }
 
@@ -140,30 +186,31 @@ fn render_message(
                     .map(|v| !v.is_null())
                     .unwrap_or(false);
 
-            let mut thinking_part = String::new();
             if thinking_mode == ThinkingMode::Thinking && !prev_has_task {
                 let render_thinking = !drop_thinking || last_user_idx.is_none_or(|u| index > u);
                 if render_thinking {
-                    thinking_part.push_str(reasoning);
-                    thinking_part.push_str(tokens::THINKING_END);
+                    prompt.push_str(reasoning);
+                    prompt.push_str(tokens::THINKING_END);
                 }
             }
 
-            prompt.push_str(&thinking_part);
             prompt.push_str(content);
 
             if let Some(tool_calls) = msg.get("tool_calls").and_then(|t| t.as_array())
                 && !tool_calls.is_empty()
             {
                 prompt.push_str("\n\n");
-                prompt.push_str(&format!(
-                    "<{}{}>\n",
+                writeln!(
+                    prompt,
+                    "<{}{}>",
                     tokens::DSML_TOKEN,
-                    TOOL_CALLS_BLOCK_NAME
-                ));
+                    encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
+                )?;
 
-                let mut invocations = Vec::with_capacity(tool_calls.len());
-                for tc in tool_calls {
+                for (call_idx, tc) in tool_calls.iter().enumerate() {
+                    if call_idx > 0 {
+                        prompt.push('\n');
+                    }
                     // Accept both OpenAI-format (nested `function`) and internal
                     // `{name, arguments}` shape, matching Python's `tool_calls_from_openai_format`.
                     let fn_obj = tc.get("function").unwrap_or(tc);
@@ -171,21 +218,28 @@ fn render_message(
                         .get("name")
                         .and_then(|n| n.as_str())
                         .context("Missing tool call name")?;
-                    let arguments = encode_arguments_to_dsml(fn_obj)?;
-                    invocations.push(format!(
-                        "<{}invoke name=\"{}\">\n{}\n</{}invoke>",
+                    let arguments = if encoding.is_v41() {
+                        super::v41::encode_arguments(fn_obj)?
+                    } else {
+                        encode_arguments_to_dsml(fn_obj)?
+                    };
+                    write!(
+                        prompt,
+                        "<{}{} name=\"{}\">\n{}\n</{}{}>",
                         tokens::DSML_TOKEN,
+                        encoding.tag("invoke", " invoke"),
                         name,
                         arguments,
-                        tokens::DSML_TOKEN
-                    ));
+                        tokens::DSML_TOKEN,
+                        encoding.tag("invoke", " invoke")
+                    )?;
                 }
-                prompt.push_str(&invocations.join("\n"));
-                prompt.push_str(&format!(
+                write!(
+                    prompt,
                     "\n</{}{}>",
                     tokens::DSML_TOKEN,
-                    TOOL_CALLS_BLOCK_NAME
-                ));
+                    encoding.tag(TOOL_CALLS_BLOCK_NAME, " calls")
+                )?;
             }
 
             if !wo_eos {
@@ -200,7 +254,7 @@ fn render_message(
     if index + 1 < messages.len() {
         let next_role = messages[index + 1].get("role").and_then(|r| r.as_str());
         if !matches!(next_role, Some("assistant") | Some("latest_reminder")) {
-            return Ok(prompt);
+            return Ok(());
         }
     }
 
@@ -219,7 +273,9 @@ fn render_message(
             });
             prompt.push_str(sp);
         }
-    } else if matches!(role, "user" | "developer") {
+    } else if matches!(role, "user" | "developer")
+        || (encoding.is_v41() && role == "system" && index > 0)
+    {
         prompt.push_str(tokens::ASSISTANT_START);
         let seed_thinking = thinking_mode == ThinkingMode::Thinking
             && (!drop_thinking || last_user_idx.is_none_or(|u| index >= u));
@@ -230,33 +286,30 @@ fn render_message(
         });
     }
 
-    Ok(prompt)
+    Ok(())
 }
 
 /// Render a tool_result `content` payload (string or content-block list).
-fn render_tool_result_content(content: &JsonValue) -> String {
+fn render_tool_result_content(prompt: &mut String, content: &JsonValue) -> Result<()> {
     match content {
-        JsonValue::String(s) => s.clone(),
+        JsonValue::String(s) => prompt.push_str(s),
         JsonValue::Array(items) => {
-            let mut parts: Vec<String> = Vec::with_capacity(items.len());
-            for item in items {
+            for (index, item) in items.iter().enumerate() {
+                if index > 0 {
+                    prompt.push_str("\n\n");
+                }
                 let item_type = item.get("type").and_then(|v| v.as_str()).unwrap_or("");
                 if item_type == "text" {
-                    parts.push(
-                        item.get("text")
-                            .and_then(|v| v.as_str())
-                            .unwrap_or("")
-                            .to_string(),
-                    );
+                    prompt.push_str(item.get("text").and_then(|v| v.as_str()).unwrap_or(""));
                 } else {
-                    parts.push(format!("[Unsupported {}]", item_type));
+                    write!(prompt, "[Unsupported {}]", item_type)?;
                 }
             }
-            parts.join("\n\n")
         }
-        JsonValue::Null => String::new(),
-        _ => to_json(content),
+        JsonValue::Null => {}
+        _ => prompt.push_str(&to_json(content)),
     }
+    Ok(())
 }
 
 /// Encode messages to prompt string with default options.
@@ -285,8 +338,29 @@ pub fn encode_messages_with_options(
     drop_thinking: bool,
     reasoning_effort: Option<ReasoningEffort>,
 ) -> Result<String> {
+    encode_owned_messages(
+        messages.to_vec(),
+        thinking_mode,
+        add_bos_token,
+        drop_thinking,
+        Encoding::V4(reasoning_effort),
+    )
+}
+
+pub(super) fn encode_owned_messages(
+    messages: Vec<JsonValue>,
+    thinking_mode: ThinkingMode,
+    add_bos_token: bool,
+    drop_thinking: bool,
+    encoding: Encoding,
+) -> Result<String> {
     let merged = merge_tool_messages(messages);
-    let mut full = sort_tool_results_by_call_order(merged);
+    // V4.1 orders source messages before merging, using the same routine as its media hook.
+    let mut full = if encoding.is_v41() {
+        merged
+    } else {
+        sort_tool_results_by_call_order(merged)
+    };
 
     let mut prompt = String::new();
     if add_bos_token {
@@ -306,20 +380,28 @@ pub fn encode_messages_with_options(
     let effective_drop_thinking = drop_thinking && !has_tools;
 
     if thinking_mode == ThinkingMode::Thinking && effective_drop_thinking {
-        full = drop_thinking_messages(full);
+        full = if encoding.is_v41() {
+            super::v41::drop_thinking_messages(full)
+        } else {
+            drop_thinking_messages(full)
+        };
     }
 
-    let last_user_idx = find_last_user_index(&full);
+    let last_user_idx = if encoding.is_v41() {
+        super::v41::find_last_user_index(&full)
+    } else {
+        find_last_user_index(&full)
+    };
     for idx in 0..full.len() {
-        let part = render_message(
+        render_message(
+            &mut prompt,
             idx,
             &full,
             thinking_mode,
             effective_drop_thinking,
-            reasoning_effort,
+            encoding,
             last_user_idx,
         )?;
-        prompt.push_str(&part);
     }
 
     Ok(prompt)
@@ -401,25 +483,24 @@ impl crate::OAIPromptFormatter for DeepSeekV4Formatter {
         }
         let drop_thinking = Self::resolve_drop_thinking(args);
 
-        let messages_value = req.messages();
-        let messages_json =
-            serde_json::to_value(&messages_value).context("Failed to convert messages to JSON")?;
+        let messages_json = crate::messages_to_json(req)?;
+        crate::reject_unsupported_partial_assistant(&messages_json)?;
+        crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
 
-        let mut messages_array = messages_json
-            .as_array()
-            .context("Messages is not an array")?
-            .clone();
+        let JsonValue::Array(mut messages_array) = messages_json else {
+            anyhow::bail!("Messages is not an array");
+        };
 
         normalize_message_contents(&mut messages_array, NormalizeNonText::LeaveUntouched);
 
         super::common::inject_tools_and_response_format(&mut messages_array, req)?;
 
-        encode_messages_with_options(
-            &messages_array,
+        encode_owned_messages(
+            messages_array,
             thinking_mode,
             true,
             drop_thinking,
-            reasoning_effort,
+            Encoding::V4(reasoning_effort),
         )
     }
 }
@@ -530,29 +611,49 @@ mod tests {
     }
 
     #[test]
-    fn test_user_task_preserved_when_merged_after_tool_result() {
-        let messages = json!([
-            {"role": "assistant", "content": "", "tool_calls": [{
-                "id": "c1", "type": "function",
-                "function": {"name": "search", "arguments": "{}"}
-            }]},
-            {"role": "tool", "tool_call_id": "c1", "content": "RESULT"},
-            {"role": "user", "content": "Search", "task": "action"},
-            {"role": "assistant", "content": "OK"}
-        ]);
-
-        let out = encode_messages(messages.as_array().unwrap(), ThinkingMode::Chat, true).unwrap();
-        assert!(
-            out.contains(&format!(
-                "{}Search{}{}{}OK",
-                "<tool_result>RESULT</tool_result>\n\n",
-                tokens::ASSISTANT_START,
-                tokens::THINKING_END,
-                tokens::TASK_ACTION
-            )),
-            "expected merged user text to keep the action task transition, got:\n{}",
-            out
+    fn test_empty_tool_lists_and_merged_user_task_match_reference() {
+        let call = |id: &str| json!({"id": id, "type": "function", "function": {"name": "search", "arguments": "{}"}});
+        let invoke = "<｜DSML｜invoke name=\"search\">\n\n</｜DSML｜invoke>";
+        let calls = format!(
+            "<｜Assistant｜></think>\n\n<｜DSML｜tool_calls>\n{invoke}\n{invoke}\n</｜DSML｜tool_calls><｜end▁of▁sentence｜>"
         );
+        // Expected prompts come from the official DeepSeek-V4-Flash encoding_dsv4.py.
+        for (messages, expected) in [
+            (
+                json!([{"role": "system", "content": "S", "tools": []}, {"role": "user", "content": "Hi"}]),
+                "<｜begin▁of▁sentence｜>S<｜User｜>Hi<｜Assistant｜></think>".to_owned(),
+            ),
+            (
+                json!([
+                    {"role": "user", "content": "q"},
+                    {"role": "assistant", "content": "", "tool_calls": [call("a"), call("b")]},
+                    {"role": "assistant", "content": "x", "tool_calls": []},
+                    {"role": "tool", "tool_call_id": "b", "content": "B"},
+                    {"role": "tool", "tool_call_id": "a", "content": "A"}
+                ]),
+                format!(
+                    "<｜begin▁of▁sentence｜><｜User｜>q{calls}x<｜end▁of▁sentence｜><｜User｜><tool_result>A</tool_result>\n\n<tool_result>B</tool_result><｜Assistant｜></think>"
+                ),
+            ),
+            (
+                json!([
+                    {"role": "user", "content": "q"},
+                    {"role": "assistant", "content": "", "tool_calls": [call("a"), call("b")]},
+                    {"role": "tool", "tool_call_id": "b", "content": "B"},
+                    {"role": "user", "content": "Search", "task": "action"},
+                    {"role": "user", "content": "More"},
+                    {"role": "tool", "tool_call_id": "a", "content": "A"},
+                    {"role": "assistant", "content": "OK"}
+                ]),
+                format!(
+                    "<｜begin▁of▁sentence｜><｜User｜>q{calls}<｜User｜><tool_result>A</tool_result>\n\nSearch\n\nMore\n\n<tool_result>B</tool_result><｜Assistant｜></think>OK<｜end▁of▁sentence｜>"
+                ),
+            ),
+        ] {
+            let out =
+                encode_messages(messages.as_array().unwrap(), ThinkingMode::Chat, true).unwrap();
+            assert_eq!(out, expected);
+        }
     }
 
     #[test]
@@ -652,6 +753,7 @@ mod tests {
 
     struct MockRequest {
         messages: JsonValue,
+        typed: Option<Vec<dynamo_protocols::types::ChatCompletionRequestMessage>>,
         chat_template_args: Option<std::collections::HashMap<String, JsonValue>>,
         reasoning_effort: Option<JsonValue>,
         tools: Option<JsonValue>,
@@ -663,6 +765,7 @@ mod tests {
         fn new(messages: JsonValue) -> Self {
             Self {
                 messages,
+                typed: None,
                 chat_template_args: None,
                 reasoning_effort: None,
                 tools: None,
@@ -706,7 +809,17 @@ mod tests {
         }
 
         fn messages(&self) -> minijinja::value::Value {
+            assert!(
+                self.typed.is_none(),
+                "typed requests must skip MiniJinja conversion"
+            );
             minijinja::value::Value::from_serialize(&self.messages)
+        }
+
+        fn typed_messages(
+            &self,
+        ) -> Option<&[dynamo_protocols::types::ChatCompletionRequestMessage]> {
+            self.typed.as_deref()
         }
 
         fn should_add_generation_prompt(&self) -> bool {
@@ -744,6 +857,32 @@ mod tests {
         }
     }
 
+    #[test]
+    fn typed_messages_match_value_messages() {
+        use crate::OAIPromptFormatter;
+        let messages = json!([
+            {"role": "system", "content": "Use tools. 中文 🦀"},
+            {"role": "user", "content": [{"type": "text", "text": "weather?"}]},
+            {"role": "assistant", "content": null, "reasoning_content": "check",
+             "tool_calls": [{"id": "call_1", "type": "function",
+                 "function": {"name": "weather", "arguments": "{\"city\":\"東京\"}"}}]},
+            {"role": "tool", "tool_call_id": "call_1", "content": "sunny"},
+            {"role": "user", "content": "explain"}
+        ]);
+        let mut typed = MockRequest::new(messages.clone());
+        typed.typed = Some(serde_json::from_value(messages.clone()).unwrap());
+        let value = MockRequest::new(messages);
+        for formatter in [
+            DeepSeekV4Formatter::new_thinking(),
+            DeepSeekV4Formatter::new_chat(),
+        ] {
+            assert_eq!(
+                formatter.render(&typed).unwrap(),
+                formatter.render(&value).unwrap()
+            );
+        }
+    }
+
     fn weather_tool() -> JsonValue {
         json!([{
             "type": "function",
@@ -757,6 +896,65 @@ mod tests {
                 }
             }
         }])
+    }
+
+    #[test]
+    fn test_formatter_rejects_unsupported_partial_assistant() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "user", "content": "Continue"},
+            {"role": "assistant", "content": "prefix", "partial": true}
+        ]));
+        let error = DeepSeekV4Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("`partial: true` is not supported")
+        ));
+    }
+
+    #[test]
+    fn test_formatter_rejects_system_tools_before_injection() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "system", "tools": [
+                {"type": "function", "function": {"name": "dynamic_tool"}}
+            ]},
+            {"role": "user", "content": "Use a tool"}
+        ]))
+        .with_tools(weather_tool());
+        let error = DeepSeekV4Formatter::new_thinking()
+            .render(&request)
+            .unwrap_err();
+
+        assert!(matches!(
+            error.downcast_ref::<crate::PromptRenderError>(),
+            Some(crate::PromptRenderError::InvalidRequest(message))
+                if message.contains("message-level `tools`") && message.contains("system")
+        ));
+    }
+
+    #[test]
+    fn test_formatter_preserves_developer_tools_with_top_level_tools() {
+        use crate::OAIPromptFormatter;
+
+        let request = MockRequest::new(json!([
+            {"role": "developer", "content": "Use a tool", "tools": [
+                {"type": "function", "function": {"name": "developer_tool"}}
+            ]}
+        ]))
+        .with_tools(weather_tool());
+        let rendered = DeepSeekV4Formatter::new_thinking()
+            .render(&request)
+            .unwrap();
+
+        assert!(rendered.contains("developer_tool"));
+        assert!(rendered.contains("get_current_weather"));
     }
 
     #[test]

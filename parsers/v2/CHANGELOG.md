@@ -4,6 +4,79 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.7.22](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.21...dynamo-parsers-v2-v0.7.22) - Unreleased
+
+### Bug fixes
+
+- Keep failed invocation bytes available to reset until a later valid tool call recovers the stream.
+
+## [0.7.21](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.20...dynamo-parsers-v2-v0.7.21) - 2026-10-09
+
+### Bug fixes
+
+- Qwen XML xgrammar bug in v2 structural tags ([#379](https://github.com/ai-dynamo/frontend-crates/pull/379))
+
+## [0.7.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.2...dynamo-parsers-v2-v0.7.3) - 2026-09-23
+
+### Bug fixes
+
+- *(parsers-v2)* Preserve literal entities in GLM arguments ([#249](https://github.com/ai-dynamo/frontend-crates/pull/249))
+
+## [0.7.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.1...dynamo-parsers-v2-v0.7.2) - 2026-09-23
+
+### Features
+
+- *(parsers)* Support both DSML dialects in DeepSeek tool parser ([#255](https://github.com/ai-dynamo/frontend-crates/pull/255))
+
+## [0.7.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.0...dynamo-parsers-v2-v0.7.1) - 2026-09-23
+
+### Bug fixes
+
+- *(parsers)* Accept DeepSeek V4.1 JSON invocation bodies ([#250](https://github.com/ai-dynamo/frontend-crates/pull/250))
+
+## [0.6.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.2...dynamo-parsers-v2-v0.6.3) - 2026-09-22
+
+### Bug fixes
+
+- *(parsers)* Retain GLM scalar types for non-string unions ([#248](https://github.com/ai-dynamo/frontend-crates/pull/248))
+- Preserve reasoning markers in DeepSeek V4 tool projection ([#253](https://github.com/ai-dynamo/frontend-crates/pull/253))
+
+## [0.6.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.1...dynamo-parsers-v2-v0.6.2) - 2026-09-22
+
+### Bug fixes
+
+- *(parsers)* Preserve DeepSeek V4 string whitespace ([#247](https://github.com/ai-dynamo/frontend-crates/pull/247))
+
+### Chore
+
+- *(conformance)* Simplify Unified YAML history ([#257](https://github.com/ai-dynamo/frontend-crates/pull/257))
+- *(conformance)* Reorganize Unified cases ([#242](https://github.com/ai-dynamo/frontend-crates/pull/242))
+
+## [0.6.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.6.0...dynamo-parsers-v2-v0.6.1) - 2026-09-17
+
+### Bug fixes
+
+- Align Unified conformance and guided recovery across models ([#232](https://github.com/ai-dynamo/frontend-crates/pull/232))
+
+## [0.6.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.5.3...dynamo-parsers-v2-v0.6.0) - 2026-09-11
+
+### Features
+
+- Add v2 DeepSeek V4 and Kimi K3 unified parsers ([#213](https://github.com/ai-dynamo/frontend-crates/pull/213))
+
+## [0.5.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.5.1...dynamo-parsers-v2-v0.5.2) - 2026-09-09
+
+### Bug fixes
+
+- *(parsers)* Keep string-typed GLM tool arguments verbatim ([#215](https://github.com/ai-dynamo/frontend-crates/pull/215))
+
+## [0.5.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.5.0...dynamo-parsers-v2-v0.5.1) - 2026-09-09
+
+### Features
+
+- *(parsers-v2)* Add structural tag support ([#189](https://github.com/ai-dynamo/frontend-crates/pull/189))
+- *(parsers)* Convert DeepSeek V4 DSML and reasoning handling to the UnifiedParser, preserving the legacy tool-only API as an event projection.
+- *(parsers)* Add Kimi K3 XTML UnifiedParser support with typed and raw JSON arguments, guided JSON routing, and a legacy tool-only event projection.
 ## [0.5.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.4.1...dynamo-parsers-v2-v0.5.0) - 2026-09-03
 
 ### Bug fixes

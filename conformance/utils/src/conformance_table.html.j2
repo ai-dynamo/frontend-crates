@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <title>{{ title|e }}</title>
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const requested = params.get('transpose');
+  if (requested === '1' || requested === 'true') {
+    document.documentElement.classList.add('transpose-pending');
+  }
+})();
+</script>
 <style>
 {{ conformance_css|safe }}
 </style>

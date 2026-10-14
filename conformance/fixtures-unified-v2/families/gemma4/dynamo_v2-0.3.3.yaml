@@ -1,0 +1,17 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.3.3
+document:
+  mode: unified
+changes:
+  retired__4_c:
+    absent: true
+  retired__4_d:
+    absent: true
+  retired__4_e:
+    absent: true
+  retired__4_f:
+    absent: true
+metadata_changes: {}
+document_overrides: {}

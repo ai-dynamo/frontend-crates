@@ -62,15 +62,32 @@ def test_lint_green_on_committed_corpus() -> None:
     assert report.failures == []
 
 
+def test_retired_stream_id_requires_explicit_declaration(tmp_path) -> None:
+    taxonomy = _taxonomy()
+    taxonomy["retired_subcases"] = {}
+    report = cfc.Report()
+    family_dir = tmp_path / "toolcalling/fixtures-stream-v1/inputs/deepseek_v4"
+    family_dir.mkdir(parents=True)
+    (family_dir / "TOOLCALLING.streamv1.50.yaml").write_text(yaml.safe_dump({
+        "family": "deepseek_v4",
+        "mode": "streamv1",
+        "cases": {"TOOLCALLING.streamv1.50.a": {"chunks": []}},
+    }))
+
+    cfc.check_suite(report, taxonomy, tmp_path, "toolcalling.stream", "deepseek_v4", set())
+
+    assert any("TOOLCALLING.streamv1.50.a is not in the taxonomy" in failure for failure in report.failures)
+
+
 def test_lint_fails_on_inkling_shaped_family(tmp_path) -> None:
     """A family with the PR #120 gap profile fails the lint: batch groups 6/8/30
-    absent, the entire stream-v2 corpus missing, and no `markers:` registration."""
+    absent, the entire legacy stream corpus missing, and no `markers:` registration."""
     root = _ensure_fixtures()
     fake_root = tmp_path / "fixtures"
     src_fam = root / "toolcalling/fixtures-batch-v1/inputs/hermes"
     dst_fam = fake_root / "toolcalling/fixtures-batch-v1/inputs/newfam"
     dst_fam.mkdir(parents=True)
-    (fake_root / "toolcalling/fixtures-stream-v2/inputs").mkdir(parents=True)
+    (fake_root / "toolcalling/fixtures-stream-v1/inputs").mkdir(parents=True)
     (fake_root / "reasoning/fixtures-v1/inputs").mkdir(parents=True)
     for path in src_fam.glob("TOOLCALLING.batch*.yaml"):
         data = yaml.safe_load(path.read_text())
@@ -116,10 +133,10 @@ def test_taxonomy_case_entries_well_formed() -> None:
 
 
 def test_markers_declared_for_every_family() -> None:
-    """markers: and families: stay key-aligned — a new family cannot register a
-    parser row without declaring (possibly empty) grammar tokens."""
+    """Tool-only and unified parser families must declare their grammar tokens."""
     registry = _registry()
-    assert set(registry["markers"]) == set(registry["families"])
+    unified = {row.get("registry", family) for family, row in registry["unified"].items()}
+    assert set(registry["markers"]) == set(registry["families"]) | unified
 
 
 def test_leak_regex_superset_of_retired_hardcoded_regex() -> None:
@@ -163,6 +180,41 @@ def test_declared_tokens_render_non_orphan() -> None:
             assert "tt-orphan" not in markup.colorize_markup(f"{open_tok}x{close_tok}", family=fam), (fam, open_tok)
         for tok in decl.get("singletons") or []:
             assert "tt-orphan" not in markup.colorize_markup(str(tok), family=fam), (fam, tok)
+
+
+def test_kimi_k3_composite_markers_render_as_longest_declared_tokens() -> None:
+    cases = [
+        "<|open|>think<|sep|>private<|close|>think<|sep|>",
+        "<|open|> response <|sep|>visible<|close|> response <|sep|>",
+        '<|open|>call tool="get_weather" index="1"<|sep|>'
+        '<|open|>argument key="city" type="string"<|sep|>Paris'
+        "<|close|>argument<|sep|><|close|>call<|sep|>",
+        '<|open|> message role="assistant" <|sep|>visible'
+        "<|close|> message <|sep|>",
+    ]
+    for text in cases:
+        rendered = markup.colorize_markup(text, family="kimi_k3")
+        assert "tt-orphan" not in rendered, text
+        expected_markers = text.count("<|open|>") + text.count("<|close|>")
+        assert rendered.count("<span") == expected_markers
+
+
+def test_kimi_k3_opaque_composite_regions_keep_marker_text_as_data() -> None:
+    typed = (
+        '<|open|> call tool="run" index="1" <|sep|>'
+        '<|open|> argument key="cmd" type="string" <|sep|>'
+        "literal <|close|>call<|sep|> text"
+        "<|close|> argument <|sep|><|close|> call <|sep|>"
+    )
+    raw_json = (
+        '<|open|>json type="object"<|sep|>'
+        '{"cmd":"literal <|close|>json<|sep|> text"}'
+        "<|close|>json<|sep|>"
+    )
+    for text in (typed, raw_json):
+        rendered = markup.colorize_markup(text, family="kimi_k3")
+        assert "tt-orphan" not in rendered
+        assert rendered.count("&lt;|close|&gt;") == text.count("<|close|>")
 
 
 def test_reasoning_only_family_skips_toolcalling_suites() -> None:

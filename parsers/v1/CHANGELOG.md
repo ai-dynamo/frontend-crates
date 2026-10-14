@@ -4,6 +4,96 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [10.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.2...dynamo-parsers-v10.0.3) - 2026-10-13
+
+### Bug fixes
+
+- *(parsers)* Stop jailing gpt-oss answers on short '<' prefixes and keep bare text after failed harmony parse ([#336](https://github.com/ai-dynamo/frontend-crates/pull/336))
+
+## [10.0.0] - 2026-10-08
+
+### Breaking changes
+
+- Use `dynamo-protocols` 8.0 for the protocol types exposed in the public API.
+  Consumers sharing those types must upgrade to protocols 8.x.
+
+## [9.2.12](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.11...dynamo-parsers-v9.2.12) - 2026-10-08
+
+### Bug fixes
+
+- *(jail)* Emit each index once per chunk under guided streaming ([#352](https://github.com/ai-dynamo/frontend-crates/pull/352))
+
+## [9.2.11](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.10...dynamo-parsers-v9.2.11) - 2026-10-08
+
+### Bug fixes
+
+- *(kimi-k3)* Generate unique tool-call IDs across turns ([#353](https://github.com/ai-dynamo/frontend-crates/pull/353))
+
+## [9.2.9](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.8...dynamo-parsers-v9.2.9) - 2026-10-07
+
+### Bug fixes
+
+- *(parsers)* Suppress K3 marker leaks and fix empty XML tool calls ([#331](https://github.com/ai-dynamo/frontend-crates/pull/331))
+
+## [9.2.7] - 2026-10-02
+
+### Bug fixes
+
+- Preserve GLM47 calls to unknown tools for request-scoped validation by the executor, and refresh the V1 conformance capture.
+
+## [9.2.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.2...dynamo-parsers-v9.2.3) - 2026-10-01
+
+### Bug fixes
+
+- *(parsers)* Retain GLM scalar types for non-string unions in v1 ([#280](https://github.com/ai-dynamo/frontend-crates/pull/280))
+
+## [9.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.1.1...dynamo-parsers-v9.2.0) - 2026-09-29
+
+### Features
+
+- Kimi K3 structural tag default ([#196](https://github.com/ai-dynamo/frontend-crates/pull/196))
+
+## [9.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.1.0...dynamo-parsers-v9.1.1) - 2026-09-25
+
+### Bug fixes
+
+- *(parsers)* Allow EOS after native Kimi K3 tool calls ([#292](https://github.com/ai-dynamo/frontend-crates/pull/292))
+
+### Chore
+
+- Trivial rename legacy stream conventions ([#264](https://github.com/ai-dynamo/frontend-crates/pull/264))
+
+## [9.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.0.1...dynamo-parsers-v9.1.0) - 2026-09-22
+
+### Features
+
+- Add GLM-5.3 UnifiedParser support (part 1) ([#234](https://github.com/ai-dynamo/frontend-crates/pull/234))
+
+## [9.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.0.0...dynamo-parsers-v9.0.1) - 2026-09-21
+
+### Bug fixes
+
+- *(parser)* Preserve XML argument order ([#223](https://github.com/ai-dynamo/frontend-crates/pull/223))
+
+## [9.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.2.2...dynamo-parsers-v9.0.0) - 2026-09-11
+
+### Bug fixes
+
+- *(parsers)* [**breaking**] Require `dynamo-protocols` 6.x.
+
+## [8.2.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.2.1...dynamo-parsers-v8.2.2) - 2026-09-09
+
+### Bug fixes
+
+- *(parsers)* Serialize GLM tool-call arguments in source order ([#220](https://github.com/ai-dynamo/frontend-crates/pull/220))
+
+## [8.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.2.0...dynamo-parsers-v8.2.1) - 2026-09-09
+
+### Bug fixes
+
+- *(parsers)* Keep string-typed GLM tool arguments verbatim ([#215](https://github.com/ai-dynamo/frontend-crates/pull/215))
+
 ## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v8.1.0...dynamo-parsers-v8.2.0) - 2026-08-25
 
 ### Features

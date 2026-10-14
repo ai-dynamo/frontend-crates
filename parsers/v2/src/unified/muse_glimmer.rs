@@ -40,13 +40,93 @@ use crate::tool_calling::muse_glimmer::{
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
-    GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
-    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState,
+    GuidedChannel, GuidedGrammar, GuidedPrefix, GuidedPrefixContext, GuidedPrefixFactory,
+    GuidedPrefixScanner, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
+    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState, count_guided_prefix_bytes,
 };
 
-/// The invoke opener, in the prefix form the guided reader anchors on.
-const INVOKE_START: &str = "<atem:invoke";
+const INVOKE_START: &str = "<atem:invoke name=\"";
 const INVOKE_END: &str = "</atem:invoke>";
+
+fn guided_invoke_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
+    let suffix = &context.text[context.at..];
+    let Some(after_prefix) = suffix.strip_prefix("<atem:invoke name=\"") else {
+        return if "<atem:invoke name=\"".starts_with(suffix) {
+            GuidedPrefix::Pending
+        } else {
+            GuidedPrefix::NoMatch
+        };
+    };
+    if context.followed_by_competing_marker || !context.outside_reasoning {
+        return GuidedPrefix::Strip(INVOKE_START.len());
+    }
+    if after_prefix.starts_with(['{', '[']) {
+        return GuidedPrefix::Match;
+    }
+    let Some(name_end) = after_prefix.find('"') else {
+        return GuidedPrefix::Pending;
+    };
+    if name_end == 0 {
+        return GuidedPrefix::NoMatch;
+    }
+    match after_prefix.as_bytes()[name_end + 1..].first() {
+        None => GuidedPrefix::Pending,
+        Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+        Some(_) => GuidedPrefix::NoMatch,
+    }
+}
+
+#[derive(Default)]
+struct MuseGuidedPrefix {
+    scan_from: usize,
+    name_end: Option<usize>,
+}
+
+fn muse_guided_prefix() -> Box<dyn GuidedPrefixScanner> {
+    Box::new(MuseGuidedPrefix::default())
+}
+
+impl GuidedPrefixScanner for MuseGuidedPrefix {
+    fn append(
+        &mut self,
+        candidate: &str,
+        append: &str,
+        context: GuidedPrefixContext<'_>,
+    ) -> GuidedPrefix {
+        let Some(after_prefix) = candidate.strip_prefix(INVOKE_START) else {
+            return guided_invoke_prefix(context);
+        };
+        if context.followed_by_competing_marker || !context.outside_reasoning {
+            return GuidedPrefix::Strip(INVOKE_START.len());
+        }
+        if after_prefix.starts_with(['{', '[']) {
+            return GuidedPrefix::Match;
+        }
+        if self.name_end.is_none() {
+            let append_start = candidate.len() - append.len();
+            let scan_from = self
+                .scan_from
+                .max(append_start.saturating_sub(INVOKE_START.len()));
+            let scanned = &after_prefix[scan_from..];
+            count_guided_prefix_bytes(scanned.len());
+            self.name_end = scanned.find('"').map(|at| scan_from + at);
+            self.scan_from = after_prefix.len();
+        }
+        match self.name_end {
+            None => GuidedPrefix::Pending,
+            Some(0) => GuidedPrefix::NoMatch,
+            Some(at) => match after_prefix.as_bytes()[at + 1..].first() {
+                None => GuidedPrefix::Pending,
+                Some(b'{') | Some(b'[') => GuidedPrefix::Match,
+                Some(_) => GuidedPrefix::NoMatch,
+            },
+        }
+    }
+
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
 
 impl NativeUnified for MuseChannelScanner {
     fn preserve_special_tokens(&self) -> bool {
@@ -70,6 +150,7 @@ impl NativeUnified for MuseChannelScanner {
             strip_text: guided_strip_text,
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
+            response_literal_markers: &[],
         }))
     }
 
@@ -85,7 +166,8 @@ impl NativeUnified for MuseChannelScanner {
             // literal opener and closer, with no grammar-aware location rule of the
             // kind gemma4's value wrapping needs.
             invoke_boundary_factory: None,
-            guided_prefix_policy: None,
+            guided_prefix_policy: Some(guided_invoke_prefix),
+            guided_prefix_factory: Some(muse_guided_prefix as GuidedPrefixFactory),
         }
     }
 
@@ -146,7 +228,8 @@ mod tests {
     use super::*;
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
-        UnifiedToolOutputMode, assemble,
+        UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
+        reset_guided_prefix_examined_bytes,
     };
 
     /// The conformance harness vocabulary, so a unit test and a golden case can
@@ -209,6 +292,130 @@ mod tests {
         )
     }
 
+    #[test]
+    fn native_parameter_preserves_control_markers_at_every_split() {
+        let value = " <|start|>assistant to=self<|message|>quoted<|eom|> <atem:function_calls> </atem:function_calls> </atem:invoke> &amp; \"x\"\\\n ";
+        let input = tool_channel("get_weather", "city", value);
+        let want = vec![call("get_weather", serde_json::json!({"city": value}))];
+        assert_eq!(batch(&input), want);
+        for split in 0..=input.len() {
+            if input.is_char_boundary(split) {
+                assert_eq!(
+                    events(&[&input[..split], &input[split..]]),
+                    want,
+                    "split {split}"
+                );
+            }
+        }
+        let chunks: Vec<_> = input
+            .char_indices()
+            .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+            .collect();
+        assert_eq!(events(&chunks), want);
+    }
+
+    #[test]
+    fn unterminated_parameter_recovers_later_user_channel_at_eof() {
+        for terminator in ["<|eom|>", "<|eot|>", ""] {
+            for invoke_close in ["", "</atem:invoke>"] {
+                let input = format!(
+                    "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
+                     <atem:parameter name=\"x\">unfinished{invoke_close}{terminator}{}",
+                    channel("user", "Recovered answer.")
+                );
+                let want = vec![text("Recovered answer.")];
+                assert_eq!(batch(&input), want);
+                for split in 0..=input.len() {
+                    let mut parser = muse_glimmer_unified(&tools());
+                    assert!(parser.push(&input[..split]).expect("prefix").is_empty());
+                    assert!(parser.push(&input[split..]).expect("suffix").is_empty());
+                    assert_eq!(
+                        assemble(&parser.finish().expect("finish").events),
+                        want,
+                        "terminator {terminator:?}, invoke close {invoke_close:?}, split {split}"
+                    );
+                }
+                let chunks: Vec<_> = input
+                    .char_indices()
+                    .map(|(at, ch)| &input[at..at + ch.len_utf8()])
+                    .collect();
+                assert_eq!(events(&chunks), want);
+            }
+        }
+    }
+
+    #[test]
+    fn malformed_guided_invoke_header_recovers_as_text_at_every_split() {
+        let input = concat!(
+            "Hello <atem:invoke name=\"get_weather\"",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#,
+        );
+        let want = vec![
+            text("Hello "),
+            call("get_weather", serde_json::json!({"city": "Paris"})),
+        ];
+        for split in 0..=input.len() {
+            if !input.is_char_boundary(split) {
+                continue;
+            }
+            let mut parser = muse_glimmer_unified(&tools());
+            parser
+                .initialize_request(UnifiedParserInit {
+                    tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                    invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+                    ..UnifiedParserInit::default()
+                })
+                .expect("initialize");
+            let mut events = parser.push(&input[..split]).expect("push prefix");
+            events.extend(parser.push(&input[split..]).expect("push suffix"));
+            events.extend(parser.finish().expect("finish").events);
+            assert_eq!(assemble(&events), want, "split at byte {split}");
+        }
+    }
+
+    #[test]
+    fn reset_restarts_muse_guided_prefix_scanning() {
+        fn state() -> crate::unified::GuidedState {
+            let scanner = muse_scanner(&tools());
+            crate::unified::GuidedState::new(
+                scanner.guided_reasoning().expect("Muse guided reasoning"),
+                scanner.guided_grammar(),
+                None,
+                UnifiedParserStartingState::None,
+                InvalidGuidedPayloadPolicy::RecoverAsText,
+            )
+        }
+
+        fn context(text: &str) -> GuidedPrefixContext<'_> {
+            GuidedPrefixContext {
+                text,
+                at: 0,
+                outside_reasoning: true,
+                payload_is_empty: true,
+                preceded_by_response_text: false,
+                followed_by_competing_marker: false,
+            }
+        }
+
+        let partial = format!("{INVOKE_START}abcde");
+        let fresh_candidate = format!(
+            "{INVOKE_START}a\"{}",
+            r#"[{"name":"get_weather","arguments":{"city":"Paris"}}]"#
+        );
+        let mut reused = state();
+        assert_eq!(
+            reused.guided_prefix_append(&partial, 0, context(&partial)),
+            Some(GuidedPrefix::Pending)
+        );
+        reused.reset(UnifiedParserStartingState::None);
+
+        let mut fresh = state();
+        assert_eq!(
+            reused.guided_prefix_append(&fresh_candidate, 0, context(&fresh_candidate)),
+            fresh.guided_prefix_append(&fresh_candidate, 0, context(&fresh_candidate))
+        );
+    }
+
     // ── Ported from the v1 reasoning parser ───────────────────────────────────
 
     #[test]
@@ -234,6 +441,37 @@ mod tests {
             "<|start|>assistant to=user<|message|>done<|eot|>",
         ]);
         assert_eq!(out, vec![reasoning("first\nsecond"), text("done")]);
+    }
+
+    /// A conformance event cannot expose retained-scan work, so this drives the production path byte by byte.
+    #[test]
+    fn guided_bare_invoke_header_scans_each_name_byte_once() {
+        let input = format!("{INVOKE_START}{}", "a".repeat(4096));
+        let mut parser = muse_glimmer_unified(&tools());
+        parser
+            .initialize_request(UnifiedParserInit {
+                prompt_token_ids: Vec::new(),
+                starting_state: UnifiedParserStartingState::None,
+                tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            })
+            .expect("initialize");
+        reset_guided_prefix_examined_bytes();
+        for byte in input.bytes() {
+            parser
+                .push(std::str::from_utf8(std::slice::from_ref(&byte)).expect("ASCII input"))
+                .expect("push");
+        }
+        let examined = guided_prefix_examined_bytes();
+        assert!(
+            examined > input.len() / 2,
+            "the guided prefix was not exercised"
+        );
+        assert!(
+            examined <= input.len() * 2,
+            "guided prefix examined {examined} bytes for a {}-byte one-byte stream",
+            input.len()
+        );
     }
 
     #[test]
@@ -535,34 +773,66 @@ mod tests {
     }
 
     #[test]
-    fn a_special_token_in_a_parameter_value_is_data_only_until_it_ends_the_channel() {
-        // `opaque: ["atem:parameter"]` in parser_families.yaml colours a parameter
-        // body as argument DATA. That holds for `<|message|>`, which has no
-        // body-cutting role, but NOT for the channel terminators: they close the
-        // message before `</atem:invoke>` arrives, so the invoke is truncated and
-        // dropped, and the residual markup surfaces as the prose it now is. Both
-        // engines truncate on `<|eom|>` / `<|eot|>` the same way.
-        //
-        // `<|start|>` is where the two sides part: this crate reads the decoded
-        // reserved token as a REAL channel switch (see the `next_channel_message`
-        // rationale in the v1 parser) and drops the call, while SGLang's `muse`
-        // detector keeps it as data and emits `{"x": "a<|start|>b"}`. The corpus has
-        // no case for it, so nothing renders it today — this pins which side of the
-        // gap Dynamo is on, so a change of mind is deliberate rather than silent.
+    fn split_orphan_invoke_closer_after_prose_is_stripped() {
+        let mut parser = muse_glimmer_unified(&tools());
+        let first = parser
+            .push("Sure, here is the plan.</atem:inv")
+            .expect("first push");
+        assert_eq!(assemble(&first), vec![text("Sure, here is the plan.")]);
+        assert!(
+            parser.push("oke>").expect("second push").is_empty(),
+            "the completed orphan closer must be suppressed"
+        );
+        assert!(parser.finish().expect("finish").is_empty());
+    }
+
+    #[test]
+    fn invoke_closer_stripping_is_chunk_invariant() {
+        let orphan = "before </atem:invoke> after";
+        let expected = batch(orphan);
+        for split in orphan
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain(std::iter::once(orphan.len()))
+        {
+            assert_eq!(
+                events(&[&orphan[..split], &orphan[split..]]),
+                expected,
+                "split at {split} changed {orphan:?}"
+            );
+        }
+        assert_eq!(batch(orphan), vec![text("before  after")]);
+    }
+
+    #[test]
+    fn reset_discards_unmatched_prose_invoke_context() {
+        let mut parser = muse_glimmer_unified(&tools());
+        parser
+            .push("quoted <atem:invoke name=\"f\">")
+            .expect("first push");
+        parser.reset();
+        let mut deltas = parser
+            .push("fresh </atem:invoke> text")
+            .expect("second push");
+        deltas.extend(parser.finish().expect("second finish"));
+        assert_eq!(assemble(&deltas), vec![text("fresh  text")]);
+    }
+
+    #[test]
+    fn special_tokens_in_parameter_values_are_data() {
         let call_of = |marker: &str| {
             format!(
                 "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
                  <atem:parameter name=\"x\">a{marker}b</atem:parameter></atem:invoke><|eom|>"
             )
         };
-        let truncated = vec![text("b</atem:parameter></atem:invoke>")];
-        for marker in ["<|eom|>", "<|eot|>", "<|start|>"] {
-            assert_eq!(events(&[&call_of(marker)]), truncated, "marker {marker}");
+        for marker in ["<|eom|>", "<|eot|>", "<|start|>", "<|message|>"] {
+            assert_eq!(
+                events(&[&call_of(marker)]),
+                vec![call("f", serde_json::json!({"x": format!("a{marker}b")}))],
+                "marker {marker}",
+            );
         }
-        assert_eq!(
-            events(&[&call_of("<|message|>")]),
-            vec![call("f", serde_json::json!({"x": "a<|message|>b"}))]
-        );
     }
 
     #[test]
@@ -1405,6 +1675,7 @@ mod tests {
             arguments: serde_json::json!({"city": "Paris"}),
         };
         let reasoning = |text: &str| UnifiedEvent::Reasoning { text: text.into() };
+        let text = |text: &str| UnifiedEvent::Text { text: text.into() };
 
         for (label, input, want) in [
             (
@@ -1436,6 +1707,25 @@ mod tests {
                      <|start|>assistant to=get_weather<|message|> soon<|eom|>{call}"
                 ),
                 vec![reasoning("I will call  soon"), weather()],
+            ),
+            (
+                "a bare invoke header cannot consume a later reasoning opener",
+                format!(
+                    "<atem:invoke name=\"<|start|>assistant to=self<|message|>secret<|eom|>{call}"
+                ),
+                vec![reasoning("secret"), weather()],
+            ),
+            (
+                "a bare invoke header inside reasoning preserves its narrated name",
+                format!(
+                    "<|start|>assistant to=self<|message|>I'll call <atem:invoke name=\"get_weather<|eom|>{call}"
+                ),
+                vec![reasoning("I'll call get_weather"), weather()],
+            ),
+            (
+                "a malformed bare invoke header strips before rejected JSON",
+                "<atem:invoke name=\"{\"unexpected\": \"shape\"}".to_string(),
+                vec![text("{\"unexpected\": \"shape\"}")],
             ),
         ] {
             let drive = |chunks: Vec<&str>| {

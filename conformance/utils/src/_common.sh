@@ -39,7 +39,11 @@ fi
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
 # Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
 # so CI and .gitignore find it where they always have.
-STAGE="${STAGE:-$UTILS/.stage}"
+if [ -z "${STAGE:-}" ]; then
+  STAGE=$(mktemp -d /tmp/frontend-crates-conformance-stage.XXXXXX)
+  export STAGE
+  trap 'rm -rf "$STAGE"' EXIT
+fi
 # Override when the default cargo can't build the workspace (edition 2024 /
 # resolver "3" needs >= 1.85): CARGO='cargo +1.96.1' conformance/utils/check.sh ...
 CARGO="${CARGO:-cargo}"
@@ -58,6 +62,7 @@ _build_stage_base() {
   # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
   mkdir -p "$STAGE/src"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
+  \cp -f "$TOOLS/parser_families.yaml" "$STAGE/parser_families.yaml"
   # Static CSS/JS inlined into the conformance page at render time (the renderer
   # reads tests/parity/assets/*). The compare-bar/coloring logic lives in one place.
   mkdir -p "$STAGE/tests/parity/assets"
@@ -75,21 +80,27 @@ _build_stage_base() {
   \cp -f "$TOOLS/yaml_fast.py" "$STAGE/tests/parity/yaml_fast.py"
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
+  \cp -f "$TOOLS/null_cases.py" "$STAGE/tests/parity/null_cases.py"
+  \cp -f "$TOOLS/schema_cases.py" "$STAGE/tests/parity/schema_cases.py"
+  \cp -f "$TOOLS/glm47_schema_cases.json" "$STAGE/tests/parity/glm47_schema_cases.json"
+  \cp -f "$TOOLS/case_variants.py" "$STAGE/tests/parity/case_variants.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
+  \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
+  \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved (at the pinned peer versions) by
   # build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
-  if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" ]; then
+  if [ -d "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v1" ]; then
     mkdir -p "$STAGE/tests/parity/toolcalling"
-    \cp -Rf "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v2" \
-      "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v2"
+    \cp -Rf "$FIXTURES_ROOT/toolcalling/fixtures-batch-on-stream-v1" \
+      "$STAGE/tests/parity/toolcalling/fixtures-batch-on-stream-v1"
   fi
   ln -s "$ROOT/parsers/v1/src/tool_calling"      "$STAGE/lib/parsers/src/tool_calling"
   ln -s "$UTILS/lib/parsers/TOOLCALLING_CASES.md"   "$STAGE/lib/parsers/TOOLCALLING_CASES.md"
-  ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V2_CASES.md"
+  ln -s "$UTILS/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md" "$STAGE/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md"
   ln -s "$UTILS/lib/parsers/REASONING_CASES.md"     "$STAGE/lib/parsers/REASONING_CASES.md"
   ln -s "$TOOLS/pyproject.stub.toml"                "$STAGE/pyproject.toml"
   [ -e "$ROOT/.git" ] && ln -s "$ROOT/.git" "$STAGE/.git" || true
@@ -131,14 +142,14 @@ _copy_toolcalling_v2_fixtures() {
   local dst="$STAGE/tests/parity/toolcalling/fixtures"
   _resolve_toolcalling_fixtures "$dst"
   find "$dst" -name 'TOOLCALLING.stream*.yaml' -delete
-  # The stream-v2 corpus is versioned like the batch corpus (no unversioned anchor):
+  # The legacy stream corpus is versioned like the batch corpus (no unversioned anchor):
   # inputs/ (shared per-chunk delta_text) + <impl>-<version>/ (per-impl expected;
   # lowest version = full anchor, higher = changed-only). Resolve the PINNED (latest)
   # peer versions into the flat tree the renderer expects; a genuinely single-version
   # impl (vllm_rust) defaults to its lowest. The generator re-resolves each version for
   # the compare model.
-  local sv2="$FIXTURES_ROOT/toolcalling/fixtures-stream-v2"
-  if [ -d "$sv2" ]; then
+  local sv1="$FIXTURES_ROOT/toolcalling/fixtures-stream-v1"
+  if [ -d "$sv1" ]; then
     local vllm_v sglang_v tmp family f
     vllm_v=$(grep -oE 'vllm\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
     sglang_v=$(grep -oE 'sglang\[[^]]*\]==[^"]+' "$TOOLS/pyproject.stub.toml" | sed -E 's/.*==//')
@@ -149,10 +160,10 @@ _copy_toolcalling_v2_fixtures() {
     # _dynamo_v2_version() reads the published dir list. Select the latest so the data
     # matches its own label.
     local dynamo_v2_v
-    dynamo_v2_v=$(ls -d "$sv2"/dynamo_v2-* 2>/dev/null | sed 's|.*/dynamo_v2-||' | sort -V | tail -1)
+    dynamo_v2_v=$(ls -d "$sv1"/dynamo_v2-* 2>/dev/null | sed 's|.*/dynamo_v2-||' | sort -V | tail -1)
     tmp="$(mktemp -d)"
     python3 "$TOOLS/resolve_stream_fixtures.py" \
-      --fixtures-root "$sv2" --out "$tmp" \
+      --fixtures-root "$sv1" --out "$tmp" \
       --select "vllm_python-${vllm_v}" "sglang_python-${sglang_v}" \
               ${dynamo_v2_v:+"dynamo_v2-${dynamo_v2_v}"}
     for f in "$tmp"/*/TOOLCALLING.stream*.yaml; do
@@ -170,9 +181,12 @@ build_stage_conformance() {
   # Keep the current conformance harness owned by conformance/utils while presenting
   # it in Dynamo's staged tests/parity layout for imports and template lookup.
   \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
+  \cp -f "$ROOT/conformance/case-taxonomy.yaml" "$STAGE/case-taxonomy.yaml"
   # impls.py + markers.py are staged in _build_stage_base.
   \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
+  \cp -f "$TOOLS/fixture_disposition.py" "$STAGE/tests/parity/fixture_disposition.py"
+  \cp -f "$TOOLS/capture_stimulus.py" "$STAGE/tests/parity/capture_stimulus.py"
   \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
   # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures

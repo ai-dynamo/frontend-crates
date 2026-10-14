@@ -1,0 +1,22 @@
+{
+  "added_tokens_decoder": {
+    "258": {
+      "content": "<|end_of_msg|>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    },
+    "259": {
+      "content": "<|im_end|>",
+      "lstrip": false,
+      "normalized": false,
+      "rstrip": false,
+      "single_word": false,
+      "special": true
+    }
+  },
+  "model_max_length": 1024,
+  "tokenizer_class": "TikTokenTokenizer"
+}

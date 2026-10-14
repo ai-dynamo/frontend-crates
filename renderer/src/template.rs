@@ -29,6 +29,11 @@ pub fn deepseek_formatter_for(
     model_type_lower: &Option<String>,
     display_name_lower: &str,
 ) -> Option<PromptFormatter> {
+    if is_deepseek_v41(model_type_lower, display_name_lower) {
+        return Some(PromptFormatter::OAI(Arc::new(
+            super::deepseek::v41::DeepSeekV41Formatter,
+        )));
+    }
     if is_deepseek_v4(model_type_lower, display_name_lower) {
         tracing::info!(
             model_type = ?model_type_lower,
@@ -183,6 +188,13 @@ struct HfTokenizerConfigJsonFormatter {
     /// True if the `tool_use` template natively references `reasoning_content`.
     /// See `default_template_handles_reasoning` for rationale.
     tool_use_template_handles_reasoning: bool,
+    /// True if the `default` template renders a string `reasoning_content` but
+    /// not the segment array sent with interleaved tool calls (MiniMax-M2 and
+    /// Qwen3 read it only when it `is string`). When true and rendering through
+    /// `default`, join the segments into the string the template expects.
+    default_template_requires_reasoning_string: bool,
+    /// See `default_template_requires_reasoning_string` for rationale.
+    tool_use_template_requires_reasoning_string: bool,
     /// Per-family placeholder template for image content parts when flattening
     /// mixed text+image content arrays into a single string (`preserve_arrays`
     /// = false path). `{n}` in the template is substituted with the 1-based
@@ -191,14 +203,15 @@ struct HfTokenizerConfigJsonFormatter {
     /// for it (no MM-aware routing benefit either way).
     image_placeholder_template: Option<&'static str>,
     /// True if the `default` template branches on `tool_call.arguments is string`
-    /// (Qwen3, Hermes, etc.). When true and rendering through `default`, skip
-    /// pre-parsing the JSON-string `tool_calls[].function.arguments` into an
-    /// object — the template wants the raw string verbatim. Pre-parsing forces
-    /// the `tojson`-with-object branch and re-emits with minijinja's compact
-    /// separators, which breaks append-only prefix matching across multi-step
-    /// tool-use turns. Tracked separately for `default` and `tool_use` because
-    /// HF configs may register different sources for each, and because
-    /// `arguments is string` is tool_calls-specific — legacy
+    /// and renders string arguments verbatim (Qwen3, Hermes, etc.; templates that
+    /// only use the test to reject strings don't count). When true and rendering
+    /// through `default`, skip pre-parsing the JSON-string
+    /// `tool_calls[].function.arguments` into an object — the template wants the
+    /// raw string verbatim. Pre-parsing forces the `tojson`-with-object branch and
+    /// re-emits with minijinja's compact separators, which breaks append-only
+    /// prefix matching across multi-step tool-use turns. Tracked separately for
+    /// `default` and `tool_use` because HF configs may register different sources
+    /// for each, and because `arguments is string` is tool_calls-specific — legacy
     /// `function_call.arguments` lives outside that branch and is still
     /// normalized unconditionally.
     default_template_handles_tool_calls_arguments_string: bool,
@@ -226,6 +239,25 @@ struct HfTokenizerConfigJsonFormatter {
 #[derive(Debug, Clone, Default)]
 pub struct ContextMixins {
     context_mixins: HashSet<PromptContextMixin>,
+}
+
+fn is_deepseek_v41(model_type_lower: &Option<String>, display_name_lower: &str) -> bool {
+    match model_type_lower.as_deref() {
+        Some("deepseek_v41") => true,
+        Some(_) => false,
+        None => [
+            "deepseek-v4.1",
+            "deepseek_v4.1",
+            "deepseek.v4.1",
+            "deepseekv4.1",
+        ]
+        .iter()
+        .any(|prefix| {
+            display_name_lower
+                .strip_prefix(prefix)
+                .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with(['-', '_', '.']))
+        }),
+    }
 }
 
 /// Decides whether to activate the DeepSeek-V4 native formatter.

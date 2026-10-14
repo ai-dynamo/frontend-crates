@@ -1,0 +1,20 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.13
+    source_sha256: f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8
+    git_commit: 47ef952237deefe0643f94025272a558f249687d
+document:
+  mode: unified
+changes:
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: a7f43a11f9fdd37253809b088ccc30a3c4eece02700148d2ec3e70402a1bf7e9
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native push: EOF while parsing a string at line 1 column 16'
+metadata_changes: {}
+document_overrides: {}

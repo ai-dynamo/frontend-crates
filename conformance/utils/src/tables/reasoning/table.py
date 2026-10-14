@@ -916,7 +916,7 @@ def _parse_case_descriptions() -> dict[str, str]:
     if not REASONING_CASES_MD.exists():
         return {}
     pat = re.compile(
-        r"\*\*`REASONING\.(batch|stream)\.([0-9]+(?:\.[a-z])?)`\*\*\s+(.+)"
+        rf"\*\*`REASONING\.(batch|stream)\.({common.CASE_DESCRIPTION_SUFFIX})`\*\*\s+(.+)"
     )
     out = {}
     lines = REASONING_CASES_MD.read_text(encoding="utf-8").splitlines()

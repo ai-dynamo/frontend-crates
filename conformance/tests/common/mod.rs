@@ -8,9 +8,42 @@
 //! `mod common;` so this compiles into it; a binary that uses only a subset is
 //! fine (hence the allow).
 #![allow(dead_code)]
+// The copied historical harness supplies this cfg without editing old manifests.
+#![allow(unexpected_cfgs)]
+
+pub mod known_toolcalling_chunking;
+pub mod known_unified_divergences;
+pub mod unified_capture;
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Copy the schema file with historical harnesses: tool registration and argument
+/// typing are request inputs, not parser-version differences.
+pub fn unified_tools() -> Vec<dynamo_parsers_v2::Tool> {
+    serde_json::from_value(unified_tool_schemas()).expect("Unified corpus tool schemas")
+}
+
+pub fn unified_tools_for_schemas(
+    schemas: Option<&serde_json::Value>,
+) -> Vec<dynamo_parsers_v2::Tool> {
+    match schemas {
+        Some(schemas) => {
+            serde_json::from_value(schemas.clone()).expect("case-specific Unified tool schemas")
+        }
+        None => unified_tools(),
+    }
+}
+
+pub fn unified_tool_schemas_for_case(schemas: Option<&serde_json::Value>) -> serde_json::Value {
+    schemas.cloned().unwrap_or_else(unified_tool_schemas)
+}
+
+pub fn unified_tool_schemas() -> serde_json::Value {
+    serde_json::from_str(include_str!("../../utils/src/unified_tools.json"))
+        .expect("Unified corpus tool schemas")
+}
 
 /// Recursively collect `*.yaml` fixture files under `dir` into `out`.
 pub fn collect_yaml(dir: &Path, out: &mut Vec<PathBuf>) {
@@ -200,18 +233,31 @@ mod resolve_snap_dir_tests {
 /// `*.tar.gz` shards). Instead `gen_unified_golden.py` renders it from one
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
-/// The committed `golden.tar.gz` shard is DERIVED from this via render -> explode
-/// -> package. A `flock` serializes the two unified test binaries so they don't
-/// race writing the same files. Panics with the fix command if generation fails.
+/// The committed canonical family YAML is DERIVED from this via render -> explode
+/// -> package. Each test process copies the generated tree to its own immutable
+/// directory while holding the lock, because the generator truncates files before
+/// rewriting them and another test binary may start as soon as the lock is released.
+/// Panics with the fix command if generation fails.
 pub fn ensure_unified_golden() -> PathBuf {
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = manifest.join("utils/src/gen_unified_golden.py");
+    let generated = manifest.join("unified/golden_spec");
+    static GOLDEN_COPY_ID: AtomicUsize = AtomicUsize::new(0);
+    let copy_id = GOLDEN_COPY_ID.fetch_add(1, Ordering::Relaxed);
+    let isolated = manifest.join(format!(
+        "unified/golden_spec-{}-{copy_id}",
+        std::process::id()
+    ));
     let status = std::process::Command::new("flock")
         .args([
             "/tmp/dynamo-unified-golden.lock",
-            "python3",
-            script.to_str().expect("non-UTF-8 script path"),
+            "sh",
+            "-c",
+            "python3 \"$GOLDEN_SCRIPT\" && rm -rf \"$GOLDEN_DEST\" && cp -a \"$GOLDEN_SOURCE\" \"$GOLDEN_DEST\"",
         ])
+        .env("GOLDEN_SCRIPT", &script)
+        .env("GOLDEN_SOURCE", &generated)
+        .env("GOLDEN_DEST", &isolated)
         .status()
         .expect("flock/python3 not found — ensure python3 is in PATH");
     if !status.success() {
@@ -221,7 +267,7 @@ pub fn ensure_unified_golden() -> PathBuf {
             script.display()
         );
     }
-    manifest.join("unified/golden_spec")
+    isolated
 }
 
 /// Crate-relative display path for a fixture (for failure messages).
@@ -232,13 +278,39 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Current parser-version capture used by stream parity and interleave tests.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.0";
+/// Fold prior family captures through the current parser release checkpoint.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.7.22";
 
-pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.4.1";
+// Consumers may reuse verified archives in tagless clones; producers still require tags.
+pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
+
+fn dynamo_identity_command() -> std::process::Command {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    // Historical worktrees need the current checker, not their version-only helper.
+    let script = std::env::var_os("CONFORMANCE_DYNAMO_PROVENANCE_SCRIPT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| repo.join("conformance/utils/src/dynamo_version.py"));
+    let mut command = std::process::Command::new("python3");
+    command.arg(script).arg("--repo-root").arg(repo);
+    command
+}
+
+pub fn dynamo_capture_provenance(label: Option<&str>) -> serde_json::Value {
+    let mut command = dynamo_identity_command();
+    if let Some(label) = label {
+        command.arg("--label").arg(label);
+    }
+    let output = command.output().expect("run Dynamo capture identity check");
+    assert!(
+        output.status.success(),
+        "Dynamo capture identity check failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    serde_json::from_slice(&output.stdout).expect("Dynamo capture provenance JSON")
+}
 
 /// Version-sorted capture dirs for one impl prefix (e.g. `dynamo-` under
-/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v2), ASCENDING by
+/// fixtures-batch-v1, `dynamo_v2-` under fixtures-stream-v1), ASCENDING by
 /// numeric version. Multiple dirs per impl are capture HISTORY (never deleted);
 /// readers fold them ascending so the latest capture wins per case.
 pub type VersionCaptureSortKey = (Vec<u64>, bool, String);
@@ -269,7 +341,34 @@ pub fn version_dirs_ascending_with_current(
     prefix: &str,
     current_dir: &str,
 ) -> Vec<PathBuf> {
-    let current = root.join(current_dir);
+    version_dirs_with_identity_command(root, prefix, current_dir, dynamo_identity_command())
+}
+
+fn version_dirs_with_identity_command(
+    root: &Path,
+    prefix: &str,
+    current_dir: &str,
+    mut command: std::process::Command,
+) -> Vec<PathBuf> {
+    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+        let output = command
+            .args(["--format", "label"])
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .output()
+            .expect("run Dynamo capture version reader");
+        assert!(
+            output.status.success(),
+            "Dynamo capture version lookup failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let label = String::from_utf8(output.stdout).expect("capture label UTF-8");
+        let resolved = format!("{prefix}{}", label.trim());
+        root.join(resolved)
+    } else {
+        root.join(current_dir)
+    };
+    let current = current_dir;
     assert!(
         current.is_dir(),
         "expected current capture directory {}",
@@ -281,6 +380,167 @@ pub fn version_dirs_ascending_with_current(
         .collect::<Vec<_>>();
     dirs.push(current);
     dirs
+}
+
+/// Use the same snapshot and request-binding validator as the Python renderer.
+pub fn capture_stimulus_command() -> std::process::Command {
+    let mut command = std::process::Command::new("python3");
+    command.arg(Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src/capture_stimulus.py"));
+    command
+}
+
+#[cfg(test)]
+mod capture_selector_tests {
+    use super::*;
+
+    fn git(root: &Path, args: &[&str]) -> String {
+        let output = std::process::Command::new("git")
+            .arg("-C")
+            .arg(root)
+            .args(args)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).unwrap().trim().to_string()
+    }
+
+    fn checker(repo: &Path) -> std::process::Command {
+        let mut command = dynamo_identity_command();
+        command
+            .arg("--repo-root")
+            .arg(repo)
+            .env_remove("CONFORMANCE_DYNAMO_V2_LABEL");
+        command
+    }
+
+    fn select(root: &Path, repo: &Path, label: Option<&str>) -> Vec<PathBuf> {
+        let mut command = checker(repo);
+        if let Some(label) = label {
+            command.env("CONFORMANCE_DYNAMO_V2_LABEL", label);
+        }
+        version_dirs_with_identity_command(
+            root,
+            "dynamo_v2-",
+            UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
+            command,
+        )
+    }
+
+    fn write_capture_with_record(
+        dir: &Path,
+        provenance: &serde_json::Value,
+        record: serde_json::Value,
+    ) {
+        std::fs::create_dir_all(dir.join("gemma4")).unwrap();
+        std::fs::write(
+            dir.join("gemma4/probe.yaml"),
+            serde_json::to_string(&serde_json::json!({
+                "family": "gemma4",
+                "capture_provenance": provenance,
+                "cases": {"probe": record}
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+    }
+
+    fn write_capture(dir: &Path, provenance: &serde_json::Value) {
+        write_capture_with_record(dir, provenance, serde_json::json!({}));
+    }
+
+    #[test]
+    fn tagless_rust_consumer_reuses_verified_release() {
+        let scratch =
+            std::env::temp_dir().join(format!("dynamo-tagless-selector-{}", std::process::id()));
+        let repo = scratch.join("release");
+        std::fs::create_dir_all(repo.join("parsers/v2/src")).unwrap();
+        std::fs::write(
+            repo.join("parsers/v2/Cargo.toml"),
+            "[package]\nname='dynamo-parsers-v2'\nversion='0.6.0'\n",
+        )
+        .unwrap();
+        std::fs::write(repo.join("parsers/v2/src/lib.rs"), "pub fn parser() {}\n").unwrap();
+        git(&repo, &["init", "-q"]);
+        git(&repo, &["add", "."]);
+        let tree = git(&repo, &["write-tree"]);
+        let commit = git(
+            &repo,
+            &[
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.invalid",
+                "commit-tree",
+                &tree,
+                "-m",
+                "fixture",
+            ],
+        );
+        git(&repo, &["update-ref", "HEAD", &commit]);
+        git(
+            &repo,
+            &["update-ref", "refs/tags/dynamo-parsers-v2-v0.6.0", &commit],
+        );
+        let output = checker(&repo).output().unwrap();
+        assert!(output.status.success());
+        let recorded: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(recorded["label"], "0.6.0");
+        let clone = scratch.join("shallow");
+        git(
+            &repo,
+            &[
+                "clone",
+                "--depth=1",
+                "--no-tags",
+                &format!("file://{}", repo.display()),
+                clone.to_str().unwrap(),
+            ],
+        );
+        assert_eq!(
+            git(&clone, &["rev-parse", "--is-shallow-repository"]),
+            "true"
+        );
+        assert_eq!(git(&clone, &["tag", "--list"]), "");
+        let captures = scratch.join("unified");
+        let release = captures.join("dynamo_v2-0.6.0");
+        write_capture(&release, &recorded);
+        let selected = select(&captures, &clone, None);
+        assert_eq!(selected.last(), Some(&release));
+        assert!(
+            !checker(&clone)
+                .args(["--label", "0.6.0"])
+                .output()
+                .unwrap()
+                .status
+                .success()
+        );
+        assert_eq!(
+            select(&captures, &clone, Some("current")).last(),
+            Some(&release)
+        );
+        assert_eq!(
+            select(&captures, &clone, Some("0.6.0")).last(),
+            Some(&release)
+        );
+        write_capture(&release, &serde_json::Value::Null);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
+        write_capture(&release, &recorded);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
+
+        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        std::fs::create_dir_all(&stream).unwrap();
+        let stream_dirs = version_dirs_with_identity_command(
+            &captures,
+            "dynamo_v2-",
+            STREAM_DYNAMO_V2_CURRENT_CAPTURE,
+            std::process::Command::new("this-command-must-not-run"),
+        );
+        assert_eq!(stream_dirs.last(), Some(&stream));
+    }
 }
 
 /// Sort a PR-qualified capture after its matching release. The PR capture represents
@@ -385,6 +645,7 @@ pub struct Init {
     pub named_tool: Option<String>,
 }
 
+#[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
 impl Init {
     /// An unknown value is a spec bug, not something to paper over with a default:
     /// silently falling back to `None`/`Native` is exactly the failure this replaced.
@@ -411,15 +672,21 @@ impl Init {
 
     /// Apply this configuration to a freshly created parser.
     pub fn apply(&self, parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>, what: &str) {
-        use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: self.starting_state(),
-                tool_output_mode: self.output_mode(),
-                invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
-                ..UnifiedParserInit::default()
-            })
+        self.try_apply(parser)
             .unwrap_or_else(|e| panic!("{what}: initialize_request {self:?}: {e}"));
+    }
+
+    pub fn try_apply(
+        &self,
+        parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
+    ) -> anyhow::Result<()> {
+        use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        parser.initialize_request(UnifiedParserInit {
+            starting_state: self.starting_state(),
+            tool_output_mode: self.output_mode(),
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            ..UnifiedParserInit::default()
+        })
     }
 
     /// The config as APPLIED, not as written — an omitted field is reported as the
