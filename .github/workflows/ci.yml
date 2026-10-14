@@ -145,8 +145,8 @@ jobs:
       - name: Conformance gate (catalog + lint + invariants)
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="--numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" conformance/utils/check.sh ci
 
       - name: Prepare GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}

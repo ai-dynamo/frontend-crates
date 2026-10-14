@@ -103,10 +103,7 @@ def _chrome(viewer_url, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
-    try:
-        d = webdriver.Chrome(options=opts)
-    except Exception as exc:  # noqa: BLE001 — environment without a usable driver
-        pytest.skip(f"could not start Chrome webdriver: {exc}")
+    d = webdriver.Chrome(options=opts)
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
     _navigate(d, f"{viewer_url}?transpose=0")

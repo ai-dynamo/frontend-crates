@@ -45,6 +45,13 @@ const missingCaptureReader = { yaml: async () => ({ value: document }), unified:
 const missingCapturePanel = await unifiedPanel(catalog, missingCaptureReader);
 assert.equal(missingCapturePanel.rows[0].cells.tool_only.cmp.dynamo.err, 1);
 assert.match(missingCapturePanel.rows[0].cells.tool_only.tooltip.candidates.find(({ key }) => key === 'dynamo').block.error, /Missing Unified capture/);
+const qwen3Generation = catalog.metadata.unified_presentation.parser_generations.qwen3;
+for (const label of ['v1', 'v1/v2 split', 'v2']) {
+  catalog.metadata.unified_presentation.parser_generations.qwen3 = { label };
+  const labeledPanel = await unifiedPanel(catalog, missingCaptureReader);
+  assert.equal(labeledPanel.rows[0].model_label, `qwen3 (${label})`);
+}
+catalog.metadata.unified_presentation.parser_generations.qwen3 = qwen3Generation;
 catalog.metadata.unified_presentation.v1_split_scenarios = ['tool_only'];
 const v1SplitPanel = await unifiedPanel(catalog, missingCaptureReader);
 assert.equal(v1SplitPanel.rows[0].cells.tool_only.cmp.dynamo.na, 1);
