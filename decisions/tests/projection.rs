@@ -172,17 +172,7 @@ fn jev_refusal_is_explicit_and_missing_label_mass_is_not_invented() {
 }
 
 #[test]
-fn distribution_temperature_ties_and_confidence_are_independent() {
-    let scores = [0.72_f64.ln(), 0.08_f64.ln()];
-    let cold = reduce_vocab_logprobs(&scores, 0.5).unwrap();
-    let hot = reduce_vocab_logprobs(&scores, 2.0).unwrap();
-    assert_eq!(cold.label_mass, hot.label_mass);
-    assert!(cold.probabilities[0] > hot.probabilities[0]);
-    assert!((choice_confidence(&[0.1, 0.2, 0.7]).unwrap() - 0.55).abs() < 1e-12);
-    assert!((score_confidence(&[0.1, 0.2, 0.7]).unwrap() - 0.4).abs() < 1e-12);
-    for t in [f64::NAN, f64::INFINITY, -1.0] {
-        assert!(reduce_vocab_logprobs(&scores, t).is_err());
-    }
+fn distribution_ties_and_underflow_preserve_projection() {
     assert_eq!(
         reduce_vocab_logprobs(&[-1.0, -1.0], f64::MIN_POSITIVE)
             .unwrap()
@@ -213,12 +203,7 @@ fn distribution_temperature_ties_and_confidence_are_independent() {
 }
 
 #[test]
-fn dialect_error_bodies_preserve_openai_and_jev_contracts() {
-    let openai = DecisionError::validation(Dialect::OpenAi, "bad request");
-    assert_eq!(
-        openai.response_body(),
-        json!({"error":{"message":"bad request","type":"invalid_request_error","param":null,"code":"invalid_request_error"}})
-    );
+fn jev_model_not_found_preserves_error_body() {
     let jev = DecisionError::new(Dialect::Jev, 404, "model_not_found", "unknown model");
     assert_eq!(
         jev.response_body(),

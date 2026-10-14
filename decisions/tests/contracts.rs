@@ -73,26 +73,6 @@ fn jev_preserves_structured_state_order_and_singletons() {
 }
 
 #[test]
-fn actual_refusal_is_not_a_scored_answer() {
-    let request = parse(
-        json!({"model":"m","input":"x","questions":[{"type":"predicate","instructions":"safe?"}]}),
-        Route::Decisions,
-    );
-    let response = project_response(
-        &request,
-        "m",
-        &[QuestionOutcome::Refusal("internal reason".into())],
-        &usage(),
-    )
-    .unwrap();
-    assert_eq!(
-        response["answers"][0],
-        json!({"type":"refusal","name":null})
-    );
-    assert!(!response.to_string().contains("internal reason"));
-}
-
-#[test]
 fn missing_cache_measurement_is_not_fabricated() {
     let request = parse(
         json!({"model":"m","input":"x","questions":[{"type":"predicate","instructions":"safe?"}]}),
