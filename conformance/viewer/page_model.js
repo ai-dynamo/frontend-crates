@@ -16,7 +16,8 @@ export async function buildTab(catalog, reader, tabId, options = {}) {
 
 export function pageMetadata(catalog, { commitSha = null, sourceLink = null } = {}) {
   if (commitSha !== null && !/^[0-9a-f]{40}$/.test(commitSha)) throw new Error('commitSha must be an immutable full SHA');
-  const latest = tabCandidates(catalog, catalog.metadata.tabs.find((tab) => tab.id === 'tab-toolcalling-streamv1')).find((descriptor) => descriptor.control.default_bucket === 'A');
+  const streamSpec = catalog.metadata.tabs.find(tab => tab.id === 'tab-toolcalling-streamv1');
+  const latest = streamSpec ? tabCandidates(catalog, streamSpec).find(descriptor => descriptor.control.default_bucket === 'A') : null;
   const parserNi = {};
   if (latest) {
     const version = latest.source.version;

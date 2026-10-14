@@ -24,8 +24,9 @@ window.initializeConformanceController = function (hooks = {}) {
   function activePanel() { return document.querySelector('.tab-panel.active'); }
   function panelCtl(panel) { return panel ? panel.querySelector('.cmpctl') : null; }
   // Reference = the single checked radio; Compare-with = every checked checkbox.
-  function ctlBase(ctl) { const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
+  function ctlBase(ctl) { if (hooks.engineSelection) return hooks.engineSelection.reference; const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
   function ctlShown(ctl) {
+    if (hooks.engineSelection) return hooks.engineSelection.selection().selected;
     return ctl ? Array.from(ctl.querySelectorAll('input.cmp-on:checked')).map(function (x) { return x.value; }) : [];
   }
   // The Reference parser can't compare to itself: disable (and flag) its own
@@ -135,6 +136,7 @@ window.initializeConformanceController = function (hooks = {}) {
     return shown.every(function (k) { return set.has(k); });
   }
   function updateCompareUrl(panel, ctl) {
+    if (hooks.engineSelection) return;
     const url = new URL(window.location.href);
     const pid = panel.id;
     const base = ctlBase(ctl);
@@ -152,6 +154,7 @@ window.initializeConformanceController = function (hooks = {}) {
     window.history.replaceState(null, '', url.toString());
   }
   function restoreCtlFromUrl(panel, ctl) {
+    if (hooks.engineSelection) return;
     const params = new URLSearchParams(window.location.search);
     const pid = panel.id;
     if (!params.has('base_' + pid) && !params.has('cmp_' + pid)) { return; }  // keep defaults
@@ -464,7 +467,8 @@ window.initializeConformanceController = function (hooks = {}) {
   document.querySelectorAll('[data-reset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
-      const u = new URL(window.location.href); u.search = ''; u.hash = '';
+      const u = new URL(window.location.href);
+      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['tab', 'ref', 'cmp', 'view', 'transpose', 'cols', 'show', 'hide'].includes(key)) u.searchParams.delete(key);
       if (tab) { u.searchParams.set('tab', tab); }
       window.location.href = u.href;  // reload at defaults, same tab
     });
@@ -1512,7 +1516,7 @@ window.initializeConformanceController = function (hooks = {}) {
   return { refreshPanel, updatePanel, disposePanel, activePanel,
     selection(panel) {
       const ctl = panelCtl(panel), reference = ctlBase(ctl);
-      return { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
+      return hooks.engineSelection ? hooks.engineSelection.selection() : { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
     },
   };
 };

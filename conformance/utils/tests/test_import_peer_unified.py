@@ -14,7 +14,27 @@ import unified_history
 from capture_stimulus import select_peer_observation
 from capture_unified_job import build_job
 from import_peer_unified import digest, import_capture, main
+from peer_stream_assembly import assemble_stream
 from conformance.utils.tests.test_unified_history import _add_backfill_case, _change, _request, _write_capture, _write_family
+
+
+def test_peer_stream_assembly_coalesces_text_and_joins_tool_arguments_in_order():
+    chunks = [
+        [{"kind": "reasoning", "text": "think"}],
+        [
+            {"kind": "reasoning", "text": " more"},
+            {"kind": "tool_call", "name": "lookup", "arguments": '{"q":', "complete": False},
+        ],
+        [
+            {"kind": "tool_call", "arguments": '"x"}', "complete": True},
+            {"kind": "text", "text": "done"},
+        ],
+    ]
+    assert assemble_stream(chunks) == [
+        {"kind": "reasoning", "text": "think more"},
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}},
+        {"kind": "text", "text": "done"},
+    ]
 
 
 @pytest.mark.parametrize("implementation", ["vllm_python", "vllm_rust", "sglang_python"])

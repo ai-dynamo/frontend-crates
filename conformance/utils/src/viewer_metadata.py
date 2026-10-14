@@ -38,7 +38,7 @@ VIEWER_SELECTION_POLICY = {
     "batch": {"reference": "dynamo_v1", "golden_bucket": "B", "inventory_availability": "inputs"},
     "stream": {"reference": "dynamo_v2", "fold_patch_suffix": True, "golden_bucket": "B", "inventory_defaults": {"dynamo_v1": "oldest", "vllm_rust": "oldest"}},
     "reasoning": {"reference": "dynamo_v1", "implementation_order": ["dynamo_v1", "vllm_python", "sglang_python"]},
-    "unified": {"reference": "dynamo_v2", "implementation_order": ["dynamo_v2", "vllm_python", "vllm_rust"], "golden_bucket": "C", "historical_control_aliases": {"vllm_python@0.25.1": "vllm", "vllm_rust@0.25.1": "vllm_rust"}},
+    "unified": {"capture_contracts": {"dynamo_v1": {"label": "batch, v1", "assembled": "final"}, "dynamo_v2": {"label": "stream, Unified", "assembled": "stream"}, "sglang_python": {"label": "stream, reasoning + tool detectors", "assembled": "stream"}, "vllm_python": {"label": "batch + stream, Combined", "assembled": "final"}, "vllm_rust": {"label": "stream, Combined & Unified", "assembled": "stream"}}, "reference": "dynamo_v2", "implementation_order": ["dynamo_v2", "dynamo_v1", "sglang_python", "vllm_python", "vllm_rust"], "golden_bucket": "C", "historical_control_aliases": {"vllm_python@0.25.1": "vllm", "vllm_rust@0.25.1": "vllm_rust"}},
 }
 
 VIEWER_TAB_SPECS = (

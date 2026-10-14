@@ -79,6 +79,27 @@ def test_viewer_catalog_is_current_and_contains_only_resource_metadata():
     assert catalog["schema"] == 1
     assert catalog["metadata"]["tabs"]
     assert catalog["metadata"]["unified_taxonomy"]
+    parser_generations = catalog["metadata"]["unified_presentation"]["parser_generations"]
+    assert parser_generations["deepseek_v4"]["label"] == "v1/v2 split"
+    assert parser_generations["muse_glimmer"]["label"] == "v2"
+    assert parser_generations["qwen3"]["label"] == "v2"
+    assert parser_generations["deepseek_v3"]["label"] == "v1"
+    assert parser_generations["harmony"]["label"] == "v1/v2 split"
+    assert parser_generations["gpt_oss"]["label"] == "v1/v2 split"
+    assert parser_generations["deepseek_v4"]["native_unified_v2"] is True
+    assert parser_generations["deepseek_v3"]["native_unified_v2"] is False
+    unified_families = {
+        source["family"] for source in catalog["sources"]["unified"]
+        if source["kind"] == "inputs-and-golden"
+    }
+    assert unified_families == set(parser_generations)
+    assert len(unified_families) == 27
+    for family, generation in parser_generations.items():
+        assert generation["label"] in {"v1", "v1/v2 split", "v2"}, family
+        assert generation["generation"] == {
+            "v1": "v1", "v1/v2 split": "v1+v2 split", "v2": "v2",
+        }[generation["label"]], family
+        assert isinstance(generation["native_unified_v2"], bool), family
     assert catalog["metadata"]["source_hashes"]["documentation"]
     assert all("members" in archive for archive in catalog["sources"]["archives"])
     identities = [(candidate["implementation"], candidate["mode"], candidate["version"]) for candidate in catalog["sources"]["candidates"]]

@@ -7,7 +7,7 @@ import { FixtureResources } from './resources.js';
 import { buildPage, buildTab } from './page_model.js';
 import { buildStatus } from './status.js';
 import { tabCandidates } from './candidates.js';
-import { compareLegacyVersions } from './model.js';
+import { compareLegacyVersions, resolveUnified } from './model.js';
 import { leafCells } from './folds.js';
 import { columnKeysFor } from './column_state.js';
 const root = new URL('../../', import.meta.url);
@@ -88,6 +88,17 @@ assert.ok(unified.columns.every(column => column.label.includes('-')));
 assert.ok(unified.columns.some(column => column.variant_labels?.length || column.schemas?.length));
 assert.ok(unified.candidates.some(candidate => candidate.key === 'dynamo@0.6.0'));
 assert.ok(unified.candidates.some(candidate => candidate.key === 'vllm_rust'));
+const sparseProvenance = resolveUnified([
+  { implementation: 'dynamo', version: '0.9.0', path: 'first.yaml', bytes: new Uint8Array(), document: {
+    changes: { 'UNIFIED.provenance': { case_key: 'provenance', stimulus: {}, observation: { events: [] } } },
+    document: {}, document_overrides: { 'UNIFIED.provenance': { parser_path: 'unified', capture_provenance: { captured_with: { dynamo: '0.8.0' }, inherited_from: null } } },
+  } },
+  { implementation: 'dynamo', version: '1.0.0', path: 'next.yaml', bytes: new Uint8Array(), document: {
+    changes: { 'UNIFIED.provenance': { stimulus: { updated: true } } }, document: {},
+  } },
+], '1.0.0');
+assert.equal(sparseProvenance.get('UNIFIED.provenance').value.document.captured_with.dynamo, '0.8.0');
+assert.equal(Object.hasOwn(sparseProvenance.get('UNIFIED.provenance').value.document, 'inherited_from'), false);
 for (const original of page.tabs) {
   const reference = original.candidates.find(candidate => candidate.default_bucket === 'A').key;
   const selected = await buildTab(catalog, reader, original.id, { selected: [reference], reference });

@@ -19,7 +19,7 @@ const captures = [
   { version: '0.1.0', implementation: 'dynamo_v2', path: 'first.yaml', bytes: new Uint8Array([1]), document: {
     provenance: { status: 'captured', origin: { crate_version: '0.1.0', source_sha256: 'a'.repeat(64) } },
     document: { mode: 'unified' },
-    changes: { case_a: { observation: { value: { assembled: [{ kind: 'text', text: 'old' }] } } }, case_removed: { observation: { value: { assembled: [] } } } },
+    changes: { case_a: { case_key: 'UNIFIED.3', stimulus: { unavailable: { code: 'original_request_not_retained' } }, observation: { value: { assembled: [{ kind: 'text', text: 'old' }] } } }, case_removed: { case_key: 'UNIFIED.3', stimulus: { unavailable: { code: 'original_request_not_retained' } }, observation: { value: { assembled: [] } } } },
     metadata_changes: { case_a: { source: 'old' } },
     document_overrides: { case_a: { parser_path: 'old/parser' } },
   } },

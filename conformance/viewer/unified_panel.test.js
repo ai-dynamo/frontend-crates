@@ -22,6 +22,7 @@ for (const observation of [{ error: { code: 'panic', detail: 'parser failed' } }
   await validateUnifiedCapture(capture, document, identity);
   const reader = { yaml: async () => ({ value: document }), unified: async () => ({ records: resolveUnified([{ ...identity, document: capture }], '1.0.0') }) };
   const panel = await unifiedPanel(catalog, reader);
+  assert.equal(panel.rows[0].model_label, 'qwen3 (v2)');
   const cell = panel.rows[0].cells.tool_only;
   const candidate = cell.tooltip.candidates.find((candidate) => candidate.key === 'dynamo');
   if (observation.error) {
@@ -40,6 +41,15 @@ assert.match(unifiedComparisonFailure(request, {}), /original input/);
 assert.match(unifiedComparisonFailure(request, { capture_input: { ...request, tools: null } }), /original tool schema/);
 assert.match(unifiedComparisonFailure(request, { capture_input: { ...request, input: 'different' } }), /mismatch \(input\)/);
 assert.throws(() => unifiedComparisonFailure(request, { capture_input: { input: 'sample', tools: [] } }), /incomplete/);
+const missingCaptureReader = { yaml: async () => ({ value: document }), unified: async () => ({ records: new Map() }) };
+const missingCapturePanel = await unifiedPanel(catalog, missingCaptureReader);
+assert.equal(missingCapturePanel.rows[0].cells.tool_only.cmp.dynamo.err, 1);
+assert.match(missingCapturePanel.rows[0].cells.tool_only.tooltip.candidates.find(({ key }) => key === 'dynamo').block.error, /Missing Unified capture/);
+catalog.metadata.unified_presentation.v1_split_scenarios = ['tool_only'];
+const v1SplitPanel = await unifiedPanel(catalog, missingCaptureReader);
+assert.equal(v1SplitPanel.rows[0].cells.tool_only.cmp.dynamo.na, 1);
+assert.match(v1SplitPanel.rows[0].cells.tool_only.tooltip.candidates.find(({ key }) => key === 'dynamo').block.unavailable, /Dynamo v1 split parser/);
+catalog.metadata.unified_presentation.v1_split_scenarios = [];
 const retiredDocument = structuredClone(document);
 retiredDocument.cases.retired = { ...structuredClone(input), lifecycle: 'retired', display_id: null, historical_ids: [], request: null, golden: null, description: null };
 const good = { provenance: { status: 'captured', origin: { crate_version: '1.0.0', source_sha256: 'a'.repeat(64) } }, document: {},
@@ -48,15 +58,16 @@ const good = { provenance: { status: 'captured', origin: { crate_version: '1.0.0
 await validateUnifiedCapture(good, retiredDocument, identity);
 const retiredReader = { yaml: async () => ({ value: retiredDocument }), unified: async () => ({ records: resolveUnified([{ ...identity, document: good }], '1.0.0') }) };
 let panel = await unifiedPanel(catalog, retiredReader);
-assert.equal(panel.rows[0].cells.tool_only.tooltip.candidates[0].block.verdict, 'MATCH');
+assert.equal(panel.rows[0].cells.tool_only.tooltip.candidates.find(candidate => candidate.key === 'dynamo').block.verdict, 'MATCH');
 delete good.changes.id;
 retiredDocument.cases.id.historical_ids = ['UNIFIED.1.a'];
 good.changes.retired.case_key = 'UNIFIED.1.a';
 good.changes.retired.stimulus.inline = { ...request, input: 'old', chunks: [{ delta_text: 'old' }] };
 await validateUnifiedCapture(good, retiredDocument, identity);
 panel = await unifiedPanel(catalog, retiredReader);
-assert.match(panel.rows[0].cells.tool_only.tooltip.candidates[0].block.unavailable, /mismatch \(input, chunks\)/);
-assert.equal(panel.rows[0].cells.tool_only.cmp.dynamo.err, 1);
+assert.match(panel.rows[0].cells.tool_only.tooltip.candidates.find(candidate => candidate.key === 'dynamo').block.unavailable, /mismatch \(input, chunks\)/);
+assert.equal(panel.rows[0].cells.tool_only.cmp.dynamo.err, 0);
+assert.equal(panel.rows[0].cells.tool_only.cmp.dynamo.na, 1);
 
 catalog.sources.candidates.push(
   { mode: 'unified', implementation: 'dynamo_v2', version: '0.9.0', source: 'older.yaml' },

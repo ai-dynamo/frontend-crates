@@ -28,12 +28,15 @@ export function aggregateCells(cells, parent, description) {
   if (cells.some(cell => Object.hasOwn(cell, 'applicable'))) result.applicable = cells.some(isApplicableCell);
   result.red_on_diff = true;
   const applicable = cells.filter(isApplicableCell);
-  const keys = [...new Set(applicable.flatMap((cell) => Object.keys(cell.cmp || {})))].sort(compareText);
+  // Keep comparison identities even when every folded leaf is inapplicable.
+  // The aggregate still needs NA entries for selected engines so rendering and
+  // status checks can distinguish an unavailable case from a missing engine.
+  const keys = [...new Set(cells.flatMap((cell) => Object.keys(cell.cmp || {})))].sort(compareText);
   const signatures = [];
   result.cmp = {};
   for (const key of keys) {
     const entries = applicable.map((cell) => cell.cmp?.[key] || { na: 1 });
-    const missing = entries.some((entry) => entry.na);
+    const missing = !applicable.length || entries.some((entry) => entry.na);
     const failure = entries.some((entry, index) => !entry.na && (entry.err || entry.leak || (applicable[index].cmp?.golden && !sameValue(entry.sig, applicable[index].cmp.golden.sig))));
     const signature = entries.map((entry) => entry.na ? null : entry.sig);
     let group = signatures.findIndex((prior) => sameValue(prior, signature));

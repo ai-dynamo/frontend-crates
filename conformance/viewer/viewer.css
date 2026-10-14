@@ -1,7 +1,20 @@
 /* Transport state is separate from recorded parser outcomes. */
-.tab-panel:not([data-load-state="ready"]) > :not(.cmpctl):not(.load-status) { display: none; }
+.tab-panel:not([data-load-state="ready"]) > :not(.cmpctl):not(.load-status):not([data-parity-table]) { display: none; }
 .load-status { padding: 1rem; }
 .load-status[role="alert"], .error { color: #b00; }
 #viewer > pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .ttip-pinned { resize: both; }
+
+.engine-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 12px 0; }
+.engine-card { min-width: 0; padding: 13px 14px; border: 1px solid #cbd5e1; border-left: 3px solid var(--engine-color); border-radius: 12px; background: #fff; }
+.engine-card[data-engine="dynamo"] { --engine-color: #76b900; }
+.engine-card[data-engine="sglang"] { --engine-color: #f97316; }
+.engine-card[data-engine="vllm"] { --engine-color: #3b82f6; }
+.engine-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.engine-name { color: var(--engine-color); }
+.engine-card select { max-width: 78%; min-width: 0; border: 1px solid #cbd5e1; border-radius: 7px; padding: 5px; background: #f8fafc; color: #172033; font: inherit; font-size: 12px; }
+.reference-status, .engine-cards > p { grid-column: 1 / -1; margin: 0; }
+:root[data-theme="dark"] .engine-card { background: #172033; border-color: #475569; border-left-color: var(--engine-color); }
+:root[data-theme="dark"] .engine-card select { background: #0f172a; color: #e2e8f0; border-color: #475569; }
+@media(max-width: 720px) { .engine-cards { grid-template-columns: 1fr; } }

@@ -58,7 +58,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
       const versions = sources.filter((item) => item.implementation === implementation && item.id !== reference.id).sort((a, b) => compare(b.version, a.version));
       for (const source of versions) {
         const key = implementation === policy.reference ? `dynamo@${source.version}` : policy.historical_control_aliases[`${implementation}@${source.version}`] || `${implementation}@${source.version}`;
-        const label = implementation === 'vllm_python' ? `${metadata.implementations.find((item) => item.key === implementation).label} ${source.version} (batch, Combined)` : implementation === 'vllm_rust' ? `${metadata.implementations.find((item) => item.key === implementation).label} ${source.version} (stream, Combined & Unified)` : fullLabel(implementation, source.version, 'stream', metadata);
+        const label = `${metadata.implementations.find(item => item.key === implementation).label} ${source.version} (${policy.capture_contracts?.[implementation]?.label || 'stream'})`;
         result.push(control(source, key, label));
       }
     }

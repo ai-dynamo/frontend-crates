@@ -26,6 +26,29 @@ export class FixtureResources {
     this.captures = new Map();
   }
 
+  unifiedDependencies(descriptors) {
+    return this.catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden' || descriptors.some(item => item.source.implementation === resource.implementation && compareVersions(resource.version, item.source.version) <= 0));
+  }
+
+  async prepareUnified(descriptors) {
+    const dependencies = this.unifiedDependencies(descriptors);
+    this.store.demand?.(dependencies);
+    await Promise.all(dependencies.map(resource => this.store.read(resource)));
+  }
+
+  async prefetchUnified(alternatives, descriptors, isCurrent = () => true) {
+    if (globalThis.navigator?.connection?.saveData) return;
+    this.store.scheduler?.ready();
+    let count = 0;
+    for (const selected of alternatives) {
+      if (!isCurrent()) return;
+      const dependencies = this.unifiedDependencies(descriptors.filter(item => selected.includes(item.control.key))).filter(resource => !this.store.has?.(resource));
+      if (!dependencies.length) continue;
+      await Promise.allSettled(dependencies.map(resource => this.store.read(resource, { background: true })));
+      if (++count === 2) break;
+    }
+  }
+
   async archive(resource) {
     validateResource(resource);
     return cachedTask(this.archives, `${resource.sha256}:${resource.size}`, async () => this.parser.parseArchive(await this.store.read(resource), { path: resource.path }));

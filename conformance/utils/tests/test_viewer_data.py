@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_lossless_values_and_unified_contracts():
-    for filename in ("values.test.js", "unified.test.js", "comparison.test.js", "resources.test.js", "legacy.test.js", "folds.test.js", "toolcalling.test.js", "unified_panel.test.js", "reasoning_panel.test.js", "selection.test.js"):
+    for filename in ("values.test.js", "unified.test.js", "comparison.test.js", "resources.test.js", "legacy.test.js", "folds.test.js", "toolcalling.test.js", "unified_panel.test.js", "reasoning_panel.test.js", "selection.test.js", "engine_selection.test.js"):
         result = subprocess.run(
             ["node", str(ROOT / "conformance" / "viewer" / filename)],
             cwd=ROOT,

@@ -1,0 +1,71 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v1: 10.0.1
+document:
+  mode: unified
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: UNIFIED.v1_split-parallel_tool_calls
+    stimulus:
+      inline:
+        input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```<｜tool▁call▁end｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_time
+
+          ```json
+
+          {"timezone": "EST"}
+
+          ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+            ```json
+
+            {"location": "NYC"}
+
+            ```<｜tool▁call▁end｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_time
+
+            ```json
+
+            {"timezone": "EST"}
+
+            ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      semantic_sha256: 992f71abd3257135106ecd895949ce27a791c5a99d20b21dd35c808df6a53f48
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks: []
+metadata_changes: {}
+document_overrides: {}

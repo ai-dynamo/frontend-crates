@@ -8,12 +8,12 @@ export function columnGroupKey(label, mode = null) {
 export function columnKeysFor(metadata) {
   // Fixed columns are already mounted by the shell; only case groups arrive late.
   const keys = new Set();
-  for (const groups of Object.values(metadata.legacy_case_groups)) {
+  for (const groups of Object.values(metadata.legacy_case_groups || {})) {
     for (const [label] of groups) keys.add(columnGroupKey(label));
   }
   keys.add(columnGroupKey('Other'));
   for (const mode of ['batch', 'stream']) {
-    for (const [label, cases] of metadata.reasoning_display.groups) {
+    for (const [label, cases] of metadata.reasoning_display?.groups || []) {
       if (cases.some(id => id.startsWith(`${mode}.`))) keys.add(columnGroupKey(label, mode));
     }
     keys.add(columnGroupKey('Other', mode));

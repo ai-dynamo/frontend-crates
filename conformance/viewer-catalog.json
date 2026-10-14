@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "snapshot": "20261010_203100",
+  "snapshot": "20261013_192955",
   "sources": {
     "archives": [
       {
@@ -326178,8 +326178,71 @@
     ],
     "unified": [
       {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3/dynamo_v1-10.0.1.yaml",
+        "sha256": "6bd7d7cb1ed082acf909b1c0d01052a1d06a480110c942195eb02d14d04d99f6",
+        "size": 1853,
+        "family": "deepseek_v3",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3/inputs_and_golden.yaml",
+        "sha256": "8c9f1f3c9091d36d4e9d52fa4ff65c2aec9aa7939c87fac08df91d23e52440b5",
+        "size": 1971,
+        "family": "deepseek_v3",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3_1/dynamo_v1-10.0.1.yaml",
+        "sha256": "803482cfdd406a88201e29619e64e7e2dc0a2db3fad84d462ddaa8916da7a20e",
+        "size": 1617,
+        "family": "deepseek_v3_1",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3_1/inputs_and_golden.yaml",
+        "sha256": "7592c4891ac3737d6359846669809a5853ccc8b771869480b2862d9628c6dac2",
+        "size": 1769,
+        "family": "deepseek_v3_1",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3_2/dynamo_v1-10.0.1.yaml",
+        "sha256": "49583ada13aaf9eb2f4677c6fcb82b4189d2eeb3023435c3b8b1f39c60d6084d",
+        "size": 1933,
+        "family": "deepseek_v3_2",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v3_2/inputs_and_golden.yaml",
+        "sha256": "7fb2beaefca4359cd8d681915c7e566b16350d7504348826e38655205103bce4",
+        "size": 2057,
+        "family": "deepseek_v3_2",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v1-10.0.1.yaml",
+        "sha256": "55ebdcb9da51e832578af0676a3f11203e5b1bb6503bfa1a9bb3c75e7157ddc7",
+        "size": 1917,
+        "family": "deepseek_v4",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.1.23.yaml",
-        "sha256": "462a329c2114ca20f51cad12b6643811d802615cc698a572846aa66ef2391957",
+        "sha256": "e2161f3af3a757f6e62bdff3706b7fc756104293b13313eb2fb97a69b8eca590",
         "size": 71047,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
@@ -326188,8 +326251,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.3.2.yaml",
-        "sha256": "5f39fc9e69637bb1738e3e7711df942041b24d873cae19013ae7395233fdcbf5",
-        "size": 11125,
+        "sha256": "757679207e0eec1f00369d5f37fcda9dd2cc1f3b32e0d7cae8df6fbcee3aa4b8",
+        "size": 4373,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -326197,8 +326260,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.5.3.yaml",
-        "sha256": "b5fea93adc1d237b4d5dcab5aaba341c1bb368d0b7a87cd682713a3c768109e9",
-        "size": 31421,
+        "sha256": "4eceb386bba790da877dd1625ab91a487f67472f3d0d534a944eb87390163b35",
+        "size": 23880,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -326206,11 +326269,20 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.0.yaml",
-        "sha256": "fc5b793beb43c5645741ff007418910938a0e0d30a374ca1219fa0c8eb3e9e43",
-        "size": 68068,
+        "sha256": "83d3279196a59fb2ee7e22f688e80b0bc073c0d4f3843375562913aa1a5fd330",
+        "size": 63977,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml",
+        "sha256": "b4beb36f87fc37b7e6b930e523017e77c1806885e83bacdb135b9970cf57ebb5",
+        "size": 7361,
+        "family": "deepseek_v4",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
         "kind": "history"
       },
       {
@@ -326233,8 +326305,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.16.yaml",
-        "sha256": "c8fe1f18ba300b1b347ef0b2369b3ae1c16adb424bd8154608ef0a28dbefc6ce",
-        "size": 45902,
+        "sha256": "0aa9199563e0cc96be002a34f251df6051ea6508227be700fd0fd6cf6ffb373e",
+        "size": 36676,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -326242,8 +326314,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.17.yaml",
-        "sha256": "a00988849a5c5f4aacdc3a67096f03701f6d0ec01e92afd329189c8d742c6411",
-        "size": 6343,
+        "sha256": "98dbc0a1d922480aeb5cc90c5f90bc9c36d76a4a163f368517050c8ad0d93e24",
+        "size": 1557,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -326251,8 +326323,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.18.yaml",
-        "sha256": "7cb75f450a77e931e3a399361d2efe66524077746d3f5707e20609d2ff5c9c58",
-        "size": 6906,
+        "sha256": "b492dd02b2ed005557c47161448d9bb0ed133291167f85c66985857c0880f494",
+        "size": 7241,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -326260,8 +326332,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.20.yaml",
-        "sha256": "5170d083e9967a91b645e6c2fe756c2c93f01d22f67cef8e37353fda9e1d88ba",
-        "size": 127680,
+        "sha256": "35c585c8c7fecf2680e574e7bc4cf3fe8a640ec73cf78330d754b47f5b9c4b74",
+        "size": 89830,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -326269,8 +326341,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.4.yaml",
-        "sha256": "a93d846529ce2f405b8296d15618f8b4236aa5c572321577f85d51f8c8614272",
-        "size": 20647,
+        "sha256": "bcbe05d85b77171573714c0df6c9bd953e2b9043bafbb3d9db45edf22afc06db",
+        "size": 11004,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -326278,8 +326350,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.7.9.yaml",
-        "sha256": "bc5690c70bcbdad3c488026bd3040c911a8084ffb9f4b67a1ddbcebb86764156",
-        "size": 61859,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "deepseek_v4",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -326287,16 +326359,97 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v4/inputs_and_golden.yaml",
-        "sha256": "2e6199eba837ae44ad71d2236ddcea88216a1d344a550a1153691357e841529f",
-        "size": 433611,
+        "sha256": "e83826d91dd62ff40778129a56ca2dfa26a44b338c063062f26ec28407334c30",
+        "size": 437424,
         "family": "deepseek_v4",
         "implementation": null,
         "version": null,
         "kind": "inputs-and-golden"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.14.yaml",
+        "sha256": "a23d918159c42b5f79b833882b5846398ab5f64196c8a226d9034c3272276353",
+        "size": 364279,
+        "family": "deepseek_v4",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.16.yaml",
+        "sha256": "be3959ef5d97f1b8b9732f640f63b9b479989debad9950f666c8c15042bee077",
+        "size": 217014,
+        "family": "deepseek_v4",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.21.yaml",
+        "sha256": "2167847eb7eedae6c67b12f7db3f31ebb9f3be57e31f7768c5efbd67987164a5",
+        "size": 329930,
+        "family": "deepseek_v4",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.25.1.yaml",
+        "sha256": "c8f75a8c7935d5789e0e668c4826b9536dcb6b7ae04eae9548a4180302fe4cd7",
+        "size": 285833,
+        "family": "deepseek_v4",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.26.0.yaml",
+        "sha256": "9778faf267b277f1f6d4f580d7b7fbbf6d3c3d4fb17b9fc5568b932d8a537a38",
+        "size": 92790,
+        "family": "deepseek_v4",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.27.1.yaml",
+        "sha256": "2fba91d90bfd5d38911288283663b8dd204982d18c5e375a8ba87a7955dcdb83",
+        "size": 89324,
+        "family": "deepseek_v4",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.31.0.yaml",
+        "sha256": "b2f3eeffa5c2b2ccc3f358864bff47c87a6d6f64b86fc0a50f988bd8b01aecdd",
+        "size": 94418,
+        "family": "deepseek_v4",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.25.1.yaml",
+        "sha256": "ab274ec65833a77ab54864a9004b35fdb9a541f8b747cd22dec11ecf5dd241aa",
+        "size": 443201,
+        "family": "deepseek_v4",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.26.0.yaml",
+        "sha256": "d74438d61461ba41f55aa8ab2198cd1501ff6525484f5e598e633e709d8c7821",
+        "size": 346530,
+        "family": "deepseek_v4",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.1.23.yaml",
-        "sha256": "244207111de3e89ebd5e363d988f321a90b87b20f7daefe84a726e3680f15e0c",
+        "sha256": "67cbed228810e4c145ba7d444e6dcf6d16bfa87eb4b698c76ad5d691e339756f",
         "size": 46206,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
@@ -326305,8 +326458,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.5.3.yaml",
-        "sha256": "51f36dc879ae996879d6fce6c2fcb259930d13e281ed718da176a303b5cb778c",
-        "size": 71213,
+        "sha256": "b574b3f70e03e72cead9e7fbd309d60778440e64153d9a7c0c46a94656c33217",
+        "size": 53102,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -326314,11 +326467,29 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.6.0.yaml",
-        "sha256": "e58fa99bd1b59b9c3cda7241fe45540d961640cf60ee4d63ab18da2a6d45af95",
-        "size": 61029,
+        "sha256": "6df234767d122819766b4b811cb1acf4c944108d968c41659ff8e89a734bd7a8",
+        "size": 51961,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.6.1.yaml",
+        "sha256": "999fcb6eb872b278f8eb6b5ca606c9681e92010113238e7b9ca01b09a2a381a7",
+        "size": 8612,
+        "family": "deepseek_v41",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.0.yaml",
+        "sha256": "47fda5b55cc353604cb837e466eee09665fa4bc8874d0ef885b0aa5cc9d3f91a",
+        "size": 446,
+        "family": "deepseek_v41",
+        "implementation": "dynamo_v2",
+        "version": "0.7.0",
         "kind": "history"
       },
       {
@@ -326341,8 +326512,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.16.yaml",
-        "sha256": "78965e2ad1da9fbcf22439090bbbd2109eff5ded93cc0cdf7a19de2f4aa5ed1f",
-        "size": 44877,
+        "sha256": "657b7ad5cdd11919a175e77ad74635c4cd5c4752555162b72dbd053ef6a7493e",
+        "size": 35395,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -326350,8 +326521,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.17.yaml",
-        "sha256": "e1c90f93e00a317bc6c55193334436b7ef293705431286ba956322eefd1547a6",
-        "size": 5049,
+        "sha256": "5395a1caeded481a9714465f0e78183385bf2dc129b01d018a523d726c9cd563",
+        "size": 615,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -326359,8 +326530,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.18.yaml",
-        "sha256": "c960068c56314671565117522579bda5684567d2d539fe805f7edd9f76542900",
-        "size": 6171,
+        "sha256": "bbc99837c2636f6914a062d83661bcbd36b59994000f87f34e0dfdffa8d37470",
+        "size": 6506,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -326368,8 +326539,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.20.yaml",
-        "sha256": "72b4a6dd6a6e5973364256896efd15d0db58f94c2751e4307fbc4e88f3cbe786",
-        "size": 115710,
+        "sha256": "d37dab11e17a6ea6d5eb79c69299263ea84564bfff8676743e021760d6dfe051",
+        "size": 77860,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -326377,8 +326548,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.22.yaml",
-        "sha256": "c30e1e034a6dd45b12049bfcfacb85157ef231e93faa5805398b44de577d00fb",
-        "size": 1372,
+        "sha256": "a992df84c32dd7ab9295852546790001d4c5aab7ecf943a9047880a0d78ff7be",
+        "size": 38766,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.22",
@@ -326386,8 +326557,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.4.yaml",
-        "sha256": "8b8eb57ac15b86475661eab69287e6c9e4824bce0429bd989791bdbbfc47b63e",
-        "size": 18253,
+        "sha256": "a85e26acb608167442f99400eb9954b565e413d06b9f310c81aa948ba529dec5",
+        "size": 8089,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -326395,7 +326566,7 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.5.yaml",
-        "sha256": "8c3d60e4d93f3fafc3163dca5d46a7614a2bb773acadb9b568e71f3f271d8d0a",
+        "sha256": "2c2512dbcceb956fdaf0d16a83ef3c109e143cddc30a34e03d35a7f8b27c1522",
         "size": 1570,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
@@ -326404,8 +326575,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.9.yaml",
-        "sha256": "3695fc4aaea534902bf190932861a43bb602dabdebdd87a185d3c072236a46a0",
-        "size": 58817,
+        "sha256": "48bb6f6cc1d4b1d824de39ae86b47f87edfeee30c84e3113db44d1c100ccdfb5",
+        "size": 2714,
         "family": "deepseek_v41",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -326413,16 +326584,106 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/deepseek_v41/inputs_and_golden.yaml",
-        "sha256": "2d8a6a4d6f1ac5ce3510e46f2f41a12dff1b80133739341d610fe01a04feca72",
-        "size": 431420,
+        "sha256": "d2ea70e45be6fa3f8b81dd0c2deca65c5724cefe58f7d22402eefe813e8aeb36",
+        "size": 433467,
         "family": "deepseek_v41",
         "implementation": null,
         "version": null,
         "kind": "inputs-and-golden"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.14.yaml",
+        "sha256": "9d9da95db2b52f6c5812762654aebb9fb88977b8ecd23a3f433907b33207a576",
+        "size": 279101,
+        "family": "deepseek_v41",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.16.yaml",
+        "sha256": "3376503bde6c03fe1a38056d2f11982e8014c493af9c22d36633965becefdb51",
+        "size": 296996,
+        "family": "deepseek_v41",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.21.yaml",
+        "sha256": "0106e495136ea507a87e123e980cf8482b48a72fa092dad3ceb3ef569b62b968",
+        "size": 349220,
+        "family": "deepseek_v41",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.25.1.yaml",
+        "sha256": "3065e88d93f24f5cf656c50b6663ad4a582c159981eeb5bf0ad4a0b8958c5d8a",
+        "size": 340325,
+        "family": "deepseek_v41",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.26.0.yaml",
+        "sha256": "e4f7441f23571b054a03b70c2fa9fa6fc30708644e5656201fd5b68df579ae69",
+        "size": 91852,
+        "family": "deepseek_v41",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.27.1.yaml",
+        "sha256": "620d9f3e2705d21a1d795b27186032c9df7d2cee7f9bf53a7e2a213dd37ff441",
+        "size": 75678,
+        "family": "deepseek_v41",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.31.0.yaml",
+        "sha256": "5debb3a4d559e271e49e49416a9d4ead33b20e517e9591162ef0934551f4f79b",
+        "size": 66491,
+        "family": "deepseek_v41",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.25.1.yaml",
+        "sha256": "aa818b0f415984a9769e4e7eb58226edebcc9c47dcdb026bce25302398af056e",
+        "size": 518016,
+        "family": "deepseek_v41",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.26.0.yaml",
+        "sha256": "f51d8725e6288fc7cdaa149c9bd219419d711db29061b90c05043e6a2ee1c348",
+        "size": 358781,
+        "family": "deepseek_v41",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v1-10.0.1.yaml",
+        "sha256": "0e447a8f77e9339a774d641b177002c0cd59efd11847850fea80b1ba76d75034",
+        "size": 1369,
+        "family": "gemma4",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.1.23.yaml",
-        "sha256": "9495c034177642d04ca8cdd2f9a912f06521754c1e05b8436827163bdd3f3dd7",
+        "sha256": "e4b877ae8c8532b7d1ea3acf91cdc8b7b2ab63572279e3e29fc3d02ce9535b73",
         "size": 67534,
         "family": "gemma4",
         "implementation": "dynamo_v2",
@@ -326431,8 +326692,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.3.2.yaml",
-        "sha256": "449a08fa3e8823559fb89b763d568b56c3cdd69a149fc92821c5e934cda3be83",
-        "size": 10453,
+        "sha256": "4d2b9ff7a21fe6507434dc235f0de43c9518710a80df129259d568d687ece945",
+        "size": 4312,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -326440,8 +326701,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.3.3.yaml",
-        "sha256": "e08e8d613e35513fb796eddb4fcd52a003ec0d3b4f6f88124adf193016e58ffb",
-        "size": 5899,
+        "sha256": "7af31c16e98f3d7544c2b62691f47a39a185cee1337d1c87e63f9a6e555896f6",
+        "size": 278,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.3.3",
@@ -326449,8 +326710,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.4.0.yaml",
-        "sha256": "47062c660c04826c0e287fe8f55f71bad2ffbfb97f41b47006477ba7b5789006",
-        "size": 62692,
+        "sha256": "3857fe5146a351c807a0271c3a8c32888ed40297ab9472dc0ee6b2ac6e9c6159",
+        "size": 47643,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.4.0",
@@ -326458,8 +326719,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.5.3.yaml",
-        "sha256": "b3aba3269b5853150b1bfd672b04d904142ef033f793c6fd40305c7a56ee3fa7",
-        "size": 58453,
+        "sha256": "d81b2fb3f0834241d5b4d449637d3641c87ecf21b524b0d5e37794b72b819d2d",
+        "size": 43960,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -326467,11 +326728,20 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.6.0.yaml",
-        "sha256": "3563833e78513d4df126404859df24b8f5b12a574cff54b40b6484fa21b3fdbd",
-        "size": 62532,
+        "sha256": "f705e27e0c43bda52d56e218ad77459f217e7ebdc287795f6dd3501cb24cc5c0",
+        "size": 53272,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.6.1.yaml",
+        "sha256": "fb94317309108140818221084fe652f001913c2c6d1d6f5d295777b6b577479d",
+        "size": 7567,
+        "family": "gemma4",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
         "kind": "history"
       },
       {
@@ -326494,8 +326764,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.16.yaml",
-        "sha256": "f47cc38944b9f041b13dbe70b433e5c308e566293bb3ad188559ed0fbdf6f870",
-        "size": 45068,
+        "sha256": "453fbf8cf282f49f805adad9ca1762cf337322af8f3781a16bcbc9526eb9a977",
+        "size": 36246,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -326503,8 +326773,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.17.yaml",
-        "sha256": "18ad7d169ea6098664c962af178296792b4ed77110680826c1ac1d92cc1cc08f",
-        "size": 5021,
+        "sha256": "ab6cf71701ee5c5447c6e5d916e06aff67f8cc0d993857563f01fdf63a7fe858",
+        "size": 587,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -326512,8 +326782,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.18.yaml",
-        "sha256": "db4eb3c31490ac071ca1b737533786da4c9a3e04b17f720ad30c93c625f2e883",
-        "size": 5412,
+        "sha256": "0f1e0d82e3ba62ccd4efee16aba5d41e217453f7badc6568fadf195285009cd0",
+        "size": 5747,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -326521,8 +326791,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.20.yaml",
-        "sha256": "e70bbe45d5a3a3088342cacddf2bc8826eaff5ebb5c8f34bc61860006ad2e5e8",
-        "size": 111938,
+        "sha256": "3196e3bdcb35da2ef2820f8432f16ea7654f6da446bc422ca88c8da458659916",
+        "size": 74088,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -326530,8 +326800,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.22.yaml",
-        "sha256": "e620ddfe1752da680635cfcdb4806e7845f6cb7b1e0e6d4d015cb40a7234703c",
-        "size": 1372,
+        "sha256": "39aaa40948d5275962bec5c1ef8e0ce8fc7d8028df937f39800af85e68d6d6b2",
+        "size": 38766,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.22",
@@ -326539,8 +326809,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.4.yaml",
-        "sha256": "1b2597b675d9a6a02d29d8b1f7dfd533ba89001317c2aa12c1b36af05ffc611d",
-        "size": 17736,
+        "sha256": "82f1ed0f3d8aa0e158cd3d39ededcf203f415f64ca42a93c3f924fdf7dd52679",
+        "size": 8601,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -326548,8 +326818,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.7.9.yaml",
-        "sha256": "cfd99038630ed2867f8f493e52b0ce19a2ee5986a4a6bf327d24a02d1e840b31",
-        "size": 60030,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "gemma4",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -326557,8 +326827,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/inputs_and_golden.yaml",
-        "sha256": "cc460f919ec9e1dba70128b770038f1d2484491622bebc41185f8113d0d7220e",
-        "size": 391771,
+        "sha256": "23c91c397c6878c0afdeed56a61ccd71702625ce69bc662a758b63bd95444a55",
+        "size": 395042,
         "family": "gemma4",
         "implementation": null,
         "version": null,
@@ -326566,8 +326836,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.14.yaml",
-        "sha256": "5f619047ea8d6cf21a8b2b7fdfd78f4f6025241cd7532bf71a26bd0a90ce8714",
-        "size": 24196,
+        "sha256": "4ee684cf501878d6b3026be3d1c2d29d60193893fd701b601716d3a1f8fc1fcc",
+        "size": 391041,
         "family": "gemma4",
         "implementation": "sglang_python",
         "version": "0.5.14",
@@ -326575,17 +326845,26 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.16.yaml",
-        "sha256": "6e16eefd6efa65257854fe258cdcbd1a528b8788b14a7f8e34d30bf34b52bdcc",
-        "size": 19903,
+        "sha256": "6f8694db0dfe92814d1d78d3aba2a2e6584ed674f72dcd82f8450674eb0f8508",
+        "size": 393820,
         "family": "gemma4",
         "implementation": "sglang_python",
         "version": "0.5.16",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.21.yaml",
+        "sha256": "94358441357a066e65fb2f9cbdabe4c24bf66691a1ce56f0834e40eaaf1c4db4",
+        "size": 254365,
+        "family": "gemma4",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.25.1.yaml",
-        "sha256": "a43c9204db34bb6fe8b87922e032874c111afa55b733a16daf5060b43193d1d1",
-        "size": 66200,
+        "sha256": "11c92bc301bf80139794e95a2d9f73f5ff27f532d5e1e23925f762ba276148a1",
+        "size": 469178,
         "family": "gemma4",
         "implementation": "vllm_python",
         "version": "0.25.1",
@@ -326593,17 +326872,35 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.26.0.yaml",
-        "sha256": "9332e772467bd2e4b72661d39851d68afde23d28a2ea0dc97efa0a55e661b5aa",
-        "size": 5643,
+        "sha256": "f886162c89eb91a9fd895fe9b83177533bf68e9c1f5901aa6204e7e6bb44e8de",
+        "size": 309577,
         "family": "gemma4",
         "implementation": "vllm_python",
         "version": "0.26.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.27.1.yaml",
+        "sha256": "b5eeeff5f1824da756c865055c2e88569c6f3ae2dbbf00b88e4913494544acdb",
+        "size": 163932,
+        "family": "gemma4",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.31.0.yaml",
+        "sha256": "9310020944c8b34162ecf344fbc9d5399ceabf6e66dc1e47bc4e99e0740f24b4",
+        "size": 78491,
+        "family": "gemma4",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml",
-        "sha256": "493959b94bd68d0ea3c8bf6abc66d39d333945d9321631236b605be1cc018d25",
-        "size": 55689,
+        "sha256": "94e65788a550e1e0efa7f8dcc1187ed9847b33f826e6473fd8121bf003e36c00",
+        "size": 411166,
         "family": "gemma4",
         "implementation": "vllm_rust",
         "version": "0.25.1",
@@ -326611,16 +326908,25 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml",
-        "sha256": "9517c8a869156752dade042488e33e906422a7b3e40be9017e256ac719eb8d10",
-        "size": 4429,
+        "sha256": "e7f1077c23f94e94206a0a52c8432337cea3e2ffc9ef51c459bbce7f6b70d41e",
+        "size": 303210,
         "family": "gemma4",
         "implementation": "vllm_rust",
         "version": "0.26.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v1-10.0.1.yaml",
+        "sha256": "00ba5b9de510aa8367dc919bf657d9a4d351714ae10b12e52b3567c932bb84b5",
+        "size": 1461,
+        "family": "glm47",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.0.yaml",
-        "sha256": "a66ef4f5fc7f14026047bfb5cb819b5d9380e55540434f14159994e68babaa72",
+        "sha256": "1a8c3be58742d58aa9bd2ecaabff0aad126a239af28dfb124e852daa56020cc4",
         "size": 71232,
         "family": "glm47",
         "implementation": "dynamo_v2",
@@ -326647,7 +326953,7 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.16.yaml",
-        "sha256": "53d1fa6cf9483348a5963237dc47d155fbf45a395e38cf8fa4da789f42a36898",
+        "sha256": "94c32cc3c189597a091a90ffbe3032633e90c68c66e45148f53dca597a6a4038",
         "size": 46634,
         "family": "glm47",
         "implementation": "dynamo_v2",
@@ -326656,7 +326962,7 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.17.yaml",
-        "sha256": "99e1193dc356ffd34b86b890583068ddabe6cbb9ed5d632c82c7c10d222f0cb1",
+        "sha256": "99616cfc0a81a103915e627e5c4a48b129b8594f9b659e73f74a18512106a8e9",
         "size": 5676,
         "family": "glm47",
         "implementation": "dynamo_v2",
@@ -326683,8 +326989,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.4.yaml",
-        "sha256": "a7b8b9b9c9c14dcc5046d20c6525100c22f42ad24770b3b856e9d700ebd0d485",
-        "size": 20143,
+        "sha256": "927bad96282d7452e91af59ce85d1c589fc2d2be9bb3a6d8ae7b9a09c945e7f1",
+        "size": 12368,
         "family": "glm47",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -326692,7 +326998,7 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.5.yaml",
-        "sha256": "7973d90c355546b35440948dd6284515e389111872a8833a6f5a4e1536553104",
+        "sha256": "e7d2ef8955be875bea8a0fbdf6b1417c42b0e77f7f77540142424ec0364e924a",
         "size": 1185,
         "family": "glm47",
         "implementation": "dynamo_v2",
@@ -326701,8 +327007,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.7.yaml",
-        "sha256": "eb9edeaa3ec1493869f2182e62571c500d4e3600b3be9599045e7ada4eb5e513",
-        "size": 15596,
+        "sha256": "d35a44e54c6b48807998084a6e1a9a71d7197955e8ed104920ce030c3fddb6d5",
+        "size": 6899,
         "family": "glm47",
         "implementation": "dynamo_v2",
         "version": "0.7.7",
@@ -326710,8 +327016,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.8.yaml",
-        "sha256": "1a9896a32b33a570c05bc5bcc4f418654b807385fc4f472fc7fd5d09054e3ac6",
-        "size": 14010,
+        "sha256": "0f4d613bbacf8e7cba7562c7c20195015f1cde3b9e91dcc628b2cf0fc642c0df",
+        "size": 6235,
         "family": "glm47",
         "implementation": "dynamo_v2",
         "version": "0.7.8",
@@ -326719,8 +327025,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.9.yaml",
-        "sha256": "d0a8ef95cbdc2e5da5e7e20e1b315c9861ea742c9b87c1f655a5115d993c632a",
-        "size": 1184,
+        "sha256": "525385906d453830f5b43e8adb6933416c78ea94f47b798a810b8a906ddeaa9d",
+        "size": 1063,
         "family": "glm47",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -326728,16 +327034,214 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/glm47/inputs_and_golden.yaml",
-        "sha256": "726dff683fd2fbdec327d39bcd204df5235e72fd6a2ca61df44be1c1a243272d",
-        "size": 405337,
+        "sha256": "0df67c77a3467468d7d73901b33b2128789144c67bb8892a738ccb71af2c6613",
+        "size": 406753,
         "family": "glm47",
         "implementation": null,
         "version": null,
         "kind": "inputs-and-golden"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.14.yaml",
+        "sha256": "e9e8f2a9b87b160e234163bdba568d64ab757e614f7afb85a7395ccd0b38d063",
+        "size": 411700,
+        "family": "glm47",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.16.yaml",
+        "sha256": "680f23a5fcf80ba97f87c10ab127338da8003c310f4396d3c9eb307fe41c9bc3",
+        "size": 213110,
+        "family": "glm47",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.21.yaml",
+        "sha256": "c78d5eea5a568aaaa11fb6548bedf030923cf49bb53abc8c4344e955303d8e42",
+        "size": 300071,
+        "family": "glm47",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.25.1.yaml",
+        "sha256": "41cb55cf02140b695267e77c59e21104e1fb869d811bac94970ab47dd6a41a14",
+        "size": 303594,
+        "family": "glm47",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.26.0.yaml",
+        "sha256": "0983bf41641451f61431ac8919d9fa5162497edcbf4bb152a13163bd0d216f53",
+        "size": 93711,
+        "family": "glm47",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.27.1.yaml",
+        "sha256": "5f3a4c7c285ea8afee0402673051681df44dfa6be2bcd521fc06ae462299e00e",
+        "size": 102695,
+        "family": "glm47",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml",
+        "sha256": "55a8c8c5160b6cb241ee6249c0c9c51c68eaccda0a8c0ae88fce08467c9b9799",
+        "size": 76571,
+        "family": "glm47",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml",
+        "sha256": "3384a1cc2854e60d16b5869677c2e878983dcf77d6d438c909ba34e3f43f9e6a",
+        "size": 439901,
+        "family": "glm47",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml",
+        "sha256": "1468d97da26fa93422f09caae6192e8799707e2ca9ddfc02107c960cd90178e2",
+        "size": 351837,
+        "family": "glm47",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v1-10.0.1.yaml",
+        "sha256": "bab9b2d4e77add45a0fe495320bf8ea01be67e679e97449470fbedb7ccc8b944",
+        "size": 1589,
+        "family": "gpt_oss",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/gpt_oss/inputs_and_golden.yaml",
+        "sha256": "0b9e205122609f7d80bcbfebc23ea2cc8548cad7d7e4d3dad934155249eb54e9",
+        "size": 1711,
+        "family": "gpt_oss",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/harmony/dynamo_v1-10.0.1.yaml",
+        "sha256": "bab9b2d4e77add45a0fe495320bf8ea01be67e679e97449470fbedb7ccc8b944",
+        "size": 1589,
+        "family": "harmony",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/harmony/inputs_and_golden.yaml",
+        "sha256": "f2e719f91cfa451bd4c43c99868482c14facc9c1ac9d39681e6d7e5b4d93db4a",
+        "size": 1711,
+        "family": "harmony",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/harmony_text/dynamo_v1-10.0.1.yaml",
+        "sha256": "bab9b2d4e77add45a0fe495320bf8ea01be67e679e97449470fbedb7ccc8b944",
+        "size": 1589,
+        "family": "harmony_text",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/harmony_text/inputs_and_golden.yaml",
+        "sha256": "79adb4f6ae3a545321686622e9f500f50791843cb03f8324ba609d502474e790",
+        "size": 1726,
+        "family": "harmony_text",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/hermes/dynamo_v1-10.0.1.yaml",
+        "sha256": "d6fda09fffd366274ac45b764ec57e1b97018a784d169cadfea891a60d195eb3",
+        "size": 1437,
+        "family": "hermes",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/hermes/inputs_and_golden.yaml",
+        "sha256": "6e159ea4769251063d4bb38539b9f8e5370a384dcc871df1de260b5ddd2b0725",
+        "size": 1554,
+        "family": "hermes",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/inkling/dynamo_v1-10.0.1.yaml",
+        "sha256": "63d1643ff078d21831db1c41a6ec4d3decb359f24c490ed21e7a64d30b45ae70",
+        "size": 1643,
+        "family": "inkling",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/inkling/inputs_and_golden.yaml",
+        "sha256": "8eb2d3518d2b2047afecea3170fdd0a4e8c7ef7b253d388934cb10e7b2747f73",
+        "size": 1765,
+        "family": "inkling",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/jamba/dynamo_v1-10.0.1.yaml",
+        "sha256": "9a722bd771b6b849360dd97e02836e1eadef4bdd14381cfd3a745f2d545c3e61",
+        "size": 1403,
+        "family": "jamba",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/jamba/inputs_and_golden.yaml",
+        "sha256": "3e3fb02bac37343e7744de27dda45a69da786de69473e8b7ef2e06e479a51b2b",
+        "size": 1515,
+        "family": "jamba",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v1-10.0.1.yaml",
+        "sha256": "3c63e4ad461d5c27f38dd80a5d19a1089a9ab6aa02fc48ca8da0b8f6b60f2c2a",
+        "size": 1641,
+        "family": "kimi_k2",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.1.23.yaml",
-        "sha256": "299e7927dbbbc2c01980e14d3c09edb31ad9b0d213d7b2f093106b5e0e23674b",
+        "sha256": "2ba4365b816dcd3be22327b31da215189b4cd8752445684be4486e3abdd89670",
         "size": 67098,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
@@ -326746,8 +327250,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.3.2.yaml",
-        "sha256": "ff817b377d976d974060c4117fa8afd7812f0d93c5a2c5c92c3e1ac2096ae08d",
-        "size": 8446,
+        "sha256": "18f8a64936067bf2c80ab99aaec7c9e93f4f538611478aed795029bb53636c13",
+        "size": 2305,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -326755,8 +327259,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.3.3.yaml",
-        "sha256": "b9f92ba0ddb3e47953af12e65d2eb2d1bb29c80f7223d641937b57dfc71e4538",
-        "size": 64085,
+        "sha256": "063003bbe2e460e5b62d5eb93fa408c0abdc8e5dde3a9e956e4869c2890e9db7",
+        "size": 48581,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.3.3",
@@ -326764,8 +327268,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.3.4.yaml",
-        "sha256": "446993f4d716b1a5e14f8c8c87f609c43c2847a3f568548b1b2f55e04fad432f",
-        "size": 13307,
+        "sha256": "508dddfc9c0ff723c35871d1e1fc09f9b8db5d52ef7fed8b9af775c57dd0034a",
+        "size": 3535,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.3.4",
@@ -326773,8 +327277,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.4.0.yaml",
-        "sha256": "e1955c4e3166afa5129a3b636aef8ed171b031ed6b6211102049c8837b22ea6e",
-        "size": 14911,
+        "sha256": "f17f541ea71eedaf12d967f4a16d9bd930084d1e5bf591360220ed3659c5234c",
+        "size": 3266,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.4.0",
@@ -326782,8 +327286,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.5.3.yaml",
-        "sha256": "64c385ac91ec2eb66b1f928d7839eef3d8798f78911c03dd642e8222c61249f2",
-        "size": 56864,
+        "sha256": "d84bfbe679efccb0db81f7b887638c42b0d34879c10c0a3a04ebb03526f38f7b",
+        "size": 42438,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -326791,11 +327295,20 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.6.0.yaml",
-        "sha256": "e6933273646646534bfd3921f0ce94f4f89ee072e720735c6390a9c5bbcd310b",
-        "size": 61036,
+        "sha256": "05e8dbe08c07a829d4c69ca03f915877f791418593ef50e5beeb4c5075850bdc",
+        "size": 51899,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.6.1.yaml",
+        "sha256": "59d0e7fa3987351ad36bef15b0947402fb8a16c2be9b0e9beac00e231c511ccd",
+        "size": 7370,
+        "family": "kimi_k2",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
         "kind": "history"
       },
       {
@@ -326818,8 +327331,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.16.yaml",
-        "sha256": "4257abe2b972617dff4eb9423ac4046f86050f8278967652808b86e5e554aaf0",
-        "size": 44766,
+        "sha256": "bbb94b3af7f0c2c7f5618fdf46595732ebaf7443cafa1f89b6b910ab44acbd29",
+        "size": 35944,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -326827,8 +327340,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.17.yaml",
-        "sha256": "ac142d18eb2bcdda8d3cf5be9c89ad40445f6897e06dd53c2f90ea943e631667",
-        "size": 5626,
+        "sha256": "0e63585dabdf45251c42e94c7565d31524bd9d6ed237b1ef170514dd9905729a",
+        "size": 1192,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -326836,8 +327349,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.18.yaml",
-        "sha256": "70e6709cc042c63f81158d8d8ec22fc588a063d840033f9be63d049b9fff3f16",
-        "size": 5412,
+        "sha256": "e38ad252c408a2c7e167ff036c1f6d4ba69a986347b7ecf4df68184a5715b632",
+        "size": 5747,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -326845,8 +327358,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.20.yaml",
-        "sha256": "ba32a6baa9e2954106be2b8682bc9a7774dd2d5ba0f59cdd1d69bfcce9265514",
-        "size": 115710,
+        "sha256": "9fee64d542607d303c3e596f78b77c7c9ff629ea61e95746312b61a948d25706",
+        "size": 77860,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -326854,8 +327367,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.4.yaml",
-        "sha256": "c64595490c27ddffad01a663ebf03c7a484e193b11f95a956bfab4344576b8c2",
-        "size": 18333,
+        "sha256": "8d4104d62f2d56e2902ad464e5c12f94886adbe994eb8074070936c879c3d7b0",
+        "size": 9175,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -326863,8 +327376,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.7.9.yaml",
-        "sha256": "b1645058dcba010a4f08b3285182c462bffa4436106f3fc05cdbbfa76c5b8d74",
-        "size": 58456,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "kimi_k2",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -326872,8 +327385,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/inputs_and_golden.yaml",
-        "sha256": "d8cbd0b840afe5ad07818a9bf855dbba5a33f844838d32192ca5ffd916790e7e",
-        "size": 425982,
+        "sha256": "e74247f644576e68769de4e90a7919f312a7e83ce434d3d78ea92366caf64e77",
+        "size": 429455,
         "family": "kimi_k2",
         "implementation": null,
         "version": null,
@@ -326881,8 +327394,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.14.yaml",
-        "sha256": "5a04f50542a12b7f4fd87847899af17936d792f31aa5304cac84768b48fef5b7",
-        "size": 23930,
+        "sha256": "0146b06696e2c732141d579cf5b79a744002014ac070e0870f0b0ec9278df362",
+        "size": 398404,
         "family": "kimi_k2",
         "implementation": "sglang_python",
         "version": "0.5.14",
@@ -326890,17 +327403,26 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.16.yaml",
-        "sha256": "425d38108df9b3100362238b8a58c043d32ad23d87144d5f3ccd542b5ab237b9",
-        "size": 40742,
+        "sha256": "bd05ba7167a06a9d44858b57a5aef5305d83e20438e3396fb6dcd3f167894799",
+        "size": 472504,
         "family": "kimi_k2",
         "implementation": "sglang_python",
         "version": "0.5.16",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.21.yaml",
+        "sha256": "1680f2151320568e5968113e57f791cf65f46ce397dcbd8354484aa523bd8269",
+        "size": 252536,
+        "family": "kimi_k2",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.25.1.yaml",
-        "sha256": "cea4d9831ac5f5a97702a421d81b68e228dd630f07b62704e85a33183388e9be",
-        "size": 55263,
+        "sha256": "bb996275202fa77825311aea75bc39ee2de3471f511f42624c978ad93f8c4d59",
+        "size": 458054,
         "family": "kimi_k2",
         "implementation": "vllm_python",
         "version": "0.25.1",
@@ -326908,17 +327430,35 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.26.0.yaml",
-        "sha256": "d56296227c4661cd38882213da5e93029317d826383c990f475d8283b05d7c7e",
-        "size": 4782,
+        "sha256": "efc3072ec3cd1c30790270c503295bb6faf155126ea005f9fd67fbaffd45f685",
+        "size": 310390,
         "family": "kimi_k2",
         "implementation": "vllm_python",
         "version": "0.26.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.27.1.yaml",
+        "sha256": "3dfa90c62fe21ad0f1bb8e9bcba80feaddfbe0a69080129e0ebc347194c8e53b",
+        "size": 156523,
+        "family": "kimi_k2",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.31.0.yaml",
+        "sha256": "c8c8a5793944ef8819c9d6c435725a47fec26bfee9fa71fe58cb17e93a2fc1e5",
+        "size": 69266,
+        "family": "kimi_k2",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.25.1.yaml",
-        "sha256": "3edb3a249529d86a790c5d28f8e1082a743b3876639113fb2da8a19d4aa372c2",
-        "size": 56839,
+        "sha256": "8e27901d15ab7bf1bcf29a90680dd81dc59f1e1ccb1d23894fb65db466497859",
+        "size": 436107,
         "family": "kimi_k2",
         "implementation": "vllm_rust",
         "version": "0.25.1",
@@ -326926,16 +327466,25 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.26.0.yaml",
-        "sha256": "6ab4b39a4d01504432ad87edcb7f10421a0fcba3610a0ba21e31ddfd887f4765",
-        "size": 6002,
+        "sha256": "9bae2090d7b94b707271f51f3c6077d547dea518b2a3c43c6d689bbbaeef0fac",
+        "size": 318612,
         "family": "kimi_k2",
         "implementation": "vllm_rust",
         "version": "0.26.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v1-10.0.1.yaml",
+        "sha256": "c6aca28d4fc15e38d1491b30a86cf031530e073c1c7d0330a16eb08924baee8d",
+        "size": 1783,
+        "family": "kimi_k3",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.1.23.yaml",
-        "sha256": "c02e44c58d3d16c11200f7df330b960d7ba0d812a40bf6c2f5a946a3f2d8dd60",
+        "sha256": "193856c212490d54d2180e50526db770b6a6d6cdbe889110d227b294590212f9",
         "size": 45314,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
@@ -326944,8 +327493,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.3.2.yaml",
-        "sha256": "628c6e6b0cf82746bc1fa0bcd36d63c96ce780b898633a70a4cb26c7e05c57e9",
-        "size": 16123,
+        "sha256": "750c08010da9c0dc23ee787783d7f13b6084d330147efd17369f3edbed3e6806",
+        "size": 7939,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -326953,11 +327502,20 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.6.0.yaml",
-        "sha256": "2739f1d25c10e9e584ea1ea3995c73a0b894dbd64cffda95e3d5328910cc4501",
-        "size": 91093,
+        "sha256": "b969548d06afc9799a59cc88eeca7aef1257239a095afa92aec2edb76aaab353",
+        "size": 87510,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.6.1.yaml",
+        "sha256": "5aa57866dca09513e16b1b9df9f6451c05d1f9f2c40f7af0f0133a6fbb259435",
+        "size": 7972,
+        "family": "kimi_k3",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
         "kind": "history"
       },
       {
@@ -326971,8 +327529,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.15.yaml",
-        "sha256": "37e5679fe4ba1883da1d909fe6a9e22d51dfdbcfcbecafbaa00c1a7dd47e95c3",
-        "size": 1003,
+        "sha256": "250d231c8a1e1aaec72731a9145b416011834cb70731c42b6c41fe655fc4e537",
+        "size": 856,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.7.15",
@@ -326980,8 +327538,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.16.yaml",
-        "sha256": "c43eff5cb7135e7294190a08522971236008517cdae8aae3f5015b5d82b7d3c8",
-        "size": 10717,
+        "sha256": "2c70b2a9825cc103f901ff0929724634888ff2788abb68bc993c89d707e8f589",
+        "size": 8945,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -326989,7 +327547,7 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.17.yaml",
-        "sha256": "a1daeb8ba1674cca35000e8f3dde4feafab52aa2f1c4531fa140795144596563",
+        "sha256": "8ada4d6f31c28d0c6238fc266109b8f8acd9b61015a4b708b722f5271c891466",
         "size": 1003,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
@@ -327007,8 +327565,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.20.yaml",
-        "sha256": "9cba15f64c747dc9a95419135e0e35d6fcb05c7ee0bd894f159605b28ab32b0d",
-        "size": 147174,
+        "sha256": "9e89810f6f41971becaaf9e637752721266d7046f9838a736f855fa84d2954d8",
+        "size": 109324,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -327016,8 +327574,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.4.yaml",
-        "sha256": "742bc3eb2159006f138ad3332fa8272ce206e7f5c95ba55b7d8cd86e053039bd",
-        "size": 22312,
+        "sha256": "221c620314b24a66d08e15e04e020deadf0d4b0bb76118d43d64a429c9820746",
+        "size": 13025,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -327025,8 +327583,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.7.9.yaml",
-        "sha256": "cebdb66fa145d7dc9793eeadfb6deb8edb5e43fc6836ad4767a5f3028751ed49",
-        "size": 86229,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "kimi_k3",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -327034,16 +327592,169 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/kimi_k3/inputs_and_golden.yaml",
-        "sha256": "f73b7d2d14457ab608988a7f2004dc5dbbb2dbbfdc2e9e6e9c417d9069790eeb",
-        "size": 513118,
+        "sha256": "1a9c1bd25d9ed32f35c99dbd6e780c6acc7c99de3664c7ff905bcaf986b801d7",
+        "size": 516344,
         "family": "kimi_k3",
         "implementation": null,
         "version": null,
         "kind": "inputs-and-golden"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.14.yaml",
+        "sha256": "03a64cf9ffcba2340742fe84c5bb8e06693654c9e0aad26660cb4e6c937d8a31",
+        "size": 288195,
+        "family": "kimi_k3",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.16.yaml",
+        "sha256": "3d7bb04c97c66c4686b86cb67a1b2add223d39f65ce08fcca78c9f33a9d04f7b",
+        "size": 306855,
+        "family": "kimi_k3",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.21.yaml",
+        "sha256": "83ebfdcece99677bfb3a886b8be7579c1f3021cb11a8cf6de5c6f2a384734311",
+        "size": 424395,
+        "family": "kimi_k3",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.25.1.yaml",
+        "sha256": "aa70cf85c5838645db0446ee5de10ec7fd6cce2e79ba595e699cdfadb3ea87e9",
+        "size": 172790,
+        "family": "kimi_k3",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.26.0.yaml",
+        "sha256": "1b96b87ea7e8b28d2f1c1835b8187f0f058192f0a561f246c87e306ca901ad45",
+        "size": 93373,
+        "family": "kimi_k3",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.27.1.yaml",
+        "sha256": "b9070db35a9a7d814acbd80b1b014725c42dd326a38bafbf1495fafae3eb750d",
+        "size": 445607,
+        "family": "kimi_k3",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml",
+        "sha256": "1409542c2d5f725336fdcc895cbba8329365ab6559b8778d3d4a863ccfc1207e",
+        "size": 360270,
+        "family": "kimi_k3",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.25.1.yaml",
+        "sha256": "61d1040385eb59ec1fe6dcde11513126973baa8110883468e635d0970f1656ef",
+        "size": 437822,
+        "family": "kimi_k3",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.26.0.yaml",
+        "sha256": "214b11b69ce21652672770f334f8e9630c304c107404ec0b978241c688a6ddbe",
+        "size": 403133,
+        "family": "kimi_k3",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/llama3_json/dynamo_v1-10.0.1.yaml",
+        "sha256": "9cdac7c58a60b7172b458962a23e8cce3423348028b70509a44d99e06bc8d698",
+        "size": 1375,
+        "family": "llama3_json",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/llama3_json/inputs_and_golden.yaml",
+        "sha256": "9d6d525e9248bf0fe722458fce7a67942efd215c64c75b77d164eb3d399d6ac3",
+        "size": 1517,
+        "family": "llama3_json",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/minimax_m2/dynamo_v1-10.0.1.yaml",
+        "sha256": "0cd460a671c0ecf61fc9d95e44b7274c6f8925fd89e81af49110a7edc878f49e",
+        "size": 1689,
+        "family": "minimax_m2",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/minimax_m2/inputs_and_golden.yaml",
+        "sha256": "4cc681e75729c1825e79436159954406408b92a2ff7867cb8c3a2042f4317cc1",
+        "size": 1798,
+        "family": "minimax_m2",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-10.0.1.yaml",
+        "sha256": "714dd6b3366046aed68f84508621f09e2a051b19c6d32d758addb7b456fcdabd",
+        "size": 1845,
+        "family": "minimax_m3",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/minimax_m3/inputs_and_golden.yaml",
+        "sha256": "beecbcdd97813eb92615dc0c2ae8990b75e5ec691d1583ec48bec256c3b7c545",
+        "size": 1954,
+        "family": "minimax_m3",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/mistral/dynamo_v1-10.0.1.yaml",
+        "sha256": "5842a59320ddd8058befe4f56794734035aef76ff8f2bd1c2541df052c781638",
+        "size": 1403,
+        "family": "mistral",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/mistral/inputs_and_golden.yaml",
+        "sha256": "e8a967dc54360dd96539a3f401517d76ada30dd77222955ae46a2851f7e2bfec",
+        "size": 1525,
+        "family": "mistral",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.1.23.yaml",
-        "sha256": "b5972ec4bed84ebf538e5232a0dcd99dfc6c85c266e2768956ab5208afca294f",
+        "sha256": "21d3c6761beb9119474d158ccad746cb5b67990c8ecf0ade73a937dc0de5e68b",
         "size": 51052,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
@@ -327052,8 +327763,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.3.2.yaml",
-        "sha256": "b2f696c82679bb97fe45308bf509feb74b32d6694b00c62160ea7fb922d44d87",
-        "size": 88441,
+        "sha256": "fcb18d0b811e23e3d54012bf57a7023ba750ff28544b30f6ddb730dcdf3e7dd5",
+        "size": 66523,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -327061,8 +327772,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.3.3.yaml",
-        "sha256": "96c519182de5ded2fa7b02ebcdb28e7db9b937dec025258011729b79671edf74",
-        "size": 13754,
+        "sha256": "6a02f5acdc8aba3038a25f287fd94fe496a37471f5b7fefaedd6297699cbacb6",
+        "size": 1373,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.3.3",
@@ -327070,8 +327781,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.3.4.yaml",
-        "sha256": "620264327c05d7f46b0f58d8ed1c99697ef98881f6a2db6fa2112c81a47a0b6a",
-        "size": 53909,
+        "sha256": "8843b7b96c2dfcdf914c15444b1cc80d0c0e5e6d1cd24499481e3fa91a4c5afd",
+        "size": 27859,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.3.4",
@@ -327079,8 +327790,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.4.0.yaml",
-        "sha256": "9a2fe52f0b72687fb3253e1ccc7c7e500dedb18be0890cb5ed15c5623937e240",
-        "size": 16703,
+        "sha256": "ce776e30eb2f64a8e20eea46688d1af6572f928a15e86b7906015395292c690f",
+        "size": 2500,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.4.0",
@@ -327088,8 +327799,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.5.3.yaml",
-        "sha256": "75ad90d91684a243947b7b5a931dbcfeaac675fe80499c2c3d017a0bc11e2bfa",
-        "size": 80271,
+        "sha256": "8754b92b777567f48aadedcfdf64d43270945ffaee127ec6b1cb253e83e830d2",
+        "size": 56647,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -327097,17 +327808,26 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.6.0.yaml",
-        "sha256": "969509d4f58c4f35a10269644d8caa24cbb571c02deada65f0c6260fe1d25480",
-        "size": 78884,
+        "sha256": "ffeab87e8b52d874784110afad3ba3f408cab8761dcded87bce4a6129e5f3830",
+        "size": 72859,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.6.1.yaml",
+        "sha256": "6266690c62e4c1da0ec715ca8d38e4559ecfaa54130de8e4e741e29cc64ac376",
+        "size": 9850,
+        "family": "muse_glimmer",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.11.yaml",
-        "sha256": "24302b80e13510b4102c0e36f82df1efd7c0d924da9c22c68909a6fa102bfd82",
-        "size": 91601,
+        "sha256": "29e54ba9c8a962234192cb8b50f22cad454ae5981d0a9a8649c6290577596438",
+        "size": 6139,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.11",
@@ -327133,8 +327853,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.16.yaml",
-        "sha256": "9320ce4ea9e554723f140b8b4daa4475a49d7b6715b5a987994ab91d855eb1a1",
-        "size": 49398,
+        "sha256": "601a08f1626d9f194d56b879954f7762b4f7859819f50b8be3170437ba13c431",
+        "size": 13472,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -327142,8 +327862,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.17.yaml",
-        "sha256": "9c09942a6dc3168adfad018d87107646b6a2d8212dd6f91181eccb1b01a89565",
-        "size": 6692,
+        "sha256": "7c57b6f1fa94ede1fec25e3f98be4ec19dbca5bd8ee8a64dab70e02c094abb70",
+        "size": 1242,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -327151,8 +327871,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.18.yaml",
-        "sha256": "53534b1a73771ddb9e295c707d5e60e7e358ceb29622000ef48e60c1606c6a00",
-        "size": 7712,
+        "sha256": "d4b0216048c1fb470878554d7535c01462328ac9e782f09f51a1be13ab63701d",
+        "size": 8047,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -327160,8 +327880,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.20.yaml",
-        "sha256": "35e6b22637df7b147860f922eeff7a5b152a85124d9ada2e9f6552b8fc57dfbc",
-        "size": 136686,
+        "sha256": "1312d6cd9159d8980c93f687d9d101d43a71e83dd7159e51aa12d48d9aca45a3",
+        "size": 98836,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -327169,8 +327889,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.4.yaml",
-        "sha256": "11764464c0ccc2ed6fe301875a1f92e50316d2bce97ec069267273e9cdabd186",
-        "size": 25552,
+        "sha256": "9c813d52f1fd67cb4ced74f707298d682d294c8d7d5701cb52683f295e0c3f46",
+        "size": 11979,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -327178,8 +327898,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.7.9.yaml",
-        "sha256": "ce982301d1a0c3eb46c4e257b6eb8be8d6baf16e3343793b79b91470b8d3410e",
-        "size": 71400,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "muse_glimmer",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -327187,16 +327907,187 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/muse_glimmer/inputs_and_golden.yaml",
-        "sha256": "91bafea0e837baf94e1daa01ff59631448774655b7fc628de12924beb10307e1",
-        "size": 511001,
+        "sha256": "53b22cc89570b83148f94099e7e256f5d24f2340d533265195b384f0168c6501",
+        "size": 514832,
         "family": "muse_glimmer",
         "implementation": null,
         "version": null,
         "kind": "inputs-and-golden"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.14.yaml",
+        "sha256": "6514e7f807c0d732406c686f04d7cb6f8b041c19656bf2ceb12c6bcf35228886",
+        "size": 286637,
+        "family": "muse_glimmer",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.16.yaml",
+        "sha256": "6a387ecfe11236e00891fd5ddacced0841b280800100c820475480562e3d44aa",
+        "size": 304911,
+        "family": "muse_glimmer",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.21.yaml",
+        "sha256": "69bf7d253c732c1ff5355d0ae7d01dc945f220da30fbbb6929b47db3ac0a1711",
+        "size": 403574,
+        "family": "muse_glimmer",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.25.1.yaml",
+        "sha256": "19c2f2112f9c398347413819a6e5a23b96a80a35d69fe964edc0ec88602d7739",
+        "size": 177005,
+        "family": "muse_glimmer",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.26.0.yaml",
+        "sha256": "53f41060aef55865f2261568f30f6d5906670cc7363f98a0c428335246f9ddfe",
+        "size": 94468,
+        "family": "muse_glimmer",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.27.1.yaml",
+        "sha256": "11b7e57f7d4e4dfb81dcff35a59c1f7f7dc87bc4e9253979c03bf60b067fa061",
+        "size": 68124,
+        "family": "muse_glimmer",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.31.0.yaml",
+        "sha256": "7f8dc936c7051a9d3ac1f32a4868a621bfe4cb2d17a413eff9a1586d784d8a86",
+        "size": 66836,
+        "family": "muse_glimmer",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.25.1.yaml",
+        "sha256": "2391ed49b569ef9c8c1b7329f820707987070a8cc5d9052603bdf4981e757098",
+        "size": 426138,
+        "family": "muse_glimmer",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.26.0.yaml",
+        "sha256": "e1121f20f7503e9fc5a2df9328503405c08e9c070fcc1a095f40041a894928c5",
+        "size": 392064,
+        "family": "muse_glimmer",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/nemotron_deci/dynamo_v1-10.0.1.yaml",
+        "sha256": "3fba534cea2e57f7b518bfd661f71baf8bde03e015c8b71a309c4a2a2f354753",
+        "size": 1395,
+        "family": "nemotron_deci",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/nemotron_deci/inputs_and_golden.yaml",
+        "sha256": "a7f6ca0aa4465f1a4bf1f14e1e317f7d5244bd704ba5a3b8564a22e38f391834",
+        "size": 1547,
+        "family": "nemotron_deci",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/nemotron_nano/dynamo_v1-10.0.1.yaml",
+        "sha256": "f12c638d165d6a24d5bffd77b81ba37a730200a09882844f141d1d9561edb8b1",
+        "size": 1819,
+        "family": "nemotron_nano",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/nemotron_nano/inputs_and_golden.yaml",
+        "sha256": "6c6e6b45028695ec9d5f85f8b2c3a405cdaab1d162aef55654c0eac9b0052e7a",
+        "size": 1919,
+        "family": "nemotron_nano",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/phi4/dynamo_v1-10.0.1.yaml",
+        "sha256": "a6e585afbc7919276d71d1adf457c7eaf02f364e7c76de69d50c3167eb4868ac",
+        "size": 1371,
+        "family": "phi4",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/phi4/inputs_and_golden.yaml",
+        "sha256": "bf0418deea01ea1c9a26d44d2906dbae27638742a834a09f6b5e5564aa8ab6d4",
+        "size": 1478,
+        "family": "phi4",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/pythonic/dynamo_v1-10.0.1.yaml",
+        "sha256": "dbaa756427a9dd16a646fdcfa70d4a32e4c516a8078df8a0f69e9eeced6dc01d",
+        "size": 1233,
+        "family": "pythonic",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/pythonic/inputs_and_golden.yaml",
+        "sha256": "0fb309a9fbac7725dffeda7c6e7b22fcf29a55ddf025cf119da981aa0f6c5921",
+        "size": 1360,
+        "family": "pythonic",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/qwen25/dynamo_v1-10.0.1.yaml",
+        "sha256": "502cd7e17569aeb7925b3b77f854b20cfd4f8e23c466484ec25672c6a513fd6e",
+        "size": 1541,
+        "family": "qwen25",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/qwen25/inputs_and_golden.yaml",
+        "sha256": "c057843c52dfb73771fe5ae8de0c1eb537322478eb8f0c93b091969a0042ac4e",
+        "size": 1642,
+        "family": "qwen25",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.1.23.yaml",
-        "sha256": "60415e22bccc2d1f494ddc16f8e60daf112d5e0f39303376a75380ce2a8c53e3",
+        "sha256": "2632a1659191d1b7b80cc7d9df09dbeceec4af64ce83b263a76c8d3c02eb6bc7",
         "size": 78681,
         "family": "qwen3",
         "implementation": "dynamo_v2",
@@ -327205,8 +328096,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.3.2.yaml",
-        "sha256": "1e66da5c6030f6d96e809dce528c22d169b3fa1f7d2567c800e7ad96a007e807",
-        "size": 72775,
+        "sha256": "589a5792441cf15c8017ce8cfe096b7d2a09edec21d2b83e25d12c19685a10f7",
+        "size": 51126,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.3.2",
@@ -327214,8 +328105,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.3.4.yaml",
-        "sha256": "e0fddb9ff9243ed40be5fb8be94bb5a32d69484cdb3dce30f4d27d02bd1275af",
-        "size": 10835,
+        "sha256": "8ea442b4d401eb756282a2ce75c02fcf6444cc51e3ae02ca7057c4d879e41f3a",
+        "size": 1376,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.3.4",
@@ -327223,8 +328114,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.4.0.yaml",
-        "sha256": "0562ca01d3a701a563190dfc140a8ae86b39debeb7908c12b2592a420926f4c5",
-        "size": 12072,
+        "sha256": "ed0005b460744b0a1f660c39c8ef8b50ea8cf52bdbb54b005001aae52fe2a27a",
+        "size": 2215,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.4.0",
@@ -327232,8 +328123,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.5.3.yaml",
-        "sha256": "e40bcecf47aaab25e9fe8bc97334f378b4ee9291049a7b6a02aab7fd6beaa476",
-        "size": 76904,
+        "sha256": "5c043c49ef4b7383b52d2766f43d6f49f9351a6126fe403517f705f83a413c5b",
+        "size": 58854,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.5.3",
@@ -327241,17 +328132,26 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.6.0.yaml",
-        "sha256": "9527c4b9cd2600d266fc682c33eeebaa810458889d240823c3188f5f0a53a1a6",
-        "size": 74530,
+        "sha256": "995fa4a728e76d2160a4e3b38ab55e90fee66831d4e5a3e0fc8ee5cbb004639d",
+        "size": 69573,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.6.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.6.1.yaml",
+        "sha256": "23720b46565a98c1de986e7a9ccf7070efc4f22ee0b1b14df62a18010a641a9f",
+        "size": 9825,
+        "family": "qwen3",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.10.yaml",
-        "sha256": "c379f78d8a08ac7671d3fe5d23519efba0121a9a8dc560c9aa1954982cdd642c",
-        "size": 97040,
+        "sha256": "db15ca86a47064e9e79bf14b65f486ea7008c00ec6902465debbf822f19a6b5c",
+        "size": 12658,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.10",
@@ -327277,8 +328177,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.16.yaml",
-        "sha256": "f5dfe45b18dcfaad0f1567d03da8c42758db4072bfa59f8dd14b2f6dfdbeac8a",
-        "size": 44052,
+        "sha256": "c958cc520facd933fe4be039eb86e9276ac078022b3ed36d3f50105c5031bed3",
+        "size": 9568,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.16",
@@ -327286,8 +328186,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.17.yaml",
-        "sha256": "33ab591af6da9585d050d8c1813a6001c67006c49bb7c41610791aea2b6fab6b",
-        "size": 5676,
+        "sha256": "28910fea36e2fb359bdd9be5c453115f297756771f38a0ded3f19caaf0f605fb",
+        "size": 1242,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.17",
@@ -327295,8 +328195,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.18.yaml",
-        "sha256": "4d5664fca724fe2160f0615c96b52caa29983aff3cef1b1d45cf89259dbedaa7",
-        "size": 7714,
+        "sha256": "369868d1d31abe616d5300001b755aa582c42cda1d97f46024ed013afaeaf991",
+        "size": 8049,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.18",
@@ -327304,8 +328204,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.20.yaml",
-        "sha256": "8b4661a3fd0a5ff20fea113aba5e009f6bad1e017162d04dcc97e5bc69af378c",
-        "size": 128643,
+        "sha256": "ae337caa5d937e9903c91c836d9965522c6d5c3bf826aee7ebf31a6c00006536",
+        "size": 90793,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.20",
@@ -327313,8 +328213,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.4.yaml",
-        "sha256": "c489544034537de413a147e1ff1f740fe65a88f0ac3cff5cf54b6c4e0c26b902",
-        "size": 20101,
+        "sha256": "54efafeddf3cb3747a359f1ac2fdd92d7d55cbdb05afaa05e1608677134e965d",
+        "size": 10174,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.4",
@@ -327322,8 +328222,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.7.9.yaml",
-        "sha256": "c999df1422cfe516e55b2ae04b38164f85de150713dc60d98990b2bfef296a1f",
-        "size": 70514,
+        "sha256": "89479f49acfd4d44f14e7aca29d002c5500b8470d6d08e6082e52851c80424f5",
+        "size": 289,
         "family": "qwen3",
         "implementation": "dynamo_v2",
         "version": "0.7.9",
@@ -327331,8 +328231,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/inputs_and_golden.yaml",
-        "sha256": "982e5ce926fde790f4a1668491fccc1aba4d589554cdc90575d233ad7cacf747",
-        "size": 446476,
+        "sha256": "1e92e189d43013cdc30aa0599bc989ceeef95cd7d74541e661feaa5f1d9878e8",
+        "size": 450485,
         "family": "qwen3",
         "implementation": null,
         "version": null,
@@ -327340,8 +328240,8 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.14.yaml",
-        "sha256": "2210e7efd94548003ce1a7731e531b02d63db304ea46a63f4602ccd378705a68",
-        "size": 32407,
+        "sha256": "9c1c82bc5805662bd031156f7504e9cd491905eaabc2b9f748d532679766dc54",
+        "size": 459655,
         "family": "qwen3",
         "implementation": "sglang_python",
         "version": "0.5.14",
@@ -327349,17 +328249,26 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.16.yaml",
-        "sha256": "b1c64b4cd797a38b5e3d1662951b8634e914091b16731ff7c9312c6287519524",
-        "size": 19825,
+        "sha256": "daa5f0bb5962d5f2de6b49801aa24c77e2a52a93d313e8887c952669b4845d9b",
+        "size": 416131,
         "family": "qwen3",
         "implementation": "sglang_python",
         "version": "0.5.16",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.21.yaml",
+        "sha256": "bce3203f6bd8f3bf40c16564a59ff1f2fb5feebdfde7b31a5ae477870585929a",
+        "size": 283560,
+        "family": "qwen3",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.25.1.yaml",
-        "sha256": "345dc82958725ccf1317bc35d2a2250b24f7f4d408b09bf926ca4be59541e797",
-        "size": 69775,
+        "sha256": "14cf2c31604bd16da2c28e8523c3d7ad6f13a5d9f81313f744064b4c855cb335",
+        "size": 510317,
         "family": "qwen3",
         "implementation": "vllm_python",
         "version": "0.25.1",
@@ -327367,17 +328276,35 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.26.0.yaml",
-        "sha256": "4b1f55e86d4aeaf349e834231ebccfd9e29489a185b630d6774cd5a9419176c6",
-        "size": 5807,
+        "sha256": "bee675571d67774326aeca1a33d46d8db6fcd68d2e2ffc3e264f7b42290b410a",
+        "size": 329940,
         "family": "qwen3",
         "implementation": "vllm_python",
         "version": "0.26.0",
         "kind": "history"
       },
       {
+        "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.27.1.yaml",
+        "sha256": "5041b7a02a935be6e4c6c586412cfc36b0d999c56bfe26e8e8f96a2ff29fb023",
+        "size": 172335,
+        "family": "qwen3",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.31.0.yaml",
+        "sha256": "872e8188265e669c78daeebce7e7236edcbca3026fe4b79735a8ab4b75ce63ce",
+        "size": 69156,
+        "family": "qwen3",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "kind": "history"
+      },
+      {
         "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.25.1.yaml",
-        "sha256": "372e2269807b0ddef44ccc59a2176b0011ca26c82b9733df31c0db4c80cfbd05",
-        "size": 61249,
+        "sha256": "8c6e585857d74d5c309625703be2486a620f740da9cb6c9b2d8ccebf9d399bb8",
+        "size": 451642,
         "family": "qwen3",
         "implementation": "vllm_rust",
         "version": "0.25.1",
@@ -327385,19 +328312,37 @@
       },
       {
         "path": "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.26.0.yaml",
-        "sha256": "849de36201803e949f13eb8e8ae371441e85ede0e870cfece0a53733d0eb4a34",
-        "size": 5370,
+        "sha256": "c1236b00aa547f26f6b4c284bb4356c034101c515c51bc8732a4034ac1e6ef80",
+        "size": 322726,
         "family": "qwen3",
         "implementation": "vllm_rust",
         "version": "0.26.0",
         "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v1-10.0.1.yaml",
+        "sha256": "f12c638d165d6a24d5bffd77b81ba37a730200a09882844f141d1d9561edb8b1",
+        "size": 1819,
+        "family": "qwen3_coder",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "kind": "history"
+      },
+      {
+        "path": "conformance/fixtures-unified-v2/families/qwen3_coder/inputs_and_golden.yaml",
+        "sha256": "edb11efac59b808740be7333e3600f80ea0681400886f301d35436b4c67529ea",
+        "size": 1909,
+        "family": "qwen3_coder",
+        "implementation": null,
+        "version": null,
+        "kind": "inputs-and-golden"
       }
     ],
     "unified_history": {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "17c4571a7a66c4679d0de173298dbf0e1dfc9a0ad024b258336afdfbc1c35066",
-      "size": 8263022
+      "sha256": "6dcd489b95281ccfa07117f864d214dc2f2be3a9e675eadc96d97945328dc1f0",
+      "size": 27212153
     },
     "candidates": [
       {
@@ -328083,11 +329028,44 @@
       {
         "mode": "reasoning",
         "implementation": "dynamo_v1",
-        "version": "10.0.2",
+        "version": "10.0.3",
         "archive": "conformance/fixtures/reasoning/fixtures-v1/inputs.tar.gz",
-        "id": "dynamo_v1@reasoning@10.0.2",
+        "id": "dynamo_v1@reasoning@10.0.3",
         "sources": [
           "conformance/fixtures/reasoning/fixtures-v1/inputs.tar.gz"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "dynamo_v1",
+        "version": "10.0.1",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v3/dynamo_v1-10.0.1.yaml",
+        "id": "dynamo_v1@unified@10.0.1",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v3/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v3_1/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v3_2/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/gpt_oss/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/harmony/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/harmony_text/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/hermes/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/inkling/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/jamba/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/llama3_json/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/minimax_m2/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/minimax_m3/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/mistral/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/nemotron_deci/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/nemotron_nano/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/phi4/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/pythonic/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen25/dynamo_v1-10.0.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3_coder/dynamo_v1-10.0.1.yaml"
         ]
       },
       {
@@ -328150,6 +329128,22 @@
           "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.6.0.yaml",
           "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.6.0.yaml",
           "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.6.0.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "dynamo_v2",
+        "version": "0.6.1",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml",
+        "id": "dynamo_v2@unified@0.6.1",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.6.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.6.1.yaml"
         ]
       },
       {
@@ -328290,6 +329284,170 @@
       },
       {
         "mode": "unified",
+        "implementation": "sglang_python",
+        "version": "0.5.14",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.14.yaml",
+        "id": "sglang_python@unified@0.5.14",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.14.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.14.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "sglang_python",
+        "version": "0.5.16",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.16.yaml",
+        "id": "sglang_python@unified@0.5.16",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.16.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.16.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "sglang_python",
+        "version": "0.5.21",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.21.yaml",
+        "id": "sglang_python@unified@0.5.21",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/sglang_python-0.5.21.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.21.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_python",
+        "version": "0.25.1",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.25.1.yaml",
+        "id": "vllm_python@unified@0.25.1",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.25.1.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_python",
+        "version": "0.26.0",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.26.0.yaml",
+        "id": "vllm_python@unified@0.26.0",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.26.0.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_python",
+        "version": "0.27.1",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.27.1.yaml",
+        "id": "vllm_python@unified@0.27.1",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.27.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.27.1.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_python",
+        "version": "0.31.0",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.31.0.yaml",
+        "id": "vllm_python@unified@0.31.0",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_python-0.31.0.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.31.0.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_rust",
+        "version": "0.25.1",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.25.1.yaml",
+        "id": "vllm_rust@unified@0.25.1",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.25.1.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.25.1.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "vllm_rust",
+        "version": "0.26.0",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.26.0.yaml",
+        "id": "vllm_rust@unified@0.26.0",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v4/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/deepseek_v41/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/kimi_k3/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/muse_glimmer/vllm_rust-0.26.0.yaml",
+          "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.26.0.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
+        "implementation": "dynamo_v2",
+        "version": "0.7.0",
+        "source": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.0.yaml",
+        "id": "dynamo_v2@unified@0.7.0",
+        "sources": [
+          "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.0.yaml",
+          "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.0.yaml"
+        ]
+      },
+      {
+        "mode": "unified",
         "implementation": "dynamo_v2",
         "version": "0.7.22",
         "source": "conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.7.22.yaml",
@@ -328333,88 +329491,6 @@
           "conformance/fixtures-unified-v2/families/kimi_k2/dynamo_v2-0.4.0.yaml",
           "conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.4.0.yaml",
           "conformance/fixtures-unified-v2/families/qwen3/dynamo_v2-0.4.0.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "sglang_python",
-        "version": "0.5.14",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.14.yaml",
-        "id": "sglang_python@unified@0.5.14",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.14.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.14.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.14.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "sglang_python",
-        "version": "0.5.16",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.16.yaml",
-        "id": "sglang_python@unified@0.5.16",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/sglang_python-0.5.16.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/sglang_python-0.5.16.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/sglang_python-0.5.16.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "vllm_python",
-        "version": "0.25.1",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.25.1.yaml",
-        "id": "vllm_python@unified@0.25.1",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.25.1.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.25.1.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.25.1.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "vllm_python",
-        "version": "0.26.0",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.26.0.yaml",
-        "id": "vllm_python@unified@0.26.0",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/vllm_python-0.26.0.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_python-0.26.0.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/vllm_python-0.26.0.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "vllm_rust",
-        "version": "0.25.1",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml",
-        "id": "vllm_rust@unified@0.25.1",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.25.1.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.25.1.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.25.1.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "vllm_rust",
-        "version": "0.26.0",
-        "source": "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml",
-        "id": "vllm_rust@unified@0.26.0",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/gemma4/vllm_rust-0.26.0.yaml",
-          "conformance/fixtures-unified-v2/families/kimi_k2/vllm_rust-0.26.0.yaml",
-          "conformance/fixtures-unified-v2/families/qwen3/vllm_rust-0.26.0.yaml"
-        ]
-      },
-      {
-        "mode": "unified",
-        "implementation": "dynamo_v2",
-        "version": "0.7.0",
-        "source": "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.0.yaml",
-        "id": "dynamo_v2@unified@0.7.0",
-        "sources": [
-          "conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.7.0.yaml"
         ]
       },
       {
@@ -328573,9 +329649,33 @@
         ]
       },
       "unified": {
+        "capture_contracts": {
+          "dynamo_v1": {
+            "label": "batch, v1",
+            "assembled": "final"
+          },
+          "dynamo_v2": {
+            "label": "stream, Unified",
+            "assembled": "stream"
+          },
+          "sglang_python": {
+            "label": "stream, reasoning + tool detectors",
+            "assembled": "stream"
+          },
+          "vllm_python": {
+            "label": "batch + stream, Combined",
+            "assembled": "final"
+          },
+          "vllm_rust": {
+            "label": "stream, Combined & Unified",
+            "assembled": "stream"
+          }
+        },
         "reference": "dynamo_v2",
         "implementation_order": [
           "dynamo_v2",
+          "dynamo_v1",
+          "sglang_python",
           "vllm_python",
           "vllm_rust"
         ],
@@ -330555,6 +331655,143 @@
           }
         }
       ],
+      "parser_generations": {
+        "deepseek_v3": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "deepseek_v3_1": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "deepseek_v3_2": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "deepseek_v4": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "gemma4": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "glm47": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "hermes": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "inkling": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "jamba": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "kimi_k2": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "kimi_k3": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "llama3_json": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "minimax_m2": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": false
+        },
+        "minimax_m3": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": false
+        },
+        "mistral": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "muse_glimmer": {
+          "generation": "v2",
+          "label": "v2",
+          "native_unified_v2": true
+        },
+        "nemotron_deci": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "nemotron_nano": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "phi4": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "pythonic": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "qwen25": {
+          "generation": "v1",
+          "label": "v1",
+          "native_unified_v2": false
+        },
+        "qwen3_coder": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": true
+        },
+        "harmony": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": false
+        },
+        "harmony_text": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": false
+        },
+        "deepseek_v41": {
+          "generation": "v2",
+          "label": "v2",
+          "native_unified_v2": true
+        },
+        "qwen3": {
+          "generation": "v2",
+          "label": "v2",
+          "native_unified_v2": true
+        },
+        "gpt_oss": {
+          "generation": "v1+v2 split",
+          "label": "v1/v2 split",
+          "native_unified_v2": false
+        }
+      },
       "authored_scenarios": [
         "tool_only",
         "reason_then_tool",
@@ -330639,10 +331876,24 @@
         "guided_json_gt_in_argument_trailing_close",
         "guided_json_gt_in_argument_wrapped",
         "guided_json_gt_in_argument_bare_opener",
+        "guided_json_gt_in_argument_named_bare_opener",
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning",
+        "qwen3_guided_non_ascii_header_in_closed_reasoning",
+        "guided_json_native_parameter_body_inside_reasoning",
+        "guided_json_reasoning_markers_inside_native_parameter",
+        "guided_json_native_parameter_object_before_payload",
+        "guided_json_native_parameter_array_before_payload",
+        "qwen3_guided_reasoning_opener_inside_native_header",
+        "muse_glimmer_guided_message_end_inside_native_header",
+        "deepseek_v4_guided_reasoning_opener_inside_native_body",
+        "gemma4_guided_reasoning_opener_after_call_prefix",
+        "kimi_k2_optional_prefix_name_overlap",
         "tool_markup_only_emits_nothing",
         "tool_block_never_closed_then_text",
         "guided_json_native_markup_only",
         "guided_json_unterminated_reasoning_then_wrapped_payload",
+        "prefilled_response_guided_pending_invoke_header",
+        "prefilled_response_guided_closer_inside_invoke_quote",
         "guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_tool_header_in_answer",
         "guided_json_quoted_bare_header_after_payload",
@@ -330803,7 +332054,11 @@
         "schema_null_union_ambiguous",
         "schema_integer_const_ambiguous",
         "schema_object_const_union",
-        "schema_id_direct_integer"
+        "schema_id_direct_integer",
+        "v1_split_parallel_tool_calls"
+      ],
+      "v1_split_scenarios": [
+        "v1_split_parallel_tool_calls"
       ],
       "scenario_families": {
         "tool_only": [
@@ -331337,7 +332592,6 @@
         ],
         "prefilled_reasoning_with_tool": [
           "deepseek_v4",
-          "deepseek_v41",
           "gemma4",
           "glm47",
           "kimi_k2",
@@ -331347,7 +332601,6 @@
         ],
         "prefilled_reasoning_then_text_then_tool": [
           "deepseek_v4",
-          "deepseek_v41",
           "gemma4",
           "glm47",
           "kimi_k2",
@@ -331357,7 +332610,6 @@
         ],
         "prefilled_reasoning_then_text": [
           "deepseek_v4",
-          "deepseek_v41",
           "gemma4",
           "glm47",
           "kimi_k2",
@@ -331558,6 +332810,62 @@
           "muse_glimmer",
           "qwen3"
         ],
+        "guided_json_gt_in_argument_named_bare_opener": [
+          "deepseek_v4",
+          "deepseek_v41",
+          "gemma4",
+          "kimi_k2",
+          "kimi_k3",
+          "muse_glimmer",
+          "qwen3"
+        ],
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning": [
+          "qwen3"
+        ],
+        "qwen3_guided_non_ascii_header_in_closed_reasoning": [
+          "qwen3"
+        ],
+        "guided_json_native_parameter_body_inside_reasoning": [
+          "deepseek_v4",
+          "deepseek_v41",
+          "gemma4",
+          "kimi_k2",
+          "kimi_k3",
+          "muse_glimmer",
+          "qwen3"
+        ],
+        "guided_json_reasoning_markers_inside_native_parameter": [
+          "deepseek_v4",
+          "deepseek_v41",
+          "gemma4",
+          "kimi_k2",
+          "kimi_k3",
+          "muse_glimmer",
+          "qwen3"
+        ],
+        "guided_json_native_parameter_object_before_payload": [
+          "muse_glimmer",
+          "qwen3"
+        ],
+        "guided_json_native_parameter_array_before_payload": [
+          "muse_glimmer",
+          "qwen3"
+        ],
+        "qwen3_guided_reasoning_opener_inside_native_header": [
+          "qwen3"
+        ],
+        "muse_glimmer_guided_message_end_inside_native_header": [
+          "muse_glimmer"
+        ],
+        "deepseek_v4_guided_reasoning_opener_inside_native_body": [
+          "deepseek_v4"
+        ],
+        "gemma4_guided_reasoning_opener_after_call_prefix": [
+          "gemma4"
+        ],
+        "kimi_k2_optional_prefix_name_overlap": [
+          "kimi_k2"
+        ],
         "tool_markup_only_emits_nothing": [
           "deepseek_v4",
           "deepseek_v41",
@@ -331597,6 +332905,12 @@
           "kimi_k3",
           "muse_glimmer",
           "qwen3"
+        ],
+        "prefilled_response_guided_pending_invoke_header": [
+          "deepseek_v41"
+        ],
+        "prefilled_response_guided_closer_inside_invoke_quote": [
+          "muse_glimmer"
         ],
         "guided_json_quoted_bare_header_in_answer": [
           "deepseek_v4",
@@ -333138,17 +334452,62 @@
           "kimi_k3",
           "muse_glimmer",
           "qwen3"
+        ],
+        "v1_split_parallel_tool_calls": [
+          "deepseek_v3",
+          "deepseek_v3_1",
+          "deepseek_v3_2",
+          "deepseek_v4",
+          "gemma4",
+          "glm47",
+          "gpt_oss",
+          "harmony",
+          "harmony_text",
+          "hermes",
+          "inkling",
+          "jamba",
+          "kimi_k2",
+          "kimi_k3",
+          "llama3_json",
+          "minimax_m2",
+          "minimax_m3",
+          "mistral",
+          "nemotron_deci",
+          "nemotron_nano",
+          "phi4",
+          "pythonic",
+          "qwen25",
+          "qwen3_coder"
         ]
       },
       "marker_families": {
-        "deepseek_v41": "deepseek_v41",
+        "deepseek_v3": "deepseek_v3",
+        "deepseek_v3_1": "deepseek_v3_1",
+        "deepseek_v3_2": "deepseek_v3_2",
         "deepseek_v4": "deepseek_v4",
+        "deepseek_v41": "deepseek_v41",
         "gemma4": "gemma4",
         "glm47": "glm47",
+        "harmony": "harmony",
+        "harmony_text": "harmony",
+        "hermes": "hermes",
+        "inkling": "inkling",
+        "jamba": "jamba",
         "kimi_k2": "kimi_k2",
         "kimi_k3": "kimi_k3",
+        "llama3_json": "llama3_json",
+        "minimax_m2": "minimax_m2",
+        "minimax_m3": "minimax_m3",
+        "mistral": "mistral",
         "muse_glimmer": "muse_glimmer",
-        "qwen3": "qwen3_coder"
+        "nemotron_deci": "nemotron_deci",
+        "nemotron_nano": "nemotron_nano",
+        "phi4": "phi4",
+        "pythonic": "pythonic",
+        "qwen25": "qwen25",
+        "qwen3": "qwen3_coder",
+        "qwen3_coder": "qwen3_coder",
+        "gpt_oss": "harmony"
       }
     },
     "legacy_taxonomy": {
@@ -335466,6 +336825,32 @@
             [
               0,
               1
+            ],
+            1,
+            ""
+          ],
+          "schema": null
+        },
+        "v1_split_parallel_tool_calls": {
+          "legacy_label": "v1_split-parallel_tool_calls",
+          "canonical_label": "v1_split-parallel_tool_calls",
+          "taxonomy_order": [
+            [
+              1,
+              "v1_split"
+            ],
+            10000,
+            "parallel_tool_calls"
+          ],
+          "schema": null
+        },
+        "kimi_k2_optional_prefix_name_overlap": {
+          "legacy_label": "kimi_k2-1",
+          "canonical_label": "kimi_k2-kimi_k2_optional_prefix_name_overlap",
+          "taxonomy_order": [
+            [
+              1,
+              "kimi_k2"
             ],
             1,
             ""
@@ -338687,6 +340072,19 @@
           ],
           "schema": null
         },
+        "guided_json_gt_in_argument_named_bare_opener": {
+          "legacy_label": "30-14",
+          "canonical_label": "30-guided_json_gt_in_argument_named_bare_opener",
+          "taxonomy_order": [
+            [
+              0,
+              30
+            ],
+            14,
+            ""
+          ],
+          "schema": null
+        },
         "guided_json_narrated_invoke_in_reasoning": {
           "legacy_label": "34-1",
           "canonical_label": "34-guided_json_narrated_invoke_in_reasoning",
@@ -338817,6 +340215,136 @@
           ],
           "schema": null
         },
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning": {
+          "legacy_label": "qwen3-1",
+          "canonical_label": "qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning",
+          "taxonomy_order": [
+            [
+              1,
+              "qwen3"
+            ],
+            1,
+            ""
+          ],
+          "schema": null
+        },
+        "qwen3_guided_non_ascii_header_in_closed_reasoning": {
+          "legacy_label": "qwen3-2",
+          "canonical_label": "qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning",
+          "taxonomy_order": [
+            [
+              1,
+              "qwen3"
+            ],
+            2,
+            ""
+          ],
+          "schema": null
+        },
+        "guided_json_native_parameter_body_inside_reasoning": {
+          "legacy_label": "34-10",
+          "canonical_label": "34-guided_json_native_parameter_body_inside_reasoning",
+          "taxonomy_order": [
+            [
+              0,
+              34
+            ],
+            10,
+            ""
+          ],
+          "schema": null
+        },
+        "guided_json_native_parameter_object_before_payload": {
+          "legacy_label": "35-6",
+          "canonical_label": "35-guided_json_native_parameter_object_before_payload",
+          "taxonomy_order": [
+            [
+              0,
+              35
+            ],
+            6,
+            ""
+          ],
+          "schema": null
+        },
+        "guided_json_native_parameter_array_before_payload": {
+          "legacy_label": "35-7",
+          "canonical_label": "35-guided_json_native_parameter_array_before_payload",
+          "taxonomy_order": [
+            [
+              0,
+              35
+            ],
+            7,
+            ""
+          ],
+          "schema": null
+        },
+        "qwen3_guided_reasoning_opener_inside_native_header": {
+          "legacy_label": "qwen3-3",
+          "canonical_label": "qwen3-qwen3_guided_reasoning_opener_inside_native_header",
+          "taxonomy_order": [
+            [
+              1,
+              "qwen3"
+            ],
+            3,
+            ""
+          ],
+          "schema": null
+        },
+        "muse_glimmer_guided_message_end_inside_native_header": {
+          "legacy_label": "muse-5",
+          "canonical_label": "muse-glimmer_guided_message_end_inside_native_header",
+          "taxonomy_order": [
+            [
+              1,
+              "muse"
+            ],
+            5,
+            ""
+          ],
+          "schema": null
+        },
+        "deepseek_v4_guided_reasoning_opener_inside_native_body": {
+          "legacy_label": "deepseek_v4-1",
+          "canonical_label": "deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body",
+          "taxonomy_order": [
+            [
+              1,
+              "deepseek_v4"
+            ],
+            1,
+            ""
+          ],
+          "schema": null
+        },
+        "gemma4_guided_reasoning_opener_after_call_prefix": {
+          "legacy_label": "gemma-3",
+          "canonical_label": "gemma-guided_reasoning_opener_after_call_prefix",
+          "taxonomy_order": [
+            [
+              1,
+              "gemma"
+            ],
+            3,
+            ""
+          ],
+          "schema": null
+        },
+        "guided_json_reasoning_markers_inside_native_parameter": {
+          "legacy_label": "34-11",
+          "canonical_label": "34-guided_json_reasoning_markers_inside_native_parameter",
+          "taxonomy_order": [
+            [
+              0,
+              34
+            ],
+            11,
+            ""
+          ],
+          "schema": null
+        },
         "gemma4_guided_json_visible_call_prose_before_reasoning": {
           "legacy_label": "gemma-1",
           "canonical_label": "gemma-guided_json_visible_call_prose_before_reasoning",
@@ -338943,6 +340471,32 @@
               50
             ],
             4,
+            ""
+          ],
+          "schema": null
+        },
+        "prefilled_response_guided_pending_invoke_header": {
+          "legacy_label": "deepseek_v41-2",
+          "canonical_label": "deepseek_v41-prefilled_response_guided_pending_invoke_header",
+          "taxonomy_order": [
+            [
+              1,
+              "deepseek_v41"
+            ],
+            2,
+            ""
+          ],
+          "schema": null
+        },
+        "prefilled_response_guided_closer_inside_invoke_quote": {
+          "legacy_label": "muse-6",
+          "canonical_label": "muse-prefilled_response_guided_closer_inside_invoke_quote",
+          "taxonomy_order": [
+            [
+              1,
+              "muse"
+            ],
+            6,
             ""
           ],
           "schema": null
@@ -339474,6 +341028,28 @@
         "section": "unified_g1",
         "section_label": "TC Single call"
       },
+      "v1_split_parallel_tool_calls": {
+        "group": "v1_split",
+        "suffix": "parallel_tool_calls",
+        "label": "v1_split-parallel_tool_calls",
+        "compact_prefix": "v1_split",
+        "display_number": 1,
+        "display_group": "v1_split",
+        "display_order": 262,
+        "section": "unified_gv1_split",
+        "section_label": "V1 parser cases"
+      },
+      "kimi_k2_optional_prefix_name_overlap": {
+        "group": "kimi_k2",
+        "suffix": "1",
+        "label": "kimi_k2-kimi_k2_optional_prefix_name_overlap",
+        "compact_prefix": "kimi_k2",
+        "display_number": 1,
+        "display_group": "kimi_k2",
+        "display_order": 252,
+        "section": "unified_gkimi_k2",
+        "section_label": "Single Family Test: Kimi K2-specific tests"
+      },
       "two_calls": {
         "group": 2,
         "suffix": "1",
@@ -339866,7 +341442,7 @@
         "compact_prefix": "ds41",
         "display_number": 1,
         "display_group": "deepseek",
-        "display_order": 230,
+        "display_order": 235,
         "section": "unified_gdeepseek",
         "section_label": "Single Family Test: DeepSeek V4.1 DSML invocation bodies"
       },
@@ -339877,7 +341453,7 @@
         "compact_prefix": "glm5",
         "display_number": 2,
         "display_group": "glm5",
-        "display_order": 235,
+        "display_order": 243,
         "section": "unified_gglm5",
         "section_label": "Single Family Test: GLM argument handling"
       },
@@ -341241,7 +342817,7 @@
         "compact_prefix": "40",
         "display_number": 1,
         "display_group": 40,
-        "display_order": 221,
+        "display_order": 226,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -341274,7 +342850,7 @@
         "compact_prefix": "40",
         "display_number": 2,
         "display_group": 40,
-        "display_order": 222,
+        "display_order": 227,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -341283,9 +342859,9 @@
         "suffix": "8",
         "label": "34-guided_quoted_reasoning_closer_named",
         "compact_prefix": "34",
-        "display_number": 8,
+        "display_number": 10,
         "display_group": 34,
-        "display_order": 215,
+        "display_order": 218,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -341294,9 +342870,9 @@
         "suffix": "9",
         "label": "34-guided_quoted_reasoning_closer_required",
         "compact_prefix": "34",
-        "display_number": 9,
+        "display_number": 11,
         "display_group": 34,
-        "display_order": 216,
+        "display_order": 219,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -341305,9 +342881,9 @@
         "suffix": "3",
         "label": "35-guided_response_quoted_control_braces_named",
         "compact_prefix": "35",
-        "display_number": 3,
+        "display_number": 5,
         "display_group": 35,
-        "display_order": 219,
+        "display_order": 224,
         "section": "unified_g35",
         "section_label": "Guided Decoding — markers in visible answers"
       },
@@ -341316,9 +342892,9 @@
         "suffix": "4",
         "label": "35-guided_response_quoted_control_braces_required",
         "compact_prefix": "35",
-        "display_number": 4,
+        "display_number": 6,
         "display_group": 35,
-        "display_order": 220,
+        "display_order": 225,
         "section": "unified_g35",
         "section_label": "Guided Decoding — markers in visible answers"
       },
@@ -341327,9 +342903,9 @@
         "suffix": "5",
         "label": "deepseek_v4-guided_response_rejected_header_quote_ownership",
         "compact_prefix": "ds4",
-        "display_number": 1,
+        "display_number": 2,
         "display_group": "deepseek_v4",
-        "display_order": 231,
+        "display_order": 237,
         "section": "unified_gdeepseek_v4",
         "section_label": "Single Family Test: DeepSeek V4-specific tests"
       },
@@ -341338,9 +342914,9 @@
         "suffix": "2",
         "label": "muse-quoted_reserved_eom_argument",
         "compact_prefix": "muse",
-        "display_number": 2,
+        "display_number": 4,
         "display_group": "muse",
-        "display_order": 245,
+        "display_order": 256,
         "section": "unified_gmuse",
         "section_label": "Single Family Test: Muse-specific"
       },
@@ -341349,9 +342925,9 @@
         "suffix": "3",
         "label": "muse-quoted_reserved_eot_argument",
         "compact_prefix": "muse",
-        "display_number": 3,
+        "display_number": 5,
         "display_group": "muse",
-        "display_order": 246,
+        "display_order": 257,
         "section": "unified_gmuse",
         "section_label": "Single Family Test: Muse-specific"
       },
@@ -341360,9 +342936,9 @@
         "suffix": "4",
         "label": "muse-quoted_reserved_start_argument",
         "compact_prefix": "muse",
-        "display_number": 4,
+        "display_number": 6,
         "display_group": "muse",
-        "display_order": 247,
+        "display_order": 258,
         "section": "unified_gmuse",
         "section_label": "Single Family Test: Muse-specific"
       },
@@ -341582,7 +343158,7 @@
         "compact_prefix": "kimi",
         "display_number": 8,
         "display_group": "kimi",
-        "display_order": 243,
+        "display_order": 251,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341593,7 +343169,7 @@
         "compact_prefix": "kimi",
         "display_number": 5,
         "display_group": "kimi",
-        "display_order": 240,
+        "display_order": 248,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341604,7 +343180,7 @@
         "compact_prefix": "kimi",
         "display_number": 7,
         "display_group": "kimi",
-        "display_order": 242,
+        "display_order": 250,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341615,7 +343191,7 @@
         "compact_prefix": "kimi",
         "display_number": 4,
         "display_group": "kimi",
-        "display_order": 239,
+        "display_order": 247,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341626,7 +343202,7 @@
         "compact_prefix": "kimi",
         "display_number": 1,
         "display_group": "kimi",
-        "display_order": 236,
+        "display_order": 244,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341637,7 +343213,7 @@
         "compact_prefix": "kimi",
         "display_number": 3,
         "display_group": "kimi",
-        "display_order": 238,
+        "display_order": 246,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341648,7 +343224,7 @@
         "compact_prefix": "kimi",
         "display_number": 6,
         "display_group": "kimi",
-        "display_order": 241,
+        "display_order": 249,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341659,7 +343235,7 @@
         "compact_prefix": "kimi",
         "display_number": 2,
         "display_group": "kimi",
-        "display_order": 237,
+        "display_order": 245,
         "section": "unified_gkimi",
         "section_label": "Single Family Test: Kimi K3 XTML"
       },
@@ -341668,9 +343244,9 @@
         "suffix": "1",
         "label": "30-guided_json_named_tool",
         "compact_prefix": "30",
-        "display_number": 8,
+        "display_number": 9,
         "display_group": 30,
-        "display_order": 187,
+        "display_order": 188,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341679,9 +343255,9 @@
         "suffix": "2",
         "label": "30-guided_json_required_tool",
         "compact_prefix": "30",
-        "display_number": 9,
+        "display_number": 10,
         "display_group": 30,
-        "display_order": 188,
+        "display_order": 189,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341690,9 +343266,9 @@
         "suffix": "3",
         "label": "30-guided_json_two_calls",
         "compact_prefix": "30",
-        "display_number": 10,
+        "display_number": 11,
         "display_group": 30,
-        "display_order": 189,
+        "display_order": 190,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341734,9 +343310,9 @@
         "suffix": "7",
         "label": "30-guided_json_marker_inside_argument",
         "compact_prefix": "30",
-        "display_number": 7,
+        "display_number": 8,
         "display_group": 30,
-        "display_order": 186,
+        "display_order": 187,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341747,7 +343323,7 @@
         "compact_prefix": "31",
         "display_number": 1,
         "display_group": 31,
-        "display_order": 190,
+        "display_order": 191,
         "section": "unified_g31",
         "section_label": "Guided Decoding — invalid JSON or call structure"
       },
@@ -341758,7 +343334,7 @@
         "compact_prefix": "31",
         "display_number": 3,
         "display_group": 31,
-        "display_order": 192,
+        "display_order": 193,
         "section": "unified_g31",
         "section_label": "Guided Decoding — invalid JSON or call structure"
       },
@@ -341769,7 +343345,7 @@
         "compact_prefix": "31",
         "display_number": 4,
         "display_group": 31,
-        "display_order": 193,
+        "display_order": 194,
         "section": "unified_g31",
         "section_label": "Guided Decoding — invalid JSON or call structure"
       },
@@ -341780,7 +343356,7 @@
         "compact_prefix": "31",
         "display_number": 2,
         "display_group": 31,
-        "display_order": 191,
+        "display_order": 192,
         "section": "unified_g31",
         "section_label": "Guided Decoding — invalid JSON or call structure"
       },
@@ -341791,7 +343367,7 @@
         "compact_prefix": "32",
         "display_number": 4,
         "display_group": 32,
-        "display_order": 197,
+        "display_order": 198,
         "section": "unified_g32",
         "section_label": "Guided Decoding — tool markup around the payload"
       },
@@ -341802,7 +343378,7 @@
         "compact_prefix": "32",
         "display_number": 3,
         "display_group": 32,
-        "display_order": 196,
+        "display_order": 197,
         "section": "unified_g32",
         "section_label": "Guided Decoding — tool markup around the payload"
       },
@@ -341813,7 +343389,7 @@
         "compact_prefix": "32",
         "display_number": 5,
         "display_group": 32,
-        "display_order": 198,
+        "display_order": 199,
         "section": "unified_g32",
         "section_label": "Guided Decoding — tool markup around the payload"
       },
@@ -341824,7 +343400,7 @@
         "compact_prefix": "32",
         "display_number": 2,
         "display_group": 32,
-        "display_order": 195,
+        "display_order": 196,
         "section": "unified_g32",
         "section_label": "Guided Decoding — tool markup around the payload"
       },
@@ -341835,7 +343411,7 @@
         "compact_prefix": "32",
         "display_number": 1,
         "display_group": 32,
-        "display_order": 194,
+        "display_order": 195,
         "section": "unified_g32",
         "section_label": "Guided Decoding — tool markup around the payload"
       },
@@ -341846,7 +343422,7 @@
         "compact_prefix": "33",
         "display_number": 8,
         "display_group": 33,
-        "display_order": 206,
+        "display_order": 207,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341857,7 +343433,7 @@
         "compact_prefix": "33",
         "display_number": 9,
         "display_group": 33,
-        "display_order": 207,
+        "display_order": 208,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341868,7 +343444,7 @@
         "compact_prefix": "33",
         "display_number": 7,
         "display_group": 33,
-        "display_order": 205,
+        "display_order": 206,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341879,7 +343455,7 @@
         "compact_prefix": "33",
         "display_number": 5,
         "display_group": 33,
-        "display_order": 203,
+        "display_order": 204,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341890,7 +343466,7 @@
         "compact_prefix": "33",
         "display_number": 6,
         "display_group": 33,
-        "display_order": 204,
+        "display_order": 205,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341901,7 +343477,7 @@
         "compact_prefix": "33",
         "display_number": 4,
         "display_group": 33,
-        "display_order": 202,
+        "display_order": 203,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341912,7 +343488,7 @@
         "compact_prefix": "33",
         "display_number": 2,
         "display_group": 33,
-        "display_order": 200,
+        "display_order": 201,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341923,7 +343499,7 @@
         "compact_prefix": "33",
         "display_number": 3,
         "display_group": 33,
-        "display_order": 201,
+        "display_order": 202,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341934,7 +343510,7 @@
         "compact_prefix": "33",
         "display_number": 1,
         "display_group": 33,
-        "display_order": 199,
+        "display_order": 200,
         "section": "unified_g33",
         "section_label": "Guided Decoding — invalid payload plus tool markup"
       },
@@ -341943,9 +343519,9 @@
         "suffix": "11",
         "label": "30-guided_json_gt_in_argument_trailing_close",
         "compact_prefix": "30",
-        "display_number": 5,
+        "display_number": 6,
         "display_group": 30,
-        "display_order": 184,
+        "display_order": 185,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341954,9 +343530,9 @@
         "suffix": "12",
         "label": "30-guided_json_gt_in_argument_wrapped",
         "compact_prefix": "30",
-        "display_number": 6,
+        "display_number": 7,
         "display_group": 30,
-        "display_order": 185,
+        "display_order": 186,
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
@@ -341971,6 +343547,17 @@
         "section": "unified_g30",
         "section_label": "Guided Decoding — baseline and argument fidelity"
       },
+      "guided_json_gt_in_argument_named_bare_opener": {
+        "group": 30,
+        "suffix": "14",
+        "label": "30-guided_json_gt_in_argument_named_bare_opener",
+        "compact_prefix": "30",
+        "display_number": 5,
+        "display_group": 30,
+        "display_order": 184,
+        "section": "unified_g30",
+        "section_label": "Guided Decoding — baseline and argument fidelity"
+      },
       "guided_json_narrated_invoke_in_reasoning": {
         "group": 34,
         "suffix": "1",
@@ -341978,7 +343565,7 @@
         "compact_prefix": "34",
         "display_number": 2,
         "display_group": 34,
-        "display_order": 209,
+        "display_order": 210,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -341987,9 +343574,9 @@
         "suffix": "2",
         "label": "34-guided_json_prose_before_reasoning",
         "compact_prefix": "34",
-        "display_number": 5,
+        "display_number": 6,
         "display_group": 34,
-        "display_order": 212,
+        "display_order": 214,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -341998,9 +343585,9 @@
         "suffix": "3",
         "label": "34-guided_json_orphan_reason_close_before_payload",
         "compact_prefix": "34",
-        "display_number": 4,
+        "display_number": 5,
         "display_group": 34,
-        "display_order": 211,
+        "display_order": 213,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -342009,9 +343596,9 @@
         "suffix": "4",
         "label": "34-guided_json_stray_prefix_before_reasoning",
         "compact_prefix": "34",
-        "display_number": 6,
+        "display_number": 8,
         "display_group": 34,
-        "display_order": 213,
+        "display_order": 216,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -342022,7 +343609,7 @@
         "compact_prefix": "34",
         "display_number": 3,
         "display_group": 34,
-        "display_order": 210,
+        "display_order": 211,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -342031,9 +343618,9 @@
         "suffix": "6",
         "label": "34-guided_json_unterminated_reasoning_then_wrapped_payload",
         "compact_prefix": "34",
-        "display_number": 7,
+        "display_number": 9,
         "display_group": 34,
-        "display_order": 214,
+        "display_order": 217,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -342044,7 +343631,7 @@
         "compact_prefix": "34",
         "display_number": 1,
         "display_group": 34,
-        "display_order": 208,
+        "display_order": 209,
         "section": "unified_g34",
         "section_label": "Guided Decoding — reasoning boundaries"
       },
@@ -342053,9 +343640,9 @@
         "suffix": "1",
         "label": "35-guided_json_quoted_bare_header_in_answer",
         "compact_prefix": "35",
-        "display_number": 2,
+        "display_number": 4,
         "display_group": 35,
-        "display_order": 218,
+        "display_order": 223,
         "section": "unified_g35",
         "section_label": "Guided Decoding — markers in visible answers"
       },
@@ -342064,9 +343651,9 @@
         "suffix": "2",
         "label": "35-guided_json_quoted_bare_header_after_payload",
         "compact_prefix": "35",
-        "display_number": 1,
+        "display_number": 3,
         "display_group": 35,
-        "display_order": 217,
+        "display_order": 222,
         "section": "unified_g35",
         "section_label": "Guided Decoding — markers in visible answers"
       },
@@ -342075,11 +343662,121 @@
         "suffix": "1",
         "label": "muse-guided_json_quoted_bare_tool_header_in_answer",
         "compact_prefix": "muse",
-        "display_number": 1,
+        "display_number": 2,
         "display_group": "muse",
-        "display_order": 244,
+        "display_order": 254,
         "section": "unified_gmuse",
         "section_label": "Single Family Test: Muse-specific"
+      },
+      "qwen3_guided_non_ascii_header_in_truncated_reasoning": {
+        "group": "qwen3",
+        "suffix": "1",
+        "label": "qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning",
+        "compact_prefix": "qwen3",
+        "display_number": 2,
+        "display_group": "qwen3",
+        "display_order": 260,
+        "section": "unified_gqwen3",
+        "section_label": "Single Family Test: Qwen3-specific tests"
+      },
+      "qwen3_guided_non_ascii_header_in_closed_reasoning": {
+        "group": "qwen3",
+        "suffix": "2",
+        "label": "qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning",
+        "compact_prefix": "qwen3",
+        "display_number": 1,
+        "display_group": "qwen3",
+        "display_order": 259,
+        "section": "unified_gqwen3",
+        "section_label": "Single Family Test: Qwen3-specific tests"
+      },
+      "guided_json_native_parameter_body_inside_reasoning": {
+        "group": 34,
+        "suffix": "10",
+        "label": "34-guided_json_native_parameter_body_inside_reasoning",
+        "compact_prefix": "34",
+        "display_number": 4,
+        "display_group": 34,
+        "display_order": 212,
+        "section": "unified_g34",
+        "section_label": "Guided Decoding — reasoning boundaries"
+      },
+      "guided_json_native_parameter_object_before_payload": {
+        "group": 35,
+        "suffix": "6",
+        "label": "35-guided_json_native_parameter_object_before_payload",
+        "compact_prefix": "35",
+        "display_number": 2,
+        "display_group": 35,
+        "display_order": 221,
+        "section": "unified_g35",
+        "section_label": "Guided Decoding — markers in visible answers"
+      },
+      "guided_json_native_parameter_array_before_payload": {
+        "group": 35,
+        "suffix": "7",
+        "label": "35-guided_json_native_parameter_array_before_payload",
+        "compact_prefix": "35",
+        "display_number": 1,
+        "display_group": 35,
+        "display_order": 220,
+        "section": "unified_g35",
+        "section_label": "Guided Decoding — markers in visible answers"
+      },
+      "qwen3_guided_reasoning_opener_inside_native_header": {
+        "group": "qwen3",
+        "suffix": "3",
+        "label": "qwen3-qwen3_guided_reasoning_opener_inside_native_header",
+        "compact_prefix": "qwen3",
+        "display_number": 3,
+        "display_group": "qwen3",
+        "display_order": 261,
+        "section": "unified_gqwen3",
+        "section_label": "Single Family Test: Qwen3-specific tests"
+      },
+      "muse_glimmer_guided_message_end_inside_native_header": {
+        "group": "muse",
+        "suffix": "5",
+        "label": "muse-glimmer_guided_message_end_inside_native_header",
+        "compact_prefix": "muse",
+        "display_number": 1,
+        "display_group": "muse",
+        "display_order": 253,
+        "section": "unified_gmuse",
+        "section_label": "Single Family Test: Muse-specific"
+      },
+      "deepseek_v4_guided_reasoning_opener_inside_native_body": {
+        "group": "deepseek_v4",
+        "suffix": "1",
+        "label": "deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body",
+        "compact_prefix": "ds4",
+        "display_number": 1,
+        "display_group": "deepseek_v4",
+        "display_order": 236,
+        "section": "unified_gdeepseek_v4",
+        "section_label": "Single Family Test: DeepSeek V4-specific tests"
+      },
+      "gemma4_guided_reasoning_opener_after_call_prefix": {
+        "group": "gemma",
+        "suffix": "3",
+        "label": "gemma-guided_reasoning_opener_after_call_prefix",
+        "compact_prefix": "gemma",
+        "display_number": 3,
+        "display_group": "gemma",
+        "display_order": 241,
+        "section": "unified_ggemma",
+        "section_label": "Single Family Test: Gemma 4 guided call-prefix boundaries"
+      },
+      "guided_json_reasoning_markers_inside_native_parameter": {
+        "group": 34,
+        "suffix": "11",
+        "label": "34-guided_json_reasoning_markers_inside_native_parameter",
+        "compact_prefix": "34",
+        "display_number": 7,
+        "display_group": 34,
+        "display_order": 215,
+        "section": "unified_g34",
+        "section_label": "Guided Decoding — reasoning boundaries"
       },
       "gemma4_guided_json_visible_call_prose_before_reasoning": {
         "group": "gemma",
@@ -342088,7 +343785,7 @@
         "compact_prefix": "gemma",
         "display_number": 2,
         "display_group": "gemma",
-        "display_order": 233,
+        "display_order": 240,
         "section": "unified_ggemma",
         "section_label": "Single Family Test: Gemma 4 guided call-prefix boundaries"
       },
@@ -342099,7 +343796,7 @@
         "compact_prefix": "gemma",
         "display_number": 1,
         "display_group": "gemma",
-        "display_order": 232,
+        "display_order": 239,
         "section": "unified_ggemma",
         "section_label": "Single Family Test: Gemma 4 guided call-prefix boundaries"
       },
@@ -342110,7 +343807,7 @@
         "compact_prefix": "glm5",
         "display_number": 1,
         "display_group": "glm5",
-        "display_order": 234,
+        "display_order": 242,
         "section": "unified_gglm5",
         "section_label": "Single Family Test: GLM argument handling"
       },
@@ -342121,7 +343818,7 @@
         "compact_prefix": "40",
         "display_number": 6,
         "display_group": 40,
-        "display_order": 226,
+        "display_order": 231,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -342132,7 +343829,7 @@
         "compact_prefix": "40",
         "display_number": 5,
         "display_group": 40,
-        "display_order": 225,
+        "display_order": 230,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -342143,7 +343840,7 @@
         "compact_prefix": "40",
         "display_number": 4,
         "display_group": 40,
-        "display_order": 224,
+        "display_order": 229,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -342154,7 +343851,7 @@
         "compact_prefix": "40",
         "display_number": 3,
         "display_group": 40,
-        "display_order": 223,
+        "display_order": 228,
         "section": "unified_g40",
         "section_label": "Prefilled Reasoning"
       },
@@ -342165,7 +343862,7 @@
         "compact_prefix": "41",
         "display_number": 1,
         "display_group": 41,
-        "display_order": 227,
+        "display_order": 232,
         "section": "unified_g41",
         "section_label": "Prefilled Reasoning — malformed"
       },
@@ -342176,7 +343873,7 @@
         "compact_prefix": "41",
         "display_number": 2,
         "display_group": 41,
-        "display_order": 228,
+        "display_order": 233,
         "section": "unified_g41",
         "section_label": "Prefilled Reasoning — malformed"
       },
@@ -342187,9 +343884,31 @@
         "compact_prefix": "50",
         "display_number": 1,
         "display_group": 50,
-        "display_order": 229,
+        "display_order": 234,
         "section": "unified_g50",
         "section_label": "Prefilled Response"
+      },
+      "prefilled_response_guided_pending_invoke_header": {
+        "group": "deepseek_v41",
+        "suffix": "2",
+        "label": "deepseek_v41-prefilled_response_guided_pending_invoke_header",
+        "compact_prefix": "ds41",
+        "display_number": 2,
+        "display_group": "deepseek_v41",
+        "display_order": 238,
+        "section": "unified_gdeepseek_v41",
+        "section_label": "Single Family Test: DeepSeek V4.1-specific tests"
+      },
+      "prefilled_response_guided_closer_inside_invoke_quote": {
+        "group": "muse",
+        "suffix": "6",
+        "label": "muse-prefilled_response_guided_closer_inside_invoke_quote",
+        "compact_prefix": "muse",
+        "display_number": 3,
+        "display_group": "muse",
+        "display_order": 255,
+        "section": "unified_gmuse",
+        "section_label": "Single Family Test: Muse-specific"
       }
     },
     "unified_aliases": {
@@ -342199,6 +343918,15 @@
         ],
         "1-1": [
           "tool_only"
+        ],
+        "v1_split-parallel_tool_calls": [
+          "v1_split_parallel_tool_calls"
+        ],
+        "kimi_k2-kimi_k2_optional_prefix_name_overlap": [
+          "kimi_k2_optional_prefix_name_overlap"
+        ],
+        "kimi_k2-1": [
+          "kimi_k2_optional_prefix_name_overlap"
         ],
         "2-two_calls": [
           "two_calls"
@@ -343562,6 +345290,12 @@
         "30-13": [
           "guided_json_gt_in_argument_bare_opener"
         ],
+        "30-guided_json_gt_in_argument_named_bare_opener": [
+          "guided_json_gt_in_argument_named_bare_opener"
+        ],
+        "30-14": [
+          "guided_json_gt_in_argument_named_bare_opener"
+        ],
         "34-guided_json_narrated_invoke_in_reasoning": [
           "guided_json_narrated_invoke_in_reasoning"
         ],
@@ -343622,6 +345356,66 @@
         "muse-1": [
           "guided_json_quoted_bare_tool_header_in_answer"
         ],
+        "qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning": [
+          "qwen3_guided_non_ascii_header_in_truncated_reasoning"
+        ],
+        "qwen3-1": [
+          "qwen3_guided_non_ascii_header_in_truncated_reasoning"
+        ],
+        "qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning": [
+          "qwen3_guided_non_ascii_header_in_closed_reasoning"
+        ],
+        "qwen3-2": [
+          "qwen3_guided_non_ascii_header_in_closed_reasoning"
+        ],
+        "34-guided_json_native_parameter_body_inside_reasoning": [
+          "guided_json_native_parameter_body_inside_reasoning"
+        ],
+        "34-10": [
+          "guided_json_native_parameter_body_inside_reasoning"
+        ],
+        "35-guided_json_native_parameter_object_before_payload": [
+          "guided_json_native_parameter_object_before_payload"
+        ],
+        "35-6": [
+          "guided_json_native_parameter_object_before_payload"
+        ],
+        "35-guided_json_native_parameter_array_before_payload": [
+          "guided_json_native_parameter_array_before_payload"
+        ],
+        "35-7": [
+          "guided_json_native_parameter_array_before_payload"
+        ],
+        "qwen3-qwen3_guided_reasoning_opener_inside_native_header": [
+          "qwen3_guided_reasoning_opener_inside_native_header"
+        ],
+        "qwen3-3": [
+          "qwen3_guided_reasoning_opener_inside_native_header"
+        ],
+        "muse-glimmer_guided_message_end_inside_native_header": [
+          "muse_glimmer_guided_message_end_inside_native_header"
+        ],
+        "muse-5": [
+          "muse_glimmer_guided_message_end_inside_native_header"
+        ],
+        "deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body": [
+          "deepseek_v4_guided_reasoning_opener_inside_native_body"
+        ],
+        "deepseek_v4-1": [
+          "deepseek_v4_guided_reasoning_opener_inside_native_body"
+        ],
+        "gemma-guided_reasoning_opener_after_call_prefix": [
+          "gemma4_guided_reasoning_opener_after_call_prefix"
+        ],
+        "gemma-3": [
+          "gemma4_guided_reasoning_opener_after_call_prefix"
+        ],
+        "34-guided_json_reasoning_markers_inside_native_parameter": [
+          "guided_json_reasoning_markers_inside_native_parameter"
+        ],
+        "34-11": [
+          "guided_json_reasoning_markers_inside_native_parameter"
+        ],
         "gemma-guided_json_visible_call_prose_before_reasoning": [
           "gemma4_guided_json_visible_call_prose_before_reasoning"
         ],
@@ -343681,6 +345475,18 @@
         ],
         "50-4": [
           "prefilled_response_reasoning_markers_literal"
+        ],
+        "deepseek_v41-prefilled_response_guided_pending_invoke_header": [
+          "prefilled_response_guided_pending_invoke_header"
+        ],
+        "deepseek_v41-2": [
+          "prefilled_response_guided_pending_invoke_header"
+        ],
+        "muse-prefilled_response_guided_closer_inside_invoke_quote": [
+          "prefilled_response_guided_closer_inside_invoke_quote"
+        ],
+        "muse-6": [
+          "prefilled_response_guided_closer_inside_invoke_quote"
         ],
         "7-6": [
           "deepseek_v41_json_invocation_body"
@@ -343925,6 +345731,18 @@
         "31-28": [
           "guided_json_bare_tool_header_recovers_inside_a_thought"
         ],
+        "31-33": [
+          "guided_json_native_parameter_body_inside_reasoning"
+        ],
+        "31-34": [
+          "guided_json_native_parameter_object_before_payload"
+        ],
+        "31-35": [
+          "guided_json_native_parameter_array_before_payload"
+        ],
+        "31-40": [
+          "guided_json_reasoning_markers_inside_native_parameter"
+        ],
         "g4-1": [
           "gemma4_guided_json_visible_call_prose_before_reasoning"
         ],
@@ -343955,6 +345773,8 @@
       },
       "canonical": {
         "tool_only": "1-tool_only",
+        "v1_split_parallel_tool_calls": "v1_split-parallel_tool_calls",
+        "kimi_k2_optional_prefix_name_overlap": "kimi_k2-kimi_k2_optional_prefix_name_overlap",
         "two_calls": "2-two_calls",
         "two_calls_same_name": "2-two_calls_same_name",
         "text_only": "3-text_only",
@@ -344182,6 +346002,7 @@
         "guided_json_gt_in_argument_trailing_close": "30-guided_json_gt_in_argument_trailing_close",
         "guided_json_gt_in_argument_wrapped": "30-guided_json_gt_in_argument_wrapped",
         "guided_json_gt_in_argument_bare_opener": "30-guided_json_gt_in_argument_bare_opener",
+        "guided_json_gt_in_argument_named_bare_opener": "30-guided_json_gt_in_argument_named_bare_opener",
         "guided_json_narrated_invoke_in_reasoning": "34-guided_json_narrated_invoke_in_reasoning",
         "guided_json_prose_before_reasoning": "34-guided_json_prose_before_reasoning",
         "guided_json_orphan_reason_close_before_payload": "34-guided_json_orphan_reason_close_before_payload",
@@ -344192,6 +346013,16 @@
         "guided_json_quoted_bare_header_in_answer": "35-guided_json_quoted_bare_header_in_answer",
         "guided_json_quoted_bare_header_after_payload": "35-guided_json_quoted_bare_header_after_payload",
         "guided_json_quoted_bare_tool_header_in_answer": "muse-guided_json_quoted_bare_tool_header_in_answer",
+        "qwen3_guided_non_ascii_header_in_truncated_reasoning": "qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning",
+        "qwen3_guided_non_ascii_header_in_closed_reasoning": "qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning",
+        "guided_json_native_parameter_body_inside_reasoning": "34-guided_json_native_parameter_body_inside_reasoning",
+        "guided_json_native_parameter_object_before_payload": "35-guided_json_native_parameter_object_before_payload",
+        "guided_json_native_parameter_array_before_payload": "35-guided_json_native_parameter_array_before_payload",
+        "qwen3_guided_reasoning_opener_inside_native_header": "qwen3-qwen3_guided_reasoning_opener_inside_native_header",
+        "muse_glimmer_guided_message_end_inside_native_header": "muse-glimmer_guided_message_end_inside_native_header",
+        "deepseek_v4_guided_reasoning_opener_inside_native_body": "deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body",
+        "gemma4_guided_reasoning_opener_after_call_prefix": "gemma-guided_reasoning_opener_after_call_prefix",
+        "guided_json_reasoning_markers_inside_native_parameter": "34-guided_json_reasoning_markers_inside_native_parameter",
         "gemma4_guided_json_visible_call_prose_before_reasoning": "gemma-guided_json_visible_call_prose_before_reasoning",
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": "gemma-guided_json_malformed_call_prefix_before_reasoning",
         "glm47_parameterless_call_shape_inside_argument": "glm5-parameterless_call_shape_inside_argument",
@@ -344201,7 +346032,9 @@
         "prefilled_reasoning_then_text": "40-prefilled_reasoning_then_text",
         "prefilled_reasoning_redundant_opener": "41-prefilled_reasoning_redundant_opener",
         "prefilled_reasoning_truncated": "41-prefilled_reasoning_truncated",
-        "prefilled_response_reasoning_markers_literal": "50-prefilled_response_reasoning_markers_literal"
+        "prefilled_response_reasoning_markers_literal": "50-prefilled_response_reasoning_markers_literal",
+        "prefilled_response_guided_pending_invoke_header": "deepseek_v41-prefilled_response_guided_pending_invoke_header",
+        "prefilled_response_guided_closer_inside_invoke_quote": "muse-prefilled_response_guided_closer_inside_invoke_quote"
       },
       "families": {
         "gemma4": {
@@ -344214,29 +346047,30 @@
       "parser_families": "6a0a19e21323d7eadfe97c38241e1225dcd30387fd39115607ebf76151aef152",
       "legacy_taxonomy": "d1a3107c9e73c5094e2aec423346b9b0250b172106f27962827e582df33bf430",
       "documentation": {
-        "conformance/README.md": "354a52b1d301c10fd07b1d0fd075dbf884c5425114332224979631346067f85a",
+        "conformance/README.md": "c8bdebc2b4f3a79a6e1e5bad7aba188961cde6383dbefe577d54de83114fe232",
         "conformance/utils/lib/parsers/TOOLCALLING_CASES.md": "f6d6094085334f4a8f0573e005c19a638fb3f9b70db017d9a2afadc193a150b2",
         "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md": "6c3bc8a03aa65673ce578d78fe4e6b8c01812d92115b381c7a2a611f3018bc9f",
         "conformance/utils/lib/parsers/REASONING_CASES.md": "3e31dbc6e7e83789693a7bba2fea0243a03e4b63aadb6611ce84504acff303a8",
-        "conformance/utils/lib/parsers/UNIFIED_CASES.md": "2f684d7085607a98897333de7fe03ea0b2c39e43430519d367b566613cacfe3c"
+        "conformance/utils/lib/parsers/UNIFIED_CASES.md": "b2cc33261f1cbcf61d094da487912f5faf0a94deacf816e016b85b34b95dacd5"
       },
-      "unified_taxonomy": "333d67e15e4bb9f84d9651f86e6c052c040d599f4f03cb56688d5358e22e9947",
-      "viewer_metadata": "73edc72fbd1a241cf67674b97d0030dfad1f156089039ce6275e625ca0febb25",
+      "unified_taxonomy": "550ea12e85a8ae99d81336322ae2a84b1dca3caa5c86cf05669a8b9d7906d466",
+      "viewer_metadata": "93211f78c2c52ab4fe6385f3d7734798e8d4c9d24db923ebe8ce1061df643d1a",
       "reasoning_metadata": "f33597414ab4180f2b977a7c8d96c5cd6ebaa16de729f8767a5d8b1018b2728f",
       "implementations": "e7476943ad7c6393100ad805840dd4dad210709ca0376429a1e805764d8e61f3",
       "peer_versions": "edb75f67e77e25533c0587442fda80be6f6668a2d6278cf62cb57f1621eb7082",
       "parser_config": "b7489a1fef2885318e5bf2d90954ae94b52e027b7e13f6f6a490bef41780f533",
       "parser_metadata": "d5057bfe09fa2c3f41017d61412e585a0fc87890cb62d74459a007a93a3fa424",
       "divergence_notes": "7c4d20e71e3b4eaf7660cfe419d86cb68a855e0c788af391814bc75fa2e4267f",
-      "unified_authoring": "4459a407ccdb791802a1d0f5b3c2edb306963e376444329976cff80ba5a1c828",
+      "unified_authoring": "2f15f18bd10c3dcbb196c115ab80741c0f32fbb17650e26b55587cd5d98957cd",
+      "unified_v1_authoring": "597dc3e3e0ecc2957a15b595e234dec8f416e8c512a27a8e7324170396ee8669",
       "unified_tools": "f37f97a386aab8fedf399d50ffeea0de4d55ddabe54bf4e7bb41538dba8b6c86",
       "parser_registrations": "6d742983040bfd99e7117f56b855225daae8847daf3e5f0cf7d67d980e6af0d6",
       "availability_controls": {
-        "projection": "00ea9a4f9c5ca3b12547d902aa0b75ea89df981a9f5c157cceaa100f0031d888",
+        "projection": "02844f709414bb7c5d4625add0edb80eaa87375462d6dc51aeef20a0ca525623",
         "predicate": "fdc0c6fd9d5920ccf54ff51c63b564bfa5c8be724304612d4def946d7951fb62",
         "indexer": "12a26e81251138911e9b707976c6ea1f1768abdfc4f2abc590addb74565d2770"
       }
     }
   },
-  "revision": "58bb6c1917104e1d85de8c4b8b0131e3962a267889d334210f6ecc4d19926d17"
+  "revision": "dd81cae8a6183a82babe80b550ab12a33a4f2dd63eb92830f012d147c5b4e415"
 }

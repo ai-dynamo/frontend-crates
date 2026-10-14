@@ -57,6 +57,17 @@ const folded = { ...tab, rows: [{ family: 'qwen3', cells: { folded: { variants: 
 const aliases = { canonical: { nullable: '7-nullable', union: '8-union' }, owners: { '7-nullable': ['nullable'], '8-union': ['union'] }, families: {} };
 const registry = { qwen3: { 'UNIFIED.7-nullable': { golden: { actual: 'recorded' } } } };
 validateUnifiedKnownDivergences({ tabs: [folded] }, registry, ['qwen3'], aliases);
+const unavailableSplit = { ...leaf('v1_split_parallel_tool_calls', false), cmp: {
+  reference: { ...clean, na: 1 }, golden: clean,
+}, tooltip: { candidates: [{ key: reference.key, block: {
+  unavailable: 'Dynamo v2 does not run the Dynamo v1 split parser for deepseek_v3; select a Dynamo v1 capture to inspect this case.',
+} }] } };
+const expanded = { ...folded, rows: [
+  ...folded.rows,
+  { family: 'deepseek_v3', cells: { folded: { variants: [leaf('nullable', false), leaf('union', false), unavailableSplit] } } },
+] };
+validateUnifiedKnownDivergences({ tabs: [expanded] }, registry, ['qwen3', 'deepseek_v3'], aliases, ['v1_split_parallel_tool_calls']);
+assert.throws(() => validateUnifiedKnownDivergences({ tabs: [expanded] }, registry, ['qwen3', 'deepseek_v3'], aliases), /empty=.*v1_split_parallel_tool_calls/);
 assert.throws(() => validateUnifiedKnownDivergences({ tabs: [folded] }, {}, ['qwen3'], aliases), /differs from known divergences/);
 assert.throws(() => validateUnifiedKnownDivergences({ tabs: [folded] }, { unknown: {} }, ['qwen3'], aliases), /unknown families/);
 folded.rows[0].cells.folded.variants[1] = leaf('union', true);

@@ -116,10 +116,12 @@ export async function validateUnifiedCapture(document, inputDocument, { path, im
     if (!Object.hasOwn(inputDocument.cases, caseId)) throw new Error(`${where} is an unknown case`);
     const input = inputDocument.cases[caseId];
     if (sameValue(change, { absent: true })) continue;
-    keys(change, ['case_key', 'stimulus', 'observation'], ['case_key', 'stimulus', 'observation'], where);
-    component(change.case_key, `${where}.case_key`);
+    keys(change, [], ['case_key', 'stimulus', 'observation'], where);
+    if (!Object.keys(change).length) throw new Error(`${where} has empty change`);
+    if (Object.hasOwn(change, 'case_key')) component(change.case_key, `${where}.case_key`);
+    if (Object.hasOwn(change, 'stimulus')) {
     const stimulus = mapping(change.stimulus, `${where}.stimulus`);
-    const states = ['ref', 'inline', 'partial', 'unavailable'].filter((state) => Object.hasOwn(stimulus, state));
+    const states = ['ref', 'inline', 'partial', 'error', 'unavailable'].filter((state) => Object.hasOwn(stimulus, state));
     if (states.length !== 1) throw new Error(`${where} must contain exactly one stimulus state`);
     keys(stimulus, states, [...states, 'semantic_sha256'], `${where}.stimulus`);
     if (states[0] === 'ref') {
@@ -127,7 +129,9 @@ export async function validateUnifiedCapture(document, inputDocument, { path, im
       if (stimulus.semantic_sha256 !== undefined && stimulus.semantic_sha256 !== null && stimulus.semantic_sha256 !== await sha256(new TextEncoder().encode(canonicalJson(input.request)))) throw new Error(`${where} stimulus digest differs from the canonical request`);
     } else if (states[0] === 'inline') request(stimulus.inline, `${where}.stimulus.inline`);
     else if (states[0] === 'partial') mapping(stimulus.partial, `${where}.stimulus.partial`);
-    else string(getField(mapping(stimulus.unavailable, `${where}.stimulus.unavailable`), 'code'), `${where}.stimulus.unavailable.code`);
+    else string(getField(mapping(stimulus[states[0]], `${where}.stimulus.${states[0]}`), 'code'), `${where}.stimulus.${states[0]}.code`);
+    }
+    if (Object.hasOwn(change, 'observation')) {
     const observation = mapping(change.observation, `${where}.observation`);
     const outcomes = ['value', 'error', 'unavailable'].filter((state) => Object.hasOwn(observation, state));
     if (outcomes.length !== 1) throw new Error(`${where} must contain exactly one observation state`);
@@ -138,6 +142,7 @@ export async function validateUnifiedCapture(document, inputDocument, { path, im
       if (!Object.hasOwn(payload, 'assembled') && !Object.hasOwn(payload, 'chunks')) throw new Error(`${where}.value needs assembled or chunks`);
     } else string(getField(payload, 'code'), `${where}.observation.${outcomes[0]}.code`);
   }
+    }
   for (const field of ['metadata_changes', 'document_overrides']) {
     for (const [caseId, value] of Object.entries(document[field])) {
       if (!Object.hasOwn(inputDocument.cases, caseId)) throw new Error(`${path}:${caseId} is an unknown metadata case`);

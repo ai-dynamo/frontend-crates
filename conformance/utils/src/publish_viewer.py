@@ -13,7 +13,7 @@ import tempfile
 from contextlib import nullcontext
 
 import unified_history
-from viewer_catalog import catalog_generation
+from viewer_catalog import catalog_generation, unified_projection
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -43,6 +43,7 @@ def _copy_site(destination: Path, revision: str, catalog: dict) -> None:
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source_path(relative), target)
+    (destination / "conformance/viewer-unified-catalog.json").write_text(json.dumps(unified_projection(catalog), ensure_ascii=False, separators=(",", ":")) + "\n")
     shutil.copytree(ROOT / "conformance/viewer", destination / "conformance/viewer", dirs_exist_ok=True)
     shutil.copytree(ROOT / "conformance/utils/src/assets", destination / "conformance/utils/src/assets", dirs_exist_ok=True)
     (destination / "conformance/viewer-publication.json").write_text(json.dumps({"schema": 1, "revision": revision, "catalog_revision": catalog["revision"]}, sort_keys=True) + "\n")
@@ -64,6 +65,9 @@ def publish(destination: Path, revision: str) -> None:
         raise ValueError("publication destination overlaps the source checkout")
     with catalog_generation(root):
         catalog = json.loads(CATALOG.read_text())
+        projection_path = CATALOG.with_name("viewer-unified-catalog.json")
+        if projection_path.is_file() and json.loads(projection_path.read_text()) != unified_projection(catalog):
+            raise ValueError("Unified catalog does not match full catalog")
         source_roots = [ROOT / "conformance/viewer", ROOT / "conformance/utils/src/assets"]
         relatives = ["index.html", "conformance/CONFORMANCE_v2.html", "conformance/viewer-catalog.json", "conformance/utils/README.md",
                      *catalog["metadata"]["source_hashes"]["documentation"],

@@ -1792,6 +1792,44 @@ changes:
             count: 42
             flag: false
             text: 'null'
+  v1_split_parallel_tool_calls:
+    case_key: UNIFIED.v1_split-parallel_tool_calls
+    stimulus:
+      inline:
+        input: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      semantic_sha256: 754c9e130fcc285c9d649710b851e80d93cdd0ce62668b654b22463ff9ef34e4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks: []
 metadata_changes:
   arg_json_null:
     batch_final:
@@ -4327,4 +4365,10 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 2dc39e20e359db50f7ac541e961a86b3aa3618cf3e8c84e95ee5033d86bcfc41
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  v1_split_parallel_tool_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin: null
       inherited_from: null

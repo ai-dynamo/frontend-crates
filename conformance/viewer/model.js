@@ -49,10 +49,18 @@ export function resolveUnified(captures, version) {
         continue;
       }
       const prior = stateByCase.get(caseId);
-      const next = structuredClone(change);
-      next.__origin = capture;
+      if (!prior && ['case_key', 'stimulus', 'observation'].some(key => !Object.hasOwn(change, key))) throw new Error(`first capture change must provide a complete record: ${caseId} (${capture.path})`);
+      const next = { ...structuredClone(prior || {}), ...structuredClone(change) };
+      if (!prior || Object.hasOwn(change, 'observation')) {
+        next.__origin = capture;
+        delete next._document_overrides;
+      }
       if (prior?._record_metadata !== undefined) next._record_metadata = prior._record_metadata;
-      if (prior?._document_overrides?.parser_path !== undefined) next._document_overrides = { parser_path: prior._document_overrides.parser_path };
+      if (prior?._document_overrides?.parser_path !== undefined) {
+        next._document_overrides = Object.hasOwn(change, 'observation')
+          ? { parser_path: prior._document_overrides.parser_path }
+          : structuredClone(prior._document_overrides);
+      }
       stateByCase.set(caseId, next);
     }
     for (const [caseId, metadata] of Object.entries(capture.document.metadata_changes || {})) {

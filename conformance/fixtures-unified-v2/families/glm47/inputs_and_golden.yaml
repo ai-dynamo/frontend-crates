@@ -13569,3 +13569,44 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native glm47 grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: glm47/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: <tool_call>get_weather<arg_key>location</arg_key><arg_value>NYC</arg_value></tool_call><tool_call>get_time<arg_key>timezone</arg_key><arg_value>EST</arg_value></tool_call>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []

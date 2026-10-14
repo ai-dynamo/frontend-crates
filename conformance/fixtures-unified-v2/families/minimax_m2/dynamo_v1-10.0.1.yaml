@@ -1,0 +1,75 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v1: 10.0.1
+document:
+  mode: unified
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: UNIFIED.v1_split-parallel_tool_calls
+    stimulus:
+      inline:
+        input: '<minimax:tool_call>
+
+          <invoke name="get_weather">
+
+          <parameter name="location">NYC</parameter>
+
+          </invoke>
+
+          <invoke name="get_time">
+
+          <parameter name="timezone">EST</parameter>
+
+          </invoke>
+
+          </minimax:tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<minimax:tool_call>
+
+            <invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            <invoke name="get_time">
+
+            <parameter name="timezone">EST</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+      semantic_sha256: d93b3f9cf4b4e247b7cb3a25eaaa438e639bce986eb73a4d2653ba18f7440f1e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks: []
+metadata_changes: {}
+document_overrides: {}

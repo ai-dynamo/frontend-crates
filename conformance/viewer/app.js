@@ -10,6 +10,7 @@ import { SelectionLoader } from './selection.js';
 import { selectedCellOutcome } from './selection_comparison.js';
 import { createSourceLink } from './links.js';
 import { columnKeysFor } from './column_state.js';
+import { EngineSelection, mountEngineControls } from './engine_selection.js';
 import '../utils/src/assets/colorize.js';
 import '../utils/src/assets/conformance_view.js';
 import '../utils/src/assets/conformance.js';
@@ -54,55 +55,56 @@ function fixtureLinks(tab) {
   return tab;
 }
 
-function selectionAliases(catalog, active) {
-  const url = new URL(location.href), descriptors = tabCandidates(catalog, active, { golden: true });
-  const resolve = identity => descriptors.find(item => item.control.key === identity || `${item.source.implementation}@${item.source.version}` === identity || item.source.id === identity)?.control.key;
-  if (url.searchParams.has('ref') && !url.searchParams.has(`base_${active.id}`)) {
-    const raw = url.searchParams.get('ref'), key = raw ? resolve(raw) : '';
-    if (key !== undefined) url.searchParams.set(`base_${active.id}`, key);
-  }
-  if (url.searchParams.has('cmp') && !url.searchParams.has(`cmp_${active.id}`)) {
-    const compares = url.searchParams.get('cmp').split(',').map(resolve).filter(Boolean);
-    url.searchParams.set(`cmp_${active.id}`, compares.join(','));
-    if (compares.length && !url.searchParams.has('view')) url.searchParams.set('view', 'details');
-  }
-  url.searchParams.delete('ref'); url.searchParams.delete('cmp');
-  history.replaceState(null, '', url);
-}
-
 async function initialize() {
-  const response = await fetch(new URL('conformance/viewer-catalog.json', baseUrl), { cache: 'no-store' });
+  const response = await fetch(new URL('conformance/viewer-unified-catalog.json', baseUrl), { cache: 'no-store' });
   if (!response.ok) throw new Error(`Catalog fetch failed (${response.status})`);
-  const catalog = await response.json();
+  let catalog = await response.json();
   if (catalog.schema !== 1 || !Array.isArray(catalog.sources?.archives)) throw new Error('Unsupported conformance catalog');
   const reader = new FixtureResources(catalog, new HttpResourceStore({ baseUrl }));
   window.addEventListener('pagehide', () => reader.dispose(), { once: true });
   const params = new URLSearchParams(location.search);
-  if (params.has('raw')) { await rawView(catalog, reader, params.get('raw')); return; }
-  const active = catalog.metadata.tabs.find(tab => tab.id === params.get('tab')) || catalog.metadata.tabs[0];
-  selectionAliases(catalog, active);
+  if (params.has('raw')) {
+    if (!catalog.sources.unified.some(resource => resource.path === params.get('raw'))) {
+      const fullResponse = await fetch(new URL('conformance/viewer-catalog.json', baseUrl), { cache: 'no-store' });
+      if (!fullResponse.ok) throw new Error(`Catalog fetch failed (${fullResponse.status})`);
+      const full = await fullResponse.json();
+      if (full.revision !== catalog.revision) throw new Error('Legacy catalog revision mismatch');
+      catalog = full; reader.catalog = full;
+    }
+    await rawView(catalog, reader, params.get('raw')); return;
+  }
+  const active = catalog.metadata.tabs.find(tab => tab.id === 'tab-unified');
+  const descriptors = tabCandidates(catalog, active, { golden: true });
+  const owner = new EngineSelection(descriptors, new URL(location.href));
   let publication = null;
-  const publicationResponse = await fetch(new URL('conformance/viewer-publication.json', baseUrl), { cache: 'no-store' });
-  if (publicationResponse.ok) publication = await publicationResponse.json();
-  const sourceLink = createSourceLink(baseUrl, publication, catalog.revision);
-  const page = pageMetadata(catalog, { commitSha: publication?.revision || null, sourceLink });
+  let sourceLink = createSourceLink(baseUrl, null, catalog.revision);
+  const page = pageMetadata(catalog, { commitSha: null, sourceLink: path => `source:${path}` });
   window.__PARSER_NI = page.parser_ni;
   page.tabs = catalog.metadata.tabs.map(spec => ({
-    ...tabPresentation(spec, catalog, tabCandidates(catalog, spec), sourceLink),
+    ...tabPresentation(spec, catalog, tabCandidates(catalog, spec), path => `source:${path}`),
     id: spec.id, kind: spec.suite === 'toolcalling' ? 'toolcalling' : spec.suite, mode: spec.mode === 'stream' && spec.suite === 'toolcalling' ? 'streamv1' : spec.mode,
     active: spec.id === active.id, no_parser_col: spec.suite === 'unified',
     rows: [], columns: [], column_groups: [], stats: {}, glossary: [],
     candidates: tabCandidates(catalog, spec, { golden: true }).map(item => item.control),
   }));
-  const resolveSources = () => root.querySelectorAll('a[href^="source:"]').forEach(anchor => { anchor.href = sourceLink(anchor.getAttribute('href').slice(7)); });
+  const resolveSources = () => root.querySelectorAll('a').forEach(anchor => {
+    if (anchor.getAttribute('href')?.startsWith('source:')) anchor.dataset.sourcePath = anchor.getAttribute('href').slice(7);
+    if (anchor.dataset.sourcePath) anchor.href = sourceLink(anchor.dataset.sourcePath);
+  });
   window.ConformanceView.initialize(page, root);
   resolveSources();
   root.dataset.catalogRevision = catalog.revision;
   let controller;
   const suspendedPins = new Map();
   const loader = new SelectionLoader({
-    build: (tabId, selection) => buildTab(catalog, reader, tabId, { ...selection, sourceLink }),
+    async build(tabId, selection) {
+      const generation = loader.generation;
+      await reader.prepareUnified(descriptors.filter(item => selection.selected.includes(item.control.key)));
+      if (generation !== loader.generation) throw new Error('Obsolete fixture selection');
+      return buildTab(catalog, reader, tabId, { ...selection, sourceLink: path => `source:${path}` });
+    },
     state(tabId, state, error) {
+      if (error) window.__conformanceError = error.stack;
       const panel = document.getElementById(tabId);
       panel.dataset.loadState = state;
       if (state !== 'ready') {
@@ -134,13 +136,24 @@ async function initialize() {
       panel.dataset.loadState = 'ready';
       controller.updatePanel(panel, pin);
       window.__conformanceModel = model;
+      const generation = loader.generation;
+      reader.prefetchUnified(owner.alternatives(), descriptors, () => generation === loader.generation);
     },
   });
   window.__conformanceLoader = loader;
   const load = panel => { if (panel.classList.contains('active')) return loader.select(panel.id, controller.selection(panel)); };
-  controller = window.initializeConformanceController({ columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => { suspendedPins.clear(); return load(document.getElementById(id)); } });
+  controller = window.initializeConformanceController({ engineSelection: owner, columnKeys: columnKeysFor(catalog.metadata), cellOutcome: selectedCellOutcome, selectionChanged: load, tabChanged: id => { suspendedPins.clear(); return load(document.getElementById(id)); } });
   window.__conformanceController = controller;
+  mountEngineControls(root.querySelector('.cmpctl'), owner, () => { controller.refreshPanel(controller.activePanel()); load(controller.activePanel()); });
   load(controller.activePanel());
+  // Publication is optional and never gates controls or fixture resolution.
+  fetch(new URL('conformance/viewer-publication.json', baseUrl), { cache: 'no-store' }).then(async response => {
+    if (!response.ok) return;
+    const metadata = await response.json();
+    const upgraded = createSourceLink(baseUrl, metadata, catalog.revision);
+    sourceLink = upgraded; publication = metadata; resolveSources();
+  }).catch(() => {});
+
 }
 
 initialize().catch(error => {

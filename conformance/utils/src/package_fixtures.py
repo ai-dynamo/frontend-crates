@@ -792,6 +792,7 @@ def package_snapshot(
                 (candidate_fixtures, FIXTURES_DIR),
                 (candidate_manifest, manifest_path),
                 (candidate_catalog, conformance_root / "viewer-catalog.json"),
+                (transaction_root / "viewer-unified-catalog.json", conformance_root / "viewer-unified-catalog.json"),
             ]
             if not stream_only:
                 publish_paths.insert(0, (candidate_history, UNIFIED_HISTORY_DIR))

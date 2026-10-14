@@ -239,6 +239,42 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
          "language": spec.language, "label": spec.display, "modes": list(spec.modes)}
         for spec in IMPL_SPECS
     ]
+    unified_parser_generations = {
+        family: {
+            "generation": "v1+v2 split" if declaration.get("dynamo_v2") else "v1",
+            "label": "v1/v2 split" if declaration.get("dynamo_v2") else "v1",
+            "native_unified_v2": family in gen_unified_golden.UNIFIED_FAMILIES,
+        }
+        for family, declaration in parser_declarations.get("families", {}).items()
+    }
+    for family, declaration in parser_declarations.get("unified", {}).items():
+        generation = "v1+v2 split" if family in gen_unified_golden.V1_SPLIT_FAMILIES else "v2"
+        label = "v1/v2 split" if generation == "v1+v2 split" else "v2"
+        registry_family = declaration.get("registry", family)
+        has_native_v2 = family in gen_unified_golden.UNIFIED_FAMILIES or registry_family in gen_unified_golden.UNIFIED_FAMILIES
+        native = {"generation": generation, "label": label, "native_unified_v2": has_native_v2}
+        unified_parser_generations[family] = native
+        if registry_family in gen_unified_golden.V1_SPLIT_FAMILIES:
+            unified_parser_generations[registry_family] = {
+                "generation": "v1+v2 split", "label": "v1/v2 split",
+                "native_unified_v2": has_native_v2,
+            }
+        else:
+            unified_parser_generations[registry_family] = native
+    unified_parser_generations["deepseek_v41"] = {
+        "generation": "v2", "label": "v2", "native_unified_v2": True,
+    }
+    unified_parser_generations["gpt_oss"] = {
+        "generation": "v1+v2 split", "label": "v1/v2 split", "native_unified_v2": False,
+    }
+    unified_scenarios = [item[0] for item in (*gen_unified_golden.CLEAN, *gen_unified_golden.EDGE)]
+    unified_scenarios.extend(gen_unified_golden.V1_SPLIT_SCENARIOS)
+    unified_marker_families = {
+        family: unified_taxonomy.marker_family(family)
+        for family in sorted({*parser_declarations.get("families", {}), *parser_declarations.get("unified", {})})
+    }
+    unified_marker_families["gpt_oss"] = "harmony"
+    unified_marker_families["harmony_text"] = "harmony"
     pins_text = (root / "conformance/utils/src/pyproject.stub.toml").read_text()
     peer_versions = {}
     for name, implementation in (("vllm", "vllm_python"), ("sglang", "sglang_python")):
@@ -277,9 +313,11 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
         "unified": parser_declarations.get("unified", {}),
         "unified_presentation": {
             "shared_tools": unified_tools(),
-            "authored_scenarios": [item[0] for item in (*gen_unified_golden.CLEAN, *gen_unified_golden.EDGE)],
-            "scenario_families": {item[0]: sorted(gen_unified_golden.scenario_families(item[0])) for item in (*gen_unified_golden.CLEAN, *gen_unified_golden.EDGE)},
-            "marker_families": {family: unified_taxonomy.marker_family(family) for family in parser_declarations.get("unified", {})},
+            "parser_generations": unified_parser_generations,
+            "authored_scenarios": unified_scenarios,
+            "v1_split_scenarios": list(gen_unified_golden.V1_SPLIT_SCENARIOS),
+            "scenario_families": {scenario: sorted(gen_unified_golden.scenario_families(scenario)) for scenario in unified_scenarios},
+            "marker_families": unified_marker_families,
         },
         "legacy_taxonomy": case_taxonomy,
         "legacy_case_groups": SUB_CASE_GROUPS_BY_MODE,
@@ -331,6 +369,7 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
             "parser_metadata": _sha256((root / "conformance/utils/src/parser_metadata.py").read_bytes()),
             "divergence_notes": _sha256((root / "conformance/toolcalling/known-divergences.yaml").read_bytes()),
             "unified_authoring": _sha256((root / "conformance/utils/src/gen_unified_golden.py").read_bytes()),
+            "unified_v1_authoring": _sha256((root / "conformance/utils/src/gen_unified_v1_cases.py").read_bytes()),
             "unified_tools": _sha256((root / "conformance/utils/src/unified_tools.json").read_bytes()),
             "parser_registrations": _sha256((parser_sources / "parsers.rs").read_bytes()),
             "availability_controls": {
@@ -420,6 +459,18 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
     return catalog
 
 
+def unified_projection(catalog: dict) -> dict:
+    """Keep browser initialization independent of legacy archives and metadata."""
+    keys = ["selection_policy", "implementations", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
+    metadata = {key: catalog["metadata"][key] for key in keys if key in catalog["metadata"]}
+    metadata["tabs"] = [tab for tab in catalog["metadata"].get("tabs", []) if tab["suite"] == "unified"]
+    metadata["selection_policy"] = {"unified": metadata.get("selection_policy", {}).get("unified", {})}
+    metadata["folds"] = metadata.get("folds", {})
+    return {"schema": catalog.get("schema", 1), "revision": catalog["revision"], "snapshot": catalog.get("snapshot"),
+            "metadata": metadata, "sources": {"archives": [], "unified": catalog["sources"]["unified"],
+            "candidates": [item for item in catalog["sources"].get("candidates", []) if item["mode"] == "unified"]}}
+
+
 @dataclass
 class CatalogGeneration:
     root: Path
@@ -449,10 +500,23 @@ def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check
                                    unified=unified, manifest=manifest, generation=generation)
     if not generation.active or generation.root != root or generation.owner != threading.get_ident():
         raise ValueError("catalog generation lease is inactive or belongs to another root/thread")
-    document = json.dumps(build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest), ensure_ascii=False, indent=2) + "\n"
+    catalog = build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest)
+    document = json.dumps(catalog, ensure_ascii=False, indent=2) + "\n"
+    destination = destination or root / "conformance/viewer-catalog.json"
+    projection = destination.parent / "viewer-unified-catalog.json"
+    projection_document = json.dumps(unified_projection(catalog), ensure_ascii=False, separators=(",", ":")) + "\n"
     destination = destination or root / "conformance/viewer-catalog.json"
     if check:
-        return destination.is_file() and destination.read_text() == document
+        return destination.is_file() and destination.read_text() == document and projection.is_file() and projection.read_text() == projection_document
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    projection_temporary = projection.with_suffix(".json.new")
+    try:
+        projection_temporary.write_text(projection_document)
+        os.chmod(projection_temporary, 0o644)
+        unified_history._fsync_candidate_payload(projection_temporary)
+        os.replace(projection_temporary, projection)
+    finally:
+        projection_temporary.unlink(missing_ok=True)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:

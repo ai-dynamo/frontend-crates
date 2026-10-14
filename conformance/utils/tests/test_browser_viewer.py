@@ -84,7 +84,7 @@ def _ready(driver, tab):
     assert not driver.find_elements("css selector", ".error, .load-status[role=alert]")
 
 
-def test_browser_viewer_loads_matrix_and_controls():
+def test_browser_viewer_loads_three_engine_cards_and_controls():
     server, requests = _server()
     driver = _driver()
     try:
@@ -93,13 +93,46 @@ def test_browser_viewer_loads_matrix_and_controls():
         _ready(driver, "tab-unified")
         assert driver.title == 'Dynamo Parser v2 Conformance Table'
         assert driver.find_element('css selector', '#viewer > h1').text == driver.title
-        assert len(driver.find_elements("css selector", "#tab-unified table[data-parity-table] td.cell")) == 1352
+        assert len(driver.find_elements("css selector", "#tab-unified table[data-parity-table] td.cell")) == 4968
+        family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified table[data-parity-table] td.model")}
+        assert "deepseek_v4 (v1/v2 split)" in family_labels
+        assert "deepseek_v3 (v1)" in family_labels
+        assert "muse_glimmer (v2)" in family_labels
         assert driver.find_element("id", "viewer").get_attribute("data-catalog-revision")
+        selects = {item.get_attribute('data-engine'): item for item in driver.find_elements('css selector', '#tab-unified select[data-engine]')}
+        assert set(selects) == {'dynamo', 'sglang', 'vllm'}
+        assert selects['dynamo'].get_attribute('value') == 'dynamo'
+        assert selects['sglang'].get_attribute('value') == 'sglang_python@0.5.21'
+        assert selects['vllm'].get_attribute('value') == 'vllm_python@0.31.0'
+        assert driver.find_elements('css selector', '#viewer > .tabs .tab-button') == []
         loaded = [path for path in requests if "/fixtures" in path]
         assert loaded and all("/fixtures-unified-v2/" in path for path in loaded)
         assert all(count == 1 for count in Counter(loaded).values())
-        assert all("vllm" not in path and "sglang" not in path for path in loaded)
-        assert driver.execute_script("return window.__conformanceModel.rows.filter(r => !r.section).length") == 8
+        assert any('sglang_python-0.5.21.yaml' in path for path in loaded)
+        assert any('vllm_python-0.31.0.yaml' in path for path in loaded)
+        assert driver.execute_script("return window.__conformanceModel.rows.filter(r => !r.section).length") == 27
+        family_labels = driver.execute_script("return window.__conformanceModel.rows.filter(r => !r.section).map(r => r.model_label)")
+        assert len(family_labels) == 27
+        assert all(label.endswith((" (v1)", " (v1/v2 split)", " (v2)")) for label in family_labels), family_labels
+        def color_summary():
+            return driver.execute_script("""
+                const counts = {equal: 0, different: 0, unavailable: 0};
+                for (const cell of document.querySelectorAll('#tab-unified table[data-parity-table] td.cell')) {
+                  if (cell.classList.contains('cmp-eq')) counts.equal++;
+                  if (cell.classList.contains('cmp-leak')) counts.different++;
+                  if (cell.classList.contains('cmp-na')) counts.unavailable++;
+                }
+                return counts;
+            """)
+        newest_reference = color_summary()
+        Select(selects['dynamo']).select_by_value('dynamo@0.7.13')
+        _ready(driver, 'tab-unified')
+        older_reference = color_summary()
+        assert older_reference != newest_reference, (
+            f"changing the Dynamo Reference did not recolor the matrix: {newest_reference}"
+        )
+        Select(selects['dynamo']).select_by_value('dynamo')
+        _ready(driver, 'tab-unified')
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert "transpose-mode" in driver.find_element("tag name", "body").get_attribute("class")
         assert driver.find_elements("css selector", "#tab-unified table[data-transpose-table] td.cell")
@@ -109,19 +142,23 @@ def test_browser_viewer_loads_matrix_and_controls():
         cell = driver.find_element("css selector", "#tab-unified table[data-parity-table] td.cell[data-ttip-id]")
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new MouseEvent('mouseenter'));", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-visible")))
-        assert popup.text and "Golden output" in popup.text
+        assert popup.text and "Golden output" in popup.text and 'SGLang Python' in popup.text and 'vLLM Python' in popup.text
         driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         assert "ttip-pinned" in popup.get_attribute("class")
         assert driver.execute_script("return getComputedStyle(arguments[0]).resize", popup) == "both"
-        refs = driver.find_elements("css selector", "#tab-unified input.cmp-ref")
-        ref = next(item for item in refs if item.is_selected())
-        # Native Reference change invokes the shared asynchronous model and preserves URL.
-        target = next(item for item in refs if not item.is_selected())
-        target_key = target.get_attribute("value")
-        driver.execute_script("arguments[0].click()", target)
-        _ready(driver, "tab-unified")
-        assert "keep=1" in driver.current_url
-        assert driver.find_element("css selector", "#tab-unified input.cmp-ref:checked").get_attribute("value") == target_key
+        Select(selects['vllm']).select_by_value('vllm_rust@0.26.0')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected.includes('vllm_rust@0.26.0')")
+        Select(selects['dynamo']).select_by_value('')
+        _ready(driver, 'tab-unified')
+        state = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))")
+        assert state['reference'] is None and 'sglang_python@0.5.21' in state['selected'] and 'vllm_rust@0.26.0' in state['selected']
+        assert driver.find_elements('css selector', '#tab-unified td.cell.cmp-nobase')
+        Select(selects['sglang']).select_by_value('')
+        Select(selects['vllm']).select_by_value('')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': []}
+        assert 'keep=1' in driver.current_url
         driver.get(f"{base}/conformance/CONFORMANCE_v2.html?tab=tab-unified&keep=1#case")
         WebDriverWait(driver, 20).until(lambda page: urlsplit(page.current_url).path in ("/", "/index.html"))
         parsed = urlsplit(driver.current_url)
@@ -137,33 +174,36 @@ def test_browser_viewer_resolves_nested_http_prefix_and_empty_reference():
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/nested/index.html?tab=tab-unified&base_tab-unified=&transpose=0")
         _ready(driver, "tab-unified")
-        assert not driver.find_elements("css selector", "#tab-unified input.cmp-ref:checked")
-        assert not any("dynamo_v2-" in path or "vllm_python-" in path for path in requests)
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": []}
+        assert not any(path.endswith("viewer-catalog.json") for path in requests)
         assert driver.current_url.startswith(f"http://127.0.0.1:{server.server_port}/nested/")
         assert driver.find_elements("css selector", "#tab-unified td.cell.cmp-nobase")
         driver.refresh()
         _ready(driver, "tab-unified")
-        assert not driver.find_elements("css selector", "#tab-unified input.cmp-ref:checked")
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": []}
     finally:
         driver.quit()
         server.shutdown()
 
 
-def test_delayed_previous_tab_cannot_repaint_current_matrix():
+def test_delayed_previous_capture_cannot_repaint_current_matrix():
     started, release = threading.Event(), threading.Event()
     server, requests = _server(gate=(started, release))
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
         assert started.wait(20)
-        driver.find_element("id", "tab-reasoning-batch-button").click()
-        _ready(driver, "tab-reasoning-batch")
-        assert driver.execute_script("return window.__conformanceModel.id") == "tab-reasoning-batch"
+        driver.execute_script("""
+            const select = document.querySelector('#tab-unified select[data-engine="dynamo"]');
+            select.value = ''; select.dispatchEvent(new Event('change', { bubbles: true }));
+        """)
+        _ready(driver, "tab-unified")
+        assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
         release.set()
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0"))
-        assert driver.execute_script("return window.__conformanceModel.id") == "tab-reasoning-batch"
-        assert driver.find_element("css selector", ".tab-panel.active").get_attribute("id") == "tab-reasoning-batch"
-        assert not any("/toolcalling/" in path for path in requests)
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": ["sglang_python@0.5.21", "vllm_python@0.31.0"]}
+        assert driver.find_element("css selector", ".tab-panel.active").get_attribute("id") == "tab-unified"
+        assert not any("/toolcalling/" in path or "/reasoning/fixtures" in path for path in requests)
     finally:
         release.set()
         driver.quit()
@@ -189,27 +229,25 @@ def test_resource_failures_remain_transport_errors_and_retry(kind):
         server.shutdown()
 
 
-def test_leaving_detailed_only_loads_the_active_tab():
-    server, requests = _server()
+def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unified():
+    started, release = threading.Event(), threading.Event()
+    server, requests = _server(gate=(started, release))
     driver = _driver()
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-reasoning-batch&view=details&transpose=0")
-        _ready(driver, "tab-reasoning-batch")
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-reasoning-batch&transpose=0")
+        assert started.wait(20)
+        assert driver.current_url.startswith(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        assert len(driver.find_elements("css selector", "#tab-unified .engine-card")) == 3
+        assert len(driver.find_elements("css selector", "#tab-unified select[data-engine]")) == 3
+        assert driver.find_element("css selector", "#tab-unified [data-parity-table]").is_displayed()
+        release.set()
+        _ready(driver, "tab-unified")
         driver.find_element("css selector", "[data-view-detailed]").click()
-        _ready(driver, "tab-reasoning-batch")
+        _ready(driver, "tab-unified")
         WebDriverWait(driver, 20).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0"))
-        assert driver.execute_script("return window.__conformanceModel.id") == "tab-reasoning-batch"
-        assert not any("/toolcalling/" in path or "/fixtures-unified-v2/" in path for path in requests)
-        assert not driver.find_elements("css selector", ".tab-panel:not(.active)[data-load-state=loading]")
-        geometry = driver.execute_script("""
-            const table = document.querySelector('#tab-reasoning-batch [data-parity-table]');
-            return ['--sticky-top-row-height', '--sticky-model-width'].map((key, index) => {
-                const node = table.querySelector(index === 0 ? 'thead > tr.matrix-groups' : 'thead th[data-col-control-group=model]');
-                return [parseFloat(table.style.getPropertyValue(key)), node.getBoundingClientRect()[index === 0 ? 'height' : 'width']];
-            });
-        """)
-        for stored, measured in geometry:
-            assert measured > 0 and stored == pytest.approx(measured)
+        assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
+        assert not any("/toolcalling/" in path or "/reasoning/fixtures" in path for path in requests)
+        assert driver.find_element("css selector", "[data-view-detailed]").get_property("checked") is True
     finally:
         driver.quit()
         server.shutdown()
@@ -234,9 +272,8 @@ def test_selection_loading_and_failure_suspend_results_and_restore_pinned_popup(
                 loader.build = original;
                 return new Promise((resolve, reject) => { window.rejectHeldSelection = reject; });
             };
-            const target = document.querySelector('#tab-unified input.cmp-ref:not(:checked)');
-            target.checked = true;
-            target.dispatchEvent(new Event('change', { bubbles: true }));
+            const target = document.querySelector('#tab-unified select[data-engine="vllm"]');
+            target.value = ''; target.dispatchEvent(new Event('change', { bubbles: true }));
         """)
 
         def assert_suspended(state):
@@ -245,7 +282,7 @@ def test_selection_loading_and_failure_suspend_results_and_restore_pinned_popup(
             assert not driver.execute_script("return Boolean(window.__conformanceModel)")
             assert not driver.find_elements("css selector", "#tab-unified td.cell.cmp-eq, #tab-unified td.cell.cmp-leak, #tab-unified td.cell.cmp-na")
             assert not driver.find_elements("css selector", ".ttip-visible")
-            assert not driver.find_element("css selector", "#tab-unified table[data-parity-table]").is_displayed()
+            assert driver.find_element("css selector", "#tab-unified table[data-parity-table]").is_displayed()
             assert {node.get_attribute("textContent") for node in driver.find_elements("css selector", "#tab-unified [data-overview-count]")} == {"—"}
 
         assert_suspended("loading")
@@ -274,18 +311,20 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result():
         _ready(driver, "tab-unified")
         selected = driver.execute_script("""
             const panel = document.getElementById('tab-unified');
-            const peers = [...panel.querySelectorAll('input.cmp-on')].filter(cb => !cb.disabled && cb.value !== 'golden').slice(0, 2);
+            const sglang = panel.querySelector('select[data-engine="sglang"]');
+            const vllm = panel.querySelector('select[data-engine="vllm"]');
+            const rust = [...vllm.options].find(option => option.value.startsWith('vllm_rust@'));
+            if (!rust) throw new Error('Missing vLLM Rust capture option');
             const loader = window.__conformanceLoader;
             const original = loader.build;
+            const staleModel = window.__conformanceModel;
             loader.build = (...args) => {
                 loader.build = original;
-                return new Promise((resolve, reject) => {
-                    original(...args).then(model => { window.releaseOldComparison = () => resolve(model); }, reject);
-                });
+                return new Promise(resolve => { window.releaseOldComparison = () => resolve(staleModel); });
             };
-            peers[0].click();
-            peers[1].click();
-            return peers.map(cb => cb.value);
+            vllm.value = rust.value; vllm.dispatchEvent(new Event('change', { bubbles: true }));
+            sglang.value = ''; sglang.dispatchEvent(new Event('change', { bubbles: true }));
+            return [panel.querySelector('select[data-engine="dynamo"]').value, vllm.value];
         """)
         assert len(selected) == 2
         _ready(driver, "tab-unified")
@@ -297,7 +336,8 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result():
             assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
             shown = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
             assert all(key in shown for key in selected)
-            assert driver.execute_script("return window.__conformanceModel.rows.filter(row=>!row.section).every(row=>Object.values(row.cells).every(cell=>arguments[0].every(key=>Object.hasOwn(cell.cmp || {},key))))", selected)
+            missing = driver.execute_script("return window.__conformanceModel.rows.filter(row=>!row.section).flatMap(row=>Object.entries(row.cells).flatMap(([sub,cell])=>arguments[0].filter(key=>!Object.hasOwn(cell.cmp || {},key)).map(key=>[row.family,sub,key])))", selected)
+            assert not missing, f"selected comparison keys missing from matrix cells: {missing[:12]}"
             cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
             driver.execute_script("window.__buildTooltip(arguments[0]);", cell)
             rendered = driver.execute_script("return [...arguments[0].querySelectorAll('.ttip [data-cand]')].filter(node=>!node.classList.contains('col-hidden')).map(node=>node.dataset.cand)", cell)
@@ -320,8 +360,6 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result():
 @pytest.mark.parametrize("tab,transpose,selector", [
     ("tab-unified", False, "th.case-sub[data-ttip-id]"),
     ("tab-unified", True, "th.trow-case[data-ttip-id]"),
-    ("tab-reasoning-batch", False, "td.parser[data-ttip-wired]"),
-    ("tab-reasoning-batch", True, "th.tcol-model[data-ttip-wired]"),
 ])
 def test_grammar_header_pin_survives_asynchronous_model_refresh(tab, transpose, selector):
     server, _requests = _server()
@@ -359,7 +397,7 @@ def test_grammar_header_pin_survives_asynchronous_model_refresh(tab, transpose, 
         server.shutdown()
 
 
-def test_tab_navigation_discards_popup_pin_suspended_by_selection_load():
+def test_reset_discards_popup_pin_suspended_by_selection_load():
     server, _requests = _server()
     driver = _driver()
     try:
@@ -384,14 +422,10 @@ def test_tab_navigation_discards_popup_pin_suspended_by_selection_load():
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return typeof window.releaseNavigationSelection === 'function'"))
         assert driver.find_element("id", "tab-unified").get_attribute("data-load-state") == "loading"
         assert not driver.find_elements("css selector", ".ttip-pinned")
-        driver.find_element("css selector", "[data-tab-target=tab-reasoning-batch]").click()
-        _ready(driver, "tab-reasoning-batch")
-        driver.execute_script("window.releaseNavigationSelection()")
-        WebDriverWait(driver, 20).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0"))
-        assert driver.execute_script("return window.__conformanceModel.id") == "tab-reasoning-batch"
-        driver.find_element("css selector", "[data-tab-target=tab-unified]").click()
+        driver.find_element("css selector", "[data-reset]").click()
         _ready(driver, "tab-unified")
-        WebDriverWait(driver, 20).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 0"))
+        selection = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))")
+        assert selection == {'reference': 'dynamo', 'selected': ['dynamo', 'sglang_python@0.5.21', 'vllm_python@0.31.0']}
         assert not driver.find_elements("css selector", ".ttip-pinned")
         assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
     finally:
@@ -444,24 +478,24 @@ def test_original_yaml_view_and_blob_download_preserve_source_bytes(kind):
         server.shutdown()
 
 
-def test_short_selection_aliases_and_reset_preserve_tab_contract():
+def test_legacy_capture_alias_and_reset_preserve_unrelated_url_state():
     server, _requests = _server()
     driver = _driver()
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&ref=dynamo_v2%400.7.18&cmp=dynamo&keep=1&transpose=1#saved')
         _ready(driver, 'tab-unified')
-        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': 'dynamo@0.7.18', 'selected': ['dynamo@0.7.18', 'dynamo']}
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': 'dynamo@0.7.18', 'selected': ['dynamo@0.7.18']}
         saved = urlsplit(driver.current_url)
-        query = dict(parse_qsl(saved.query))
-        assert query['base_tab-unified'] == 'dynamo@0.7.18'
-        assert query['cmp_tab-unified'] == 'dynamo'
-        assert query['view'] == 'details' and query['transpose'] == '1' and query['keep'] == '1'
+        query = dict(parse_qsl(saved.query, keep_blank_values=True))
+        assert query['base_tab-unified'] == 'dynamo_v2@unified@0.7.18'
+        assert query['cmp_tab-unified'] == ''
+        assert 'view' not in query and query['transpose'] == '1' and query['keep'] == '1'
         assert 'ref' not in query and 'cmp' not in query and saved.fragment == 'saved'
         driver.find_element('css selector', '[data-reset]').click()
         _ready(driver, 'tab-unified')
         reset = urlsplit(driver.current_url)
-        assert reset.query == 'tab=tab-unified' and not reset.fragment
-        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': 'dynamo', 'selected': ['dynamo']}
+        assert dict(parse_qsl(reset.query)) == {'tab': 'tab-unified', 'keep': '1'} and reset.fragment == 'saved'
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': 'dynamo', 'selected': ['dynamo', 'sglang_python@0.5.21', 'vllm_python@0.31.0']}
         assert not driver.execute_script("return document.body.classList.contains('transpose-mode')")
     finally:
         driver.quit()
@@ -469,29 +503,23 @@ def test_short_selection_aliases_and_reset_preserve_tab_contract():
 
 
 @pytest.mark.parametrize('columns', ['model', 'batch_core'])
-def test_legacy_column_selection_survives_async_mount_and_other_tab_toggle(columns):
+def test_legacy_column_selection_survives_async_mount_and_reload(columns):
     server, _requests = _server()
     driver = _driver()
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&base_tab-unified=&base_tab-reasoning-batch=&cols={columns}&transpose=0')
         _ready(driver, 'tab-unified')
         buttons = driver.find_elements('css selector', '#tab-unified [data-col-toggle]')
-        assert all((button.get_attribute('aria-pressed') == 'true') == (button.get_attribute('data-col-toggle') == columns) for button in buttons)
+        assert all((button.get_attribute('aria-pressed') == 'true') == (button.get_attribute('data-col-toggle') == 'model') for button in buttons) if columns == 'model' else all(button.get_attribute('aria-pressed') == 'true' for button in buttons)
         assert 'cols' not in dict(parse_qsl(urlsplit(driver.current_url).query))
         driver.refresh()
         _ready(driver, 'tab-unified')
-        if columns == 'batch_core':
-            driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').click()
-            driver.find_element('id', 'tab-reasoning-batch-button').click()
-            _ready(driver, 'tab-reasoning-batch')
-            buttons = driver.find_elements('css selector', '#tab-reasoning-batch [data-col-toggle]')
-            assert all((button.get_attribute('aria-pressed') == 'true') == (button.get_attribute('data-col-toggle') in {'batch_core', 'model'}) for button in buttons)
     finally:
         driver.quit()
         server.shutdown()
 
 
-def test_column_toggle_preserves_unloaded_tab_overrides_and_hide_precedence():
+def test_unified_column_toggle_preserves_hide_precedence_and_reload():
     server, _requests = _server()
     driver = _driver()
     try:
@@ -499,19 +527,11 @@ def test_column_toggle_preserves_unloaded_tab_overrides_and_hide_precedence():
         _ready(driver, 'tab-unified')
         driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').click()
         query = dict(parse_qsl(urlsplit(driver.current_url).query))
-        assert 'batch_core' in query['hide'].split(',')
-        driver.find_element('id', 'tab-reasoning-batch-button').click()
-        _ready(driver, 'tab-reasoning-batch')
-        assert driver.find_element('css selector', '#tab-reasoning-batch [data-col-toggle=batch_core]').get_attribute('aria-pressed') == 'false'
-        driver.find_element('id', 'tab-reasoning-stream-button').click()
-        _ready(driver, 'tab-reasoning-stream')
-        assert driver.find_element('css selector', '#tab-reasoning-stream [data-col-toggle=stream_chunk_boundaries]').get_attribute('aria-pressed') == 'true'
+        assert 'batch_core' not in query.get('hide', '').split(',')
+        assert driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').get_attribute('aria-pressed') == 'false'
         driver.refresh()
-        _ready(driver, 'tab-reasoning-stream')
-        assert driver.find_element('css selector', '#tab-reasoning-stream [data-col-toggle=stream_chunk_boundaries]').get_attribute('aria-pressed') == 'true'
-        driver.find_element('id', 'tab-reasoning-batch-button').click()
-        _ready(driver, 'tab-reasoning-batch')
-        assert driver.find_element('css selector', '#tab-reasoning-batch [data-col-toggle=batch_core]').get_attribute('aria-pressed') == 'false'
+        _ready(driver, 'tab-unified')
+        assert driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').get_attribute('aria-pressed') == 'false'
     finally:
         driver.quit()
         server.shutdown()
@@ -540,6 +560,45 @@ def test_collapsing_last_legacy_column_restores_no_visible_columns_on_reload():
         driver.refresh()
         _ready(driver, 'tab-unified')
         assert all(button.get_attribute('aria-pressed') == 'false' for button in driver.find_elements('css selector', '#tab-unified [data-col-toggle]'))
+    finally:
+        driver.quit()
+        server.shutdown()
+
+
+def test_unified_engine_cards_restore_peer_reference_and_stack_on_mobile():
+    server, _requests = _server()
+    driver = _driver()
+    try:
+        base = f"http://127.0.0.1:{server.server_port}"
+        driver.set_window_size(390, 900)
+        driver.get(f"{base}/?tab=tab-reasoning-batch&ref=sglang_python%400.5.21&cmp=dynamo,vllm_python%400.31.0&keep=1#saved")
+        _ready(driver, 'tab-unified')
+        assert driver.current_url.startswith(base + '/?tab=tab-unified')
+        state = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))")
+        assert state == {'reference': 'sglang_python@0.5.21', 'selected': ['dynamo', 'sglang_python@0.5.21', 'vllm_python@0.31.0']}
+        cards = driver.find_elements('css selector', '#tab-unified .engine-card')
+        assert [card.get_attribute('data-engine') for card in cards] == ['dynamo', 'sglang', 'vllm']
+        boxes = [card.rect for card in cards]
+        assert boxes[0]['y'] < boxes[1]['y'] < boxes[2]['y']
+        assert 'keep=1' in driver.current_url and driver.current_url.endswith('#saved')
+        selects = {item.get_attribute('data-engine'): item for item in driver.find_elements('css selector', '#tab-unified select[data-engine]')}
+        Select(selects['dynamo']).select_by_value('dynamo@0.7.20')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).reference") == 'dynamo@0.7.20'
+        Select(selects['dynamo']).select_by_value('')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': ['sglang_python@0.5.21', 'vllm_python@0.31.0']}
+        Select(selects['sglang']).select_by_value('')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ['vllm_python@0.31.0']
+        Select(selects['vllm']).select_by_value('')
+        _ready(driver, 'tab-unified')
+        assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': []}
+        driver.find_element('css selector', '[data-reset]').click()
+        _ready(driver, 'tab-unified')
+        params = dict(parse_qsl(urlsplit(driver.current_url).query))
+        assert params == {'tab': 'tab-unified', 'keep': '1'}
+        assert urlsplit(driver.current_url).fragment == 'saved'
     finally:
         driver.quit()
         server.shutdown()

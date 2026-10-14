@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # conformance
 
-Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded conformance viewer for frontend-crates. The maintained root `index.html` loads the versioned catalog and active fixture sources over HTTP; it does not need extracted archives or a generated report.
+Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The maintained root `index.html` loads the compact Unified catalog and active versioned YAML over HTTP; the full catalog remains available to Node model checks and legacy raw archive links.
 
 ## Unified storage contract: plain versioned YAML only
 
@@ -94,7 +94,7 @@ The detailed reference table retains compact Unified `<group>-<number>` headings
 
 | Output | Command | Parser version | Fixture version |
 |---|---|---|---|
-| Browser matrix | Serve the checkout over HTTP and open `/index.html` | Tool-calling batch and reasoning use v1 captures; tool-calling stream, batch-on-stream candidates, and Unified include Dynamo parser v2 captures. | The viewer reads active archives and plain Unified YAML through `conformance/viewer-catalog.json`. Refresh the catalog with `python3 conformance/utils/src/viewer_catalog.py`, then check it with `--check`. |
+| Browser matrix | Serve the checkout over HTTP and open `/index.html?tab=tab-unified` | The maintained page shows Dynamo, SGLang, and vLLM Unified captures with GOLDEN comparisons. | It loads `conformance/viewer-unified-catalog.json`; legacy archive raw links fetch the full catalog on demand. Refresh and check both catalogs with `python3 conformance/utils/src/viewer_catalog.py` and `python3 conformance/utils/src/viewer_catalog.py --check`. |
 
 ### Historical batch pipelines on Unified inputs
 
@@ -187,7 +187,7 @@ The commands below cover both the older archive-backed tests and Unified. Apply 
 
 ### Unified peer comparisons and recapture provenance
 
-The three engine cards retain the original report layout and select among existing Dynamo Unified, vLLM Python, vLLM Rust, SGLang Python, and separate historical batch captures. Only slot 1 has a default: the latest Dynamo v2 Rust Unified parser. Slots 2 and 3 display None until selected. Batch observations retain final reasoning, visible content, and ordered calls; their rows say “Order/chunk not applicable for batch.”
+The three engine cards retain the original report layout and select among existing Dynamo Unified, vLLM Python, vLLM Rust, SGLang Python, and separate historical batch captures. Only slot 1 has a default: the latest Dynamo v2 Rust Unified parser. Slots 2 and 3 display None until selected. Batch observations retain final reasoning, visible content, and ordered calls; their rows say “Order/chunk not applicable for batch.” Family labels show `v1`, `v1/v2 split`, or `v2` coverage: the matrix includes `UNIFIED.v1_split-parallel_tool_calls` for every family with an archived Dynamo v1 path, including GPT-OSS, while Muse Glimmer remains v2-only.
 
 Each family stores its authored request and GOLDEN in `inputs_and_golden.yaml`. A version checkpoint stores changed stimulus, observation, and metadata fields; omitted fields inherit, and an explicit absent entry removes a case from that checkpoint. Inserting or backfilling an older version preserves every later resolved record, including provenance, unavailable explanations, and missing cases. Unchanged observations remain inherited rather than copied into every release.
 
@@ -237,7 +237,7 @@ python3 -m pytest conformance/utils/tests/test_viewer_model.py conformance/utils
 
 Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, updates and re-extracts the YAML history, refreshes the catalog, and runs the consuming tests and Node status checks. It fails when current capture coverage or Unified results disagree with the authored cases and known-divergence registry. Reload the browser viewer to inspect any red or empty cells.
 
-The browser viewer reads checked-in plain Unified YAML and the active archives indexed by the catalog. Refresh the catalog after packaging or source metadata changes; it contains resource identities and control metadata, with no captured outputs or computed cells.
+The browser viewer reads the compact Unified resource catalog on normal visits. Legacy archive raw links load the full catalog on demand and require the same revision. Refresh both catalogs after packaging or source metadata changes; they contain resource identities and control metadata, with no captured outputs or computed cells.
 
 ### 3. Version rule: one capture name per crate version
 

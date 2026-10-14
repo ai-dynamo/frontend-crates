@@ -7,7 +7,7 @@ import { yamlTemporal } from './values.js';
 
 const CACHE_DB = 'frontend-crates-conformance-v1';
 const CACHE_STORE = 'resources';
-const inFlight = new Map();
+import { DownloadScheduler } from './download_scheduler.js';
 
 // yaml's YAML 1.1 schema includes y/n and unsigned/no-dot exponents. PyYAML's
 // frozen readers do not. Adapt tag tests, preserving the library's resolvers.
@@ -176,19 +176,15 @@ export class HttpResourceStore {
     this.baseUrl = baseUrl instanceof URL ? baseUrl : new URL(baseUrl, globalThis.document?.baseURI);
     this.fetchImpl = fetchImpl;
     this.memory = new Map();
+    this.scheduler = new DownloadScheduler();
   }
 
-  async read(resource) {
+  key(resource) { return `${resource.sha256}:${resource.size}`; }
+  has(resource) { return this.memory.has(resource.sha256); }
+  demand(resources) { this.scheduler.demand(resources.map(resource => this.key(resource))); }
+  async read(resource, { background = false } = {}) {
     validateResource(resource);
-    const key = resource.sha256;
-    if (!key) throw new Error(`resource has no sha256: ${resource.path}`);
-    if (inFlight.has(key)) return inFlight.get(key).then((bytes) => {
-      if (bytes.byteLength !== resource.size) throw new Error(`size mismatch for ${resource.path}`);
-      return bytes.slice();
-    });
-    const task = this._read(resource).finally(() => inFlight.delete(key));
-    inFlight.set(key, task);
-    return task.then((bytes) => bytes.slice());
+    return this.scheduler.read(this.key(resource), () => this._read(resource), background).then(bytes => bytes.slice());
   }
 
   async _read(resource) {

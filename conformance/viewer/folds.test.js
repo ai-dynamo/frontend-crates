@@ -18,6 +18,13 @@ assert.notEqual(failure.cmp.reference.sig, failure.cmp.golden.sig);
 const mixed = cell('7-4.mixed_labels', { golden: entry(1), reference: entry(1) });
 assert.equal(leafCells({ cells: { null: { variants: [...children, mixed] }, string: { variants: [mixed] } } }).size, 3);
 assert.throws(() => leafCells({ cells: { null: { variants: [mixed] }, string: { variants: [{ ...mixed, status: 'problem' }] } } }), /inconsistent/);
+const allInapplicable = aggregateCells([
+  cell('schema_a', { golden: entry(0, { na: 1 }), dynamo: entry(0, { na: 1 }), sglang: entry(0, { na: 1 }) }, 'na'),
+  cell('schema_b', { golden: entry(0, { na: 1 }), dynamo: entry(0, { na: 1 }), sglang: entry(0, { na: 1 }) }, 'na'),
+], 'schema', 'schema variants');
+assert.deepEqual(Object.keys(allInapplicable.cmp), ['dynamo', 'golden', 'sglang']);
+assert.equal(allInapplicable.cmp.dynamo.na, 1);
+assert.equal(allInapplicable.cmp.sglang.na, 1);
 const tab = { id: 'tab-toolcalling-batch', columns: [
   { sub: '7-4', label: '7-4', group_key: 'args' }, { sub: '7-4.anyof', label: '7-4.anyof', group_key: 'args' },
   { sub: '7-5', label: '7-5', group_key: 'args' }, { sub: '7-4.mixed_labels', label: '7-4.mixed_labels', group_key: 'args' },

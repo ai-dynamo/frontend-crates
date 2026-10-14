@@ -50,8 +50,9 @@ def test_invalid_revision_or_resource_cannot_overwrite_site(tmp_path, monkeypatc
     assert not output.exists()
     catalog = json.loads(publish_viewer.CATALOG.read_text())
     catalog["sources"]["archives"][0]["sha256"] = "0" * 64
-    invalid = tmp_path / "catalog.json"
+    invalid = tmp_path / "viewer-catalog.json"
     invalid.write_text(json.dumps(catalog))
+    (tmp_path / "viewer-unified-catalog.json").write_text(json.dumps(viewer_catalog.unified_projection(catalog)))
     monkeypatch.setattr(publish_viewer, "CATALOG", invalid)
     with pytest.raises(ValueError, match="does not match catalog"):
         publish_viewer.publish(output, "a" * 40)
@@ -68,8 +69,9 @@ def test_stale_document_hash_rejects_before_publication(tmp_path, monkeypatch):
     catalog = json.loads(publish_viewer.CATALOG.read_text())
     name = next(iter(catalog["metadata"]["source_hashes"]["documentation"]))
     catalog["metadata"]["source_hashes"]["documentation"][name] = "0" * 64
-    source = tmp_path / "catalog.json"
+    source = tmp_path / "viewer-catalog.json"
     source.write_text(json.dumps(catalog))
+    (tmp_path / "viewer-unified-catalog.json").write_text(json.dumps(viewer_catalog.unified_projection(catalog)))
     monkeypatch.setattr(publish_viewer, "CATALOG", source)
     target = tmp_path / "site"
     with pytest.raises(ValueError, match="document does not match catalog"):
@@ -90,6 +92,7 @@ def _private_publication(tmp_path, monkeypatch):
     catalog = {"revision": "probe", "sources": {"archives": [{"path": "conformance/resource.yaml", "sha256": hashlib.sha256(b"resource").hexdigest(), "size": 8}], "unified": []},
                "metadata": {"source_hashes": {"documentation": {"conformance/doc.json": hashlib.sha256(b"document").hexdigest()}}}}
     (conformance / "viewer-catalog.json").write_text(json.dumps(catalog))
+    (conformance / "viewer-unified-catalog.json").write_text(json.dumps(viewer_catalog.unified_projection(catalog)))
     monkeypatch.setattr(publish_viewer, "ROOT", root)
     monkeypatch.setattr(publish_viewer, "CATALOG", conformance / "viewer-catalog.json")
     source_path = publish_viewer.source_path

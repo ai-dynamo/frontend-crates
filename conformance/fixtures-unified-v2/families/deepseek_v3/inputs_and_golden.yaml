@@ -1,0 +1,75 @@
+input_document:
+  family: deepseek_v3
+  mode: unified
+  model_label: deepseek_v3
+golden_document:
+  family: deepseek_v3
+  mode: unified
+  captured_with:
+    golden: v1
+cases:
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native deepseek_v3 grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: deepseek_v3/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+        ```json
+
+        {"location": "NYC"}
+
+        ```<｜tool▁call▁end｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_time
+
+        ```json
+
+        {"timezone": "EST"}
+
+        ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+          ```json
+
+          {"location": "NYC"}
+
+          ```<｜tool▁call▁end｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_time
+
+          ```json
+
+          {"timezone": "EST"}
+
+          ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []

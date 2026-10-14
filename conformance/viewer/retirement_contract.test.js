@@ -113,7 +113,7 @@ if (args[1] === 'assembly') {
     for (const variant of result.variants) assert.ok(variant.tooltip.head.startsWith(metadata.folds.unified[variant.sub].schema[1] + ' — '));
   }
 } else if (args[1] === 'overlay') {
-  const first = { implementation: 'dynamo_v2', version: '0.6.0', path: 'first.yaml', bytes: new Uint8Array(), document: { provenance: { status: 'legacy', captured_with: { dynamo_v2: '0.6.0' } }, document: {}, changes: { id: { case_key: 'UNIFIED.3', observation: { value: { assembled: [{ kind: 'text', text: 'captured' }] } } } }, metadata_changes: {}, document_overrides: {} } };
+  const first = { implementation: 'dynamo_v2', version: '0.6.0', path: 'first.yaml', bytes: new Uint8Array(), document: { provenance: { status: 'legacy', captured_with: { dynamo_v2: '0.6.0' } }, document: {}, changes: { id: { case_key: 'UNIFIED.3', stimulus: { unavailable: { code: 'original_request_not_retained' } }, observation: { value: { assembled: [{ kind: 'text', text: 'captured' }] } } } }, metadata_changes: {}, document_overrides: {} } };
   const carried = resolveUnified([first], '0.6.1').get('id');
   assert.equal(unifiedResult(carried).events[0].text, 'captured');
   assert.equal(carried.value.document.captured_with.dynamo_v2, '0.6.0');

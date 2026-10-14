@@ -108,12 +108,11 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
     if (!group) { group = { key: column.group_key, label: metadata.unified_taxonomy[column.sub].section_label, band: column.band, span: 0 }; groups.push(group); }
     group.span++;
   }
-  const peers = chosen.filter((descriptor) => descriptor.control.impl === 'vllm');
-  const dynamo = chosen.filter((descriptor) => descriptor.control.impl === 'dynamo');
-  const tooltipOrder = [...chosen.filter((descriptor) => descriptor.control.key === 'dynamo'), descriptors.find((descriptor) => descriptor.control.key === 'golden'), ...peers, ...dynamo.filter((descriptor) => descriptor.control.key !== 'dynamo')];
+  const tooltipOrder = [descriptors.find((descriptor) => descriptor.control.key === 'golden'), ...['dynamo', 'sglang', 'vllm'].flatMap(engine => chosen.filter(descriptor => descriptor.control.impl === engine))];
   const rows = [];
   for (const family of families) {
     const cells = {};
+    const parserGeneration = metadata.unified_presentation.parser_generations?.[family];
     for (const scenario of scenarios) {
       const entry = byFamily.get(family).get(scenario);
       const taxonomy = metadata.unified_taxonomy[scenario];
@@ -141,20 +140,28 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         const history = histories.get(`${family}\0${control.key}`);
         const capture = history.get(scenario);
         let failure = capture ? Object.fromEntries(['unavailable', 'error'].filter((key) => hasField(capture.value, key)).map((key) => [key, getField(capture.value, key)])) : {};
-        if (!capture && control.key === 'dynamo') failure = { error: `Missing Unified capture for applicable case ${family}/${scenario}. Regenerate the current Dynamo capture before publishing this report.` };
-        const failed = Object.keys(failure).length > 0;
-        const chunks = capture && !failed ? unifiedChunkDeltas(capture.value) : [];
-        const stream = source.implementation !== 'vllm_python';
-        const events = !capture || failed ? null : stream ? assembleStream(chunks, source.implementation === 'dynamo_v2' ? getField(capture.value, 'assembled') : null) : getField(capture.value, 'assembled', []);
+        const isDynamo = control.impl === 'dynamo';
+        const v1SplitOnly = metadata.unified_presentation.v1_split_scenarios?.includes(scenario) === true;
+        if (!capture && isDynamo && source.implementation === 'dynamo_v2' && v1SplitOnly) {
+          failure = { unavailable: `Dynamo v2 does not run the Dynamo v1 split parser for ${family}; select a Dynamo v1 capture to inspect this case.` };
+        } else if (!capture && isDynamo && source.implementation === 'dynamo_v2' && parserGeneration?.native_unified_v2 !== true) {
+          failure = { unavailable: `Dynamo v2 has no native Unified parser for ${family}; select a Dynamo v1 capture to inspect its family parser.` };
+        } else if (!capture && control.key === 'dynamo') {
+          failure = { error: `Missing Unified capture for applicable case ${family}/${scenario}. Regenerate the current Dynamo capture before publishing this report.` };
+        }
+        const failed = Object.hasOwn(failure, 'error');
+        const hasFailure = Object.keys(failure).length > 0;
+        const chunks = capture && !hasFailure ? unifiedChunkDeltas(capture.value) : [];
+        const stream = metadata.selection_policy.unified.capture_contracts?.[source.implementation]?.assembled === 'stream';
+        const events = !capture || hasFailure ? null : stream ? assembleStream(chunks, source.implementation === 'dynamo_v2' ? getField(capture.value, 'assembled') : null) : getField(capture.value, 'assembled', []);
         const verdict = failed ? 'ERROR' : events === null ? null : classifyUnified(family, gold, events, metadata.unified_leak_markers);
-        const isDynamo = source.implementation === 'dynamo_v2';
         let block;
         if (events === null) {
           let unavailable;
           const covered = historyCoverage.has(`${family}\0${control.key}`);
-          if (isDynamo) unavailable = covered ? `not captured at ${source.version} — this case postdates that build` : `no ${family} parser in Dynamo v2 ${source.version} — this build could not run the case`;
+          if (isDynamo && source.implementation === 'dynamo_v2') unavailable = covered ? `not captured at ${source.version} — this case postdates that build` : `no ${family} parser in Dynamo v2 ${source.version} — this build could not run the case`;
           else unavailable = covered ? `not captured at ${source.version}; this case postdates that capture` : `${control.label} has no parser for ${family}`;
-          block = failed ? failure : { unavailable };
+          block = hasFailure ? failure : { unavailable };
         } else {
           block = { events, verdict };
           if (isDynamo) {
@@ -165,7 +172,7 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
         results.set(control.key, { chunks, events, verdict, failure, block });
         comparisons[control.key] = { value: events !== null ? ['events', events] : failed && (isDynamo || Object.hasOwn(failure, 'error')) ? ['failure'] : ['absent'],
           leak: Number(verdict === 'LEAK'), err: Number(control.key === 'dynamo' ? failed : Object.hasOwn(failure, 'error')),
-          na: Number(control.key !== 'dynamo' && events === null && !Object.hasOwn(failure, 'error')) };
+          na: Number(events === null && !Object.hasOwn(failure, 'error')) };
       }
       const init = getField(request, 'init') || {};
       const chunks = request.chunks.map((chunk, index) => ({ delta_text: getField(chunk, 'delta_text', ''), finish_reason: null,
@@ -183,7 +190,8 @@ export async function unifiedPanel(catalog, reader, { selected = null, reference
             : { key: control.key, label: control.label, impl: control.impl, version: control.version, parse_mode: 'unified', leak: results.get(control.key).verdict === 'LEAK', block: results.get(control.key).block }),
           baseline: null, reasons, dynamo_notes: [], refs: [], leak_note: null, na_note: null } };
     }
-    rows.push({ family, model_label: family, model_label_html: family, section: null, parser: null, cells });
+    const modelLabel = parserGeneration ? `${family} (${parserGeneration.label})` : family;
+    rows.push({ family, model_label: modelLabel, model_label_html: modelLabel, section: null, parser: null, cells });
   }
   for (const column of columns) {
     const configs = rows.map((row) => row.cells[column.sub]).filter((cell) => cell.status !== 'na').map((cell) => cell.tooltip.init);

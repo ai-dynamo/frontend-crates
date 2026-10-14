@@ -98,7 +98,7 @@ export function statusTotals(status) {
   return { reports: status.reports.length, empty: status.reports.reduce((sum, report) => sum + report.empty, 0), red: status.reports.reduce((sum, report) => sum + report.red, 0) };
 }
 
-export function validateUnifiedKnownDivergences(model, registry, families, aliases) {
+export function validateUnifiedKnownDivergences(model, registry, families, aliases, v1SplitScenarios = []) {
   const tabs = selectTabs(model, ['unified']);
   if (tabs.length !== 1) throw new Error('expected exactly one Unified tab');
   const tab = tabs[0];
@@ -109,7 +109,7 @@ export function validateUnifiedKnownDivergences(model, registry, families, alias
   const extra = actualFamilies.filter((family) => !families.includes(family)).sort();
   if (missing.length || extra.length) throw new Error(`Unified display families differ from the generator: missing=${JSON.stringify(missing)} extra=${JSON.stringify(extra)}`);
   if (!registry || typeof registry !== 'object' || Array.isArray(registry) || registry instanceof Map) throw new Error('known divergences: expected a family mapping');
-  const unknown = Object.keys(registry).filter((family) => !families.includes(family)).sort();
+  const unknown = Object.keys(registry).filter((family) => !actualFamilies.includes(family)).sort();
   if (unknown.length) throw new Error(`known divergences: unknown families: ${JSON.stringify(unknown)}`);
   const reference = defaultReference(tab);
   for (const row of rows) {
@@ -120,9 +120,14 @@ export function validateUnifiedKnownDivergences(model, registry, families, alias
       if (!caseId.startsWith('UNIFIED.') || (!scenario && !caseId.endsWith(`.${row.family}`))) throw new Error(`known divergences: invalid case ID for ${row.family}: ${caseId}`);
       if (Object.hasOwn(checks, 'golden')) expected.add(scenario || caseId.slice('UNIFIED.'.length, -(row.family.length + 1)));
     }
-    const states = [...leafCells(row)].map(([sub, cell]) => [sub, cellState(cell, reference)[0]]);
+    const states = [...leafCells(row)].map(([sub, cell]) => [sub, cellState(cell, reference)[0], cell]);
     if (!states.length || states.every(([, state]) => state === 'na')) throw new Error(`Unified ${row.family}: no applicable fixture leaves`);
-    const empty = states.filter(([, state]) => state === 'empty').map(([sub]) => sub).sort();
+    const empty = states.filter(([sub, state, cell]) => {
+      if (state !== 'empty') return false;
+      const reason = cell.tooltip?.candidates?.find((candidate) => candidate.key === reference.key)?.block?.unavailable;
+      const expectedUnavailable = `Dynamo v2 does not run the Dynamo v1 split parser for ${row.family};`;
+      return !(v1SplitScenarios.includes(sub) && typeof reason === 'string' && reason.startsWith(expectedUnavailable));
+    }).map(([sub]) => sub).sort();
     const actual = new Set(states.filter(([, state]) => state === 'red').map(([sub]) => sub));
     if (empty.length || actual.size !== expected.size || [...actual].some((sub) => !expected.has(sub))) throw new Error(`Unified display differs from known divergences for ${row.family}: empty=${JSON.stringify(empty)} expected_red=${JSON.stringify([...expected].sort())} actual_red=${JSON.stringify([...actual].sort())}`);
   }
@@ -173,7 +178,7 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
     for (const spec of selected) {
       const tab = await buildTab(catalog, reader, spec.id);
-      if (options.knownDivergences && tab.id === 'tab-unified') validateUnifiedKnownDivergences({ tabs: [tab] }, known, Object.keys(catalog.metadata.unified), catalog.metadata.unified_aliases);
+      if (options.knownDivergences && tab.id === 'tab-unified') validateUnifiedKnownDivergences({ tabs: [tab] }, known, Object.keys(catalog.metadata.unified_presentation.parser_generations), catalog.metadata.unified_aliases, catalog.metadata.unified_presentation.v1_split_scenarios);
       status.reports.push(...buildStatus(page, [tab], options.models, status.html).reports);
     }
     const totals = statusTotals(status);

@@ -1,0 +1,51 @@
+input_document:
+  family: inkling
+  mode: unified
+  model_label: inkling
+golden_document:
+  family: inkling
+  mode: unified
+  captured_with:
+    golden: v1
+cases:
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native inkling grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: inkling/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_time<|content_invoke_tool_json|>{"name":"get_time","args":{"timezone":"EST"}}<|end_message|><|content_model_end_sampling|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|message_model|>get_time<|content_invoke_tool_json|>{"name":"get_time","args":{"timezone":"EST"}}<|end_message|><|content_model_end_sampling|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []

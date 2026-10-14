@@ -28,6 +28,8 @@ fi
 if ! run python3 conformance/utils/src/extract_fixtures.py --full-refresh; then
   exit 1
 fi
+run python3 conformance/utils/src/gen_unified_v1_cases.py
+run python3 conformance/utils/src/unified_history.py --validate --store conformance/fixtures-unified-v2
 run python3 conformance/utils/src/viewer_catalog.py
 run python3 conformance/utils/src/viewer_catalog.py --check
 
