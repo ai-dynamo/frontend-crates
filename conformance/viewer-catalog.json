@@ -346047,7 +346047,7 @@
       "parser_families": "6a0a19e21323d7eadfe97c38241e1225dcd30387fd39115607ebf76151aef152",
       "legacy_taxonomy": "d1a3107c9e73c5094e2aec423346b9b0250b172106f27962827e582df33bf430",
       "documentation": {
-        "conformance/README.md": "7d0fe98e4122b39d6081db94383d89fb379bf64b13091765294a7266a1b4e024",
+        "conformance/README.md": "77a39ab46b5e00236afb93bce6d09cbd8853b2f0cbb39bb4c6618ecd0363ff3e",
         "conformance/utils/lib/parsers/TOOLCALLING_CASES.md": "f6d6094085334f4a8f0573e005c19a638fb3f9b70db017d9a2afadc193a150b2",
         "conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md": "6c3bc8a03aa65673ce578d78fe4e6b8c01812d92115b381c7a2a611f3018bc9f",
         "conformance/utils/lib/parsers/REASONING_CASES.md": "3e31dbc6e7e83789693a7bba2fea0243a03e4b63aadb6611ce84504acff303a8",
@@ -346072,5 +346072,5 @@
       }
     }
   },
-  "revision": "afea3d1ff87ee7f701de8663e0b724f483087342e48433673b4fc4a8232d232a"
+  "revision": "1d8e653ebe8b16c75d8cacc17a9e45981dd8bf3dfc3d4e64af76bfbd6c44fc21"
 }

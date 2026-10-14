@@ -83,9 +83,12 @@ run_ci() {  # the conformance-data CI gate; fail-fast, also runnable locally
   # Chrome does not contend with CPU-heavy shared-model Node checks under xdist.
   case "$shard" in
     core) python3 -m pytest "$UTILS/tests" -q --ignore="$UTILS/tests/test_browser_smoke.py" --ignore="$UTILS/tests/test_browser_viewer.py" ;;
-    browser) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k 'not first_visible_matrix_matches_transpose_url' -vv --durations=25 ;;
+    browser) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k 'not first_visible_matrix_matches_transpose_url and not schema_popup_opens_and_fits_across_themes_viewports_and_transpose and not popup_headings_include_compact_references' -vv --durations=25 ;;
     first-matrix) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k first_visible_matrix_matches_transpose_url -vv --durations=25 ;;
-    viewer) python3 -m pytest "$UTILS/tests/test_browser_viewer.py" -vv --durations=25 ;;
+    viewer)
+      python3 -m pytest "$UTILS/tests/test_browser_viewer.py" -vv --durations=25
+      python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k 'schema_popup_opens_and_fits_across_themes_viewports_and_transpose or popup_headings_include_compact_references' -vv --durations=25
+      ;;
     all) python3 -m pytest "$UTILS/tests" -q ;;
   esac
 }
