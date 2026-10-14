@@ -346053,7 +346053,7 @@
         "conformance/utils/lib/parsers/REASONING_CASES.md": "3e31dbc6e7e83789693a7bba2fea0243a03e4b63aadb6611ce84504acff303a8",
         "conformance/utils/lib/parsers/UNIFIED_CASES.md": "b2cc33261f1cbcf61d094da487912f5faf0a94deacf816e016b85b34b95dacd5"
       },
-      "unified_taxonomy": "550ea12e85a8ae99d81336322ae2a84b1dca3caa5c86cf05669a8b9d7906d466",
+      "unified_taxonomy": "751313a6a2d358c9dfc6bd94999181023c8445800abe0939ed74a7debfb8c85d",
       "viewer_metadata": "93211f78c2c52ab4fe6385f3d7734798e8d4c9d24db923ebe8ce1061df643d1a",
       "reasoning_metadata": "f33597414ab4180f2b977a7c8d96c5cd6ebaa16de729f8767a5d8b1018b2728f",
       "implementations": "e7476943ad7c6393100ad805840dd4dad210709ca0376429a1e805764d8e61f3",
@@ -346061,7 +346061,7 @@
       "parser_config": "b7489a1fef2885318e5bf2d90954ae94b52e027b7e13f6f6a490bef41780f533",
       "parser_metadata": "d5057bfe09fa2c3f41017d61412e585a0fc87890cb62d74459a007a93a3fa424",
       "divergence_notes": "7c4d20e71e3b4eaf7660cfe419d86cb68a855e0c788af391814bc75fa2e4267f",
-      "unified_authoring": "2f15f18bd10c3dcbb196c115ab80741c0f32fbb17650e26b55587cd5d98957cd",
+      "unified_authoring": "4cf9e7c0e79c7e64866ff00a0c9f1600d7226210a1dea44a294be1085ba6871d",
       "unified_v1_authoring": "597dc3e3e0ecc2957a15b595e234dec8f416e8c512a27a8e7324170396ee8669",
       "unified_tools": "f37f97a386aab8fedf399d50ffeea0de4d55ddabe54bf4e7bb41538dba8b6c86",
       "parser_registrations": "6d742983040bfd99e7117f56b855225daae8847daf3e5f0cf7d67d980e6af0d6",
@@ -346072,5 +346072,5 @@
       }
     }
   },
-  "revision": "dd81cae8a6183a82babe80b550ab12a33a4f2dd63eb92830f012d147c5b4e415"
+  "revision": "0b3c8122679f4bb85806f57de1baadf3dae8e7cddf5178cb0427d3e74dc89fd2"
 }

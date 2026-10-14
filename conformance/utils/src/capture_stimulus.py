@@ -11,6 +11,7 @@ import yaml
 
 from fixture_disposition import canonical_unified_record_key, canonicalize_unified_inputs
 from impls import UNIFIED_BATCH_IMPLS
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 
 _UNAVAILABLE_CATEGORIES = {
@@ -312,10 +313,15 @@ def validated_current_capture_docs(
         ident = canonical_unified_record_key(family, key, input_aliases)
         if inputs.get(ident) == record:
             input_keys[ident] = key
+    intentionally_v1_only = {
+        ident for ident, record in inputs.items()
+        if directory.name.startswith("dynamo_v2-") and record.get("scenario") in V1_SPLIT_SCENARIOS
+    }
+    checked_inputs = {ident: record for ident, record in inputs.items() if ident not in intentionally_v1_only}
     captures = _effective_capture_records(directory, input_aliases)
-    if not inputs or inputs.keys() != captures.keys():
-        raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
-    for ident, current in inputs.items():
+    if not inputs or checked_inputs.keys() != captures.keys():
+        raise ValueError(f"current capture/input sets differ: missing={sorted(checked_inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - checked_inputs.keys())}")
+    for ident, current in checked_inputs.items():
         if not isinstance(current.get("tools"), list):
             raise ValueError(f"current input has no executable tool schema: {ident}")
         record, raw, relative, bindings = captures[ident]

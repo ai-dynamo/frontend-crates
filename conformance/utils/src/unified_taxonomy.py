@@ -188,6 +188,7 @@ UNIFIED_TAX = {
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
 UNIFIED_GROUP_LABEL = UNIFIED_DISPLAY["group_labels"]
+V1_SPLIT_SCENARIOS = tuple(scenario for scenario, taxonomy in UNIFIED_TAX.items() if taxonomy[0] == "v1_split")
 
 
 def tax(scenario):

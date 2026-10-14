@@ -142,6 +142,29 @@ def test_current_version_validates_exact_version_records(tmp_path):
     assert json.loads(result.stdout) == docs
 
 
+def test_dynamo_v2_current_capture_skips_only_v1_split_scenarios(tmp_path):
+    split_id = "UNIFIED.v1_split-parallel_tool_calls"
+    split = _input("split") | {"scenario": "v1_split_parallel_tool_calls"}
+    current = _input("current")
+    _write(tmp_path, "inputs", split, split_id)
+    _write(tmp_path, "inputs", current, "UNIFIED.7-2")
+    current_record = {"capture_input": capture_stimulus.capture_input(current), "assembled": []}
+    _write(tmp_path, "dynamo_v2-0.7.22", current_record, "UNIFIED.7-2")
+
+    selected = tmp_path / "dynamo_v2-0.7.22"
+    docs = capture_stimulus.validated_current_capture_docs(selected, [tmp_path / "inputs"])
+    assert capture_stimulus.validate_current_capture(selected, [tmp_path / "inputs"]) == 1
+    assert [case for doc in docs for case in doc["cases"]] == ["UNIFIED.7-2"]
+
+    split_record = {"capture_input": capture_stimulus.capture_input(split), "assembled": []}
+    _write(tmp_path, "dynamo_v2-0.7.22", split_record, split_id)
+    with pytest.raises(ValueError, match="current capture/input sets differ"):
+        capture_stimulus.validate_current_capture(selected, [tmp_path / "inputs"])
+
+    with pytest.raises(ValueError, match="current capture/input sets differ"):
+        capture_stimulus.validate_current_capture(tmp_path / "dynamo_v1-10.0.1", [tmp_path / "inputs"])
+
+
 @pytest.mark.parametrize("invalid", [{"error": "failed"}, {"unavailable": "missing"},
                                      {"capture_input": _input("other")}])
 def test_current_release_rejects_surviving_invalid_records(tmp_path, invalid):

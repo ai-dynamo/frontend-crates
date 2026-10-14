@@ -25,6 +25,7 @@ import yaml
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -43,7 +44,6 @@ V1_SPLIT_FAMILIES = frozenset(
     set(yaml.safe_load(markers.parser_families_path().read_text())["families"])
     - {"muse_glimmer"}
 ) | {"gpt_oss"}
-V1_SPLIT_SCENARIOS = ("v1_split_parallel_tool_calls",)
 # Families whose unified parser accepts GUIDED tool output, declared in the manifest.
 # Every family with a native unified parser does today. The gate is kept rather than
 # deleted because "can this family honour a guided request mode" is a real per-family
