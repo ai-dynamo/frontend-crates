@@ -823,8 +823,9 @@ def _schema_header(driver, transposed):
         """, transposed)
 
 
-def _dismiss_visible_tooltips(driver):
-    ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+def _dismiss_visible_tooltips(driver, move_pointer=True):
+    if move_pointer:
+        ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
     _script(driver, """
         const owners = new Set([
           ...document.querySelectorAll('[data-ttip-wired]:hover'),
@@ -838,6 +839,12 @@ def _dismiss_visible_tooltips(driver):
 def _open_schema_popup(driver, header):
     _dismiss_visible_tooltips(driver)
     _script(driver, "arguments[0].scrollIntoView({block: 'center', inline: 'center'})", header)
+    # Scrolling can put the target under the pointer. Move to a fixed viewport point and
+    # clear any hover opened by scrolling so the next move produces a fresh enter event.
+    actions = ActionChains(driver)
+    actions.w3c_actions.pointer_action.move_to_location(0, 0)
+    actions.perform()
+    _dismiss_visible_tooltips(driver, move_pointer=False)
     _script(driver, "window.__buildTooltip(arguments[0])", header)
     ActionChains(driver).move_to_element(header).perform()
     return WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
@@ -884,7 +891,8 @@ def test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose(drive
                     summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
                     assert disclosure.get_dom_attribute("open") is None
                     collapsed_width = tip.size["width"]
-                    _click(summary)
+                    summary.send_keys(Keys.ENTER)
+                    assert _script(driver, "return document.activeElement === arguments[0]", summary)
                     WebDriverWait(driver, 10).until(lambda browser: disclosure.get_dom_attribute("open") is not None)
                     WebDriverWait(driver, 10).until(lambda browser: tip.size["width"] >= collapsed_width)
                     rect = _script(driver, """
@@ -899,7 +907,7 @@ def test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose(drive
                     assert 0 <= rect["top"] and rect["bottom"] <= rect["viewportHeight"], rect
                     blocks = disclosure.find_elements(By.CSS_SELECTOR, ".case-schema-json")
                     assert blocks and all(block.is_displayed() for block in blocks)
-                    summary.click()
+                    summary.send_keys(Keys.ENTER)
                     WebDriverWait(driver, 10).until(lambda browser: disclosure.get_dom_attribute("open") is None)
                     _dismiss_visible_tooltips(driver)
     finally:

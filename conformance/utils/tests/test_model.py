@@ -10,7 +10,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[3]
 
 def test_shared_javascript_matrix_contracts():
-    result = subprocess.run(["node", str(ROOT / "conformance/viewer/models.test.js")], cwd=ROOT, capture_output=True, text=True, timeout=300)
+    # Rebuilding alternate selections for the full matrix can exceed 300s under xdist load.
+    result = subprocess.run(["node", str(ROOT / "conformance/viewer/models.test.js")], cwd=ROOT, capture_output=True, text=True, timeout=600)
     assert result.returncode == 0, result.stderr
     assert "Shared matrix structural contracts passed:" in result.stdout
 
