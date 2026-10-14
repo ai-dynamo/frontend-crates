@@ -210,9 +210,17 @@ body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
 /* Known v1-vs-v2 divergence suffix (batch-on-stream tab, from
  * known-divergences.yaml): calls agree (cell stays green) but normal_text
  * differs by design. Muted corner glyph; the popup carries the explanation. */
-td.cell .kdiv { display: none; position: absolute; top: 0; right: 1px; font-size: 9px;
-  line-height: 1.1; color: #375a7f; opacity: 0.75; pointer-events: none; }
-body.view-details td.cell .kdiv { display: block; }
+:root { --duplicate-color: #7b61a8; }
+td.cell .kdiv,
+td.cell .duplicate-marker { display: none; position: absolute; top: 0; font-size: 9px;
+  line-height: 1.1; }
+td.cell .kdiv { right: 1px; color: #375a7f; opacity: 0.75; pointer-events: none; }
+td.cell .duplicate-marker { left: 1px; color: var(--duplicate-color); opacity: 0.9; cursor: help; }
+body.view-details td.cell .kdiv,
+body.view-details td.cell .duplicate-marker { display: block; }
+.ttip-duplicate { margin-top: 6px; padding: 4px 6px; color: var(--duplicate-color);
+  border-left: 3px solid var(--duplicate-color); background: #f4effa; font-weight: 600; }
+[data-theme="dark"] .ttip-duplicate { color: #d0b9f2; background: #2b2140; }
 td.cell[data-cmp] .cell-marker { display: none !important; }
 body.view-details td.cell .cmp-marker { display: flex; }
 td.cell.cmp-eq { background: #76b884 !important; }

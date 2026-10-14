@@ -232,7 +232,12 @@
     if (!b) { return '—'; }
     if (b.unavailable != null) {
       // Prose, not payload: these carry n/a rationale and TODO notes.
-      return '<span class="expl">unavailable: ' + escapeHtml(String(b.unavailable)) + '</span>';
+      var unavailable = b.unavailable;
+      var reason = (unavailable && typeof unavailable === 'object')
+        ? (typeof unavailable.detail === 'string' && unavailable.detail ? unavailable.detail
+          : (typeof unavailable.code === 'string' ? unavailable.code : JSON.stringify(unavailable)))
+        : String(unavailable);
+      return '<span class="expl">unavailable: ' + escapeHtml(reason) + '</span>';
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named
@@ -627,6 +632,10 @@
     if (m.na_note) {
       h += '<pre class="ttip-pre ttip-note">' + escapeHtml(m.na_note) + '</pre>';
     }
+    if (m.duplicate_of) {
+      h += '<div class="ttip-duplicate">↔ Duplicate of <code>'
+        + escapeHtml(m.duplicate_of) + '</code></div>';
+    }
     return h;
   }
 
@@ -989,6 +998,14 @@
       kd.textContent = '≠';
       td.appendChild(kd);
     }
+    if (cell.duplicate_of) {
+      var dup = document.createElement('span');
+      dup.className = 'duplicate-marker';
+      dup.setAttribute('title', 'Duplicate of ' + cell.duplicate_of);
+      dup.setAttribute('aria-label', 'Duplicate of ' + cell.duplicate_of);
+      dup.textContent = '↔';
+      td.appendChild(dup);
+    }
     if (cell.fixture_href) {
       // Empty anchor: the visible glyph is written into .marker-text by applyCtl;
       // the link still points at the fixture yaml.
@@ -1225,7 +1242,9 @@
           if (!tip) { return; }
           tip.popupCase = columnsBySub.get(sub);
           tip.family = cell.family;
+          if (typeof cell.duplicate_of === 'number') { cell.duplicate_of = strings[cell.duplicate_of]; }
           S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
+          if (typeof tip.duplicate_of === 'number') { tip.duplicate_of = strings[tip.duplicate_of]; }
           if (tip.input) { S(tip.input, 'text'); }
           (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });
           (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });

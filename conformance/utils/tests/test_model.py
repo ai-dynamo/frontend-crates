@@ -98,6 +98,59 @@ def _tab(model: dict, tab_id: str) -> dict:
     raise AssertionError(f"tab {tab_id!r} missing; have {[t['id'] for t in model['tabs']]}")
 
 
+def _unavailable_detail(block: dict) -> str:
+    unavailable = block["unavailable"]
+    if isinstance(unavailable, dict):
+        assert isinstance(unavailable.get("code"), str)
+        detail = unavailable.get("detail")
+        assert detail is None or isinstance(detail, str)
+        return detail or unavailable["code"]
+    assert isinstance(unavailable, str)
+    return unavailable
+
+
+def _render_tooltips(tips: list[dict]) -> list[str]:
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
+const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
+"""
+    result = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(tips), text=True, capture_output=True, check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_tooltip_renders_structured_and_legacy_unavailable_reasons():
+    tips = [
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": {"code": "vllm_rust_parser_not_registered",
+                            "detail": "No parser for <family>."},
+        }}]},
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": "No parser for this legacy result.",
+        }}]},
+        {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
+            "unavailable": {"code": "original_request_not_retained"},
+        }}]},
+    ]
+
+    rendered = _render_tooltips(tips)
+
+    assert "unavailable: No parser for &lt;family&gt;." in rendered[0]
+    assert "[object Object]" not in rendered[0]
+    assert "unavailable: No parser for this legacy result." in rendered[1]
+    assert "unavailable: original_request_not_retained" in rendered[2]
+
+
 def test_case_schema_extraction_omits_absent_and_shared_defaults():
     schema = {"type": "object", "properties": {"query": {"type": "string"}}}
     tools = [{"name": "search", "parameters": schema, "description": "Search"}]
@@ -320,15 +373,46 @@ def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
         if row["family"] != "muse_glimmer":
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
+            assert cell["duplicate_of"] == "UNIFIED.35-1"
             for field in ("description", "na_note"):
                 assert cell["tooltip"][field].startswith("This is a duplication of " + table.unified_taxonomy.numbered_id("guided_json_quoted_bare_header_in_answer"))
         if row["family"] == "deepseek_v41":
-            for scenario in ("prefilled_reasoning_with_tool", "prefilled_reasoning_then_text_then_tool", "prefilled_reasoning_then_text"):
+            duplicates = {
+                "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+                "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+                "prefilled_reasoning_then_text": "UNIFIED.10-2",
+            }
+            for scenario, canonical in duplicates.items():
                 cell = row["cells"][scenario]
-                assert cell["status"] != "na"
-                assert cell["tooltip"]["init"]["starting_state"] == "Reasoning"
-                assert cell["cmp"]["dynamo"].get("na", 0) == 0
-                assert cell["cmp"]["dynamo"]["sig"] == cell["cmp"]["golden"]["sig"]
+                assert cell["status"] == "na"
+                assert cell["duplicate_of"] == canonical
+                assert cell["tooltip"]["duplicate_of"] == canonical
+                assert cell["tooltip"]["na_note"] == f"Duplicate of {canonical}: same observable event contract for deepseek_v41."
+
+
+def test_unified_duplicate_cells_expose_canonical_pointer_in_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    assert {
+        scenario: row["cells"][scenario]["duplicate_of"]
+        for scenario in (
+            "prefilled_reasoning_with_tool",
+            "prefilled_reasoning_then_text_then_tool",
+            "prefilled_reasoning_then_text",
+        )
+    } == {
+        "prefilled_reasoning_with_tool": "UNIFIED.11-1",
+        "prefilled_reasoning_then_text_then_tool": "UNIFIED.11-5",
+        "prefilled_reasoning_then_text": "UNIFIED.10-2",
+    }
+
+
+def test_unified_duplicate_pointer_is_explained_in_tooltip_json(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row["family"] == "deepseek_v41")
+    cell = row["cells"]["prefilled_reasoning_with_tool"]
+    assert cell["tooltip"]["duplicate_of"] == "UNIFIED.11-1"
+    assert "Duplicate of UNIFIED.11-1" in cell["tooltip"]["na_note"]
 
 
 def test_v2_exactly_one_active_tab(model_v2):
@@ -375,8 +459,33 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
         for cell in muse["cells"].values()
     )
     muse_tip = next(iter(muse["cells"].values()))["tooltip"]
-    native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == "vllm_rust@0.26.0")
-    assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
+    # Fresh request-bound classifications retain their release identity even
+    # when both releases lack the same parser.
+    for key, version in (("vllm_rust", "0.25.1"), ("vllm_rust@0.26.0", "0.26.0")):
+        native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == key)
+        assert native["block"]["unavailable"] == f"No vLLM Rust Unified parser is registered for muse_glimmer at {version}."
+
+
+def test_unified_sglang_versions_are_streamed_and_grouped_without_duplicate_backend(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    candidates = [candidate for candidate in tab["candidates"] if candidate["impl"] == "sglang"]
+    by_version = {candidate["version"]: candidate for candidate in candidates}
+    assert len(by_version) == len(candidates)
+    for version in ("0.5.14", "0.5.16", "0.5.21"):
+        candidate = by_version[version]
+        assert candidate["key"] == f"sglang_python@{version}"
+        assert candidate["label"] == f"SGLang Python {version} (stream, reasoning + tool detectors)"
+        assert candidate["default_bucket"] == "C"
+    assert all("Dynamo backend version" not in candidate["label_html"] for candidate in candidates)
+    assert next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")["key"] == "dynamo"
+    for row in tab["rows"]:
+        for cell in leaf_cells(row).values():
+            for candidate in candidates:
+                assert candidate["key"] in cell["cmp"]
+                tooltip = next(item for item in cell["tooltip"]["candidates"] if item["key"] == candidate["key"])
+                if cell.get("status") != "na" and not tooltip["block"].get("unavailable") and not tooltip["block"].get("error"):
+                    assert "events" in tooltip["block"]
+                    assert all(candidate["key"] in chunk["expected"] for chunk in cell["tooltip"]["input"]["chunks"])
 
 
 def test_unified_default_dynamo_keeps_semantic_capture_keys_and_release_history_visible(model_v2):
@@ -425,24 +534,8 @@ def test_null_case_descriptions_explain_schema_difference(model_v2):
     assert tips[0]["input"]["text"] == tips[1]["input"]["text"]
     assert "request tool schema requires a string" in tips[0]["description"]
     assert "request tool schema permits JSON null" in tips[1]["description"]
-    script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
-vm.runInContext(source.replace('// --- Entry point',
-  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
-const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
-process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
-"""
     tips = [row["cells"][scenario]["tooltip"] for scenario in scenarios]
-    result = subprocess.run(
-        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
-        input=json.dumps(tips), text=True, capture_output=True, check=True,
-    )
-    rendered = json.loads(result.stdout)
+    rendered = _render_tooltips(tips)
     assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
@@ -503,23 +596,7 @@ def test_minimax_nested_union_fixtures_preserve_history_and_input(
         assert (stimulus["text"] if mode == "batch" else
                 "".join(chunk["delta_text"] for chunk in stimulus["chunks"])) == raw_input
         tips.append(tip)
-    script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
-vm.runInContext(source.replace('// --- Entry point',
-  'window.audit = {buildTooltipHtml};\n// --- Entry point'), context);
-const tips = JSON.parse(fs.readFileSync(0, 'utf8'));
-process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTooltipHtml(tip))));
-"""
-    result = subprocess.run(
-        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
-        input=json.dumps(tips), text=True, capture_output=True, check=True,
-    )
-    for tip, markup in zip(tips, json.loads(result.stdout)):
+    for tip, markup in zip(tips, _render_tooltips(tips)):
         left = [unescape(re.sub(r"<[^>]+>", "", match))
                 for match in re.findall(r'<td class="cin">(.*?)</td>', markup, re.S)]
         if mode == "batch":
@@ -833,10 +910,14 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 if not is_unavailable or leaf_cells(row)[scenario]["status"] == "na":
                     continue
                 peer = next(candidate for candidate in leaf_cells(row)[scenario]["tooltip"]["candidates"] if candidate["key"] == key)
-                reason = peer["block"]["unavailable"]
+                reason = _unavailable_detail(peer["block"])
                 assert (
                     "not captured at" in reason
                     or "has no parser" in reason
+                    or "parser is not registered for" in reason
+                    or reason.startswith("No vLLM Rust Unified parser is registered for ")
+                    or "has no request-prefilled Response starting-state API" in reason
+                    or reason.startswith("Peer harness supports only native/default initialization and stop termination;")
                     or "no GuidedJson" in reason
                     or reason.startswith(("Capture stimulus unavailable:", "Capture stimulus mismatch ("))
                 ), reason
@@ -855,7 +936,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
             if key.startswith("vllm_rust"):
                 assert comparison["na"] == 1
                 peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
-                assert "no GuidedJson" in peer["block"]["unavailable"]
+                assert "no GuidedJson" in _unavailable_detail(peer["block"])
             else:
                 assert comparison["na"] == 0
 
@@ -1237,7 +1318,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
                 version = tuple(map(int, candidate["key"].split("@", 1)[1].split(".")))
                 if version < (0, 7, 16):
                     assert "unavailable" in candidate["block"]
-                    assert "not captured at" in candidate["block"]["unavailable"]
+                    assert "not captured at" in _unavailable_detail(candidate["block"])
                     assert "events" not in candidate["block"]
                     state, reason = cell_state(shared, candidate)
                     assert state == "empty"
@@ -1459,12 +1540,13 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     column = next(c for c in tab["columns"] if c["sub"] == scenario)
     assert column["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
     assert column["compact_prefix"] == "ds4"
-    assert column["display_number"] == 1
+    assert column["display_number"] == 2
     assert column["case_id"] == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
     assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
-    assert group["span"] == 1
+    group_columns = [c for c in tab["columns"] if c["group_key"] == column["group_key"]]
+    assert group["span"] == len(group_columns)
     assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
     for row in tab["rows"]:
@@ -1473,14 +1555,11 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
         if row["family"] != "deepseek_v4":
             assert cell["status"] == "na"
     glossary = next(g for g in tab["glossary"] if g["label"] == group["label"])
-    assert [r[0] for r in glossary["rows"]] == ["deepseek_v4-guided_response_rejected_header_quote_ownership"]
+    assert {r[0] for r in glossary["rows"]} == {c["label"] for c in group_columns}
 
 
 def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures(model_v2):
     """A parity/defect annotation must never erase a captured oracle disagreement."""
-    manifest = json.loads((REPO / "conformance/fixtures-manifest.json").read_text())
-    versions = manifest["crates"]
-    v1, v2 = versions["dynamo-parsers"], versions["dynamo-parsers-v2"]
     batch_tab = _tab(model_v2, "tab-toolcalling-batch")
     stream_tab = _tab(model_v2, "tab-toolcalling-streamv1")
     indexed = {
@@ -1491,12 +1570,18 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
     }
     root = _cache_root() / "toolcalling"
     modes = [
-        ("fixtures-batch-v1", root / f"fixtures-batch-v1/dynamo_v1-{v1}", batch_tab, f"dynamo_v1-b-{v1.replace('.', '-')}", "batch"),
-        ("fixtures-stream-v1", root / f"fixtures-stream-v1/dynamo_v2-{v2}", stream_tab, f"dynamo_v2-{v2.replace('.', '-')}", "stream"),
-        ("fixtures-batch-v1", root / "fixtures-batch-on-stream-v1", batch_tab, f"dynamo_v2-s-{v2.replace('.', '-')}", "batch-stream"),
+        ("fixtures-batch-v1", "fixtures-batch-v1/dynamo_v1-", batch_tab, "dynamo_v1-b-", "batch"),
+        ("fixtures-stream-v1", "fixtures-stream-v1/dynamo_v2-", stream_tab, "dynamo_v2-", "stream"),
+        ("fixtures-batch-v1", "fixtures-batch-on-stream-v1", batch_tab, "dynamo_v2-s-", "batch-stream"),
     ]
     checked = mismatches = hidden_mismatches = 0
-    for input_tree, captures, tab, candidate_key, mode in modes:
+    for input_tree, capture_tree, tab, candidate_prefix, mode in modes:
+        # Each surface records its own release; Unified's manifest version can advance independently.
+        candidate = next(c for c in tab["candidates"] if c["key"].startswith(candidate_prefix))
+        candidate_key = candidate["key"]
+        captures = root / (capture_tree if mode == "batch-stream" else f"{capture_tree}{candidate['version']}")
+        assert captures.is_dir(), captures
+        mode_checked = 0
         for path in sorted(captures.glob("*/TOOLCALLING.*.7.schema.yaml")):
             doc = yaml.safe_load(path.read_text())
             inputs = yaml.safe_load((root / input_tree / "inputs" / path.parent.name / path.name).read_text())["cases"]
@@ -1540,7 +1625,9 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
                 # JSON spelling distinguishes bool/int as well as string/number.
                 assert (cmp[candidate_key]["sig"] != cmp["golden"]["sig"]) == differs, (mode, doc["family"], cid)
                 checked += 1
+                mode_checked += 1
                 mismatches += differs
+        assert mode_checked > 0, f"no visible schema captures checked for {mode}"
     assert checked > 0, "no independently authored schema probes were checked"
     print(f"Preserved {mismatches} visible authored-golden disagreements across {checked} current schema captures; {hidden_mismatches} additional hidden alias disagreements remain in the fixtures")
 
@@ -1573,3 +1660,31 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
             assert len(cell["variants"]) == 4
             assert column["schemas"]
     assert found == expected
+
+
+@pytest.mark.parametrize(("unavailable", "reason"), [
+    ({"code": "missing_result"}, "missing_result"),
+    ({"code": "missing_result", "detail": ""}, "missing_result"),
+    ({"code": "missing_result", "detail": "No retained capture."}, "No retained capture."),
+    ("legacy explanation", "legacy explanation"),
+    ({"code": "<missing>&", "detail": ""}, "&lt;missing&gt;&amp;"),
+    ({"code": "missing", "detail": "<script>&\\\"'"}, "&lt;script&gt;&amp;\\&quot;&#39;"),
+])
+def test_unavailable_popup_renders_detail_or_code(unavailable, reason):
+    script = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+vm.runInContext(source.replace('// --- Entry point',
+  'window.audit = {outputBlock};\n// --- Entry point'), context);
+const unavailable = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(context.window.audit.outputBlock({unavailable}, 'gemma4', {}, []));
+"""
+    rendered = subprocess.run(
+        ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
+        input=json.dumps(unavailable), text=True, capture_output=True, check=True,
+    ).stdout
+    assert rendered == f'<span class="expl">unavailable: {reason}</span>'

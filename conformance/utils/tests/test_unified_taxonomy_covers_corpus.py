@@ -504,9 +504,19 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "muse_quoted_reserved_eom_argument",
                 "muse_quoted_reserved_eot_argument",
                 "muse_quoted_reserved_start_argument",
+                "prefilled_response_guided_closer_inside_invoke_quote",
+                "guided_json_native_parameter_object_before_payload",
+                "guided_json_native_parameter_array_before_payload",
             })
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
+        if family == "deepseek_v41":
+            extra.add("prefilled_response_guided_pending_invoke_header")
+        if family == "qwen3":
+            extra.update({
+                "guided_json_native_parameter_object_before_payload",
+                "guided_json_native_parameter_array_before_payload",
+            })
         assert set(response_cases) == response_scenarios | extra
         native_scenarios = {
             "native_quoted_control_in_response",
@@ -818,24 +828,24 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 114,
-            "deepseek_v41": 114,
-            "gemma4": 115,
+            "deepseek_v4": 118,
+            "deepseek_v41": 115,
+            "gemma4": 119,
             "glm47": 117,
-            "kimi_k2": 113,
-            "kimi_k3": 121,
-            "muse_glimmer": 117,
-            "qwen3": 114,
+            "kimi_k2": 117,
+            "kimi_k3": 124,
+            "muse_glimmer": 124,
+            "qwen3": 122,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 925 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 956 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
-    deferred = {"1-2", "5-5", "6-2", "30-14", "32-6", "50-1", "50-2"} | {
+    deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 134 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 148 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1126,9 +1136,14 @@ def _family_value(scenario, family):
         recipient = quoted[scenario]
         return (f"I mean to={recipient}literal" if family == "muse_glimmer"
                 else f"I mean {reason_open}{recipient} literal{reason_close}")
-    if scenario == "prefilled_response_reasoning_markers_literal":
+    if scenario in {
+        "prefilled_response_reasoning_markers_literal",
+        "guided_json_native_parameter_object_before_payload",
+        "guided_json_native_parameter_array_before_payload",
+    }:
+        suffix = " then a call" if scenario == "prefilled_response_reasoning_markers_literal" else ""
         return ("to=selfliteral" if family == "muse_glimmer"
-                else f"{reason_open}literal{reason_close}") + " then a call"
+                else f"{reason_open}literal{reason_close}") + suffix
     return None
 
 
@@ -1542,6 +1557,19 @@ def _assert_cross_family_contract(corpus):
                 # Complete native argument bodies are input even when guided mode
                 # suppresses them. Goldens alone cannot detect a changed stress value.
                 suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
+                if scenario == "guided_json_reasoning_markers_inside_native_parameter":
+                    opener, closer, _, _ = control_tokens(family)
+                    assert suppressed == [{"kind": "tool_call", "name": "f", "arguments": {"x": opener + "quoted" + closer}}], (
+                        family, scenario, "wrong suppressed marker role or payload",
+                    )
+                    suppressed[0]["arguments"]["x"] = "FAMILY_REASONING_MARKERS"
+                if scenario in {
+                    "guided_json_native_parameter_object_before_payload",
+                    "guided_json_native_parameter_array_before_payload",
+                }:
+                    for call in suppressed:
+                        if isinstance(call["arguments"]["x"], str):
+                            call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX)
     for scenario, families in by_scenario.items():
@@ -1696,6 +1724,10 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
             sections[taxonomy.display_section(scenario)[0]].append(scenario)
         for section in sections.values():
             assert [taxonomy.case_description(s) for s in section] == sorted(taxonomy.case_description(s) for s in section)
+    compact_prefixes = defaultdict(list)
+    for scenario in sorted(scenarios, key=taxonomy.display_sort_key):
+        compact_prefixes[labels[scenario]["compact_prefix"]].append(scenario)
+    for members in compact_prefixes.values():
         assert [labels[s]["display_number"] for s in members] == list(range(1, len(members) + 1))
     v4 = labels["guided_response_rejected_header_quote_ownership"]
     assert v4["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"

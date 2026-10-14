@@ -8,9 +8,6 @@ document:
   mode: unified
 changes:
   glm47_reference_type_intersection:
-    stimulus:
-      ref: current
-      semantic_sha256: 9d436633af0c5f9e00fdb31d0abf3fc111ac6b9dca10f164ce44a383faa41c2d
     case_key: UNIFIED.glm5-2
     observation:
       value:

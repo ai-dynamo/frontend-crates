@@ -14,7 +14,7 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
-from unified_tools import unified_tools
+from unified_tools import openai_tools, unified_tools
 
 
 def _assert_value(value, schema):
@@ -143,15 +143,19 @@ def test_peer_request_schema_projection_matches_shared_definition(script):
     tree = ast.parse((SRC / script).read_text())
     assignments = [node for node in tree.body if isinstance(node, ast.Assign)
                    and any(isinstance(target, ast.Name) and target.id in {"TOOLS", "TOOL_SCHEMAS"} for target in node.targets)]
-    namespace = {"unified_tools": unified_tools, "Tool": SimpleNamespace, "Function": SimpleNamespace}
+    namespace = {
+        "unified_tools": unified_tools,
+        "openai_tools": openai_tools,
+        "Tool": SimpleNamespace,
+        "Function": SimpleNamespace,
+    }
     exec(compile(ast.Module(body=assignments, type_ignores=[]), script, "exec"), namespace)
-    projected = namespace["TOOLS"]
     if script == "capture_sglang_unified.py":
-        actual = [vars(tool.function) for tool in projected]
-        assert all(tool.type == "function" for tool in projected)
-    else:
-        actual = [tool["function"] for tool in projected]
-        assert all(tool["type"] == "function" for tool in projected)
+        assert namespace["TOOL_SCHEMAS"] == unified_tools()
+        return
+    projected = namespace["TOOLS"]
+    actual = [tool["function"] for tool in projected]
+    assert all(tool["type"] == "function" for tool in projected)
     assert actual == unified_tools()
 
 
@@ -173,8 +177,10 @@ def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     assert "unified_tool_schemas_for_case(case.tools.as_ref())" in render
     assert "unified_tool_schemas_for_case(tool_schema_json.as_ref())" in cross_version
     peer = (SRC / "capture_vllm_rust_unified.py").read_text()
-    assert 'serde_json::from_str(include_str!("unified_tools.json"))' in peer
-    assert '(crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())' in peer
+    assert "tools: Vec<Tool>" in peer
+    assert "make_parser(&case.family, &case.tools)" in peer
+    assert "supports_tools=True" in peer
+    assert "schema_bytes = SCHEMA_PATH.read_bytes()" in peer
 
 
 def test_recovery_successor_respects_string_schema():

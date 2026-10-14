@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import importlib
+import importlib.metadata
 import io
 import json
 import sys
@@ -33,9 +34,16 @@ def producer(request, monkeypatch, tmp_path):
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
+    class Request(Box):
+        def __init__(self, **kwargs):
+            calls.append(("request", kwargs))
+            super().__init__(**kwargs)
+
     class Parser:
+        DetectorMap = {"gemma4": object}
+
         def __init__(self, *args, **kwargs):
-            pass
+            calls.append(("parser_init", kwargs))
 
         def parse(self, text, *args):
             calls.append(("batch", text))
@@ -49,9 +57,23 @@ def producer(request, monkeypatch, tmp_path):
             calls.append(("stream", text))
             return "", text
 
+        def parse_stream_end(self):
+            calls.append(("stream_end",))
+            return "", ""
+
     class ToolParser(Parser):
+        ToolCallParserEnum = {"gemma4": object}
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.detector = SimpleNamespace()
+
         def parse_stream_chunk(self, text):
             return text, []
+
+        def parse_stream_end(self):
+            calls.append(("tool_stream_end",))
+            return "", []
 
     class Manager:
         def get_parser(self, **kwargs):
@@ -59,7 +81,7 @@ def producer(request, monkeypatch, tmp_path):
 
     modules = {
         "vllm": {"__version__": "0.25.1"},
-        "vllm.entrypoints.openai.chat_completion.protocol": {"ChatCompletionRequest": Box},
+        "vllm.entrypoints.openai.chat_completion.protocol": {"ChatCompletionRequest": Request},
         "vllm.parser.parser_manager": {"ParserManager": Manager},
         "sglang": {"__version__": "0.5.16"},
         "sglang.srt.entrypoints.openai.protocol": {"Function": Box, "Tool": Box},
@@ -71,6 +93,8 @@ def producer(request, monkeypatch, tmp_path):
         module.__dict__.update(attrs)
         monkeypatch.setitem(sys.modules, name, module)
     name = {"vllm_python": "capture_vllm_unified", "vllm_rust": "capture_vllm_rust_unified", "sglang_python": "capture_sglang_unified"}[engine]
+    installed_version = importlib.metadata.version
+    monkeypatch.setattr(importlib.metadata, "version", lambda distribution: "0.5.16" if distribution == "sglang" else installed_version(distribution))
     monkeypatch.delitem(sys.modules, name, raising=False)
     module = importlib.import_module(name)
 
@@ -100,7 +124,14 @@ def producer(request, monkeypatch, tmp_path):
 
 
 def _case(text="hi", **extra):
-    return {"id": "UNIFIED.text_only.gemma4", "family": "gemma4", "input": text, "chunks": [text], **extra}
+    return {
+        "id": "UNIFIED.text_only.gemma4",
+        "family": "gemma4",
+        "input": text,
+        "chunks": [text],
+        "tools": unified_tools(),
+        **extra,
+    }
 
 
 def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, tmp_path, monkeypatch):
@@ -407,12 +438,23 @@ def test_rust_anchor_comparison_projects_only_rust_results():
 
 @pytest.mark.parametrize("init", [{"starting_state": "Reasoning"}, {"starting_state": "Response"},
                                  {"tool_output_mode": "GuidedJson"}, {"named_tool": "f"}])
-def test_unsupported_requested_init_does_not_run_or_get_stamped_as_applied(producer, init):
-    _engine, run, calls = producer
+def test_requested_init_is_executed_only_by_engines_that_support_it(producer, init):
+    engine, run, calls = producer
     result = run(_case(init=init))
-    assert "unsupported request: init" in result["unavailable"]
-    assert result["capture_input"]["init"] == capture_stimulus.capture_input({})["init"]
-    assert not calls
+    rust_unsupported = engine == "vllm_rust" and (
+        init.get("starting_state") == "Response"
+        or init.get("tool_output_mode") == "GuidedJson"
+        or init.get("named_tool") is not None
+    )
+    if engine == "sglang_python" or rust_unsupported:
+        assert "unavailable" in result
+        assert result["capture_stimulus"]["unavailable"]["code"].endswith("_unsupported")
+        assert result["capture_input"]["init"] == init
+        assert not calls
+    else:
+        assert "unavailable" not in result
+        assert result["capture_input"]["init"] == init
+        assert calls
 
 
 def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
@@ -422,8 +464,12 @@ def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
                  chunks=[authored["input"], "‹finish›"])
     result = run(case)
     if engine == "sglang_python":
-        assert "finish operation" in result["unavailable"]
-        assert not calls
+        assert "unavailable" not in result
+        assert len(result["chunks"]) == 2
+        assert ("stream", authored["input"]) in calls
+        assert ("stream", "") not in calls
+        assert calls.count(("stream_end",)) == 1
+        assert calls.count(("tool_stream_end",)) == 1
     else:
         assert "unavailable" not in result
         assert result["capture_input"]["chunks"] == [{"delta_text": authored["input"]}, {"delta_text": "‹finish›"}]
@@ -439,7 +485,9 @@ def test_real_authored_native_case_executes_its_explicit_finish_step(producer):
 @pytest.mark.parametrize("returned", [{}, {"unexpected": {}}])
 def test_peer_result_cardinality_is_fail_closed(returned):
     with pytest.raises(ValueError, match="executed request"):
-        capture_stimulus.capture_peer_results([_case()], {"gemma4"}, lambda _cases: returned, tools=[])
+        capture_stimulus.capture_peer_results(
+            [_case()], {"gemma4"}, lambda _cases: returned, tools=unified_tools()
+        )
 
 
 def test_literal_finish_marker_is_not_an_unexecuted_terminal_operation(producer):
@@ -454,9 +502,78 @@ def test_literal_finish_marker_is_not_an_unexecuted_terminal_operation(producer)
         assert any(call[1] == "‹finish›" for call in calls)
 
 
-def test_peer_rejects_unapplied_tool_schema(producer):
-    _engine, run, calls = producer
-    result = run(_case(tools=[]))
-    assert "tools" in result["unavailable"]
-    assert result["capture_input"]["tools"] == unified_tools()
-    assert not calls
+def test_peers_apply_case_specific_tool_schema_only_when_supported(producer):
+    engine, run, calls = producer
+    tools = [{"name": "custom", "parameters": {"type": "object", "properties": {"value": {"type": "string"}}}}]
+    result = run(_case(tools=tools))
+    if engine == "vllm_python":
+        expected = [{"type": "function", "function": tools[0]}]
+        assert "unavailable" not in result
+        assert result["capture_input"]["tools"] == tools
+        assert [call[1]["tools"] for call in calls if call[0] == "request"] == [expected]
+        assert [call[1]["tools"] for call in calls if call[0] == "parser_init"] == [expected, expected]
+    elif engine == "sglang_python":
+        assert "unavailable" not in result
+        assert result["capture_input"]["tools"] == tools
+        parser_tools = [call[1]["tools"] for call in calls if call[0] == "parser_init" and "tools" in call[1]]
+        assert len(parser_tools) == 1
+        assert parser_tools[0][0].type == "function"
+        assert parser_tools[0][0].function.name == "custom"
+        assert parser_tools[0][0].function.parameters == tools[0]["parameters"]
+    else:
+        assert "unavailable" not in result
+        assert result["capture_input"]["tools"] == tools
+        assert [call[1]["tools"] for call in calls if call[0] == "rust_job"] == [tools]
+
+
+def test_sglang_length_termination_binds_the_executed_request(producer):
+    engine, run, calls = producer
+    if engine != "sglang_python":
+        pytest.skip("SGLang serving supports length termination")
+    result = run(_case(finish_reason="length", chunks=["hi", "‹finish›"]))
+    assert "unavailable" not in result
+    assert result["capture_input"]["finish_reason"] == "length"
+    assert result["capture_input"]["chunks"] == [{"delta_text": "hi"}, {"delta_text": "‹finish›"}]
+    assert calls.count(("stream_end",)) == 1
+
+
+def test_rust_unregistered_family_keeps_input_and_uses_observation_unavailable(tmp_path, monkeypatch):
+    import capture_vllm_rust_unified as rust_capture
+
+    monkeypatch.setattr(rust_capture, "_vllm_rust_version", lambda *_args: "0.25.1")
+    case = _case(family="muse_glimmer", id="UNIFIED.text_only.muse_glimmer")
+    result = rust_capture.capture_job(tmp_path, {"cases": [case]})["results"][case["id"]]
+    assert result["capture_input"]["input"] == case["input"]
+    assert result["capture_observation"]["unavailable"]["code"] == "vllm_rust_parser_not_registered"
+    assert "capture_stimulus" not in result
+
+
+def test_vllm_reasoning_close_ids_appear_only_when_each_split_marker_completes(producer):
+    engine, _run, _calls = producer
+    if engine != "vllm_python":
+        pytest.skip("vLLM DelegatingParser consumes generated marker token IDs")
+    adapter = sys.modules["capture_vllm_unified"]
+    for family in adapter.FAMILY_PARSERS:
+        tokenizer = adapter.StubTokenizer(family)
+        close = "<|close|>think<|sep|>" if family == "kimi_k3" else "<channel|>" if family == "gemma4" else "</think>"
+        marker_ids = tokenizer.encode(close)
+        for split in range(1, len(close)):
+            partial = close[:split]
+            first = tokenizer.generated_ids("", partial)
+            assert not any(first[index:index + len(marker_ids)] == marker_ids for index in range(len(first)))
+            tokens = first + tokenizer.generated_ids(partial, close)
+            assert tokens[-len(marker_ids):] == marker_ids
+    tokenizer = adapter.StubTokenizer("kimi_k3")
+    opening = tokenizer.encode("<|open|>think<|sep|>")
+    closing = tokenizer.encode("<|close|>think<|sep|>")
+    assert opening[1:] == closing[1:]
+
+
+def test_tools_capability_alone_binds_the_executed_request_schema():
+    case = _case(tools=[{"name": "custom", "parameters": {"type": "object"}}])
+    result = capture_stimulus.capture_peer_results(
+        [case], {"gemma4"},
+        lambda cases: {cases[0]["id"]: {"assembled": [], "chunks": [[]]}},
+        tools=unified_tools(), supports_tools=True,
+    )[case["id"]]
+    assert result["capture_input"]["tools"] == case["tools"]
