@@ -847,6 +847,11 @@ def _open_schema_popup(driver, header):
     _dismiss_visible_tooltips(driver, move_pointer=False)
     _script(driver, "window.__buildTooltip(arguments[0])", header)
     ActionChains(driver).move_to_element(header).perform()
+    _script(driver, """
+        const header = arguments[0];
+        header.dispatchEvent(new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse'}));
+        header.dispatchEvent(new PointerEvent('pointerenter', {pointerType: 'mouse'}));
+        """, header)
     return WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
         const tip = arguments[0]._ttip || arguments[0].querySelector('.ttip');
         return tip && tip.classList.contains('ttip-visible') ? tip : null;
