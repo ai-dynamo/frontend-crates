@@ -179,7 +179,13 @@ pub fn python_methods(
                     let maxsplit = maxsplit.and_then(|n| usize::try_from(n).ok());
                     return Ok(python_split_whitespace(s, maxsplit)
                         .into_iter()
-                        .map(Value::from)
+                        .map(|part| {
+                            if value.is_safe() {
+                                Value::from_safe_string(part.to_owned())
+                            } else {
+                                Value::from(part)
+                            }
+                        })
                         .collect());
                 }
             }

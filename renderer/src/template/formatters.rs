@@ -962,6 +962,36 @@ mod tests {
         );
     }
 
+    /// Splitting a safe string must preserve its safety through an explicit escape.
+    #[test]
+    fn test_split_preserves_string_safety() {
+        for (args, expected) in [
+            ("", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, -1", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, 1", "[<b>][& hi]|[&lt;b&gt;][&amp; hi]"),
+            ("none, 0", "[<b> & hi]|[&lt;b&gt; &amp; hi]"),
+            ("' '", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+        ] {
+            let template = format!(
+                "{{% for part in (s | safe).split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}|\
+                 {{% for part in s.split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}"
+            );
+            assert_eq!(
+                render_hf(&template, context! { s => "<b> & hi" }),
+                expected,
+                "split({args})"
+            );
+        }
+        assert_eq!(
+            render_hf(
+                "{{ (s | safe).split()[0] | escape }}|{{ s.split()[0] | escape }}",
+                context! { s => "\u{1c}<b>\u{1f}hi" }
+            ),
+            "<b>|&lt;b&gt;"
+        );
+    }
+
     /// HF prints `{{ x }}` and `x | string` with Python `str`, which spells floats as `repr`.
     #[test]
     fn test_output_formats_floats_like_python() {
