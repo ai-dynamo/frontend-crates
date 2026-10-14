@@ -99,14 +99,15 @@ observer.observe(document, {childList: true, subtree: true, attributes: true});
 """
 
 
-def _chrome(viewer_url, force_hover):
+def _chrome(viewer_url, force_hover, initial_navigation=True):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
     d = webdriver.Chrome(options=opts)
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    _navigate(d, f"{viewer_url}?transpose=0")
+    if initial_navigation:
+        _navigate(d, f"{viewer_url}?transpose=0")
     d.implicitly_wait(2)
     return d
 
@@ -434,7 +435,7 @@ def test_transpose_default_overrides_toggle_and_reload(driver, viewer_url, overr
                                                ("true", "transpose"), ("0", "horizontal"),
                                                ("false", "horizontal")])
 def test_first_visible_matrix_matches_transpose_url(viewer_url, override, expected):
-    d = _chrome(viewer_url, force_hover=False)
+    d = _chrome(viewer_url, force_hover=False, initial_navigation=False)
     try:
         d.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
@@ -867,20 +868,23 @@ def test_schema_popup_survives_themes_viewports_and_transpose(driver, viewer_url
     try:
         _navigate(driver, f"{viewer_url}?tab=tab-unified&view=details&transpose=0")
         for transposed in (False, True):
+            _dismiss_visible_tooltips(driver)
+            driver.set_window_size(1000, 700)
+            _set_schema_view(driver, transposed)
             for theme in ("light", "dark"):
+                if _script(driver, "return document.documentElement.dataset.theme") != theme:
+                    _click(driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]"))
+                header = _schema_header(driver, transposed)
+                assert header is not None, f"no visible schema case in transpose={transposed}"
+                tip = _open_schema_popup(driver, header)
+                variant_rows = tip.find_elements(By.CSS_SELECTOR, ".ttip-grammar tbody tr")
+                assert len(variant_rows) == 27, "schema popup should include each of the 27 captured families with a schema variant"
+                assert all(row.find_elements(By.CSS_SELECTOR, "td") for row in variant_rows)
+                disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
+                summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
                 for viewport_width, viewport_height in ((1000, 700), (480, 500)):
                     driver.set_window_size(viewport_width, viewport_height)
-                    _set_schema_view(driver, transposed)
-                    if _script(driver, "return document.documentElement.dataset.theme") != theme:
-                        _click(driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]"))
-                    header = _schema_header(driver, transposed)
-                    assert header is not None, f"no visible schema case in transpose={transposed}"
-                    tip = _open_schema_popup(driver, header)
-                    variant_rows = tip.find_elements(By.CSS_SELECTOR, ".ttip-grammar tbody tr")
-                    assert len(variant_rows) == 27, "schema popup should include each of the 27 captured families with a schema variant"
-                    assert all(row.find_elements(By.CSS_SELECTOR, "td") for row in variant_rows)
-                    disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
-                    summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
+                    assert tip.is_displayed(), f"schema popup closed in {theme} theme at {viewport_width}px"
                     assert disclosure.get_dom_attribute("open") is None
                     collapsed_width = tip.size["width"]
                     _click(summary)
@@ -900,7 +904,8 @@ def test_schema_popup_survives_themes_viewports_and_transpose(driver, viewer_url
                     assert blocks and all(block.is_displayed() for block in blocks)
                     summary.click()
                     WebDriverWait(driver, 10).until(lambda browser: disclosure.get_dom_attribute("open") is None)
-                    _dismiss_visible_tooltips(driver)
+                # Resize is a live update; theme and transpose changes close hover popups.
+                _dismiss_visible_tooltips(driver)
     finally:
         _navigate(driver, saved_url)
         driver.set_window_size(saved_size["width"], saved_size["height"])

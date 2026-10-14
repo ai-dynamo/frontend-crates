@@ -150,9 +150,47 @@ jobs:
           /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
           PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=browser conformance/utils/check.sh ci
 
-  # Preserve one stable required status and publish only after both test shards pass.
+  # This module's Selenium runs contend with the Node model-contract test under
+  # xdist, so keep it on a separate runner from the core and smoke shards.
+  conformance-viewer:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Conformance viewer browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=viewer conformance/utils/check.sh ci
+
+  # The first-visible-matrix tests each start an independent Chrome profile.
+  # Keep those initial-load checks on their own runner to bound the smoke shard.
+  conformance-first-matrix:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: First visible matrix browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=first-matrix conformance/utils/check.sh ci
+
+  # Preserve one stable required status and publish only after every test shard passes.
   conformance-table:
-    needs: [changes, conformance-core, conformance-browser]
+    needs: [changes, conformance-core, conformance-browser, conformance-viewer, conformance-first-matrix]
     if: ${{ always() && (needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -161,13 +199,17 @@ jobs:
       pages: read
       pull-requests: write
     steps:
-      - name: Require both conformance shards
+      - name: Require all conformance shards
         env:
           CORE_RESULT: ${{ needs.conformance-core.result }}
           BROWSER_RESULT: ${{ needs.conformance-browser.result }}
+          VIEWER_RESULT: ${{ needs.conformance-viewer.result }}
+          FIRST_MATRIX_RESULT: ${{ needs.conformance-first-matrix.result }}
         run: |
           test "$CORE_RESULT" = success
           test "$BROWSER_RESULT" = success
+          test "$VIEWER_RESULT" = success
+          test "$FIRST_MATRIX_RESULT" = success
 
       - name: Checkout
         if: ${{ github.ref == 'refs/heads/main' }}
