@@ -25,6 +25,7 @@ from pathlib import Path
 import yaml
 
 from case_variants import leaf_cells
+import unified_taxonomy
 
 
 MODEL_RE = re.compile(
@@ -263,10 +264,11 @@ def validate_unified_known_divergences(model: dict, registry: Path, families: li
         expected = set()
         for case_id, checks in known.get(family, {}).items():
             suffix = f".{family}"
-            if not case_id.startswith("UNIFIED.") or not case_id.endswith(suffix):
+            scenario = unified_taxonomy.scenario_for_label(case_id, family)
+            if not case_id.startswith("UNIFIED.") or (scenario is None and not case_id.endswith(suffix)):
                 raise ValueError(f"{registry}: invalid case ID for {family}: {case_id}")
             if "golden" in checks:
-                expected.add(case_id[len("UNIFIED."):-len(suffix)])
+                expected.add(scenario or case_id[len("UNIFIED."):-len(suffix)])
         # Display columns group null variants. Their leaves retain the exact
         # registry identities, so a new failure cannot hide inside a red group.
         states = {sub: cell_state(cell, ref)[0] for sub, cell in leaf_cells(row).items()}

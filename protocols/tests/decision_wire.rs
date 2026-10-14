@@ -68,7 +68,7 @@ fn decision_response_serialization_preserves_refusal_and_typed_choice() {
     );
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 #[test]
 fn decision_public_schemas_use_distinct_component_names() {
     use utoipa::{OpenApi, ToSchema};
@@ -284,12 +284,12 @@ fn decision_jev_nested_object_order_survives_standalone_protocol_round_trip() {
     );
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 fn schema_json<T: utoipa::PartialSchema>() -> serde_json::Value {
     serde_json::to_value(T::schema()).unwrap()
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 fn assert_optional_nonnullable_property(schema: &serde_json::Value, field: &str, expected: usize) {
     fn visit<'a>(
         value: &'a serde_json::Value,
@@ -353,7 +353,7 @@ fn assert_optional_nonnullable_property(schema: &serde_json::Value, field: &str,
     }
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 #[test]
 fn decision_openai_optional_metadata_schema_matches_decoder() {
     assert_optional_nonnullable_property(&schema_json::<openai::InputMessage>(), "type", 1);
@@ -374,7 +374,7 @@ fn decision_flat_modules_retain_legacy_public_type_aliases() {
     let _: systemone::Request = flat;
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 #[test]
 fn decision_image_detail_schema_preserves_enum_and_nullability() {
     let detail = schema_json::<openai::ImageDetail>();
@@ -407,7 +407,7 @@ fn decision_image_detail_schema_preserves_enum_and_nullability() {
     );
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 fn assert_nullable_reference(schema: &serde_json::Value, target: &str) {
     let alternatives = schema["oneOf"].as_array().unwrap();
     assert_eq!(alternatives.len(), 2, "{schema}");
@@ -415,7 +415,7 @@ fn assert_nullable_reference(schema: &serde_json::Value, target: &str) {
     assert!(alternatives.contains(&json!({"$ref":target})), "{schema}");
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 fn assert_jev_question_nullable_fields(question: &serde_json::Value) {
     let structured = "#/components/schemas/DecisionSystemOneStructuredText";
     for variant in question["oneOf"].as_array().unwrap() {
@@ -455,7 +455,7 @@ fn assert_jev_question_nullable_fields(question: &serde_json::Value) {
     }
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 #[test]
 fn decision_jev_structured_text_schema_matches_top_level_decoder() {
     let structured = schema_json::<systemone::StructuredText>();

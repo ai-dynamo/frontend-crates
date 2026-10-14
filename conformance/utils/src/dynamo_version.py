@@ -46,7 +46,7 @@ def _capture_records(captures: dict, version: str) -> list:
     if isinstance(layer, dict):
         records = layer.get("records")
         return list(records.values()) if isinstance(records, dict) else []
-    return layer if isinstance(layer, list) else []
+    return list(layer) if isinstance(layer, list) else []
 
 
 def _legacy_records(captures: dict, version: str) -> list:
@@ -280,8 +280,9 @@ def validate_capture_provenance(repo_root: Path, recorded: dict) -> dict:
     _validate_provenance_origin(repo_root, recorded)
     version = current["crate_version"]
     tag = f"dynamo-parsers-v2-v{version}"
-    # A legacy producer's "current" label must not backdate new behavior when
-    # the Unified publisher converts it to a plain semantic-version filename.
+    # The Unified publisher converts every producer label to a plain semantic
+    # version, so source-qualified output cannot be recorded under an existing
+    # release whose tag points at different parser source.
     if _git(repo_root, "tag", "--list", tag).strip():
         released_source = source_fingerprint(repo_root, f"refs/tags/{tag}")
         if released_source != current["source_sha256"]:
@@ -331,13 +332,7 @@ def main() -> None:
     parser.add_argument("--repo-root", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--label", help="crate version or current; legacy JSON producer labels are deprecated")
     parser.add_argument("--format", choices=("json", "label"), default="json")
-    parser.add_argument("--select-capture", action="store_true", help="deprecated Rust harness compatibility: read legacy capture inventory from stdin")
     args = parser.parse_args()
-    if args.select_capture:
-        if args.label is not None or args.format != "label":
-            parser.error("--select-capture requires --format label and no --label")
-        print(select_capture_label(args.repo_root, json.load(sys.stdin)))
-        return
     if args.format == "label":
         print(dynamo_v2_label(args.repo_root, args.label))
     else:

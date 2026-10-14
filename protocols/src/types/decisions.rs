@@ -10,8 +10,8 @@ pub use crate::types::systemone;
 /// Choice values retain their JSON type; `true` differs from `"true"`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSharedChoiceValue))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSharedChoiceValue))]
 pub enum ChoiceValue {
     String(String),
     Bool(bool),
@@ -19,8 +19,8 @@ pub enum ChoiceValue {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiRequest))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiRequest))]
 pub struct Request {
     pub model: String,
     pub input: Input,
@@ -31,8 +31,8 @@ pub struct Request {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiInput))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiInput))]
 pub enum Input {
     Text(String),
     Messages(Vec<InputMessage>),
@@ -40,8 +40,8 @@ pub enum Input {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiInputMessage))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiInputMessage))]
 pub struct InputMessage {
     pub role: UserRole,
     pub content: Content,
@@ -51,29 +51,29 @@ pub struct InputMessage {
         deserialize_with = "optional_nonnull",
         skip_serializing_if = "Option::is_none"
     )]
-    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+    #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
     pub kind: Option<MessageType>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiUserRole))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiUserRole))]
 pub enum UserRole {
     User,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiMessageType))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiMessageType))]
 pub enum MessageType {
     Message,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiImageDetail))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiImageDetail))]
 pub enum ImageDetail {
     Low,
     High,
@@ -83,8 +83,8 @@ pub enum ImageDetail {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiContent))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiContent))]
 pub enum Content {
     Text(String),
     Parts(Vec<InputPart>),
@@ -92,8 +92,8 @@ pub enum Content {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiInputPart))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiInputPart))]
 pub enum InputPart {
     InputText {
         text: String,
@@ -107,8 +107,8 @@ pub enum InputPart {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiQuestion))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiQuestion))]
 pub enum Question {
     Predicate {
         instructions: String,
@@ -117,7 +117,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
-        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+        #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
         name: Option<String>,
     },
     Choice {
@@ -127,7 +127,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
-        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+        #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
         name: Option<String>,
         choices: Vec<ChoiceOption>,
     },
@@ -138,7 +138,7 @@ pub enum Question {
             deserialize_with = "optional_nonnull",
             skip_serializing_if = "Option::is_none"
         )]
-        #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+        #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
         name: Option<String>,
         levels: Vec<ScoreLevel>,
     },
@@ -146,8 +146,8 @@ pub enum Question {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiChoiceOption))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiChoiceOption))]
 pub struct ChoiceOption {
     pub value: ChoiceValue,
     #[serde(
@@ -155,14 +155,14 @@ pub struct ChoiceOption {
         deserialize_with = "optional_nonnull",
         skip_serializing_if = "Option::is_none"
     )]
-    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+    #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
     pub description: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiScoreLevel))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiScoreLevel))]
 pub struct ScoreLevel {
     pub label: String,
     #[serde(
@@ -170,7 +170,7 @@ pub struct ScoreLevel {
         deserialize_with = "optional_nonnull",
         skip_serializing_if = "Option::is_none"
     )]
-    #[cfg_attr(feature = "utoipa", schema(nullable = false))]
+    #[cfg_attr(feature = "protocol-schema", schema(nullable = false))]
     pub description: Option<String>,
 }
 
@@ -181,8 +181,8 @@ fn optional_nonnull<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiResponse))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiResponse))]
 pub struct Response {
     pub model: String,
     pub answers: Vec<Answer>,
@@ -191,8 +191,8 @@ pub struct Response {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiAnswer))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiAnswer))]
 pub enum Answer {
     Predicate {
         name: Option<String>,
@@ -216,23 +216,23 @@ pub enum Answer {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiChoiceProbability))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiChoiceProbability))]
 pub struct ChoiceProbability {
     pub value: ChoiceValue,
     pub probability: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiScoreProbability))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiScoreProbability))]
 pub struct ScoreProbability {
     pub value: usize,
     pub label: String,
     pub probability: f64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiUsage))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiUsage))]
 pub struct Usage {
     pub input_tokens: u64,
     pub output_tokens: u64,
@@ -241,15 +241,15 @@ pub struct Usage {
     pub output_tokens_details: OutputTokenDetails,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiInputTokenDetails))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiInputTokenDetails))]
 pub struct InputTokenDetails {
     pub cached_tokens: u64,
     pub cache_write_tokens: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionOpenAiOutputTokenDetails))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionOpenAiOutputTokenDetails))]
 pub struct OutputTokenDetails {
     pub reasoning_tokens: u64,
 }

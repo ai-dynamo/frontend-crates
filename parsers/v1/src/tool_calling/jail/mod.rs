@@ -32,9 +32,10 @@ use async_stream::stream;
 // `Nv{inner, nvext}` newtype and dynamo-runtime's `Annotated`, which dynamo
 // re-wraps at its own boundary after the move.
 use dynamo_protocols::types::{
-    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageToolCallChunk,
-    ChatCompletionStreamResponseDelta, ChatCompletionTokenLogprob,
-    CreateChatCompletionStreamResponse, FinishReason, FunctionCallStream, FunctionType, Role,
+    ChatChoiceLogprobs, ChatChoiceStream, ChatCompletionMessageContent,
+    ChatCompletionMessageToolCallChunk, ChatCompletionStreamResponseDelta,
+    ChatCompletionTokenLogprob, CreateChatCompletionStreamResponse, FinishReason,
+    FunctionCallStream, FunctionType, Role,
 };
 use futures::{Stream, StreamExt};
 use serde_json::value::RawValue;
@@ -109,6 +110,144 @@ pub enum ChoiceEmission {
     Content(ChatChoiceStream),
     /// Emit trailing content after tool call end (choice has trailing after unjail)
     Trailing(ChatChoiceStream),
+}
+
+fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatChoiceLogprobs>) {
+    let Some(extra) = extra else {
+        return;
+    };
+    let Some(target) = target.as_mut() else {
+        *target = Some(extra);
+        return;
+    };
+    for (into, from) in [
+        (&mut target.content, extra.content),
+        (&mut target.refusal, extra.refusal),
+    ] {
+        if let Some(from) = from {
+            into.get_or_insert_with(Vec::new).extend(from);
+        }
+    }
+}
+
+/// Pack emissions into frames that hold each choice index at most once, in
+/// emission order. A same-index entry folds into the current frame when that
+/// loses nothing and crosses no boundary; otherwise it opens the next frame.
+fn pack_choices(emissions: Vec<ChoiceEmission>) -> Vec<Vec<ChatChoiceStream>> {
+    let mut frames: Vec<Vec<ChatChoiceStream>> = vec![Vec::new()];
+    for choice in emissions.into_iter().map(ChoiceEmission::into_choice) {
+        let frame = frames.last_mut().expect("frames is never empty");
+        match frame.iter_mut().find(|seen| seen.index == choice.index) {
+            None => frame.push(choice),
+            Some(seen) if choices_merge(seen, &choice) => merge_choice(seen, choice),
+            Some(_) => frames.push(vec![choice]),
+        }
+    }
+    frames
+}
+
+/// Whether two entries for one choice fold without losing anything or
+/// crossing a boundary. `Parts` content has no concatenation, and reasoning
+/// stays apart from the answer (content or tool calls) that follows it.
+/// Keep prose separate from tool calls so their relative order survives packing.
+fn choices_merge(a: &ChatChoiceStream, b: &ChatChoiceStream) -> bool {
+    let parts = |c: &ChatChoiceStream| {
+        matches!(
+            c.delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        )
+    };
+    let both = |has: fn(&ChatChoiceStream) -> bool| has(a) && has(b);
+    let reasoning = |c: &ChatChoiceStream| c.delta.reasoning_content.is_some();
+    let tools = |c: &ChatChoiceStream| {
+        c.delta
+            .tool_calls
+            .as_ref()
+            .is_some_and(|calls| !calls.is_empty())
+    };
+    let content = |c: &ChatChoiceStream| match c.delta.content.as_ref() {
+        Some(ChatCompletionMessageContent::Text(text)) => !text.is_empty(),
+        Some(ChatCompletionMessageContent::Parts(_)) => true,
+        None => false,
+    };
+    let answer = |c: &ChatChoiceStream| content(c) || tools(c);
+    #[allow(deprecated)]
+    let conflicts = (reasoning(a) && answer(b))
+        || (answer(a) && reasoning(b))
+        || (content(a) && tools(b))
+        || (tools(a) && content(b))
+        || (parts(a) && b.delta.content.is_some())
+        || (parts(b) && a.delta.content.is_some())
+        || both(|c| c.delta.refusal.is_some())
+        || both(|c| c.delta.function_call.is_some())
+        || both(|c| c.finish_reason.is_some());
+    !conflicts
+}
+
+fn merge_choice(base: &mut ChatChoiceStream, extra: ChatChoiceStream) {
+    let ChatChoiceStream {
+        index: _,
+        delta,
+        finish_reason,
+        logprobs,
+    } = extra;
+    #[allow(deprecated)]
+    let ChatCompletionStreamResponseDelta {
+        role,
+        content,
+        tool_calls,
+        function_call,
+        refusal,
+        reasoning_content,
+    } = delta;
+    let target = &mut base.delta;
+    target.content = match (target.content.take(), content) {
+        (
+            Some(ChatCompletionMessageContent::Text(mut text)),
+            Some(ChatCompletionMessageContent::Text(more)),
+        ) => {
+            text.push_str(&more);
+            Some(ChatCompletionMessageContent::Text(text))
+        }
+        (existing, added) => existing.or(added),
+    };
+    target.reasoning_content = match (target.reasoning_content.take(), reasoning_content) {
+        (Some(mut text), Some(more)) => {
+            text.push_str(&more);
+            Some(text)
+        }
+        (existing, added) => existing.or(added),
+    };
+    if let Some(calls) = tool_calls {
+        let merged = target.tool_calls.get_or_insert_with(Vec::new);
+        for call in calls {
+            // A nameless entry continues the call already at its index.
+            let continues =
+                call.id.is_none() && call.function.as_ref().is_none_or(|f| f.name.is_none());
+            match merged
+                .iter_mut()
+                .find(|seen| continues && seen.index == call.index)
+                .and_then(|seen| seen.function.as_mut())
+            {
+                Some(function) => {
+                    let more = call.function.and_then(|f| f.arguments).unwrap_or_default();
+                    function
+                        .arguments
+                        .get_or_insert_with(String::new)
+                        .push_str(&more);
+                }
+                None => merged.push(call),
+            }
+        }
+    }
+    target.role = target.role.or(role);
+    target.refusal = target.refusal.take().or(refusal);
+    #[allow(deprecated)]
+    {
+        target.function_call = target.function_call.take().or(function_call);
+    }
+    base.finish_reason = base.finish_reason.or(finish_reason);
+    append_logprobs(&mut base.logprobs, logprobs);
 }
 
 impl ChoiceEmission {
@@ -207,6 +346,7 @@ struct ChoiceJailState {
     accumulated_logprobs: Option<ChatChoiceLogprobs>,
     /// Buffer for partial marker matches across chunks
     partial_match_buffer: String,
+    partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
     /// Whole token records belonging to the held suffix.
@@ -392,6 +532,73 @@ enum JailCompletion {
     Complete(CompletedJail),
 }
 
+/// A token that would cross `prefix_chars` stays with the suffix: entries
+/// are emitted with the chunk where their token completes, so the prefix
+/// never carries an entry for bytes it did not emit.
+fn split_logprobs_at_chars(
+    logprobs: &Option<ChatChoiceLogprobs>,
+    prefix_chars: usize,
+) -> (Option<ChatChoiceLogprobs>, Option<ChatChoiceLogprobs>) {
+    let Some(lp) = logprobs else {
+        return (None, None);
+    };
+    let Some(content) = lp.content.as_ref() else {
+        return (Some(lp.clone()), None);
+    };
+    let mut split_at = content.len();
+    let mut chars = 0usize;
+    for (i, entry) in content.iter().enumerate() {
+        if chars >= prefix_chars {
+            split_at = i;
+            break;
+        }
+        let token_chars = entry.token.chars().count();
+        if chars + token_chars > prefix_chars {
+            split_at = i;
+            break;
+        }
+        chars += token_chars;
+    }
+    let mut prefix = lp.clone();
+    let mut suffix = lp.clone();
+    prefix.content = Some(content[..split_at].to_vec());
+    suffix.content = Some(content[split_at..].to_vec());
+    // Refusal entries have no char alignment to the content split; emit
+    // them once with the prefix instead of cloning them into both halves.
+    suffix.refusal = None;
+    if suffix.content.as_ref().is_some_and(|c| c.is_empty()) {
+        suffix.content = None;
+    }
+    if prefix.content.as_ref().is_some_and(|c| c.is_empty()) {
+        prefix.content = None;
+    }
+    (Some(prefix), Some(suffix))
+}
+
+fn merge_held_logprobs(
+    held: &mut Option<ChatChoiceLogprobs>,
+    current: Option<ChatChoiceLogprobs>,
+) -> Option<ChatChoiceLogprobs> {
+    let held_taken = held.take();
+    match (held_taken, current) {
+        (None, c) => c,
+        (h, None) => h,
+        (Some(mut h), Some(c)) => {
+            match (h.content.as_mut(), c.content.as_ref()) {
+                (Some(hc), Some(cc)) => hc.extend(cc.iter().cloned()),
+                (None, Some(cc)) => h.content = Some(cc.clone()),
+                _ => {}
+            }
+            match (h.refusal.as_mut(), c.refusal.as_ref()) {
+                (Some(hr), Some(cr)) => hr.extend(cr.iter().cloned()),
+                (None, Some(cr)) => h.refusal = Some(cr.clone()),
+                _ => {}
+            }
+            Some(h)
+        }
+    }
+}
+
 fn create_choice_stream(
     index: u32,
     role: Option<Role>,
@@ -466,6 +673,7 @@ impl ChoiceJailState {
             accumulated_content: String::new(),
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
+            partial_logprobs_buffer: None,
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
@@ -475,6 +683,25 @@ impl ChoiceJailState {
             completion_progress: JailCompletionProgress::default(),
             guided_cursor: guided.map(GuidedStreamCursor::new),
         }
+    }
+
+    /// Append a chunk's logprob entries to the pending pool. Every arm
+    /// below draws from this pool, so entries stay in text order whether
+    /// the chunk is emitted, held, or jailed.
+    fn feed_entries(&mut self, current: Option<ChatChoiceLogprobs>) {
+        let merged = merge_held_logprobs(&mut self.partial_logprobs_buffer, current);
+        self.partial_logprobs_buffer = merged;
+    }
+
+    /// Consume pending logprob entries for `chars` characters of emitted
+    /// text, leaving the remainder held for the text still buffered; a
+    /// token that crosses the boundary stays pending for the next
+    /// emission.
+    fn consume_pending_entries(&mut self, chars: usize) -> Option<ChatChoiceLogprobs> {
+        let available = self.partial_logprobs_buffer.take()?;
+        let (front, rest) = split_logprobs_at_chars(&Some(available), chars);
+        self.partial_logprobs_buffer = rest;
+        front
     }
 
     fn begin_jail(&mut self, content: String, logprobs: Option<ChatChoiceLogprobs>) {
@@ -489,24 +716,7 @@ impl ChoiceJailState {
         if self.is_jailed {
             self.accumulated_content.push_str(content);
             // Accumulate logprobs so they are preserved across jailed chunks.
-            if let Some(lp) = logprobs {
-                let state_lps = self.accumulated_logprobs.get_or_insert(ChatChoiceLogprobs {
-                    content: None,
-                    refusal: None,
-                });
-                if let Some(content_lps) = &lp.content {
-                    state_lps
-                        .content
-                        .get_or_insert_with(Vec::new)
-                        .extend(content_lps.clone());
-                }
-                if let Some(refusal_lps) = &lp.refusal {
-                    state_lps
-                        .refusal
-                        .get_or_insert_with(Vec::new)
-                        .extend(refusal_lps.clone());
-                }
-            }
+            append_logprobs(&mut self.accumulated_logprobs, logprobs.cloned());
         }
     }
 
@@ -634,11 +844,30 @@ impl ChoiceJailState {
             return;
         }
 
+        // Combine a pending hold with this chunk, mirroring process_content:
+        // the matcher resolves it and the split re-measures against the
+        // combined text, so a second consecutive short-suffix chunk cannot
+        // discard the first hold's text.
+        let held_text;
+        let content = if self.partial_match_buffer.is_empty() {
+            content
+        } else {
+            held_text = format!(
+                "{}{}",
+                std::mem::take(&mut self.partial_match_buffer),
+                content
+            );
+            &held_text
+        };
+
+        self.feed_entries(choice.logprobs.clone());
+
         if let MatchResult::Partial {
             prefix, partial, ..
         } = jail_stream.marker_matcher.process_chunk(content, "")
         {
             if !prefix.is_empty() {
+                let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                 #[allow(deprecated)]
                 let trailing_choice = create_choice_stream(
                     choice.index,
@@ -646,7 +875,7 @@ impl ChoiceJailState {
                     &prefix,
                     None,
                     None,
-                    choice.logprobs.clone(),
+                    prefix_lp,
                 );
                 emissions.push(ChoiceEmission::Trailing(trailing_choice));
             }
@@ -656,6 +885,7 @@ impl ChoiceJailState {
 
         if let Some((prefix, partial)) = jail_stream.split_partial_tool_call_start(content) {
             if !prefix.is_empty() {
+                let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                 #[allow(deprecated)]
                 let trailing_choice = create_choice_stream(
                     choice.index,
@@ -663,14 +893,16 @@ impl ChoiceJailState {
                     prefix,
                     None,
                     None,
-                    choice.logprobs.clone(),
+                    prefix_lp,
                 );
                 emissions.push(ChoiceEmission::Trailing(trailing_choice));
             }
             self.partial_match_buffer = partial.to_string();
         } else if jail_stream.should_start_jail(content) {
-            self.begin_jail(content.to_string(), None);
+            let remaining = self.partial_logprobs_buffer.take();
+            self.begin_jail(content.to_string(), remaining);
         } else {
+            let all = self.partial_logprobs_buffer.take();
             #[allow(deprecated)]
             let trailing_choice = create_choice_stream(
                 choice.index,
@@ -678,7 +910,7 @@ impl ChoiceJailState {
                 content,
                 None,
                 choice.finish_reason,
-                choice.logprobs.clone(),
+                all,
             );
             emissions.push(ChoiceEmission::Trailing(trailing_choice));
         }
@@ -708,9 +940,25 @@ impl ChoiceJailState {
 
         let mut chunks: Vec<ChatCompletionMessageToolCallChunk> = Vec::new();
         for delta in deltas {
+            let index = (self.emitted_tool_calls_count + delta.tool_index) as u32;
+            // The cursor commits a call's opener and releases its first fragment in the
+            // same advance. Two entries for one index in one chunk is not valid OpenAI
+            // streaming, and a client keeping the last entry per index loses the name.
+            if delta.name.is_none()
+                && let Some(function) = chunks
+                    .last_mut()
+                    .filter(|chunk| chunk.index == index)
+                    .and_then(|chunk| chunk.function.as_mut())
+            {
+                function
+                    .arguments
+                    .get_or_insert_with(String::new)
+                    .push_str(&delta.arguments);
+                continue;
+            }
             let first = delta.name.is_some();
             chunks.push(ChatCompletionMessageToolCallChunk {
-                index: (self.emitted_tool_calls_count + delta.tool_index) as u32,
+                index,
                 id: first.then(|| format!("call-{}", uuid::Uuid::new_v4())),
                 r#type: first.then_some(FunctionType::Function),
                 function: Some(FunctionCallStream {
@@ -722,7 +970,7 @@ impl ChoiceJailState {
 
         emissions.push(ChoiceEmission::ToolCall(create_choice_stream(
             choice.index,
-            None,
+            choice.delta.role,
             "",
             Some(chunks),
             None,
@@ -873,6 +1121,8 @@ impl ChoiceJailState {
     ) -> Vec<ChoiceEmission> {
         let mut emissions = Vec::new();
         if !self.is_jailed {
+            self.feed_entries(choice.logprobs.clone());
+
             // Use the marker matcher to detect complete/partial markers
             let match_result = jail_stream
                 .marker_matcher
@@ -891,6 +1141,7 @@ impl ChoiceJailState {
 
                     // Emit prefix if any
                     if !prefix.is_empty() && !prefix_has_harmony_protocol {
+                        let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                         #[allow(deprecated)]
                         let prefix_choice = create_choice_stream(
                             choice.index,
@@ -898,7 +1149,7 @@ impl ChoiceJailState {
                             &prefix,
                             None,
                             choice.finish_reason,
-                            choice.logprobs.clone(),
+                            prefix_lp,
                         );
                         emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                     }
@@ -910,7 +1161,8 @@ impl ChoiceJailState {
                         format!("{}{}", marker, suffix)
                     };
 
-                    self.begin_jail(full_content, choice.logprobs.clone());
+                    let remaining = self.partial_logprobs_buffer.take();
+                    self.begin_jail(full_content, remaining);
                     let completion = jail_stream
                         .check_jail_completion(
                             &self.accumulated_content,
@@ -933,13 +1185,15 @@ impl ChoiceJailState {
                     if is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                         && contains_harmony_protocol(&prefix)
                     {
-                        self.begin_jail(format!("{}{}", prefix, partial), choice.logprobs.clone());
+                        let remaining = self.partial_logprobs_buffer.take();
+                        self.begin_jail(format!("{}{}", prefix, partial), remaining);
                         self.partial_match_buffer.clear();
                         return emissions;
                     }
 
                     // Emit the safe prefix
                     if !prefix.is_empty() {
+                        let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                         #[allow(deprecated)]
                         let prefix_choice = create_choice_stream(
                             choice.index,
@@ -947,7 +1201,7 @@ impl ChoiceJailState {
                             &prefix,
                             None,
                             choice.finish_reason,
-                            choice.logprobs.clone(),
+                            prefix_lp,
                         );
                         emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                     }
@@ -968,6 +1222,7 @@ impl ChoiceJailState {
                         jail_stream.split_partial_tool_call_start(&content)
                     {
                         if !prefix.is_empty() {
+                            let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                             #[allow(deprecated)]
                             let prefix_choice = create_choice_stream(
                                 choice.index,
@@ -975,17 +1230,19 @@ impl ChoiceJailState {
                                 prefix,
                                 None,
                                 None,
-                                choice.logprobs.clone(),
+                                prefix_lp,
                             );
                             emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                         }
                         self.partial_match_buffer = partial.to_string();
                     } else if jail_stream.should_start_jail(&content) {
-                        self.begin_jail(content, choice.logprobs.clone());
+                        let remaining = self.partial_logprobs_buffer.take();
+                        self.begin_jail(content, remaining);
                         self.partial_match_buffer.clear();
                     } else {
                         // No markers - emit everything
                         if !content.is_empty() {
+                            let all = self.partial_logprobs_buffer.take();
                             #[allow(deprecated)]
                             let pass_through_choice = create_choice_stream(
                                 choice.index,
@@ -993,7 +1250,7 @@ impl ChoiceJailState {
                                 &content,
                                 None,
                                 choice.finish_reason,
-                                choice.logprobs.clone(),
+                                all,
                             );
                             emissions.push(ChoiceEmission::PassThrough(pass_through_choice));
                         }
@@ -1216,6 +1473,7 @@ impl ChoiceJailState {
             }
         } else if !self.partial_match_buffer.is_empty() {
             let mut content = std::mem::take(&mut self.partial_match_buffer);
+            let mut held_logprobs = self.partial_logprobs_buffer.take();
             if self.stream_finish_reason == Some(FinishReason::Length)
                 && policy.truncated_end_markers.iter().any(|(marker, prefix)| {
                     content.starts_with(prefix) && marker.starts_with(&content)
@@ -1224,6 +1482,7 @@ impl ChoiceJailState {
                 // The limit interrupted a reserved close marker, not prose.
                 // Still emit its terminal chunk with the original finish reason.
                 content.clear();
+                held_logprobs = None;
             }
             let choice = create_choice_stream(
                 self.index,
@@ -1231,7 +1490,7 @@ impl ChoiceJailState {
                 &content,
                 None,
                 self.stream_finish_reason,
-                None,
+                held_logprobs,
             );
             Some(ChoiceEmission::Content(choice))
         } else {
@@ -1646,17 +1905,30 @@ impl JailedStream {
 
         match self.emission_mode {
             EmissionMode::Packed => {
-                // Pack all choices into a single response
-                let mut response = base_response.clone();
-                response.choices = emissions.into_iter().map(|e| e.into_choice()).collect();
-
-                vec![Annotated {
-                    data: Some(response),
-                    id,
-                    event,
-                    comment,
-                    error: None,
-                }]
+                // Pack all choices into as few responses as possible. One pass can emit
+                // several entries for one choice, and two for one index in one response
+                // is not valid at n = 1; entries that must stay apart get their own.
+                let frames = pack_choices(emissions);
+                let last = frames.len() - 1;
+                frames
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, choices)| {
+                        let mut response = base_response.clone();
+                        response.choices = choices;
+                        // Usage describes the whole chunk; count it once.
+                        if i != last {
+                            response.usage = None;
+                        }
+                        Annotated {
+                            data: Some(response),
+                            id: id.clone(),
+                            event: event.clone(),
+                            comment: comment.clone(),
+                            error: None,
+                        }
+                    })
+                    .collect()
             }
             EmissionMode::SingleChoicePerChunk => {
                 // Emit each choice in a separate response
@@ -1683,6 +1955,19 @@ impl JailedStream {
     fn split_partial_tool_call_start<'a>(&self, content: &'a str) -> Option<(&'a str, &'a str)> {
         if self.tool_call_parser.as_deref() == Some("gemma4") {
             return split_partial_call_prefix_gemma4(content);
+        }
+        if is_harmony_parser(self.tool_call_parser.as_deref()) {
+            // A `<` / `<|` tail is ambiguous between prose and the head of a
+            // text-split marker. The stateless start detector cannot tell
+            // them apart, so hold the tail and let the next chunk resolve it
+            // through the marker matcher instead of jailing immediately.
+            let trimmed = content.trim_end();
+            for short in ["<|", "<"] {
+                if trimmed.ends_with(short) {
+                    let idx = content.rfind(short).expect("rfind after ends_with");
+                    return Some((&content[..idx], &content[idx..]));
+                }
+            }
         }
         None
     }
@@ -3045,6 +3330,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn kimi_k3_streamed_turns_do_not_reuse_tool_ids() {
+        let payload = kimi_k3_tool_call("Bash");
+        let mut turn_ids = Vec::new();
+        for _ in 0..2 {
+            let chunks: Vec<_> = payload
+                .chars()
+                .map(|ch| text_chunk(&ch.to_string()))
+                .collect();
+            let responses: Vec<_> = apply_tool_calling_jail(
+                Some("kimi_k3".to_string()),
+                None,
+                None,
+                false,
+                stream::iter(chunks),
+            )
+            .collect()
+            .await;
+            let calls = collect_tool_calls(&responses);
+            assert_eq!(
+                calls,
+                vec![("Bash".to_string(), r#"{"city":"Berlin"}"#.to_string())]
+            );
+            let ids: Vec<_> = responses
+                .iter()
+                .filter_map(|response| response.data.as_ref())
+                .flat_map(|response| &response.choices)
+                .filter_map(|choice| choice.delta.tool_calls.as_ref())
+                .flatten()
+                .filter_map(|call| call.id.clone())
+                .collect();
+            assert_eq!(ids.len(), 1, "a streamed call emits its ID once");
+            turn_ids.push(ids[0].clone());
+        }
+        assert_ne!(turn_ids[0], turn_ids[1]);
+    }
+
+    #[tokio::test]
     async fn named_kimi_k3_structural_tag_path_keeps_matching_tool() {
         let calls = apply_named_kimi_k3("get_weather", true).await;
 
@@ -4088,6 +4410,237 @@ mod tests {
             .collect()
     }
 
+    fn collect_stream_content(
+        responses: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> String {
+        let mut content = String::new();
+        for r in responses {
+            let Some(resp) = r.data.as_ref() else {
+                continue;
+            };
+            for choice in &resp.choices {
+                if let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(t)) =
+                    choice.delta.content.as_ref()
+                {
+                    content.push_str(t);
+                }
+            }
+        }
+        content
+    }
+
+    #[tokio::test]
+    async fn test_jailed_stream_keeps_prose_with_lt_operators() {
+        // gpt-oss models emit prose containing '<' operators; chunked at
+        // token boundaries, a chunk ending in '<' must be held only as a
+        // potential marker prefix and released when no marker follows —
+        // never dropped.
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let chunks: Vec<_> = ["\\(2", " <", " x", " <", " 10", "\\)", "\nBANANA"]
+            .into_iter()
+            .map(text_chunk)
+            .collect();
+
+        let responses: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+        let content = collect_stream_content(&responses);
+        assert_eq!(content, "\\(2 < x < 10\\)\nBANANA");
+    }
+
+    #[tokio::test]
+    async fn test_stream_end_flushes_held_partial_as_content() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let chunks: Vec<_> = ["answer is x <"].into_iter().map(text_chunk).collect();
+
+        let responses: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+        let content = collect_stream_content(&responses);
+        assert_eq!(content, "answer is x <");
+    }
+
+    #[test]
+    fn test_split_partial_tool_call_start_harmony_short_suffix() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+
+        assert_eq!(jail.split_partial_tool_call_start("< "), Some(("", "< ")));
+        assert_eq!(jail.split_partial_tool_call_start("<|"), Some(("", "<|")));
+        assert_eq!(
+            jail.split_partial_tool_call_start("Django >= 4.2, <"),
+            Some(("Django >= 4.2, ", "<"))
+        );
+        assert_eq!(jail.split_partial_tool_call_start("10"), None);
+        assert_eq!(jail.split_partial_tool_call_start("<|channel|>comm"), None);
+        assert_eq!(jail.split_partial_tool_call_start("a < b"), None);
+    }
+
+    #[test]
+    fn test_merge_held_logprobs_then_resplit_keeps_entries() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let held = ChatChoiceLogprobs {
+            content: Some(vec![entry("< ")]),
+            refusal: None,
+        };
+        let current = ChatChoiceLogprobs {
+            content: Some(vec![entry("x "), entry("< ")]),
+            refusal: None,
+        };
+        let mut held_buf = Some(held);
+        let combined = merge_held_logprobs(&mut held_buf, Some(current));
+        let (prefix, suffix) = split_logprobs_at_chars(&combined, 3);
+        let tokens = |lp: &Option<ChatChoiceLogprobs>| {
+            lp.as_ref()
+                .and_then(|l| l.content.clone())
+                .map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        // "x " crosses the 3-char boundary, so it rides with the suffix
+        assert_eq!(tokens(&prefix), vec!["< "]);
+        assert_eq!(tokens(&suffix), vec!["x ", "< "]);
+        assert!(held_buf.is_none());
+    }
+
+    #[test]
+    fn test_merge_held_logprobs_fills_missing_channels() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let held = ChatChoiceLogprobs {
+            content: None,
+            refusal: Some(vec![entry("no")]),
+        };
+        let current = ChatChoiceLogprobs {
+            content: Some(vec![entry("x ")]),
+            refusal: Some(vec![entry("go")]),
+        };
+        let mut held_buf = Some(held);
+        let combined = merge_held_logprobs(&mut held_buf, Some(current));
+        let combined = combined.expect("merge keeps the combined logprobs");
+        let tok = |v: Option<Vec<dynamo_protocols::types::ChatCompletionTokenLogprob>>| {
+            v.map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        assert_eq!(tok(combined.content), vec!["x "]);
+        assert_eq!(tok(combined.refusal), vec!["no", "go"]);
+    }
+
+    #[test]
+    fn test_trailing_double_hold_keeps_first_hold_text_and_logprobs() {
+        let jail_stream = JailedStream::builder().tool_call_parser("harmony").build();
+        let mut state = ChoiceJailState::new(0, false, None);
+
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let lp = |tokens: &[&str]| {
+            Some(ChatChoiceLogprobs {
+                content: Some(tokens.iter().map(|t| entry(t)).collect::<Vec<_>>()),
+                refusal: None,
+            })
+        };
+        let choice = |tokens: &[&str]| ChatChoiceStream {
+            index: 0,
+            delta: dynamo_protocols::types::ChatCompletionStreamResponseDelta {
+                role: None,
+                content: None,
+                tool_calls: None,
+                function_call: None,
+                refusal: None,
+                reasoning_content: None,
+            },
+            logprobs: lp(tokens),
+            finish_reason: None,
+        };
+
+        let mut emissions = Vec::new();
+        state.handle_trailing_content(
+            "answer < ",
+            &choice(&["answer", " ", "<", " "]),
+            &jail_stream,
+            &mut emissions,
+        );
+        state.handle_trailing_content(
+            "more < ",
+            &choice(&["more", " ", "<", " "]),
+            &jail_stream,
+            &mut emissions,
+        );
+
+        // The first hold's text survives the second split: the second prefix
+        // emission covers "< more " and only the final "< " stays held.
+        assert_eq!(state.partial_match_buffer, "< ");
+        // The held entries are the second chunk's tail; the first hold's
+        // entries merged into the second prefix emission, not discarded.
+        let held_tokens: Vec<String> = state
+            .partial_logprobs_buffer
+            .as_ref()
+            .and_then(|l| l.content.clone())
+            .map(|c| c.iter().map(|e| e.token.clone()).collect())
+            .unwrap_or_default();
+        assert_eq!(held_tokens, vec!["<", " "]);
+    }
+
+    #[test]
+    fn test_split_logprobs_at_chars_partitions_token_entries() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let logprobs = ChatChoiceLogprobs {
+            content: Some(vec![entry("x "), entry("< "), entry("10")]),
+            refusal: None,
+        };
+        let (prefix, suffix) = split_logprobs_at_chars(&Some(logprobs.clone()), 2);
+        let tokens = |lp: &Option<ChatChoiceLogprobs>| {
+            lp.as_ref()
+                .and_then(|l| l.content.clone())
+                .map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        assert_eq!(tokens(&prefix), vec!["x "]);
+        assert_eq!(tokens(&suffix), vec!["< ", "10"]);
+
+        let crossing = ChatChoiceLogprobs {
+            content: Some(vec![entry("x<")]),
+            refusal: Some(vec![entry("refused")]),
+        };
+        let (cross_pre, cross_suf) = split_logprobs_at_chars(&Some(crossing), 1);
+        assert_eq!(tokens(&cross_pre), Vec::<String>::new());
+        assert_eq!(tokens(&cross_suf), vec!["x<"]);
+        assert_eq!(
+            cross_pre
+                .as_ref()
+                .and_then(|l| l.refusal.as_ref().map(|r| r.len())),
+            Some(1)
+        );
+        assert!(
+            cross_suf
+                .as_ref()
+                .and_then(|l| l.refusal.as_ref())
+                .is_none()
+        );
+    }
+
     #[tokio::test]
     async fn test_tool_call_preserves_logprobs_single_chunk() {
         let jail = JailedStream::builder().tool_call_parser("hermes").build();
@@ -4507,5 +5060,209 @@ mod tests {
             }),
             "terminal chunks must follow the early empty response and precede the final usage response"
         );
+    }
+
+    fn packed_call(
+        index: u32,
+        name: Option<&str>,
+        args: &str,
+    ) -> ChatCompletionMessageToolCallChunk {
+        ChatCompletionMessageToolCallChunk {
+            index,
+            id: name.map(|_| "call-1".to_string()),
+            r#type: name.map(|_| FunctionType::Function),
+            function: Some(FunctionCallStream {
+                name: name.map(str::to_string),
+                arguments: Some(args.to_string()),
+            }),
+        }
+    }
+
+    fn logprobs_of(tokens: &[&str]) -> Option<ChatChoiceLogprobs> {
+        Some(ChatChoiceLogprobs {
+            content: Some(
+                tokens
+                    .iter()
+                    .map(
+                        |token| dynamo_protocols::types::ChatCompletionTokenLogprob {
+                            token: token.to_string(),
+                            logprob: -0.5,
+                            token_id: None,
+                            bytes: None,
+                            top_logprobs: Vec::new(),
+                        },
+                    )
+                    .collect(),
+            ),
+            refusal: None,
+        })
+    }
+
+    /// A completed jail's non-empty remainder beside this pass's guided fragment
+    /// for the same call: one entry, the arguments in order, nothing dropped.
+    #[test]
+    fn pack_choices_folds_a_remainder_into_the_same_choice() {
+        let fragment = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "{\"a\": ")]),
+            None,
+            logprobs_of(&["t0"]),
+        );
+        let remainder = create_choice_stream(
+            0,
+            Some(Role::Assistant),
+            "",
+            Some(vec![packed_call(0, None, "1}")]),
+            Some(FinishReason::ToolCalls),
+            logprobs_of(&["t1"]),
+        );
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::ToolCall(fragment),
+            ChoiceEmission::ToolCall(remainder),
+        ]);
+
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
+        assert_eq!(packed.len(), 1);
+        let calls = packed[0].delta.tool_calls.as_ref().unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.as_ref().unwrap().arguments.as_deref(),
+            Some("{\"a\": 1}")
+        );
+        assert_eq!(packed[0].delta.role, Some(Role::Assistant));
+        assert_eq!(packed[0].finish_reason, Some(FinishReason::ToolCalls));
+        let tokens: Vec<_> = packed[0]
+            .logprobs
+            .as_ref()
+            .unwrap()
+            .content
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|t| t.token.as_str())
+            .collect();
+        assert_eq!(tokens, ["t0", "t1"]);
+    }
+
+    /// A second call opening at the same choice stays its own tool-call entry.
+    #[test]
+    fn pack_choices_keeps_distinct_calls_apart() {
+        let first = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(0, Some("a"), "{}")]),
+            None,
+            None,
+        );
+        let second = create_choice_stream(
+            0,
+            None,
+            "",
+            Some(vec![packed_call(1, Some("b"), "{}")]),
+            None,
+            None,
+        );
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::ToolCall(first),
+            ChoiceEmission::ToolCall(second),
+        ]);
+
+        assert_eq!(frames.len(), 1);
+        let packed = &frames[0];
+        assert_eq!(packed.len(), 1);
+        let names: Vec<_> = packed[0]
+            .delta
+            .tool_calls
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|c| (c.index, c.function.as_ref().unwrap().name.clone().unwrap()))
+            .collect();
+        assert_eq!(names, [(0, "a".to_string()), (1, "b".to_string())]);
+    }
+
+    /// An entry that cannot fold without losing data opens the next frame, so no
+    /// frame carries one index twice; other choices are untouched.
+    #[test]
+    fn pack_choices_moves_unmergeable_entries_to_the_next_frame() {
+        let mut parts = create_choice_stream(0, None, "", None, None, None);
+        parts.delta.content = Some(ChatCompletionMessageContent::Parts(Vec::new()));
+        let text = create_choice_stream(0, None, "after", None, None, None);
+        let other = create_choice_stream(1, None, "other", None, None, None);
+
+        let frames = pack_choices(vec![
+            ChoiceEmission::PassThrough(parts),
+            ChoiceEmission::PassThrough(other),
+            ChoiceEmission::PassThrough(text),
+        ]);
+
+        let indices: Vec<Vec<u32>> = frames
+            .iter()
+            .map(|frame| frame.iter().map(|c| c.index).collect())
+            .collect();
+        assert_eq!(indices, [vec![0, 1], vec![0]]);
+        assert!(matches!(
+            frames[0][0].delta.content,
+            Some(ChatCompletionMessageContent::Parts(_))
+        ));
+    }
+
+    /// Pending reasoning and a call finalized at EOF for the same choice arrive as
+    /// separate, ordered frames, each holding the choice index once. Kimi K3 is
+    /// the parser that emits the reasoning as its own entry, so it drives this.
+    #[tokio::test]
+    async fn reasoning_and_tool_call_are_separate_frames_at_eof() {
+        let mut chunk = text_chunk(concat!(
+            "<|open|>tools<|sep|>",
+            "<|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>323",
+            "<|close|>argument<|sep|><|close|>call<|sep|>",
+        ));
+        chunk.data.as_mut().expect("response").choices[0]
+            .delta
+            .reasoning_content = Some("Compute it.".to_string());
+
+        let responses = apply_kimi_k3(vec![chunk]).await;
+        let frames: Vec<&Vec<ChatChoiceStream>> = responses
+            .iter()
+            .filter_map(|response| response.data.as_ref())
+            .map(|response| &response.choices)
+            .filter(|choices| !choices.is_empty())
+            .collect();
+
+        assert_eq!(
+            collect_tool_calls(&responses),
+            vec![("calc".to_string(), r#"{"x":323}"#.to_string())]
+        );
+        for frame in &frames {
+            let indices: Vec<u32> = frame.iter().map(|c| c.index).collect();
+            assert!(
+                indices
+                    .iter()
+                    .enumerate()
+                    .all(|(i, x)| !indices[..i].contains(x)),
+                "duplicate choice index in {indices:?}"
+            );
+        }
+        let choices: Vec<&ChatChoiceStream> = frames.iter().flat_map(|f| f.iter()).collect();
+        assert!(choices.iter().all(|c| {
+            c.delta.reasoning_content.is_none()
+                || c.delta.tool_calls.as_ref().is_none_or(Vec::is_empty)
+        }));
+        let reasoning_at = choices
+            .iter()
+            .position(|c| c.delta.reasoning_content.is_some())
+            .expect("reasoning emitted");
+        let call_at = choices
+            .iter()
+            .position(|c| c.delta.tool_calls.as_ref().is_some_and(|t| !t.is_empty()))
+            .expect("call emitted");
+        assert!(reasoning_at < call_at, "reasoning must precede the call");
     }
 }

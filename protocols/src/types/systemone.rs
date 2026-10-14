@@ -9,8 +9,8 @@ use serde_json::{Map, Value};
 /// Text or structured JSON evidence; scalars remain valid inside objects and arrays.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneStructuredText))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneStructuredText))]
 pub enum StructuredText {
     String(String),
     Object(Map<String, Value>),
@@ -42,8 +42,8 @@ impl TryFrom<Value> for StructuredText {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneRequest))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneRequest))]
 pub struct Request {
     pub model: String,
     pub state: StructuredText,
@@ -60,8 +60,8 @@ pub struct Request {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase", deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneQuestion))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneQuestion))]
 pub enum Question {
     Noul {
         #[serde(default)]
@@ -72,7 +72,7 @@ pub enum Question {
     Choice {
         #[serde(default)]
         instructions: Option<StructuredText>,
-        #[cfg_attr(feature = "utoipa", schema(schema_with = choice_criteria_schema))]
+        #[cfg_attr(feature = "protocol-schema", schema(schema_with = choice_criteria_schema))]
         criteria: IndexMap<String, Option<StructuredText>>,
     },
     Score {
@@ -82,7 +82,7 @@ pub enum Question {
     },
 }
 
-#[cfg(feature = "utoipa")]
+#[cfg(feature = "protocol-schema")]
 fn choice_criteria_schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
     use utoipa::{
         ToSchema,
@@ -104,8 +104,8 @@ fn choice_criteria_schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::S
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneNoulCriteria))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneNoulCriteria))]
 pub struct NoulCriteria {
     #[serde(default, rename = "true")]
     pub positive: Option<StructuredText>,
@@ -114,8 +114,8 @@ pub struct NoulCriteria {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneResponse))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneResponse))]
 pub struct Response {
     pub model: String,
     pub answers: IndexMap<String, Answer>,
@@ -124,8 +124,8 @@ pub struct Response {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneAnswer))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneAnswer))]
 pub enum Answer {
     Noul {
         noul: f64,
@@ -155,8 +155,8 @@ pub enum Answer {
     },
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "utoipa", schema(as = DecisionSystemOneUsage))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = DecisionSystemOneUsage))]
 pub struct Usage {
     pub input_tokens: u64,
     pub output_tokens: u64,
