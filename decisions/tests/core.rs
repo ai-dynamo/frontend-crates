@@ -39,7 +39,8 @@ fn canonical_semantics_keep_typed_choices_and_ids_out_of_prompts() {
         render_question_prompt(&input, &alternate).unwrap()
     );
     assert_eq!(rendered.labels, ["A", "B"]);
-    assert_ne!(question.candidates[0].value, question.candidates[1].value);
+    assert!(rendered.content.lines().any(|line| line == "A: true"));
+    assert!(rendered.content.lines().any(|line| line == "B: \"true\""));
     assert!(!rendered.content.contains("opaque-id"));
 }
 
