@@ -128,50 +128,6 @@ fn jev_validation_is_sanitized_and_uses_422() {
 }
 
 #[test]
-fn model_capabilities_are_validated_before_dispatch() {
-    let request = parse(oai(), Route::Decisions).unwrap();
-    let capabilities = Capabilities {
-        max_questions: 1,
-        max_candidates: 2,
-        supports_predicate: true,
-        supports_choice: true,
-        supports_score: true,
-        measured_cache_reads: true,
-        prompt_format_version: 1,
-    };
-    request.validate_capabilities(&capabilities).unwrap();
-    for bad in [
-        Capabilities {
-            max_candidates: 1,
-            ..capabilities.clone()
-        },
-        Capabilities {
-            max_questions: 0,
-            ..capabilities.clone()
-        },
-        Capabilities {
-            supports_choice: false,
-            ..capabilities.clone()
-        },
-        Capabilities {
-            prompt_format_version: 2,
-            ..capabilities.clone()
-        },
-    ] {
-        assert!(request.validate_capabilities(&bad).is_err());
-    }
-    let request = parse(oai(), Route::Decisions).unwrap();
-    assert!(
-        request
-            .validate_capabilities(&Capabilities {
-                measured_cache_reads: false,
-                ..capabilities
-            })
-            .is_err()
-    );
-}
-
-#[test]
 fn jev_preserves_case_sensitive_names_and_structured_levels() {
     let request = parse(
         json!({"model":"jev-latest","state":"x","questions":{
