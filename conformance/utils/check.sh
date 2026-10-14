@@ -68,19 +68,27 @@ run_coverage() {  # $@ = passthrough (--family F ...); defaults to --all
 
 run_ci() {  # the conformance-data CI gate; fail-fast, also runnable locally
   if [ "$DRY" = 1 ]; then
-    echo "[dry-run] validate viewer catalog, coverage, legacy store, invariant pytest"
+    echo "[dry-run] validate viewer catalog, coverage, legacy store, and selected invariant pytest shard"
     return
   fi
+  local shard="${CONFORMANCE_CI_SHARD:-all}"
+  case "$shard" in all|core|browser) ;; *) echo "invalid CONFORMANCE_CI_SHARD: $shard" >&2; return 2 ;; esac
   set -e
-  python3 "$TOOLS/viewer_catalog.py" --check
-  run_coverage
-  python3 "$TOOLS/validate_legacy_convention.py"
+  if [ "$shard" != browser ]; then
+    python3 "$TOOLS/viewer_catalog.py" --check
+    run_coverage
+    python3 "$TOOLS/validate_legacy_convention.py"
+  fi
   # The WHOLE tests/ dir, not a hand-maintained file list: the old list named three
   # files, so the resolver-fold, render-invariant and colorize tests never ran in CI
   # and a new test file was gated only by remembering to add it here. The browser
   # tests exercise the maintained viewer over fixture-owned HTTP servers. CI
   # installs Selenium so browser contracts run with the shared model tests.
-  python3 -m pytest "$UTILS/tests" -q
+  case "$shard" in
+    core) python3 -m pytest "$UTILS/tests" -q --ignore="$UTILS/tests/test_browser_smoke.py" ;;
+    browser) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -vv --durations=25 ;;
+    all) python3 -m pytest "$UTILS/tests" -q ;;
+  esac
 }
 
 engine="${1:-}"; shift || true

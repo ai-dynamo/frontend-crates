@@ -14,9 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  # Decide which optional jobs need to run for this change. `conformance-table`
-  # is expensive (downloads the private fixture dataset, renders both charts) and
-  # is only affected by conformance/parser changes, so skip it otherwise.
+  # The conformance jobs validate the maintained viewer and source resources and
+  # run only for conformance/parser changes.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -28,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
 
       - name: Detect conformance/parser changes
         id: filter
@@ -109,20 +110,11 @@ jobs:
   # Validate the maintained conformance viewer and its source resources.
   # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
-  conformance-table:
+  conformance-core:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    # Render cost scales with the number of peer version dirs: every <impl>-<version>
-    # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
-    # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
-    # Raised to match the `rust` lane's headroom. If this creeps toward 20m, the fix is
-    # to make the render cheaper (or shard it), not to raise the ceiling again.
     timeout-minutes: 20
-    permissions:
-      contents: read
-      pages: read
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -133,26 +125,68 @@ jobs:
           # The renderer needs release tags to distinguish releases from changed source.
           fetch-depth: 0
 
+      # The browser smoke file has three module-scoped Chrome drivers and is kept
+      # on its own runner to avoid contending with the file-level pytest workers.
+      - name: Conformance core shard (catalog + lint + invariants)
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=core conformance/utils/check.sh ci
+
+  conformance-browser:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Conformance browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=browser conformance/utils/check.sh ci
+
+  # Preserve one stable required status and publish only after both test shards pass.
+  conformance-table:
+    needs: [changes, conformance-core, conformance-browser]
+    if: ${{ always() && (needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pages: read
+      pull-requests: write
+    steps:
+      - name: Require both conformance shards
+        env:
+          CORE_RESULT: ${{ needs.conformance-core.result }}
+          BROWSER_RESULT: ${{ needs.conformance-browser.result }}
+        run: |
+          test "$CORE_RESULT" = success
+          test "$BROWSER_RESULT" = success
+
+      - name: Checkout
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
       - name: Configure GitHub Pages
         if: ${{ github.ref == 'refs/heads/main' }}
         id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
-      # Single stable entry point: validate the browser catalog, fixture coverage,
-      # legacy storage, and invariant tests.
-      # Add/change conformance gates in check.sh's run_ci(), NOT here — this
-      # workflow step should never need another edit for a new gate.
-      - name: Conformance gate (catalog + lint + invariants)
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
-          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="--numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" conformance/utils/check.sh ci
-
       - name: Prepare GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           set -euo pipefail
-          python3 conformance/utils/src/publish_viewer.py --output "$RUNNER_TEMP/pages" --revision "$GITHUB_SHA"
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml
+          /tmp/pvenv/bin/python3 conformance/utils/src/publish_viewer.py --output "$RUNNER_TEMP/pages" --revision "$GITHUB_SHA"
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -167,6 +201,7 @@ jobs:
         run: |
           PR_NUMBER="${GITHUB_REF_NAME#pull-request/}"
           gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
             --edit-last --create-if-none \
             --body "📊 **Parser conformance viewer** validated — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
