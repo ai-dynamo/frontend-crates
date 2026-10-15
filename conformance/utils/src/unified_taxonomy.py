@@ -44,6 +44,8 @@ UNIFIED_TAX = {
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
+    "adjacent_calls_partial_header": (2, "3"),
+    "three_calls_partial_header": (2, "4"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.

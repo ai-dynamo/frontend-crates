@@ -7,6 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 25896d88b06aa6a31434057cf10ff1d7f7b46c1792f7dd97084fafd9412c6688
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -1066,6 +1075,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for deepseek_v41
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 630595481794654f95a6b2825be9d407940ce952851a90b8286077d454475484
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -1163,6 +1181,11 @@ changes:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -1614,6 +1637,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   text_sandwich:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native

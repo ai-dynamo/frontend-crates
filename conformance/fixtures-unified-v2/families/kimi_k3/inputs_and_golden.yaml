@@ -17146,3 +17146,116 @@ cases:
         name: lookup
         arguments:
           q: x
+  adjacent_calls_partial_header:
+    lifecycle: active
+    scenario: adjacent_calls_partial_header
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="a" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="g" index="2"<|sep|><|open|>argument key="b" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            a:
+              type: string
+          required:
+          - a
+      - name: g
+        parameters:
+          type: object
+          properties:
+            b:
+              type: string
+          required:
+          - b
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="a" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to
+      - delta_text: ol="g" index="2"<|sep|><|open|>argument key="b" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          a: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          b: '2'
+  three_calls_partial_header:
+    lifecycle: active
+    scenario: three_calls_partial_header
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-three_calls_partial_header
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="g" index="2"<|sep|><|open|>argument key="x" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="h" index="3"<|sep|><|open|>argument key="x" type="string"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: g
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: h
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      chunks:
+      - delta_text: ''
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to
+      - delta_text: ol="g" index="2"<|sep|><|open|>argument key="x" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="h" index="3"<|sep|><|open|>argument key="x" type="string"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          x: '2'
+      - kind: tool_call
+        name: h
+        arguments:
+          x: '3'

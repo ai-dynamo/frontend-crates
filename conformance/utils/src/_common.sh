@@ -89,6 +89,8 @@ _build_stage_base() {
   \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
   \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
+  \cp -f "$TOOLS/stream_regression_cases.py" "$STAGE/tests/parity/stream_regression_cases.py"
+  \cp -f "$TOOLS/parallel_boundary_cases.json" "$STAGE/tests/parity/parallel_boundary_cases.json"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved (at the pinned peer versions) by

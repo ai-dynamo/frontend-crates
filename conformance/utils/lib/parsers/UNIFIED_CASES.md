@@ -86,6 +86,8 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 ### Group 2 — TC Multiple calls (TOOLCALLING.streamv1.2)
 - **`2-two_calls`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
 - **`2-two_calls_same_name`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
+- **`2-adjacent_calls_partial_header`** (`adjacent_calls_partial_header`) Native/default state: one delta closes a complete call and carries the next opener plus a partial call header. Preserve both calls and emit no visible markup. Reuses TOOLCALLING.streamv1.50.d input, tools, chunk schedule, and independent oracle for the nine native grammars; GPT-OSS uses its Harmony-text source, and DeepSeek V4.1 uses the corresponding split inside its second invoke in one calls container.
+- **`2-three_calls_partial_header`** (`three_calls_partial_header`) Native/default state: three adjacent calls delivered with a boundary inside the second call header. Preserve f, g, h in order and emit no visible markup. Reuses TOOLCALLING.streamv1.50.e with the same family adaptations. Both scenarios apply to all ten families (20 cases: nine native Unified families and the GPT-OSS split route). The authored schedules exercise delivery boundaries that marker-aligned and fixed-width chunking can miss.
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
 - **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.

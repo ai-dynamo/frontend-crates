@@ -1,5 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
+import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -9,6 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from append_stream_regression_cases import _append  # noqa: E402
 from stream_regression_cases import PARALLEL_BOUNDARY_CASES  # noqa: E402
+import gen_unified_golden as unified  # noqa: E402
 
 
 def test_parallel_boundaries_cover_the_registry_with_authored_oracles():
@@ -50,3 +54,42 @@ def test_pythonic_parallel_calls_share_one_list():
         assert text.startswith("[f(") and text.endswith(")]")
         assert text.count("[") == text.count("]") == 1
         assert "), g(" in text
+
+
+def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
+    for family in unified.FAMILIES:
+        cases = unified.build_cases(family)
+        for suffix, scenario in (("b", "adjacent_calls_partial_header"), ("c", "three_calls_partial_header")):
+            assert family in unified.scenario_families(scenario)
+            case = cases[f"UNIFIED.{scenario}.{family}"]
+            source_family = {"qwen3": "qwen3_coder", "deepseek_v41": "deepseek_v4"}.get(family, family)
+            source = PARALLEL_BOUNDARY_CASES[f"TOOLCALLING.streamv1.50.{suffix}"][source_family]
+            assert case["golden"] == [{"kind": "tool_call", **call} for call in source["golden"]["calls"]]
+            assert case["tools"] == source["tools"]
+            assert "".join(case["input_chunks"]) == case["input"]
+            if family == "deepseek_v41":
+                assert case["input"].count("<｜DSML｜ calls>") == 1
+                assert any(chunk.endswith('<｜DSML｜ invoke na') for chunk in case["input_chunks"])
+            else:
+                assert case["input_chunks"] == [chunk["delta_text"] for chunk in source["chunks"]]
+
+
+def test_staged_unified_generator_preserves_parallel_boundaries(tmp_path):
+    # Direct imports cannot detect a dependency omitted by the renderer's stage.
+    probe = """import json
+import gen_unified_golden as g
+print(json.dumps({f: {k: c for k, c in g.build_cases(f).items()
+                     if 'partial_header' in k} for f in g.FAMILIES}, sort_keys=True))
+"""
+    env = {key: os.environ[key] for key in (
+        "PATH", "HOME", "TMPDIR", "TMP", "TEMP", "DYN_SCRATCH_ROOT",
+    ) if key in os.environ}
+    env.update(STAGE=str(tmp_path / "stage"), STAGED_PYTHON=sys.executable,
+               STAGED_PROBE=probe, STAGED_COMMON=str(Path(__file__).parents[1] / "src/_common.sh"))
+    result = subprocess.run(
+        ["bash", "-c", 'source "$STAGED_COMMON" && _build_stage_base && cd "$STAGE/tests/parity" && "$STAGED_PYTHON" -c "$STAGED_PROBE"'],
+        env=env, capture_output=True, text=True, check=True,
+    )
+    expected = {family: {key: case for key, case in unified.build_cases(family).items()
+                         if "partial_header" in key} for family in unified.FAMILIES}
+    assert json.loads(result.stdout) == expected

@@ -7,6 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -1230,6 +1239,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -1327,6 +1345,11 @@ changes:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -1803,6 +1826,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   text_sandwich:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native

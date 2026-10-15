@@ -7,6 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 3614508e8b66afeb0f7804ce8825cd8362f72bf02d1347320ccdaff95fab8e64
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -1049,6 +1058,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 5754e1844f45fcd463d11d12ca231370e610c119e5faa9b5ef551804da1e0188
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -1146,6 +1164,11 @@ changes:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -1642,6 +1665,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   text_sandwich:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native
