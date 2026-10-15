@@ -1457,11 +1457,13 @@
       // Carry the per-case grammar popup into the transposed view. Transposing turns the
       // case COLUMN header into a ROW header, and this branch previously cloned only the
       // link — so the popup silently disappeared whenever the table was transposed.
-      // Copy the `data-ttip-id` (the model key) and attach an empty `.ttip`; it then
-      // builds lazily exactly like the upright header.
+      // Copy the tooltip identity and URL key so this heading can build lazily and
+      // restore the same pinned popup after sharing a transposed view.
       const caseTipId = subTh.getAttribute('data-ttip-id');
       if (caseTipId) {
         caseTh.setAttribute('data-ttip-id', caseTipId);
+        const caseTipKey = subTh.getAttribute('data-ttip-key');
+        if (caseTipKey) { caseTh.setAttribute('data-ttip-key', caseTipKey); }
         const caseTip = document.createElement('div');
         caseTip.className = 'ttip';
         caseTh.appendChild(caseTip);

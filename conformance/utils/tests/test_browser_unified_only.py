@@ -30,25 +30,35 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert blocked["source_unavailable"] == 2027
 
 
-def test_shared_popup_url_restores_without_redundant_tab_parameter(matrix_driver, rendered_page):
+@pytest.mark.parametrize("transpose", [False, True])
+def test_shared_popup_url_restores_without_redundant_tab_parameter(matrix_driver, rendered_page, transpose):
     d = matrix_driver
-    load(d, rendered_page, "?tab=tab-unified&transpose=0")
+    load(d, rendered_page, f"?tab=tab-unified&transpose={int(transpose)}")
     legend = d.find_element(By.CSS_SELECTOR, ".capture-legend")
     assert "or press Enter/Space" not in legend.text
 
-    cell = d.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-cmp][data-ttip-id]")
-    cell.click()
+    selector = "#tab-unified table[data-transpose-table] th.trow-case[data-ttip-id]" if transpose else "#tab-unified td.cell[data-cmp][data-ttip-id]"
+    owner = d.find_element(By.CSS_SELECTOR, selector)
+    owner.click()
     popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
     shared_url = d.current_url
-    assert d.execute_script("return new URL(arguments[0]).searchParams.has('popup')", shared_url)
+    key = d.execute_script("return new URL(arguments[0]).searchParams.get('popup')", shared_url)
+    assert key
     assert not d.execute_script("return new URL(arguments[0]).searchParams.has('tab')", shared_url)
+    assert d.execute_script("return arguments[0].dataset.ttipKey", owner) == key
 
     d.get(shared_url)
     restored = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
     assert restored.is_displayed()
-    assert d.execute_script("return new URL(location.href).searchParams.has('tab')") is False
+    assert d.execute_script("""
+        const key = new URL(location.href).searchParams.get('popup');
+        const owner = [...document.querySelectorAll('[data-ttip-key][data-ttip-click="pin"]')]
+            .find(node => node.dataset.ttipKey === key && node.classList.contains('ttip-open'));
+        return owner && Boolean(owner.closest('table[data-transpose-table]')) === arguments[0];
+    """, transpose)
     restored.find_element(By.CSS_SELECTOR, ".ttip-close").click()
     assert not d.find_elements(By.CSS_SELECTOR, "body > .ttip-pinned")
+    assert not d.execute_script("return new URL(location.href).searchParams.has('popup')")
 
 
 @pytest.mark.parametrize("removed", ["tab-toolcalling-batch", "tab-toolcalling-streamv1", "tab-reasoning-batch", "tab-reasoning-stream"])
