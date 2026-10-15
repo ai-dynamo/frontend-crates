@@ -1,0 +1,73 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.24
+    git_commit: fc74640e4af4e999c82e9d70de272f70d43ba880
+    source_sha256: ce52c204811146d4b7df4c7c8e29537ed445de203b71d125cb29c85e55c71da0
+document:
+  mode: unified
+changes:
+  dsml_unterminated_parameter_then_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: ee3ceb1ca25cb683bca603efb861f4f094f36e182d84e23d8fb75a1c06ac70c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dsml_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 3e78ad38e16c8233cb84130271599597818d244dbf95e72ee0e7a7e85d27ea50
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native finish: incomplete DeepSeek V4.1 parameter'
+  prefilled_reasoning_then_text:
+    absent: true
+  prefilled_reasoning_then_text_then_tool:
+    absent: true
+  prefilled_reasoning_with_tool:
+    absent: true
+metadata_changes: {}
+document_overrides:
+  dsml_unterminated_parameter_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin:
+        crate_version: 0.7.24
+        source_sha256: ce52c204811146d4b7df4c7c8e29537ed445de203b71d125cb29c85e55c71da0
+        git_commit: fc74640e4af4e999c82e9d70de272f70d43ba880
+      inherited_from: null
+  dsml_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin:
+        crate_version: 0.7.24
+        source_sha256: ce52c204811146d4b7df4c7c8e29537ed445de203b71d125cb29c85e55c71da0
+        git_commit: fc74640e4af4e999c82e9d70de272f70d43ba880
+      inherited_from: null

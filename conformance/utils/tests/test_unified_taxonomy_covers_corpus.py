@@ -134,6 +134,26 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
         assert prefix.rsplit(">", 1)[-1]
 
 
+@pytest.mark.parametrize("scenario", [
+    "dsml_unterminated_parameter_then_empty_call",
+    "dsml_unterminated_parameter_then_call",
+])
+def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
+    assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
+    for family in G.scenario_families(scenario):
+        case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+        gap = " " if family == "deepseek_v41" else ""
+        invoke_end = f"</｜DSML｜{gap}invoke>"
+        first, trailing = case["input"].split(invoke_end, 1)
+        assert f'<｜DSML｜{gap}parameter' in first
+        assert f'</｜DSML｜{gap}parameter>' not in first
+        calls = _native_input_calls(family, trailing)
+        assert calls == case["golden"]
+        assert len(calls) == 1
+        assert calls[0]["name"] == ("f" if scenario.endswith("empty_call") else "get_weather")
+        assert tax(scenario)[0] == 5
+
+
 def test_request_scoped_cases_never_claim_vllm_match() -> None:
     for family in FAMILIES:
         for case_id, case in build_cases(family).items():
@@ -828,8 +848,8 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 118,
-            "deepseek_v41": 115,
+            "deepseek_v4": 120,
+            "deepseek_v41": 117,
             "gemma4": 119,
             "glm47": 117,
             "kimi_k2": 117,
@@ -838,14 +858,14 @@ def test_unified_case_counts_match_the_generator():
             "qwen3": 122,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 956 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 960 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 148 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 150 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
