@@ -14,7 +14,9 @@ static QWEN3_CODER_FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     tool_call_begin_prefix: "<tool_call>\n<function=",
     tool_call_begin_suffix: ">\n",
     tool_call_end: "\n</function>\n</tool_call>",
-    tool_call_trigger: "<tool_call>\n<function=",
+    // Dispatch before the excluded bare function marker enters free text.
+    // The tag still requires the complete opening sequence above.
+    tool_call_trigger: "<tool_call>",
     first_tool_call_prefix: "",
     tool_call_separator: "\n",
     arguments_style: JsonSchemaStyle::QwenXml,

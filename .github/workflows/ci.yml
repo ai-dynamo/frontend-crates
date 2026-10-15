@@ -25,6 +25,7 @@ jobs:
       pull-requests: read
     outputs:
       conformance: ${{ steps.filter.outputs.conformance }}
+      structural-tag: ${{ steps.filter.outputs.structural-tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -34,10 +35,36 @@ jobs:
         uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
         with:
           filters: |
+            structural-tag:
+              - 'parsers/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.github/workflows/ci.yml'
             conformance:
               - 'conformance/**'
               - 'parsers/**'
               - '.github/workflows/ci.yml'
+
+  structural-tag:
+    needs: changes
+    if: ${{ needs.changes.outputs.structural-tag == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Install Rust
+        run: rustup toolchain install
+      - name: Install pinned CPU XGrammar environment
+        run: |
+          python3.12 -m venv /tmp/xgrammar
+          /tmp/xgrammar/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu -r parsers/v2/tests/structural_tag/requirements.txt
+          /tmp/xgrammar/bin/pip check
+      - name: Execute structural-tag contracts
+        env:
+          XGRAMMAR_PYTHON: /tmp/xgrammar/bin/python
+        run: cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
 
   rust:
     runs-on: ubuntu-latest
