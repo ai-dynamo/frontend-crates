@@ -30,6 +30,27 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert blocked["source_unavailable"] == 2027
 
 
+def test_shared_popup_url_restores_without_redundant_tab_parameter(matrix_driver, rendered_page):
+    d = matrix_driver
+    load(d, rendered_page, "?tab=tab-unified&transpose=0")
+    legend = d.find_element(By.CSS_SELECTOR, ".capture-legend")
+    assert "or press Enter/Space" not in legend.text
+
+    cell = d.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-cmp][data-ttip-id]")
+    cell.click()
+    popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
+    shared_url = d.current_url
+    assert d.execute_script("return new URL(arguments[0]).searchParams.has('popup')", shared_url)
+    assert not d.execute_script("return new URL(arguments[0]).searchParams.has('tab')", shared_url)
+
+    d.get(shared_url)
+    restored = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
+    assert restored.is_displayed()
+    assert d.execute_script("return new URL(location.href).searchParams.has('tab')") is False
+    restored.find_element(By.CSS_SELECTOR, ".ttip-close").click()
+    assert not d.find_elements(By.CSS_SELECTOR, "body > .ttip-pinned")
+
+
 @pytest.mark.parametrize("removed", ["tab-toolcalling-batch", "tab-toolcalling-streamv1", "tab-reasoning-batch", "tab-reasoning-stream"])
 def test_removed_tab_links_open_the_unified_report_without_a_tab_button(matrix_driver, rendered_page, removed):
     d = matrix_driver

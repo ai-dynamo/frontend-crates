@@ -167,8 +167,9 @@
   var _summaryLegendHtml = null;
 
   const tooltipIds = new WeakMap();
-  function registerTooltip(td, model, fixtureHref) {
+  function registerTooltip(td, model, fixtureHref, stateKey) {
     if (fixtureHref) td.dataset.ttipFixture = fixtureHref;
+    if (stateKey) td.dataset.ttipKey = stateKey;
     const id = tooltipIds.get(model) || String(++_ttipSeq);
     tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
@@ -987,7 +988,7 @@
     return t.querySelector('td');
   }
 
-  function buildCellNode(cell, col, groupStart) {
+  function buildCellNode(cell, col, groupStart, tab) {
     var td = document.createElement('td');
     var groupClass = groupStart ? ' case-group-start' : '';
     if (!cell) {
@@ -1063,7 +1064,8 @@
       td.appendChild(ttip);
       // Empty .ttip now (so conformance.js's attachTooltip finds it); content built
       // lazily on first interaction from the keyed model (survives transpose clones).
-      registerTooltip(td, cell.tooltip, cell.fixture_href);
+      registerTooltip(td, cell.tooltip, cell.fixture_href,
+        JSON.stringify(['cell', tab.id, cell.case_id || col.sub, cell.family || '']));
     }
     return td;
   }
@@ -1091,7 +1093,7 @@
     var cells = row.cells || {};
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
-      tr.appendChild(buildCellNode(cells[c.sub], c, i === 0 || cols[i - 1].group_key !== c.group_key));
+      tr.appendChild(buildCellNode(cells[c.sub], c, i === 0 || cols[i - 1].group_key !== c.group_key, tab));
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {
         tr.appendChild(placeholderTd(c.group_key));
@@ -1119,7 +1121,10 @@
     // ~20 families is far too much to render up front for every column).
     var subThs = thead.querySelectorAll('th.case-sub');
     (tab.columns || []).forEach(function (col, i) {
-      if (subThs[i]) { registerTooltip(subThs[i], columnGrammarModel(tab, col)); }
+      if (subThs[i]) {
+        registerTooltip(subThs[i], columnGrammarModel(tab, col), null,
+          JSON.stringify(['grammar', tab.id, col.case_id || col.sub]));
+      }
     });
     table.appendChild(thead);
     var tbody = document.createElement('tbody');
@@ -1183,7 +1188,7 @@
 
   function captureLegendHtml() {
     return '<div class="legend capture-legend"><p><strong>Legend:</strong> Each rounded box has one equal-width segment per active capture, in slot order. Outputs are compared with GOLDEN, including tool-call order and reasoning/content/tool interleaving.</p><ul></ul>'
-      + '<p>Click a case cell or heading, or press Enter/Space, to open its outputs and status details. '
+      + '<p>Click a case cell or heading to open its outputs and status details. '
       + '<span data-dynamo-parsers hidden>Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser.</span> '
       + '<span data-batch-timing hidden>Order/chunk not applicable for batch.</span></p>'
       + '<p data-output-formats hidden>Output formats: batch <code>calls=[...]</code> is the final list of calls; streaming <code>tool_call=...</code> is one call event. '

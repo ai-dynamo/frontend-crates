@@ -960,6 +960,20 @@
   };
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
+  function updatePinnedPopupUrl(cell) {
+    const url = new URL(window.location.href);
+    if (cell) {
+      const panels = document.querySelectorAll('.tab-panel');
+      const panel = cell.closest('.tab-panel');
+      if (panels.length > 1 && panel) { url.searchParams.set('tab', panel.id); }
+      else { url.searchParams.delete('tab'); }
+      if (cell.dataset.ttipKey) { url.searchParams.set('popup', cell.dataset.ttipKey); }
+      else { url.searchParams.delete('popup'); }
+    } else {
+      url.searchParams.delete('popup');
+    }
+    window.history.replaceState(null, '', url.toString());
+  }
   document.addEventListener('click', function (e) {
     if (e.target.closest('.capture-slots, .comparison-picker')) return;
     if (pinnedCell && !pinnedCell.contains(e.target) && !pinnedCell._ttip.contains(e.target)) { unpinCell(pinnedCell); }
@@ -1043,6 +1057,7 @@
       isVisible = true;
       isActive = true;
       pinnedCell = cell;
+      updatePinnedPopupUrl(cell);
       // The pressed look must mark the cell whose popup is actually up. While a pin
       // is held, hover no longer opens anything, so hover must not press either —
       // `ttip-pin-mode` switches the press off for :hover and onto this cell alone.
@@ -1050,6 +1065,7 @@
       document.body.classList.add('ttip-pin-mode');
     }
     function unpin() {
+      const wasPinned = pinnedCell === cell;
       clearTimers();
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
       visibleTooltips.delete(ttip);
@@ -1057,12 +1073,14 @@
       isVisible = false;
       isActive = false;
       cell.classList.remove('ttip-open');
-      if (pinnedCell === cell) {
+      if (wasPinned) {
         if (cell.isConnected) cell.focus({ preventScroll: true });
         pinnedCell = null;
         document.body.classList.remove('ttip-pin-mode');
+        updatePinnedPopupUrl(null);
       }
     }
+    cell._ttipPin = pin;
     cell._ttipUnpin = unpin;
     cell.addEventListener('keydown', function (event) {
       if (event.target !== cell || cell.dataset.ttipClick !== 'pin') return;
@@ -1225,6 +1243,24 @@
   // wires them itself.
   const WIRE_ON_LOAD = 'td.cell, td.parser, th.case-sub';
   document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
+
+  function restorePinnedTooltip() {
+    const stateKey = new URLSearchParams(window.location.search).get('popup');
+    if (!stateKey) return;
+    const panel = activePanel();
+    const transposed = document.body.classList.contains('transpose-mode');
+    const cell = panel && Array.from(panel.querySelectorAll('[data-ttip-key][data-ttip-click="pin"]'))
+      .find(function (candidate) {
+        return candidate.dataset.ttipKey === stateKey
+          && Boolean(candidate.closest('table[data-transpose-table]')) === transposed;
+      });
+    if (cell && cell._ttipPin) { cell._ttipPin(); }
+    else {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('popup');
+      window.history.replaceState(null, '', url.toString());
+    }
+  }
 
   activateTab(readActiveTab(), false);
   tabButtons.forEach(function (button) {
@@ -1500,6 +1536,7 @@
   }
 
   applyTransposeMode(readTransposeMode(), false);
+  restorePinnedTooltip();
   updateStickyOffsets();
   window.addEventListener('resize', updateStickyOffsets);
   if (transposeToggle) {
