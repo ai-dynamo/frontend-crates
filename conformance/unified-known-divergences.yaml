@@ -7,14 +7,14 @@
 # Schema: family -> case ID -> check -> note and exact observed output.
 
 deepseek_v4:
-  UNIFIED.dsml_unterminated_parameter_then_call.deepseek_v4:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
     golden:
       note: The later parameter closer completes the malformed first invoke, emitting f with embedded DSML instead of get_weather.
       actual: tool_call(f, {"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"})
     tool_adapter:
       note: The shared V4/V4.1 tool adapter dispatches the malformed first invoke instead of the valid later call.
       actual: tool_call(f, {"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"})
-  UNIFIED.dsml_unterminated_parameter_then_empty_call.deepseek_v4:
+  UNIFIED.5-dsml_unterminated_parameter_then_empty_call:
     golden:
       note: The unterminated parameter loses the later parameterless call; V4 emits the malformed get_weather invoke.
       actual: tool_call(get_weather, {})
@@ -22,14 +22,14 @@ deepseek_v4:
       note: The shared V4/V4.1 tool adapter dispatches the malformed first invoke instead of the valid later call.
       actual: tool_call(get_weather, {})
 deepseek_v41:
-  UNIFIED.dsml_unterminated_parameter_then_call.deepseek_v41:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
     golden:
       note: The later parameter closer completes the malformed first invoke, emitting f with embedded DSML instead of get_weather.
       actual: tool_call(f, {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"})
     tool_adapter:
       note: The shared V4/V4.1 tool adapter dispatches the malformed first invoke instead of the valid later call.
       actual: tool_call(f, {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"})
-  UNIFIED.dsml_unterminated_parameter_then_empty_call.deepseek_v41:
+  UNIFIED.5-dsml_unterminated_parameter_then_empty_call:
     golden:
       note: The unterminated parameter loses the later parameterless call; V4.1 errors at finish.
       actual: 'ERROR: native finish: incomplete DeepSeek V4.1 parameter'
