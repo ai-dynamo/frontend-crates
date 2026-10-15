@@ -76,6 +76,9 @@ helpers (`tomllib`); the system Python 3.10 cannot run them.
   execution cost is under one second; most of that step is compilation.
 - Shared `common` helper tests are compiled into multiple integration binaries.
   Their execution is negligible; consolidating them would not address the hotspot.
+- Legacy v1 and v2's embedded `v1core` share examples, but exercise separately
+  compiled implementations that can drift. The entire v1 unit binary costs only
+  8.29s in the reference job. Deleting those checks is a poor tradeoff.
 - `cargo check --workspace --all-targets --locked` repeats the type-checking that
   the subsequent default-feature `cargo test --workspace --all-targets --locked`
   already performs. The original check step is 106s, but that is NOT all net
@@ -107,6 +110,12 @@ helpers (`tomllib`); the system Python 3.10 cannot run them.
 - Build caching remains unmeasured. Cache transfer/save cost matters: local debug
   build artifacts exceed 10 GiB. Do not equate a local warm rebuild with a hosted
   cache speedup.
+- Splitting CI into jobs would overlap independent work but duplicate compilation
+  without a build-artifact handoff. Nextest can overlap binaries and expose
+  per-test timings, but adds process startup and repeats process-local caches.
+  Neither is needed to obtain the measured compiler-profile gains. Benchmark
+  them after shrinking the serial matrices, rather than forecasting a core-count
+  speedup.
 
 ## Results
 
@@ -123,4 +132,16 @@ zero failures. Total binary execution is 384.04s; the incremental rebuild is
 | Unified parity | Not run | 7.69s | Reference CI: 31.26s |
 | XML schema coercion | Not run | 19.04s | Reference CI: 25.19s |
 
-Second experiment and hosted baseline/candidate comparisons are in progress.
+Adding parser-v2-only `opt-level = 1` passes the same 2,692 tests and reduces
+binary execution to 268.10s: another 115.94s (30.2%) below regex-only. Its
+incremental rebuild is 26.39s. Per-suite times: parser-v2 units 113.20s, split
+sweep 56.26s, interleave 28.87s, Unified parity 5.88s, XML schema 14.59s.
+This is a measured alternative, not yet the selected branch configuration.
+
+The first committed candidate is `117502e2` (regex-only). Its hosted run is
+[38666562731](https://github.com/ai-dynamo/frontend-crates/actions/runs/38666562731),
+Rust job `116199754395`.
+
+A broader test-profile `opt-level = 1` trial is in progress to test whether
+optimizing the remaining dependencies repays the extra build cost. Debug
+assertions and overflow checks stay enabled in every experiment.

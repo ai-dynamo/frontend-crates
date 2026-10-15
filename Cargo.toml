@@ -98,3 +98,6 @@ opt-level = 3
 
 [profile.test.package.regex-syntax]
 opt-level = 3
+
+[profile.test.package.dynamo-parsers-v2]
+opt-level = 1
