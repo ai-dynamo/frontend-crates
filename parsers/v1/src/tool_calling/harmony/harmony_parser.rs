@@ -405,7 +405,7 @@ pub async fn parse_tool_calls_harmony_complete(
             let Some(fname) = message
                 .recipient
                 .as_ref()
-                .and_then(|r| r.split('.').nth(1))
+                .and_then(|r| r.strip_prefix("functions."))
                 .filter(|s| !s.is_empty())
                 .map(|s| s.to_string())
             else {
@@ -547,6 +547,17 @@ mod tests {
         assert_eq!(name, "get_current_weather");
         assert_eq!(args["location"], "San Francisco");
         assert_eq!(args["format"], "celsius");
+    }
+
+    #[tokio::test]
+    async fn test_parse_tool_calls_harmony_dotted_name() {
+        let text = r#"<|channel|>commentary to=functions.my-tool.v2 <|constrain|>json<|message|>{"location":"Beijing"}<|call|>"#;
+        let (tool_calls, _) = parse_tool_calls_harmony_complete(text, &Default::default(), None)
+            .await
+            .unwrap();
+        let (name, args) = extract_name_and_args(tool_calls[0].clone());
+        assert_eq!(name, "my-tool.v2");
+        assert_eq!(args["location"], "Beijing");
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.d in tests/parity/toolcalling/fixtures/harmony/TOOLCALLING.batch.4.yaml.
