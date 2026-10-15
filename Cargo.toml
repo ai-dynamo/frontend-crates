@@ -88,12 +88,7 @@ url = "2.5"
 uuid = "1.18.1"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 
-# Exercise the complete parser matrices with optimized code, retaining checks.
-[profile.test]
-opt-level = 1
-debug-assertions = true
-overflow-checks = true
-
+# Optimize the hot test code while retaining default debug and overflow checks.
 # Parser sweeps repeatedly compile config-specific regexes.
 [profile.test.package.regex]
 opt-level = 3
@@ -103,3 +98,7 @@ opt-level = 3
 
 [profile.test.package.regex-syntax]
 opt-level = 3
+
+# Level 2 avoids sharing unoptimized generic code from other crates.
+[profile.test.package.dynamo-parsers-v2]
+opt-level = 2
