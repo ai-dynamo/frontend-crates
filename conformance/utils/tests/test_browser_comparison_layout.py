@@ -72,7 +72,38 @@ def selection(driver):
 
 
 def wait_for_popup(driver):
-    return WebDriverWait(driver, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, ".tab-panel.active .ttip-visible"))
+    return WebDriverWait(driver, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
+
+
+@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize("kind", ["case", "grammar"])
+def test_pinned_popup_url_survives_reload_and_close(matrix_driver, rendered_page, transpose, kind):
+    d = matrix_driver
+    query = "?tab=tab-unified&keep=value" + ("&transpose=1" if transpose else "") + "#retained"
+    load(d, rendered_page, query)
+    selector = "td.cell" if kind == "case" else "th.trow-case" if transpose else "th.case-sub"
+    cell = d.execute_script("return [...document.querySelectorAll(arguments[0])].find(cell => cell.getClientRects().length)", "#tab-unified " + selector)
+    assert cell is not None
+    cell.click()
+    popup = wait_for_popup(d)
+    key = cell.get_attribute("data-ttip-key")
+    assert d.execute_script("return new URL(location.href).searchParams.get('popup')") == key
+    heading = popup.find_element(By.CSS_SELECTOR, ".ttip-head").text
+    d.refresh()
+    popup = wait_for_popup(d)
+    assert popup.find_element(By.CSS_SELECTOR, ".ttip-head").text == heading
+    assert "ttip-pinned" in popup.get_attribute("class")
+    popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
+    assert d.execute_script("return new URL(location.href).searchParams.has('popup')") is False
+    assert d.execute_script("return new URL(location.href).searchParams.get('keep')") == "value"
+    assert d.execute_script("return location.hash") == "#retained"
+
+
+def test_unknown_popup_url_is_removed(matrix_driver, rendered_page):
+    load(matrix_driver, rendered_page, "?tab=tab-unified&popup=unknown&keep=value#retained")
+    assert matrix_driver.execute_script("return new URL(location.href).searchParams.has('popup')") is False
+    assert matrix_driver.execute_script("return new URL(location.href).searchParams.get('keep')") == "value"
+    assert matrix_driver.execute_script("return location.hash") == "#retained"
 
 
 def assert_popup_closed(driver, popup, owner):
