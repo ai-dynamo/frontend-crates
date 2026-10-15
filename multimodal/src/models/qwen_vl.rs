@@ -689,6 +689,25 @@ mod tests {
     }
 
     #[test]
+    fn rejects_overflowing_spec_dimensions() {
+        for (patch_size, merge_size, temporal_patch_size) in [
+            (usize::MAX, 2, 1),         // Resize factor overflows.
+            (1, usize::MAX, 1),         // Merge area overflows.
+            (1, 1, usize::MAX / 3 + 1), // Flattened patch dimension overflows.
+        ] {
+            let mut spec = valid_spec();
+            spec.patch_size = patch_size;
+            spec.merge_size = merge_size;
+            spec.temporal_patch_size = temporal_patch_size;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
     fn rejects_invalid_pixel_bounds() {
         for (min_pixels, max_pixels) in [(0, 1), (2, 1)] {
             let mut spec = valid_spec();
