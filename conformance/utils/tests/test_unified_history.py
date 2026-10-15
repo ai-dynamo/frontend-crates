@@ -1038,6 +1038,52 @@ def test_history_materializes_a_derived_release_view_without_a_checkpoint(tmp_pa
     assert document["inherited_from"] == "0.5.0"
 
 
+def test_extraction_tracks_crate_release_without_repackaging(tmp_path, monkeypatch, capsys):
+    import extract_fixtures
+
+    root = _store(tmp_path / "store")
+    digest, size = unified_history.store_digest(root)
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "snapshot": "20260101_000000",
+        "crates": {"dynamo-parsers-v2": "0.5.2"},
+        "shards": [{
+            "path": "unified-history", "format": "unified-history",
+            "sha256": digest, "size": size,
+        }],
+    }))
+    crate = tmp_path / "parsers/v2/Cargo.toml"
+    crate.parent.mkdir(parents=True)
+    monkeypatch.setattr(extract_fixtures, "ROOT", tmp_path)
+    monkeypatch.setattr(extract_fixtures, "HISTORY_DIR", root)
+    monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest)
+    monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: tmp_path / "cache")
+    monkeypatch.setattr(sys, "argv", ["extract_fixtures.py"])
+    monkeypatch.delenv("CONFORMANCE_DYNAMO_V2_LABEL", raising=False)
+
+    crate.write_text('[package]\nversion = "0.5.2"\n')
+    extract_fixtures.main()
+    original = Path(capsys.readouterr().out.strip())
+    prior = original / "unified/dynamo_v2-0.5.2/gemma4/UNIFIED.1-1.yaml"
+    prior_bytes = prior.read_bytes()
+
+    crate.write_text('[package]\nversion = "0.6.1"\n')
+    extract_fixtures.main()
+    current = Path(capsys.readouterr().out.strip())
+    assert current != original
+    document = unified_history.load_yaml(
+        current / "unified/dynamo_v2-0.6.1/gemma4/UNIFIED.1-1.yaml"
+    )
+    assert document["inherited_from"] == "0.5.0"
+    assert prior.read_bytes() == prior_bytes
+    assert unified_history.store_digest(root) == (digest, size)
+
+    extract_fixtures.main()
+    cached = capsys.readouterr()
+    assert Path(cached.out.strip()) == current
+    assert "Cache hit" in cached.err
+
+
 def test_history_derived_release_view_is_not_reingested_as_a_checkpoint(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"

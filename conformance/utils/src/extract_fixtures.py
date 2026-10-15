@@ -101,7 +101,7 @@ def shard_hash_map(shards):
 
 
 def fixtures_identity(shards, inactive=()):
-    """Hash active shard bytes and canonical inactive dispositions into one identity.
+    """Hash fixture inputs and the current derived release into one identity.
 
     NOT the same thing as `snapshot`/`pin`: `pin` is a human-readable stamp
     that can stay fixed while the shards under it are re-pinned in place
@@ -119,6 +119,8 @@ def fixtures_identity(shards, inactive=()):
     identity = {"shards": pinned, "inactive_shards": fixture_disposition.canonical_inactive_shards(inactive)}
     # A renamed materialized format must not reuse a snapshot with the old marker.
     identity["unified_history_format"] = unified_history.MATERIALIZED_FORMAT
+    # A release bump needs a new derived view even when fixture bytes are unchanged.
+    identity["dynamo_v2_version"] = dynamo_version.dynamo_v2_label(ROOT)
     return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -502,13 +504,8 @@ def _extract(args):
     if tmp_dir.exists():
         shutil.rmtree(str(tmp_dir))
     print(f"Extracting {len(shards)} shard(s) into {tmp_dir}", file=sys.stderr)
-    crates = manifest.get("crates", {})
-    dynamo_v2_version = crates.get("dynamo-parsers-v2") if isinstance(crates, dict) else None
-    derived_release_versions = (
-        {"dynamo_v2": dynamo_v2_version}
-        if isinstance(dynamo_v2_version, str)
-        else None
-    )
+    # Automatic releases can advance Cargo.toml without repackaging the fixtures.
+    derived_release_versions = {"dynamo_v2": dynamo_version.dynamo_v2_label(ROOT)}
     for s in shards:
         materialize_shard(
             s,
