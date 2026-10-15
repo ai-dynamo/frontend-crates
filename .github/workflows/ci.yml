@@ -178,7 +178,34 @@ jobs:
           site="$RUNNER_TEMP/pages"
           fixtures_root="$(python3 conformance/utils/src/extract_fixtures.py)"
           mkdir -p "$site"
-          cp conformance/CONFORMANCE_v2.html "$site/index.html"
+          # Keep the report at a deep path so the project-site root can forward to /parser/.
+          mkdir -p "$site/report"
+          cp conformance/CONFORMANCE_v2.html "$site/report/index.html"
+          cat > "$site/index.html" <<'HTML'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <meta name="robots" content="noindex">
+              <title>Report moved</title>
+              <script>
+                function openReport(path) {
+                  const target = new URL(path, window.location.origin);
+                  target.search = window.location.search;
+                  target.hash = window.location.hash;
+                  window.location.replace(target);
+                }
+
+                fetch("/parser/", { method: "HEAD", cache: "no-store" })
+                  .then((response) => openReport(response.ok ? "/parser/" : "/frontend-crates/report/"))
+                  .catch(() => openReport("/frontend-crates/report/"));
+              </script>
+            </head>
+            <body>
+              <p>The report moved to <a href="/parser/">/parser/</a>.</p>
+            </body>
+          </html>
+          HTML
           for relative in \
             toolcalling/fixtures-batch-v1/inputs \
             toolcalling/fixtures-stream-v1/inputs \
