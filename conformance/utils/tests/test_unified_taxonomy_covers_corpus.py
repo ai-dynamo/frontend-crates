@@ -134,6 +134,21 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
         assert prefix.rsplit(">", 1)[-1]
 
 
+def _assert_dsml_recovery_input(family, scenario, case):
+    assert family in {"deepseek_v4", "deepseek_v41"}
+    gap = " " if family == "deepseek_v41" else ""
+    invoke_end = f"</｜DSML｜{gap}invoke>"
+    first, trailing = case["input"].split(invoke_end, 1)
+    assert f'<｜DSML｜{gap}parameter' in first
+    assert f'</｜DSML｜{gap}parameter>' not in first
+    expected = [{"kind": "tool_call", "name": "f", "arguments": {}}] if scenario.endswith("empty_call") else [
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+    assert _native_input_calls(family, trailing) == expected
+    assert case["golden"] == expected
+    assert tax(scenario)[0] == 5
+
+
 @pytest.mark.parametrize("scenario", [
     "dsml_unterminated_parameter_then_empty_call",
     "dsml_unterminated_parameter_then_call",
@@ -142,16 +157,7 @@ def test_dsml_recovery_cases_keep_a_complete_trailing_invoke(scenario):
     assert set(G.scenario_families(scenario)) == {"deepseek_v4", "deepseek_v41"}
     for family in G.scenario_families(scenario):
         case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
-        gap = " " if family == "deepseek_v41" else ""
-        invoke_end = f"</｜DSML｜{gap}invoke>"
-        first, trailing = case["input"].split(invoke_end, 1)
-        assert f'<｜DSML｜{gap}parameter' in first
-        assert f'</｜DSML｜{gap}parameter>' not in first
-        calls = _native_input_calls(family, trailing)
-        assert calls == case["golden"]
-        assert len(calls) == 1
-        assert calls[0]["name"] == ("f" if scenario.endswith("empty_call") else "get_weather")
-        assert tax(scenario)[0] == 5
+        _assert_dsml_recovery_input(family, scenario, case)
 
 
 def test_request_scoped_cases_never_claim_vllm_match() -> None:
@@ -1435,6 +1441,9 @@ def _assert_malformed_recovery(family, case):
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
+        return
+    if scenario in {"dsml_unterminated_parameter_then_call", "dsml_unterminated_parameter_then_empty_call"}:
+        _assert_dsml_recovery_input(family, scenario, case)
         return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
