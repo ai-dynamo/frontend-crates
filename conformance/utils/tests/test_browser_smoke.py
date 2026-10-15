@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Browser-level smoke test for the conformance matrix (audit D4).
 
-The recent regressions were browser-behavior regressions (hover tooltips, parser
+The recent regressions were browser-behavior regressions (case popups, parser
 radios) that the string-level template tests can't catch. This renders the real
-table and drives a headless browser: hover a cell and assert its tooltip becomes
+table and drives a headless browser: activate a case and assert its popup becomes
 visible; assert the vLLM Rust parser option shows on a tool-calling tab and hides
 on Reasoning (which has no vLLM Rust column).
 
@@ -30,11 +30,8 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-# Headless Chrome reports `(hover: hover)` as FALSE, so conformance.js takes its touch
-# branch and never attaches the `pointerenter` listener that test_hover_shows_tooltip
-# drives — the test could not pass here regardless of the page being correct. Force the
-# hover-capable branch by patching matchMedia BEFORE any page script runs (CDP
-# addScriptToEvaluateOnNewDocument runs ahead of the document's own scripts).
+# Exercise the click-only contract with both reported pointer capabilities.
+# Install this media-query override before any document script runs.
 _FORCE_HOVER_JS = """
 const _mm = window.matchMedia.bind(window);
 window.matchMedia = function (q) {
@@ -81,7 +78,7 @@ observer.observe(document, {childList: true, subtree: true, attributes: true});
 """
 
 
-def _chrome(rendered_page, force_hover):
+def _chrome(reference_page, force_hover):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage", "--window-size=1600,1200"):
         opts.add_argument(a)
@@ -91,45 +88,30 @@ def _chrome(rendered_page, force_hover):
         pytest.skip(f"could not start Chrome webdriver: {exc}")
     if force_hover:
         d.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _FORCE_HOVER_JS})
-    d.get(f"file://{rendered_page}?transpose=0")
+    d.get(f"file://{reference_page}?transpose=0")
     d.implicitly_wait(2)
     return d
 
 
 @pytest.fixture(scope="module")
-def driver(rendered_page):
-    d = _chrome(rendered_page, force_hover=True)
+def driver(reference_page):
+    d = _chrome(reference_page, force_hover=True)
     yield d
     d.quit()
 
 
 @pytest.fixture(scope="module")
-def unforced_driver(rendered_page):
-    """Chrome with its REAL media-query values — no matchMedia patch.
-
-    Headless Chrome reports `(hover: hover)` and `(any-hover: hover)` false, which is
-    precisely what Chrome reported on the desktop where hovering opened nothing. Every
-    other lane forces those true and therefore cannot observe that failure. This is the
-    negative control: it must pass while the browser claims no hover capability.
-    """
-    d = _chrome(rendered_page, force_hover=False)
+def unforced_driver(reference_page):
+    """Exercise case activation with the browser's actual pointer capabilities."""
+    d = _chrome(reference_page, force_hover=False)
     yield d
     d.quit()
 
 
 @pytest.fixture(scope="module")
-def touch_driver(rendered_page):
-    """A driver on the TOUCH branch — no matchMedia patch, so `(hover: hover)` is false.
-
-    Tap-to-pin only exists here: pinning is modal, so a mouse click must never pin or it
-    would disable hover page-wide. The page decides from `PointerEvent.pointerType`, and
-    the tap is delivered by `_tap`, which fires a genuine `pointerdown` carrying
-    `pointerType: 'touch'` before the click. A bare `.click()` carries no pointerdown and
-    would be classified (correctly) as not-touch, testing nothing; CDP mouse-to-touch
-    emulation was tried first and deadlocks ActionChains. This fixture is what keeps the
-    pin machinery under test.
-    """
-    d = _chrome(rendered_page, force_hover=False)
+def touch_driver(reference_page):
+    """Exercise native case activation after touch pointer events."""
+    d = _chrome(reference_page, force_hover=False)
     yield d
     d.quit()
 
@@ -180,108 +162,36 @@ def _assert_tooltip_actually_visible(drv, where):
     assert r["topmostInside"], f"{where}: something is covering the tooltip: {r}"
 
 
-def test_real_mouse_hover_opens_a_visible_tooltip(unforced_driver):
-    """THE production contract: a real mouse move over a cell shows readable text.
-
-    Runs on `unforced_driver`, which does NOT patch matchMedia — headless Chrome reports
-    `(hover: hover)` and `(any-hover: hover)` false there, exactly as Chrome did on the
-    desktop where hovering was dead. The page must not consult those queries to decide
-    whether to listen for hover, so this lane fails if that gate ever comes back.
-    """
+def test_real_mouse_hover_does_not_build_case_popup(unforced_driver):
     drv = unforced_driver
-    assert drv.execute_script(
-        "return !window.matchMedia('(hover: hover)').matches"
-        " && !window.matchMedia('(any-hover: hover)').matches;"
-    ), "this lane is only meaningful while the browser reports NO hover capability"
-    drv.execute_script(
-        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
-    )
-    time.sleep(0.5)
-    el = drv.execute_script(
-        """
-        const p = document.querySelector('.tab-panel.active') || document;
-        const c = [...p.querySelectorAll('td.cell')].filter(e => e.offsetParent !== null
-                                                             && e.querySelector('.ttip'))[20];
-        if (!c) return null;
-        c.scrollIntoView({block: 'center'});
-        return c;
-        """
-    )
-    if el is None:
-        pytest.skip("no visible cell with a tooltip on the active tab")
-    # A REAL pointer move, not a synthetic dispatch — a synthetic event would fire the
-    # listener even if the browser would never deliver one to a human.
+    drv.get(drv.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    el = drv.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    drv.execute_script("arguments[0].scrollIntoView({block:'center'});", el)
     webdriver.ActionChains(drv).move_to_element(el).perform()
-    deadline = time.time() + 4
-    while time.time() < deadline:
-        if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
-            break
-        time.sleep(0.1)
-    assert drv.execute_script(
-        "return arguments[0].matches(':hover');", el
-    ), "the browser did not deliver a real hover to the cell; test setup is wrong"
-    _assert_tooltip_actually_visible(drv, "real mouse hover, no forced media queries")
+    assert drv.execute_script("return arguments[0].matches(':hover')", el)
+    assert drv.execute_script("return !document.querySelector('.ttip-visible') && !arguments[0]._ttip.querySelector('.ttip-head')", el)
+    el.click()
+    _assert_tooltip_actually_visible(drv, 'native click after hover')
 
 
-def test_keyboard_focus_opens_a_visible_tooltip(unforced_driver):
-    """Focus must open the popup too — `focusin` sat behind the same gate as hover."""
+def test_keyboard_focus_requires_activation_for_case_popup(unforced_driver):
     drv = unforced_driver
-    opened = drv.execute_script(
-        """
-        const p = document.querySelector('.tab-panel.active') || document;
-        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
-          if (!el.querySelector('.ttip') || el.offsetParent === null) continue;
-          const f = el.querySelector('a, button, [tabindex]');
-          if (!f) continue;
-          el.scrollIntoView({block: 'center'});
-          f.focus();
-          return true;
-        }
-        return false;
-        """
-    )
-    if not opened:
-        pytest.skip("no focusable element inside a wired tooltip host on this tab")
-    deadline = time.time() + 4
-    while time.time() < deadline:
-        if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
-            break
-        time.sleep(0.1)
-    _assert_tooltip_actually_visible(drv, "keyboard focus")
+    drv.get(drv.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    header = drv.find_element(By.CSS_SELECTOR, '.tab-panel.active th.case-sub[data-ttip-id]')
+    drv.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'}); arguments[0].focus();", header)
+    assert drv.execute_script("return !document.querySelector('.ttip-visible') && !arguments[0]._ttip.querySelector('.ttip-head')", header)
+    header.send_keys('\ue007')
+    _assert_tooltip_actually_visible(drv, 'Enter activation')
 
 
-def test_hover_shows_tooltip(driver):
-    """Hovering a detail cell makes its `.ttip` visible (`.ttip-visible`)."""
-    driver.execute_script(
-        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
-    )
-    # Find a cell that actually has a tooltip, fire the hover event the page listens for.
-    found = driver.execute_script(
-        """
-        const tab = document.querySelector('.tab-panel.active') || document;
-        for (const cell of tab.querySelectorAll('td.cell')) {
-          if (cell.querySelector('.ttip')) {
-            cell.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true}));
-            return true;
-          }
-        }
-        return false;
-        """
-    )
-    assert found, "no cell with a tooltip found"
-    deadline = time.time() + 3
-    visible = False
-    while time.time() < deadline:
-        visible = driver.execute_script(
-            "return !!document.querySelector('.ttip.ttip-visible');"
-        )
-        if visible:
-            break
-        time.sleep(0.1)
-    assert visible, "tooltip did not become visible on hover"
+def test_pointerenter_does_not_construct_case_popup(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell = driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    assert driver.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerenter', {bubbles:true})); return !document.querySelector('.ttip-visible') && !arguments[0]._ttip.querySelector('.ttip-head');", cell)
 
 
 def test_column_toggle_hint_is_anchored_to_the_button(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -303,6 +213,7 @@ def test_column_toggle_hint_is_anchored_to_the_button(driver):
 
 
 def test_column_toggle_hover_opens_its_tooltip(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -319,113 +230,56 @@ def test_column_toggle_hover_opens_its_tooltip(driver):
     assert result == {"visible": True, "visibility": "visible"}
 
 
-def test_portalled_tooltip_tracks_the_document_scroll(driver):
-    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active tbody tr:last-child td.cell")
-    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", cell)
-    assert driver.execute_script("return window.scrollY > 0")
-    ActionChains(driver).move_to_element(cell).perform()
-    time.sleep(1)
-    result = driver.execute_script(
-        """
-        const cell = arguments[0];
-        const tooltip = cell._ttip;
-        const cellRect = cell.getBoundingClientRect();
-        const tooltipRect = tooltip.getBoundingClientRect();
-        return {
-          portalled: tooltip.parentElement === document.body,
-          topDelta: tooltipRect.top - cellRect.bottom,
-          leftDelta: tooltipRect.left - cellRect.left,
-        };
-        """,
-        cell,
-    )
-
-    assert result["portalled"], result
-    assert abs(result["topDelta"]) < 2, result
-    assert result["leftDelta"] <= 0, result
+def test_case_popup_stays_centered_after_document_scroll(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell = driver.find_element(By.CSS_SELECTOR, '.tab-panel.active tbody tr:last-child td.cell[data-ttip-id]')
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'}); arguments[0].click();", cell)
+    result = driver.execute_script("""
+        const t=arguments[0]._ttip, r=t.getBoundingClientRect();
+        return {portalled:t.parentElement===document.body, dx:Math.abs((r.left+r.right)/2-innerWidth/2),
+                dy:Math.abs((r.top+r.bottom)/2-innerHeight/2), width:r.width, height:r.height, vw:innerWidth, vh:innerHeight};
+    """, cell)
+    assert result['portalled'] and result['dx'] < 2 and result['dy'] < 2, result
+    assert result['width'] <= result['vw'] * .97 + 2 and result['height'] <= result['vh'] * .97 + 2, result
 
 
-def test_portalled_tooltip_stays_open_while_hovered(driver):
-    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
-    result = driver.execute_script(
-        """
-        const cell = arguments[0];
-        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        return new Promise(resolve => setTimeout(() => {
-          const tooltip = cell._ttip;
-          cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
-          tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-          resolve({tooltip});
-        }, 850));
-        """,
-        cell,
-    )
-    time.sleep(1)
-    visible = driver.execute_script(
-        "return arguments[0].classList.contains('ttip-visible');", result["tooltip"]
-    )
-
-    assert visible
+def test_clicked_popup_stays_open_after_pointer_leaves(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell=driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    driver.execute_script("arguments[0].click(); arguments[0].dispatchEvent(new MouseEvent('mouseleave'));", cell)
+    assert driver.execute_script("return arguments[0]._ttip.classList.contains('ttip-visible') && arguments[0]._ttip.classList.contains('ttip-pinned')", cell)
 
 
-def test_transpose_keeps_one_open_tooltip(driver):
-    driver.execute_script(
-        """
-        document.querySelectorAll('.ttip.ttip-visible').forEach(t => t.classList.remove('ttip-visible', 'ttip-pinned'));
-        document.body.classList.remove('ttip-pin-mode', 'transpose-mode');
-        const toggle = document.querySelector('[data-transpose-toggle]');
-        if (toggle.checked) toggle.click();
-        """
-    )
-    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
-    result = driver.execute_script(
-        """
-        const cell = arguments[0];
-        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        return new Promise(resolve => setTimeout(() => {
-          const toggle = document.querySelector('[data-transpose-toggle]');
-          const sourceId = cell.getAttribute('data-ttip-id');
-          const before = document.querySelectorAll('.ttip.ttip-visible').length;
-          toggle.click();
-          const after = document.querySelectorAll('.ttip.ttip-visible').length;
-          const clone = document.querySelector(
-            '.transpose-table td.cell[data-ttip-id="' + sourceId + '"]'
-          );
-          resolve({
-            before,
-            after,
-            portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
-              .filter(t => t.parentElement === document.body).length,
-            cloneHasTooltip: Boolean(clone && clone._ttip),
-          });
-        }, 850));
-        """,
-        cell,
-    )
-
-    assert result["before"] == 1, result
-    assert result["after"] == 1, result
-    assert result["portalled"] == 1, result
-    assert result["cloneHasTooltip"], result
+def test_transpose_reopens_the_same_case_with_one_popup(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell = driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    result = driver.execute_script("""
+        const cell=arguments[0], id=cell.dataset.ttipId;
+        cell.click();
+        const before=document.querySelectorAll('.ttip-visible').length;
+        document.querySelector('[data-transpose-toggle]').click();
+        const dismissed=document.querySelectorAll('.ttip-visible').length;
+        const clone=document.querySelector('.transpose-table td.cell[data-ttip-id="'+id+'"]');
+        clone.click();
+        return {before,dismissed,after:document.querySelectorAll('.ttip-visible').length,
+                portalled:clone._ttip.parentElement===document.body};
+    """, cell)
+    assert result == {'before':1,'dismissed':0,'after':1,'portalled':True}
 
 
-def test_focus_tooltip_stays_in_tab_order(driver):
-    cell = driver.find_element(By.CSS_SELECTOR, ".tab-panel.active td.cell")
-    result = driver.execute_script(
-        """
-        const cell = arguments[0];
-        cell.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
-        return new Promise(resolve => setTimeout(() => {
-          const tooltip = cell._ttip;
-          resolve({parent: tooltip.parentElement === cell, visible: tooltip.classList.contains('ttip-visible')});
-        }, 850));
-        """,
-        cell,
-    )
-    assert result == {"parent": True, "visible": True}
+
+def test_keyboard_popup_restores_host_focus_on_escape(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell=driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    driver.execute_script("arguments[0].focus()", cell)
+    cell.send_keys(' ')
+    assert driver.execute_script("return arguments[0]._ttip.classList.contains('ttip-visible')", cell)
+    driver.switch_to.active_element.send_keys('\ue00c')
+    assert driver.execute_script("return !document.querySelector('.ttip-visible') && document.activeElement===arguments[0]", cell)
 
 
 def test_column_toggle_reuses_its_portalled_tooltip(driver):
+    _click_tab(driver, "tab-toolcalling-batch")
     result = driver.execute_script(
         """
         const button = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')]
@@ -697,8 +551,8 @@ def _set_transpose(driver, on):
 
 @pytest.mark.parametrize("override,expected", [("", False), ("1", True), ("true", True),
                                                ("0", False), ("false", False)])
-def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_page, override, expected):
-    url = f"file://{rendered_page}?tab=tab-unified"
+def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, reference_page, override, expected):
+    url = f"file://{reference_page}?tab=tab-unified"
     try:
         driver.get(url + ("&transpose=" + override if override else ""))
         toggle = driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]')
@@ -715,20 +569,20 @@ def test_transpose_default_overrides_toggle_refresh_and_tabs(driver, rendered_pa
             assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
             assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == selected
     finally:
-        driver.get(f"file://{rendered_page}?transpose=0")
+        driver.get(f"file://{reference_page}?transpose=0")
 
 
 @pytest.mark.parametrize("override,expected", [("", "horizontal"), ("1", "transpose"),
                                                ("true", "transpose"), ("0", "horizontal"),
                                                ("false", "horizontal")])
-def test_first_visible_matrix_matches_transpose_url(rendered_page, override, expected):
-    d = _chrome(rendered_page, force_hover=False)
+def test_first_visible_matrix_matches_transpose_url(reference_page, override, expected):
+    d = _chrome(reference_page, force_hover=False)
     try:
         d.execute_cdp_cmd(
             "Page.addScriptToEvaluateOnNewDocument",
             {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS},
         )
-        url = f"file://{rendered_page}" + ("?transpose=" + override if override else "")
+        url = f"file://{reference_page}" + ("?transpose=" + override if override else "")
         d.get(url)
         first = d.execute_script("return window.__firstVisibleMatrix")
         insertion = d.execute_script("return window.__firstMatrixInsertion")
@@ -749,9 +603,9 @@ def test_first_visible_matrix_matches_transpose_url(rendered_page, override, exp
         d.quit()
 
 
-def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rendered_page):
+def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, reference_page):
     try:
-        driver.get(f"file://{rendered_page}?tab=tab-unified")
+        driver.get(f"file://{reference_page}?tab=tab-unified&view=details")
         header = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a")
         full_label = header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
         short_label = header.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent")
@@ -802,11 +656,8 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             assert numbers == list(range(1, len(numbers) + 1))
         assert by_prefix["ds4"][0] == by_prefix["ds41"][0] == 1
 
-        ActionChains(driver).move_to_element(header).perform()
         driver.execute_script(
-            "const h=arguments[0].closest('th.case-sub');"
-            "h.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
-            "h.dispatchEvent(new PointerEvent('pointerenter'));",
+            "arguments[0].closest('th.case-sub').click();",
             header,
         )
         deadline = time.time() + 3
@@ -817,7 +668,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
                 tip = tips[0]
                 break
             time.sleep(0.1)
-        assert tip is not None, "case description tooltip did not open on hover"
+        assert tip is not None, "case description popup did not open on click"
         assert tip.find_element(By.CSS_SELECTOR, ".ttip-head > span[title]").get_attribute("title") == header.get_attribute("aria-label")
         assert f"{full_label} ({short_label})" in tip.find_element(By.CSS_SELECTOR, ".ttip-head").text
         assert full_label in tip.text
@@ -865,7 +716,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
         assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
         expanded_width = group_cell.rect["width"]
-        ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
+        driver.find_element(By.TAG_NAME, "h1").click()
         WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
         group_toggle = group_cell.find_element(By.CSS_SELECTOR, ".col-toggle")
         group_toggle.click()
@@ -884,7 +735,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, rend
             assert cell.value_of_css_property("text-align") == "left"
             assert cell.value_of_css_property("padding-left") == "8px"
     finally:
-        driver.get(f"file://{rendered_page}?transpose=0")
+        driver.get(f"file://{reference_page}?transpose=0")
 
 
 def test_transpose_builds_mirror_and_colors(driver):
@@ -1005,68 +856,20 @@ def test_transpose_honors_collapsed_case_group(driver):
     assert hidden is True, f"transposed rows for collapsed group {key} should be hidden"
 
 
-def test_click_never_pins_where_hover_exists(driver):
-    """Where hover exists, a click must NOT pin — hover stays live afterwards.
-
-    Pinning is modal: `hoverAllowed()` returns false for every other cell while one is
-    pinned. When a desktop click also pinned, a single stray click disabled hover for the
-    whole page until the pin was released, and in details view "click elsewhere to
-    dismiss" almost always lands on another wired cell, which only moves the pin. This
-    pins the fix: on a hover-capable device no click pins anything, so hover cannot be
-    switched off by clicking.
-    """
-    driver.execute_script(
-        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
-    )
-    clicked = driver.execute_script(
-        """
-        const tab = document.querySelector('.tab-panel.active') || document;
-        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
-          if (!el.querySelector('.ttip')) continue;
-          if (el.offsetParent === null) continue;
-          el.click();
-          window.__clicked = el;
-          return true;
-        }
-        return false;
-        """
-    )
-    if not clicked:
-        pytest.skip("no wired elements with a tooltip on the active tab")
-    time.sleep(0.6)
-    assert not driver.execute_script(
-        "return !!document.querySelector('.ttip.ttip-pinned');"
-    ), "a click pinned a popup on a hover-capable device"
-    assert not driver.execute_script(
-        "return document.body.classList.contains('ttip-pin-mode');"
-    ), "a click put the page into modal pin mode on a hover-capable device"
-
-    # And hover still opens a popup on a DIFFERENT cell afterwards — the actual symptom.
-    driver.execute_script(
-        """
-        const tab = document.querySelector('.tab-panel.active') || document;
-        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
-          if (!el.querySelector('.ttip')) continue;
-          if (el.offsetParent === null || el === window.__clicked) continue;
-          el.dispatchEvent(new PointerEvent('pointerenter', {bubbles: false}));
-          return;
-        }
-        """
-    )
-    deadline = time.time() + 3
-    shown = False
-    while time.time() < deadline and not shown:
-        shown = driver.execute_script("return !!document.querySelector('.ttip.ttip-visible');")
-        time.sleep(0.1)
-    assert shown, "hover stopped opening popups after a click"
+def test_desktop_click_pins_until_outside_click(driver):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell=driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    driver.execute_script("arguments[0].click()", cell)
+    assert driver.execute_script("return arguments[0]._ttip.classList.contains('ttip-pinned') && document.body.classList.contains('ttip-pin-mode')", cell)
+    driver.find_element(By.TAG_NAME, 'h1').click()
+    assert not driver.find_elements(By.CSS_SELECTOR, '.ttip-visible')
 
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
 def test_every_wired_element_stays_pinned(touch_driver, transposed):
     """TOUCH: tapping anything with a popup PINS it, and the same tap must not close it.
 
-    Runs on `touch_driver` because tap-to-pin is now touch-only; where hover exists there
-    is no click-to-pin at all (see test_click_never_pins_where_hover_exists).
+    Runs on `touch_driver` to prove touch activation follows the same pinned-popup contract as desktop clicks.
 
     The document-level outside-click handler decides what counts as "inside". While it
     enumerated classes, it kept drifting from the set `attachTooltip` actually wires: first
@@ -1191,175 +994,62 @@ def test_legend_is_detailed_only(driver):
 
 
 def test_duplicate_markers_are_detailed_only_and_name_the_canonical_case(driver, rendered_page):
-    driver.get(f"file://{rendered_page}?tab=tab-unified")
+    original_url = driver.current_url
+    try:
+        driver.get(f"file://{rendered_page}?tab=tab-unified")
 
-    def state():
-        return driver.execute_script(
-            """
-            const markers = [...document.querySelectorAll('.duplicate-marker')];
-            return {
-              count: markers.length,
-              visible: markers.filter((marker) => getComputedStyle(marker).display !== 'none').length,
-              titles: markers.map((marker) => marker.getAttribute('title')),
-            };
-            """
+        def state():
+            return driver.execute_script(
+                """
+                const markers = [...document.querySelectorAll('.duplicate-marker')];
+                return {
+                  count: markers.length,
+                  visible: markers.filter((marker) => getComputedStyle(marker).display !== 'none').length,
+                  titles: markers.map((marker) => marker.getAttribute('title')),
+                };
+                """
+            )
+
+        driver.execute_script(
+            "const v=document.querySelector('[data-view-detailed]');"
+            "if(v.checked){v.checked=false; v.dispatchEvent(new Event('change'));}"
         )
-
-    driver.execute_script(
-        "const v=document.querySelector('[data-view-detailed]');"
-        "if(v.checked){v.checked=false; v.dispatchEvent(new Event('change'));}"
-    )
-    overview = state()
-    driver.execute_script(
-        "const v=document.querySelector('[data-view-detailed]');"
-        "v.checked=true; v.dispatchEvent(new Event('change'));"
-    )
-    detailed = state()
-
-    assert overview["count"] > 0, "Unified model rendered no duplicate markers"
-    assert overview["visible"] == 0, "duplicate marker leaked into Overview"
-    assert detailed["visible"] == detailed["count"], "duplicate marker hidden in Detailed"
-    assert all(title and title.startswith("Duplicate of UNIFIED.") for title in detailed["titles"])
-
-
-def test_touch_then_keyboard_does_not_pin(driver):
-    """A keyboard activation after a touch must NOT inherit the touch's pinning.
-
-    Pointer provenance used to persist until the next `pointerdown`. A keyboard
-    activation issues none, so after any touch the next Enter on a focused link
-    still read `touch`, called `preventDefault()` and pinned — suppressing the
-    navigation the keyboard user asked for. Provenance is now consumed by the click
-    it belongs to and cleared.
-    """
-    drv = driver
-    drv.execute_script(
-        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
-    )
-    time.sleep(0.4)
-
-    # 1. A touch tap: pointerdown(touch) then click. This one MAY pin.
-    ok = drv.execute_script(
-        """
-        const p = document.querySelector('.tab-panel.active') || document;
-        const els = [...p.querySelectorAll('[data-ttip-wired]')]
-            .filter(e => e.offsetParent !== null && e.querySelector('.ttip'));
-        if (els.length < 2) return false;
-        window.__a = els[0]; window.__b = els[1];
-        window.__a.dispatchEvent(new PointerEvent('pointerdown',
-            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
-        window.__a.click();
-        return true;
-        """
-    )
-    if not ok:
-        pytest.skip("need two wired elements on the active tab")
-    time.sleep(0.4)
-
-    # 2. A KEYBOARD activation on a different cell: a click with NO pointerdown.
-    #    It must not pin, and must not have been preventDefault()-ed.
-    prevented = drv.execute_script(
-        """
-        const ev = new MouseEvent('click', {bubbles: true, cancelable: true});
-        window.__b.dispatchEvent(ev);
-        return ev.defaultPrevented;
-        """
-    )
-    time.sleep(0.4)
-    assert not prevented, (
-        "a keyboard activation was preventDefault()-ed, so it inherited the earlier "
-        "touch's pointer provenance instead of being treated as keyboard"
-    )
-    pinned_on_b = drv.execute_script(
-        "return !!(window.__b && window.__b.querySelector('.ttip.ttip-pinned'));"
-    )
-    assert not pinned_on_b, "keyboard activation must not pin"
-
-    drv.execute_script(
-        "document.querySelectorAll('.ttip.ttip-pinned').forEach(t => { const c = t.querySelector('.ttip-close'); if (c) c.click(); });"
-    )
-
-    # 3. A touch tap INSIDE a tooltip takes the `.ttip` early return. That path must also
-    #    consume the provenance, or it stays armed for the next keyboard activation —
-    #    the same defect one branch over.
-    tapped_inside = drv.execute_script(
-        """
-        const p = document.querySelector('.tab-panel.active') || document;
-        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
-          const tip = el.querySelector('.ttip');
-          if (!tip || el.offsetParent === null) continue;
-          tip.dispatchEvent(new PointerEvent('pointerdown',
-              {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
-          tip.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-          return true;
-        }
-        return false;
-        """
-    )
-    if tapped_inside:
-        time.sleep(0.3)
-        prevented2 = drv.execute_script(
-            """
-            const ev = new MouseEvent('click', {bubbles: true, cancelable: true});
-            window.__b.dispatchEvent(ev);
-            return ev.defaultPrevented;
-            """
+        overview = state()
+        driver.execute_script(
+            "const v=document.querySelector('[data-view-detailed]');"
+            "v.checked=true; v.dispatchEvent(new Event('change'));"
         )
-        assert not prevented2, (
-            "a touch tap inside a tooltip left pointer provenance armed, so the next "
-            "keyboard activation inherited it"
-        )
+        detailed = state()
+
+        assert overview["count"] > 0, "Unified model rendered no duplicate markers"
+        assert overview["visible"] == 0, "duplicate marker leaked into Overview"
+        assert detailed["visible"] == detailed["count"], "duplicate marker hidden in Detailed"
+        assert all(title and title.startswith("Duplicate of UNIFIED.") for title in detailed["titles"])
+    finally:
+        driver.get(original_url)
 
 
-def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
-    """A tap that lands anywhere else must not arm the next pointerdown-less activation.
-
-    Pointer provenance recorded only the KIND of pointer, in one document-wide
-    variable. Only a tooltip host's own click consumed it, so a tap on a header —
-    or any element that is not a host — left `touch` armed indefinitely. The next
-    activation on a host that carries NO pointerdown of its own — keyboard Enter, a
-    synthetic click — then read that stale `touch`, pinned, and `preventDefault()`ed
-    the parser-source link the user actually asked for. A genuine mouse click is NOT
-    the vulnerable case: it brings its own mouse `pointerdown`, which overwrites the
-    stale value before the click arrives. Provenance now also records WHERE the
-    pointer went down and is only honoured when the gesture started in the same host.
-    """
-    drv = driver
-    drv.execute_script(
-        "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}"
-    )
-    time.sleep(0.4)
-
-    pinned = drv.execute_script(
-        """
-        const p = document.querySelector('.tab-panel.active') || document;
-        const cell = p.querySelector('[data-ttip-wired]');
-        if (!cell) { return 'no-cell'; }
-
-        // A touch that goes down on something that is NOT a tooltip host, and whose
-        // click therefore never reaches a host's handler to consume the provenance.
-        const outside = document.querySelector('h1, h2, header, .legend') || document.body;
-        outside.dispatchEvent(new PointerEvent('pointerdown',
-            {bubbles: true, cancelable: true, pointerType: 'touch', isPrimary: true}));
-        outside.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-
-        // Now an activation on a host that carries NO pointerdown of its own — a keyboard
-        // Enter or a synthetic click. It cannot overwrite the stale provenance, so this is
-        // the interaction that actually reads it.
-        cell.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
-
-        return !!document.querySelector('.ttip.ttip-pinned');
-        """
-    )
-    assert pinned != 'no-cell', "no wired tooltip host found to exercise"
-    assert pinned is False, (
-        "a pointerdown-less activation pinned because an unrelated touch elsewhere left "
-        "the provenance armed — pinning must require the gesture to start in this host"
-    )
+@pytest.mark.parametrize("touch_origin", ["case", "popup", "outside"])
+def test_keyboard_case_activation_after_touch_opens_one_popup(driver, touch_origin):
+    driver.get(driver.current_url.split("?", 1)[0] + "?tab=tab-unified&transpose=0")
+    cell = driver.find_element(By.CSS_SELECTOR, '.tab-panel.active td.cell[data-ttip-id]')
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", cell)
+    if touch_origin == "case":
+        _tap(driver, cell)
+    elif touch_origin == "popup":
+        driver.execute_script("arguments[0].click()", cell)
+        tip = driver.execute_script("return arguments[0]._ttip", cell)
+        _tap(driver, tip)
+    else:
+        _tap(driver, driver.find_element(By.TAG_NAME, "h1"))
+    driver.execute_script("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); arguments[0].focus();", cell)
+    cell.send_keys('\ue007')
+    assert driver.execute_script("return document.querySelectorAll('.ttip-visible').length===1 && arguments[0]._ttip.classList.contains('ttip-pinned')", cell)
 
 
 @pytest.mark.parametrize("transposed", [False, True], ids=["normal", "transposed"])
-def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transposed):
-    driver.get(f"file://{rendered_page}?view=details&transpose=0")
+def test_matrix_labels_stay_visible_when_scrolled(driver, reference_page, transposed):
+    driver.get(f"file://{reference_page}?tab=tab-toolcalling-batch&view=details&transpose=0")
     if transposed:
         toggled = driver.execute_script(
             """
@@ -1412,13 +1102,13 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, rendered_page, transpo
         assert abs(result["afterLeft"] - result["headerLeft"]) < 2
         assert result["labelWidth"] > 0 and result["headerWidth"] > 0
     finally:
-        driver.get(f"file://{rendered_page}")
+        driver.get(f"file://{reference_page}")
 
 
-def test_popup_headings_include_compact_references(driver, rendered_page):
+def test_popup_headings_include_compact_references(driver, reference_page):
     try:
         for transpose in ("0", "1"):
-            driver.get(f"file://{rendered_page}?tab=tab-unified&transpose={transpose}")
+            driver.get(f"file://{reference_page}?tab=tab-unified&transpose={transpose}")
             table = "#tab-unified table[data-transpose-table]" if transpose == "1" else "#tab-unified table:not([data-transpose-table])"
             header_selector = "th.trow-case" if transpose == "1" else "th.case-sub"
             for prefix in ("1-", "deepseek_v41-", "7-arg_json_null"):
@@ -1438,11 +1128,10 @@ def test_popup_headings_include_compact_references(driver, rendered_page):
                 assert cell is not None
                 for target in (header, cell):
                     actions = ActionChains(driver)
-                    actions.w3c_actions.pointer_action.move_to_location(2, 2)
-                    actions.perform()
+                    driver.execute_script("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
                     WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
                     driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", target)
-                    ActionChains(driver).move_to_element(target).perform()
+                    driver.execute_script("arguments[0].click()", target)
                     popup = WebDriverWait(driver, 5).until(lambda d: d.execute_script("""
                         const tip = arguments[0]._ttip;
                         return tip && tip.classList.contains('ttip-visible') ? tip : null;
@@ -1454,4 +1143,9 @@ def test_popup_headings_include_compact_references(driver, rendered_page):
                     assert float(number.value_of_css_property("font-size")[:-2]) < float(heading.value_of_css_property("font-size")[:-2])
                     assert heading.find_element(By.CSS_SELECTOR, "span[title]").get_attribute("title").startswith("UNIFIED.")
     finally:
-        driver.get(f"file://{rendered_page}?tab=tab-unified&transpose=0")
+        driver.get(f"file://{reference_page}?tab=tab-unified&transpose=0")
+
+
+@pytest.fixture(scope="session")
+def rendered_page(legacy_rendered_page):
+    return legacy_rendered_page

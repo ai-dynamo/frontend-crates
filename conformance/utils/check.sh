@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip] [--dry-run]
+# check.sh <dynamo|vllm|sglang|coverage|status|ci|ci-render|ci-tests|all> [batch|stream|all] [--container N|--pip] [--dry-run]
 #   Run a parser against the committed fixtures and report pass/fail (read-only).
 #     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_v2 / expected.dynamo_v1 (cargo test)
 #     vllm   [--container N|--pip]   vLLM Python parser vs expected.vllm_python / expected.vllm
@@ -11,11 +11,9 @@
 #                                    case-taxonomy.yaml (defaults to --all families)
 #     status [--model F ...] [--tab T ...]
 #                                    render, then fail on every empty/red selected cell
-#     ci [render options]
-#            what the conformance-table CI job runs, and the ONLY thing it runs:
-#            render the conformance chart, structural sanity, coverage lint,
-#            invariant pytest. Render options are forwarded to render_table_v2.sh.
-#            Add/change conformance gates in run_ci below — never in .github/workflows.
+#     ci [render options]       full local gate: ci-render followed by ci-tests
+#     ci-render [render options]  report, structural sanity, coverage and legacy lint
+#     ci-tests                   complete utility test suite
 #     all    [--container-vllm N --container-sglang M] [--allow-peer-failures]
 #            dynamo(all) + vllm + sglang + coverage. Fails the run on any parser
 #            failure; pass --allow-peer-failures (alias --best-effort-peers) to keep
@@ -26,7 +24,7 @@ while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=
 set -- ${args+"${args[@]}"}
 source "$(dirname "$0")/src/_common.sh"
 
-usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
+usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|ci-render|ci-tests|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
 
 run_dynamo() {  # $1 = batch|stream|all ; returns non-zero if any target fails
   local targets=() rc=0
@@ -68,9 +66,9 @@ run_status() {  # $@ = passthrough (--model F ... --tab T ...)
     --html "$out" --require-green "$@"
 }
 
-run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
+run_ci_render() {
   if [ "$DRY" = 1 ]; then
-    echo "[dry-run] render v2 $*, sanity greps, coverage lint, invariant pytest"
+    echo "[dry-run] render v2 $*, status validation, coverage lint, legacy convention"
     return
   fi
   set -e
@@ -79,19 +77,30 @@ run_ci() {  # the conformance-table CI gate; fail-fast, also runnable locally
   local status="$ROOT/conformance/CONFORMANCE_v2.json"
   test -s "$out"
   test -s "$status"
-  grep -q "TOOLCALLING.batch" "$out"
-  grep -q "REASONING.batch" "$out"
+  python3 "$TOOLS/validate_conformance_status.py" --html "$out" --unified-only-report --summary-only
   echo "conformance matrix rendered: $(wc -c < "$out") bytes"
   # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
   \cp -f "$out" "$UTILS/CONFORMITY.html"
   run_coverage
   python3 "$TOOLS/validate_legacy_convention.py"
+}
+
+run_ci_tests() {
+  if [ "$DRY" = 1 ]; then
+    echo "[dry-run] python3 -m pytest $UTILS/tests -q"
+    return
+  fi
   # The WHOLE tests/ dir, not a hand-maintained file list: the old list named three
   # files, so the resolver-fold, render-invariant and colorize tests never ran in CI
   # and a new test file was gated only by remembering to add it here. The browser
   # tests skip themselves when Selenium isn't installed (CI installs pyyaml/jinja2/
   # pytest only), so this stays a no-engine, no-browser gate.
   python3 -m pytest "$UTILS/tests" -q
+}
+
+run_ci() {
+  run_ci_render "$@"
+  run_ci_tests
 }
 
 engine="${1:-}"; shift || true
@@ -103,6 +112,8 @@ case "$engine" in
   coverage) run_coverage "$@" ;;
   status) run_status "$@" ;;
   ci)     run_ci "$@" ;;
+  ci-render) run_ci_render "$@" ;;
+  ci-tests) run_ci_tests ;;
   all)
     cv=""; cs=""; allow_peer=0; rc=0
     while [ $# -gt 0 ]; do case "$1" in

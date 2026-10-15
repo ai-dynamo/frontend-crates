@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import sys
 from pathlib import Path
 
@@ -11,9 +12,19 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import capture_unified_job
+import impls
 
 
 ROOT = Path(__file__).resolve().parents[2] / "fixtures-unified-v2" / "families"
+
+
+def test_batch_cli_emits_bound_requests_and_golden(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["capture_unified_job.py", "--family", "gemma4", "--mode", "batch"])
+    capture_unified_job.main()
+    job = json.loads(capsys.readouterr().out)
+    assert job == capture_unified_job.build_job(ROOT, "gemma4", mode="batch")
+    assert all({"request", "golden", "case_id"} <= case.keys() for case in job["cases"])
+    assert any(case["request"]["init"]["starting_state"] == "Reasoning" for case in job["cases"])
 
 
 def test_existing_family_job_is_stable_and_preserves_request_shape():
@@ -63,3 +74,12 @@ cases:
     )
     with pytest.raises(ValueError, match="string delta_text"):
         capture_unified_job.build_job(tmp_path, "gemma4")
+
+
+def test_capture_registry_keeps_historical_pipeline_names_and_jail_scope():
+    assert impls.VLLM_UNIFIED_PIPELINES["deepseek_v41"] == ("deepseek_v4", "deepseek_v4")
+    assert impls.SGLANG_UNIFIED_PIPELINES["deepseek_v41"] == ("deepseek-v41", "deepseekv41")
+    assert impls.DYNAMO_UNIFIED_PIPELINES["glm47"] == ("glm45", "glm47")
+    assert "muse_glimmer" not in impls.DYNAMO_UNIFIED_PIPELINES
+    assert impls.DYNAMO_JAIL_UNIFIED_PIPELINES["muse_glimmer"] == ("muse", "muse")
+    assert impls.VLLM_TOKENIZER_MARKERS.keys() == impls.VLLM_UNIFIED_PIPELINES.keys()

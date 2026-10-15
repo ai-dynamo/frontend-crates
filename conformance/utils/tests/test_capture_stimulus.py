@@ -17,7 +17,79 @@ if str(SRC) not in sys.path:
 
 import capture_stimulus
 import generate_conformance_table as table
+import markers
+from tables.reasoning import table as reasoning_table
 from unified_tools import unified_tools
+
+
+@pytest.mark.parametrize("payload", [
+    {"code": "source_unavailable", "detail": "source detail", "message": "older message"},
+    {"code": "source_unavailable", "message": "older message"},
+    {"code": "source_unavailable"},
+])
+def test_typed_unavailable_uses_one_text_projection_across_readers(payload):
+    """Failure metadata cannot be expressed by a model-text corpus scenario."""
+    expected = payload.get("detail", payload.get("message", payload["code"]))
+    record = {"unavailable": payload}
+    original = copy.deepcopy(record)
+    normalized = capture_stimulus.normalize_unavailable(record)
+    assert normalized["unavailable"] == expected
+    assert normalized["capture_observation"] == {"unavailable": payload}
+    assert capture_stimulus.normalize_unavailable(normalized) == normalized
+    for reader in (table._unified_capture_failure, table._output_block_model, reasoning_table._reasoning_output_model):
+        assert reader(record) == {"unavailable": expected, "unavailable_code": payload["code"]}
+    assert record == original
+
+
+@pytest.mark.parametrize("code, category", [
+    ("peer_request_unsupported", "unsupported_request_mode"),
+    ("peer_finish_unsupported", "unsupported_request_mode"),
+    ("peer_termination_unsupported", "unsupported_request_mode"),
+    ("peer_chunk_schedule_unsupported", "unsupported_request_mode"),
+    ("vllm_chunk_schedule_unsupported", "unsupported_request_mode"),
+    ("vllm_tool_schema_unsupported", "unsupported_request_mode"),
+    ("vllm_rust_guided_json_unsupported", "unsupported_request_mode"),
+    ("vllm_rust_named_tool_unsupported", "unsupported_request_mode"),
+    ("vllm_rust_starting_state_unsupported", "unsupported_request_mode"),
+    ("peer_detector_unavailable", "unsupported_family"),
+    ("vllm_parser_not_registered", "unsupported_family"),
+    ("vllm_rust_parser_not_registered", "unsupported_family"),
+    ("future_family_unsupported", "future_family_unsupported"),
+    ("source_unavailable", "source_unavailable"),
+])
+@pytest.mark.parametrize("sidecar", ["capture_observation", "capture_stimulus"])
+def test_unavailable_category_keeps_the_original_code_in_its_sidecar(code, category, sidecar):
+    record = {"unavailable": "verbatim reason", sidecar: {"unavailable": {"code": code}}}
+    original = copy.deepcopy(record)
+    normalized = capture_stimulus.normalize_unavailable(record)
+    assert normalized["unavailable"] == "verbatim reason"
+    assert normalized["unavailable_code"] == category
+    assert normalized[sidecar] == original[sidecar]
+    assert record == original
+
+
+@pytest.mark.parametrize("error, kind", [({"message": "parser threw"}, "parser_error"), ("expected rejection", "expected_error")])
+def test_unavailable_projection_preserves_error_shape_and_classification(error, kind):
+    record = {"error": error}
+    assert capture_stimulus.normalize_unavailable(record) == record
+    for reader in (table._output_block_model, reasoning_table._reasoning_output_model):
+        projected = reader(record)
+        assert projected["error"] == error
+        assert markers._error_kind(projected) == kind
+
+
+@pytest.mark.parametrize("sidecar", ["capture_observation", "capture_stimulus"])
+@pytest.mark.parametrize("raw", [{"message": "request cannot run"}, {"code": "legacy_unclassified", "detail": "old reason"}])
+def test_typed_sidecar_remains_authoritative_for_structured_unavailable(sidecar, raw):
+    payload = {"code": "peer_request_unsupported", "detail": {"message": "request cannot run"}}
+    record = {"unavailable": raw, sidecar: {"unavailable": payload}, "unavailable_code": "legacy_unclassified"}
+    original = copy.deepcopy(record)
+    projected = capture_stimulus.normalize_unavailable(record)
+    assert projected[sidecar] == original[sidecar]
+    assert projected["unavailable"] == "peer_request_unsupported"
+    assert projected["unavailable_code"] == "unsupported_request_mode"
+    assert capture_stimulus.normalize_unavailable(projected) == projected
+    assert record == original
 
 
 def _input(text):
@@ -25,10 +97,10 @@ def _input(text):
             "finish_reason": "stop", "tools": [], "chunks": [{"delta_text": text}, {"delta_text": "‹finish›"}]}
 
 
-def _write(base, directory, record, key="UNIFIED.7-2"):
-    path = base / directory / f"deepseek_v41/{key}.yaml"
+def _write(base, directory, record, key="UNIFIED.7-2", family="deepseek_v41"):
+    path = base / directory / f"{family}/{key}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(yaml.safe_dump({"family": "deepseek_v41", "cases": {key: record}}))
+    path.write_text(yaml.safe_dump({"family": family, "cases": {key: record}}))
     return path
 
 
@@ -146,6 +218,30 @@ def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
     _write(tmp_path, "capture", {"capture_input": capture_stimulus.capture_input(current), "assembled": []})
     with pytest.raises(ValueError, match="executable tool schema"):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
+
+
+def test_current_capture_can_validate_only_native_unified_families(tmp_path):
+    native = _input("same") | {"tools": unified_tools()}
+    split_only = _input("split") | {"tools": unified_tools()}
+    native_record = {"capture_input": capture_stimulus.capture_input(native), "assembled": []}
+    _write(tmp_path, "inputs", native, family="deepseek_v41")
+    _write(tmp_path, "inputs", split_only, family="gpt_oss")
+    _write(tmp_path, "dynamo_v2-0.7.22", native_record, family="deepseek_v41")
+
+    with pytest.raises(ValueError, match="current capture/input sets differ"):
+        capture_stimulus.validate_current_capture(tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"])
+
+    expected = [{"family": "deepseek_v41", "cases": {"UNIFIED.7-2": native_record}}]
+    assert capture_stimulus.validated_current_capture_docs(
+        tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"], {"deepseek_v41"},
+    ) == expected
+    result = subprocess.run(
+        [sys.executable, str(SRC / "capture_stimulus.py"), "--validate-current",
+         str(tmp_path / "dynamo_v2-0.7.22"), "--inputs", str(tmp_path / "inputs"),
+         "--families", "deepseek_v41", "--format", "json"],
+        check=True, capture_output=True, text=True,
+    )
+    assert json.loads(result.stdout) == expected
 
 
 def test_current_version_validates_exact_version_records(tmp_path):

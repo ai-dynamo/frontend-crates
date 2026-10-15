@@ -14,6 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import unified_history
 from capture_stimulus import select_peer_observation
+import generate_conformance_table as table
+import markers
+from tables.reasoning import table as reasoning_table
 
 
 def _request(text: str = "hello") -> dict:
@@ -28,6 +31,50 @@ def _request(text: str = "hello") -> dict:
         "tools": [],
         "chunks": [{"delta_text": text}],
     }
+
+
+def test_structured_parser_error_survives_store_and_view_projection(tmp_path):
+    _write_family(tmp_path)
+    change = _change()
+    detail = {"message": "parser threw", "offset": 17}
+    change["observation"] = {"error": {"code": "legacy_unclassified", "detail": detail}}
+    path = _write_capture(tmp_path, "0.26.0", {"text_only": change})
+    original = path.read_bytes()
+    store = unified_history.load_store(tmp_path)
+    resolved = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.26.0")["text_only"]
+    record, _document = unified_history.materialized_record(store.families["gemma4"].cases["text_only"], resolved)
+    assert record["error"] == detail
+    for reader in (table._output_block_model, reasoning_table._reasoning_output_model):
+        projected = reader(record)
+        assert projected["error"] == detail
+        assert markers._error_kind(projected) == "parser_error"
+    assert path.read_bytes() == original
+
+
+def test_materialized_unavailable_reimport_does_not_add_view_metadata(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    change = _change()
+    change["stimulus"]["semantic_sha256"] = unified_history._request_digest(_request())
+    payload = {"code": "vllm_rust_guided_json_unsupported", "detail": "no guided API"}
+    change["observation"] = {"unavailable": payload}
+    path = _write_capture(root, "0.26.0", {"text_only": change})
+    original = path.read_bytes()
+    store = unified_history.load_store(root)
+    resolved = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.26.0")["text_only"]
+    record, _document = unified_history.materialized_record(store.families["gemma4"].cases["text_only"], resolved)
+    assert "unavailable_code" not in record
+    assert table._unified_capture_failure(record)["unavailable_code"] == "unsupported_request_mode"
+    stimulus, observation, metadata = unified_history._legacy_state(record, b"", "case.yaml", {}, _request())
+    assert observation == change["observation"]
+    assert metadata == {}
+    assert stimulus["ref"] == "current"
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose, store=store)
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
+    after = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.26.0")
+    assert after["text_only"] == resolved
+    assert path.read_bytes() == original
 
 
 def _change(text: str = "hello") -> dict:
@@ -67,6 +114,48 @@ def _write_family(root: Path) -> None:
         ),
         encoding="utf-8",
     )
+
+
+def test_current_corpus_adds_a_registered_family(tmp_path):
+    loose = tmp_path / "loose"
+    input_dir = loose / "inputs/gpt_oss"
+    golden_dir = loose / "golden/gpt_oss"
+    input_dir.mkdir(parents=True)
+    golden_dir.mkdir(parents=True)
+    case_key = "UNIFIED.1-tool_only"
+    request = _request("authored request")
+    input_document = {
+        "family": "gpt_oss",
+        "mode": "unified",
+        "model_label": "gpt_oss",
+        "cases": {
+            case_key: {
+                "scenario": "tool_only",
+                "description": "single tool call",
+                "policy": [],
+                **request,
+            }
+        },
+    }
+    golden_document = {
+        "family": "gpt_oss",
+        "mode": "unified",
+        "captured_with": {"golden": "v1"},
+        "cases": {case_key: {"assembled": [{"kind": "tool_call", "name": "f", "arguments": {}}]}},
+    }
+    (input_dir / f"{case_key}.yaml").write_text(unified_history.dump_yaml(input_document))
+    (golden_dir / f"{case_key}.yaml").write_text(unified_history.dump_yaml(golden_document))
+    store = unified_history.Store(tmp_path / "store", {}, {})
+
+    documents = unified_history._sync_current_corpus(store, loose, complete_snapshot=True)
+
+    family = store.families["gpt_oss"]
+    assert family.path == tmp_path / "store/families/gpt_oss/inputs_and_golden.yaml"
+    assert len(family.cases) == 1
+    case = next(iter(family.cases.values()))
+    assert case["request"] == request
+    assert case["golden"] == golden_document["cases"][case_key]
+    assert documents[family.path] == family.document
 
 
 def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):

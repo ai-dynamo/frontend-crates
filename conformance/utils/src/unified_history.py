@@ -28,6 +28,7 @@ from yaml.cyaml import CParser
 from yaml.resolver import BaseResolver, Resolver
 
 import capture_stimulus
+import impls
 import fixture_disposition
 
 
@@ -381,6 +382,11 @@ class History:
             case_document.update(overrides)
             if record_metadata:
                 case_document["record_metadata"] = record_metadata
+            if self.implementation in impls.UNIFIED_BATCH_IMPLS and "value" in record["observation"]:
+                value = record["observation"]["value"]
+                final = (record_metadata or {}).get("batch_final", {})
+                if "chunks" in value or value.get("assembled") != capture_stimulus.batch_final_events(final):
+                    raise ValueError(f"batch history does not match final fields: {case_id}")
             record["document"] = case_document
             materialized[case_id] = record
         return materialized
@@ -475,6 +481,21 @@ def _capture_document_metadata(capture: dict, implementation: str) -> dict:
     return document
 
 
+def _validate_source_origin(origin: Any, where: str, runtime_version: str | None = None) -> dict:
+    origin = _mapping(origin, where)
+    _require_keys(origin, {"crate_version", "source_sha256"}, {"crate_version", "source_sha256", "git_commit", "adapter_sha256", "job_sha256"}, where)
+    if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", origin["crate_version"]):
+        raise ValueError(f"capture origin has invalid crate_version: {where}")
+    if runtime_version is not None and origin["crate_version"] != runtime_version:
+        raise ValueError(f"capture origin differs from runtime identity: {where}")
+    for key in ("source_sha256", "adapter_sha256", "job_sha256"):
+        if key in origin and not re.fullmatch(r"[0-9a-f]{64}", origin[key]):
+            raise ValueError(f"capture origin has invalid source hash ({key}): {where}")
+    if "git_commit" in origin and not re.fullmatch(r"[0-9a-f]{40}", origin["git_commit"]):
+        raise ValueError(f"capture origin has invalid git commit: {where}")
+    return origin
+
+
 def _validate_capture_provenance(
     provenance: Any,
     path: Path,
@@ -494,12 +515,7 @@ def _validate_capture_provenance(
 
     if status == "captured":
         _require_keys(provenance, {"status", "origin"}, {"status", "origin"}, f"{path}.provenance")
-        origin = _mapping(provenance["origin"], f"{path}.provenance.origin")
-        _require_keys(origin, {"crate_version", "source_sha256"}, {"crate_version", "source_sha256", "git_commit"}, f"{path}.provenance.origin")
-        if origin["crate_version"] != runtime_version or not re.fullmatch(r"[0-9a-f]{64}", origin["source_sha256"]):
-            raise ValueError(f"capture origin differs from runtime identity: {path}")
-        if "git_commit" in origin and not re.fullmatch(r"[0-9a-f]{40}", origin["git_commit"]):
-            raise ValueError(f"capture origin has invalid git commit: {path}")
+        _validate_source_origin(provenance["origin"], f"{path}.provenance.origin", runtime_version)
     else:
         _require_keys(provenance, {"status", "captured_with"}, {"status", "captured_with"}, f"{path}.provenance")
         captured_with = _mapping(
@@ -599,24 +615,7 @@ def _validate_capture_file(
                 )
             origin = provenance["capture_origin"]
             if origin is not None:
-                origin = _mapping(
-                    origin,
-                    f"{path}:{case_id}.document_overrides.capture_provenance.capture_origin",
-                )
-                if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", origin.get("crate_version", "")):
-                    raise ValueError(
-                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid crate_version"
-                    )
-                if not re.fullmatch(r"[0-9a-f]{64}", origin.get("source_sha256", "")):
-                    raise ValueError(
-                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid source hash"
-                    )
-                if "git_commit" in origin and not re.fullmatch(
-                    r"[0-9a-f]{40}", origin["git_commit"]
-                ):
-                    raise ValueError(
-                        f"{path}:{case_id}.document_overrides.capture_provenance has invalid git commit"
-                    )
+                _validate_source_origin(origin, f"{path}:{case_id}.document_overrides.capture_provenance.capture_origin")
             if provenance["inherited_from"] is not None and not isinstance(
                 provenance["inherited_from"], str
             ):
@@ -1183,7 +1182,7 @@ def _materialized_record(case: dict, change: dict) -> tuple[dict, dict]:
         record = dict(observation[state])
     else:
         payload = observation[state]
-        record = {state: payload.get("detail", payload.get("message", payload["code"]))}
+        record = {state: capture_stimulus.capture_failure_detail(payload)}
     stimulus = change["stimulus"]
     if "ref" in stimulus:
         record["capture_input"] = case["request"]
@@ -2159,6 +2158,30 @@ def _sync_current_corpus(
         return documents
     input_roots = _shared_corpus_roots(loose_root, "inputs")
     golden_roots = _shared_corpus_roots(loose_root, "golden")
+
+    registered_families = set(
+        (yaml.safe_load((Path(__file__).resolve().parent / "parser_families.yaml").read_text()) or {})
+        .get("unified", {})
+    )
+    known_families = set(store.families)
+    for root in (*input_roots, *golden_roots):
+        unknown = sorted(
+            path.name for path in root.iterdir() if path.is_dir() and path.name not in known_families
+        )
+        unregistered = sorted(set(unknown) - registered_families)
+        if unregistered:
+            raise ValueError(f"current Unified corpus has unregistered families under {root}: {unregistered}")
+        for family_name in unknown:
+            family_path = store.root / "families" / family_name / FAMILY_DOCUMENT_NAME
+            store.families[family_name] = Family(
+                family_name,
+                {
+                    "input_document": {"family": family_name, "mode": "unified", "model_label": family_name},
+                    "golden_document": {"family": family_name, "mode": "unified", "captured_with": {"golden": "v1"}},
+                    "cases": {},
+                },
+                family_path,
+            )
 
     family_documents = {}
     for family_name in sorted(store.families):

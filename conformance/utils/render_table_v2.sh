@@ -4,7 +4,7 @@
 #
 # render_table_v2.sh [--dry-run] [--output PATH] [web-link options]
 #   Render the conformance matrix to an HTML file
-#   (all four tabs: TC batch / TC stream / TC batch-on-stream / Reasoning).
+#   (Unified only; legacy capture tools and regression tests remain available).
 #   No engines needed.
 
 usage() {
@@ -143,7 +143,7 @@ else
   exit "$rc"
 fi
 if python3 "$TOOLS/validate_conformance_status.py" \
-    --html "$WORK" --report-path "$OUT" --status-path "$STATUS_WORK" --summary-only \
+    --unified-only-report --html "$WORK" --report-path "$OUT" --status-path "$STATUS_WORK" --summary-only \
     --unified-fixtures "$FIXTURES_SNAP/unified"; then
   chmod a+r "$WORK" "$STATUS_WORK"
   \mv -f "$WORK" "$OUT"

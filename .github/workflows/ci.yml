@@ -14,9 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  # Decide which optional jobs need to run for this change. `conformance-table`
-  # is expensive (downloads the private fixture dataset, renders both charts) and
-  # is only affected by conformance/parser changes, so skip it otherwise.
+  # Parser and conformance changes activate the render, utility and browser jobs.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -140,16 +138,13 @@ jobs:
         id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
-      # Single stable entry point: render both charts, structural sanity, fixture-
-      # coverage + marker-registration lint (DIS-2442), chart-invariant guards.
-      # Add/change conformance gates in check.sh's run_ci(), NOT here — this
-      # workflow step should never need another edit for a new gate.
-      - name: Conformance gate (render + lint + invariants)
+      # Rendering and utility tests use separate runners to stay within each job's budget.
+      - name: Conformance report and lint
         env:
           PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
           render_args=()
           if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
             test -n "$PAGES_BASE_URL"
@@ -159,7 +154,7 @@ jobs:
               --fixture-base-url "${PAGES_BASE_URL%/}/fixtures/"
             )
           fi
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci "${render_args[@]}"
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-render "${render_args[@]}"
 
       - name: Upload conformance matrix
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -210,9 +205,49 @@ jobs:
             --edit-last --create-if-none \
             --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
+  conformance-utils:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Run utility tests
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
+          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-tests
+
+  conformance-browser:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Install browser test dependencies
+        run: |
+          python3 -m venv /tmp/browser-venv
+          /tmp/browser-venv/bin/pip install --quiet pyyaml jinja2 pytest selenium
+          google-chrome --version
+          node --version
+
+      - name: Run comparison matrix browser regressions
+        run: PATH="/tmp/browser-venv/bin:$PATH" python3 -m pytest conformance/utils/tests/test_browser_comparison_layout.py conformance/utils/tests/test_browser_unified_only.py conformance/utils/tests/test_comparison_status.py -q
+
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
-    needs: conformance-table
+    needs: [conformance-table, conformance-utils]
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -24,8 +24,8 @@ def _model(cell):
             "kind": "unified",
             "label": "Unified",
             "candidates": [
-                {"key": "dynamo", "label": "Dynamo current", "default_bucket": "A"},
-                {"key": "golden", "label": "GOLDEN", "default_bucket": "C"},
+                {"key": "dynamo", "impl": "dynamo", "version": "0.0.0", "parse_mode": "unified", "label": "Dynamo current", "default_bucket": "A"},
+                {"key": "golden", "impl": "golden", "version": None, "parse_mode": "unified", "label": "GOLDEN", "default_bucket": "C"},
             ],
             "columns": [{"sub": "case", "label": "1.a"}],
             "rows": [{"family": "qwen3", "model_label": "qwen3", "cells": cell}],
@@ -39,6 +39,15 @@ def test_reports_empty_cells():
 
     assert status["reports"][0]["empty"] == 1
     assert status["reports"][0]["issues"][0]["reason"] == "no cell was emitted for this model/case pair"
+
+
+def test_default_capture_identity_is_separate_from_engine_grouping():
+    validator = _load_validator()
+    model = _model({})
+    tab = model["tabs"][0]
+    expected = list(validator.UNIFIED_COMPARISON_DEFAULTS)
+    status = validator.build_status(model, [tab], ["qwen3"], Path("report.html"))
+    assert status["comparison_defaults"]["tab-unified"] == expected
 
 
 def test_reports_unified_reference_mismatches_as_red():
@@ -185,12 +194,13 @@ def inventory_report(tmp_path):
     for source, key in zip(sources, keys):
         (fixtures / source).mkdir(parents=True)
         if key != "dynamo":
-            tab["candidates"].append({"key": key, "label": source, "version": source.split("-")[1]})
+            tab["candidates"].append({"key": key, "impl": source.split("-")[0], "parse_mode": "unified", "label": source, "version": source.split("-")[1]})
     inputs = fixtures / "inputs" / "qwen3" / "UNIFIED.case.yaml"
     inputs.parent.mkdir(parents=True)
     inputs.write_text("cases:\n  sample:\n    scenario: case\n")
     tab["rows"][0]["cells"]["case"] = {
         "kind": "cell", "status": "ok", "red_on_diff": True,
+        "case_id": "UNIFIED.1.a",
         "cmp": {candidate["key"]: {"sig": 1, "leak": 0, "na": 0, "err": 0} for candidate in tab["candidates"]},
         "tooltip": {"candidates": [{"key": candidate["key"], "block": {"events": []}} for candidate in tab["candidates"]]},
     }
@@ -345,3 +355,16 @@ def test_renderer_validates_before_publishing(inventory_report, tmp_path, failur
         assert out.stat().st_mode & 0o004
     assert not list(tmp_path.glob("report.html.*"))
     assert not list(tmp_path.glob("report.json.*"))
+
+
+def test_unified_only_guard_rejects_removed_tabs_and_foreign_cases():
+    validator = _load_validator()
+    model = _model({"case": {"kind": "cell", "case_id": "UNIFIED.1.a"}})
+    validator.validate_unified_only_report(model)
+    model["tabs"].append({"id": "tab-reasoning-batch"})
+    with pytest.raises(ValueError, match="exactly one Unified"):
+        validator.validate_unified_only_report(model)
+    model["tabs"].pop()
+    model["tabs"][0]["rows"][0]["cells"]["case"]["case_id"] = "TOOLCALLING.batch.1.a"
+    with pytest.raises(ValueError, match="non-Unified"):
+        validator.validate_unified_only_report(model)

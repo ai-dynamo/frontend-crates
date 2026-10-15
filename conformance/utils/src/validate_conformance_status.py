@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 import yaml
+from impls import UNIFIED_BATCH_IMPLS, UNIFIED_COMPARISON_DEFAULTS
 
 from case_variants import leaf_cells
 import unified_taxonomy
@@ -137,7 +138,7 @@ def validate_unified_inventory(model: dict, fixtures: Path) -> list[str]:
     required = set()
     for directory in fixtures.iterdir():
         source, separator, version = directory.name.partition("-")
-        if directory.is_dir() and separator and source in {"dynamo_v2", "vllm_python", "vllm_rust"}:
+        if directory.is_dir() and separator and source in {"dynamo_v2", "vllm_python", "vllm_rust", "sglang_python", *UNIFIED_BATCH_IMPLS}:
             required.add((source, version))
     if not required:
         raise ValueError(f"no Unified captures found under {fixtures}")
@@ -283,6 +284,41 @@ def validate_unified_known_divergences(model: dict, registry: Path, families: li
             )
 
 
+def capture_status(tab: dict, rows: list[dict]) -> list[dict]:
+    reports = []
+    for candidate in tab["candidates"]:
+        if candidate["key"] == "golden":
+            continue
+        counts = {key: 0 for key in ("considered", "captured", "matches", "mismatches", "parser_exception", "unsupported_family", "unsupported_request_mode", "source_unavailable", "missing_capture")}
+        for row in rows:
+            for cell in leaf_cells(row).values():
+                if cell.get("status") == "na":
+                    continue
+                counts["considered"] += 1
+                entry = (cell.get("cmp") or {}).get(candidate["key"], {})
+                block = next((item["block"] for item in (cell.get("tooltip") or {}).get("candidates", []) if item["key"] == candidate["key"]), {})
+                if entry.get("na") or not entry:
+                    code = block.get("unavailable_code", "missing_capture")
+                    counts[code if code in counts else "missing_capture"] += 1
+                elif entry.get("err"):
+                    counts["parser_exception"] += 1
+                else:
+                    counts["captured"] += 1
+                    golden = (cell.get("cmp") or {}).get("golden", {})
+                    counts["matches" if entry["sig"] == golden.get("sig") and not entry.get("leak") else "mismatches"] += 1
+        counts["attempted"] = counts["captured"] + counts["parser_exception"]
+        reports.append({"tab": tab["id"], "capture": candidate["key"], "label": candidate["label"], "mode": candidate["parse_mode"], **counts})
+    return reports
+
+
+def validate_unified_only_report(model: dict) -> None:
+    if [tab["id"] for tab in model["tabs"]] != ["tab-unified"]:
+        raise ValueError("report must contain exactly one Unified tab")
+    for row in model["tabs"][0]["rows"]:
+        if any(not cell.get("case_id", "").startswith("UNIFIED.") for cell in leaf_cells(row).values()):
+            raise ValueError("report contains a non-Unified case")
+
+
 def build_status(model: dict, tabs: list[dict], requested_models: list[str], html_path: Path) -> dict:
     reports = []
     for tab in tabs:
@@ -324,6 +360,11 @@ def build_status(model: dict, tabs: list[dict], requested_models: list[str], htm
         "html": str(html_path),
         "generated": model.get("meta", {}),
         "reports": reports,
+        "captures": [capture for tab in tabs if tab["id"] == "tab-unified" for capture in capture_status(tab, select_rows(tab, requested_models))],
+        "comparison_defaults": {tab["id"]: [
+            next((candidate["key"] for candidate in tab["candidates"] if candidate["key"] == key), None)
+            for key in tab.get("comparison_defaults", UNIFIED_COMPARISON_DEFAULTS)
+        ] for tab in tabs if tab["id"] == "tab-unified"},
     }
 
 
@@ -354,12 +395,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--status-path", type=Path, help="write the machine-readable status JSON")
     parser.add_argument("--report-path", type=Path, help="final HTML path recorded in status JSON when validating a temporary file")
     parser.add_argument("--unified-fixtures", type=Path, help="pinned snapshot Unified directory; require its versions, families and cases in the report")
+    parser.add_argument("--unified-only-report", action="store_true", help="require exactly the Unified tab and Unified cases")
     parser.add_argument("--require-green", action="store_true", help="exit 1 when any selected cell is empty or red")
     parser.add_argument("--summary-only", action="store_true", help="print totals without listing each issue")
     args = parser.parse_args(argv)
 
     try:
         model = load_model(args.html)
+        if args.unified_only_report:
+            validate_unified_only_report(model)
         if args.unified_fixtures:
             for warning in validate_unified_inventory(model, args.unified_fixtures):
                 print(f"WARNING: {warning}", file=sys.stderr)

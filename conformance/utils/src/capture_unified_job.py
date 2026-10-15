@@ -27,7 +27,7 @@ def _family_path(input_root: Path, family: str) -> Path:
     return path
 
 
-def _case_job(family: str, case: dict) -> dict:
+def _case_job(family: str, case_id: str, case: dict, *, mode: str) -> dict:
     scenario = case.get("scenario")
     if not isinstance(scenario, str) or not scenario:
         raise ValueError(f"{family}: case has no non-empty scenario")
@@ -58,10 +58,11 @@ def _case_job(family: str, case: dict) -> dict:
         "finish_reason": request["finish_reason"],
         "tools": request["tools"],
         "chunks": texts,
+        **({"case_id": case_id, "request": request, "golden": case["golden"]} if mode == "batch" else {}),
     }
 
 
-def build_job(input_root: Path, family: str) -> dict:
+def build_job(input_root: Path, family: str, *, mode: str = "unified") -> dict:
     path = _family_path(input_root, family)
     document = yaml.safe_load(path.read_text())
     if not isinstance(document, dict):
@@ -76,9 +77,11 @@ def build_job(input_root: Path, family: str) -> dict:
     cases = document.get("cases")
     if not isinstance(cases, dict):
         raise ValueError(f"{path}: cases must be a mapping")
+    if mode not in {"unified", "batch"}:
+        raise ValueError(f"unknown capture mode: {mode}")
     jobs = [
-        _case_job(family, case)
-        for case in cases.values()
+        _case_job(family, case_id, case, mode=mode)
+        for case_id, case in cases.items()
         if case.get("lifecycle", "active") != "retired"
     ]
     validate_family_scoped_cases(jobs)
@@ -96,8 +99,9 @@ def main() -> None:
         default=Path(__file__).resolve().parents[2] / "fixtures-unified-v2" / "families",
     )
     parser.add_argument("--output", type=Path, help="write JSON here instead of stdout")
+    parser.add_argument("--mode", choices=("unified", "batch"), default="unified")
     args = parser.parse_args()
-    payload = json.dumps(build_job(args.input_root, args.family), indent=2, ensure_ascii=False)
+    payload = json.dumps(build_job(args.input_root, args.family, mode=args.mode), indent=2, ensure_ascii=False)
     if args.output:
         args.output.write_text(payload + "\n")
     else:

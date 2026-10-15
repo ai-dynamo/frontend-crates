@@ -1,6 +1,6 @@
 # Conformance/Utils
 
-This directory is for checking parser behavior and generating an HTML conformance matrix. By default `render_table_v2.sh` writes `conformance/CONFORMANCE_v2.html`, but you can write another file such as `index.html`.
+This directory is for checking parser behavior and generating the Unified comparison report. By default `render_table_v2.sh` writes `conformance/CONFORMANCE_v2.html`, but you can write another file such as `index.html`.
 
 For Unified capture publication, follow [the plain-version YAML contract](../README.md#unified-storage-contract-plain-versioned-yaml-only). This migration applies only to Unified. Keep the existing archive storage for the older tool-calling stream, batch-on-stream, batch, and reasoning tests.
 
@@ -34,10 +34,10 @@ Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `c
 
 | Store path (inside snapshot) | Used By |
 |---|---|
-| `toolcalling/fixtures-batch-v1/` | `TC batch (v1)` tab. Complete model output through batch parsers. |
+| `toolcalling/fixtures-batch-v1/` | Legacy batch regression corpus. Complete model output through batch parsers. |
 | `toolcalling/fixtures-batch-on-stream-v1/` | Legacy streaming v1 convention. Complete batch text through non-Unified streaming parsers. |
 | `toolcalling/fixtures-stream-v1/` | Legacy streaming v1 convention. Incremental chunks through non-Unified streaming parsers. |
-| `reasoning/fixtures-v1/inputs/` | Reasoning parser tabs. |
+| `reasoning/fixtures-v1/inputs/` | Legacy reasoning regression corpora. |
 
 ## Parser Implementations
 
@@ -108,7 +108,7 @@ Use the same pattern for capture commands: `conformance/utils/capture.sh <target
 
 Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. One shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}`, captures every corpus x engine (it replaces the per-corpus `capture_streamv1_versions.py`; `recapture_peer.py` still exists separately). Omit `--impl` to capture ALL engines valid for the corpus. A full refresh runs one command per corpus so every tab gets the new version (see [`../README.md`](../README.md#fixture-workflows) workflow 1 for the ordered runbook):
 - `--corpus stream` — vLLM Python + SGLang Python stream parsers over the resolved streamv1 anchors → changed-only full-case dir `fixtures-stream-v1/<impl>-<ver>/` (written straight to the top level; `package_fixtures.py` shards it directly); `--impl vllm_rust` drives the cargo probe over the `inputs/` cases → full-chunk changed-case dir `fixtures-stream-v1/vllm_rust-<ver>/` (needs `VLLM_RUST_SOURCE` / `--vllm-rust-source`, see below).
-- `--corpus batch` — vLLM Python / SGLang Python non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds → `fixtures-batch-v1/<impl>-<ver>/` (TC batch tab).
+- `--corpus batch` — vLLM Python / SGLang Python non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds → `fixtures-batch-v1/<impl>-<ver>/` (legacy batch corpus).
 - `--corpus reasoning` — vLLM Python / SGLang Python reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds → `reasoning/fixtures-v1/<impl>-<ver>/` (Reasoning tab; this tab is multi-version — both old and new versions must render).
 - `recapture_batch_on_stream.py` — refreshes the single-snapshot batch-on-stream tree in place (preserves the `vllm_rust`/`dynamo_v2` blocks); the vLLM Rust batch-on-stream block is refreshed by the full `capture.sh batch-on-stream` flow.
 
@@ -198,7 +198,7 @@ The three web-link options must be supplied together. They change only link dest
 
 The CI workflow automatically publishes this report for matching pushes to `main`, and `workflow_dispatch` can republish it when run from `main`. Mirror branches still run the conformance gate but never upload or deploy the Pages artifact. Before the first deployment, configure the repository's Pages source as **GitHub Actions** and restrict the `github-pages` environment's deployment branches to `main`.
 
-Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. The standard compiler-like gate for one or more models and tabs is:
+Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. Both outputs contain only Unified. JSON retains per-capture successful observations, ordered-GOLDEN mismatches, parser exceptions, unsupported requests/families, source blockers, and missing captures. Legacy archives, capture commands, and regression tests remain available. The standard compiler-like gate for one or more models and tabs is:
 
 ```bash
 conformance/utils/check.sh status --model qwen3 --tab unified
@@ -206,7 +206,7 @@ conformance/utils/check.sh status --model qwen3 --tab unified
 
 Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
 
-Use the generated matrix to inspect vLLM Python vs vLLM Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the legacy stream and batch-on-stream tabs.
+The Unified picker offers existing vLLM Python and Rust captures as distinct selections. `check.sh vllm` runs the live vLLM Python parser against extracted legacy YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the retained legacy stream and batch-on-stream regression corpora.
 
 ### UnifiedParser conversion collection
 
@@ -228,18 +228,20 @@ Run `bash conformance/utils/regenerate_unified.sh` when changing Unified parser 
 
 ## Matrix Legend
 
-Each cell compares the parser implementations for one model family and case. The page carries **structured comparison facts** (`markers.comparison_facts()` in `src/markers.py`) — a per-implementation record of `status` (ok / problem / na), whether it `agrees` with the Dynamo baseline, whether a divergence is `intentional` (documented), whether it `leak`s tool-call markup, and its `error_kind`. The JS view (`assets/conformance_view.js`) turns those facts into the glyphs and popups, and labels every parser with its full descriptive name. There is no shorthand code to memorize.
+Each matrix cell compares the selected captures with authored ordered GOLDEN for one family and case. The comparison layout shows matches, mismatches, parser errors, unsupported families, unsupported requests, source-unavailable producers, and missing captures as distinct statuses. Popups show the selected capture's output and provenance; the Detailed table uses the same three slots and GOLDEN.
 
-The implementations shown per cell:
+Batch candidates run reasoning extraction followed by tool extraction and retain final fields. Their final reasoning/content/ordered-call projection is compared with original ordered GOLDEN, so lost interleaving or call order remains a mismatch. Existing Unified candidates compare ordered emitted events. Batch popups label rows “Order/chunk not applicable for batch.”
+
+Legacy render builders and their regression fixtures retain the older Dynamo-reference comparison facts and glyphs. They do not add navigation buttons or panels to the generated Unified report.
+
+The retained legacy capture tools use these parser implementations:
 
 | Implementation | Batch parser | Stream parser |
 |---|---|---|
 | Dynamo | Dynamo v1 batch parser (`dynamo-parsers`); Dynamo v1 jail+batch for the stream-on-batch overlay. | Dynamo v2 stream parser (`dynamo-parsers-v2`). |
 | vLLM Python | vLLM Python batch parser. | vLLM Python stream parser. |
-| vLLM Rust | none — vLLM Rust has no separate batch parser; batch-style complete parsing delegates through streaming `parse_into(full_output, ...)` and `finish()` in vLLM Rust 0.23.0. | vLLM Rust stream parser. |
+| vLLM Rust | vLLM Rust has no separate batch parser; complete parsing delegates through streaming `parse_into(full_output, ...)` and `finish()` in vLLM Rust 0.23.0. | vLLM Rust stream parser. |
 | SGLang | SGLang batch parser. | SGLang stream parser. |
-
-A cell's status glyphs: `=` (every compared parser matches the Dynamo baseline), `↯` (the parser leaks tool-call markup into the visible `normal_text`), `!` (a declared expected-error), `✗` (the parser ran but failed to parse), `·` (Dynamo-only fixture; peers unavailable), `n/a` (case doesn't apply), `—` (no fixture yet). In the Detailed view a cell shows how many selected Compare parsers diverge from the Reference.
 
 ## Scripts
 

@@ -5,6 +5,7 @@
 <title>{{ title|e }}</title>
 <script>
 (function () {
+  window.__CONFORMANCE_INITIAL_SEARCH = window.location.search;
   const params = new URLSearchParams(window.location.search);
   const requested = params.get('transpose');
   if (requested === '1' || requested === 'true') {
@@ -20,7 +21,7 @@
 <div class="cmp-loading-note">loading&hellip; applying the compare model (colors are not final)</div>
 <h1>{% if title_html is defined and title_html %}{{ title_html|safe }}{% else %}{{ title|e }}{% endif %}</h1>
 <p class="generated">
-  Auto-generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
+  Generated on {{ stamp|e }}{% if sha %} on commit <a href="https://github.com/ai-dynamo/frontend-crates/commit/{{ sha|e }}"><code>{{ short_sha|e }}</code></a>{% endif %}:
   <code>{{ command|e }} &gt; {{ output|e }}</code>
 </p>
 {% if model_json is defined and model_json %}
@@ -42,5 +43,10 @@
 <script>
 {{ conformance_js|safe }}
 </script>
+{% if comparison_layout_js is defined and comparison_layout_js %}
+<script>
+{{ comparison_layout_js|safe }}
+</script>
+{% endif %}
 </body>
 </html>

@@ -22,19 +22,7 @@ from sglang.srt.parser.reasoning_parser import ReasoningParser
 
 # family -> (reasoning model_type, tool_call_parser). Kimi K2.5 uses <think>; SGLang's
 # `kimi_k2` reasoning detector matches the golden corpus.
-FAMILY_PARSERS = {
-    "deepseek_v4": ("deepseek-v4", "deepseekv4"),
-    "deepseek_v41": ("deepseek-v41", "deepseekv41"),
-    "kimi_k3": ("kimi_k3", "kimi_k3"),
-    "gemma4": ("gemma4", "gemma4"),
-    "qwen3": ("qwen3", "qwen3_coder"),
-    "glm47": ("glm45", "glm47"),
-    "kimi_k2": ("kimi_k2", "kimi_k2"),
-    # SGLang names both Muse Glimmer detectors `muse` (PR #34262). vLLM has no
-    # released muse parser, so `capture_vllm_unified.py` gets no entry — an entry
-    # that cannot capture renders a misleading empty cell instead of an honest gap.
-    "muse_glimmer": ("muse", "muse"),
-}
+from impls import SGLANG_UNIFIED_PIPELINES as FAMILY_PARSERS
 
 TOOL_SCHEMAS = unified_tools()
 

@@ -156,7 +156,7 @@
   // survives cloneNode), NOT a JS property (which does not) — so transpose clones
   // (built by conformance.js via cloneNode) can still build their tooltip. One
   // DELEGATED document listener handles every cell (originals + clones) instead of
-  // thousands of per-cell listeners.
+  // thousands of per-cell listeners; click-only hosts build only after a click.
   var _ttipModels = {};
   var _ttipSeq = 0;
   // Whether this page carries a reference-aware not-implemented map (v2 only); gates
@@ -166,8 +166,11 @@
   // supplies its own HTML so the legacy v1 page keeps its "match Base" wording.
   var _summaryLegendHtml = null;
 
-  function registerTooltip(td, model) {
-    var id = String(++_ttipSeq);
+  const tooltipIds = new WeakMap();
+  function registerTooltip(td, model, fixtureHref) {
+    if (fixtureHref) td.dataset.ttipFixture = fixtureHref;
+    const id = tooltipIds.get(model) || String(++_ttipSeq);
+    tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
     _ttipModels[id] = model;
   }
@@ -183,7 +186,7 @@
     if (!m) { return; }
     // Append (don't overwrite): conformance.js may already have inserted its
     // `.ttip-close` button / `.cmp-why` line into the empty `.ttip`; keep them.
-    ttip.insertAdjacentHTML('beforeend', buildTooltipHtml(m));
+    ttip.insertAdjacentHTML('beforeend', renderTooltip(m, td.dataset.ttipFixture));
     // The freshly-built `.cand` sections + chart columns start hidden — CSS shows
     // them only with `.cand-on`/visible-column, which conformance.js's toggleCands
     // adds during applyCtl. Nudge applyCtl so the current selection is reflected.
@@ -191,14 +194,20 @@
   }
   // Expose so conformance.js (or tests) can force-build a specific cell if needed.
   window.__buildTooltip = buildTooltipInto;
+  window.__conformanceTooltipModel = cell => _ttipModels[cell.getAttribute("data-ttip-id")];
+  window.__registerConformanceTooltip = registerTooltip;
+  window.__conformanceCaseTooltip = columnGrammarModel;
 
   function delegatedBuild(e) {
     var t = e.target;
     // Anything carrying a `data-ttip-id` builds the same lazy way a data cell does —
     // headers included, which is why this asks for the attribute rather than listing the
-    // element types that happen to have one today. A list here had already missed
-    // `th.tcol-model`, so hovering a transposed model header showed an empty box.
+    // element types that happen to have one today. Click-only matrix cells either open the
+    // output drawer or pin their tooltip, so pointer and focus must not build them.
     var td = t && t.closest ? t.closest('[data-ttip-id]') : null;
+    if (td && td.closest('#tab-unified') && e.type !== 'click') { return; }
+    if (td && (td.dataset.ttipClick === 'drawer'
+      || (td.dataset.ttipClick === 'pin' && e.type !== 'click'))) { return; }
     if (td) { buildTooltipInto(td); }
   }
   // pointerover/focusin/click all bubble, so one document listener covers every
@@ -213,6 +222,10 @@
   function refreshCompare(td) {
     var panel = td.closest ? td.closest('.tab-panel') : null;
     if (!panel) { return; }
+    if (panel._comparisonSelection) {
+      window.__syncConformanceTooltip(td, panel._comparisonSelection.keys, panel._comparisonSelection.reference, panel.id === 'tab-unified');
+      return;
+    }
     var ctl = panel.querySelector('.cmpctl');
     if (!ctl) { return; }
     var box = ctl.querySelector('input.cmp-on');
@@ -230,23 +243,34 @@
   // --- Output block rendering (mirrors _format_output_block_html) ------------
   function outputBlock(b, family, ctx, goldenKinds) {
     if (!b) { return '—'; }
+    const producerNote = b.producer_origin
+      ? '\n<span class="expl">Producer: ' + escapeHtml(JSON.stringify(b.producer_origin)) + '</span>'
+        + (b.inherited_from ? '\n<span class="expl">Inherited observation from ' + escapeHtml(b.inherited_from) + '</span>' : '')
+      : '';
     if (b.unavailable != null) {
-      // Prose, not payload: these carry n/a rationale and TODO notes.
-      var unavailable = b.unavailable;
-      var reason = (unavailable && typeof unavailable === 'object')
-        ? (typeof unavailable.detail === 'string' && unavailable.detail ? unavailable.detail
-          : (typeof unavailable.code === 'string' ? unavailable.code : JSON.stringify(unavailable)))
-        : String(unavailable);
-      return '<span class="expl">unavailable: ' + escapeHtml(reason) + '</span>';
+      const code = b.unavailable_code || b.unavailable.code;
+      const reason = code === 'source_unavailable' ? 'Producer source unavailable.'
+        : ['scenario_not_applicable', 'duplicate_scenario'].includes(code)
+          ? String(b.unavailable) : 'Result not yet captured';
+      return '<span class="expl">' + escapeHtml(reason) + '</span>' + producerNote;
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named
       // vLLM Rust crate variant `ToolParserError::ParsingFailed (...)`).
-      return 'exception: ' + escapeHtml(String(b.exception));
+      return 'exception: ' + escapeHtml(String(b.exception)) + producerNote;
     }
     if (b.error != null) {
       var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
-      return 'error: ' + escapeHtml(e);
+      return 'error: ' + escapeHtml(e) + producerNote;
+    }
+    if (b.batch_final != null) {
+      const fields = b.batch_final;
+      return '<span class="fldl">reasoning_text=</span>' + colorize(fields.reasoning_text, family, ctx)
+        + '\n<span class="fldl">normal_text=</span>' + colorize(fields.normal_text, family, ctx)
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(fields.calls), ctx)
+        + '\n\n<span class="expl">Order/chunk not applicable for batch. Final assembly is compared to ordered GOLDEN; lost interleaving is a mismatch.</span>'
+        + (b.verdict && b.verdict !== 'MATCH' ? '\n<span class="expl">diverges: ' + escapeHtml(b.verdict) + '</span>' : '')
+        + producerNote;
     }
     // Unified tab: an ordered event stream (reasoning | text | tool_call).
     if (b.events != null) {
@@ -430,10 +454,15 @@
         }
         row += '</td>';
         cands.forEach(function (c, ci) {
-          var impl = implKeyOf(c.key);
-          var d = (ch.expected && ch.expected[impl]) || [];
+          const expected = ch.expected || {};
+          const deltas = Object.prototype.hasOwnProperty.call(expected, c.key) ? expected[c.key] : expected[implKeyOf(c.key)];
+          const output = c.parse_mode === 'batch'
+            ? (c.block && c.block.unavailable == null && c.block.exception == null && c.block.error == null
+              && (c.block.batch_final != null || c.block.normal_text != null || c.block.events != null)
+              ? '<span class="parser-base">Order/chunk not applicable for batch</span>' : '')
+            : renderDeltas(deltas || [], ctx);
           row += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
-            + renderDeltas(d, ctx) + '</td>';
+            + output + '</td>';
         });
         body += row + '</tr>';
       });
@@ -458,7 +487,8 @@
     var inputHdr = showGolden ? 'input / golden output' : 'input';
     // The table carries class `ttip-chunks` — conformance.js keys the popup grid on it.
     return '<table class="ttip-chunks"><thead><tr><th>' + escapeHtml(inputHdr) + '</th>' + header
-      + '</tr></thead><tbody>' + body + fin + '</tbody></table>';
+      + '</tr></thead><tbody>' + body + fin + '</tbody></table>'
+      + (golden && input.kind === 'text' ? '<details class="oracle-output"><summary>GOLDEN</summary><pre>' + outputBlock(golden.block, family, ctx) + '</pre></details>' : '');
   }
 
   // --- Parser configuration bullet list ---------------------------------------
@@ -539,6 +569,7 @@
     return escapeHtml(col.compact_prefix) + '-<span class="case-label-placeholder">'
       + escapeHtml(String(col.display_number)) + '</span>';
   }
+  window.__compactCaseLabelHtml = compactCaseLabelHtml;
 
   function popupCaseHeadingHtml(model) {
     const col = model.popupCase;
@@ -638,6 +669,10 @@
     }
     return h;
   }
+  function renderTooltip(model, fixtureHref) {
+    return buildTooltipHtml(model) + (fixtureHref ? '<div class="ttip-fixture"><a href="' + escapeAttr(fixtureHref) + '">Fixture YAML</a></div>' : '');
+  }
+  window.__renderConformanceTooltip = renderTooltip;
 
   // --- Compare bar (mirrors _compare_bar.html.j2) ----------------------------
   // Three engine columns (Dynamo / vLLM / SGLang); one .cmprow per candidate whose
@@ -910,6 +945,7 @@
     var h = '';
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
+      var startsGroup = i === 0 || cols[i - 1].group_key !== c.group_key;
       var label = String(c.label || '');
       var shortLabel = c.display_number != null
         ? compactCaseLabelHtml(c)
@@ -918,7 +954,7 @@
       var fullId = c.case_id || (label.indexOf(prefix) === 0 ? label : prefix + label);
       // The rich grammar popup replaces the old native `title` tooltip (which could
       // only carry the one-line description, and rendered alongside the new popup).
-      h += '<th class="case-sub ' + escapeAttr(c.band) + '" data-col-hide-group="'
+      h += '<th class="case-sub ' + escapeAttr(c.band) + (startsGroup ? ' case-group-start' : '') + '" data-col-hide-group="'
         + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
         + '<span class="case-label-full">' + escapeHtml(label) + '</span> '
         + '<span class="case-label-short' + (c.display_number != null ? ' case-label-reference' : '')
@@ -951,21 +987,22 @@
     return t.querySelector('td');
   }
 
-  function buildCellNode(cell, col) {
+  function buildCellNode(cell, col, groupStart) {
     var td = document.createElement('td');
+    var groupClass = groupStart ? ' case-group-start' : '';
     if (!cell) {
       // Defensive: a column with no matching cell renders as an empty blank slot.
-      td.className = ('cell todo ' + (col.band || '')).trim();
+      td.className = ('cell todo ' + (col.band || '') + groupClass).trim();
       td.setAttribute('data-col-hide-group', col.group_key || '');
       return td;
     }
     if (cell.kind === 'blank') {
-      td.className = ('cell todo ' + (cell.band || '')).trim();
+      td.className = ('cell todo ' + (cell.band || '') + groupClass).trim();
       td.setAttribute('data-col-hide-group', cell.col_group || '');
       return td;
     }
     // kind 'cell' or 'missing': a real (comparable) cell.
-    td.className = ('cell ' + (cell.band || '')).trim();
+    td.className = ('cell ' + (cell.band || '') + groupClass).trim();
     td.setAttribute('data-col-hide-group', cell.col_group || '');
     // data-family drives ONLY the reference-aware "not implemented for family X" note
     // (the PARSER_NI path). Emit it only on pages that carry a parser_ni map (the v2
@@ -1026,7 +1063,7 @@
       td.appendChild(ttip);
       // Empty .ttip now (so conformance.js's attachTooltip finds it); content built
       // lazily on first interaction from the keyed model (survives transpose clones).
-      registerTooltip(td, cell.tooltip);
+      registerTooltip(td, cell.tooltip, cell.fixture_href);
     }
     return td;
   }
@@ -1054,7 +1091,7 @@
     var cells = row.cells || {};
     for (var i = 0; i < cols.length; i++) {
       var c = cols[i];
-      tr.appendChild(buildCellNode(cells[c.sub], c));
+      tr.appendChild(buildCellNode(cells[c.sub], c, i === 0 || cols[i - 1].group_key !== c.group_key));
       var next = cols[i + 1];
       if (!next || next.group_key !== c.group_key) {
         tr.appendChild(placeholderTd(c.group_key));
@@ -1109,6 +1146,50 @@
   }
 
   // --- Static per-panel sections (legends, stats, glossary) ------------------
+  const segmentLabels = { pass: 'Matches GOLDEN', documented: 'Documented difference',
+    diverge: 'Disagreement', leak: 'Markup leak', error: 'Parser error', expected: 'Expected error',
+    unsupported: 'Not applicable or unsupported', missing: 'No captured result', blocked: 'Historical source unavailable',
+    uncompared: 'GOLDEN unavailable' };
+  window.__conformanceSegmentLabels = segmentLabels;
+
+  window.__conformanceUpdateLegend = function (panel) {
+    const list = panel.querySelector('.capture-legend ul');
+    if (!list) return;
+    const selected = new Set(panel._comparisonSelection ? panel._comparisonSelection.keys : []);
+    const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === panel.id);
+    const captures = tab.candidates.filter(item => selected.has(item.key));
+    const formats = new Set(captures.map(item => item.parse_mode === 'batch' ? 'batch' : 'events'));
+    panel.querySelector('[data-dynamo-parsers]').hidden = !captures.some(item => item.impl.startsWith('dynamo'));
+    panel.querySelector('[data-batch-timing]').hidden = !captures.some(item => item.parse_mode === 'batch' || item.stream === false);
+    panel.querySelector('[data-output-formats]').hidden = formats.size < 2;
+    const table = panel.querySelector(document.body.classList.contains('transpose-mode')
+      ? 'table[data-transpose-table]' : 'table[data-parity-table]:not([data-transpose-table])');
+    const present = new Set();
+    if (table) {
+      table.querySelectorAll('td.cell .matrix-status').forEach(segment => {
+        if (!segment.closest('.col-hidden,[hidden]')) {
+          present.add(segment.className.split('status-')[1]);
+        }
+      });
+    }
+    const statuses = Object.keys(segmentLabels).filter(status => present.has(status));
+    const signature = statuses.join(',');
+    if (list.dataset.statuses === signature) return;
+    list.dataset.statuses = signature;
+    list.innerHTML = statuses.map(status => '<li data-legend-status="' + status
+      + '"><span class="matrix-segments" aria-hidden="true"><i class="matrix-status status-'
+      + status + '"></i></span>' + segmentLabels[status] + '</li>').join('');
+  };
+
+  function captureLegendHtml() {
+    return '<div class="legend capture-legend"><p><strong>Legend:</strong> Each rounded box has one equal-width segment per active capture, in slot order. Outputs are compared with GOLDEN, including tool-call order and reasoning/content/tool interleaving.</p><ul></ul>'
+      + '<p>Click a case cell or heading, or press Enter/Space, to open its outputs and status details. '
+      + '<span data-dynamo-parsers hidden>Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser.</span> '
+      + '<span data-batch-timing hidden>Order/chunk not applicable for batch.</span></p>'
+      + '<p data-output-formats hidden>Output formats: batch <code>calls=[...]</code> is the final list of calls; streaming <code>tool_call=...</code> is one call event. '
+      + 'Both are compared as ordered events with the same call names and arguments. Lost reasoning/text/tool-call interleaving remains a mismatch.</p></div>';
+  }
+
   // Copied verbatim from conformance_table.html.j2 so conformance.js finds the
   // same data-overview-count spans it writes tallies into.
   function summaryLegendHtml() {
@@ -1126,6 +1207,7 @@
       + ' doesn\'t implement.</p>';
   }
   function detailsLegendHtml(tab, page) {
+    if (page.tabs.length === 1 && tab.id === 'tab-unified') { return captureLegendHtml(); }
     var h = '<div class="legend details-only">' + (page.legend_html || '');
     if (tab.captured_note) {
       h += '<p class="versions">' + escapeHtml(tab.captured_note) + '</p>';
@@ -1171,6 +1253,7 @@
     section.className = 'tab-panel' + (tab.active ? ' active' : '');
     section.setAttribute('role', 'tabpanel');
     if (multiTab) { section.setAttribute('aria-labelledby', tab.id + '-button'); }
+    else { section.setAttribute('aria-label', tab.label || 'Conformance report'); }
     var hasCands = tab.candidates && tab.candidates.length;
     if (hasCands) {
       section.setAttribute('data-cmp-panel', 'true');
@@ -1181,7 +1264,9 @@
     if (tab.toolbar_desc_html) {
       section.insertAdjacentHTML('beforeend', '<div class="toolbar-desc">' + tab.toolbar_desc_html + '</div>');
     }
-    section.insertAdjacentHTML('beforeend', summaryLegendHtml());
+    if (multiTab || tab.id !== 'tab-unified') {
+      section.insertAdjacentHTML('beforeend', summaryLegendHtml());
+    }
     section.insertAdjacentHTML('beforeend', detailsLegendHtml(tab, page));
     section.insertAdjacentHTML('beforeend', statsHtml(tab));
     if (tab.glossary && tab.glossary.length) {
@@ -1193,21 +1278,24 @@
   }
 
   function buildTabsBar(page) {
-    var html = '<div class="tabs" role="tablist">';
-    (page.tabs || []).forEach(function (t) {
-      html += '<button class="tab-button' + (t.active ? ' active' : '') + '"'
-        + ' id="' + escapeAttr(t.id) + '-button" type="button" role="tab"'
-        + ' aria-selected="' + (t.active ? 'true' : 'false') + '"'
-        + ' aria-label="' + escapeAttr(t.tab_title || '') + '"'
-        + ' title="' + escapeAttr(t.tab_title || '') + '"'
-        + ' data-tab-target="' + escapeAttr(t.id) + '">'
-        + (t.label_html || escapeHtml(t.label || '')) + '</button>';
-    });
+    var multiTab = (page.tabs || []).length > 1;
+    var html = '<div class="tabs"' + (multiTab ? ' role="tablist"' : ' role="toolbar" aria-label="Report controls"') + '>';
+    if (multiTab) {
+      (page.tabs || []).forEach(function (t) {
+        html += '<button class="tab-button' + (t.active ? ' active' : '') + '"'
+          + ' id="' + escapeAttr(t.id) + '-button" type="button" role="tab"'
+          + ' aria-selected="' + (t.active ? 'true' : 'false') + '"'
+          + ' aria-label="' + escapeAttr(t.tab_title || '') + '"'
+          + ' title="' + escapeAttr(t.tab_title || '') + '"'
+          + ' data-tab-target="' + escapeAttr(t.id) + '">'
+          + (t.label_html || escapeHtml(t.label || '')) + '</button>';
+      });
+    }
     html += '<span class="tabs-right">'
       + '<label class="checkbox-option cmp-detailed"><input type="checkbox" data-view-detailed> Detailed</label>'
       + '<button type="button" class="theme-toggle" data-theme-toggle'
       + ' title="Switch between light and dark">' + THEME_GLYPH[currentTheme()] + '</button>'
-      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Transpose</label>'
+      + '<label class="checkbox-option cmp-transpose"><input type="checkbox" data-transpose-toggle> Vertical</label>'
       + '<button type="button" class="cmp-reset" data-reset title="Clear all selections and reload defaults">Reset</button>'
       + '</span></div>';
     var tmp = document.createElement('div');
@@ -1272,6 +1360,7 @@
     if (!modelEl) { return; }  // no model blob; nothing to build.
     var page = hydratePage(JSON.parse(modelEl.textContent));
     if (!page || !page.tabs || !page.tabs.length) { return; }
+    window.__CONFORMANCE_PAGE = page;
 
     _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);
     _familyMarkers = page.family_markers || {};
@@ -1279,7 +1368,7 @@
 
     var multiTab = page.tabs.length > 1;
     var newNodes = [];
-    if (multiTab) { newNodes.push(buildTabsBar(page)); }
+    newNodes.push(buildTabsBar(page));
     page.tabs.forEach(function (tab) { newNodes.push(buildPanel(tab, page, multiTab)); });
 
     // Replace the server-rendered tabs bar + panels in place with model-built

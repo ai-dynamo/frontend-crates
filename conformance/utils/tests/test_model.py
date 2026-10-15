@@ -9,10 +9,8 @@ does — stronger (they check the data the view consumes) and less brittle (no H
 shape coupling). They are the migration target for the chart-invariant guards named in
 the ticket.
 
-The model is the inlined `<script type="application/json" id="conformance-model">`
-blob. The CI conformance-table job renders both pages first, then runs this in the
-no-browser venv (pyyaml/jinja2/pytest only), so we parse the repo-rendered pages (and
-render them if absent, mirroring test_chart_invariants).
+The session fixture renders the archived corpora for model regression coverage;
+the public report shows only Unified.
 
 Expected peer versions are DERIVED from the downloaded fixture dirs (not hard-coded),
 so the guards keep working across version bumps.
@@ -38,7 +36,7 @@ from case_variants import leaf_cells
 from schema_cases import ARGUMENT_SECTIONS, schema_fold
 import unified_taxonomy
 from validate_conformance_status import cell_state
-from capture_stimulus import capture_input  # noqa: E402
+from capture_stimulus import batch_final_events, capture_input  # noqa: E402
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
@@ -82,13 +80,13 @@ def _read_model(page_path: Path, render_script: str) -> dict:
 
 
 @pytest.fixture(scope="module")
-def model_v2_raw() -> dict:
-    return _read_model_raw(REPO / "conformance/CONFORMANCE_v2.html", "render_table_v2.sh")
+def model_v2_raw(legacy_rendered_page) -> dict:
+    return _read_model_raw(legacy_rendered_page, "render_table_v2.sh")
 
 
 @pytest.fixture(scope="module")
-def model_v2() -> dict:
-    return _read_model(REPO / "conformance/CONFORMANCE_v2.html", "render_table_v2.sh")
+def model_v2(legacy_rendered_page) -> dict:
+    return _read_model(legacy_rendered_page, "render_table_v2.sh")
 
 
 def _tab(model: dict, tab_id: str) -> dict:
@@ -129,7 +127,7 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
     return json.loads(result.stdout)
 
 
-def test_tooltip_renders_structured_and_legacy_unavailable_reasons():
+def test_tooltip_uses_concise_copy_for_unavailable_results():
     tips = [
         {"candidates": [{"key": "vllm_rust", "label": "vLLM", "block": {
             "unavailable": {"code": "vllm_rust_parser_not_registered",
@@ -145,10 +143,105 @@ def test_tooltip_renders_structured_and_legacy_unavailable_reasons():
 
     rendered = _render_tooltips(tips)
 
-    assert "unavailable: No parser for &lt;family&gt;." in rendered[0]
+    assert "Result not yet captured" in rendered[0]
+    assert "No parser for &lt;family&gt;." not in rendered[0]
     assert "[object Object]" not in rendered[0]
-    assert "unavailable: No parser for this legacy result." in rendered[1]
-    assert "unavailable: original_request_not_retained" in rendered[2]
+    assert "Result not yet captured" in rendered[1]
+    assert "No parser for this legacy result." not in rendered[1]
+    assert "Result not yet captured" in rendered[2]
+    assert "original_request_not_retained" not in rendered[2]
+
+
+def test_tooltip_uses_plain_copy_for_unsupported_parser_registration():
+    fixture = REPO / "conformance/fixtures-unified-v2/families/deepseek_v41/sglang_python-0.5.14.yaml"
+    unavailable = yaml.safe_load(fixture.read_text())["changes"]["arg_json_null_anyof"]["observation"]["unavailable"]
+    reason = unavailable["detail"]
+    rendered = _render_tooltips([{
+        "candidates": [{"key": "sglang_python_batch@0.5.14", "label": "SGLang Python 0.5.14 (batch)", "block": {
+            "unavailable_code": unavailable["code"],
+            "unavailable": unavailable["detail"],
+        }}],
+    }])[0]
+
+    assert "Result not yet captured" in rendered
+    assert reason not in rendered
+
+
+@pytest.mark.parametrize(("block", "captured"), [
+    (None, False),
+    ({}, False),
+    ({"unavailable": "No result"}, False),
+    ({"unavailable": {"code": "source_unavailable"}}, False),
+    ({"unavailable": "No result", "normal_text": ""}, False),
+    ({"unavailable": "No result", "batch_final": {"normal_text": "", "calls": []}}, False),
+    ({"exception": "Parser failed"}, False),
+    ({"exception": "Parser failed", "events": []}, False),
+    ({"error": "Capture failed"}, False),
+    ({"error": "Capture failed", "normal_text": ""}, False),
+    ({"expected": "Capture pending"}, False),
+    ({"batch_final": {"reasoning_text": "", "normal_text": "", "calls": []}}, True),
+    ({"normal_text": "", "calls": []}, True),
+    ({"events": []}, True),
+])
+def test_popup_batch_timing_requires_a_captured_output(block, captured):
+    rendered = _render_tooltips([{
+        "input": {"kind": "chunks", "chunks": [{"delta_text": "answer"}]},
+        "candidates": [{"key": "batch", "label": "Batch", "parse_mode": "batch", "block": block}],
+    }])[0]
+    assert ("Order/chunk not applicable for batch" in rendered) == captured
+    if block and "unavailable" in block:
+        assert "Result not yet captured" in rendered or "Producer source unavailable" in rendered
+
+
+def test_tooltip_preserves_scenario_applicability_and_duplicate_meanings():
+    reasons = [
+        ("scenario_not_applicable", "This scenario is not applicable to glm47."),
+        ("duplicate_scenario", "Duplicate of UNIFIED.11-1: same observable event contract for deepseek_v41."),
+    ]
+    rendered = _render_tooltips([
+        {"candidates": [{"key": "dynamo", "label": "Dynamo", "block": {
+            "unavailable_code": code, "unavailable": reason,
+        }}]}
+        for code, reason in reasons
+    ])
+    for html, (_, reason) in zip(rendered, reasons):
+        assert reason in html
+        assert "Result not yet captured" not in html
+
+
+def test_unified_na_scenarios_have_concise_family_specific_copy(model_v2):
+    cells = [cell for row in _tab(model_v2, "tab-unified")["rows"]
+             for cell in leaf_cells(row).values() if cell.get("status") == "na"]
+    assert cells
+    for cell in cells:
+        if cell.get("duplicate_of"):
+            continue
+        tip = cell["tooltip"]
+        reason = f"This scenario is not applicable to {cell['family']}."
+        assert tip["description"] == tip["na_note"] == reason
+        assert all(candidate["block"] == {
+            "unavailable": reason, "unavailable_code": "scenario_not_applicable",
+        } for candidate in tip["candidates"])
+
+
+def test_tooltip_distinguishes_source_blockers_from_uncaptured_results():
+    fixture = REPO / "conformance/fixtures-unified-v2/families/glm47/dynamo_v1-9.2.13.yaml"
+    observation = next(iter(yaml.safe_load(fixture.read_text())["changes"].values()))["observation"]
+    unavailable = observation["unavailable"]
+    assert unavailable["code"] == "source_unavailable"
+    blocks = [observation, {
+        "unavailable": unavailable["detail"], "unavailable_code": unavailable["code"],
+        "producer_origin": {"source": "historical"},
+    }, {"unavailable": "No captured result", "unavailable_code": "missing_capture"}]
+    rendered = _render_tooltips([{"candidates": [{"key": "dynamo", "label": "Dynamo", "block": block}]}
+                                for block in blocks])
+    for html in rendered[:2]:
+        assert "Producer source unavailable." in html
+        assert "Result not yet captured" not in html
+        assert unavailable["detail"] not in html
+    assert "Producer:" in rendered[1]
+    assert "historical" in rendered[1]
+    assert "Result not yet captured" in rendered[2]
 
 
 def test_case_schema_extraction_omits_absent_and_shared_defaults():
@@ -329,7 +422,8 @@ def test_v2_all_tabs_present(model_v2):
     ids = [t["id"] for t in model_v2["tabs"]]
     assert ids == [
         "tab-toolcalling-batch", "tab-toolcalling-streamv1",
-        "tab-reasoning-batch", "tab-reasoning-stream", "tab-unified",
+        "tab-reasoning-batch", "tab-reasoning-stream",
+        "tab-unified",
     ], ids
 
 
@@ -338,7 +432,7 @@ def test_v2_tab_labels_show_parser_generation(model_v2):
 
     assert labels["tab-toolcalling-batch"].startswith("Tool Calling v1")
     assert labels["tab-toolcalling-streamv1"].startswith("Tool Calling legacy stream")
-    assert labels["tab-unified"].startswith("Unified v2")
+    assert labels["tab-unified"] == "Unified"
 
 
 def test_unified_descriptive_case_ids_use_dash_everywhere(model_v2):
@@ -417,7 +511,8 @@ def test_unified_duplicate_pointer_is_explained_in_tooltip_json(model_v2):
 
 def test_v2_exactly_one_active_tab(model_v2):
     assert sum(1 for t in model_v2["tabs"] if t.get("active")) == 1
-    assert model_v2["tabs"][0]["active"] is True
+    assert model_v2["tabs"][-1]["id"] == "tab-unified"
+    assert model_v2["tabs"][-1]["active"] is True
 
 
 # ---- candidates (compare bar) -------------------------------------------------
@@ -468,9 +563,11 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
 
 def test_unified_sglang_versions_are_streamed_and_grouped_without_duplicate_backend(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    candidates = [candidate for candidate in tab["candidates"] if candidate["impl"] == "sglang"]
+    candidates = [candidate for candidate in tab["candidates"] if candidate["impl"] == "sglang" and candidate["parse_mode"] == "unified"]
     by_version = {candidate["version"]: candidate for candidate in candidates}
     assert len(by_version) == len(candidates)
+    batch = next(candidate for candidate in tab["candidates"] if candidate["key"] == "sglang_python_batch@0.5.14")
+    assert batch["parse_mode"] == "batch" and batch["key"] != by_version["0.5.14"]["key"]
     for version in ("0.5.14", "0.5.16", "0.5.21"):
         candidate = by_version[version]
         assert candidate["key"] == f"sglang_python@{version}"
@@ -639,7 +736,8 @@ function grid(variant) {
   const rows = [0, 1].map(() => {
     const columns = variant.candidates.filter(c => c.key !== 'golden').map((c, order) => {
       const classes = new Set();
-      return {key: c.key, getAttribute: name => ({'data-cand': c.key, 'data-cand-order': order})[name],
+      return {key: c.key, dataset: {candOrder: String(order)},
+        getAttribute: name => ({'data-cand': c.key, 'data-cand-order': order})[name],
         classList: {toggle(name, on) {if (on) classes.add(name); else classes.delete(name);},
           contains: name => classes.has(name)}};
     });
@@ -719,8 +817,7 @@ def test_unified_grammar_header_preserves_each_family_config(tmp_path, monkeypat
     tab = table._unified_tab_model(tmp_path, {})
     default = next(candidate for candidate in tab["candidates"] if candidate["default_bucket"] == "A")
     assert default["key"] == "dynamo"
-    assert "Default Reference = <strong>Dynamo v2 Rust</strong>" in tab["toolbar_desc_html"]
-    assert "Oracle = <strong>GOLDEN</strong>" in tab["toolbar_desc_html"]
+    assert tab["toolbar_desc_html"] is None
     column = next(col for col in tab["columns"] if col["sub"] == scenario)
     assert column["init"] == (None if changed_field else configurations["deepseek_v4"])
     script = r"""
@@ -833,8 +930,8 @@ def test_unified_source_selection_inherits_previous_family_capture(
 
 @pytest.mark.parametrize("impl,version,mode,want", [
     ("dynamo_v2", "0.6.0", "stream",
-     "Dynamo v2 Rust 0.6.0 (stream, Combined & Unified)"),
-    ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream, Combined & Unified)"),
+     "Dynamo v2 Rust 0.6.0 (stream, UnifiedParser)"),
+    ("dynamo_v2", "0.6.1", "stream", "Dynamo v2 Rust 0.6.1 (stream, UnifiedParser)"),
     ("dynamo_v1", "8.2.2", "stream", "Dynamo v1 Rust 8.2.2 (jail+batch)"),
     ("vllm_python", "0.26.0", "batch", "vLLM Python 0.26.0 (batch)"),
 ])
@@ -842,11 +939,11 @@ def test_candidate_label_keeps_capture_identity_out_of_display(impl, version, mo
     assert table._full_label(impl, version, mode) == want
 
 
-@pytest.mark.parametrize("input_mode", ["stream", "stream, Combined & Unified"])
+@pytest.mark.parametrize("input_mode", ["stream", "stream, UnifiedParser", "stream, Combined & Unified"])
 def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mode):
     producer = {"crate_version": "0.7.9", "kind": "unpublished", "source_id": "sha256:abc123"}
     monkeypatch.setattr(table, "_dynamo_v2_producer", lambda: producer)
-    mode = "stream, Combined & Unified"
+    mode = "stream, UnifiedParser"
     label = table._full_label("dynamo_v2", "0.7.9", input_mode)
     assert label == f"Dynamo v2 Rust 0.7.9 ({mode})"
     previous = table._full_label("dynamo_v2", "0.7.8", input_mode)
@@ -863,12 +960,12 @@ def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mod
     assert table._full_label("dynamo_v2", "0.7.9", input_mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
 
 
-def test_unified_dynamo_labels_identify_stream_combined_and_unified(model_v2):
+def test_unified_dynamo_labels_identify_unified_parser(model_v2):
     producer = table._dynamo_v2_producer()
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     expected = producer["crate_version"]
-    full_label = f"Dynamo v2 Rust {expected} (stream, Combined & Unified)"
+    full_label = f"Dynamo v2 Rust {expected} (stream, UnifiedParser)"
     assert reference["label"] == full_label
     assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]
@@ -898,7 +995,7 @@ def test_tc_source_capture_versions_survive_label_parsing():
 def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
     """Historical output without its original request cannot establish parity."""
     tab = _tab(model_v2, "tab-unified")
-    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm"}
+    peer_keys = {candidate["key"] for candidate in tab["candidates"] if candidate["impl"] == "vllm" and candidate["parse_mode"] == "unified"}
     assert peer_keys
     for row in tab["rows"]:
         for key in peer_keys:
@@ -912,7 +1009,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 peer = next(candidate for candidate in leaf_cells(row)[scenario]["tooltip"]["candidates"] if candidate["key"] == key)
                 reason = _unavailable_detail(peer["block"])
                 assert (
-                    "not captured at" in reason
+                    "No captured result" in reason
                     or "has no parser" in reason
                     or "parser is not registered for" in reason
                     or reason.startswith("No vLLM Rust Unified parser is registered for ")
@@ -941,7 +1038,7 @@ def test_unified_tab_marks_uncomparable_vllm_cases_na(model_v2):
                 assert comparison["na"] == 0
 
 
-_IMPL_KEYS = ("dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
+_IMPL_KEYS = ("dynamo_v1_jail", "dynamo_v1", "dynamo_v2", "vllm_rust", "vllm_python", "sglang_python")
 
 
 def _impl_key_of(cand_key: str) -> str:
@@ -1246,6 +1343,9 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
         family = row["family"]
         for scenario in scenarios:
             cmp = leaf_cells(row)[scenario]["cmp"]
+            if family == "gpt_oss":
+                assert cmp["dynamo"]["na"] == 1, (family, scenario, "no native unified parser")
+                continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families:
                 _assert_unmeasured_versions(cmp, older_keys)
@@ -1294,13 +1394,16 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     events = [{"kind": "tool_call", **call} for call in calls]
     assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
     assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
-    families = {"deepseek_v4", "deepseek_v41", "gemma4", "glm47",
+    families = {"deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
                 "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
     rows = {other["family"]: other for other in unified["rows"] if other.get("family")}
     assert rows.keys() == families
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
         assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
+        if family == "gpt_oss":
+            assert shared["cmp"]["dynamo"]["na"] == 1
+            continue
         assert shared["status"] != "na"
         candidates = {candidate["key"]: candidate["block"]
                       for candidate in shared["tooltip"]["candidates"]}
@@ -1318,7 +1421,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
                 version = tuple(map(int, candidate["key"].split("@", 1)[1].split(".")))
                 if version < (0, 7, 16):
                     assert "unavailable" in candidate["block"]
-                    assert "not captured at" in _unavailable_detail(candidate["block"])
+                    assert _unavailable_detail(candidate["block"]) == "No captured result"
                     assert "events" not in candidate["block"]
                     state, reason = cell_state(shared, candidate)
                     assert state == "empty"
@@ -1337,6 +1440,64 @@ def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_
     for cell in _iter_cells(tab):
         for candidate in cell["tooltip"]["candidates"]:
             assert "adopt a unified parser" not in (candidate["block"].get("todo") or "")
+
+
+def test_unified_event_reordering_is_a_mismatch():
+    golden = [
+        {"kind": "reasoning", "text": "checking"},
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+        {"kind": "text", "text": "It is sunny."},
+    ]
+    batch = [
+        {"kind": "reasoning", "text": "checking"},
+        {"kind": "text", "text": "It is sunny."},
+        {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
+    ]
+    assert table._unified_classify("gpt_oss", golden, batch) == "ORDER"
+
+
+def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    row = next(row for row in tab["rows"] if row.get("family") == "gpt_oss")
+    keys = {"vllm_python_batch@" + version for version in ("0.23.0", "0.24.0", "0.25.1", "0.26.0")}
+    keys.add("sglang_python_batch@0.5.14")
+    cases = [cell for cell in leaf_cells(row).values() if cell["status"] != "na"]
+    assert len(cases) == 159
+    assert leaf_cells(row)["tool_only"]["case_id"] == "UNIFIED.1-tool_only"
+    missing = []
+    for cell in cases:
+        peers = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"] if candidate["key"] in keys}
+        assert peers.keys() == keys
+        for key, block in peers.items():
+            assert block["unavailable_code"] == "missing_capture"
+            assert block["unavailable"] == "No captured result"
+            assert "no parser" not in block["unavailable"]
+            assert cell["cmp"][key]["na"] == 1
+            missing.append(block)
+    assert len(missing) == 795
+    unsupported = [candidate["block"] for other in tab["rows"] for cell in leaf_cells(other).values()
+                   for candidate in cell.get("tooltip", {}).get("candidates", [])
+                   if "_python_batch@" in candidate["key"] and candidate["block"].get("unavailable_code") == "unsupported_family"]
+    assert unsupported
+    assert all("No registered reasoning + batch tool parser" in block["unavailable"] for block in unsupported)
+
+
+def test_unified_batch_final_tool_call_order_is_a_mismatch():
+    golden = [
+        {"kind": "tool_call", "name": "first", "arguments": {"n": 1}},
+        {"kind": "tool_call", "name": "second", "arguments": {"n": 2}},
+    ]
+    batch_final = {
+        "reasoning_text": "",
+        "normal_text": "",
+        "calls": [
+            {"name": "second", "arguments": {"n": 2}},
+            {"name": "first", "arguments": {"n": 1}},
+        ],
+    }
+
+    events = batch_final_events(batch_final)
+    assert table._unified_classify("gpt_oss", golden, events) == "ORDER"
 
 
 def test_v2_reasoning_uses_current_peers(model_v2):
@@ -1687,4 +1848,50 @@ process.stdout.write(context.window.audit.outputBlock({unavailable}, 'gemma4', {
         ["node", "-e", script, str(UTILS / "src/assets/conformance_view.js")],
         input=json.dumps(unavailable), text=True, capture_output=True, check=True,
     ).stdout
-    assert rendered == f'<span class="expl">unavailable: {reason}</span>'
+    assert rendered == '<span class="expl">Result not yet captured</span>'
+
+
+def test_documented_reasons_bind_source_and_normalized_reference():
+    facts = [
+        {"impl": "dynamo_v1", "agrees": True, "reason": None, "intentional": False},
+        {"impl": "vllm_python", "agrees": False, "reason": "intentional recovery", "intentional": True},
+        {"impl": "sglang_python", "agrees": False, "reason": None, "intentional": False},
+    ]
+    entries = {"dynamo_v1": {"sig": 0}, "vllm_python": {"sig": 1}, "sglang_python": {"sig": 2}}
+    assert model_mod.comparison_reasons(facts, {"vllm_python": "vLLM Python"}, "dynamo_v1", entries) == [
+        {"impl": "vllm_python", "label": "vLLM Python", "reason": "intentional recovery", "intentional": True,
+         "candidate_sig": 1, "reference_impl": "dynamo_v1", "reference_sig": 0},
+    ]
+
+
+def test_merged_documented_pair_preserves_outputs_and_reason_when_candidates_reverse():
+    batch_key = "dynamo_v1-b-10-0-1"
+    stream_key = "dynamo_v2-s-0-7-21"
+    peer_key = "vllm_python-b-0-26-0"
+    batch = {"calls": [], "normal_text": " "}
+    stream = {"calls": [], "normal_text": "", "explanation": "documented batch/stream difference"}
+    peer = {"calls": [], "normal_text": "peer output"}
+    captures = [
+        {"key": batch_key, "label": "Dynamo v1 Rust 10.0.1 (batch)", "block": batch},
+        {"key": stream_key, "label": "Dynamo v2 Rust 0.7.21 (stream)", "block": stream},
+        {"key": peer_key, "label": "vLLM Python 0.26.0 (batch)", "block": peer},
+    ]
+    case = {
+        "__family": "deepseek_v4", "__case_id": "TOOLCALLING.batch.9.b",
+        "__known_divergence": True, "model_text": " ",
+        "expected": {"dynamo_v1": batch, "vllm_python": peer}, "__cmp": captures,
+    }
+    cell = table._toolcalling_cell_model(case, "batch", "deepseek_v4", "9.b", "batch", "engines", str)
+    assert cell["tooltip"]["reasons"], "merged stream documentation was lost because it is outside case.expected"
+    reverse_case = {**case, "__cmp": list(reversed(captures))}
+    reversed_cell = table._toolcalling_cell_model(
+        reverse_case, "batch", "deepseek_v4", "9.b", "batch", "engines", str,
+    )
+    assert reversed_cell["tooltip"]["reasons"] == cell["tooltip"]["reasons"]
+    outputs = {item["key"]: item["block"] for item in cell["tooltip"]["candidates"]}
+    reversed_outputs = {item["key"]: item["block"] for item in reversed_cell["tooltip"]["candidates"]}
+    assert outputs == reversed_outputs == {
+        batch_key: batch,
+        stream_key: stream,
+        peer_key: peer,
+    }

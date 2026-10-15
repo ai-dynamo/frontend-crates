@@ -53,7 +53,7 @@ struct GoldenCase {
     init: Init,
 }
 
-fn load_golden() -> Vec<GoldenFile> {
+fn load_native_golden() -> Vec<GoldenFile> {
     let dir = common::ensure_unified_golden();
     let mut files: Vec<GoldenFile> = Vec::new();
     for entry in std::fs::read_dir(&dir).unwrap_or_else(|e| panic!("read {}: {e}", dir.display())) {
@@ -66,6 +66,7 @@ fn load_golden() -> Vec<GoldenFile> {
             serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display())),
         );
     }
+    files.retain(|file| has_unified_parser(&file.family));
     files.sort_by(|a, b| a.family.cmp(&b.family));
     files
 }
@@ -130,21 +131,17 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
 /// The gate: assembled events must equal the golden, exactly and in order.
 #[test]
 fn unified_parser_matches_the_golden_oracle() {
-    let files = load_golden();
+    let files = load_native_golden();
     let known = divergences::load();
-    let covered: Vec<&GoldenFile> = files
-        .iter()
-        .filter(|f| has_unified_parser(&f.family))
-        .collect();
     assert!(
-        !covered.is_empty(),
+        !files.is_empty(),
         "no golden family has a unified parser — the surface is unproven"
     );
 
     let mut failures = Vec::new();
     let mut observed = std::collections::BTreeSet::new();
     let mut checked = 0usize;
-    for file in &covered {
+    for file in &files {
         for (id, case) in &file.cases {
             checked += 1;
             let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
@@ -191,10 +188,7 @@ fn unified_parser_is_chunk_invariant() {
     let known = divergences::load();
     let mut observed = std::collections::BTreeSet::new();
     let mut failures = Vec::new();
-    for file in load_golden()
-        .iter()
-        .filter(|f| has_unified_parser(&f.family))
-    {
+    for file in load_native_golden() {
         for (id, case) in &file.cases {
             let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
             let baseline = events(
@@ -253,7 +247,7 @@ fn unified_parser_is_chunk_invariant() {
 #[test]
 fn reference_argument_cases_preserve_results_at_every_split() {
     let mut checked = 0;
-    for file in load_golden() {
+    for file in load_native_golden() {
         for (id, case) in &file.cases {
             if ![
                 "glm_ref_object",
@@ -299,10 +293,7 @@ fn unified_parser_has_stream_batch_parity() {
     let known = divergences::load();
     let mut observed = std::collections::BTreeSet::new();
     let mut failures = Vec::new();
-    for file in load_golden()
-        .iter()
-        .filter(|f| has_unified_parser(&f.family))
-    {
+    for file in load_native_golden() {
         for (id, case) in &file.cases {
             let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
             let streamed = events(
@@ -380,10 +371,7 @@ fn advance(
 /// either one.
 #[test]
 fn unified_parsers_are_isolated_per_stream() {
-    for file in load_golden()
-        .iter()
-        .filter(|f| has_unified_parser(&f.family))
-    {
+    for file in load_native_golden() {
         let cases: Vec<_> = file.cases.iter().collect();
         for pair in cases.windows(2) {
             let [(id_a, a), (id_b, b)] = pair else {
@@ -438,7 +426,7 @@ fn registered_unified_families_all_create() {
         });
     }
     assert!(
-        load_golden().iter().any(|f| has_unified_parser(&f.family)),
+        !load_native_golden().is_empty(),
         "no golden family maps to a registered unified parser"
     );
 }
@@ -508,7 +496,7 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
 
     let known = divergences::load();
     let mut coverage = BTreeMap::<String, usize>::new();
-    for file in load_golden()
+    for file in load_native_golden()
         .into_iter()
         .filter(|file| matches!(file.family.as_str(), "deepseek_v4" | "deepseek_v41"))
     {

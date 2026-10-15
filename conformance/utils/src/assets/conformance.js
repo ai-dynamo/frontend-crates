@@ -6,6 +6,8 @@
   // The tooltip is width:max-content and the widest ones run to the full cap below, so
   // without this they sit flush against the screen edge and read as clipped.
   const margin = 32;
+  let placeScheduled = false;
+  const visibleTooltips = new Set();
   const showDelayMs = 750;
   const hideDelayMs = 750;
   const columnButtons = Array.from(document.querySelectorAll('[data-col-toggle]'));
@@ -28,7 +30,7 @@
   }
   // The Reference parser can't compare to itself: disable (and flag) its own
   // Compare checkbox, re-enable every other row's.
-  function syncRefDisable(ctl, base) {
+  function syncRefDisable(ctl, base, allowNoReference = false) {
     ctl.querySelectorAll('input.cmp-on').forEach(function (cb) {
       const isRef = cb.value === base;
       // The Reference is always part of the comparison (it's the base everything is
@@ -39,8 +41,8 @@
       // (the cleared state) every box is unchecked + locked, so the only possible
       // action is starring a new Reference. With a base, the ref's box is the locked
       // one and every other row is free to toggle.
-      if (!base) { cb.checked = false; }
-      cb.disabled = isRef || !base;
+      if (!base && !allowNoReference) { cb.checked = false; }
+      cb.disabled = isRef || (!base && !allowNoReference);
       const row = cb.closest('.cmprow');
       if (row) { row.classList.toggle('is-ref', isRef); }
     });
@@ -48,6 +50,23 @@
   // Compare keys are `<impl>-s-<version>` / `<impl>-b-<version>` (or `<impl>-s`); the
   // per-chunk grid columns are keyed by bare impl. Strip the mode+version suffix.
   function implOf(key) { return key ? key.replace(/-[sb](-.*)?$/, '') : key; }
+  // All popup grids follow the slot selection, with the oracle first.
+  function orderCandidateColumns(table, active, base) {
+    const keys = Array.from(active);
+    function rank(element) {
+      const key = element.getAttribute('data-cand');
+      if (element.getAttribute('data-cand-pin') === '1' || key === 'golden') return -2;
+      if (key === base) return -1;
+      const index = keys.indexOf(key);
+      return index < 0 ? keys.length : index;
+    }
+    table.querySelectorAll('tr').forEach(function (row) {
+      const columns = Array.from(row.querySelectorAll('[data-cand]'));
+      columns.sort((a, b) => rank(a) - rank(b)
+        || Number(a.dataset.candOrder || 0) - Number(b.dataset.candOrder || 0));
+      columns.forEach(column => row.appendChild(column));
+    });
+  }
   function toggleCands(cell, active, base) {
     let baseSec = null;
     const tip = cell._ttip || cell.querySelector('.ttip');
@@ -76,30 +95,10 @@
         // it first (right after the input column) in every row.
         cands.forEach(function (el) {
           const key = el.getAttribute('data-cand');
-          el.classList.toggle('col-hidden', !active.has(key));
+          el.classList.toggle('col-hidden', !(el.getAttribute('data-cand-pin') === '1' || active.has(key)));
           el.classList.toggle('col-ref', key === base);
         });
-        // Stable re-sort: Reference first, then the rest in their declaration order
-        // (data-cand-order). Using a stable key avoids the cumulative scramble that a
-        // move-to-front produces when the Reference is toggled repeatedly.
-        // Order: a pinned column (the golden oracle) is always leftmost, THEN the
-        // selected Reference, THEN the rest in declaration order (alphabetical here).
-        function _colRank(el) {
-          if (el.getAttribute('data-cand-pin') === '1') { return 0; }
-          if (el.getAttribute('data-cand') === base) { return 1; }
-          return 2;
-        }
-        grid.querySelectorAll('tr').forEach(function (tr) {
-          const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
-          if (!cols.length) { return; }
-          cols.sort(function (a, b) {
-            const ra = _colRank(a), rb = _colRank(b);
-            if (ra !== rb) { return ra - rb; }
-            return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
-              - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
-          });
-          cols.forEach(function (el) { tr.appendChild(el); });
-        });
+        orderCandidateColumns(grid, active, base);
       } else {
         // Legacy impl-column grid: show columns whose engine is active.
         const activeImpls = new Set(Array.from(active).map(implOf));
@@ -166,12 +165,107 @@
       cb.checked = cb.value !== base && inB.has(cb.value);
     });
   }
+  function tooltipCandidate(cell, key) {
+    function find(model) {
+      const candidate = ((model && model.candidates) || []).find(item => item.key === key);
+      if (candidate) return candidate;
+      for (const variant of (model && model.variants) || []) {
+        const nested = find(variant);
+        if (nested) return nested;
+      }
+      return null;
+    }
+    return find(cell && cell.tooltip);
+  }
+
+  function sourceMatches(key, impl) {
+    return typeof key === 'string' && typeof impl === 'string'
+      && (key === impl || key.startsWith(impl + '-') || key.startsWith(impl + '@'));
+  }
+
+  function captureIssue(cell, key) {
+    if (!cell || cell.kind === 'blank' || cell.kind === 'missing') return 'missing';
+    const entry = (cell.cmp || {})[key];
+    const candidateTip = tooltipCandidate(cell, key);
+    const block = candidateTip && candidateTip.block;
+    if (!entry || entry.na === 1) {
+      const reason = String((block && block.unavailable) || '');
+      const code = block && (block.unavailable_code || (block.capture_observation && block.capture_observation.unavailable && block.capture_observation.unavailable.code));
+      if (code === 'missing_capture') return 'missing';
+      if (['unsupported_family', 'unsupported_request_mode', 'scenario_not_applicable', 'duplicate_scenario'].includes(code)) return 'unsupported';
+      if (code === 'source_unavailable' || /source unavailable|source blocked|historical source/i.test(reason)) return 'blocked';
+      return /\bno(?: [\w.-]+)* parser\b|\bnot (?:yet )?implemented\b|unsupported (?:family|request|mode)|cannot apply/i.test(reason) ? 'unsupported' : 'missing';
+    }
+    if (entry.err === 1 || (block && (block.exception || (block.error && typeof block.error === 'object')))) return 'error';
+    if (block && typeof block.error === 'string') return 'expected';
+    if (entry.leak === 1 || (candidateTip && candidateTip.leak)) return 'leak';
+    return null;
+  }
+
+  function outputStatus(tab, cell, candidate, reference) {
+    const issue = captureIssue(cell, candidate.key);
+    if (issue) return issue;
+    const entry = cell.cmp[candidate.key];
+    const oracleTab = tab.id === 'tab-unified';
+    const compareKey = oracleTab ? 'golden' : reference;
+    const compareEntry = (cell.cmp || {})[compareKey];
+    if (['missing', 'unsupported', 'error', 'expected'].includes(captureIssue(cell, compareKey))) return 'uncompared';
+    if (entry.sig === compareEntry.sig) return 'pass';
+    const intentional = ((cell.tooltip && cell.tooltip.reasons) || []).some(reason => {
+      if (reason.intentional !== true) return false;
+      const forward = sourceMatches(candidate.key, reason.impl) && sourceMatches(compareKey, reason.reference_impl)
+        && entry.sig === reason.candidate_sig && compareEntry.sig === reason.reference_sig;
+      const reverse = sourceMatches(compareKey, reason.impl) && sourceMatches(candidate.key, reason.reference_impl)
+        && compareEntry.sig === reason.candidate_sig && entry.sig === reason.reference_sig;
+      const block = (tooltipCandidate(cell, forward ? candidate.key : compareKey) || {}).block;
+      return (forward || reverse) && block && reason.reason === (block.explanation || block.reason);
+    });
+    if (intentional) return 'documented';
+    return 'diverge';
+  }
+
+  window.__conformanceOutputStatus = outputStatus;
+  const segmentLabels = window.__conformanceSegmentLabels;
+  function renderSegments(cell, keys) {
+    const model = window.__conformanceTooltipModel && window.__conformanceTooltipModel(cell);
+    const cmp = JSON.parse(cell.dataset.cmp || '{}');
+    const data = { kind: 'cell', cmp, tooltip: model };
+    let segments = cell.querySelector('.matrix-segments');
+    if (!segments) {
+      segments = document.createElement('span');
+      segments.className = 'matrix-segments';
+      const marker = cell.querySelector('.cmp-marker');
+      if (marker) marker.replaceWith(segments); else cell.insertBefore(segments, cell.firstChild);
+    }
+    segments.replaceChildren();
+    const labels = keys.map(key => {
+      const status = outputStatus({ id: 'tab-unified' }, data, { key }, 'golden');
+      const segment = document.createElement('i');
+      segment.className = 'matrix-status status-' + status;
+      segment.dataset.capture = key;
+      segment.setAttribute('aria-label', key + ': ' + segmentLabels[status]);
+      segments.appendChild(segment);
+      return key + ': ' + segmentLabels[status];
+    });
+    cell.setAttribute('aria-label', labels.join('; '));
+    const tip = cell._ttip || cell.querySelector('.ttip');
+    if (tip && tip.classList.contains('ttip-built')) {
+      let summary = tip.querySelector('.capture-status-summary');
+      if (!summary) {
+        summary = document.createElement('div');
+        summary.className = 'capture-status-summary';
+        tip.appendChild(summary);
+      }
+      summary.textContent = labels.join('; ');
+    }
+  }
   function applyCtl(panel) {
     const ctl = panelCtl(panel);
     if (!ctl) { return; }
-    const base = ctlBase(ctl);
-    syncRefDisable(ctl, base);
-    const shown = ctlShown(ctl).filter(function (k) { return k !== base; });
+    const oracle = panel.id === 'tab-unified' && !!panel._comparisonSelection;
+    const base = oracle ? (panel._comparisonSelection.keys.length ? 'golden' : null) : ctlBase(ctl);
+    syncRefDisable(ctl, oracle ? null : base, oracle);
+    const shown = (oracle ? panel._comparisonSelection.keys : ctlShown(ctl)).filter(function (k) { return k !== base; });
     const active = new Set((base ? [base] : []).concat(shown));
     const counts = { ok: 0, problem: 0, na: 0 };
     // If the selected Reference is a parser with limited family coverage (e.g. the
@@ -189,6 +283,7 @@
       let cmp = {};
       const raw = cell.getAttribute('data-cmp');
       if (raw) { try { cmp = JSON.parse(raw); } catch (e) { return; } }
+      if (oracle) renderSegments(cell, shown);
       cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase', 'cmp-donly');
       const marker = cell.querySelector('.cmp-marker .marker-text');
       const fam = cell.getAttribute('data-family') || '';
@@ -211,6 +306,10 @@
       // toward the diff against a clean Reference; both are still shown in the tooltip.
       const avail = shown.map(function (k) { return cmp[k]; })
         .filter(function (o) { return o && o.na !== 1 && o.err !== 1; });
+      if (oracle && shown.every(key => !cmp[key] || cmp[key].na === 1)) {
+        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
+        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
+      }
       // ...but they must not be SILENT either. A compare candidate that has no data for
       // this case (an older capture taken before the case existed) is not agreement, and
       // folding it into "=" claims the two builds produced the same output when one of
@@ -243,6 +342,10 @@
         toggleCands(cell, active, base); return;
       }
       const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
+      const oracleDiffs = oracle ? shown.filter(function (key) {
+        const output = cmp[key];
+        return output && output.na !== 1 && (output.err === 1 || output.leak === 1 || output.sig !== refSig);
+      }).length : 0;
       const leak = bd.leak === 1;
       // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle, and the cell color
       // reflects ONLY the REF — the starred engine (`base`, default Dynamo) — measured
@@ -253,7 +356,7 @@
       const refDiverges = redOnDiff && base !== 'golden' && goldenSig != null
         && bd && bd.na !== 1 && bd.sig !== goldenSig;
       const donly = avail.length === 0;
-      const leaked = leak;  // the REF's own leak drives ↯, same as every other tab
+      const leaked = oracle ? shown.some(key => cmp[key] && cmp[key].leak === 1) : leak;
       // Marker: ✗ when the REF diverges (the red signal); otherwise NΔ = how many Compare
       // engines diverge from golden (informational, stays green), "=" when all agree.
       // "=" is only honest when every shown candidate actually produced output. When a
@@ -261,13 +364,15 @@
       // than reporting agreement it cannot support. A real divergence still wins.
       const eqTxt = naShown > 0 ? '?' : '=';
       let txt;
-      if (redOnDiff) {
+      if (oracle) {
+        txt = oracleDiffs > 0 ? String(oracleDiffs) + 'Δ' : eqTxt;
+      } else if (redOnDiff) {
         txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : eqTxt);
       } else {
         txt = donly ? '' : (diffs === 0 ? eqTxt : String(diffs) + 'Δ');
       }
       if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
-      const problem = redOnDiff ? refDiverges : leaked;
+      const problem = oracle ? oracleDiffs > 0 : redOnDiff ? refDiverges : leaked;
       cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
       if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
       toggleCands(cell, active, base);
@@ -276,36 +381,30 @@
       const k = el.dataset.overviewCount;
       el.textContent = String(k === 'todo' ? 0 : (counts[k] || 0));
     });
-    // Column grammar popups (header hover): output columns are one-per-candidate. golden
+    window.__conformanceUpdateLegend(panel);
+    repositionVisibleTooltips();
+    // Column grammar popups (header activation): output columns are one-per-candidate. golden
     // is PINNED (always shown, leftmost); the rest show only when active (Reference +
     // selected compares). Flag the Reference column and order golden -> REF -> the rest,
     // the same rule the cell-popup candidate grid uses.
-    panel.querySelectorAll('table.ttip-grammar').forEach(function (tbl) {
-      tbl.querySelectorAll('[data-cand]').forEach(function (el) {
-        const key = el.getAttribute('data-cand');
-        const pinned = el.getAttribute('data-cand-pin') === '1';
-        el.classList.toggle('col-hidden', !(pinned || active.has(key)));
-        el.classList.toggle('col-ref', key === base);
-      });
-      function _gRank(el) {
-        if (el.getAttribute('data-cand-pin') === '1') { return 0; }
-        if (el.getAttribute('data-cand') === base) { return 1; }
-        return 2;
-      }
-      tbl.querySelectorAll('tr').forEach(function (tr) {
-        const cols = Array.prototype.slice.call(tr.querySelectorAll('[data-cand]'));
-        if (!cols.length) { return; }
-        cols.sort(function (a, b) {
-          const ra = _gRank(a), rb = _gRank(b);
-          if (ra !== rb) { return ra - rb; }
-          return (parseInt(a.getAttribute('data-cand-order'), 10) || 0)
-            - (parseInt(b.getAttribute('data-cand-order'), 10) || 0);
-        });
-        cols.forEach(function (el) { tr.appendChild(el); });
-      });
-    });
-    updateCompareUrl(panel, ctl);
+    panel.querySelectorAll('[data-ttip-id]').forEach(cell => syncTooltip(cell, [...active], base, panel.id === 'tab-unified'));
+    if (!panel._comparisonSelection) updateCompareUrl(panel, ctl);
   }
+  // Cell popups, case grammar tables and drawers use the same capture visibility policy.
+  function syncTooltip(host, keys, base, oracle) {
+    const active = new Set(keys);
+    if (oracle) active.add('golden');
+    toggleCands(host, active, base);
+  }
+  window.__syncConformanceTooltip = syncTooltip;
+  window.__applyConformanceSelection = function (panel, keys, reference) {
+    const ctl = panelCtl(panel);
+    if (!ctl) return;
+    ctl.querySelectorAll('input.cmp-ref').forEach(input => { input.checked = input.value === reference; });
+    ctl.querySelectorAll('input.cmp-on').forEach(input => { input.checked = keys.includes(input.value); });
+    ctl.dataset.prevBase = reference || '';
+    applyCtl(panel);
+  };
   function applyCompare() { const p = activePanel(); if (p) { applyCtl(p); } }
   function _boxFor(ctl, val) {
     return Array.prototype.find.call(
@@ -347,6 +446,7 @@
         if (!label) { return; }
         label.addEventListener('mousedown', function () { r.dataset.wasChecked = r.checked ? '1' : '0'; });
         label.addEventListener('click', function () {
+          if (ctl.closest('.tab-panel')._comparisonSelection) return;
           if (r.dataset.wasChecked !== '1') { return; }
           r.dataset.wasChecked = '0';
           // Only clear the Reference when nothing else is selected to compare against.
@@ -368,6 +468,8 @@
         });
       });
       ctl.addEventListener('change', function (e) {
+        const selection = ctl.closest('.tab-panel')._comparisonSelection;
+        if (selection) { selection.fromControls(e.target); return; }
         if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
         if (e.target.matches('input.cmp-ref, input.cmp-on')) {
           const panel = ctl.closest('.tab-panel');
@@ -415,10 +517,11 @@
     document.body.classList.toggle('view-overview', !detailed);
     document.body.classList.toggle('view-details', detailed);
     viewCheckboxes.forEach(function (cb) { cb.checked = detailed; });
-    // Compare-with only exists in Detailed. Leaving it returns to one reference (★),
-    // rather than carrying a hidden comparison into the next Detailed session.
+    // Legacy tabs keep their existing compare reset. Unified's capture selector owns
+    // this selection across Overview and Detailed, so its hidden controls must stay in sync.
     if (!detailed && Object.keys(cmpDefaults).length > 0) {
       document.querySelectorAll('.tab-panel').forEach(function (panel) {
+        if (panel._comparisonSelection) { return; }
         const ctl = panelCtl(panel);
         if (!ctl) { return; }
         ctl.querySelectorAll('input.cmp-on:not(:disabled)').forEach(function (cb) {
@@ -427,6 +530,7 @@
         applyCtl(panel);
       });
     }
+    document.querySelectorAll('.tab-panel').forEach(window.__conformanceUpdateLegend);
     if (shouldUpdateUrl) {
       updateViewUrl(detailed);
     }
@@ -558,6 +662,7 @@
         el.colSpan = visibleColumnCount;
       });
     });
+    document.querySelectorAll('.tab-panel').forEach(window.__conformanceUpdateLegend);
     updateStickyOffsets();
     if (shouldUpdateUrl) {
       updateUrl(visible);
@@ -738,6 +843,16 @@
     // gutter's worth of usable room on top of the two real gutters.)
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
+    if (cell.dataset.ttipClick === 'pin') {
+      ttip.style.maxWidth = (window.innerWidth * .97) + 'px';
+      ttip.style.maxHeight = (window.innerHeight * .97) + 'px';
+      const rect = ttip.getBoundingClientRect();
+      ttip.style.left = ((window.innerWidth - rect.width) / 2 + window.scrollX) + 'px';
+      ttip.style.top = ((window.innerHeight - rect.height) / 2 + window.scrollY) + 'px';
+      ttip.style.visibility = '';
+      ttip.style.opacity = '';
+      return;
+    }
     // An expanded schema may fit on neither side; scroll it within the larger space.
     const schemaOpen = ttip.querySelector('.case-schema[open]');
     ttip.style.maxHeight = schemaOpen
@@ -770,8 +885,6 @@
     ttip.style.opacity = '';
   }
 
-  let placeScheduled = false;
-  const visibleTooltips = new Set();
   function repositionVisibleTooltips() {
     if (placeScheduled) return;
     placeScheduled = true;
@@ -796,10 +909,6 @@
     }
   }, true);
 
-  // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
-  // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
-  // the only affordance — clicking never pins, because pinning is modal and one stray
-  // click otherwise disabled hover page-wide. So pinning is a touch-only mechanism now.
   // Only one tooltip is pinned at a time.
   // NEVER gate event REGISTRATION on a media query. `(hover: hover)` and
   // `(any-hover: hover)` are advisory descriptions of a device; they are not a statement
@@ -837,11 +946,9 @@
     pendingPointerType = '';
     pendingPointerTarget = null;
   }, true);
-  // A click that came from a finger or stylus has no hover behind it, so it must open the
-  // popup and pin it. A mouse click must not: hover already showed the popup, and pinning
-  // is modal (see `hoverAllowed`), so a mouse pin would switch hover off page-wide.
-  // Unknown/empty pointerType (synthetic `.click()`, keyboard activation) is treated as
-  // NOT touch, matching the mouse/keyboard contract.
+  // Hosts without explicit activation must not gain modal ownership from a mouse
+  // click: their hover path already opens the tooltip. Touch/pen needs pinning because
+  // those pointers cannot keep a hover tooltip open.
   const consumeClickShouldPin = function (cell) {
     const t = pendingPointerType;
     const target = pendingPointerTarget;
@@ -853,21 +960,23 @@
   };
   let pinnedCell = null;
   function unpinCell(c) { if (c && c._ttipUnpin) { c._ttipUnpin(); } }
-  // "Inside a pinnable element" must mean EXACTLY the set `attachTooltip` wired, so ask
-  // for the mark `attachTooltip` itself leaves rather than re-listing the classes. A class
-  // list cannot express that set: the transpose headers are wired directly (see below) and
-  // never pass through WIRE_ON_LOAD, so every hand-written list drifted from it. Headers
-  // ended up pinnable but not counted as inside — a header click pinned it and the SAME
-  // click bubbled here and unpinned it, so the popup could never stay up.
-  const WIRED = '[data-ttip-wired]';
   document.addEventListener('click', function (e) {
-    // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
-    if (pinnedCell && !e.target.closest(WIRED) && !e.target.closest('.ttip')) { unpinCell(pinnedCell); }
+    if (e.target.closest('.capture-slots, .comparison-picker')) return;
+    if (pinnedCell && !pinnedCell.contains(e.target) && !pinnedCell._ttip.contains(e.target)) { unpinCell(pinnedCell); }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && pinnedCell && !document.querySelector('dialog[open]')) { event.preventDefault(); unpinCell(pinnedCell); }
   });
 
   function attachTooltip(cell) {
     const ttip = cell.querySelector('.ttip');
     if (!ttip) return;
+    if (cell.hasAttribute('data-ttip-id') && !cell.classList.contains('col-toggle')) {
+      cell.dataset.ttipClick = 'pin';
+      cell.dataset.ttipPortal = '1';
+      cell.tabIndex = 0;
+    }
     cell._ttip = ttip;
     ttip._ttipOwner = cell;
     // cloneNode copies the wired flag; guard so re-wiring a clone is a no-op and
@@ -886,9 +995,16 @@
     let isVisible = false;
     let portalParent = null;
 
+    cell._ttipDispose = function () {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+      unpin();
+      ttip.remove();
+    };
+
     function portalTooltip() {
       if (portalParent) return;
-      if (cell._focusTooltip || (document.activeElement && cell.contains(document.activeElement))) return;
+      if (cell.dataset.ttipPortal !== '1' && (cell._focusTooltip || (document.activeElement && cell.contains(document.activeElement)))) return;
       portalParent = ttip.parentNode;
       document.body.appendChild(ttip);
     }
@@ -916,7 +1032,11 @@
 
     function pin() {
       if (pinnedCell && pinnedCell !== cell) { unpinCell(pinnedCell); }
+      visibleTooltips.forEach(function (other) {
+        if (other !== ttip) { unpinCell(other._ttipOwner); }
+      });
       clearTimers();
+      if (window.__buildTooltip) window.__buildTooltip(cell);
       portalTooltip();
       place(cell);
       ttip.classList.add('ttip-visible', 'ttip-pinned');
@@ -930,6 +1050,7 @@
       document.body.classList.add('ttip-pin-mode');
     }
     function unpin() {
+      clearTimers();
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
       visibleTooltips.delete(ttip);
       restoreTooltip();
@@ -937,11 +1058,19 @@
       isActive = false;
       cell.classList.remove('ttip-open');
       if (pinnedCell === cell) {
+        if (cell.isConnected) cell.focus({ preventScroll: true });
         pinnedCell = null;
         document.body.classList.remove('ttip-pin-mode');
       }
     }
     cell._ttipUnpin = unpin;
+    cell.addEventListener('keydown', function (event) {
+      if (event.target !== cell || cell.dataset.ttipClick !== 'pin') return;
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        if (ttip.classList.contains('ttip-pinned')) unpin(); else pin();
+      }
+    });
 
     function clearTimers() {
       if (showTimer !== null) {
@@ -959,7 +1088,7 @@
       clearTimers();
       showTimer = window.setTimeout(function () {
         showTimer = null;
-        if (!isActive) return;
+        if (!isActive || !hoverAllowed()) return;
         if (cell._focusTooltip && window.__buildTooltip) window.__buildTooltip(cell);
         portalTooltip();
         place(cell);
@@ -996,6 +1125,7 @@
     }
 
     function keepButtonTooltipOpen() {
+      if (!hoverAllowed()) return;
       isActive = true;
       clearTimers();
       portalTooltip();
@@ -1009,18 +1139,6 @@
       clearTimers();
     }
 
-    // TOUCH ONLY. Tap toggles a pinned tooltip; taps INSIDE the tooltip (its links, the ✕)
-    // behave normally. Touch has no hover, so a tap on the cell must open the tooltip
-    // instead of following the cell's own parser-source link — preventDefault blocks that
-    // navigation. Without this, a touch user could not read a popup at all.
-    //
-    // There is deliberately NO click-to-pin where hover exists. Pinning is MODAL
-    // (`hoverAllowed()` below): while one cell is pinned, hover opens nothing anywhere
-    // else. That made a single stray click kill hover for the whole page until the pin
-    // was released, and in details view "click somewhere else to dismiss" almost always
-    // lands on another wired cell, which just moves the pin — so hover never came back.
-    // On a hover-capable device hover is the only affordance, and a click on a cell now
-    // does what the cell says it does: follow its parser-source link.
     cell.addEventListener('click', function (e) {
       // Consume FIRST, unconditionally. Every early return below still ends this click,
       // so leaving the provenance unconsumed on any of them hands a stale `touch` to the
@@ -1028,8 +1146,15 @@
       // on the popup's own links or its ✕ takes this return, and used to leave it armed.
       const shouldPin = consumeClickShouldPin(cell);
       if (e.target.closest('.ttip')) { return; }
-      // Decided per-interaction, not per-page: only a finger or stylus pins. A mouse click
-      // falls through to the cell's own parser-source link, and never enters modal pin mode.
+      if (cell.dataset.ttipClick === 'drawer') {
+        unpin();
+        return;
+      }
+      if (cell.dataset.ttipClick === 'pin') {
+        e.preventDefault();
+        if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
+        return;
+      }
       if (!shouldPin) { return; }
       e.preventDefault();
       if (ttip.classList.contains('ttip-pinned')) { unpin(); } else { pin(); }
@@ -1037,18 +1162,19 @@
     // Hover show/hide only where hover exists; on touch it just flickers. A pinned
     // tooltip ignores hover leave so it stays until ✕ / outside tap.
     //
-    // Pinning is also MODAL: while any tooltip is pinned, hover on OTHER cells does
+    // Pinning is also MODAL: while any tooltip is pinned, other hover hosts do
     // nothing. Clicking a cell is a deliberate "keep this one open so I can read it",
     // and hover popups firing over the top of it defeat that — you cannot move the
     // mouse toward the pinned popup without crossing cells that each try to open
-    // their own. Hover resumes when the pin is released (✕, clicking the pinned cell
+    // their own. Hover hosts resume when the pin is released (✕, clicking the pinned cell
     // again, or clicking outside).
     const hoverAllowed = function () { return pinnedCell === null || pinnedCell === cell; };
-    // Registered UNCONDITIONALLY — see the `pendingPointerType` note above. If a device has no
-    // hover these simply never fire; if it does, they work regardless of what the media
-    // queries claim. `focusin`/`focusout` additionally give keyboard users the popup.
+    const clickOnly = cell.dataset.ttipClick === 'drawer' || cell.dataset.ttipClick === 'pin';
+    // Media queries cannot establish which pointer events a device delivers, so register
+    // listeners unconditionally. Only non-click-only hosts may activate on hover or focus;
+    // case hosts require explicit activation to avoid constructing popups during navigation.
     const onEnter = function () {
-      if (hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
+      if (!clickOnly && hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
     };
     const onLeave = function () {
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
@@ -1065,7 +1191,7 @@
     cell.addEventListener('mouseenter', onEnter);
     cell.addEventListener('mouseleave', onLeave);
     cell.addEventListener('focusin', function () {
-      if (hoverAllowed()) {
+      if (!clickOnly && hoverAllowed()) {
         restoreTooltip();
         showFocusedTooltip();
         scheduleShow();
@@ -1093,10 +1219,10 @@
       cell.addEventListener('pointerenter', keepButtonTooltipOpen);
     }
   }
+  window.__attachConformanceTooltip = attachTooltip;
   // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
-  // same case in every family's grammar); it uses the identical hover/pin machinery as a
-  // data cell. Transpose builds its headers later and wires them itself — this list is only
-  // the starting set, never the definition of "pinnable" (that is `WIRED` above).
+  // same case in every family's grammar); legacy transpose builds its headers later and
+  // wires them itself.
   const WIRE_ON_LOAD = 'td.cell, td.parser, th.case-sub';
   document.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
 
@@ -1116,13 +1242,15 @@
   const transposeToggle = document.querySelector('[data-transpose-toggle]');
 
   function readTransposeMode() {
-    const requested = new URLSearchParams(window.location.search).get('transpose');
+    const params = new URLSearchParams(window.location.search);
+    const requested = params.get('vertical') || params.get('transpose');
     return requested === '1' || requested === 'true';
   }
 
   function updateTransposeUrl(enabled) {
     const url = new URL(window.location.href);
     url.searchParams.delete('transpose');
+    url.searchParams.delete('vertical');
     if (enabled) {
       url.searchParams.set('transpose', '1');
     }
@@ -1365,6 +1493,7 @@
       document.querySelectorAll('.tab-panel').forEach(ensureTransposed);
     }
     document.documentElement.classList.remove('transpose-pending');
+    document.querySelectorAll('.tab-panel').forEach(window.__conformanceUpdateLegend);
     if (shouldUpdateUrl) {
       updateTransposeUrl(Boolean(enabled));
     }

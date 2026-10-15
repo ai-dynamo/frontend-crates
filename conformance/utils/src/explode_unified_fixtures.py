@@ -21,6 +21,7 @@ Output (conformance/unified/, one YAML per case per family per version-dir):
 Same schema shape as toolcalling/fixtures-stream-v1 (family/mode/captured_with/cases).
 Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 """
+import argparse
 import shutil
 import sys
 from pathlib import Path
@@ -106,12 +107,7 @@ def _peer_cell(result, expected_chunk_count=None, *, require_assembled=False):
         if not result.get("error") or not isinstance(result["error_traceback"], str):
             raise ValueError("error traceback evidence requires a parser error and string traceback")
         record["error_traceback"] = result["error_traceback"]
-    if "capture_input" in result:
-        record["capture_input"] = result["capture_input"]
-    if "capture_stimulus" in result:
-        record["capture_stimulus"] = result["capture_stimulus"]
-    if "capture_observation" in result:
-        record["capture_observation"] = result["capture_observation"]
+    record.update({key: result[key] for key in ("capture_input", "capture_stimulus", "capture_observation") if key in result})
     return record
 
 
@@ -161,7 +157,72 @@ def _canonical_dynamo_capture_version(provenance):
     return provenance["crate_version"]
 
 
+def _split_only_cases(family, document):
+    """Build input/GOLDEN rows for a family without a native Unified parser."""
+    if document.get("family") != family or not isinstance(document.get("cases"), dict):
+        raise ValueError(f"{family}: expected a family-scoped golden spec")
+    rows = {}
+    for case_id, case in document["cases"].items():
+        key, actual_family, scenario = _case_key(case_id)
+        if actual_family != family:
+            raise ValueError(f"{case_id}: golden case belongs to {actual_family}, not {family}")
+        if not all(field in case for field in ("input", "init", "finish_reason", "golden")):
+            raise ValueError(f"{case_id}: golden case is missing authored request fields")
+        raw_input = case["input"]
+        if not isinstance(raw_input, str):
+            raise ValueError(f"{case_id}: input must be text")
+        request = {
+            "input": raw_input,
+            "init": case["init"],
+            "finish_reason": case["finish_reason"],
+            # The request schema stores an empty offered-tool set as [], matching
+            # the legacy batch API's required slice without inventing a schema.
+            "tools": case.get("tools") or [],
+            "chunks": [{"delta_text": raw_input}],
+        }
+        rows[key] = {
+            "scenario": scenario,
+            "description": case.get("description", ""),
+            "policy": case.get("policy") or [],
+            "request": request,
+            "golden": {"assembled": case["golden"]},
+        }
+    return rows
+
+
+def _input_case(case, request):
+    return {
+        "scenario": case["scenario"],
+        "description": case.get("description", ""),
+        "policy": case.get("policy") or [],
+        **{key: request[key] for key in ("init", "finish_reason", "input", "tools", "chunks")},
+    }
+
+
+def write_split_only_family(family):
+    """Materialize only authored inputs and GOLDEN for a non-native family."""
+    registry = yaml.safe_load((CONF / "utils/src/parser_families.yaml").read_text())["unified"]
+    entry = registry.get(family)
+    if entry is None or entry.get("native") is not False:
+        raise ValueError(f"{family}: split-only generation requires native: false")
+    spec_path = BUILD / "golden_spec" / entry["golden_spec"]
+    document = yaml.safe_load(spec_path.read_text())
+    rows = _split_only_cases(family, document)
+    input_header = {"family": family, "mode": MODE, "model_label": family}
+    golden_header = {"family": family, "mode": MODE, "captured_with": {"golden": "v1"}}
+    for key, row in rows.items():
+        _dump({**input_header, "cases": {key: _input_case(row, row["request"])}}, BUILD / "inputs" / family / f"{key}.yaml")
+        _dump({**golden_header, "cases": {key: row["golden"]}}, BUILD / "golden" / family / f"{key}.yaml")
+    print(f"wrote {len(rows)} input and GOLDEN cases for split-only family {family}")
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--split-only-family", help="materialize authored input and GOLDEN only for a native: false family")
+    args = parser.parse_args()
+    if args.split_only_family:
+        write_split_only_family(args.split_only_family)
+        return
     feed = yaml.safe_load((BUILD / "unified_results.yaml").read_text())
     provenance = validate_capture_provenance(REPO, feed.get("capture_provenance"))
     caps = {}
@@ -208,18 +269,10 @@ def main():
         request = capture_input(c)
         active_cases[(fam, scenario)] = (key, request)
 
-        slot("inputs", fam, model_label=fam)[key] = {
-            "scenario": scenario,
-            "description": c.get("description", ""),
-            "policy": c.get("policy") or [],
-            "init": c.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-            "finish_reason": c.get("finish_reason") or "stop",
-            "input": c.get("input", ""),
-            "tools": c.get("tools"),
-            "chunks": [
-                {"delta_text": ch.get("delta_text", "")} for ch in chunks
-            ],
-        }
+        slot("inputs", fam, model_label=fam)[key] = _input_case(
+            {**c, "scenario": scenario},
+            {**request, "chunks": [{"delta_text": ch.get("delta_text", "")} for ch in chunks]},
+        )
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
         slot("golden", fam, captured_with={"golden": "v1"})[key] = {

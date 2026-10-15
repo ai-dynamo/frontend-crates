@@ -21,9 +21,7 @@ parser cannot see that value — `finish()` takes no argument).
 
 import re
 
-import yaml
-
-import markers
+from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_group
 
@@ -188,30 +186,7 @@ UNIFIED_TAX = {
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
-UNIFIED_GROUP_LABEL = {
-    1: "TC Single call", 2: "TC Multiple calls", 3: "TC No call",
-    4: "TC Malformed envelope", 5: "TC Truncation / recovery", 6: "TC Empty body",
-    7: "TC Argument fidelity", 8: "TC Content position",
-    10: "Reasoning span",
-    11: "Reasoning ↔ tool interleaving", 12: "Adversarial nesting (reasoning + tool)",
-    30: "Guided Decoding — baseline and argument fidelity",
-    31: "Guided Decoding — invalid JSON or call structure",
-    32: "Guided Decoding — tool markup around the payload",
-    33: "Guided Decoding — invalid payload plus tool markup",
-    34: "Guided Decoding — reasoning boundaries",
-    35: "Guided Decoding — markers in visible answers",
-    40: "Prefilled Reasoning", 41: "Prefilled Reasoning — malformed",
-    50: "Prefilled Response", 51: "Prefilled Response — malformed",
-    "deepseek_v4": "Single Family Test: DeepSeek V4-specific tests",
-    "gemma": "Single Family Test: Gemma 4 guided call-prefix boundaries",
-    "glm5": "Single Family Test: GLM argument handling",
-    "deepseek": "Single Family Test: DeepSeek V4.1 DSML invocation bodies",
-    "deepseek_v41": "Single Family Test: DeepSeek V4.1-specific tests",
-    "kimi_k2": "Single Family Test: Kimi K2-specific tests",
-    "qwen3": "Single Family Test: Qwen3-specific tests",
-    "kimi": "Single Family Test: Kimi K3 XTML",
-    "muse": "Single Family Test: Muse-specific",
-}
+UNIFIED_GROUP_LABEL = UNIFIED_DISPLAY["group_labels"]
 
 
 def tax(scenario):
@@ -226,7 +201,7 @@ def tax(scenario):
 
 
 # Display placement may change without renumbering published capture IDs.
-_DISPLAY_GROUP = {"guided_response_rejected_header_quote_ownership": "deepseek_v4"}
+_DISPLAY_GROUP = UNIFIED_DISPLAY["group_overrides"]
 
 
 def display_tax(scenario):
@@ -249,9 +224,7 @@ def display_sort_key(scenario):
     return group_key, section_rank, case_description(scenario), scenario
 
 
-DISPLAY_PREFIXES = {"deepseek": ("deepseek_v41", "ds41"),
-                    "deepseek_v4": ("deepseek_v4", "ds4"),
-                    "deepseek_v41": ("deepseek_v41", "ds41")}
+DISPLAY_PREFIXES = {group: tuple(prefixes) for group, prefixes in UNIFIED_DISPLAY["prefixes"].items()}
 
 
 def display_case_labels(scenarios):
@@ -461,13 +434,7 @@ def historical_case_label(label, family=None, scenario=None):
 # argument-value regions (`opaque:`) are not applied.
 # Derived from the ONE declaration in parser_families.yaml (`unified:` -> `registry`),
 # so a family whose corpus name differs from its registry name says so in one place.
-MARKER_FAMILY = {
-    f: r["registry"]
-    for f, r in yaml.safe_load(
-        markers.parser_families_path().read_text()
-    )["unified"].items()
-    if r.get("registry") and r["registry"] != f
-}
+MARKER_FAMILY = UNIFIED_MARKER_FAMILIES
 
 
 def marker_family(family):

@@ -52,12 +52,15 @@ GRAMMAR_NOTE = {
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
+    "gpt_oss": "Harmony messages use `<|channel|>analysis<|message|>...<|end|>` for reasoning, `<|channel|>final<|message|>...<|return|>` for visible content, and `commentary to=functions.NAME <|constrain|>json<|message|>...<|call|>` for tool calls.",
 }
 
 
 # --- grammar renderers: one semantic segment -> that family's raw text --------
 
 def r_reason(fam, text):
+    if fam == "gpt_oss":
+        return f"<|channel|>analysis<|message|>{text}<|end|>"
     if fam == "kimi_k3":
         return k3_channel("think", text)
     if fam == "gemma4":
@@ -75,6 +78,8 @@ def r_text(fam, text):
     `<|eot|>`: `<|eot|>` ends the TURN, which would make any following segment
     unreachable. The marker-pair grammars leave visible text bare.
     """
+    if fam == "gpt_oss":
+        return f"<|channel|>final<|message|>{text}<|return|>"
     if fam == "muse_glimmer":
         return f"<|start|>assistant to=user<|message|>{text}<|eom|>"
     if fam == "kimi_k3":
@@ -170,6 +175,10 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
         for key, value in arguments.items()
     }
+    if fam == "gpt_oss":
+        args = json.dumps(arguments, ensure_ascii=False)
+        return (f"<|start|>assistant<|channel|>commentary to=functions.{name} "
+                f"<|constrain|>json<|message|>{args}<|call|>")
     if fam in ("deepseek_v4", "deepseek_v41"):
         gap = " " if fam == "deepseek_v41" else ""
         envelope = "calls" if gap else "tool_calls"
@@ -433,6 +442,8 @@ def control_tokens(fam):
 
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
+    if fam == "gpt_oss":
+        return "<|channel|>analysis<|message|>", "<|end|>", "<|call|>", "<|call|>"
     if fam == "kimi_k3":
         return k3_open("think"), k3_close("think"), k3_open("tools"), k3_close("tools")
     reason_open, reason_close = r_reason(fam, "\x00").split("\x00")
@@ -451,6 +462,8 @@ def control_tokens(fam):
 
 def invoke_header_prefix(fam):
     """Inner invoke header through the tool name, without its terminator."""
+    if fam == "gpt_oss":
+        return ""
     if fam == "kimi_k3":
         return '<|open|>call tool="'
     if fam == "glm47":
@@ -472,6 +485,8 @@ def guided_invoke_prefix(fam):
 
 
 def guided_named_invoke_prefix(fam):
+    if fam == "gpt_oss":
+        return ""
     return {
         "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
@@ -486,6 +501,8 @@ def guided_named_invoke_prefix(fam):
 
 def r_bare_tool(fam, name, key, value, index):
     rendered = r_tool(fam, name, key, value, index)
+    if fam == "gpt_oss":
+        return rendered
     _, _, opener, closer = control_tokens(fam)
     rendered = rendered.removeprefix(opener.replace("NAMEX", name))
     if fam != "gemma4":
@@ -551,6 +568,7 @@ V_MUSE = {
 # per-family verdict published the other 22 as if an engine had produced them.
 VLLM_UNCAPTURABLE = {
     "muse_glimmer": V_MUSE,
+    "gpt_oss": "GPT-OSS uses the split Harmony parser; the Unified parser does not capture this family.",
 }
 
 
@@ -2030,6 +2048,11 @@ EDGE += [
 
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
+    if fam == "gpt_oss":
+        return D(
+            "UNSUPPORTED",
+            "the comparison has no native GPT-OSS Unified parser; the legacy v1 batch capture is recorded separately",
+        )
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES) and "verdict" not in spec:
         if fam in {"deepseek_v4", "deepseek_v41", "glm47"} and fam not in spec:
             return spec["qwen3"]
@@ -2625,6 +2648,12 @@ def _build_edge_cases(fam, specs):
         if isinstance(per_fam, OnlyFamilies) and fam not in per_fam:
             continue
 
+        # These edge fixtures use raw family-specific markup. GPT-OSS's Harmony
+        # inputs must be authored explicitly; reusing another grammar's bytes would
+        # turn a corpus omission into a false parser result.
+        if fam == "gpt_oss" and isinstance(per_fam, dict) and fam not in per_fam:
+            continue
+
         cid = f"UNIFIED.{name}.{fam}"
         if fam not in per_fam:
             if fam == "deepseek_v4" and "kimi_k2" in per_fam:
@@ -2710,7 +2739,14 @@ def scenario_families(scenario):
         if name != scenario:
             continue
         per_fam = _edge_case_family_policy(edge_case)
-        return frozenset(per_fam) if isinstance(per_fam, OnlyFamilies) else frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
+        families = (set(per_fam) if isinstance(per_fam, OnlyFamilies)
+                    else set(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES))
+        if isinstance(per_fam, dict) and "gpt_oss" not in per_fam:
+            families.discard("gpt_oss")
+        init = edge_case[4] if len(edge_case) >= 6 else {}
+        if (init or {}).get("tool_output_mode", "Native") != "Native":
+            families.intersection_update(GUIDED_FAMILIES)
+        return frozenset(families)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
 

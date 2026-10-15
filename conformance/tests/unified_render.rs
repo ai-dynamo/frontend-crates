@@ -19,7 +19,7 @@
 //! `committed_dynamo_capture_matches_the_live_parsers` test below fails if that
 //! shard drifts from the parsers.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
@@ -546,6 +546,11 @@ fn render_unified_conformance_html() {
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
+        // Split-only families remain in the Unified corpus for their legacy batch
+        // histories, but they have no current native UnifiedParser capture to render.
+        if !common::unified_family(&file.family).native {
+            continue;
+        }
         rows.push_str(&format!(
             "<tr class=fam><td colspan=4>{} &nbsp; <span class=sub>reasoning=`{}` · tool=`{}`</span></td></tr>",
             esc(&file.family),
@@ -869,9 +874,16 @@ fn validate_committed_dynamo_capture(root: &std::path::Path) {
 
 fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
+    let native_families: BTreeSet<String> = common::unified_families()
+        .into_iter()
+        .filter_map(|(name, family)| family.native.then_some(name))
+        .collect();
+    let native_family_args: Vec<String> = native_families.iter().cloned().collect();
     let validation = common::capture_stimulus_command()
         .arg("--validate-current")
         .arg(capture_dir)
+        .arg("--families")
+        .args(&native_family_args)
         .args(["--format", "json"])
         .arg("--inputs")
         .args(&input_dirs)
@@ -895,6 +907,10 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
         for entry in glob_yaml(&input_dir) {
             let doc: InputDoc = serde_yaml::from_str(&std::fs::read_to_string(&entry).unwrap())
                 .unwrap_or_else(|e| panic!("{}: {e}", entry.display()));
+            // Split-only inputs feed legacy batch histories, not this native v2 capture.
+            if !native_families.contains(&doc.family) {
+                continue;
+            }
             for (key, case) in doc.cases {
                 // A sparse overlay can rename a case while preserving its scenario.
                 // The newer key replaces the released key for capture validation.

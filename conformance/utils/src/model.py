@@ -98,7 +98,7 @@ tooltip = {
   "candidates": [ {"key","label","impl","version","parse_mode","is_ref",
                    "block": output_block, "chunk_deltas": [per-chunk], "leak": bool} ],
   "baseline": {"impl","label","block"} | None,   # per-chunk chart baseline column
-  "reasons": [ {"impl","label","reason","intentional"} ],  # divergence reasons
+  "reasons": [ {"impl","label","reason","intentional","candidate_sig","reference_impl","reference_sig"} ],
   "dynamo_notes": [ [label, text] ], "refs": [ [label, value] ],
   "leak_note": str | None,
   "na_note": str | None,             # n/a-stub cells: the explanation-only note
@@ -164,6 +164,18 @@ def to_script_json(page: dict) -> str:
     return (raw.replace("<", "\\u003c")
                .replace(">", "\\u003e")
                .replace("&", "\\u0026"))
+
+
+def comparison_reasons(facts: list[dict], labels: dict[str, str], reference_impl: str,
+                       entries: dict[str, dict]) -> list[dict]:
+    return [
+        {"impl": fact["impl"], "label": labels.get(fact["impl"], fact["impl"]),
+         "reason": fact["reason"], "intentional": fact["intentional"],
+         "candidate_sig": entries[fact["impl"]]["sig"],
+         "reference_impl": reference_impl, "reference_sig": entries[reference_impl]["sig"]}
+        for fact in facts
+        if fact["impl"] != reference_impl and fact["agrees"] is False and fact["reason"]
+    ]
 
 
 def make_cell(**fields: Any) -> dict:

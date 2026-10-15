@@ -191,6 +191,8 @@ markers:
 # `MARKER_FAMILY` in unified_taxonomy.py.
 #
 # Columns:
+#   capture_pipelines implementation -> [reasoning, tool] historical producer names
+#   vllm_tokenizer_markers ordered synthetic vocabulary for the peer capture adapter
 #   registry          key into `families:` / `markers:` above (defaults to the row name)
 #   native            true = has a native UnifiedParser; false = driven through the SPLIT path
 #   reasoning_parser  v1 reasoning parser used by the SPLIT path
@@ -203,12 +205,22 @@ markers:
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
   deepseek_v41:
+    capture_pipelines:
+      vllm_python: ["deepseek_v4", "deepseek_v4"]
+      sglang_python: ["deepseek-v41", "deepseekv41"]
+      dynamo_v1: ["deepseek_v4", "deepseek_v4"]
+    vllm_tokenizer_markers: &deepseek_peer_tokens ["<think>", "</think>", "<｜DSML｜tool_calls>", "</｜DSML｜tool_calls>", "<｜DSML｜invoke>", "</｜DSML｜invoke>", "</｜DSML｜parameter>"]
     native: true
     reasoning_parser: deepseek_v41
     tool_parser: deepseek_v41
     golden_spec: deepseek_v41.yaml
     leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   deepseek_v4:
+    capture_pipelines:
+      vllm_python: ["deepseek_v4", "deepseek_v4"]
+      sglang_python: ["deepseek-v4", "deepseekv4"]
+      dynamo_v1: ["deepseek_v4", "deepseek_v4"]
+    vllm_tokenizer_markers: *deepseek_peer_tokens
     registry: deepseek_v4
     native: true
     reasoning_parser: deepseek_v4
@@ -216,6 +228,11 @@ unified:
     golden_spec: deepseek_v4.yaml
     leak_markers: ["<｜DSML｜", "</｜DSML｜"]
   gemma4:
+    capture_pipelines:
+      vllm_python: ["gemma4", "gemma4"]
+      sglang_python: ["gemma4", "gemma4"]
+      dynamo_v1: ["gemma4", "gemma4"]
+    vllm_tokenizer_markers: ["<|channel>", "<channel|>", "<|tool_call>", "<tool_call|>", "<|turn>", "<|tool_response>"]
     registry: gemma4
     native: true
     reasoning_parser: gemma4
@@ -223,6 +240,11 @@ unified:
     golden_spec: gemma4.yaml
     leak_markers: ["thought\n"]
   glm47:
+    capture_pipelines:
+      vllm_python: ["glm47", "glm47"]
+      sglang_python: ["glm45", "glm47"]
+      dynamo_v1: ["glm45", "glm47"]
+    vllm_tokenizer_markers: ["<think>", "</think>", "<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
     registry: glm47
     native: true
     reasoning_parser: nemotron_deci
@@ -230,6 +252,11 @@ unified:
     golden_spec: glm47.yaml
     leak_markers: ["<tool_call>", "</tool_call>", "<arg_key>", "</arg_key>", "<arg_value>", "</arg_value>"]
   kimi_k2:
+    capture_pipelines:
+      vllm_python: ["kimi_k2", "kimi_k2"]
+      sglang_python: ["kimi_k2", "kimi_k2"]
+      dynamo_v1: ["kimi_k25", "kimi_k2"]
+    vllm_tokenizer_markers: ["<think>", "</think>", "<|tool_calls_section_begin|>", "<|tool_calls_section_end|>", "<|tool_call_begin|>", "<|tool_call_end|>", "<|tool_call_argument_begin|>"]
     registry: kimi_k2
     native: true
     reasoning_parser: kimi_k25
@@ -237,6 +264,11 @@ unified:
     golden_spec: kimi.yaml
     leak_markers: []
   kimi_k3:
+    capture_pipelines:
+      vllm_python: ["kimi_k3", "kimi_k3"]
+      sglang_python: ["kimi_k3", "kimi_k3"]
+      dynamo_v1: ["kimi_k3", "kimi_k3"]
+    vllm_tokenizer_markers: ["<|open|>think<|sep|>", "<|close|>think<|sep|>", "<|open|>response<|sep|>", "<|close|>response<|sep|>", "<|close|>message<|sep|>"]
     registry: kimi_k3
     native: true
     reasoning_parser: kimi_k3
@@ -244,6 +276,9 @@ unified:
     golden_spec: kimi_k3.yaml
     leak_markers: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
   muse_glimmer:
+    capture_pipelines:
+      sglang_python: ["muse", "muse"]
+      dynamo_v1_jail: ["muse", "muse"]
     native: true
     # Prefilled channels ARE supported: `initialize_request` opens the stream in the
     # channel the prompt already opened, which is a two-line change for this grammar.
@@ -266,10 +301,100 @@ unified:
     tool_parser: muse_glimmer
     golden_spec: muse_glimmer.yaml
     leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
+  gpt_oss:
+    capture_pipelines:
+      dynamo_v1: ["gpt_oss", "harmony"]
+    registry: harmony
+    native: false
+    guided_tool_output: false
+    reasoning_parser: gpt_oss
+    tool_parser: harmony
+    golden_spec: gpt_oss.yaml
+    leak_markers: []
   qwen3:
+    capture_pipelines:
+      vllm_python: ["qwen3", "qwen3_coder"]
+      sglang_python: ["qwen3", "qwen3_coder"]
+      dynamo_v1: ["qwen3", "qwen3_coder"]
+    vllm_tokenizer_markers: ["<think>", "</think>", "<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
     registry: qwen3_coder
     native: true
     reasoning_parser: qwen3
     tool_parser: qwen3_coder
     golden_spec: qwen3.yaml
     leak_markers: ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+
+# Report identities for recorded peer pipelines. `impl` groups the comparison slots.
+unified_peer_sources:
+  vllm_python:
+    impl: vllm
+    label: "vLLM Python {version} (batch, Combined)"
+    stream: false
+    legacy_key: vllm
+  vllm_rust:
+    impl: vllm
+    label: "vLLM Rust {version} (stream, Combined & Unified)"
+    stream: true
+    legacy_key: vllm_rust
+  sglang_python:
+    impl: sglang
+    label: "SGLang Python {version} (stream, reasoning + tool detectors)"
+    stream: true
+    legacy_key: null
+
+# Historical batch capture identities and release-source limitations.
+unified_batch:
+  dynamo_v1:
+    source: dynamo_v1
+    source_blockers:
+      9.2.13: &missing_dynamo_release "Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404."
+  dynamo_v1_jail:
+    source: dynamo_v1
+    source_blockers:
+      9.2.13: *missing_dynamo_release
+      3.0.0: "Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established."
+  vllm_python_batch: {source: vllm_python}
+  sglang_python_batch: {source: sglang_python}
+
+# Reader-facing grouping and comparison defaults; capture identities remain in code.
+unified_display:
+  comparison_defaults: [dynamo, null, null]
+  comparison_slot_engines: [dynamo, sglang, vllm]
+  comparison_languages: [python, rust]
+  group_labels:
+    1: TC Single call
+    2: TC Multiple calls
+    3: TC No call
+    4: TC Malformed envelope
+    5: TC Truncation / recovery
+    6: TC Empty body
+    7: TC Argument fidelity
+    8: TC Content position
+    10: Reasoning span
+    11: Reasoning ↔ tool interleaving
+    12: Adversarial nesting (reasoning + tool)
+    30: Guided Decoding — baseline and argument fidelity
+    31: Guided Decoding — invalid JSON or call structure
+    32: Guided Decoding — tool markup around the payload
+    33: Guided Decoding — invalid payload plus tool markup
+    34: Guided Decoding — reasoning boundaries
+    35: Guided Decoding — markers in visible answers
+    40: Prefilled Reasoning
+    41: Prefilled Reasoning — malformed
+    50: Prefilled Response
+    51: Prefilled Response — malformed
+    deepseek_v4: 'Single Family Test: DeepSeek V4-specific tests'
+    gemma: 'Single Family Test: Gemma 4 guided call-prefix boundaries'
+    glm5: 'Single Family Test: GLM argument handling'
+    deepseek: 'Single Family Test: DeepSeek V4.1 DSML invocation bodies'
+    deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
+    kimi_k2: 'Single Family Test: Kimi K2-specific tests'
+    qwen3: 'Single Family Test: Qwen3-specific tests'
+    kimi: 'Single Family Test: Kimi K3 XTML'
+    muse: 'Single Family Test: Muse-specific'
+  group_overrides:
+    guided_response_rejected_header_quote_ownership: deepseek_v4
+  prefixes:
+    deepseek: [deepseek_v41, ds41]
+    deepseek_v4: [deepseek_v4, ds4]
+    deepseek_v41: [deepseek_v41, ds41]

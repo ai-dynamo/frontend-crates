@@ -18,7 +18,6 @@ the cell is simply greener than the corpus can support.
 """
 from __future__ import annotations
 
-import ast
 import sys
 from pathlib import Path
 
@@ -29,21 +28,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G  # noqa: E402
+from impls import VLLM_UNIFIED_PIPELINES  # noqa: E402
 
 
 def _vllm_capture_families() -> set[str]:
-    """`capture_vllm_unified.FAMILY_PARSERS`, read rather than imported.
-
-    The harness runs INSIDE a vLLM container and imports `vllm` at module scope, so
-    a no-engine gate can only read it.
-    """
-    tree = ast.parse((SRC / "capture_vllm_unified.py").read_text())
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign) and any(
-            getattr(t, "id", None) == "FAMILY_PARSERS" for t in node.targets
-        ):
-            return {k.value for k in node.value.keys}
-    raise AssertionError("capture_vllm_unified.py declares no FAMILY_PARSERS")
+    return set(VLLM_UNIFIED_PIPELINES)
 
 
 def test_the_uncapturable_set_is_what_the_vllm_harness_cannot_run():

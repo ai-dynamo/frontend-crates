@@ -123,6 +123,64 @@ def test_missing_scratch_peer_record_reuses_matching_history() -> None:
     ) is None
 
 
+def test_split_only_family_preserves_authored_request_and_golden() -> None:
+    init = {"starting_state": "Reasoning", "tool_output_mode": "Native", "named_tool": None}
+    tools = [{"name": "f", "parameters": {"type": "object"}}]
+    golden = [{"kind": "reasoning", "text": "thinking"}, {"kind": "text", "text": "done"}]
+    document = {
+        "family": "gpt_oss",
+        "cases": {
+            "UNIFIED.prefilled_reasoning_then_text.gpt_oss": {
+                "input": "authored Harmony request",
+                "init": init,
+                "finish_reason": "length",
+                "tools": tools,
+                "golden": golden,
+            }
+        },
+    }
+
+    rows = explode._split_only_cases("gpt_oss", document)
+
+    row = rows["UNIFIED.40-prefilled_reasoning_then_text"]
+    assert row["request"] == {
+        "input": "authored Harmony request",
+        "init": init,
+        "finish_reason": "length",
+        "tools": tools,
+        "chunks": [{"delta_text": "authored Harmony request"}],
+    }
+    assert row["golden"] == {"assembled": golden}
+
+
+def test_split_only_family_rejects_mismatched_family_scope() -> None:
+    with pytest.raises(ValueError, match="belongs to qwen3"):
+        explode._split_only_cases(
+            "gpt_oss",
+            {"family": "gpt_oss", "cases": {"UNIFIED.tool_only.qwen3": {}}},
+        )
+
+
+def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
+    rows = explode._split_only_cases(
+        "gpt_oss",
+        {
+            "family": "gpt_oss",
+            "cases": {
+                "UNIFIED.text_only.gpt_oss": {
+                    "input": "authored text",
+                    "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+                    "finish_reason": "stop",
+                    "tools": None,
+                    "golden": [{"kind": "text", "text": "authored text"}],
+                }
+            },
+        },
+    )
+
+    assert rows["UNIFIED.3-text_only"]["request"]["tools"] == []
+
+
 def test_regeneration_removes_all_materialized_capture_directories(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(explode, "BUILD", tmp_path)
     (tmp_path / "inputs").mkdir()

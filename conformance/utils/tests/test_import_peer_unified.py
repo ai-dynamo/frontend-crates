@@ -243,3 +243,17 @@ def test_cli_verifies_each_frozen_bundle_format(peer_capture, tmp_path, monkeypa
         main()
         history = unified_history.load_store(store).histories[("gemma4", implementation)]
         assert "text_only" in history.resolve(f"{implementation}-0.25.1")
+
+
+def test_cli_rejects_implementation_bundle_without_consumed_registry(peer_capture, tmp_path, monkeypatch):
+    store, job, capture, provenance, implementation = peer_capture
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    source = Path(__file__).resolve().parents[1] / "src/impls.py"
+    (bundle / source.name).write_bytes(source.read_bytes())
+    (bundle / "manifest.json").write_text(json.dumps({"files": {source.name: digest(source)}, "jobs": {}}))
+    monkeypatch.setattr(sys, "argv", ["import_peer_unified.py", "--store", str(store),
+        "--job", str(job), "--capture", str(capture), "--provenance", str(tmp_path / "unused.json"),
+        "--bundle", str(bundle), "--implementation", implementation])
+    with pytest.raises(ValueError, match="omits parser_families.yaml"):
+        main()

@@ -68,6 +68,7 @@ _build_stage_base() {
   mkdir -p "$STAGE/tests/parity/assets"
   \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
   \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
+  \cp -f "$TOOLS/assets/comparison_layout.js" "$STAGE/tests/parity/assets/comparison_layout.js"
   # Markup colorizer (port of markup.py); inlined before conformance_view.js.
   \cp -f "$TOOLS/assets/colorize.js" "$STAGE/tests/parity/assets/colorize.js"
   # JSON data model + JS view: model.py builds it (imported via reasoning_table),

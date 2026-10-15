@@ -56,6 +56,7 @@ from unified_taxonomy import (  # noqa: E402
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
+NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES)
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -120,7 +121,7 @@ def test_taxonomy_has_no_entry_without_a_corpus_case() -> None:
 
 
 def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
-    for family in FAMILIES:
+    for family in NATIVE_FAMILIES:
         prefix = invoke_header_prefix(family)
         if family == "glm47":
             # GLM's outer marker is itself the invoke opener, so there is no
@@ -132,6 +133,7 @@ def test_invoke_header_prefix_is_inner_and_unterminated() -> None:
         if family != "deepseek_v41":
             assert not prefix.startswith(control_tokens(family)[2])
         assert prefix.rsplit(">", 1)[-1]
+    assert invoke_header_prefix("gpt_oss") == ""
 
 
 def test_request_scoped_cases_never_claim_vllm_match() -> None:
@@ -363,7 +365,7 @@ def test_marker_inside_argument_golden_matches_the_input_marker() -> None:
         c for c in list(CLEAN) + list(EDGE) if c[0] == "guided_json_marker_inside_argument"
     )
     per_family = case[-1]
-    for fam in FAMILIES:
+    for fam in G.GUIDED_FAMILIES:
         entry = per_family[fam]
         raw_input, fill = entry[0], entry[-1]
         expected = control_tokens(fam)[1]
@@ -490,7 +492,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
         "guided_response_quoted_control_braces_named",
         "guided_response_quoted_control_braces_required",
     }
-    for family in FAMILIES:
+    for family in NATIVE_FAMILIES:
         cases = build_cases(family)
         response_cases = {
             case_id.split(".", 2)[1]: case
@@ -589,7 +591,7 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
         "guided_json_quoted_bare_header_after_payload",
         "guided_json_bare_tool_header_recovers_inside_a_thought",
     }
-    for fam in FAMILIES:
+    for fam in G.GUIDED_FAMILIES:
         names = {k.split(".", 2)[1] for k in build_cases(fam)}
         present = scoped & names
         assert present == scoped, f"{fam} is missing {scoped - present}"
@@ -597,7 +599,7 @@ def test_request_state_boundary_scenarios_generate_for_every_family():
 
 def test_scenario_families_matches_declared_scope():
     scoped = {
-        "guided_json_quoted_bare_header_in_answer": set(FAMILIES),
+        "guided_json_quoted_bare_header_in_answer": set(G.GUIDED_FAMILIES),
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
@@ -612,7 +614,7 @@ def test_scenario_families_matches_declared_scope():
         assert G.scenario_families(scenario) == families
     assert G.scenario_families("arg_string_null") == set(FAMILIES)
     assert G.scenario_families("arg_json_null") == set(FAMILIES)
-    assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == set(FAMILIES)
+    assert G.scenario_families("deepseek_v41_mixed_control_text_in_string") == set(NATIVE_FAMILIES)
     assert G.scenario_families("tool_only") == set(FAMILIES)
 
 
@@ -640,7 +642,7 @@ def test_schema_null_cases_keep_their_native_inputs_and_history():
     assert historical_unified_case_key("qwen3", "UNIFIED.qwen-1") == "UNIFIED.7-arg_json_null"
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 @pytest.mark.parametrize("scenario,value", [("arg_json_null", None), ("arg_string_null", "null")])
 def test_null_variants_preserve_the_declared_json_type(family, scenario, value):
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
@@ -703,7 +705,7 @@ def test_glm_type_reference_goldens_keep_raw_refs_and_schema_valid_arguments(
     _assert_input_carries_events("glm47", scenario, case)
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 @pytest.mark.parametrize("scenario,key,value", [
     ("glm_ref_object", "payload", '{"x":1}'),
     ("glm_ref_encoded_targets", "pointer", "42"),
@@ -739,10 +741,10 @@ def test_reference_oracle_rejects_unresolved_or_cyclic_targets(reference: str) -
         matches_schema({"city": None}, parameters)
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 @pytest.mark.parametrize("scenario", ["arg_json_null", "arg_string_null"])
 def test_null_variant_contract_rejects_a_changed_schema(family, scenario):
-    corpus = {name: build_cases(name) for name in FAMILIES}
+    corpus = {name: build_cases(name) for name in NATIVE_FAMILIES}
     case = corpus[family][f"UNIFIED.{scenario}.{family}"]
     case["tools"] = json.loads(json.dumps(case["tools"]))
     case["tools"][0]["parameters"]["properties"]["city"]["type"] = "number"
@@ -760,7 +762,7 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
     assert numbered_id("deepseek_v41_mixed_control_text_in_string") == "UNIFIED.7-deepseek_v41_mixed_control_text_in_string"
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 def test_mixed_control_string_uses_native_markers_and_exact_string(family):
     case = build_cases(family)["UNIFIED.deepseek_v41_mixed_control_text_in_string." + family]
     value = case["golden"][0]["arguments"]["x"]
@@ -836,9 +838,12 @@ def test_unified_case_counts_match_the_generator():
             "kimi_k3": 124,
             "muse_glimmer": 126,
             "qwen3": 122,
-        }[fam]
-        assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 958 + len(FAMILIES) * len(CONFORMANCE_CASES)
+        }.get(fam)
+        if fam == "gpt_oss":
+            assert per_family[fam] == 159
+        else:
+            assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
+    assert sum(per_family.values()) == 958 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -1068,7 +1073,7 @@ def test_retained_unified_captures_cover_the_current_corpus():
             captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
-        for family in FAMILIES for case_id in build_cases(family)
+        for family in NATIVE_FAMILIES for case_id in build_cases(family)
     }
     _assert_retained_capture_coverage(captured, expected)
 
@@ -1509,7 +1514,7 @@ def _assert_cross_family_contract(corpus):
     by_scenario = defaultdict(dict)
     clean = {row[0]: row[3] for row in CLEAN}
     prefills = {name for name, segments in clean.items() if segments[0][0] == "reason"} | {"reason_unterminated"}
-    for family in FAMILIES:
+    for family in NATIVE_FAMILIES:
         for cid, case in corpus[family].items():
             scenario = _scenario_of(cid, family)
             _assert_input_carries_events(family, scenario, case)
@@ -1573,7 +1578,7 @@ def _assert_cross_family_contract(corpus):
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX)
     for scenario, families in by_scenario.items():
-        assert set(families) == set(G.scenario_families(scenario)), (scenario, "applicability", set(families))
+        assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         contracts = list(families.items())
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
@@ -1581,12 +1586,12 @@ def _assert_cross_family_contract(corpus):
 
 
 def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
-    _assert_cross_family_contract({family: build_cases(family) for family in FAMILIES})
+    _assert_cross_family_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
 
 
-@pytest.mark.parametrize("family", [family for family in FAMILIES if family != "muse_glimmer"])
+@pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family != "muse_glimmer"])
 def test_cross_family_contract_rejects_prose_only_recipient_case(family):
-    corpus = {family: build_cases(family) for family in FAMILIES}
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
     source = corpus[family][f"UNIFIED.guided_json_quoted_bare_header_in_answer.{family}"]
     case = json.loads(json.dumps(source).replace("self literal", "get_weather literal"))
@@ -1595,7 +1600,7 @@ def test_cross_family_contract_rejects_prose_only_recipient_case(family):
         _assert_cross_family_contract(corpus)
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 @pytest.mark.parametrize("mutation", [
     "tool_name", "argument_key", "reasoning_prose", "input_tool_name",
     "input_argument_key", "input_reasoning_prose", "marker_role", "missing_event",
@@ -1603,7 +1608,7 @@ def test_cross_family_contract_rejects_prose_only_recipient_case(family):
     "guided_array_value", "argument_marker_role", "input_call_order",
 ])
 def test_cross_family_contract_rejects_single_family_mutations(family, mutation):
-    corpus = {family: build_cases(family) for family in FAMILIES}
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
     case = corpus[family][f"UNIFIED.reason_then_tool.{family}"]
     if mutation in {"tool_name", "input_tool_name"}:
@@ -1657,7 +1662,7 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
 @pytest.mark.parametrize("family", ["deepseek_v4", "deepseek_v41"])
 @pytest.mark.parametrize("mutation", ["dispatch", "tool", "key", "value", "closer"])
 def test_dsml_eof_contract_rejects_invented_success_or_changed_body(family, mutation):
-    corpus = {family: build_cases(family) for family in FAMILIES}
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     _assert_cross_family_contract(corpus)
     case = corpus[family][f"UNIFIED.tool_no_close.{family}"]
     if mutation == "dispatch":
@@ -1672,7 +1677,7 @@ def test_dsml_eof_contract_rejects_invented_success_or_changed_body(family, muta
         _assert_cross_family_contract(corpus)
 
 
-@pytest.mark.parametrize("family", FAMILIES)
+@pytest.mark.parametrize("family", NATIVE_FAMILIES)
 @pytest.mark.parametrize("mutation", ["echo_order", "closed_string", "fallback", "chunks"])
 def test_malformed_recovery_contract_rejects_changed_stimulus(family, mutation):
     case = build_cases(family)[f"UNIFIED.malformed_json_then_two_valid_calls.{family}"]
@@ -1736,3 +1741,12 @@ def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     assert v41["label"] == "deepseek_v41-json_invocation_body"
     assert v41["compact_prefix"] == "ds41"
     assert identities == {scenario: numbered_id(scenario) for scenario in scenarios}
+
+
+def test_display_policy_has_no_dangling_groups_or_scenarios():
+    assert set(taxonomy._DISPLAY_GROUP) <= set(UNIFIED_TAX)
+    assert set(taxonomy._DISPLAY_GROUP.values()) <= set(UNIFIED_GROUP_LABEL)
+    assert set(taxonomy.DISPLAY_PREFIXES) <= set(UNIFIED_GROUP_LABEL)
+    for prefixes in taxonomy.DISPLAY_PREFIXES.values():
+        assert len(prefixes) == 2
+        assert all(re.fullmatch(r"[a-z0-9_]+", prefix) for prefix in prefixes)
