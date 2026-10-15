@@ -11,7 +11,7 @@
 use regex::Regex;
 use uuid::Uuid;
 
-use super::super::config::DsmlParserConfig;
+use super::super::config::{DSML_BLOCK_SEPARATOR, DsmlParserConfig};
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 
 /// DeepSeek V3.2 / V4 use DSML (DeepSeek Markup Language) format for tool calls.
@@ -80,7 +80,8 @@ pub fn find_complete_tool_call_end_position_dsml(
 ///
 /// Returns `(parsed_tool_calls, normal_text_content)`. `normal_text` is the
 /// text BEFORE the first `<｜DSML｜tool_calls>` / `<｜DSML｜function_calls>`
-/// start marker. Text between blocks, after the last block, and any
+/// start marker, minus the one [`DSML_BLOCK_SEPARATOR`] the encoder places
+/// between content and the block. Text between blocks, after the last block, and any
 /// back-to-back-block content are all dropped — matching upstream vLLM
 /// (`vllm/tool_parsers/deepseek_v4_tool_parser.py` and the V3.2 sibling),
 /// which compute `content = model_output[:content_end]` where
@@ -143,7 +144,12 @@ pub fn try_tool_call_parse_dsml(
     let pre_block_text = first_orphan_dsml_marker_index(pre_block_span, config)
         .filter(|idx| pre_block_span[*idx..].starts_with(config.invoke_start_prefix.as_str()))
         .map(|idx| pre_block_span[..idx].trim_end().to_string())
-        .unwrap_or_else(|| pre_block_span.to_string());
+        .unwrap_or_else(|| {
+            pre_block_span
+                .strip_suffix(DSML_BLOCK_SEPARATOR)
+                .unwrap_or(pre_block_span)
+                .to_string()
+        });
 
     if tool_calls.is_empty() {
         // A block-start was detected but no valid invokes parsed. Do NOT leak
@@ -667,9 +673,10 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_preserves_whitespace_before_dsml_block() {
-        // vLLM preserves whitespace verbatim before the DSML block; the parser
-        // must as well so clients see identical prompts across servers.
+    fn test_parse_strips_block_separator_before_dsml_block() {
+        // The encoder renders `content + "\n\n" + block`, so the separator is
+        // consumed with the block (as the reference parser does). Leaving it in
+        // content makes the re-rendered history differ from the generated tokens.
         let input = "Let me check the forecast.\n\n<｜DSML｜tool_calls>
 <｜DSML｜invoke name=\"get_weather\">
 <｜DSML｜parameter name=\"city\" string=\"true\">SF</｜DSML｜parameter>
@@ -679,13 +686,13 @@ mod tests {
         let config = get_v4_test_config();
         let (calls, normal) = try_tool_call_parse_dsml(input, &config).unwrap();
         assert_eq!(calls.len(), 1);
-        let normal = normal.unwrap();
-        assert!(
-            normal.ends_with("\n\n"),
-            "Expected trailing \\n\\n preserved, got {:?}",
-            normal
-        );
-        assert_eq!(normal, "Let me check the forecast.\n\n");
+        assert_eq!(normal.unwrap(), "Let me check the forecast.");
+
+        // Only the one separator belongs to the block; extra newlines are content.
+        let extra = input.replacen("\n\n<", "\n\n\n\n<", 1);
+        let (calls, normal) = try_tool_call_parse_dsml(&extra, &config).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(normal.unwrap(), "Let me check the forecast.\n\n");
     }
 
     #[test] // TOOLCALLING.batch.3
