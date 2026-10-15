@@ -316,12 +316,13 @@ def _require_stream_capture_receipt(
     required_cases,
     *,
     context,
+    history_root=None,
 ):
     if receipt is None:
         raise ValueError(f"{context} requires a matching capture receipt: {capture_path}")
     label = capture_root.removeprefix("dynamo_v2-")
     try:
-        expected_source_sha256 = capture_source_fingerprint(ROOT, label)
+        expected_source_sha256 = capture_source_fingerprint(ROOT, label, history_root=history_root)
     except ValueError as exc:
         raise ValueError(f"{context} requires a verifiable parser source: {capture_path}") from exc
     candidate_inputs = blobs_dir / "toolcalling/fixtures-stream-v1/inputs.tar.gz"
@@ -347,6 +348,7 @@ def sync_store(
     manifest_path=None,
     approved_stream_replacements=frozenset(),
     stream_capture_receipt=None,
+    history_root=None,
 ):
     """Copy built shards into conformance/fixtures/.
 
@@ -498,6 +500,7 @@ def sync_store(
                 capture_root,
                 corrected_for_archive,
                 context="corrected stream input",
+                history_root=history_root,
             )
     for shard in shards:
         path = shard["path"]
@@ -528,6 +531,7 @@ def sync_store(
                 capture_root,
                 receipt_cases,
                 context=receipt_context,
+                history_root=history_root,
             )
         if not existing_capture.exists():
             continue
@@ -744,6 +748,7 @@ def package_snapshot(
                 manifest_path=manifest_path,
                 approved_stream_replacements=approved_stream_replacements,
                 stream_capture_receipt=stream_capture_receipt,
+                history_root=candidate_history,
             )
 
             inactive_shards = list(

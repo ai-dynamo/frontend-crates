@@ -736,6 +736,23 @@ def load_store(root: Path) -> Store:
         return _load_store_unlocked(root)
 
 
+def capture_origins(root: Path, capture_id: str) -> list[dict]:
+    identity = CAPTURE_DIRECTORY_RE.fullmatch(capture_id)
+    if identity is None:
+        raise ValueError(f"invalid capture identity: {capture_id}")
+    root = _canonical_store_root(root)
+    origins = []
+    with _store_read_lock(root):
+        for path in sorted(root.glob(f"families/*/{capture_id}.yaml")):
+            provenance = _validate_capture_provenance(
+                load_yaml(path)["provenance"], path,
+                identity["implementation"], identity["runtime_version"],
+            )
+            if provenance["status"] == "captured":
+                origins.append(provenance["origin"])
+    return origins
+
+
 def _store_inventory_unlocked(root: Path) -> list[dict]:
     root = Path(root)
     inventory = []
@@ -2412,6 +2429,7 @@ def main(argv: list[str] | None = None) -> None:
     action.add_argument("--update-from-loose", action="store_true")
     action.add_argument("--sync-current-corpus", action="store_true")
     action.add_argument("--migrate-descriptive-ids", action="store_true")
+    action.add_argument("--capture-origins", metavar="IMPLEMENTATION-VERSION")
     parser.add_argument("--store", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--history-only", action="store_true")
@@ -2421,7 +2439,9 @@ def main(argv: list[str] | None = None) -> None:
         help="retire active cases omitted from a complete loose corpus",
     )
     args = parser.parse_args(argv)
-    if args.migrate_descriptive_ids:
+    if args.capture_origins:
+        print(json.dumps(capture_origins(args.store, args.capture_origins)))
+    elif args.migrate_descriptive_ids:
         print(json.dumps([str(path) for path in migrate_descriptive_ids(args.store)], indent=2))
     elif args.materialize:
         if args.output is None:

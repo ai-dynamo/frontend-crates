@@ -813,6 +813,11 @@ def _subcase_group_label(mode: str, sub: str) -> str:
     return _group_by_sub(mode).get(null_group(sub) or sub, "Other")
 
 
+def _subcase_display_label(mode: str, sub: str) -> str:
+    # Historical 50.a is retired; keep its identity separate from displayed 50.
+    return "50.a" if mode == "streamv1" and sub == "50" else sub
+
+
 def _subcase_runs(mode: str, sub_cases: list[str]) -> list[list[str]]:
     runs: list[list[str]] = []
     start = 0
@@ -838,7 +843,7 @@ def _glossary_groups(
             "label": _subcase_group_label(mode, run[0]),
             "rows": [
                 (
-                    sub,
+                    _subcase_display_label(mode, sub),
                     descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or "",
                 )
                 for sub in run
@@ -1785,13 +1790,16 @@ def _columns_model(mode: str, sub_cases: list[str]) -> tuple[list[dict], list[di
             "span": len(run),
         })
         for sub in run:
-            cols.append({
+            column = {
                 "sub": sub,
                 "group_key": col_group,
                 "band": _subcase_band_class(mode, sub),
-                "label": sub,
+                "label": _subcase_display_label(mode, sub),
                 "desc": descriptions.get(sub) or descriptions.get(sub.split(".")[0]) or "",
-            })
+            }
+            if column["label"] != sub:
+                column["case_id"] = f"TOOLCALLING.{mode}.{sub}"
+            cols.append(column)
     return groups, cols
 
 

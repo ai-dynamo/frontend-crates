@@ -187,7 +187,7 @@ def dynamo_v2_label(repo_root: Path, override: str | None = None) -> str:
     return version
 
 
-def capture_source_fingerprint(repo_root: Path, label: str) -> str:
+def capture_source_fingerprint(repo_root: Path, label: str, *, history_root: Path | None = None) -> str:
     """Resolve a stream capture label to its released or current parser source."""
     if label == "current" or "+source." in label:
         return dynamo_v2_provenance(repo_root, label)["source_sha256"]
@@ -203,6 +203,31 @@ def capture_source_fingerprint(repo_root: Path, label: str) -> str:
 
     if crate_version(repo_root / "parsers/v2/Cargo.toml") == label:
         return dynamo_v2_provenance(repo_root, "current")["source_sha256"]
+    history_root = history_root if history_root is not None else repo_root / "conformance/fixtures-unified-v2"
+    if history_root.is_dir():
+        # Keep ordinary identity reads stdlib-only; YAML is needed only to
+        # recover an untagged historical producer from validated history.
+        result = subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("unified_history.py")),
+             "--store", str(history_root), "--capture-origins", f"dynamo_v2-{label}"],
+            check=True, capture_output=True, text=True,
+        )
+        fingerprints = set()
+        for origin in json.loads(result.stdout):
+            commit = origin.get("git_commit")
+            if not commit or origin["crate_version"] != label:
+                raise ValueError(f"retained capture has no verifiable parser source: {label}")
+            manifest = tomllib.loads(_git(repo_root, "show", f"{commit}:parsers/v2/Cargo.toml").decode())
+            if manifest.get("package", {}).get("version") != label:
+                raise ValueError(f"retained capture commit version differs: {label}")
+            fingerprint = source_fingerprint(repo_root, commit)
+            if fingerprint != origin["source_sha256"]:
+                raise ValueError(f"retained capture source fingerprint differs: {label}")
+            fingerprints.add(fingerprint)
+        if len(fingerprints) > 1:
+            raise ValueError(f"retained capture has ambiguous parser sources: {label}")
+        if fingerprints:
+            return fingerprints.pop()
     raise ValueError(f"capture label has no verifiable parser source: {label}")
 
 

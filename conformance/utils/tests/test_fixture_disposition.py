@@ -477,6 +477,7 @@ def test_package_staging_failure_preserves_live_generation(
         manifest_path,
         approved_stream_replacements=frozenset(),
         stream_capture_receipt=None,
+        history_root=None,
     ):
         if failure_stage == "archives":
             generation = fixtures_dir / "generation"
@@ -1077,7 +1078,7 @@ def test_sync_store_requires_source_bound_receipt_for_new_backfill(
         {"path": relative, "sha256": package_fixtures.sha256_file(tmp_path / "blobs" / relative), "size": (tmp_path / "blobs" / relative).stat().st_size}
         for relative in (input_relative, capture_relative)
     ]
-    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label: "a" * 64)
+    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label, **_context: "a" * 64)
 
     with pytest.raises(ValueError, match="requires a matching capture receipt"):
         package_fixtures.sync_store(
@@ -1368,7 +1369,7 @@ def test_sync_store_accepts_stream_capture_additions(evidence, tmp_path, version
     shard = {"path": relative, "sha256": package_fixtures.sha256_file(candidate), "size": candidate.stat().st_size}
 
     input_shard = {"path": input_relative, "sha256": package_fixtures.sha256_file(candidate_input), "size": candidate_input.stat().st_size}
-    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label: "a" * 64)
+    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label, **_context: "a" * 64)
     input_case = input_document["cases"]["TOOLCALLING.streamv1.7.g"]
     result_case = document["cases"]["TOOLCALLING.streamv1.7.g"]
     receipt = {
@@ -1473,7 +1474,7 @@ def test_sync_store_preserves_sparse_historical_capture_additions(evidence, tmp_
 
     receipt = None
     if captured_additions:
-        monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label: "a" * 64)
+        monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label, **_context: "a" * 64)
         input_case = input_document["cases"][captured_additions[0]]
         result_case = capture_document["cases"][captured_additions[0]]
         receipt = {
@@ -1888,7 +1889,7 @@ def test_sync_store_requires_source_bound_receipt_for_new_corrected_capture(
                 }
             },
         }
-    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label: "a" * 64)
+    monkeypatch.setattr(package_fixtures, "capture_source_fingerprint", lambda _root, _label, **_context: "a" * 64)
 
     if receipt_source_sha256 == "a" * 64:
         package_fixtures.sync_store(
