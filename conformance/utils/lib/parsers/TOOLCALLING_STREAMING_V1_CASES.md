@@ -52,6 +52,8 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.7-9`** Local parameter references preserve declared object types across chunks. Streaming form of `TOOLCALLING.batch.7-9` (PR #273).
 - **`TOOLCALLING.streamv1.7-10`** Nested properties, array items, and additional properties resolve references before coercion. Streaming form of `TOOLCALLING.batch.7-10` (PR #273).
 - **`TOOLCALLING.streamv1.7-11`** URI-encoded local reference fragments resolve their definitions before coercion. Streaming form of `TOOLCALLING.batch.7-11` (PR #273).
+- **`TOOLCALLING.streamv1.7-14`** MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
+- **`TOOLCALLING.streamv1.7-15`** MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.
 - **`TOOLCALLING.streamv1.7.g`** Composed scalar schemas preserve integer, number, and boolean argument values. Streaming regression for frontend-crates #248.
 - **`TOOLCALLING.streamv1.7.h`** Family-native string arguments preserve leading and trailing whitespace, whitespace-only text, and empty strings. Streaming regression for frontend-crates #247.
 - **`TOOLCALLING.streamv1.7.i`** GLM argument strings and object values preserve literal XML entity text. Streaming regression for frontend-crates #249.

@@ -350,6 +350,8 @@ The local-reference cases below use constructed native MiniMax M3 inputs (PR #27
 - **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type. GLM also covers UTF-8 with a literal `+`, and encoded `~1` / `~0` escapes for definition names containing `/` and `~`.
 - **`TOOLCALLING.batch.7-12`** GLM referenced strings preserve JSON-looking object text, array text, and quoted text, including the literal quote characters. An inline string field with the same object-looking bytes is a control.
 - **`TOOLCALLING.batch.7-13`** GLM references to integer, number, and boolean definitions retain those scalar types. A sibling integer constraint narrows a referenced string-or-integer definition, so bare `42` becomes an integer.
+- **`TOOLCALLING.batch.7-14`** MiniMax M2 string whitespace, Unicode, newlines, and entity spellings remain exact.
+- **`TOOLCALLING.batch.7-15`** MiniMax M2 invoke/wrapper markers and a parameter-looking header inside a value remain literal; later real parameters retain source order.
 
 The nested-whitespace cases below are Single Family Tests on constructed native MiniMax M3 inputs (PR #360), with matching legacy-stream cases. MiniMax M3 is the only registered grammar that encodes nested argument structure as markup elements; every other family carries nested values as JSON or as one raw parameter value, so it has no text between nested argument tags to classify.
 
