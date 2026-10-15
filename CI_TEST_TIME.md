@@ -136,7 +136,8 @@ Adding parser-v2-only `opt-level = 1` passes the same 2,692 tests and reduces
 binary execution to 268.10s: another 115.94s (30.2%) below regex-only. Its
 incremental rebuild is 26.39s. Per-suite times: parser-v2 units 113.20s, split
 sweep 56.26s, interleave 28.87s, Unified parity 5.88s, XML schema 14.59s.
-This is a measured alternative, not yet the selected branch configuration.
+This is committed as `c8497574`; the broader profile remains an alternative
+until its build-plus-test cost has been compared.
 
 The first committed candidate is `117502e2` (regex-only). Its hosted run is
 [38666562731](https://github.com/ai-dynamo/frontend-crates/actions/runs/38666562731),
@@ -145,3 +146,9 @@ Rust job `116199754395`.
 A broader test-profile `opt-level = 1` trial is in progress to test whether
 optimizing the remaining dependencies repays the extra build cost. Debug
 assertions and overflow checks stay enabled in every experiment.
+
+The duplicate workspace check is removed in the next candidate. `cargo test`
+already compiles exactly the same workspace, targets, lockfile, and default
+features; the separate all-feature Clippy and feature-specific tests remain.
+This removes redundant work, but its net saving must not be equated to the
+baseline check step's duration because some compilation moves into `Run tests`.
