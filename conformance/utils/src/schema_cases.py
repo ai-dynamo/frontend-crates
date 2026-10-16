@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
+from impls import unified_grammar_family
+
 
 SCHEMA_PATH = Path(__file__).with_name("glm47_schema_cases.json")
 SCHEMA_CASES: list[dict[str, Any]] = json.loads(SCHEMA_PATH.read_text())
@@ -123,6 +125,7 @@ def schema_arguments(family: str, case: dict[str, Any]) -> dict[str, Any]:
     # Qwen and MiniMax prefer parsed JSON for these ambiguous constant unions.
     # GLM prefers a matching string hint. Both satisfy these schemas;
     # explicitly typed and JSON grammars carry the authored type on the wire.
+    family = unified_grammar_family(family)
     qwen = family in ("qwen3", "qwen3_coder", "nemotron_nano")
     json_union = case["name"] in {"integer_const_ambiguous", "object_const_union"}
     if ((qwen or family in ("minimax_m2", "minimax_m3")) and json_union

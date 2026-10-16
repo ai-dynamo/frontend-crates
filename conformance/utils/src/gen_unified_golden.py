@@ -23,6 +23,7 @@ import re
 import yaml
 
 import markers
+from impls import unified_grammar_family
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
@@ -31,6 +32,7 @@ from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, 
 # row there rather than editing three lists that had to agree.
 _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
 FAMILIES = sorted(_MANIFEST)
+TEMPLATE_FAMILIES = [f for f in FAMILIES if not _MANIFEST[f].get("grammar")]
 SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
@@ -170,6 +172,7 @@ def r_tool(fam, name, key, val, idx):
 
 
 def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
+    fam = unified_grammar_family(fam)
     # Raw spellings preserve published stimuli independently of the typed oracle.
     raw = raw_arguments if raw_arguments is not None else {
         key: value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
@@ -390,14 +393,14 @@ def every_family(input_text, vllm, dynamo, *rest):
     )
     return {
         fam: (input_text, vllm, dynamo if fam in UNIFIED_FAMILIES else split, *rest)
-        for fam in FAMILIES
+        for fam in TEMPLATE_FAMILIES
     }
 
 
 def by_family(render, vllm, dynamo, *rest):
     """`render(fam) -> input` for the scenarios where only the reasoning envelope
     around an otherwise identical payload is grammar-specific."""
-    return {fam: (render(fam), vllm, dynamo, *rest) for fam in FAMILIES}
+    return {fam: (render(fam), vllm, dynamo, *rest) for fam in TEMPLATE_FAMILIES}
 
 
 # A family whose tool block opener spans more than its first control token, mapped to
@@ -485,6 +488,7 @@ def guided_invoke_prefix(fam):
 
 
 def guided_named_invoke_prefix(fam):
+    fam = unified_grammar_family(fam)
     if fam == "gpt_oss":
         return ""
     return {
@@ -538,7 +542,7 @@ def guided_surroundings(render, dynamo_note, fill=None):
             {"verdict": "match", "note": dynamo_note} if fam in UNIFIED_FAMILIES else split,
             *( (fill(fam),) if fill else () ),
         )
-        for fam in FAMILIES
+        for fam in TEMPLATE_FAMILIES
     }
 
 
@@ -1938,7 +1942,7 @@ def _guided_response_markup(fam, recipient, after_payload=False):
 
 
 def _guided_response_markup_cases(recipient, after_payload=False):
-    families = ("muse_glimmer",) if recipient != "self" else FAMILIES
+    families = ("muse_glimmer",) if recipient != "self" else TEMPLATE_FAMILIES
     cases = {
         fam: (
             _guided_response_markup(fam, recipient, after_payload)[0],
@@ -2004,7 +2008,7 @@ EDGE.append((
             {"verdict": "match",
              "note": "a native tool boundary inside prefilled reasoning ends the thought and dispatches the guided payload"},
         )
-        for fam in FAMILIES
+        for fam in TEMPLATE_FAMILIES
     },
 ))
 
@@ -2133,7 +2137,7 @@ EDGE.append((
     {fam: (malformed_json_recovery(fam)[0], D("UNSUPPORTED", "No peer capture recorded."),
            D("LOSS" if fam == "gemma4" else "ERROR", "Known malformed-call recovery defect; later calls must survive.")
            if fam in ("gemma4", "deepseek_v41") else M, malformed_json_recovery(fam)[1])
-     for fam in FAMILIES},
+     for fam in TEMPLATE_FAMILIES},
     RECOVERY_TOOLS,
 ))
 
@@ -2219,11 +2223,11 @@ EDGE += [
                 else r_tool(family, "get_weather", "city", value, 0),
                 VLLM_UNCAPTURABLE.get(family, M), M,
             )
-            for family in FAMILIES
+            for family in TEMPLATE_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "properties": {"city": json.loads(json.dumps(schema))},
-        }}] for family in FAMILIES},
+        }}] for family in TEMPLATE_FAMILIES},
     )
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
@@ -2376,8 +2380,8 @@ for scenario, description, parameters, raw_arguments, arguments in (
         OnlyFamilies({family: (
             r_tool_arguments(family, "capture_payload", arguments, 0, raw_arguments),
             D("UNSUPPORTED", "No peer capture is recorded for this reference-schema probe."), M,
-        ) for family in FAMILIES}),
-        {family: [{"name": "capture_payload", "parameters": parameters}] for family in FAMILIES},
+        ) for family in TEMPLATE_FAMILIES}),
+        {family: [{"name": "capture_payload", "parameters": parameters}] for family in TEMPLATE_FAMILIES},
     ))
 _DS41_JSON_BODY_ARGS = {
     "value": ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"\n',
@@ -2570,7 +2574,7 @@ for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|st
 
 # Shared schema cases are part of the same scenario inventory as every other case.
 _SCHEMA_CASES_BY_FAMILY = {
-    family: unified_schema_cases(family, r_tool_arguments) for family in FAMILIES
+    family: unified_schema_cases(family, r_tool_arguments) for family in TEMPLATE_FAMILIES
 }
 for _schema_probe in CONFORMANCE_CASES:
     _scenario = f"schema_{_schema_probe['name']}"
@@ -2582,7 +2586,7 @@ for _schema_probe in CONFORMANCE_CASES:
             _SCHEMA_CASES_BY_FAMILY[family][f"UNIFIED.{_scenario}.{family}"]["input"],
             _prototype["expect"]["vllm"], M,
             _SCHEMA_CASES_BY_FAMILY[family][f"UNIFIED.{_scenario}.{family}"]["golden"],
-        ) for family in FAMILIES}),
+        ) for family in TEMPLATE_FAMILIES}),
         _prototype["tools"],
     ))
 
@@ -2644,7 +2648,53 @@ EDGE.append((
 ))
 
 
+DEFAULT_REASONING_CASES = [
+    ("default_reasoning_without_opener", "The family starts in reasoning without an opener; the closer switches to visible Unicode content.",
+     ["P5", "I5"], [{"kind": "reasoning", "text": "Check Montréal."}, {"kind": "text", "text": "雪"}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({f: ("Check Montréal.</think>雪", M, M) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
+    ("default_reasoning_tool_without_closer", "Default reasoning omits both think markers; native calls interrupt and resume reasoning, preserving literal markers in arguments.",
+     ["P5", "I2", "I7"], [{"kind": "reasoning", "text": "Check."}, {"kind": "tool_call", "name": "log", "arguments": {"note": "<think>雪</think>"}}, {"kind": "reasoning", "text": "Then."}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({f: ("Check." + r_tool(f, "log", "note", "<think>雪</think>", 0) + "Then.", M, M) for f in FAMILIES if _MANIFEST[f].get("default_reasoning")})),
+]
+
+
+# Inherited grammars expose their authored rows to applicability and schema consumers too.
+for _spec in EDGE:
+    _policy = _edge_case_family_policy(_spec)
+    for _family, _row in _MANIFEST.items():
+        _grammar = _row.get("grammar")
+        if _grammar in _policy:
+            _policy[_family] = _policy[_grammar]
+        if len(_spec) == 8 and isinstance(_spec[-1], dict) and _grammar in _spec[-1]:
+            _spec[-1][_family] = _spec[-1][_grammar]
+
+EDGE.extend(DEFAULT_REASONING_CASES)
+
+def default_response_prefix(fam):
+    return control_tokens(fam)[1] if _MANIFEST[fam].get("default_reasoning") else ""
+
+
 def build_cases(fam):
+    grammar = _MANIFEST[fam].get("grammar")
+    if grammar is None:
+        return _build_cases(fam)
+    cases = {}
+    for key, original in _build_cases(grammar).items():
+        case = json.loads(json.dumps(original))
+        # Shared Qwen scenarios begin outside reasoning; Ultra's empty thought
+        # closes that default channel without disabling later reasoning markers.
+        if (case.get("init") or {}).get("starting_state", "None") == "None":
+            case["input"] = default_response_prefix(fam) + case["input"]
+            if "input_chunks" in case:
+                case["input_chunks"][0] = default_response_prefix(fam) + case["input_chunks"][0]
+        cases[key.rsplit(".", 1)[0] + "." + fam] = case
+    cases.update(_build_edge_cases(fam, DEFAULT_REASONING_CASES))
+    return cases
+
+
+def _build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
@@ -2803,6 +2853,7 @@ def scenario_families(scenario):
         init = edge_case[4] if len(edge_case) >= 6 else {}
         if (init or {}).get("tool_output_mode", "Native") != "Native":
             families.intersection_update(GUIDED_FAMILIES)
+        families.update(f for f in FAMILIES if _MANIFEST[f].get("grammar") in families)
         return frozenset(families)
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
@@ -2819,7 +2870,7 @@ def emit_yaml(fam):
         "# spec -- do not edit by hand; edit the spec so every family stays in lockstep.",
         "# GOLDEN is the AUTHORED correctness oracle (what a correct UnifiedParser MUST",
         "# emit), reasoned from UNIFIED_CASES.md -- NOT captured from any implementation.",
-        f"# {fam} grammar: {GRAMMAR_NOTE[fam]}",
+        f"# {fam} grammar: {GRAMMAR_NOTE[unified_grammar_family(fam)]}",
         "version: 1",
         f"family: {fam}",
         "cases:",

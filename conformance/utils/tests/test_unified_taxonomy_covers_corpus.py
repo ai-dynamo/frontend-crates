@@ -514,7 +514,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":
             extra.add("prefilled_response_guided_pending_invoke_header")
-        if family == "qwen3":
+        if G.unified_grammar_family(family) == "qwen3":
             extra.update({
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
@@ -538,7 +538,7 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                     "muse_quoted_reserved_start_argument": "<|start|>",
                 }[scenario]
             elif scenario in native_scenarios:
-                marker = G._NATIVE_QUOTED_CONTROL[family]
+                marker = G._NATIVE_QUOTED_CONTROL[G.unified_grammar_family(family)]
             elif scenario == "guided_response_rejected_header_quote_ownership":
                 marker = '<｜DSML｜invoke'
             elif family == "muse_glimmer":
@@ -604,7 +604,7 @@ def test_scenario_families_matches_declared_scope():
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
         "arg_json_null_ref": {"glm47"},
-        "arg_string_null_ref": {"glm47", "qwen3"},
+        "arg_string_null_ref": {"glm47", "qwen3", "nemotron_v3"},
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
         "glm_ref_json_looking_strings": set(FAMILIES),
@@ -766,11 +766,11 @@ def test_deepseek_mixed_control_string_preserves_the_historical_id():
 def test_mixed_control_string_uses_native_markers_and_exact_string(family):
     case = build_cases(family)["UNIFIED.deepseek_v41_mixed_control_text_in_string." + family]
     value = case["golden"][0]["arguments"]["x"]
-    assert value == G._MIXED_CONTROL_STRINGS[family]
+    assert value == G._MIXED_CONTROL_STRINGS[G.unified_grammar_family(family)]
     assert value.startswith(" ") and value.endswith("\n ")
     assert G.r_reason(family, "quoted") in value
     assert '&amp; "x"' + "\\" in value
-    assert case["input"] == G.r_tool(family, "f", "x", value, 0)
+    assert case["input"] == G.default_response_prefix(family) + G.r_tool(family, "f", "x", value, 0)
 
 
 # --- generated YAML must round-trip every authored byte -------------------------
@@ -838,19 +838,20 @@ def test_unified_case_counts_match_the_generator():
             "kimi_k3": 124,
             "muse_glimmer": 126,
             "qwen3": 122,
+            "nemotron_v3": 124,
         }.get(fam)
         if fam == "gpt_oss":
             assert per_family[fam] == 159
         else:
             assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 974 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
+    assert sum(per_family.values()) == 1098 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 158 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 160 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1047,7 +1048,7 @@ def _assert_reference_measurements_start_at_introduction(store):
             introduced_ids = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
             if family != "glm47":
                 introduced_ids |= shared_ids
-            if family == "qwen3":
+            if G.unified_grammar_family(family) == "qwen3":
                 introduced_ids.add("UNIFIED.7-arg_string_null_ref")
             version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
             if version < (0, 7, 18):
@@ -1085,8 +1086,9 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 
 
 def _family_value(scenario, family):
+    family = G.unified_grammar_family(family)
     reason_open, reason_close, _, _ = control_tokens(family)
-    marker = G._NATIVE_QUOTED_CONTROL[family]
+    marker = G._NATIVE_QUOTED_CONTROL[G.unified_grammar_family(family)]
     if scenario in {
         "native_quoted_control_in_response",
         "native_quoted_control_in_reasoning",
@@ -1114,7 +1116,7 @@ def _family_value(scenario, family):
         header = G.r_tool(family, "get_weather", "city", "Paris", 0).split("Paris", 1)[0]
         return f"The literal `{header}` header is part of the explanation."
     if scenario == "deepseek_v41_mixed_control_text_in_string":
-        return G._MIXED_CONTROL_STRINGS[family]
+        return G._MIXED_CONTROL_STRINGS[G.unified_grammar_family(family)]
     if scenario == "arg_marker_in_string":
         close = {
             "deepseek_v4": "</｜DSML｜invoke>",
@@ -1257,6 +1259,7 @@ def _native_input_calls(family, raw):
                 return calls
             cursor = outer_end + len("</tool_call>")
 
+    family = G.unified_grammar_family(family)
     headers = {
         "deepseek_v4": r'<｜DSML｜invoke name="([^"]+)">',
         "deepseek_v41": r'<｜DSML｜ invoke name="([^"]+)">',
@@ -1312,7 +1315,7 @@ def _native_input_calls(family, raw):
     for index, match in enumerate(found):
         body = raw[match.end():found[index + 1].start() if index + 1 < len(found) else len(raw)]
         arguments = {}
-        if family == "qwen3":
+        if G.unified_grammar_family(family) == "qwen3":
             # The generator frames values with one newline; payload whitespace is data.
             arguments = {key: value.removeprefix("\n").removesuffix("\n")
                          for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
@@ -1376,6 +1379,7 @@ def test_kimi_k2_fixture_projection_rejects_an_empty_name():
 
 
 def _assert_malformed_recovery(family, case):
+    family = G.unified_grammar_family(family)
     raw = case["input"]
     assert case["input_chunks"] == [raw]
     assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
@@ -1418,6 +1422,8 @@ def _assert_malformed_recovery(family, case):
 
 
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
+    default_reasoning = bool(G.default_response_prefix(family))
+    family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
@@ -1496,11 +1502,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             elif value is None:
                 assert "null" in raw, (family, scenario, "input null argument value", key)
     reasons = [event for event in case["golden"] if event["kind"] == "reasoning"]
-    if reasons and case["init"]["starting_state"] == "None":
+    if reasons and case["init"]["starting_state"] == "None" and not default_reasoning:
         assert control_tokens(family)[0] in raw, (family, scenario, "missing reasoning opener")
     if reasons and any(event["kind"] != "reasoning" for event in case["golden"]):
         unclosed = {
-            "truncated_tool_eof", "prefilled_reasoning_truncated",
+            "truncated_tool_eof", "prefilled_reasoning_truncated", "default_reasoning_tool_without_closer",
             "guided_json_unterminated_reasoning_then_wrapped_payload",
             "guided_json_bare_tool_header_recovers_inside_a_thought",
             "deepseek_v4_guided_reasoning_opener_inside_native_body",
@@ -1624,9 +1630,11 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
         if mutation == "reasoning_prose":
             case["golden"][0]["text"] = "Other prose."
     elif mutation == "marker_role":
-        reason_open, _, tool_open, _ = control_tokens(family)
+        reason_open, reason_close, tool_open, _ = control_tokens(family)
         if family == "deepseek_v41":
             case["input"] = case["input"].replace("</think>", "</｜DSML｜ calls>")
+        elif G.default_response_prefix(family):
+            case["input"] = case["input"].replace(reason_close, tool_open)
         else:
             case["input"] = case["input"].replace(reason_open, tool_open, 1)
     elif mutation == "missing_event":
@@ -1641,9 +1649,10 @@ def test_cross_family_contract_rejects_single_family_mutations(family, mutation)
         case["input"] = case["input"].replace("Paris", "Rome")
     elif mutation == "guided_array_value":
         case = corpus[family][f"UNIFIED.guided_json_array_argument.{family}"]
-        calls = json.loads(case["input"])
+        prefix = G.default_response_prefix(family)
+        calls = json.loads(case["input"].removeprefix(prefix))
         calls[0]["arguments"]["values"][-1] += 1
-        case["input"] = json.dumps(calls)
+        case["input"] = prefix + json.dumps(calls)
     elif mutation == "argument_marker_role":
         case = corpus[family][f"UNIFIED.arg_marker_in_string.{family}"]
         value = case["golden"][0]["arguments"]["cmd"]
