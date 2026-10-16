@@ -15,8 +15,8 @@ mod wire;
 
 pub use builders::StructuralTagBuilder;
 pub use context::{
-    ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
-    StructuralTagToolChoice,
+    PromptChannel, ReasoningBoundary, StructuralTagContext, StructuralTagOptions,
+    StructuralTagSchemaMode, StructuralTagToolChoice,
 };
 
 #[cfg(test)]

@@ -5,5 +5,7 @@
 //! [`crate::processor::MmFamilyProcessor`] and registers a spec variant in
 //! [`crate::registry::ProcessorSpec`]; everything else (request flow, caps,
 //! failure semantics) comes from the driver for free.
+//! Geometry-only modules can be consumed independently before a full processor lands.
 
+pub mod deepseek_v41;
 pub mod qwen_vl;

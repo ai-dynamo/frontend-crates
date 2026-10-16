@@ -442,6 +442,9 @@ pub async fn parse_tool_calls_harmony_complete(
     Ok((res, Some(normal_text)))
 }
 
+/// Short `<` / `<|` chunk tails are ambiguous between prose and the head of
+/// a text-split marker; the jail holds them for the next chunk instead of
+/// jailing immediately.
 pub fn detect_tool_call_start_harmony(
     chunk: &str,
     config: &JsonParserConfig,
@@ -1034,6 +1037,24 @@ mod detect_parser_tests {
             !detect_tool_call_start_harmony("xyz", &config, true),
             "'xyz' should not be detected in strict mode"
         );
+
+        // Channel-specific split markers over the production start-token
+        // pair must still be detected; the jail, not this detector, decides
+        // whether a short tail is prose.
+        let prod_config = JsonParserConfig {
+            tool_call_start_tokens: vec![
+                "<|start|>assistant<|channel|>commentary".to_string(),
+                "<|channel|>commentary".to_string(),
+            ],
+            tool_call_end_tokens: vec!["<|call|>".to_string()],
+            ..Default::default()
+        };
+        for chunk in ["<|c", "<|channel|>comm", "<|start|>assistant<|ch"] {
+            assert!(
+                detect_tool_call_start_harmony(chunk, &prod_config, true),
+                "{chunk:?} is a potential split marker and must be detected"
+            );
+        }
     }
 
     // --- analysis-channel tool-call recovery (the gpt-oss-120b malformed form) ---

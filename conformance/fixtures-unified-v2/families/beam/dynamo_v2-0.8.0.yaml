@@ -1,0 +1,3512 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.0
+    source_sha256: 869a433800bb095c38fdaf28de81ae99e43e80c283638abb3927132a0a6dc1af
+    git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    case_key: UNIFIED.7-4
+    stimulus:
+      ref: current
+      semantic_sha256: 78dce0989b30a80ae2f60b27357da67afdc898ead6b3128e6758f037be5c0787
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-4.anyof
+    stimulus:
+      ref: current
+      semantic_sha256: c19ba80bf0a5a840037c5b422629fe6043f920647b7f570100f535feb2e0ee80
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_const:
+    case_key: UNIFIED.7-4.const
+    stimulus:
+      ref: current
+      semantic_sha256: 79f4e38e4aa94c6f8a37509d6185be278842c85b2747a57ce69a2ff21b0e1d68
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-4.nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 7ad3e66dec5ee64ef01b78cc6b3b2913082a51db3b8c76c0cb0c1343bbf2f385
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-4.oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 54ada936de59e137c981ca60117e7c580a7e8fa6abbe55fb03cf00b3162ad97a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_marker_in_string:
+    case_key: UNIFIED.7-2
+    stimulus:
+      ref: current
+      semantic_sha256: 276295597526f8d51e309dc914a6ac55ef38ee3983e62fbea7bec7de31df4dc0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|call|> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log <|call|> --oneline"}'
+            complete: true
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    stimulus:
+      ref: current
+      semantic_sha256: 4be669749db464dd076609b0f64293a1923d10e609c3696c78ad3ad48b38d0c8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_const:
+    case_key: UNIFIED.7-5.const
+    stimulus:
+      ref: current
+      semantic_sha256: e3391e4ecbb3dd520967dbfa11e0b89696804331a0150cfe9572b2f3b4ff4a47
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
+    stimulus:
+      ref: current
+      semantic_sha256: 9f76fbf9c61679cc846ced4f440e9a443c2a11e13a17f046c3e24195efa48ffb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: ef1d88a6a93d76741943cc096849a87ad7b4f1151973df0dfdcff30c1e8c330b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: c5eeee316b0630e45d7bebed8a20cd193c58efdb8b6e10c44e7e0bfec8b03af9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
+    stimulus:
+      ref: current
+      semantic_sha256: 7f5e95bd02d971bc2996fd3def1aa74ccec46322a22e6910e4ba3282d3b6fc48
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-5.untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: 6e633f9cffbf368664268526505aeb4c6c45deeedc56247de5bd1f94725e14a5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+  arg_unicode:
+    case_key: UNIFIED.7-1
+    stimulus:
+      ref: current
+      semantic_sha256: 3d9104d942c5174166578016c7ae4d4d4bb3a77fbfd893512baccd002dc25093
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "São Paulo 東京"}'
+            complete: true
+        - expected: []
+  content_then_reason:
+    case_key: UNIFIED.11-7
+    stimulus:
+      ref: current
+      semantic_sha256: 945f9f53665aaf399bf0bc1c2c8fccd3b7304c3ab5939feb50eebfb8a6aa516a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: The capital is Paris.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Hello there. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me recall
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The capital is Paris.
+        - expected: []
+        - expected: []
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-6
+    stimulus:
+      ref: current
+      semantic_sha256: dd6cc8f74f9a1f318495c66b076980b01fb72a4acb9334f2062f4af71837d3b7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-3
+    stimulus:
+      ref: current
+      semantic_sha256: a28c6f309387a2752b97e8ba7d7498dbdeab00e5039f731df19fdfad18935f84
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <|start|>assistant<|channel|>analysis<|message|>quoted<|end|> <|call|> <|end|> <|return|> <|start|> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": " <|start|>assistant<|channel|>analysis<|message|>quoted<|end|> <|call|> <|end|> <|return|> <|start|> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+  empty_args:
+    case_key: UNIFIED.6-1
+    stimulus:
+      ref: current
+      semantic_sha256: 0406fddcd9455af33ff44cfb2a90237b638bfe43211c86babebdde7528261795
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            complete: true
+        - expected: []
+  guided_json_after_reasoning:
+    case_key: UNIFIED.30-6
+    stimulus:
+      ref: current
+      semantic_sha256: e5f2b5a82416c5467233d205d8e934364c026c4d57a6e428a1f4aec4ca19395a
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_array_argument:
+    case_key: UNIFIED.30-5
+    stimulus:
+      ref: current
+      semantic_sha256: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: sum_values
+          arguments:
+            values:
+            - 2
+            - 3
+            - 5
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: sum_values
+            arguments: '{"values": [2, 3, 5]}'
+            complete: true
+        - expected: []
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: UNIFIED.34-7
+    stimulus:
+      ref: current
+      semantic_sha256: 75d0a951a70248aa4614c5b0113d80dffcd37db85a801de670f870a2ec208056
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'thinking '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'thinking '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_json_escaped_string_args:
+    case_key: UNIFIED.30-4
+    stimulus:
+      ref: current
+      semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo "雪" > C:\tmp\a.txt
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+            complete: true
+        - expected: []
+  guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.30-13
+    stimulus:
+      ref: current
+      semantic_sha256: e624abf310e2844692c286280a46bd8c9292e7bbd37d5d3f10c49e1cc5c67aa1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            complete: true
+        - expected: []
+  guided_json_gt_in_argument_trailing_close:
+    case_key: UNIFIED.30-11
+    stimulus:
+      ref: current
+      semantic_sha256: 62db29b1d6980786d5286ab822fea9f286dca47836669ff2948dd75b2f3984f7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    case_key: UNIFIED.30-12
+    stimulus:
+      ref: current
+      semantic_sha256: 4bbab2aaaee0647f89ce985af607cefb8d6db29580c026f84800d94e4b3283dc
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_json_invalid_call:
+    case_key: UNIFIED.31-1
+    stimulus:
+      ref: current
+      semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_list_with_broken_element:
+    case_key: UNIFIED.31-4
+    stimulus:
+      ref: current
+      semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  guided_json_malformed_json:
+    case_key: UNIFIED.31-2
+    stimulus:
+      ref: current
+      semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"name": "get_weather", "arguments": {"city": "Par'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Par'
+  guided_json_marker_inside_argument:
+    case_key: UNIFIED.30-7
+    stimulus:
+      ref: current
+      semantic_sha256: d9510e40e82a37a4487c9282ed98d4778a91df0c8a78729efceaaf2c2883a4e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<|end|>"}'
+            complete: true
+        - expected: []
+  guided_json_named_tool:
+    case_key: UNIFIED.30-1
+    stimulus:
+      ref: current
+      semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: UNIFIED.34-1
+    stimulus:
+      ref: current
+      semantic_sha256: 60547691eed8ddc739b284dcda562208afd9bcf1f8e547487f9b49323b731f4c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use  next
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll use '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' next'
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.34-5
+    stimulus:
+      ref: current
+      semantic_sha256: 9f4bf34b94f279f597d43b8c965e1915b730271068e1c3643472288a918f8954
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call get_weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll call '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: get_weather
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_markup_only:
+    case_key: UNIFIED.32-5
+    stimulus:
+      ref: current
+      semantic_sha256: b7a35a3974ce9861801669d098fba6bc1fdfef544c756941738a107d6384cf9d
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_orphan_reason_close_before_payload:
+    case_key: UNIFIED.34-3
+    stimulus:
+      ref: current
+      semantic_sha256: 1b4e6bdb412341ed4732a7744daf479783292dd460493be92ee339c88afbc588
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_orphan_tool_close_before_payload:
+    case_key: UNIFIED.32-4
+    stimulus:
+      ref: current
+      semantic_sha256: e3372d57cae78687b8e8f60da7dbb37ea89d6c972b36960150f5c1ece2dc3341
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_partial_calls:
+    case_key: UNIFIED.31-3
+    stimulus:
+      ref: current
+      semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        - expected: []
+  guided_json_prose_before_reasoning:
+    case_key: UNIFIED.34-2
+    stimulus:
+      ref: current
+      semantic_sha256: 04c63f547d1fbd077ebb12038aec4cbcb0fda325733922574c42555c8ddf79a4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_quoted_bare_header_after_payload:
+    case_key: UNIFIED.35-2
+    stimulus:
+      ref: current
+      semantic_sha256: 88b927472bc9e8e32273dd3570e25183171e55d47c17a9b2925574d8633031e2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|start|>assistant<|channel|>analysis<|message|>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: <|end|>
+        - expected: []
+  guided_json_quoted_bare_header_in_answer:
+    case_key: UNIFIED.35-1
+    stimulus:
+      ref: current
+      semantic_sha256: a9ca03f63638d65ff0aa84cff905dd7cf36a76f4d4956942ba4c98152ff33677
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <|start|>assistant<|channel|>analysis<|message|>self literal<|end|>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <|start|>
+        - expected:
+          - kind: text
+            text: assistant
+        - expected:
+          - kind: text
+            text: <|channel|>
+        - expected:
+          - kind: text
+            text: analysis
+        - expected:
+          - kind: text
+            text: <|message|>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: <|end|>
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_required_tool:
+    case_key: UNIFIED.30-2
+    stimulus:
+      ref: current
+      semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.33-9
+    stimulus:
+      ref: current
+      semantic_sha256: c846c31ca670167c26dd3043bea4eea7248ea61d21c9129aa172fddeb36d550e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: UNIFIED.33-7
+    stimulus:
+      ref: current
+      semantic_sha256: 19deaa368706d0840208e90d489424ca0dc5079c50c3fb76e0232e850dfddfef
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: UNIFIED.33-8
+    stimulus:
+      ref: current
+      semantic_sha256: 137e9604ed55522537b47f9f5ceceb2758037a92ca9dd98aeaf099fb8d1267c3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.33-6
+    stimulus:
+      ref: current
+      semantic_sha256: 175c5c5ab57be2e2b101fde449fea38db816776a32b868646c1d865295d7ed23
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: UNIFIED.33-4
+    stimulus:
+      ref: current
+      semantic_sha256: 0e3f424c9fdaf73935381f0c93f17f0391e7ab46947ff8b777065c43f3e0f06c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: UNIFIED.33-5
+    stimulus:
+      ref: current
+      semantic_sha256: 1435b8643582850d398b912f5f6c29db24caeef18c5c5a7a2a36bd7bf55ddf57
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.34-4
+    stimulus:
+      ref: current
+      semantic_sha256: a8f2346af6b3ce208f275125bb52b87b17898097d3b22cc74d42b1ded018cb4d
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: secret
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: secret
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.33-3
+    stimulus:
+      ref: current
+      semantic_sha256: cd4fffdbd5afa55801184f2f51c1a0ae35bb9a9847031f73a3c809bea046b4bb
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+  guided_json_syntax_error_trailing_close:
+    case_key: UNIFIED.33-1
+    stimulus:
+      ref: current
+      semantic_sha256: f10504a3f795cb50be5076b7d057efdb878fabf2115c4e4fe1e84ff57ab010c7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city":'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_syntax_error_wrapped:
+    case_key: UNIFIED.33-2
+    stimulus:
+      ref: current
+      semantic_sha256: 923bf02ebe91386b7f0601ff7d9191dc202b8a756f102ce6c59d5fee488c958a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city":'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city":'
+  guided_json_tool_close_after_payload:
+    case_key: UNIFIED.32-2
+    stimulus:
+      ref: current
+      semantic_sha256: d19106f95882308ba9b901e533dfa0116634b59b4ae02790e8534c8faa4dc5cb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_json_tool_open_before_payload:
+    case_key: UNIFIED.32-1
+    stimulus:
+      ref: current
+      semantic_sha256: d4b4124e9bf7cb869c364753b2633f7f80941046428e147d302f4a5f23195332
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_two_calls:
+    case_key: UNIFIED.30-3
+    stimulus:
+      ref: current
+      semantic_sha256: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log"}'
+            complete: true
+        - expected: []
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: UNIFIED.34-6
+    stimulus:
+      ref: current
+      semantic_sha256: 8989e5a542c46e65a930808dd4adbd37d9e81fef5421a34c5c7346e0c6716c5e
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_json_wrapped_in_tool_markup:
+    case_key: UNIFIED.32-3
+    stimulus:
+      ref: current
+      semantic_sha256: 81ba62e58959032750f4b2da25b54ebdb12f19910f84a8473ed3a3c75a3134f1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    stimulus:
+      ref: current
+      semantic_sha256: 0e01c0f26444bf5cc0876af3e196efd8816f592a7e728ff20e19f95270efa812
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|end|> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|end|> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    stimulus:
+      ref: current
+      semantic_sha256: c026bc86501596c8680536e9a4d6200d60abaff7708ea506f02727903be11103
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|end|> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|end|> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    stimulus:
+      ref: current
+      semantic_sha256: 3cbe14bfaf981e3fee34b2983e9f37a5058ed9f3f1322308cbe8a5620c0e551e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    stimulus:
+      ref: current
+      semantic_sha256: ad7195c2008c1e9cf2a0344b74e0a8b55d7e05769b94565de81135c2a4f1556e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|start|>assistant to=get_weather<|channel|> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  interstitial_text:
+    case_key: UNIFIED.11-5
+    stimulus:
+      ref: current
+      semantic_sha256: 54d30153b903348bcf3d649fda8a69f6de3e930ae5f44c21f75c7359fcd6c9af
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-4
+    stimulus:
+      ref: current
+      semantic_sha256: 54afecd321d5af5442d76b978bf69795a5d35d6c5fe1f852dada4255b8cc96d6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments:
+            value: '{"x":"unfinished'
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"value": "{\"x\":\"unfinished"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "é"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "Café"}'
+            complete: true
+        - expected: []
+  narrated_calls:
+    case_key: UNIFIED.8-5
+    stimulus:
+      ref: current
+      semantic_sha256: d071272d4a455db8e65a19dbadb5a4aad42015b4821b3fb4bedd88e2bbee0eb4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' then I''ll run '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    stimulus:
+      ref: current
+      semantic_sha256: 8ddd4c75add7f9f77d183170caf043cfc2a4bae4010e2687b434bff625941256
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    stimulus:
+      ref: current
+      semantic_sha256: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    stimulus:
+      ref: current
+      semantic_sha256: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|start|>assistant to=get_weather<|channel|>" marker is part of the explanation.
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    stimulus:
+      ref: current
+      semantic_sha256: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal `<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+            ` header is part of the explanation.'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="city">
+
+              ` header is part of the explanation.'
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    stimulus:
+      ref: current
+      semantic_sha256: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    stimulus:
+      ref: current
+      semantic_sha256: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|start|>assistant to=get_weather<|channel|> marker' stays quoted.
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    stimulus:
+      ref: current
+      semantic_sha256: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <|start|>assistant to=get_weather<|channel|> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|start|>assistant to=get_weather<|channel|> marker' is part of the explanation.
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    stimulus:
+      ref: current
+      semantic_sha256: a727e358b7bfdaa821a849e584b301278d6de816e77e19788ab450e9d90ff05b
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  orphan_close_after_prose:
+    case_key: UNIFIED.5-3
+    stimulus:
+      ref: current
+      semantic_sha256: f00fafa78172a5af1e5ad463fe0c98c95f30b04ebfe661e548bf01acf88623d9
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check that. <|call|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'I will check that. '
+        - expected:
+          - kind: text
+            text: <|call|>
+        - expected: []
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    case_key: UNIFIED.41-1
+    stimulus:
+      ref: current
+      semantic_sha256: 9543b456bd0a6e86a4203d78d5837d9cd2af6d9cd5b6d330ca9067ad9f4d5d78
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "London"}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_then_text:
+    case_key: UNIFIED.40-4
+    stimulus:
+      ref: current
+      semantic_sha256: 39560c02927780305ca31e8ae58a462ca206316e47c4404eb034fe3827cca3ab
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: no tool needed
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-3
+    stimulus:
+      ref: current
+      semantic_sha256: 544e346cadece74e9621fc50dde3dcdaab2c5ac6831dc8db9a4bfba6d84b2698
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_truncated:
+    case_key: UNIFIED.41-2
+    stimulus:
+      ref: current
+      semantic_sha256: 50a6f684847daf2a587c93980a272f1f0c84307d3e096d345a954ca672f08b37
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  prefilled_reasoning_with_guided_json:
+    case_key: UNIFIED.40-2
+    stimulus:
+      ref: current
+      semantic_sha256: a43cac2d8abadad282c128c75cbb9d97820f919f9ad26864fc5791d2bcbb65a7
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-1
+    stimulus:
+      ref: current
+      semantic_sha256: 09f7f5c4eecc047cdfec4e6c41c5336239eb2d88b4e699cb11f36e1252b766e9
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    case_key: UNIFIED.50-4
+    stimulus:
+      ref: current
+      semantic_sha256: 523180aa89af25534be9a8102098f11cad69e5170e38ef60ebef37726164bbd4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: literal then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  reason_after_tool:
+    case_key: UNIFIED.11-2
+    stimulus:
+      ref: current
+      semantic_sha256: d44be147cf407f5825a7a60a3426286b3e6e5e3152432e525efc6d3e06ad5fdd
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: Now answer.
+        - kind: text
+          text: It's 18C.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Now answer.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: It's 18C.
+        - expected: []
+        - expected: []
+  reason_between_calls:
+    case_key: UNIFIED.11-9
+    stimulus:
+      ref: current
+      semantic_sha256: e45fcd6f3597ecbfbe0f7416593c4a7ff6faf70749d0edf222d5dad5f1064424
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  reason_interleaved:
+    case_key: UNIFIED.11-3
+    stimulus:
+      ref: current
+      semantic_sha256: a162953e7e398d12470d9c24c78643520ea12029f05d9dc3e3576113ad1511a6
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  reason_markup_in_arg:
+    case_key: UNIFIED.12-1
+    stimulus:
+      ref: current
+      semantic_sha256: 7d3bc91b053e0cc9c8b385fb7309b12ef2d73e434ea2c788be7cdf6cd183fbbe
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>"}'
+            complete: true
+        - expected: []
+  reason_markup_in_arg_with_text:
+    case_key: UNIFIED.12-3
+    stimulus:
+      ref: current
+      semantic_sha256: 9ba01b1f726948f5c31d0f2d1f0ef289dc00a92a6183780496a1f07f1ac8cee8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+        - kind: text
+          text: ' done.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' done.'
+        - expected: []
+        - expected: []
+  reason_only:
+    case_key: UNIFIED.10-1
+    stimulus:
+      ref: current
+      semantic_sha256: bd7abb2ad30c73f2f0b768e92a26e3ff41e1853e7f3703437359c6e947437ed2
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: just thinking, no answer
+        - expected: []
+        - expected: []
+  reason_then_content:
+    case_key: UNIFIED.10-2
+    stimulus:
+      ref: current
+      semantic_sha256: e137a39af4953b914db1668be956b35da7f1245aa4fa4ce3d81de3151065a6d3
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me think
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+        - expected: []
+  reason_then_tool:
+    case_key: UNIFIED.11-1
+    stimulus:
+      ref: current
+      semantic_sha256: caebb0c2591ec9da82fda947efd68bbde103e7f5abea0e0f6fbab6a39a9a766d
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  reason_tool_reason_tool_reason:
+    case_key: UNIFIED.11-8
+    stimulus:
+      ref: current
+      semantic_sha256: 6d6b41c5ef722cdb2d718419caf70a45e53fa336ab15ea4095c0d92e3668eb92
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        - kind: reasoning
+          text: C
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: C
+        - expected: []
+        - expected: []
+  reason_tool_text_reason_tool:
+    case_key: UNIFIED.11-4
+    stimulus:
+      ref: current
+      semantic_sha256: f460a36de40794be10481aa35fd741e867841944cfb72c65ccf675c3208e95a0
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: working on it
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: working on it
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  reason_unterminated:
+    case_key: UNIFIED.10-4
+    stimulus:
+      ref: current
+      semantic_sha256: 51babc3e294a06aa6d12735e7a034d07b5d92183bcbf2edc95faf24aae309508
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking but stream ends
+        - expected: []
+  text_before_tool:
+    case_key: UNIFIED.8-1
+    stimulus:
+      ref: current
+      semantic_sha256: 1f29c025c3f80a0e3b4cd213441b90a776207ce340b454a1801bf271c51ce2c3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  text_between_calls:
+    case_key: UNIFIED.8-4
+    stimulus:
+      ref: current
+      semantic_sha256: 433dc296568ed6bf2601f1ea0ee283e54202285f1957f07bab4c8706c500e2cd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  text_only:
+    case_key: UNIFIED.3-1
+    stimulus:
+      ref: current
+      semantic_sha256: 962910ed5530415b615134fea31ef94463cefbfb07c91b3fa2544e9b0e7aecdc
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The answer is 42, no tools needed.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42, no tools needed.
+        - expected: []
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    case_key: UNIFIED.11-10
+    stimulus:
+      ref: current
+      semantic_sha256: 5c78094a10d9349d7ad19bb3d2526b63ec8e6c47e89d9c75c6c514c0f1ad05d1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: reasoning
+          text: check B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  text_sandwich:
+    case_key: UNIFIED.8-3
+    stimulus:
+      ref: current
+      semantic_sha256: 2bf13042883ab8086cb5495f7d884c42cb265ef09ae950a204b92400e60a5a96
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' After.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Before. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' After.'
+        - expected: []
+        - expected: []
+  tool_block_never_closed_then_text:
+    case_key: UNIFIED.4-1
+    stimulus:
+      ref: current
+      semantic_sha256: adb95899fb773fc3eed0ab042e41f57aa24d519e0f18e30fb97267c10a217364
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_in_reason:
+    case_key: UNIFIED.12-2
+    stimulus:
+      ref: current
+      semantic_sha256: 0f543df656ddd86b2da5edd55e2611d1580ac964e88ab9c9fd7de87e8902d03c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    case_key: UNIFIED.12-4
+    stimulus:
+      ref: current
+      semantic_sha256: a4ba86ceb527b0c5b045fc83755ba4f8241ccaaee619e1230d36692ace914f62
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        - kind: text
+          text: ' Here you go.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []
+        - expected: []
+  tool_markup_only_emits_nothing:
+    case_key: UNIFIED.4-2
+    stimulus:
+      ref: current
+      semantic_sha256: 1de553c3337eb49c4b4255a9392c03f5e7d05b433fc3543f75c9ffe6833b9a4f
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+  tool_no_close:
+    case_key: UNIFIED.5-2
+    stimulus:
+      ref: current
+      semantic_sha256: 603027979deb183ab2c4bc3e313846f95b41407e14b2f204fca98fbb330b761e
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_only:
+    case_key: UNIFIED.1-1
+    stimulus:
+      ref: current
+      semantic_sha256: d952d5b6f30dbc76431406d43aebd57472b402978ab225a8b20902ec6a21cc50
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  trailing_text_after_tool:
+    case_key: UNIFIED.8-2
+    stimulus:
+      ref: current
+      semantic_sha256: 171a1a84bf5c56c26455349f7fcc44936a5716e230a31d87456515f5c46e16bd
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: The forecast shows clear skies for the rest of the week.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+        - expected: []
+        - expected: []
+  truncated_tool_eof:
+    case_key: UNIFIED.5-1
+    stimulus:
+      ref: current
+      semantic_sha256: 658f50bc4601547c7b08105fb8e484d3f4c81f078505a54395cb85348b868de1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  two_adjacent_reason_spans:
+    case_key: UNIFIED.10-5
+    stimulus:
+      ref: current
+      semantic_sha256: e7842aae1a0139743e0c421a6b20932dc90811dd3055f7c50e35c6fea216946e
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: '
+
+              second'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+        - expected: []
+  two_calls:
+    case_key: UNIFIED.2-1
+    stimulus:
+      ref: current
+      semantic_sha256: 3b739b8dbb02f8b96aad1c79f48e6d053083512fec20363e964f4b1d8e725acf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+  two_calls_same_name:
+    case_key: UNIFIED.2-2
+    stimulus:
+      ref: current
+      semantic_sha256: fb9a03048298e3d730977904b17f299d538d6267166bcde7541b55102c634e3d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Tokyo"}'
+            complete: true
+        - expected: []
+  two_reason_spans:
+    case_key: UNIFIED.10-3
+    stimulus:
+      ref: current
+      semantic_sha256: 11ac9fdac28b6c9e7fecebd67ae5edb5ff0a96562786519223c0ecb3350e84e6
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: 'interlude '
+        - kind: reasoning
+          text: second thought
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first thought
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'interlude '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: second thought
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

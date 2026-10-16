@@ -1,0 +1,114 @@
+# Cases of `reference-goldens.jsonl` (plain `<|start|>assistant` prefix, and the prefilled
+# prefixes the parsers can start from) where the beam
+# parsers deliberately differ from the model builder's reference serving layer. The list
+# is shared by the V2 unified parser and the V1 route (reasoning parser + tool parser):
+# `beam_reference_goldens.rs` replays both and fails on any mismatch not listed here AND
+# on any entry that no longer mismatches, so this list is exact for each route. Every
+# input below is fuzz-generated malformed output; on template-conforming output all
+# three implementations agree on all cases.
+#
+# Classes (the tag opens each reason):
+#   F  — a `<|start|>` inside a body whose own terminator never came. V2 ends the body
+#        there and parses what follows (a later call or reply is recovered, no markup
+#        reaches the user); the reference keeps everything up to its closer as that
+#        channel's text, control markers included.
+#   C  — a control token (`<|end|>`, `<|call|>`) inside a parameter value. V2 reads the
+#        value up to its `</rfl:parameter>` (XML semantics: the value is data); the
+#        reference's first stage closes the call at the token and the template's tag
+#        search then sees only the parameters before it. Both are defensible; `<|call|>`
+#        and `<|return|>` are stop tokens, so a real stream never carries them mid-value.
+#   E2 — a call the stream ends inside (no `<|call|>`/`<|end|>`). The reference emits it
+#        with `arguments: ""` and marks the region unusable; V2 drops it (only a
+#        delimiter-terminated call is a call), so no client ever receives `""` arguments.
+#   P  — a reply the prompt prefilled (`Response` starting state). Once the stream
+#        reaches the reply's own terminator the reference drops everything after it;
+#        V1 and V2 treat the whole stream as the reply and keep those bytes visible
+#        with control markers stripped (a framed thought in a prefilled reply is read as
+#        reply text with its framing consumed).
+#   R  — an artifact of the reference's two-stage pipeline: tool extraction runs over
+#        the concatenation of all non-reasoning text with the first stage's delimiters
+#        already removed, so a bare `to=NAME<|channel|>…` inside a `final` body opens a
+#        call there and a call body can run across a removed `<|end|>` into the next
+#        header. V2 is a single state machine: a `final` body is text until its closer,
+#        and every call ends at its own terminator.
+known_divergences:
+  - id: gen-11
+    reason: "F: `<|start|>` inside an unterminated `final` body ends it in V2; the reference keeps the call markup as content. The recovered call also carries C (`<|call|>` inside a value) and is dropped by V2."
+  - id: gen-62
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 (the garbled header after it is debris); the reference keeps everything as reasoning."
+  - id: gen-94
+    reason: "F: `<|start|>` inside an unterminated `final` body ends it in V2 (the `reasoning` channel header after it is skipped whole); the reference keeps everything as content."
+  - id: gen-115
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 and the call after it is recovered; the reference keeps the whole call as reasoning text."
+  - id: gen-194
+    reason: "F: `<|start|>` (here `<|start|>call|>`) inside an unterminated `final` body ends it in V2 and the debris after it is dropped; the reference keeps `<|start|>call|>` as content."
+  - id: gen-218
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 and the reply after it is visible; the reference keeps the reply header and text as reasoning."
+  - id: gen-369
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 (the `reasoning`-channel tool header after it is skipped whole); the reference keeps everything as reasoning."
+  - id: gen-402
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 (the `final <|constrain|>xml` tool header after it is skipped whole); the reference keeps it as reasoning."
+  - id: gen-412
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 (the `commentary` channel after it is skipped whole); the reference keeps everything as reasoning."
+  - id: gen-569
+    reason: "F: `<|start|>` inside an unterminated `final` body ends it in V2 (the `<|constrain|>json` tool header after it is skipped whole); the reference keeps everything as content."
+  - id: gen-572
+    reason: "F: `<|start|>` inside an unterminated `analysis` body ends it in V2 (the lead broken by further `<|start|>` markers is debris); the reference keeps everything as reasoning."
+  - id: gen-81
+    reason: "C: `<|end|>` inside a quoted parameter value; V2 keeps the value and the parameters after it, the reference closes the call at the token with no parameters."
+  - id: gen-83
+    reason: "C: `<|end|>` inside a parameter value of the second call; V2 keeps that call's parameters, the reference closes it at the token with none."
+  - id: gen-206
+    reason: "C: `<|end|>` as a parameter value; V2 keeps the parameter, the reference closes the call before it."
+  - id: gen-228
+    reason: "C: `<|end|>` inside a quoted parameter value of the second call; V2 keeps the parameter, the reference closes the call at the token with none."
+  - id: gen-273
+    reason: "C: `<|end|>` inside a quoted parameter value; V2 keeps it and the parameters after it, the reference closes the call at the token."
+  - id: gen-327
+    reason: "C: `<|end|>` as the first parameter value of the first call; V2 reads the whole body, the reference closes that call at the token with no parameters."
+  - id: gen-329
+    reason: "C: `<|call|>` as the first parameter value; V2 reads the whole body, the reference closes the call at the token with no parameters."
+  - id: gen-356
+    reason: "C: `<|end|>` inside a quoted duplicate parameter value; V2 keeps the last duplicate, the reference closes the call at the token and keeps the first."
+  - id: gen-358
+    reason: "C: `<|end|>` inside a quoted parameter value; V2 keeps it and the parameters after it, the reference closes the call at the token."
+  - id: gen-365
+    reason: "C: `<|call|>` inside a parameter value whose opener precedes a broken `</rfl…:parameter>` close; V2 reads the value up to the real close, the reference closes the call at the token."
+  - id: gen-418
+    reason: "C: `<|end|>` inside a quoted parameter value; V2 keeps it and the parameter after it, the reference closes the call at the token with no parameters."
+  - id: gen-428
+    reason: "C: `<|end|>` as a parameter value; V2 keeps it and the parameters after it, the reference closes the call at the token."
+  - id: gen-471
+    reason: "C+E2: `<|call|>` inside a quoted parameter value, then the stream ends inside the call; the reference closes the call at the token (no parameters), V2 reads on and drops the unterminated call."
+  - id: gen-483
+    reason: "C: `<|end|>` inside a quoted parameter value of the second call; V2 keeps the parameter, the reference closes the call at the token with none."
+  - id: gen-496
+    reason: "C: `<|call|>` inside a quoted parameter value of the first call; V2 keeps the parameter, the reference closes the call at the token with none."
+  - id: gen-570
+    reason: "C: `<|call|>` as a parameter value; V2 keeps the parameter, the reference closes the call before it."
+  - id: gen-571
+    reason: "C: `<|end|>` as a parameter value; V2 keeps the parameter, the reference closes the call before it."
+  - id: gen-38
+    reason: "E2: the stream ends inside the last call; the reference emits it with `arguments: \"\"` (unusable), V2 drops it."
+  - id: gen-151
+    reason: "E2: the stream ends inside the last call (reference: `arguments: \"\"`, unusable; V2: dropped). The earlier `assistantto=1abc` header with two spaces before `<|constrain|>` is junk for both."
+  - id: gen-325
+    reason: "E2: the stream ends inside the only call; the reference emits it with `arguments: \"\"` (unusable), V2 drops it."
+  - id: gen-348
+    reason: "E2: the stream ends inside the second call; the reference emits it with `arguments: \"\"` (unusable), V2 drops it. The first call (malformed opener skipped, `{}`) agrees."
+  - id: gen-362
+    reason: "E2: the stream ends inside the only call, whose bare header sits inside a `final` body (R); the reference emits it with `arguments: \"\"` (unusable), V2 keeps the body as content and drops the call."
+  - id: gen-532
+    reason: "E2: the stream ends inside the second call, and the first call is left unterminated by the next `<|start|>` header; the reference emits the first with `arguments: \"\"` (unusable), V2 drops both."
+  - id: gen-589
+    reason: "E2: the stream ends inside the last call; the reference emits it with `arguments: \"\"` (unusable), V2 drops it."
+  - id: gen-33
+    reason: "R: a bare `to=NAME<|channel|>…` header inside a `final` body; the reference's tool stage opens a call there whose body runs through the next header, V2 keeps the `final` text and parses the next call."
+  - id: gen-92
+    reason: "R: `<|end|>assistant to=refl.bash<|channel|>…` — the reference's tool stage runs the first call's body across the removed `<|end|>` into the second header, merging its parameter and losing the second call; V2 emits both calls."
+  - id: gen-495
+    reason: "R: the reference's tool stage assigns the last call's parameters to the earlier `unknown_tool` header and drops the `functions.get_weather` call; V2 ends each call at its own terminator or `<|start|>`."
+  - id: gen-304
+    reason: "P: reply prefill; the reference ends the reply at the first `<|end|>` (inside a quoted value of narrated tool markup) and drops the rest, V1/V2 keep the rest of the stream as reply text with the markers stripped."
+  - id: gen-347
+    reason: "P: reply prefill; the reference ends the reply at its first terminator and drops the rest, V1/V2 keep the rest of the stream as reply text with the markers stripped."

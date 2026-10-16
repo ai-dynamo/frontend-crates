@@ -104,6 +104,10 @@ pub struct BasicReasoningParser {
     /// reasoning block (e.g. Kimi-K2/K2.5 models sometimes emit
     /// `<|tool_calls_section_begin|>` without first closing `</think>`).
     tool_start_tokens: Vec<String>,
+    /// Tool-argument regions belong to the downstream tool parser. Reasoning
+    /// delimiters inside these regions are literal argument data, not markup.
+    tool_parameter_tokens: Option<(String, String)>,
+    in_tool_parameter: bool,
 }
 
 impl BasicReasoningParser {
@@ -124,6 +128,8 @@ impl BasicReasoningParser {
             buffer_single_char_marker_prefix: false,
             recover_tool_start_without_opener: false,
             tool_start_tokens: Vec::new(),
+            tool_parameter_tokens: None,
+            in_tool_parameter: false,
         }
     }
 
@@ -135,6 +141,81 @@ impl BasicReasoningParser {
             self.tool_start_tokens.push(token);
         }
         self
+    }
+
+    /// Preserve XML tool parameter regions after reasoning has handed off to
+    /// normal text. The tool parser remains responsible for validating them.
+    pub fn with_tool_parameter_tokens(mut self, start: &str, end: &str) -> Self {
+        assert!(!start.is_empty() && !end.is_empty());
+        self.tool_parameter_tokens = Some((start.to_string(), end.to_string()));
+        self
+    }
+
+    /// Forward-only XML-aware scan. Only a possible delimiter suffix survives
+    /// between chunks; no full-suffix searches or copies occur per parameter.
+    /// Missing parameter closers recover at the same function/wrapper boundary
+    /// as the downstream v1 XML parser, so later reasoning is not shielded.
+    fn scan_tool_parameters(&mut self, text: &str, flush: bool) -> ParserResult {
+        self._buffer.push_str(text);
+        let input = std::mem::take(&mut self._buffer);
+        let (parameter_start, parameter_end) = self.tool_parameter_tokens.as_ref().unwrap();
+        let mut result = ParserResult::default();
+        let mut cursor = 0;
+        let mut span = 0;
+        while cursor < input.len() {
+            let tail = &input[cursor..];
+            // The small, fixed delimiter set is checked only at the cursor.
+            // Function/wrapper closes end shielding but remain tool-parser input.
+            let markers: &[&str] = if self.in_tool_parameter {
+                &[parameter_end, "</function>", "</tool_call>"]
+            } else if self._in_reasoning {
+                &[
+                    &self.think_start_token,
+                    &self.think_end_token,
+                    "<tool_call>",
+                ]
+            } else {
+                &[
+                    &self.think_start_token,
+                    &self.think_end_token,
+                    parameter_start,
+                ]
+            };
+            if let Some(marker) = markers.iter().find(|marker| tail.starts_with(**marker)) {
+                if self._in_reasoning {
+                    result.reasoning_text.push_str(&input[span..cursor]);
+                } else {
+                    result.normal_text.push_str(&input[span..cursor]);
+                }
+                if self.in_tool_parameter {
+                    result.normal_text.push_str(marker);
+                    self.in_tool_parameter = false;
+                } else if *marker == self.think_start_token {
+                    self._in_reasoning = true;
+                } else if *marker == self.think_end_token {
+                    self._in_reasoning = false;
+                } else {
+                    result.normal_text.push_str(marker);
+                    self._in_reasoning = false;
+                    self.in_tool_parameter = *marker == parameter_start;
+                }
+                cursor += marker.len();
+                span = cursor;
+            } else if !flush && markers.iter().any(|marker| marker.starts_with(tail)) {
+                // At most max(delimiter length)-1 bytes are retained. Partial
+                // markers are never emitted into the wrong channel.
+                break;
+            } else {
+                cursor += tail.chars().next().unwrap().len_utf8();
+            }
+        }
+        if self._in_reasoning {
+            result.reasoning_text.push_str(&input[span..cursor]);
+        } else {
+            result.normal_text.push_str(&input[span..cursor]);
+        }
+        self._buffer.push_str(&input[cursor..]);
+        result
     }
 
     /// Enables streaming dangling-close recovery.
@@ -177,6 +258,12 @@ impl ReasoningParser for BasicReasoningParser {
     }
 
     fn detect_and_parse_reasoning(&mut self, text: &str, _token_ids: &[u32]) -> ParserResult {
+        if self.tool_parameter_tokens.is_some() {
+            let mut parser = self.clone();
+            parser._buffer.clear();
+            parser.in_tool_parameter = false;
+            return parser.scan_tool_parameters(text, true);
+        }
         let has_think_tag = text.contains(&self.think_start_token);
         // REASONING.batch.4: dangling end marker without an opener. Treat the
         // prefix as reasoning.
@@ -339,6 +426,9 @@ impl ReasoningParser for BasicReasoningParser {
         text: &str,
         _token_ids: &[u32],
     ) -> ParserResult {
+        if self.tool_parameter_tokens.is_some() {
+            return self.scan_tool_parameters(text, false);
+        }
         self._buffer.push_str(text);
 
         let mut accumulated_normal = String::new();
@@ -397,11 +487,11 @@ impl ReasoningParser for BasicReasoningParser {
 
                 if let Some(tool_at) = force_exit_idx {
                     accumulated_reasoning.push_str(&current_text[..tool_at]);
-                    accumulated_normal.push_str(&current_text[tool_at..]);
-                    self._buffer.clear();
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
                     self.recover_tool_start_without_opener = false;
+                    accumulated_normal.push_str(&current_text[tool_at..]);
+                    self._buffer.clear();
                     break;
                 }
 
@@ -563,6 +653,9 @@ impl ReasoningParser for BasicReasoningParser {
     }
 
     fn finish_reasoning_stream(&mut self) -> ParserResult {
+        if self.tool_parameter_tokens.is_some() {
+            return self.scan_tool_parameters("", true);
+        }
         if self._buffer.is_empty() {
             return ParserResult::default();
         }
@@ -586,6 +679,43 @@ impl ReasoningParser for BasicReasoningParser {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[test]
+    fn xml_parameter_scan_many_calls_and_bounded_stream_buffer() {
+        let make = || {
+            BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true)
+                .with_tool_start_token("<tool_call>")
+                .with_tool_parameter_tokens("<parameter=", "</parameter>")
+        };
+        let call = format!(
+            "<tool_call><function=read><parameter=path>{}</parameter></function></tool_call>",
+            "x".repeat(64)
+        );
+        let expected = call.repeat(4096);
+        let input = format!("<think>inspect</think>{expected}");
+        let batch = make().detect_and_parse_reasoning(&input, &[]);
+        assert_eq!(batch.reasoning_text, "inspect");
+        assert_eq!(batch.normal_text, expected);
+        for size in [1, 17, input.len()] {
+            let mut parser = make();
+            let mut normal = String::new();
+            let mut reasoning = String::new();
+            for chunk in input.as_bytes().chunks(size) {
+                let out = parser.parse_reasoning_streaming_incremental(
+                    std::str::from_utf8(chunk).unwrap(),
+                    &[],
+                );
+                normal.push_str(&out.normal_text);
+                reasoning.push_str(&out.reasoning_text);
+                assert!(parser._buffer.len() < "</parameter>".len());
+            }
+            let tail = parser.finish_reasoning_stream();
+            normal.push_str(&tail.normal_text);
+            reasoning.push_str(&tail.reasoning_text);
+            assert_eq!(normal, batch.normal_text);
+            assert_eq!(reasoning, batch.reasoning_text);
+        }
+    }
 
     #[test] // REASONING.batch.2.c
     fn test_detect_and_parse_reasoning_reasoning() {

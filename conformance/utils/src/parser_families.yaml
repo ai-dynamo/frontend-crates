@@ -95,6 +95,12 @@ markers:
   deepseek_v4:
     pairs: [["<｜DSML｜tool_calls>", "</｜DSML｜tool_calls>"]]
     leak: ["<｜DSML｜", "</｜DSML｜"]
+  beam:
+    # A tool call is `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|>`
+    # ... `<|call|>`; `<rfl:parameter name="K">` ... `</rfl:parameter>` delimits a value.
+    pairs: [["<|start|>assistant to=", "<|call|>"], ["<rfl:parameter", "</rfl:parameter>"]]
+    singletons: ["<|start|>", "<|channel|>", "<|message|>", "<|end|>", "<|return|>"]
+    leak: ["<|start|>", "<|channel|>", "<|message|>", "<|call|>", "<rfl:parameter", "</rfl:parameter"]
   gemma4:
     pairs: [["<|tool_call>", "<tool_call|>"]]
     # `<|"|>` ... `<|"|>` quotes a raw string value; `__gemma_quote` is the pair id the
@@ -202,6 +208,13 @@ markers:
 #                     `<tool_call>` cannot be spotted generically. Families whose markers
 #                     already contain `<|`/`|>` (kimi) need nothing here.
 unified:
+  beam:
+    registry: beam
+    native: true
+    reasoning_parser: beam
+    tool_parser: beam
+    golden_spec: beam.yaml
+    leak_markers: ["<|start|>", "<|channel|>", "<|message|>", "<|call|>", "<rfl:parameter", "</rfl:parameter"]
   deepseek_v41:
     native: true
     reasoning_parser: deepseek_v41
