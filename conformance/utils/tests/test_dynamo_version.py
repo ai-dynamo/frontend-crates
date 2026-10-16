@@ -11,6 +11,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import dynamo_version as identity  # noqa: E402
+import package_fixtures  # noqa: E402
 import refresh_dynamo_captures  # noqa: E402
 
 
@@ -95,6 +96,108 @@ def test_capture_source_fingerprint_resolves_release_and_unpublished_labels(rele
     assert identity.capture_source_fingerprint(release_repo, current_label) == current_source
     with pytest.raises(ValueError, match="no verifiable parser source"):
         identity.capture_source_fingerprint(release_repo, "0.6.2")
+
+
+def retained_origin(repo, family, commit, *, digest=None, version="0.6.0"):
+    path = repo / "conformance/fixtures-unified-v2/families" / family / "dynamo_v2-0.6.0.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump({
+        "provenance": {"status": "captured", "origin": {
+            "crate_version": version,
+            "git_commit": commit,
+            "source_sha256": digest or identity.source_fingerprint(repo, commit),
+        }},
+        "document": {}, "changes": {}, "metadata_changes": {}, "document_overrides": {},
+    }))
+
+
+def untagged_origin_repo(repo):
+    commit = git(repo, "rev-parse", "HEAD")
+    git(repo, "update-ref", "-d", "refs/tags/dynamo-parsers-v2-v0.6.0")
+    manifest = repo / "parsers/v2/Cargo.toml"
+    manifest.write_text(manifest.read_text().replace('"0.6.0"', '"0.6.1"'))
+    return commit
+
+
+def test_capture_source_fingerprint_uses_validated_retained_history(release_repo):
+    commit = untagged_origin_repo(release_repo)
+    retained_origin(release_repo, "gemma4", commit)
+    equivalent = git(
+        release_repo, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+        "commit-tree", git(release_repo, "write-tree"), input="equivalent producer\n",
+    )
+    retained_origin(release_repo, "second", equivalent)
+    assert identity.capture_source_fingerprint(release_repo, "0.6.0") == identity.source_fingerprint(
+        release_repo, commit
+    )
+    assert identity.capture_source_fingerprint(release_repo, "0.6.0.patch1") == identity.source_fingerprint(
+        release_repo, commit
+    )
+
+
+@pytest.mark.parametrize("defect", ["fingerprint", "origin_version", "commit_version", "missing_commit", "ambiguous"])
+def test_capture_source_fingerprint_rejects_invalid_retained_history(release_repo, defect):
+    commit = untagged_origin_repo(release_repo)
+    retained_origin(release_repo, "gemma4", commit)
+    if defect == "fingerprint":
+        retained_origin(release_repo, "gemma4", commit, digest="0" * 64)
+    elif defect == "origin_version":
+        retained_origin(release_repo, "gemma4", commit, version="0.6.2")
+    elif defect == "missing_commit":
+        retained_origin(release_repo, "gemma4", "0" * 40, digest="0" * 64)
+    else:
+        if defect == "ambiguous":
+            manifest = release_repo / "parsers/v2/Cargo.toml"
+            manifest.write_text(manifest.read_text().replace('"0.6.1"', '"0.6.0"'))
+            (release_repo / "parsers/v2/src/lib.rs").write_text("pub fn changed() {}\n")
+        git(release_repo, "add", "parsers")
+        other = git(
+            release_repo, "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+            "commit-tree", git(release_repo, "write-tree"), input="second producer\n",
+        )
+        retained_origin(release_repo, "second", other)
+        manifest = release_repo / "parsers/v2/Cargo.toml"
+        manifest.write_text(manifest.read_text().replace('"0.6.0"', '"0.6.1"'))
+    with pytest.raises((ValueError, subprocess.CalledProcessError)):
+        identity.capture_source_fingerprint(release_repo, "0.6.0")
+
+
+def test_package_resolves_retained_source_from_its_locked_snapshot(release_repo, monkeypatch):
+    commit = untagged_origin_repo(release_repo)
+    retained_origin(release_repo, "gemma4", commit)
+    conformance = release_repo / "conformance"
+    fixtures = conformance / "fixtures"
+    fixtures.mkdir()
+    history = conformance / "fixtures-unified-v2"
+    (conformance / "fixtures-manifest.json").write_text(json.dumps({
+        "snapshot": "old", "shards": [], "inactive_shards": [],
+    }))
+    monkeypatch.setattr(package_fixtures, "ROOT", release_repo)
+    monkeypatch.setattr(package_fixtures, "FIXTURES_DIR", fixtures)
+    monkeypatch.setattr(package_fixtures, "UNIFIED_HISTORY_DIR", history)
+    monkeypatch.setattr(package_fixtures, "stage_fixtures", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(package_fixtures, "build_shards", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(package_fixtures, "_validate_candidate_package", lambda *_args: None)
+    monkeypatch.setattr(package_fixtures.unified_history, "publish_paths_transactionally", lambda *_args, **_kwargs: None)
+    run = subprocess.run
+
+    def bounded_run(*args, **kwargs):
+        return run(*args, timeout=5, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", bounded_run)
+    observed = []
+
+    def sync_store(*_args, history_root=None, **_kwargs):
+        observed.append(identity.capture_source_fingerprint(
+            release_repo, "0.6.0", history_root=history_root,
+        ))
+
+    monkeypatch.setattr(package_fixtures, "sync_store", sync_store)
+    package_fixtures.package_snapshot(
+        "new", "new America/Los_Angeles", {}, {},
+        dry_run=True, prune=False, stream_only=True,
+    )
+    assert observed == [identity.source_fingerprint(release_repo, commit)]
 
 
 @pytest.mark.parametrize("version, changed, allowed", [

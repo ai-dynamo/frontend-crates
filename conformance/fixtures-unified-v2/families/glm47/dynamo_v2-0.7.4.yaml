@@ -407,65 +407,23 @@ changes:
             arguments: '{"city":"null"}'
             complete: true
         - expected: []
-metadata_changes:
-  guided_quoted_reasoning_closer_named:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_quoted_reasoning_closer_required:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_response_quoted_control_braces_named:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_response_quoted_control_braces_required:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  native_quoted_control_in_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_incomplete_header:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_then_call:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_unmatched_quote_then_call:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-document_overrides: {}
+metadata_changes: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
+        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
+        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
+      inherited_from: null

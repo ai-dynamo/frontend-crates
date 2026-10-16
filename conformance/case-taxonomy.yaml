@@ -543,6 +543,8 @@ suites:
         required: true
         cases:
           "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
+          b: {desc: "Adjacent native calls across a partial next-call header (exact seven-delta Gemma4 regression)", required: true}
+          c: {desc: "Preserve all three native calls across a partial next-call header", required: true}
       "51":
         title: Tool-only reasoning projection
         required: false

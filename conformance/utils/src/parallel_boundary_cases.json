@@ -1,0 +1,3749 @@
+{
+  "cases": {
+    "deepseek_v3": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f\n```json\n{\"a\":\"1\"}\n```<｜tool▁call▁end｜><｜tool▁call▁begin｜>fu"
+          },
+          {
+            "delta_text": "nction<｜tool▁sep｜>g\n```json\n{\"b\":\"2\"}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>f\n```json\n{\"x\":\"1\"}\n```<｜tool▁call▁end｜><｜tool▁call▁begin｜>fu"
+          },
+          {
+            "delta_text": "nction<｜tool▁sep｜>g\n```json\n{\"x\":\"2\"}\n```<｜tool▁call▁end｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>h\n```json\n{\"x\":\"3\"}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "deepseek_v3_1": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>f<｜tool▁sep｜>{\"a\":\"1\"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>g<"
+          },
+          {
+            "delta_text": "｜tool▁sep｜>{\"b\":\"2\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>f<｜tool▁sep｜>{\"x\":\"1\"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>g<"
+          },
+          {
+            "delta_text": "｜tool▁sep｜>{\"x\":\"2\"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>h<｜tool▁sep｜>{\"x\":\"3\"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "deepseek_v3_2": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<｜DSML｜function_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"a\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><｜DSML｜parameter name=\"b\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<｜DSML｜function_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><｜DSML｜parameter name=\"x\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name=\"h\"><｜DSML｜parameter name=\"x\" string=\"true\">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "deepseek_v4": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"a\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><｜DSML｜parameter name=\"b\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><｜DSML｜parameter name=\"x\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name=\"h\"><｜DSML｜parameter name=\"x\" string=\"true\">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "gemma4": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Gemma4 adjacent close and partial call: opener (exact seven-delta regression)",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|tool_call>call"
+          },
+          {
+            "delta_text": ":f{"
+          },
+          {
+            "delta_text": "a:<|\"|>1<|\"|>"
+          },
+          {
+            "delta_text": "}<tool_call|><|tool_call>ca"
+          },
+          {
+            "delta_text": "ll:g{"
+          },
+          {
+            "delta_text": "b:"
+          },
+          {
+            "delta_text": "<|\"|>2<|\"|>}<tool_call|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Gemma4 middle call survives a delta ending at the next partial call: opener",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|tool_call>call:f{x:<|\"|>1<|\"|>}<tool_call|><|tool_call>c"
+          },
+          {
+            "delta_text": "all:g{x:<|\"|>2<|\"|>}<tool_call|><|tool_call>call:h{x:<|\"|>3<|\"|>}<tool_call|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "glm47": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_call>f<arg_key>a</arg_key><arg_value>1</arg_value></tool_call><tool_call>g"
+          },
+          {
+            "delta_text": "<arg_key>b</arg_key><arg_value>2</arg_value></tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_call>f<arg_key>x</arg_key><arg_value>1</arg_value></tool_call><tool_call>g"
+          },
+          {
+            "delta_text": "<arg_key>x</arg_key><arg_value>2</arg_value></tool_call><tool_call>h<arg_key>x</arg_key><arg_value>3</arg_value></tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "harmony": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"a\":\"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions",
+            "delta_token_ids": [
+              200006,
+              173781,
+              200005,
+              12606,
+              815,
+              316,
+              28,
+              44580,
+              1196,
+              220,
+              200003,
+              4108,
+              200008,
+              10848,
+              64,
+              7534,
+              16,
+              18583,
+              200012,
+              200006,
+              173781,
+              200005,
+              12606,
+              815,
+              316,
+              28,
+              44580
+            ]
+          },
+          {
+            "delta_text": ".g <|constrain|>json<|message|>{\"b\":\"2\"}<|call|>",
+            "delta_token_ids": [
+              1940,
+              220,
+              200003,
+              4108,
+              200008,
+              10848,
+              65,
+              7534,
+              17,
+              18583,
+              200012
+            ]
+          },
+          {
+            "delta_text": "",
+            "delta_token_ids": [],
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "",
+            "delta_token_ids": []
+          },
+          {
+            "delta_text": "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\":\"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions",
+            "delta_token_ids": [
+              200006,
+              173781,
+              200005,
+              12606,
+              815,
+              316,
+              28,
+              44580,
+              1196,
+              220,
+              200003,
+              4108,
+              200008,
+              10848,
+              87,
+              7534,
+              16,
+              18583,
+              200012,
+              200006,
+              173781,
+              200005,
+              12606,
+              815,
+              316,
+              28,
+              44580
+            ]
+          },
+          {
+            "delta_text": ".g <|constrain|>json<|message|>{\"x\":\"2\"}<|call|><|start|>assistant<|channel|>commentary to=functions.h <|constrain|>json<|message|>{\"x\":\"3\"}<|call|>",
+            "delta_token_ids": [
+              1940,
+              220,
+              200003,
+              4108,
+              200008,
+              10848,
+              87,
+              7534,
+              17,
+              18583,
+              200012,
+              200006,
+              173781,
+              200005,
+              12606,
+              815,
+              316,
+              28,
+              44580,
+              1508,
+              220,
+              200003,
+              4108,
+              200008,
+              10848,
+              87,
+              7534,
+              18,
+              18583,
+              200012
+            ]
+          },
+          {
+            "delta_text": "",
+            "delta_token_ids": [],
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "harmony_text": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"a\":\"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions"
+          },
+          {
+            "delta_text": ".g <|constrain|>json<|message|>{\"b\":\"2\"}<|call|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\":\"1\"}<|call|><|start|>assistant<|channel|>commentary to=functions"
+          },
+          {
+            "delta_text": ".g <|constrain|>json<|message|>{\"x\":\"2\"}<|call|><|start|>assistant<|channel|>commentary to=functions.h <|constrain|>json<|message|>{\"x\":\"3\"}<|call|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "hermes": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_call>{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}}</tool_call><tool_call>{"
+          },
+          {
+            "delta_text": "\"name\":\"g\",\"arguments\":{\"b\":\"2\"}}</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_call>{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}}</tool_call><tool_call>{"
+          },
+          {
+            "delta_text": "\"name\":\"g\",\"arguments\":{\"x\":\"2\"}}</tool_call><tool_call>{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "inkling": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|message_model|>f<|content_invoke_tool_json|>{\"name\":\"f\",\"args\":{\"a\":\"1\"}}<|end_message|><|message_model|>"
+          },
+          {
+            "delta_text": "g<|content_invoke_tool_json|>{\"name\":\"g\",\"args\":{\"b\":\"2\"}}<|end_message|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|message_model|>f<|content_invoke_tool_json|>{\"name\":\"f\",\"args\":{\"x\":\"1\"}}<|end_message|><|message_model|>"
+          },
+          {
+            "delta_text": "g<|content_invoke_tool_json|>{\"name\":\"g\",\"args\":{\"x\":\"2\"}}<|end_message|><|message_model|>h<|content_invoke_tool_json|>{\"name\":\"h\",\"args\":{\"x\":\"3\"}}<|end_message|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "jamba": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_calls>[{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"b\":\"2\"}}]</tool_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_calls>[{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"x\":\"2\"}},{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}]</tool_calls>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "kimi_k2": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"a\":\"1\"}<|tool_call_end|><|tool_call_begin|>functions."
+          },
+          {
+            "delta_text": "g:1<|tool_call_argument_begin|>{\"b\":\"2\"}<|tool_call_end|><|tool_calls_section_end|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"x\":\"1\"}<|tool_call_end|><|tool_call_begin|>functions."
+          },
+          {
+            "delta_text": "g:1<|tool_call_argument_begin|>{\"x\":\"2\"}<|tool_call_end|><|tool_call_begin|>functions.h:2<|tool_call_argument_begin|>{\"x\":\"3\"}<|tool_call_end|><|tool_calls_section_end|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "kimi_k3": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|><|open|>argument key=\"a\" type=\"string\"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to"
+          },
+          {
+            "delta_text": "ol=\"g\" index=\"2\"<|sep|><|open|>argument key=\"b\" type=\"string\"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to"
+          },
+          {
+            "delta_text": "ol=\"g\" index=\"2\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool=\"h\" index=\"3\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "llama3_json": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|python_tag|>{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}};{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"b\":\"2\"}}"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|python_tag|>{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}};{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"x\":\"2\"}};{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "minimax_m2": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<minimax:tool_call><invoke name=\"f\"><parameter name=\"a\">1</parameter></invoke><invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><parameter name=\"b\">2</parameter></invoke></minimax:tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<minimax:tool_call><invoke name=\"f\"><parameter name=\"x\">1</parameter></invoke><invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><parameter name=\"x\">2</parameter></invoke><invoke name=\"h\"><parameter name=\"x\">3</parameter></invoke></minimax:tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "minimax_m3": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<a>1]<]minimax[>[</a>]<]minimax[>[</invoke>]<]minimax[>[<invoke na"
+          },
+          {
+            "delta_text": "me=\"g\">]<]minimax[>[<b>2]<]minimax[>[</b>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "]<]minimax[>[<tool_call>]<]minimax[>[<invoke name=\"f\">]<]minimax[>[<x>1]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[<invoke na"
+          },
+          {
+            "delta_text": "me=\"g\">]<]minimax[>[<x>2]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[<invoke name=\"h\">]<]minimax[>[<x>3]<]minimax[>[</x>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "mistral": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "[TOOL_CALLS][{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"b\":\"2\"}}][/TOOL_CALLS]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "[TOOL_CALLS][{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"x\":\"2\"}},{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}][/TOOL_CALLS]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "muse_glimmer": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name=\"f\"><atem:parameter name=\"a\">\"1\"</atem:parameter></atem:invoke><atem:invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><atem:parameter name=\"b\">\"2\"</atem:parameter></atem:invoke></atem:function_calls><|eom|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name=\"f\"><atem:parameter name=\"x\">\"1\"</atem:parameter></atem:invoke><atem:invoke na"
+          },
+          {
+            "delta_text": "me=\"g\"><atem:parameter name=\"x\">\"2\"</atem:parameter></atem:invoke><atem:invoke name=\"h\"><atem:parameter name=\"x\">\"3\"</atem:parameter></atem:invoke></atem:function_calls><|eom|>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "nemotron_deci": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<TOOLCALL>[{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"b\":\"2\"}}]</TOOLCALL>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<TOOLCALL>[{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"x\":\"2\"}},{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}]</TOOLCALL>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "nemotron_nano": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_call>\n<function=f>\n<parameter=a>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun"
+          },
+          {
+            "delta_text": "ction=g>\n<parameter=b>\n2\n</parameter>\n</function>\n</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun"
+          },
+          {
+            "delta_text": "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "phi4": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "functools[{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"b\":\"2\"}}]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "functools[{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}},{\"na"
+          },
+          {
+            "delta_text": "me\":\"g\",\"arguments\":{\"x\":\"2\"}},{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "pythonic": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "[f(a=\"1\"), g"
+          },
+          {
+            "delta_text": "(b=\"2\")]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "[f(x=\"1\"), g"
+          },
+          {
+            "delta_text": "(x=\"2\"), h(x=\"3\")]"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "qwen25": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_call>{\"name\":\"f\",\"arguments\":{\"a\":\"1\"}}</tool_call><tool_call>{"
+          },
+          {
+            "delta_text": "\"name\":\"g\",\"arguments\":{\"b\":\"2\"}}</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_call>{\"name\":\"f\",\"arguments\":{\"x\":\"1\"}}</tool_call><tool_call>{"
+          },
+          {
+            "delta_text": "\"name\":\"g\",\"arguments\":{\"x\":\"2\"}}</tool_call><tool_call>{\"name\":\"h\",\"arguments\":{\"x\":\"3\"}}</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    },
+    "qwen3_coder": {
+      "TOOLCALLING.streamv1.50.b": {
+        "description": "Adjacent native calls survive a delta ending inside the next call header",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "a": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "b"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": "<tool_call>\n<function=f>\n<parameter=a>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun"
+          },
+          {
+            "delta_text": "ction=g>\n<parameter=b>\n2\n</parameter>\n</function>\n</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "a": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "b": "2"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      },
+      "TOOLCALLING.streamv1.50.c": {
+        "description": "Three native calls preserve the middle call across a partial header boundary",
+        "ref": "https://github.com/ai-dynamo/frontend-crates/pull/408",
+        "tools": [
+          {
+            "name": "f",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "g",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          },
+          {
+            "name": "h",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ],
+        "chunks": [
+          {
+            "delta_text": ""
+          },
+          {
+            "delta_text": "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun"
+          },
+          {
+            "delta_text": "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>"
+          },
+          {
+            "delta_text": "",
+            "finish_reason": "tool_calls"
+          }
+        ],
+        "golden": {
+          "calls": [
+            {
+              "name": "f",
+              "arguments": {
+                "x": "1"
+              }
+            },
+            {
+              "name": "g",
+              "arguments": {
+                "x": "2"
+              }
+            },
+            {
+              "name": "h",
+              "arguments": {
+                "x": "3"
+              }
+            }
+          ],
+          "normal_text": ""
+        }
+      }
+    }
+  }
+}

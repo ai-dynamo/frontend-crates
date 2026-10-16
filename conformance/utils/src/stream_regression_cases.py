@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Family-native stream-v1 fixtures for shared parser regression invariants."""
 
+import json
+from pathlib import Path
+
 
 # These capture IDs are immutable; fixture_disposition owns their display aliases.
 SCALAR_CASE = "TOOLCALLING.streamv1.7.g"
@@ -286,4 +289,11 @@ REASONING_CASES = {
         {"delta_text": "<|start|>assistant to=self<|message|>reason<|eom|>"},
         {"delta_text": '<|start|>assistant to=get_weather<|message|><atem:function_calls><atem:invoke name="get_weather"><atem:parameter name="location">Paris</atem:parameter></atem:invoke></atem:function_calls><|eom|>after'},
     ]),
+}
+
+
+_PARALLEL_BOUNDARY_DATA = json.loads(Path(__file__).with_name("parallel_boundary_cases.json").read_text())
+PARALLEL_BOUNDARY_CASES = {
+    case_id: {family: cases[case_id] for family, cases in _PARALLEL_BOUNDARY_DATA["cases"].items()}
+    for case_id in ("TOOLCALLING.streamv1.50.b", "TOOLCALLING.streamv1.50.c")
 }

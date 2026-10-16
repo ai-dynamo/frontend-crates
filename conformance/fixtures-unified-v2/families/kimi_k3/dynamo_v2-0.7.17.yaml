@@ -35,4 +35,22 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
+        source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
+        source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
+      inherited_from: null

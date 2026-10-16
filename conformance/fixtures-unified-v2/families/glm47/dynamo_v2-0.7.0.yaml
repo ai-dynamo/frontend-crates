@@ -7,6 +7,35 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     case_key: UNIFIED.7-2
     stimulus:
@@ -2241,6 +2270,44 @@ changes:
         - expected:
           - kind: text
             text: After.
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-1
     stimulus:
@@ -2629,7 +2696,11 @@ changes:
           - kind: text
             text: done
 metadata_changes:
-  glm47_parameterless_call_shape_inside_argument: {}
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   guided_quoted_reasoning_closer_named:
     init:
       starting_state: Reasoning
@@ -2655,27 +2726,7 @@ metadata_changes:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_incomplete_header:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
   native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
     init:
       starting_state: Response
       tool_output_mode: Native
@@ -2685,9 +2736,52 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+  native_quoted_incomplete_header:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quoted_word_control:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+  three_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin:
+        crate_version: 0.7.0
+        git_commit: 23bdc23bca16bb14974303ae73fd97d19b0be84d
+        source_sha256: 9e22d4a9a504f85f8d589e67fcc6f0516e74cc1722468c8b1fa31c7cd4d510e8
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin:
+        crate_version: 0.7.0
+        git_commit: 23bdc23bca16bb14974303ae73fd97d19b0be84d
+        source_sha256: 9e22d4a9a504f85f8d589e67fcc6f0516e74cc1722468c8b1fa31c7cd4d510e8
+      inherited_from: null

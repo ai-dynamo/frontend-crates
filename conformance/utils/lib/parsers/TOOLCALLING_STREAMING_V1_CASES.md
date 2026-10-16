@@ -94,6 +94,15 @@ plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
 
+### Adjacent native calls across partial headers
+
+- **`TOOLCALLING.streamv1.50.b`** All 24 registered families exercise two adjacent native calls across a partial next-call header, with independently authored call/content goldens. Gemma4 retains the exact seven text deltas from frontend-crates #408: one delta closes `f(a="1")` and ends with `<|tool_call>ca`; later deltas complete `g(b="2")`. Both calls must survive with empty visible text.
+- **`TOOLCALLING.streamv1.50.c`** All 24 registered families exercise three adjacent native calls, with an empty initial delta and a boundary inside the second call header. Gemma4 retains `f(x="1")`, `g(x="2")`, and `h(x="3")`, delivered as an empty delta, the first 58 bytes, and the remaining bytes. All three calls must survive with empty visible text.
+
+Each family uses its own native invocation syntax. Shared list and section containers enclose the complete response once; Pythonic uses one enclosing list. Harmony special tokens remain atomic, and its token-path chunks carry actual encoded token IDs. The Gemma4 schedules specifically exercise its compound `<|tool_call>call:` opener; other families exercise the equivalent handoff between adjacent calls. Existing stored case `50` remains unchanged and displays as `50.a`.
+
+Captures record actual output, including dropped calls and leaked text, independently of the authored goldens. The v1 recorder feeds all text deltas and then appends a `Stop` finish; it does not interpret the fixture's `finish_reason`, so this comparison covers call/content preservation rather than terminal-reason handling. Missing historical APIs or parser registrations are explicit unavailable observations. The producer-unidentified `dynamo_v2-0.1.11.patch1` and `dynamo_v2-0.3.4+current` archives remain unchanged. Their new rows fold observations from the measured `0.1.11` release and `0.3.1` predecessor, respectively; these are inherited observations, not direct measurements of either unknown producer.
+
 ## Shared schema conformance probes
 
 Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.

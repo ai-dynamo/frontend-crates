@@ -267,4 +267,22 @@ metadata_changes:
   retired__31_33: {}
   retired__31_38: {}
   retired__31_40: {}
-document_overrides: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.1
+      capture_origin:
+        crate_version: 0.6.1
+        git_commit: a6f6c65ee5322a72ebdd6d1436230b5f136eb2a0
+        source_sha256: 95060e08c7d03b3ed1b933a96c2e78d2d82598f45713ad293e982b1ee157bd66
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.1
+      capture_origin:
+        crate_version: 0.6.1
+        git_commit: a6f6c65ee5322a72ebdd6d1436230b5f136eb2a0
+        source_sha256: 95060e08c7d03b3ed1b933a96c2e78d2d82598f45713ad293e982b1ee157bd66
+      inherited_from: null

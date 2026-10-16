@@ -25,6 +25,7 @@ import yaml
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from stream_regression_cases import PARALLEL_BOUNDARY_CASES
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2176,6 +2177,41 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+def _parallel_boundary_specs():
+    specs = []
+    for suffix, scenario, description in (
+        ("b", "adjacent_calls_partial_header", "Adjacent calls: a delta closes one call and ends inside the next call header"),
+        ("c", "three_calls_partial_header", "Three adjacent calls: retain the middle call after a partial next header"),
+    ):
+        authored = PARALLEL_BOUNDARY_CASES[f"TOOLCALLING.streamv1.50.{suffix}"]
+        per_family, schedules, schemas = {}, {}, {}
+        for family in FAMILIES:
+            source = authored[{"qwen3": "qwen3_coder", "deepseek_v41": "deepseek_v4"}.get(family, family)]
+            golden = [{"kind": "tool_call", **call} for call in source["golden"]["calls"]]
+            chunks = [chunk["delta_text"] for chunk in source["chunks"]]
+            if family == "deepseek_v41":
+                segments = [("tool", call["name"], key, value)
+                            for call in source["golden"]["calls"]
+                            for key, value in call["arguments"].items()]
+                text, _state = _deepseek_v41_input(segments)
+                # V4.1 has one calls container; split inside its second invoke,
+                # after the complete first invoke, rather than adding a container.
+                cut = text.index('<｜DSML｜ invoke name="g"') + len('<｜DSML｜ invoke na')
+                chunks = ([""] if suffix == "c" else []) + [text[:cut], text[cut:], ""]
+            text = "".join(chunks)
+            per_family[family] = (text, VLLM_UNCAPTURABLE.get(family, M), M, golden)
+            schedules[family] = chunks
+            schemas[family] = source["tools"]
+        specs.append((scenario, description, ["I2", "I3", "I5", "I7"], [],
+                      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+                      {"finish_reason": "tool_calls", "input_chunks": schedules},
+                      OnlyFamilies(per_family), schemas))
+    return specs
+
+
+EDGE += _parallel_boundary_specs()
+
+
 # Native grammars encode the oracle type; Qwen and GLM consult the request schema.
 _NULL_TEXT_INPUTS = {
     "qwen3": "<tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>",
@@ -2687,6 +2723,11 @@ def _build_edge_cases(fam, specs):
         }
         if stream_config.get("single_chunk"):
             case["input_chunks"] = [inp]
+        elif "input_chunks" in stream_config:
+            chunks = stream_config["input_chunks"][fam]
+            if not all(isinstance(chunk, str) for chunk in chunks) or "".join(chunks) != inp:
+                raise ValueError(f"{cid}: authored input_chunks must concatenate to input")
+            case["input_chunks"] = list(chunks)
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
         cases[cid] = case

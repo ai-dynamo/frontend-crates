@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from stream_regression_cases import (
+    PARALLEL_BOUNDARY_CASES,
     ENTITY_CASE,
     ENTITY_CASES,
     NESTED_UNION_CASE,
@@ -27,6 +28,8 @@ from stream_regression_cases import (
 
 
 def _fixture_path(inputs_root: Path, family: str, case_id: str) -> Path:
+    if case_id in PARALLEL_BOUNDARY_CASES:
+        return inputs_root / family / "TOOLCALLING.streamv1.50.parallel.yaml"
     if family in {"kimi_k3", "muse_glimmer"}:
         return inputs_root / family / "TOOLCALLING.streamv1.yaml"
     suffix = case_id.removeprefix("TOOLCALLING.streamv1.")
@@ -105,6 +108,7 @@ def main() -> None:
         REFERENCE_TYPE_CASE: REFERENCE_TYPE_CASES,
         OBJECT_REFERENCE_CASE: OBJECT_REFERENCE_CASES,
         SELECTOR_CASE: SELECTOR_CASES,
+        **PARALLEL_BOUNDARY_CASES,
     }
     unknown = sorted(set(args.replace_case_id) - cases.keys())
     if unknown:

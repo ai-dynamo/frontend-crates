@@ -5,6 +5,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a7346f9840090baf0004548d3db7c2d32d9c740799ac3cb3c8f90b1c2c236df2
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -2055,6 +2064,15 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 5a87da3b5f3deb6baff129475ddd6186bb08d2e1e560e650abcce8f15a4d5140
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -2487,6 +2505,11 @@ changes:
           - kind: text
             text: done
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -2932,6 +2955,11 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  three_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   tool_block_never_closed_then_text:
     init:
       starting_state: None
@@ -2993,6 +3021,15 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null
   retired__50_a:
     parser_path: split
   retired__50_b:
@@ -3003,3 +3040,12 @@ document_overrides:
     parser_path: split
   retired__51_b:
     parser_path: split
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null
