@@ -104,6 +104,11 @@ A few fields extend the upstream `async-openai` schema:
 - `mm_processor_kwargs` on chat-completion requests (vLLM multimodal)
 - `continuous_usage_stats` on chat stream options
 - `FunctionCall.arguments` accepts both string and object forms
+- Optional `token_id` on selected tokens and `top_logprobs` candidates, preserving
+  vocabulary IDs even when different candidates render to the same text. The
+  locally owned `TopLogprobs` type keeps the upstream fields and adds
+  `token_id: Option<u32>`; Rust callers constructing candidates must set it
+  to `None` when the backend does not supply an ID.
 
 ## Request compatibility and serving policy
 
