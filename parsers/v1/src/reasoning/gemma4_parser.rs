@@ -135,6 +135,10 @@ fn resolve_prefix<'a>(accum: &'a str, raw_reasoning: &'a str) -> (&'a str, bool)
 }
 
 impl ReasoningParser for Gemma4ReasoningParser {
+    fn in_reasoning(&self) -> Option<bool> {
+        Some(self.in_reasoning)
+    }
+
     fn detect_and_parse_reasoning(&mut self, text: &str, _token_ids: &[u32]) -> ParserResult {
         // Non-streaming path: we have the complete text, so we can use plain
         // string operations.
