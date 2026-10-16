@@ -253,7 +253,7 @@ mod tests {
     async fn test_reserved_partial_marker_defers_contentless_metadata() {
         let marker = "<|close|>mes";
         for finish in [FinishReason::Length, FinishReason::Stop] {
-            for continuation in [None, Some(" world"), Some("sage<|sep|>")] {
+            for continuation in [None, Some(" world"), Some("sage"), Some("sage<|sep|>")] {
                 let mut reasoning = dsml_chunk_with_metadata("thinking", Some("thinking"), None);
                 reasoning.data.as_mut().unwrap().choices[0].delta.content = None;
                 let mut chunks = vec![dsml_chunk_with_metadata(marker, None, None), reasoning];
@@ -264,12 +264,15 @@ mod tests {
                 terminal.data.as_mut().unwrap().choices[0].delta.content = None;
                 terminal.data.as_mut().unwrap().choices[0].delta.role = None;
                 chunks.push(terminal);
+                // A limit inside the marker drops its text records, never contentless ones.
+                let truncated =
+                    finish == FinishReason::Length && matches!(continuation, None | Some("sage"));
+                let last = chunks.len() - 1;
                 let expected: Vec<_> = chunks
                     .iter()
-                    .skip(usize::from(
-                        finish == FinishReason::Length && continuation.is_none(),
-                    ))
-                    .map(|chunk| {
+                    .enumerate()
+                    .filter(|(index, _)| !truncated || *index == 1 || *index == last)
+                    .map(|(_, chunk)| {
                         chunk.data.as_ref().unwrap().choices[0]
                             .logprobs
                             .clone()
@@ -287,12 +290,11 @@ mod tests {
                     .flat_map(|chunk| &chunk.data.as_ref().unwrap().choices)
                     .collect();
                 assert_logprob_records(&expected, &choices);
-                let expected_text = if continuation == Some(" world") {
-                    format!("{marker} world")
-                } else if continuation.is_none() && finish == FinishReason::Stop {
-                    marker.to_string()
-                } else {
-                    String::new()
+                let expected_text = match (continuation, finish) {
+                    (Some(" world"), _) => format!("{marker} world"),
+                    (None, FinishReason::Stop) => marker.to_string(),
+                    (Some("sage"), FinishReason::Stop) => format!("{marker}sage"),
+                    _ => String::new(),
                 };
                 assert_eq!(test_utils::reconstruct_content(&results), expected_text);
                 assert_eq!(choices.last().unwrap().finish_reason, Some(finish));

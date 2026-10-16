@@ -331,6 +331,23 @@ pub enum ToolChoiceFormat {
     ArrayOfTools,
 }
 
+/// Records held behind a contentless chunk while text stays held, in source order.
+#[derive(Debug, Clone)]
+enum HeldRecords {
+    /// A contentless chunk's records; they cover no held characters.
+    Contentless(ChatChoiceLogprobs),
+    /// Records for held text that arrived after a contentless chunk.
+    Text(ChatChoiceLogprobs),
+}
+
+/// Whether `text` is an unresolved prefix of a parser's reserved end marker.
+fn is_reserved_partial_marker(text: &str, policy: TerminalMarkerPolicy) -> bool {
+    policy
+        .truncated_end_markers
+        .iter()
+        .any(|(marker, prefix)| text.starts_with(prefix) && marker.starts_with(text))
+}
+
 /// State tracking for an individual choice during jail processing
 #[derive(Debug, Clone)]
 struct ChoiceJailState {
@@ -350,9 +367,9 @@ struct ChoiceJailState {
     partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
     /// Leading held characters whose records were already emitted.
     partial_released_chars: usize,
-    /// Records from contentless chunks that follow the held text. They cover no
-    /// characters, so they stay out of the char-aligned `partial_logprobs_buffer`.
-    held_contentless_logprobs: Option<ChatChoiceLogprobs>,
+    /// Records from the first contentless chunk after the held text onward. They
+    /// stay out of the char-aligned `partial_logprobs_buffer` to keep source order.
+    held_after_contentless: Vec<HeldRecords>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
     /// Whole token records belonging to the held suffix.
@@ -681,7 +698,7 @@ impl ChoiceJailState {
             partial_match_buffer: String::new(),
             partial_logprobs_buffer: None,
             partial_released_chars: 0,
-            held_contentless_logprobs: None,
+            held_after_contentless: Vec::new(),
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
@@ -718,7 +735,22 @@ impl ChoiceJailState {
     fn take_held_entries(&mut self) -> Option<ChatChoiceLogprobs> {
         self.partial_released_chars = 0;
         let mut logprobs = self.partial_logprobs_buffer.take();
-        append_logprobs(&mut logprobs, self.held_contentless_logprobs.take());
+        for held in self.held_after_contentless.drain(..) {
+            let (HeldRecords::Contentless(records) | HeldRecords::Text(records)) = held;
+            append_logprobs(&mut logprobs, Some(records));
+        }
+        logprobs
+    }
+
+    /// Drop the held text's records at a token limit, keeping contentless ones.
+    fn take_contentless_entries(&mut self) -> Option<ChatChoiceLogprobs> {
+        self.partial_logprobs_buffer = None;
+        let mut logprobs = None;
+        for held in self.held_after_contentless.drain(..) {
+            if let HeldRecords::Contentless(records) = held {
+                append_logprobs(&mut logprobs, Some(records));
+            }
+        }
         logprobs
     }
 
@@ -733,7 +765,7 @@ impl ChoiceJailState {
         self.is_jailed = true;
         self.accumulated_content = content;
         self.accumulated_logprobs = logprobs;
-        self.held_contentless_logprobs = None;
+        self.held_after_contentless.clear();
         self.completion_progress.reset();
     }
 
@@ -752,10 +784,7 @@ impl ChoiceJailState {
     }
 
     fn has_reserved_partial_marker(&self, policy: TerminalMarkerPolicy) -> bool {
-        policy.truncated_end_markers.iter().any(|(marker, prefix)| {
-            self.partial_match_buffer.starts_with(prefix)
-                && marker.starts_with(&self.partial_match_buffer)
-        })
+        is_reserved_partial_marker(&self.partial_match_buffer, policy)
     }
 
     fn take_contentless_logprobs(
@@ -767,12 +796,12 @@ impl ChoiceJailState {
             self.take_accumulated_logprobs()
         } else if self.has_reserved_partial_marker(policy) {
             if self.stream_finish_reason.is_none() {
-                append_logprobs(&mut self.held_contentless_logprobs, extra);
+                self.held_after_contentless
+                    .extend(extra.map(HeldRecords::Contentless));
                 return None;
             }
             if self.stream_finish_reason == Some(FinishReason::Length) {
-                self.partial_logprobs_buffer = None;
-                self.held_contentless_logprobs.take()
+                self.take_contentless_entries()
             } else {
                 self.release_held_entries()
             }
@@ -810,7 +839,7 @@ impl ChoiceJailState {
     fn end_jail(&mut self) -> String {
         self.is_jailed = false;
         self.accumulated_logprobs = None;
-        self.held_contentless_logprobs = None;
+        self.held_after_contentless.clear();
         self.completion_progress.reset();
         // The cursor's byte offsets describe THIS payload. Carrying them into a
         // second jailed value would suppress its arguments as already streamed.
@@ -1222,25 +1251,35 @@ impl ChoiceJailState {
     ) -> Vec<ChoiceEmission> {
         let mut emissions = Vec::new();
         if !self.is_jailed {
-            if self.held_contentless_logprobs.is_some() {
-                // Deferred contentless records precede this chunk's records.
-                let mut records = create_choice_stream(
-                    choice.index,
-                    None,
-                    "",
-                    None,
-                    None,
-                    self.release_held_entries(),
-                );
-                records.delta.content = None;
-                emissions.push(ChoiceEmission::PassThrough(records));
-            }
-            self.feed_entries(choice.logprobs.clone());
-
             // Use the marker matcher to detect complete/partial markers
             let match_result = jail_stream
                 .marker_matcher
                 .process_chunk(content, &self.partial_match_buffer);
+
+            let unresolved_marker = !self.held_after_contentless.is_empty()
+                && matches!(&match_result, MatchResult::Partial { prefix, partial, .. }
+                    if prefix.is_empty()
+                        && is_reserved_partial_marker(partial, jail_stream.terminal_marker_policy));
+            if unresolved_marker {
+                // A token limit may still drop this text, so its records stay held.
+                self.held_after_contentless
+                    .extend(choice.logprobs.clone().map(HeldRecords::Text));
+            } else {
+                if !self.held_after_contentless.is_empty() {
+                    // Deferred contentless records precede this chunk's records.
+                    let mut records = create_choice_stream(
+                        choice.index,
+                        None,
+                        "",
+                        None,
+                        None,
+                        self.release_held_entries(),
+                    );
+                    records.delta.content = None;
+                    emissions.push(ChoiceEmission::PassThrough(records));
+                }
+                self.feed_entries(choice.logprobs.clone());
+            }
 
             match match_result {
                 MatchResult::Complete {
@@ -1596,8 +1635,7 @@ impl ChoiceJailState {
                 // The limit interrupted a reserved close marker, not prose.
                 // Still emit its terminal chunk with the original finish reason.
                 content.clear();
-                self.partial_logprobs_buffer = None;
-                self.held_contentless_logprobs.take()
+                self.take_contentless_entries()
             } else {
                 self.take_held_entries()
             };
@@ -1923,7 +1961,7 @@ impl JailedStream {
                             } else if choice_state.is_jailed {
                                 append_logprobs(&mut choice_state.accumulated_logprobs, choice.logprobs.clone());
                             } else {
-                                append_logprobs(&mut choice_state.held_contentless_logprobs, choice.logprobs.clone());
+                                choice_state.held_after_contentless.extend(choice.logprobs.clone().map(HeldRecords::Contentless));
                             }
                         }
                     }
