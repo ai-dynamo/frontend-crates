@@ -652,6 +652,10 @@ impl ReasoningParser for BasicReasoningParser {
         }
     }
 
+    fn has_unflushed_state(&self) -> bool {
+        !self._buffer.is_empty()
+    }
+
     fn finish_reasoning_stream(&mut self) -> ParserResult {
         if self.tool_parameter_tokens.is_some() {
             return self.scan_tool_parameters("", true);
