@@ -10,9 +10,9 @@ Use this template for changes that affect parser behavior, including changes out
 
 ## Bug Fix Evidence
 
-Parser bug fixes must complete all five subsections below before requesting review. Follow the [parser contribution guide](https://github.com/ai-dynamo/frontend-crates/blob/main/PARSER_CONTRIBUTING.md#required-bug-fix-evidence) and use the [minimal input/output examples](https://github.com/ai-dynamo/frontend-crates/blob/main/PARSER_CONTRIBUTING.md#minimal-bug-fix-examples).
+Parser bug fixes must complete all five subsections below before requesting review. Follow the [required PR description format](https://github.com/ai-dynamo/frontend-crates/blob/main/CONTRIBUTING.md#required-pr-description-format) and use the [minimal input/output examples](https://github.com/ai-dynamo/frontend-crates/blob/main/CONTRIBUTING.md#minimal-bug-fix-examples).
 
-<!-- REQUIRED for bug fixes. Follow PARSER_CONTRIBUTING.md#required-bug-fix-evidence. For changes with no bug fix, replace this section's contents with "Not applicable" and the reason. -->
+<!-- REQUIRED for bug fixes. Follow CONTRIBUTING.md#required-pr-description-format. For changes with no bug fix, replace this section's contents with "Not applicable" and the reason. -->
 
 ### 1. Minimal Sample Input
 
@@ -42,4 +42,4 @@ Parser bug fixes must complete all five subsections below before requesting revi
 
 <!-- List the main files to review. -->
 
-See the [parser contribution guide](https://github.com/ai-dynamo/frontend-crates/blob/main/PARSER_CONTRIBUTING.md).
+See the [required PR description format](https://github.com/ai-dynamo/frontend-crates/blob/main/CONTRIBUTING.md#required-pr-description-format).
