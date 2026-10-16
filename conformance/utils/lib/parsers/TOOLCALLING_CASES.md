@@ -266,6 +266,26 @@ grammar has no bare-body form.
   vLLM/SGLang leak the whole tail as content (qwen3_coder vLLM is the
   exception — it recovers the call like Dynamo).
 
+`TOOLCALLING.batch.5.i` rejects an unterminated raw argument whose only
+following delimiter is the outer wrapper close, and retains a subsequent
+complete call. The matching `TOOLCALLING.streamv1.5.i` delivers the same text
+in one chunk, preserving the observed failure's delivery pattern.
+
+Native inputs are authored for qwen3_coder, nemotron_nano, minimax_m2,
+minimax_m3, deepseek_v3_2, deepseek_v4, glm47, and kimi_k3. These grammars
+separate raw argument terminators from their outer call envelope. GLM has
+no separate function closer; its arg_value closer is the missing boundary.
+
+Registry review exclusions: deepseek_v3, deepseek_v3_1, hermes, jamba,
+llama3_json, mistral, nemotron_deci, phi4, qwen25, kimi_k2, inkling,
+harmony, and harmony_text carry structured JSON arguments rather than this
+raw-value/outer-tag ambiguity; pythonic uses Python syntax; gemma4 uses its
+own quoted structured values. muse_glimmer has an analogous XML grammar but
+no legacy batch/jail implementation or corpus entry; its Unified framing is
+outside this legacy case's request mode. deepseek_v41 is likewise registered
+only for Unified, not this legacy family corpus. These exclusions do not
+assert that malformed JSON or other native syntaxes are safe.
+
 ## `TOOLCALLING.batch.6` — Empty args, no-arg happy path
 
 Tool call with `arguments={}`, or a no-parameter invoke.

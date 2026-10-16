@@ -2662,8 +2662,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<|open|>call tool="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -3358,9 +3359,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>é🙂<par{value}<|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3516,9 +3518,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<|open|>think<|sep|>before <|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|><|open|>think<|sep|>quoted<|close|>think<|sep|><|close|>argument<|sep|><|close|>call<|sep|> after<|close|>think<|sep|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -16497,3 +16500,38 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  missing_inner_closers_then_valid_call:
+    lifecycle: active
+    scenario: missing_inner_closers_then_valid_call
+    description: 'The first call''s argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-missing_inner_closers_then_valid_call
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: Paris

@@ -830,27 +830,27 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 118,
-            "deepseek_v41": 115,
-            "gemma4": 119,
-            "glm47": 117,
+            "deepseek_v4": 119,
+            "deepseek_v41": 116,
+            "gemma4": 120,
+            "glm47": 118,
             "kimi_k2": 117,
-            "kimi_k3": 124,
-            "muse_glimmer": 126,
-            "qwen3": 122,
+            "kimi_k3": 125,
+            "muse_glimmer": 127,
+            "qwen3": 123,
         }.get(fam)
         if fam == "gpt_oss":
             assert per_family[fam] == 159
         else:
             assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 958 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
+    assert sum(per_family.values()) == 965 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 150 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 151 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1417,9 +1417,33 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_missing_inner_closers(family, case):
+    raw = case["input"]
+    assert case["input_chunks"] == [raw]
+    assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    prefix = G.MISSING_INNER_CLOSERS_PREFIX[family]
+    assert raw.startswith(prefix)
+    inner_closers = {
+        "qwen3": "</parameter>", "glm47": "</arg_value>",
+        "deepseek_v4": "</｜DSML｜parameter>", "deepseek_v41": "</｜DSML｜ parameter>",
+        "gemma4": '<|"|>}', "kimi_k3": "<|close|>argument", "muse_glimmer": "</atem:parameter>",
+    }
+    assert "unfinished" in prefix and inner_closers[family] not in prefix
+    paris = [{"kind": "tool_call", "name": "get_weather", "arguments": {"location": "Paris"}}]
+    assert _native_input_calls(family, raw[len(prefix):]) == paris
+    assert case["golden"] == paris
+    assert case["tools"] == [{"name": "get_weather", "parameters": {
+        "type": "object", "properties": {"location": {"type": "string"}}, "required": ["location"],
+    }}]
+    return paris
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
+        return
+    if scenario == "missing_inner_closers_then_valid_call":
+        _assert_missing_inner_closers(family, case)
         return
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
@@ -1529,6 +1553,8 @@ def _assert_cross_family_contract(corpus):
                 assert not case["input"].startswith("<think>"), (family, scenario, "prefilled opener must be absent")
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
+                      else _assert_missing_inner_closers(family, case)
+                      if scenario == "missing_inner_closers_then_valid_call"
                       else _logical_events(scenario, family, case["golden"]))
             if scenario in {"schema_integer_const_ambiguous", "schema_object_const_union", "schema_type_array_string_integer"}:
                 probe = next(probe for probe in CONFORMANCE_CASES if scenario == f"schema_{probe['name']}")

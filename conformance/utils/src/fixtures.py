@@ -284,6 +284,7 @@ BATCH_SUB_CASE_GROUPS = [
             # (two copies of BATCH_SUB_CASE_GROUPS drift — a new sub-case must be added
             # to BOTH today).
             "5.h",
+            "5.i",
         ),
     ),
     (

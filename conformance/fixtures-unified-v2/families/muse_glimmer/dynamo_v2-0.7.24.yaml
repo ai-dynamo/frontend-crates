@@ -1,0 +1,43 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.24
+    git_commit: b4a9836c06bd61b0c48b589db5e568a5edc1ece9
+    source_sha256: 741223bcfec6b665d4e8162ce8bddf67f2f56b97088233084df79f5d8af621c4
+document:
+  mode: unified
+changes:
+  missing_inner_closers_then_valid_call:
+    case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: c8b9b35baa39ea01c6b94f76fbfce616c389f23aaa89fc63a66244dfc3f1fdff
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: 'unfinished</atem:function_calls><|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+              <atem:invoke name="get_weather">
+
+              <atem:parameter name="location">Paris'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"unfinished</atem:function_calls><|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"location\">Paris"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  missing_inner_closers_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin:
+        crate_version: 0.7.24
+        source_sha256: 741223bcfec6b665d4e8162ce8bddf67f2f56b97088233084df79f5d8af621c4
+        git_commit: b4a9836c06bd61b0c48b589db5e568a5edc1ece9
+      inherited_from: null

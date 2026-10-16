@@ -346,6 +346,8 @@ struct ChoiceJailState {
     accumulated_logprobs: Option<ChatChoiceLogprobs>,
     /// Buffer for partial marker matches across chunks
     partial_match_buffer: String,
+    /// Line context immediately before the retained partial buffer.
+    prose_line_indent: usize,
     partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
@@ -673,6 +675,7 @@ impl ChoiceJailState {
             accumulated_content: String::new(),
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
+            prose_line_indent: 0,
             partial_logprobs_buffer: None,
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
@@ -862,10 +865,16 @@ impl ChoiceJailState {
 
         self.feed_entries(choice.logprobs.clone());
 
-        match jail_stream.marker_matcher.process_chunk(content, "") {
+        match jail_stream.marker_matcher.process_chunk_with_indent(
+            content,
+            "",
+            self.prose_line_indent,
+        ) {
             MatchResult::Partial {
                 prefix, partial, ..
             } => {
+                self.prose_line_indent =
+                    super::code_spans::advance_line_indent(self.prose_line_indent, &prefix);
                 if !prefix.is_empty() {
                     let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                     #[allow(deprecated)]
@@ -922,6 +931,8 @@ impl ChoiceJailState {
         }
 
         if let Some((prefix, partial)) = jail_stream.split_partial_tool_call_start(content) {
+            self.prose_line_indent =
+                super::code_spans::advance_line_indent(self.prose_line_indent, prefix);
             if !prefix.is_empty() {
                 let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                 #[allow(deprecated)]
@@ -940,6 +951,8 @@ impl ChoiceJailState {
             let remaining = self.partial_logprobs_buffer.take();
             self.begin_jail(content.to_string(), remaining);
         } else {
+            self.prose_line_indent =
+                super::code_spans::advance_line_indent(self.prose_line_indent, content);
             let all = self.partial_logprobs_buffer.take();
             #[allow(deprecated)]
             let trailing_choice = create_choice_stream(
@@ -1147,6 +1160,9 @@ impl ChoiceJailState {
         }
 
         self.end_jail();
+        // An XML closing marker ends in a non-space character. The trailing
+        // span may begin with a newline, which advances this context normally.
+        self.prose_line_indent = 4;
         self.handle_trailing_content(&trailing_owned, choice, jail_stream, emissions);
     }
 
@@ -1162,9 +1178,11 @@ impl ChoiceJailState {
             self.feed_entries(choice.logprobs.clone());
 
             // Use the marker matcher to detect complete/partial markers
-            let match_result = jail_stream
-                .marker_matcher
-                .process_chunk(content, &self.partial_match_buffer);
+            let match_result = jail_stream.marker_matcher.process_chunk_with_indent(
+                content,
+                &self.partial_match_buffer,
+                self.prose_line_indent,
+            );
 
             match match_result {
                 MatchResult::Complete {
@@ -1220,6 +1238,8 @@ impl ChoiceJailState {
                     partial,
                     possible_patterns,
                 } => {
+                    self.prose_line_indent =
+                        super::code_spans::advance_line_indent(self.prose_line_indent, &prefix);
                     if is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                         && contains_harmony_protocol(&prefix)
                     {
@@ -1259,6 +1279,8 @@ impl ChoiceJailState {
                     if let Some((prefix, partial)) =
                         jail_stream.split_partial_tool_call_start(&content)
                     {
+                        self.prose_line_indent =
+                            super::code_spans::advance_line_indent(self.prose_line_indent, prefix);
                         if !prefix.is_empty() {
                             let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                             #[allow(deprecated)]
@@ -1279,6 +1301,10 @@ impl ChoiceJailState {
                         self.partial_match_buffer.clear();
                     } else {
                         // No markers - emit everything
+                        self.prose_line_indent = super::code_spans::advance_line_indent(
+                            self.prose_line_indent,
+                            &content,
+                        );
                         if !content.is_empty() {
                             let all = self.partial_logprobs_buffer.take();
                             #[allow(deprecated)]
@@ -1461,6 +1487,13 @@ impl ChoiceJailState {
 
     /// Finalize any remaining content when stream ends
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
+        if !self.is_jailed
+            && jail_stream.marker_matcher.protect_code_examples
+            && jail_stream.should_start_jail(&self.partial_match_buffer)
+        {
+            let remaining = std::mem::take(&mut self.partial_match_buffer);
+            self.begin_jail(remaining, None);
+        }
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
             // Create a dummy choice for the method call
@@ -2031,6 +2064,14 @@ impl JailedStream {
     }
 
     fn should_start_jail(&self, content: &str) -> bool {
+        if self.marker_matcher.protect_code_examples {
+            return self
+                .jail_start_sequences
+                .iter()
+                .any(|marker| super::code_spans::find_unquoted(content, marker).is_some())
+                || detect_tool_call_start(content, self.tool_call_parser.as_deref())
+                    .unwrap_or(false);
+        }
         // Path 1: Check configured start sequences
         let sequence_match = !self.jail_start_sequences.is_empty()
             && self
@@ -3078,7 +3119,7 @@ impl JailedStreamBuilder {
         }
 
         // Create the marker matcher (fallback to empty patterns if none configured)
-        let marker_matcher = if all_patterns.is_empty() {
+        let mut marker_matcher = if all_patterns.is_empty() {
             // If no patterns, create a dummy matcher that never matches
             MarkerMatcher::new(vec!["__NEVER_MATCH__".to_string()])
                 .expect("Failed to create dummy MarkerMatcher")
@@ -3087,6 +3128,9 @@ impl JailedStreamBuilder {
             MarkerMatcher::new(all_patterns)
                 .expect("Failed to create MarkerMatcher with configured patterns")
         };
+        marker_matcher.protect_code_examples = matches!(
+            parser_config, Some(ParserConfig::Xml(config)) if config.protect_code_examples
+        );
 
         JailedStream {
             jail_start_sequences: self.jail_start_sequences,

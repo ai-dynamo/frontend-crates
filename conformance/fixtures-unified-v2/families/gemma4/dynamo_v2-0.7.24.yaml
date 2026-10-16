@@ -1,0 +1,39 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.24
+    git_commit: b4a9836c06bd61b0c48b589db5e568a5edc1ece9
+    source_sha256: 741223bcfec6b665d4e8162ce8bddf67f2f56b97088233084df79f5d8af621c4
+document:
+  mode: unified
+changes:
+  missing_inner_closers_then_valid_call:
+    case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 39974682b550bba5f8e6f264490dcd02ff3ad5bc14e5ef87e5e7245a98ec42f0
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"Paris"}'
+            complete: true
+metadata_changes: {}
+document_overrides:
+  missing_inner_closers_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin:
+        crate_version: 0.7.24
+        source_sha256: 741223bcfec6b665d4e8162ce8bddf67f2f56b97088233084df79f5d8af621c4
+        git_commit: b4a9836c06bd61b0c48b589db5e568a5edc1ece9
+      inherited_from: null

@@ -49,6 +49,14 @@
 # reads the declared type and coerces correctly.
 
 deepseek_v4:
+  TOOLCALLING.batch.5.i:
+    baseline_defect: >-
+      FIXME (v2 defect): published 0.7.20 and unchanged 0.7.21 both consume
+      the outer closer and following invocation as part of an unterminated
+      parameter. The independent golden requires only the later Paris call.
+      This is not an intended difference or a v1-fix regression.
+    baseline_defect_actual: >-
+      {"calls":[{"name":"get_weather","arguments":{"location":"unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"location\" string=\"true\">Paris"}}],"normal_text":""}
   TOOLCALLING.batch.2.b:
     stream_vs_batch: &svb-surrounding-text >-
       v2 (stream) preserves the model's prose AROUND tool calls verbatim —
@@ -115,6 +123,14 @@ gemma4:
     stream_vs_batch: *svb-whitespace-only
 
 glm47:
+  TOOLCALLING.batch.5.i:
+    baseline_defect: >-
+      FIXME (v2 defect): published 0.7.20 and unchanged 0.7.21 accept the
+      unterminated first argument at the outer closer. The golden rejects
+      that incomplete invocation and keeps Paris. The unchanged v1 GLM
+      parser also violates the golden, but emits empty arguments instead.
+    baseline_defect_actual: >-
+      {"calls":[{"name":"get_weather","arguments":{"location":"unfinished"}},{"name":"get_weather","arguments":{"location":"Paris"}}],"normal_text":""}
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.4.d:
@@ -176,6 +192,13 @@ kimi_k2:
     stream_vs_batch: *svb-whitespace-only
 
 kimi_k3:
+  TOOLCALLING.batch.5.i:
+    baseline_defect: >-
+      FIXME (v2 defect): published 0.7.20 and unchanged 0.7.21 both swallow
+      the following tools channel into an unterminated argument. Only the
+      complete Paris invocation should survive; the golden remains unchanged.
+    baseline_defect_actual: >-
+      {"calls":[{"name":"get_weather","arguments":{"location":"unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>argument key=\"location\" type=\"string\"<|sep|>Paris"}}],"normal_text":""}
   TOOLCALLING.batch.2.b:
     stream_vs_batch: &svb-kimi-channels >-
       FIXME (v1 defect): v1 stops after the first Kimi tools channel and loses a later complete call. v2 returns to idle after each channel and extracts every closed call.
@@ -244,6 +267,12 @@ minimax_m2:
       The type array permits either string "42" or integer 42. v1 prefers the string and v2 prefers the integer; both satisfy the original schema. The independent family golden retains its explicitly authored interpretation.
 
 minimax_m3:
+  TOOLCALLING.batch.5.i:
+    stream_vs_batch: >-
+      v2 discards the incomplete first invocation and preserves the later
+      complete Paris call, matching the independent golden. Published v1
+      10.0.2 already diverged here; its MiniMax M3 behavior is unchanged by
+      the scoped Qwen/Nemotron XML fix.
   TOOLCALLING.batch.2.c:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.5.f:
@@ -273,6 +302,14 @@ minimax_m3:
     jail: *jail-stringifies-bigint
 
 qwen3_coder:
+  TOOLCALLING.batch.5.i:
+    baseline_defect: >-
+      FIXME (v2 defect): published 0.7.20 and unchanged 0.7.21 both swallow
+      the following complete function into an unterminated argument. The
+      v1 fix rejects the incomplete first invocation and returns only Paris;
+      this exact v2 defect remains visible, not an intended difference.
+    baseline_defect_actual: >-
+      {"calls":[{"name":"get_weather","arguments":{"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"}}],"normal_text":""}
   TOOLCALLING.batch.2.a:
     stream_vs_batch: *svb-surrounding-text
   TOOLCALLING.batch.2.c:

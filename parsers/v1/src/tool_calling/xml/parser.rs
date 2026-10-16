@@ -51,7 +51,7 @@ pub fn detect_tool_call_start_xml(chunk: &str, config: &XmlParserConfig) -> bool
     // Complete start token, or bare `<function=...>` in back-off mode (the
     // batch path treats both as tool-call starts; the streaming jail must
     // agree — see XmlParserConfig::is_bare_function_mode).
-    if chunk.contains(start_token.as_str()) || config.is_bare_function_mode(chunk) {
+    if config.find_marker(chunk, start_token).is_some() || config.is_bare_function_mode(chunk) {
         return true;
     }
 
@@ -156,17 +156,11 @@ pub fn try_tool_call_parse_xml(
     if config.is_bare_function_mode(message)
         && (message.contains(config.function_end_token.as_str()) || config.allow_eof_recovery)
         && (message.contains(config.tool_call_end_token.as_str()) || config.allow_eof_recovery)
+        && let Some((prefix, calls)) = recover_bare_xml_calls_in_span(message, config, tools)?
     {
-        let calls = parse_tool_call_block(message, config, tools).unwrap_or_default();
-        if !calls.is_empty() {
-            // Preserve narration before the first `<function=...>` tag so
-            // streaming output isn't dropped on the back-off path.
-            let prefix = message
-                .split_once(config.function_start_token.as_str())
-                .map(|(p, _)| p.to_string())
-                .unwrap_or_default();
-            return Ok((calls, Some(prefix)));
-        }
+        // Preserve narration before the first `<function=...>` tag so
+        // streaming output isn't dropped on the back-off path.
+        return Ok((calls, Some(prefix)));
     }
 
     if config.strict_match
@@ -202,7 +196,7 @@ fn extract_tool_calls(
 
     while cursor < text.len() {
         // Find next tool call start.
-        if let Some(start_pos) = text[cursor..].find(start_token.as_str()) {
+        if let Some(start_pos) = config.find_marker(&text[cursor..], start_token) {
             let abs_start = cursor + start_pos;
             let gap = &text[cursor..abs_start];
             if let Some((prefix, mut recovered_calls)) =
@@ -306,7 +300,7 @@ fn recover_bare_xml_calls_in_span(
         return Ok(None);
     }
 
-    let Some(marker_idx) = span.find(config.function_start_token.as_str()) else {
+    let Some(marker_idx) = config.find_marker(span, &config.function_start_token) else {
         return Ok(None);
     };
 
@@ -317,7 +311,21 @@ fn recover_bare_xml_calls_in_span(
         return Ok(None);
     }
 
-    let calls = parse_tool_call_block(tail, config, tools)?;
+    let calls = if config.protect_code_examples {
+        let mut calls = Vec::new();
+        let mut cursor = marker_idx;
+        while let Some(offset) = config.find_marker(&span[cursor..], &config.function_start_token) {
+            let start = cursor + offset;
+            let end = span[start..]
+                .find(&config.function_end_token)
+                .map_or(span.len(), |p| start + p + config.function_end_token.len());
+            calls.extend(parse_tool_call_block(&span[start..end], config, tools)?);
+            cursor = end;
+        }
+        calls
+    } else {
+        parse_tool_call_block(tail, config, tools)?
+    };
     if calls.is_empty() {
         return Ok(None);
     }
@@ -371,9 +379,9 @@ fn parse_tool_call_block(
         // regex would capture the partial value via its `$` fallback, but an
         // unterminated value can't be trusted (e.g. "New York" may be a truncated
         // "New York City"), so drop the whole call rather than emit a guessed
-        // argument. A value bounded by *any* close marker — `</parameter>`,
-        // `</function>` (function terminated), or `</tool_call>` — is complete and
-        // still recovered.
+        // argument. A parameter or function close can bound the value. The
+        // outer wrapper alone cannot: accepting it invents an argument from
+        // malformed inner XML (including protocol fragments in prose).
         let function_terminated = func_cap
             .get(0)
             .is_some_and(|m| m.as_str().contains(config.function_end_token.as_str()));
@@ -381,8 +389,7 @@ fn parse_tool_call_block(
             && let Some(open_idx) = function_body.rfind(config.parameter_start_token.as_str())
         {
             let after_value = &function_body[open_idx..];
-            let value_bounded = after_value.contains(config.parameter_end_token.as_str())
-                || after_value.contains(config.tool_call_end_token.as_str());
+            let value_bounded = after_value.contains(config.parameter_end_token.as_str());
             if !value_bounded {
                 continue;
             }
@@ -1165,8 +1172,7 @@ Boston
         assert_eq!(args["city"], "Boston");
     }
 
-    // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.d in tests/parity/toolcalling/fixtures/qwen3_coder/TOOLCALLING.batch.4.yaml.
-    #[test] // TOOLCALLING.batch.4
+    #[test]
     fn test_parse_missing_both_closing_tags() {
         let input = r#"<tool_call>
 <function=run_query>
@@ -1175,12 +1181,9 @@ SELECT * FROM users
 </tool_call>"#;
 
         let (calls, _) = try_tool_call_parse_xml(input, &XmlParserConfig::default(), None).unwrap();
-        assert_eq!(calls.len(), 1);
-        assert_eq!(calls[0].function.name, "run_query");
-
-        let args: serde_json::Value = serde_json::from_str(&calls[0].function.arguments).unwrap();
-        // This matches the original SGLang python implementation.
-        assert_eq!(args["sql"], "SELECT * FROM users\n</tool_call>");
+        // Deliberately reject the legacy recovery that put the outer closing
+        // tag into the SQL argument. Neither inner value boundary was emitted.
+        assert!(calls.is_empty());
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.4.d in tests/parity/toolcalling/fixtures/qwen3_coder/TOOLCALLING.batch.4.yaml.
@@ -1332,6 +1335,7 @@ NYC
         // fences before surfacing a call.
         let config = XmlParserConfig {
             tool_call_start_token: "<minimax:tool_call>".to_string(),
+            protect_code_examples: false,
             tool_call_end_token: "</minimax:tool_call>".to_string(),
             function_start_token: "<invoke name=".to_string(),
             function_end_token: "</invoke>".to_string(),
@@ -1541,6 +1545,7 @@ NYC
     /// factory: strict inner blocks plus bare-invoke recovery.
     fn minimax_m2_config() -> XmlParserConfig {
         XmlParserConfig {
+            protect_code_examples: false,
             tool_call_start_token: "<minimax:tool_call>".to_string(),
             tool_call_end_token: "</minimax:tool_call>".to_string(),
             function_start_token: "<invoke name=".to_string(),

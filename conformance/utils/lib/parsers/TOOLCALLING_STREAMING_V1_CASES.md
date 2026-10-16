@@ -37,6 +37,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.5.f`** Bare valid call before a complete wrapped call. The parser should recover the leading bare call as structured output rather than dropping it or leaking it as text. Streaming form of `TOOLCALLING.batch.5.f`.
 - **`TOOLCALLING.streamv1.5.g`** Orphan close marker after prefix prose. Prefix text should remain content, the bare call should recover when supported, and the orphan close marker should not leak. Streaming form of `TOOLCALLING.batch.5.g`.
 - **`TOOLCALLING.streamv1.5.h`** Orphan close marker SPLIT across two chunk boundaries after prefix prose (no matching open). The partial close must be held back whole, then dropped, so no markup fragment leaks and the surrounding prose survives. Streaming-only — exercises chunk-boundary holdback of the close marker, unlike `streamv1.5.g` which delivers the orphan close in one chunk.
+- **`TOOLCALLING.streamv1.5.i`** Unterminated raw argument followed by an outer wrapper close and a complete call, delivered in one chunk. Reject the malformed call, retain the complete call. Native inputs and registry exclusions are inventoried with `TOOLCALLING.batch.5.i` in TOOLCALLING_CASES.md.
 - **`TOOLCALLING.streamv1.6.a`** Canonical empty {} message body. Streaming form of `TOOLCALLING.batch.6.a`.
 - **`TOOLCALLING.streamv1.6.b`** Whitespace inside empty {}. Streaming form of `TOOLCALLING.batch.6.b`.
 - **`TOOLCALLING.streamv1.6.c`** No <|message|> body. Streaming form of `TOOLCALLING.batch.6.c`.
