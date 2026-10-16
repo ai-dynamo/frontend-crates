@@ -89,6 +89,10 @@ jobs:
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
 
+      # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
+      - name: Install libvpx
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvpx9
+
       - name: Run multimodal tests with all features
         run: cargo test -p dynamo-multimodal --all-targets --all-features --locked
 
