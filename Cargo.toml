@@ -85,3 +85,9 @@ tracing-subscriber = "0.3"
 url = "2.5"
 uuid = "1.18.1"
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# The renderer depends on dynamo-protocols / dynamo-tokenizers from crates.io so a git
+# consumer resolves one copy of their types; inside this workspace use the local crates.
+[patch.crates-io]
+dynamo-protocols = { path = "protocols" }
+dynamo-tokenizers = { path = "tokenizers" }

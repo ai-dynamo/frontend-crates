@@ -5,7 +5,6 @@
 
 use crate::structural_tag::StructuralTagBuilder;
 
-use super::beam::BeamToolStreamParser;
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
 use super::gemma4::Gemma4ToolStreamParser;
@@ -57,10 +56,6 @@ family_registry! {
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
     "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
-    "beam"         => (
-        BeamToolStreamParser::create,
-        Some(&crate::structural_tag::builders::BEAM)
-    ),
     "glm47"        => (
         Glm47ToolStreamParser::create,
         Some(&crate::structural_tag::builders::GLM47)
@@ -89,9 +84,13 @@ pub fn create_tool_parser_for_family(
     Ok(parser)
 }
 
-/// Return the structural-tag builder registered for a model family, if any.
+/// Return the structural-tag builder registered for a model family, if any: from the
+/// tool-calling registry, or for a family served only by a unified parser (no
+/// tool-call-only parser to carry it), from the structural-tag builders.
 pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static StructuralTagBuilder> {
-    family_spec(family).and_then(|spec| spec.structural_tag_builder)
+    family_spec(family)
+        .and_then(|spec| spec.structural_tag_builder)
+        .or_else(|| crate::structural_tag::builders::unified_only_builder(family))
 }
 
 #[cfg(test)]
@@ -117,7 +116,9 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        // Unified-only family: no tool-calling entry, grammar still resolves.
         assert!(structural_tag_builder_for_family("beam").is_some());
+        assert!(create_tool_parser_for_family("beam", &[]).is_err());
         assert!(structural_tag_builder_for_family("gemma4").is_none());
         assert!(structural_tag_builder_for_family("unknown").is_none());
     }

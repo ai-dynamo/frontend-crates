@@ -7,7 +7,6 @@ pub mod structural_tag;
 pub mod tool_calling;
 pub mod unified;
 
-pub use tool_calling::beam::BeamToolStreamParser;
 pub use tool_calling::debug::{DEBUG_ENV, debug_enabled};
 pub use tool_calling::dsml::DeepSeekV4ToolStreamParser;
 pub use tool_calling::gemma4::Gemma4ToolStreamParser;

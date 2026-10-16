@@ -573,7 +573,7 @@ impl BeamReasoningParser {
                     if t.starts_with(START) {
                         break Some(at);
                     }
-                    if t.starts_with(PARAM_OPEN) {
+                    if let Some(rest) = t.strip_prefix(PARAM_OPEN) {
                         match t.find(PARAM_CLOSE) {
                             Some(i) => {
                                 scan = at + i + PARAM_CLOSE.len();
@@ -587,11 +587,9 @@ impl BeamReasoningParser {
                             None => {
                                 let next = TOOL_TERMINATORS
                                     .iter()
-                                    .filter_map(|m| {
-                                        t[PARAM_OPEN.len()..].find(m).map(|p| (p, p + m.len()))
-                                    })
+                                    .filter_map(|m| rest.find(m).map(|p| (p, p + m.len())))
                                     .min();
-                                let header = t[PARAM_OPEN.len()..].find(START);
+                                let header = rest.find(START);
                                 break match (next, header) {
                                     (Some((p, e)), h) if h.is_none_or(|h| p < h) => {
                                         Some(at + PARAM_OPEN.len() + e)

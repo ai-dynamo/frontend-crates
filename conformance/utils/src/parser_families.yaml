@@ -14,8 +14,6 @@
 #   dynamo_v2      Dynamo parser v2 family id           (None -> not implemented yet)
 #   preferred_input  tokens | text  (how the Dynamo v2 parser is best driven)
 families:
-  # Beam channel grammar (NOT Harmony): no peer engine ships a parser for it.
-  beam:           {vllm_python: null,           vllm_rust: null,         sglang_python: null,        dynamo_v2: beam,        preferred_input: text}
   deepseek_v3:    {vllm_python: deepseek_v3,    vllm_rust: deepseek_v3,  sglang_python: deepseekv3,  dynamo_v2: null,        preferred_input: text}
   deepseek_v3_1:  {vllm_python: deepseek_v31,   vllm_rust: deepseek_v31, sglang_python: deepseekv31, dynamo_v2: null,        preferred_input: text}
   deepseek_v3_2:  {vllm_python: deepseek_v32,   vllm_rust: deepseek_v32, sglang_python: deepseekv32, dynamo_v2: null,        preferred_input: text}

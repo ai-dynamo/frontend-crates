@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - *(parsers-v2)* `ArgumentFraming::SchemaConstrained` frames the parameters of every tool
   the Beam serving grammar holds (`strict` or not), matching how the grammar emits them.
 
+### Removed
+
+- *(parsers-v2)* `BeamToolStreamParser` and the `beam` entry of the tool-calling registry:
+  Beam is served by its unified parser only (`create_unified_parser_for_family("beam")`).
+  `structural_tag_builder_for_family("beam")` still returns the Beam turn grammar.
+
 ## [0.9.0] - 2026-10-13
 
 ### Added
