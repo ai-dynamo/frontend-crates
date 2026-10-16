@@ -10,7 +10,7 @@ is the single source of truth so a scenario can't drift between families
 (CLAUDE.md: reuse the shared parent, don't copy-paste divergent cases).
 
 Full matrix: every scenario is emitted for every family (gemma4, qwen3, kimi_k2,
-muse_glimmer) -> conformance/unified/golden_spec/{gemma4,qwen3,kimi,muse_glimmer}.yaml,
+muse_glimmer, muse_spark) -> conformance/unified/golden_spec/, one file per family,
 the gitignored build tree. This authored spec is the harness INPUT (unified_render.rs reads it to
 compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
 NOT committed. The committed, versioned golden.tar.gz shard is DERIVED from it via
@@ -41,12 +41,14 @@ UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
 # perfectly good reasoning channel routed by recipient. Prefilled channels are a
 # separate axis and are supported everywhere, so they are not gated.
 GUIDED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("guided_tool_output", True)}
+MUSE_FAMILIES = {"muse_glimmer", "muse_spark"}
 
 GRAMMAR_NOTE = {
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
+    "muse_spark": "Muse Glimmer's recipient-routed ATEM grammar plus the reserved `commentary` recipient, which is user-visible intermediate text rather than a tool channel. `self` is reasoning and `user` is final visible content.",
 }
 
 
@@ -55,7 +57,7 @@ GRAMMAR_NOTE = {
 def r_reason(fam, text):
     if fam == "gemma4":
         return f"<|channel>thought\n{text}<channel|>"
-    if fam == "muse_glimmer":
+    if fam in MUSE_FAMILIES:
         return f"<|start|>assistant to=self<|message|>{text}<|eom|>"
     return f"<think>{text}</think>"
 
@@ -68,7 +70,7 @@ def r_text(fam, text):
     `<|eot|>`: `<|eot|>` ends the TURN, which would make any following segment
     unreachable. The marker-pair grammars leave visible text bare.
     """
-    if fam == "muse_glimmer":
+    if fam in MUSE_FAMILIES:
         return f"<|start|>assistant to=user<|message|>{text}<|eom|>"
     return text
 
@@ -100,7 +102,7 @@ def r_tool(fam, name, key, val, idx):
     if fam == "qwen3":
         return (f"<tool_call>\n<function={name}>\n<parameter={key}>\n"
                 f"{val}\n</parameter>\n</function>\n</tool_call>")
-    if fam == "muse_glimmer":
+    if fam in MUSE_FAMILIES:
         return (f"<|start|>assistant to={name}<|message|><atem:function_calls>\n"
                 f"<atem:invoke name=\"{name}\">\n"
                 f"<atem:parameter name=\"{key}\">{_atem_value(val)}</atem:parameter>\n"
@@ -208,7 +210,7 @@ def by_family(render, vllm, dynamo, *rest):
 
 # A family whose tool block opener spans more than its first control token, mapped to
 # the marker the opener runs THROUGH. Absent means the first token is the whole opener.
-_TOOL_OPEN_THROUGH = {"muse_glimmer": "<atem:function_calls>"}
+_TOOL_OPEN_THROUGH = {fam: "<atem:function_calls>" for fam in MUSE_FAMILIES}
 
 # A family whose OUTER message terminator is shared across channels, mapped to the
 # token that closes its tool STRUCTURE specifically. Absent means the two are the
@@ -226,7 +228,7 @@ _TOOL_OPEN_THROUGH = {"muse_glimmer": "<atem:function_calls>"}
 # natively, and `tool_markup_only_emits_nothing` must keep rendering `<|eom|>`.
 # Under GUIDED decoding the payload is bare JSON by construction, so native markup
 # around it is stray no matter which marker it is — which is what this scenario asks.
-_STRAY_TOOL_CLOSE = {"muse_glimmer": "</atem:function_calls>"}
+_STRAY_TOOL_CLOSE = {fam: "</atem:function_calls>" for fam in MUSE_FAMILIES}
 
 
 def stray_tool_close(fam):
@@ -316,13 +318,17 @@ V_MUSE = {
     "verdict": "match",
     "note": "vLLM muse_glimmer is unmerged (PR #51655); no released engine can be captured — unverified annotation",
 }
+V_MUSE_SPARK = {
+    "verdict": "match",
+    "note": "vLLM Muse Spark support is private and absent from the released conformance image — unverified annotation",
+}
 
 # Families `capture_vllm_unified.py` has no entry for. The Unified tab falls back to
 # the AUTHORED `expect.vllm` whenever a capture is missing, so for these families it
 # falls back on EVERY case and draws the same plain `expected: MATCH` a captured
 # family earns. Carrying the caveat only on the cases that happened to need a
 # per-family verdict published the other 22 as if an engine had produced them.
-VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE}
+VLLM_UNCAPTURABLE = {"muse_glimmer": V_MUSE, "muse_spark": V_MUSE_SPARK}
 
 
 # --- CLEAN scenarios: same segments for every family, input is templated ------
@@ -449,6 +455,21 @@ CLEAN = [
 # Each: (name, description, policy, golden, {family: (input, vllm, dynamo)})
 
 EDGE = [
+    ("commentary_then_tool",
+     "Muse Spark only: the reserved `commentary` recipient is visible intermediate text, then a native ATEM tool channel follows. It must not be interpreted as a tool named commentary or dropped as an unknown recipient.",
+     [],
+     [{"kind": "text", "text": "Checking the weather."},
+      {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         "muse_spark": (
+             "<|start|>assistant to=commentary<|message|>Checking the weather.<|eom|>"
+             + r_tool("muse_spark", "get_weather", "city", "Paris", 0),
+             V_MUSE_SPARK,
+             {"verdict": "match", "note": "commentary remains visible and the following ATEM call is parsed"},
+         ),
+     })),
+
     ("truncated_tool_eof",
      "Stream ends mid tool call (no close marker). Policy P2 — drop the incomplete call, keep valid preceding output, no error, no leaked markup.",
      ["P2"],
@@ -1319,7 +1340,7 @@ def _guided_response_markup(fam, recipient, after_payload=False):
     prefilled. Return the expected visible text separately because muse strips its
     special-token framing while the marker-pair families preserve their literal bytes.
     """
-    if fam == "muse_glimmer":
+    if fam in MUSE_FAMILIES:
         text = f"I mean to={recipient}literal"
         markup = f"I mean to={recipient}<|message|>literal<|eom|>"
     else:
@@ -1370,7 +1391,7 @@ EDGE.append((
     {
         fam: (
             f"thinking {control_tokens(fam)[2]}{GUIDED_ONE_CALL}{control_tokens(fam)[3]}"
-            if fam != "muse_glimmer"
+            if fam not in MUSE_FAMILIES
             else f"thinking to=get_weather<|message|>{GUIDED_ONE_CALL}",
             GUIDED_UNSUPPORTED,
             {"verdict": "match",
@@ -1408,19 +1429,24 @@ EDGE += [
      "so it is stripped and the surrounding thought survives intact — it must not swallow the closer "
      "and it must not survive into the reasoning the user sees.",
      ["I3"],
-     [{"kind": "reasoning", "text": "I'll call get_weather"},
+     [{"kind": "reasoning", "text": None},
       {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
      {"starting_state": "None", "tool_output_mode": "GuidedJson", "named_tool": None},
      {"finish_reason": "stop"},
      guided_surroundings(
          lambda fam: f"{r_reason(fam, 'I' + chr(39) + 'll call ' + invoke_header_prefix(fam) + 'get_weather')}{GUIDED_ONE_CALL}",
-         "a narrated invoke header inside a thought is stripped, closer and thought intact")),
+         "a narrated invoke header inside a thought is stripped, closer and thought intact",
+         fill=lambda fam: "I'll call " if fam == "muse_spark" else "I'll call get_weather")),
 ]
 
 
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
     if isinstance(spec, dict) and set(spec) <= set(FAMILIES):
+        # Muse Spark deliberately inherits Muse Glimmer's grammar-level verdicts.
+        # A Spark-specific row still wins when commentary changes the semantics.
+        if fam == "muse_spark" and fam not in spec and "muse_glimmer" in spec:
+            return spec["muse_glimmer"]
         return spec[fam]
     return spec
 
@@ -1438,7 +1464,9 @@ def _vllm_entry(spec, fam):
     """
     entry = _entry(spec, fam)
     caveat = VLLM_UNCAPTURABLE.get(fam)
-    return caveat if caveat is not None and not entry.get("note") else entry
+    if caveat is not None and (not entry.get("note") or (fam == "muse_spark" and entry is V_MUSE)):
+        return caveat
+    return entry
 
 
 def build_cases(fam):
@@ -1479,13 +1507,18 @@ def build_cases(fam):
             continue
 
         cid = f"UNIFIED.{name}.{fam}"
-        if fam not in per_fam:
+        source_fam = fam
+        if fam == "muse_spark" and fam not in per_fam and "muse_glimmer" in per_fam:
+            # The two families share framing and ATEM bytes. Only the reserved
+            # commentary recipient differs, and that has its own scoped case.
+            source_fam = "muse_glimmer"
+        if source_fam not in per_fam:
             raise KeyError(
                 f"{name}: no input authored for family {fam!r}. Add one, or wrap the map "
                 f"in OnlyFamilies({{...}}) if this family's grammar cannot express the "
                 f"scenario (and say why at the authoring site and in UNIFIED_CASES.md)."
             )
-        inp, vllm, dynamo, *rest = per_fam[fam]
+        inp, vllm, dynamo, *rest = per_fam[source_fam]
         g = json.loads(json.dumps(golden))  # deep copy
         if rest:
             # Fill the ONE `None` placeholder in the golden with this family's

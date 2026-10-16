@@ -33,6 +33,7 @@ if str(UTILS / "src") not in sys.path:
 
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 import model as model_mod  # noqa: E402
+import generate_conformance_table as table  # noqa: E402
 
 
 def _resolve_cache_root() -> Path:
@@ -274,23 +275,31 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     assert native["block"]["unavailable"] == "vLLM Rust 0.26.0 (stream, Combined & Unified) has no parser for muse_glimmer"
 
 
-def test_unified_default_dynamo_uses_pr_capture_and_keeps_release_history(tmp_path):
-    """The actual packaged 0.3.4 fixtures retain the release and select the PR capture."""
-    page_path = tmp_path / "CONFORMANCE_v2.html"
-    subprocess.run(
-        [str(UTILS / "render_table_v2.sh"), "--output", str(page_path)],
-        check=True,
-        capture_output=True,
-        cwd=REPO,
-    )
-    tab = _tab(_read_model(page_path, "render_table_v2.sh"), "tab-unified")
+def test_unified_default_dynamo_uses_latest_capture_and_keeps_release_history(model_v2):
+    """Derive the default label from captured versions, retaining released history."""
+    tab = _tab(model_v2, "tab-unified")
     dynamo = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     release = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo@0.4.0")
+    captures = {version.split(".patch", 1)[0] for version in _peer_versions("unified")["dynamo_v2"]}
+    current = max(captures, key=lambda version: (table.fixtures._version_sort_key(version), "+" in version, version))
 
-    assert dynamo["label"] == "Dynamo v2 Rust 0.4.0+pr200 (stream, Combined & Unified)"
+    assert dynamo["label"] == f"Dynamo v2 Rust {current} (stream, Combined & Unified)"
     assert dynamo["default_bucket"] == "A"
     assert release["label"] == "Dynamo v2 Rust 0.4.0 (stream, Combined & Unified)"
     assert release["default_bucket"] == "C"
+
+
+@pytest.mark.parametrize("current", ["0.4.1+gfce910c", "0.7.0+source.0abc123", "0.5.0-muse-spark-open-dev.1"])
+def test_tc_source_capture_versions_survive_label_parsing(current):
+    """Preserve the full capture version rather than a numeric tail of its SHA."""
+    impl = "dynamo_v2"
+    versions = [current, "0.4.0"]
+    items = [
+        {"key": f"{impl}-{version}", "label": table._full_label(impl, version, "stream")}
+        for version in reversed(versions)
+    ]
+    candidates = table._candidate_model(table._sort_candidates(items))
+    assert [candidate["version"] for candidate in candidates] == versions
 
 
 def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
@@ -303,13 +312,22 @@ def test_unified_tab_marks_unsupported_and_postdated_vllm_cases_na(model_v2):
             unavailable = [cell["cmp"][key].get("na") == 1 for cell in row["cells"].values()]
             if row["family"] == "muse_glimmer":
                 assert all(unavailable), f"{key} must say n/a for Muse"
-            elif row["family"] != "gemma4":
-                assert not any(unavailable), f"{key} is missing captured cases for {row['family']}"
+                continue
+            for scenario, is_unavailable in zip(row["cells"], unavailable):
+                if not is_unavailable or row["cells"][scenario]["status"] == "na":
+                    continue
+                peer = next(candidate for candidate in row["cells"][scenario]["tooltip"]["candidates"] if candidate["key"] == key)
+                reason = peer["block"]["unavailable"]
+                assert "not captured at" in reason or "has no parser" in reason
+                assert "events" not in peer["block"]
+                assert row["cells"][scenario]["cmp"][key] == {"sig": 0, "leak": 0, "na": 1, "err": 0}
 
     gemma = next(row for row in tab["rows"] if row["family"] == "gemma4")
     for key in peer_keys:
         for cell in gemma["cells"].values():
             if cell["cmp"][key].get("na") == 1:
+                if cell["status"] == "na":
+                    continue
                 peer = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == key)
                 assert "this case postdates that capture" in peer["block"]["unavailable"]
 

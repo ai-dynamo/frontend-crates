@@ -44,6 +44,7 @@ UNIFIED_TAX = {
     "text_before_tool": (8, "a"), "trailing_text_after_tool": (8, "b"),
     "text_sandwich": (8, "c"), "text_between_calls": (8, "d"),
     "narrated_calls": (8, "e"),
+    "commentary_then_tool": (8, "f"),
     # Group 10 — Reasoning span (REASONING.*), reasoning-only
     "reason_only": (10, "a"), "reason_then_content": (10, "b"),
     "two_reason_spans": (10, "c"), "reason_unterminated": (10, "d"),

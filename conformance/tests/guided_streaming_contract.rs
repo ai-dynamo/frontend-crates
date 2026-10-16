@@ -141,7 +141,9 @@ fn v2(case: &Case) -> (usize, Vec<String>, String, String) {
                 arguments.push_str(&call.arguments);
             }
             UnifiedParserEvent::Text(text) => content.push_str(&text),
-            UnifiedParserEvent::Reasoning(_) => {}
+            UnifiedParserEvent::Reasoning(_)
+            | UnifiedParserEvent::MessageStart(_)
+            | UnifiedParserEvent::MessageEnd => {}
         }
     }
     (carrying, names, arguments, content)

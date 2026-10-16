@@ -315,6 +315,12 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
 /// (Assembling per chunk instead produces a mapping and makes every case look changed.)
 fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            serde_json::json!({"kind":"message_start","phase":phase})
+        }
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => {
+            serde_json::json!({"kind":"message_end"})
+        }
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             serde_json::json!({"kind": "reasoning", "text": text})
         }

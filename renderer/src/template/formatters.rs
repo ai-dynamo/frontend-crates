@@ -117,22 +117,17 @@ fn detect_passthrough_template(env: &Environment) -> bool {
     out_mixed.contains('[') && out_mixed.contains("type")
 }
 
-/// Remove known non-standard Jinja2 tags from chat templates
+/// Normalize known Hugging Face generation markers before MiniJinja validation.
 ///
-/// Some models use custom Jinja2 extensions that minijinja doesn't recognize. These tags
-/// are typically metadata markers that don't affect the rendered output. For example:
-/// - {% generation %} / {% endgeneration %}: Used by vLLM's AssistantTracker to mark
-///   assistant-generated content. The tags themselves don't produce output.
-///
-/// By removing these tags before validation, we allow templates with backend-specific
-/// extensions to work with minijinja while maintaining correct output semantics.
-///
-/// Note: This follows the same approach as Mistral.rs, which also strips these tags
-/// for compatibility: https://github.com/EricLBuehler/mistral.rs/blob/2bcf0e9/mistralrs-core/src/pipeline/chat_template.rs#L318-L322
+/// Use an unconditional block to retain whitespace trimming for both `{%` and
+/// `{%-` forms. These markers only track assistant spans; inference renders the
+/// enclosed content without producing a training mask.
 fn remove_known_non_jinja2_tags(template: &str) -> String {
     template
-        .replace("{% generation %}", "")
-        .replace("{% endgeneration %}", "")
+        .replace("{% generation %}", "{% if true %}")
+        .replace("{% endgeneration %}", "{% endif %}")
+        .replace("{%- generation %}", "{%- if true %}")
+        .replace("{%- endgeneration %}", "{%- endif %}")
 }
 
 /// Normalize common Python/Jinja dict method calls that are ambiguous in minijinja.
@@ -335,6 +330,64 @@ fn normalize_chat_template_source(source: &str) -> String {
     }
 }
 
+/// Find a capability marker in executable Jinja, excluding prose, comments,
+/// quoted strings and raw blocks. MiniJinja's undeclared-variable analysis
+/// treats `set x = x | default(...)` as already assigned and misses this
+/// template's self-defaulting `deferred_render_mode` declaration.
+pub(super) fn template_references_variable(source: &str, variable: &str) -> bool {
+    let mut offset = 0;
+    while offset < source.len() {
+        let rest = &source[offset..];
+        if rest.starts_with("{#") {
+            let Some(end) = rest.find("#}") else {
+                return false;
+            };
+            offset += end + 2;
+        } else if rest.starts_with("{{") || rest.starts_with("{%") {
+            let block = rest.starts_with("{%");
+            let Some(end) = find_tag_end(source, offset + 2, if block { "%}" } else { "}}" })
+            else {
+                return false;
+            };
+            let code = &source[offset + 2..end - 2];
+            if block && is_jinja_block_name(code, "raw") {
+                let Some(raw_end) = find_raw_block_end(source, end) else {
+                    return false;
+                };
+                offset = raw_end;
+                continue;
+            }
+            let mut chars = code.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '\'' || ch == '"' {
+                    while let Some(next) = chars.next() {
+                        if next == '\\' {
+                            chars.next();
+                        } else if next == ch {
+                            break;
+                        }
+                    }
+                } else if ch.is_ascii_alphabetic() || ch == '_' {
+                    let mut identifier = String::from(ch);
+                    while chars
+                        .peek()
+                        .is_some_and(|next| next.is_ascii_alphanumeric() || *next == '_')
+                    {
+                        identifier.push(chars.next().unwrap());
+                    }
+                    if identifier == variable {
+                        return true;
+                    }
+                }
+            }
+            offset = end;
+        } else {
+            offset += rest.chars().next().unwrap().len_utf8();
+        }
+    }
+    false
+}
+
 impl JinjaEnvironment {
     fn env(self) -> Environment<'static> {
         self.env
@@ -491,6 +544,14 @@ impl HfTokenizerConfigJsonFormatter {
         let tool_use_template_handles_tool_calls_arguments_string =
             template_handles_args_string("tool_use");
 
+        let handles_native_tools = |name| {
+            env.get_template(name).ok().is_some_and(|template| {
+                template_references_variable(template.source(), "deferred_render_mode")
+            })
+        };
+        let default_template_handles_native_tools = handles_native_tools("default");
+        let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
@@ -498,6 +559,8 @@ impl HfTokenizerConfigJsonFormatter {
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,
+            default_template_handles_native_tools,
+            tool_use_template_handles_native_tools,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
             image_placeholder_template,
@@ -535,7 +598,10 @@ mod tests {
         let template =
             "USER: {{ message }} ASSISTANT: {% generation %}Reply here{% endgeneration %}";
         let result = remove_known_non_jinja2_tags(template);
-        assert_eq!(result, "USER: {{ message }} ASSISTANT: Reply here");
+        assert_eq!(
+            result,
+            "USER: {{ message }} ASSISTANT: {% if true %}Reply here{% endif %}"
+        );
     }
 
     #[test]
@@ -549,7 +615,36 @@ mod tests {
     fn test_remove_known_non_jinja2_tags_multiple() {
         let template = "Start {% generation %}Part 1{% endgeneration %} middle {% generation %}Part 2{% endgeneration %}";
         let result = remove_known_non_jinja2_tags(template);
-        assert_eq!(result, "Start Part 1 middle Part 2");
+        assert_eq!(
+            result,
+            "Start {% if true %}Part 1{% endif %} middle {% if true %}Part 2{% endif %}"
+        );
+    }
+
+    #[test]
+    fn test_generation_tags_with_and_without_left_trim() {
+        for (source, expected) in [
+            ("A {% generation %} B {% endgeneration %} C", "A  B  C"),
+            (
+                "A \n{%- generation %}\n B \n{%- endgeneration %}\n C",
+                "A B C",
+            ),
+            ("A {%- generation %} B {% endgeneration %} C", "A B  C"),
+            ("A {% generation %} B {%- endgeneration %} C", "A  B C"),
+        ] {
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            let rendered = formatter
+                .env
+                .get_template("default")
+                .unwrap()
+                .render(context! {})
+                .unwrap();
+            assert_eq!(rendered, expected, "source: {source:?}");
+        }
     }
 
     /// NVIDIA-Nemotron-Parse ships a pure pass-through chat template

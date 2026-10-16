@@ -206,6 +206,11 @@ pub trait OAIChatLikeRequest {
     fn tools(&self) -> Option<Value> {
         None
     }
+    /// Namespace/deferred tool definitions retained by a Responses adapter.
+    /// The formatter uses these only when its selected template supports them.
+    fn template_tools(&self) -> Option<Value> {
+        None
+    }
     fn tool_choice(&self) -> Option<Value> {
         None
     }
@@ -247,6 +252,9 @@ pub trait OAIChatLikeRequest {
 
 pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
+    fn supports_native_tools(&self, _request: &dyn OAIChatLikeRequest) -> bool {
+        false
+    }
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {

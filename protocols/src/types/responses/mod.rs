@@ -37,6 +37,46 @@ use serde::{Deserialize, Serialize, de};
 // shadow their upstream counterparts where no dual-side conflict exists.
 pub use async_openai::types::responses::*;
 
+/// Request tool choice extends the pinned SDK with explicit client search selection.
+/// Other variants retain the upstream representation.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ToolChoiceParam {
+    ToolSearch,
+    AllowedTools(ToolChoiceAllowed),
+    Function(ToolChoiceFunction),
+    Mcp(ToolChoiceMCP),
+    Custom(ToolChoiceCustom),
+    ApplyPatch,
+    Shell,
+    #[serde(untagged)]
+    Hosted(ToolChoiceTypes),
+    #[serde(untagged)]
+    Mode(ToolChoiceOptions),
+}
+
+impl ToolChoiceParam {
+    /// SDK response structs cannot represent search selection. Dynamo's public
+    /// serializers echo the original choice; this value is only their typed base.
+    pub fn sdk_response_choice(&self) -> async_openai::types::responses::ToolChoiceParam {
+        match self {
+            Self::ToolSearch => {
+                async_openai::types::responses::ToolChoiceParam::Mode(ToolChoiceOptions::Required)
+            }
+            _ => {
+                serde_json::from_value(serde_json::to_value(self).expect("tool choice serializes"))
+                    .expect("upstream tool choice shape")
+            }
+        }
+    }
+}
+
+mod template_tools;
+pub use template_tools::{
+    CUSTOM_TOOL_INPUT_ARG, RequestTool, client_tool_search_function, custom_tool_parameters,
+    native_tools_for_chat_template,
+};
+
 // Re-export upstream's pre-shadow `InputContent` under an explicit alias.
 // Needed because `FunctionCallOutput::Content` and `EasyInputContent::ContentList`
 // are non-owned upstream types that carry upstream's original `InputContent`
@@ -359,6 +399,20 @@ enum CodexAgentMessageInputContent {
 
 /// Structured input/output item, discriminated by `type`. Mirrors upstream
 /// variant-for-variant; only `Message` and `Reasoning` use owned types.
+/// Client search results retain the same namespace and deferral metadata as request tools.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+pub struct ToolSearchOutputItemParam {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution: Option<ToolSearchExecutionType>,
+    pub tools: Vec<RequestTool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<OutputStatus>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Item {
@@ -541,7 +595,7 @@ pub struct CreateResponse {
     )]
     pub tool_choice: Option<ToolChoiceParam>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<Tool>>,
+    pub tools: Option<Vec<RequestTool>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_logprobs: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]

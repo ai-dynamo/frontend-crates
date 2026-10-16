@@ -37,6 +37,8 @@ use crate::tool_calling::muse_glimmer::{
     GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
     guided_content_header, guided_header_holdback, guided_reasoning_close, guided_reasoning_open,
     guided_routing_header, guided_stray_header, guided_strip_text, guided_turn_end, muse_scanner,
+    muse_spark_guided_content_header, muse_spark_guided_header_holdback,
+    muse_spark_guided_reasoning_filter, muse_spark_guided_stray_header,
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
@@ -49,6 +51,10 @@ const INVOKE_START: &str = "<atem:invoke";
 const INVOKE_END: &str = "</atem:invoke>";
 
 impl NativeUnified for MuseChannelScanner {
+    fn preserve_message_phases(&mut self, enabled: bool) {
+        self.set_message_phases(enabled);
+    }
+
     fn preserve_special_tokens(&self) -> bool {
         true
     }
@@ -59,6 +65,21 @@ impl NativeUnified for MuseChannelScanner {
     /// prefilled thought and guided tool output are both honourable. Returning
     /// `None` here would silently reinstate the refusal this replaced.
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
+        if self.commentary_is_content() {
+            return Some(GuidedReasoning::Channel(GuidedChannel {
+                find_open: guided_reasoning_open,
+                find_close: guided_reasoning_close,
+                find_turn_end: guided_turn_end,
+                find_stray: muse_spark_guided_stray_header,
+                find_routing: guided_routing_header,
+                find_transition: muse_spark_guided_content_header,
+                holdback: muse_spark_guided_header_holdback,
+                strip_text: guided_strip_text,
+                reasoning_filter: Some(muse_spark_guided_reasoning_filter),
+                competitors: &GUIDED_COMPETITORS,
+                close_markers: &GUIDED_CLOSE_MARKERS,
+            }));
+        }
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
             find_close: guided_reasoning_close,
@@ -68,6 +89,7 @@ impl NativeUnified for MuseChannelScanner {
             find_transition: guided_content_header,
             holdback: guided_header_holdback,
             strip_text: guided_strip_text,
+            reasoning_filter: None,
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
         }))
@@ -133,6 +155,7 @@ fn push_event(output: &mut UnifiedParserOutput, event: UnifiedParserEvent) {
         UnifiedParserEvent::Text(text) => output.push_text(text),
         UnifiedParserEvent::Reasoning(text) => output.push_reasoning(text),
         UnifiedParserEvent::ToolCall(call) => output.push_call(call),
+        boundary => output.events.push(boundary),
     }
 }
 
@@ -789,7 +812,9 @@ mod tests {
             for event in &out {
                 let payload = match event {
                     UnifiedEvent::Reasoning { text } | UnifiedEvent::Text { text } => text.clone(),
-                    UnifiedEvent::ToolCall { .. } => continue,
+                    UnifiedEvent::ToolCall { .. }
+                    | UnifiedEvent::MessageStart { .. }
+                    | UnifiedEvent::MessageEnd => continue,
                 };
                 for m in markers {
                     assert!(

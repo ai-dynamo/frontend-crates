@@ -52,6 +52,7 @@ pub mod gemma4;
 mod guided_cursor;
 pub mod kimi_k2;
 pub mod muse_glimmer;
+pub mod muse_spark;
 pub mod qwen3;
 
 use std::collections::BTreeMap;
@@ -78,6 +79,10 @@ use crate::tool_calling::traits::{Result, Tool, ToolCallDelta, ToolParseResult};
 /// a reader's judgement.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnifiedParserEvent {
+    /// An explicit visible recipient header, when phase preservation is enabled.
+    MessageStart(MessagePhase),
+    /// An explicit message terminator. EOF does not imply successful completion.
+    MessageEnd,
     /// Normal assistant-visible text.
     Text(String),
     /// Reasoning text hidden from the normal content stream.
@@ -87,12 +92,24 @@ pub enum UnifiedParserEvent {
     ToolCall(ToolCallDelta),
 }
 
+/// Explicit recipient of a visible assistant message; never inferred from its text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MessagePhase {
+    Commentary,
+    FinalAnswer,
+}
+
 /// One assembled event: the order-sensitive unit the unified conformance
 /// surface compares. Serializes to the golden-corpus schema
 /// (`{kind: reasoning|text|tool_call, …}`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum UnifiedEvent {
+    MessageStart {
+        phase: MessagePhase,
+    },
+    MessageEnd,
     Reasoning {
         text: String,
     },
@@ -253,6 +270,9 @@ impl std::error::Error for InvalidGuidedPayload {}
 /// unrecognized calls would hide model misbehaviour that the caller needs to see —
 /// but it means "the parser produced a ToolCall" is not "this call is safe to run".
 pub trait UnifiedParser: Send {
+    /// Retain explicit visible-message boundaries for Responses consumers.
+    fn preserve_message_phases(&mut self, _enabled: bool) {}
+
     /// Initialize parser state from prompt token IDs before output deltas arrive.
     ///
     /// Aligned with the peer trait, so a caller written against it reaches the same
@@ -426,6 +446,7 @@ impl UnifiedParserOutput {
             UnifiedParserEvent::Text(text) => self.push_text(text),
             UnifiedParserEvent::Reasoning(text) => self.push_reasoning(text),
             UnifiedParserEvent::ToolCall(call) => self.push_call(call),
+            boundary => self.events.push(boundary),
         }
     }
 
@@ -443,6 +464,7 @@ impl UnifiedParserOutput {
                 UnifiedParserEvent::Text(t) => self.push_text(t),
                 UnifiedParserEvent::Reasoning(t) => self.push_reasoning(t),
                 UnifiedParserEvent::ToolCall(c) => self.push_call(c),
+                boundary => self.events.push(boundary),
             }
         }
     }
@@ -531,6 +553,7 @@ impl FromIterator<UnifiedParserEvent> for UnifiedParserOutput {
                 UnifiedParserEvent::Text(t) => out.push_text(t),
                 UnifiedParserEvent::Reasoning(t) => out.push_reasoning(t),
                 UnifiedParserEvent::ToolCall(c) => out.push_call(c),
+                boundary => out.events.push(boundary),
             }
         }
         out
@@ -607,6 +630,10 @@ pub fn assemble(deltas: &[UnifiedParserEvent]) -> Vec<UnifiedEvent> {
         match delta {
             UnifiedParserEvent::Reasoning(text) => out.push(UnifiedEvent::Reasoning { text }),
             UnifiedParserEvent::Text(text) => out.push(UnifiedEvent::Text { text }),
+            UnifiedParserEvent::MessageStart(phase) => {
+                out.push(UnifiedEvent::MessageStart { phase })
+            }
+            UnifiedParserEvent::MessageEnd => out.push(UnifiedEvent::MessageEnd),
             UnifiedParserEvent::ToolCall(call) => {
                 let (pos, raw) = calls.entry(call.tool_index).or_insert_with(|| {
                     out.push(UnifiedEvent::ToolCall {
@@ -671,6 +698,7 @@ impl ToolParseResult {
                     out.normal_text.push_str(&text)
                 }
                 UnifiedParserEvent::ToolCall(call) => out.calls.push(call),
+                UnifiedParserEvent::MessageStart(_) | UnifiedParserEvent::MessageEnd => {}
             }
         }
         out
@@ -772,6 +800,8 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
 /// is routed by a dynamic header, so it has its own state machine, and the only
 /// way to serve it guided output was to copy the overlay beside it.
 pub(crate) trait NativeUnified {
+    fn preserve_message_phases(&mut self, _enabled: bool) {}
+
     /// Whether decoding must preserve tokenizer special tokens for this grammar.
     ///
     /// Answered by the family, NOT defaulted here. An adapter that inherited
@@ -818,6 +848,7 @@ pub(crate) trait NativeUnified {
 /// refusal mutates nothing — is stated once instead of per family.
 pub(crate) struct GuidedRouted<N: NativeUnified> {
     native: N,
+    preserve_phases: bool,
     /// Which channel the PROMPT already opened. Held here as well as on the
     /// family parser because `reset` has to restore it, and because the guided
     /// path never reaches the family parser at all.
@@ -834,6 +865,7 @@ impl<N: NativeUnified> GuidedRouted<N> {
     pub(crate) fn new(native: N) -> Self {
         Self {
             native,
+            preserve_phases: false,
             starting_state: UnifiedParserStartingState::None,
             guided: None,
             started: false,
@@ -895,12 +927,23 @@ impl<N: NativeUnified> GuidedRouted<N> {
                 unreachable!("guided mode without a reasoning channel bails before any mutation")
             }
         };
+        if let Some(guided) = &mut self.guided {
+            guided.preserve_phases = self.preserve_phases;
+        }
         self.finished = false;
         Ok(())
     }
 }
 
 impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
+    fn preserve_message_phases(&mut self, enabled: bool) {
+        self.preserve_phases = enabled;
+        self.native.preserve_message_phases(enabled);
+        if let Some(guided) = &mut self.guided {
+            guided.preserve_phases = enabled;
+        }
+    }
+
     fn preserve_special_tokens(&self) -> bool {
         self.native.preserve_special_tokens()
     }
@@ -941,6 +984,7 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
                         UnifiedParserEvent::Text(t) => out.push_text(t),
                         UnifiedParserEvent::Reasoning(t) => out.push_reasoning(t),
                         UnifiedParserEvent::ToolCall(c) => out.push_call(c),
+                        boundary => out.events.push(boundary),
                     }
                 }
             }
@@ -1138,6 +1182,13 @@ pub(crate) struct GuidedChannel {
     /// marker went to the user verbatim while the native path stripped it, so the
     /// same bytes read differently by request mode (`I3`).
     pub(crate) strip_text: fn(text: &str) -> String,
+    /// Optional request-local filter for reasoning BODY text.
+    ///
+    /// Header and control-marker recognition above decides where reasoning starts and
+    /// ends. This filter handles family-reserved syntax that may be narrated inside an
+    /// otherwise valid thought. It is a factory because filtering is incremental and
+    /// each request needs independent chunk-boundary state.
+    pub(crate) reasoning_filter: Option<GuidedReasoningFilterFactory>,
     /// Literal marker texts that compete with tool syntax for a terminator, and
     /// whose split prefixes are held back. The dynamic parts of a header cannot
     /// compete for a terminator — only its fixed markers can.
@@ -1146,7 +1197,38 @@ pub(crate) struct GuidedChannel {
     pub(crate) close_markers: &'static [&'static str],
 }
 
+/// Stateful family-owned cleanup applied only to guided reasoning events.
+///
+/// The guided reader owns channel routing, while the family owns which byte sequences
+/// are reserved inside that channel. Keeping this capability behind a hook avoids
+/// embedding Muse Spark's ATEM vocabulary in the shared guided state machine.
+pub(crate) trait GuidedReasoningFilter: Send {
+    /// Filter one non-terminal reasoning fragment.
+    fn push(&mut self, text: &str) -> String;
+
+    /// Filter the last fragment in the current reasoning span and reset span state.
+    fn finish(&mut self, text: &str) -> String;
+
+    /// Whether this filter owns the control run beginning at `text`.
+    ///
+    /// Owned narrated markup remains reasoning and is filtered rather than being
+    /// discarded wholesale by the generic guided control scanner.
+    fn owns_control(&self, text: &str) -> bool;
+
+    /// Reset an abandoned stream, returning any raw prefix still held by the filter.
+    fn recover(&mut self) -> String;
+}
+
+pub(crate) type GuidedReasoningFilterFactory = fn() -> Box<dyn GuidedReasoningFilter>;
+
 impl GuidedReasoning {
+    fn reasoning_filter_factory(&self) -> Option<GuidedReasoningFilterFactory> {
+        match self {
+            Self::Pair(_) => None,
+            Self::Channel(channel) => channel.reasoning_filter,
+        }
+    }
+
     /// Earliest reasoning opener: `(offset, bytes to consume)`.
     ///
     /// The pair form returns `None` for an opener whose role label is still
@@ -1375,11 +1457,15 @@ pub(crate) struct GuidedPrefixContext<'a> {
 }
 
 struct GuidedState {
+    preserve_phases: bool,
+    open_message: bool,
     /// Any control markup was stripped this turn. Used only to tell a turn that
     /// produced nothing because it was ALL markup from a model that genuinely said
     /// nothing — the first is worth a log line, the second is not.
     stripped_markup: bool,
     reasoning: GuidedReasoning,
+    /// Family-owned cleanup for narrated reserved syntax inside guided reasoning.
+    reasoning_filter: Option<Box<dyn GuidedReasoningFilter>>,
     /// A visible-content header has routed the turn, so NO guided payload can follow.
     ///
     /// This is the visible-content mode. `GuidedMode::VisibleOnly` is not it — despite
@@ -2291,9 +2377,15 @@ impl GuidedState {
         let invoke_boundary = grammar
             .invoke_boundary_factory
             .map(InvokeBoundaryFactory::create);
+        let reasoning_filter = reasoning
+            .reasoning_filter_factory()
+            .map(|create_filter| create_filter());
         Self {
+            preserve_phases: false,
+            open_message: false,
             stripped_markup: false,
             reasoning,
+            reasoning_filter,
             grammar,
             invoke_boundary,
             invoke_candidate: String::new(),
@@ -2362,6 +2454,24 @@ impl GuidedState {
         push_run(output, Kind::Text, &self.reasoning.strip_text(text));
     }
 
+    /// The ONE route for guided reasoning body text.
+    fn push_reasoning_text(&mut self, output: &mut Vec<UnifiedParserEvent>, text: &str) {
+        let text = match self.reasoning_filter.as_mut() {
+            Some(filter) => filter.push(text),
+            None => text.to_string(),
+        };
+        push_run(output, Kind::Reasoning, &text);
+    }
+
+    /// Close a guided reasoning span and flush any possible reserved-marker prefix.
+    fn finish_reasoning_text(&mut self, output: &mut Vec<UnifiedParserEvent>, text: &str) {
+        let text = match self.reasoning_filter.as_mut() {
+            Some(filter) => filter.finish(text),
+            None => text.to_string(),
+        };
+        push_run(output, Kind::Reasoning, &text);
+    }
+
     fn is_guided_payload(&self, payload: &str) -> bool {
         match self.named_tool {
             Some(_) => {
@@ -2408,7 +2518,11 @@ impl GuidedState {
     }
 
     fn reset(&mut self, starting_state: UnifiedParserStartingState) -> String {
+        self.open_message = false;
         let mut recovered = std::mem::take(&mut self.json);
+        if let Some(filter) = self.reasoning_filter.as_mut() {
+            recovered.push_str(&filter.recover());
+        }
         recovered.push_str(&std::mem::take(&mut self.input));
         // Buffers alone are not the state. Leaving `mode` at VisibleOnly would make
         // the NEXT stream treat its reasoning as JSON payload and surface it as text,
@@ -2579,6 +2693,36 @@ impl GuidedState {
     /// payload, can route it again. Without the second half, a payload legitimately
     /// following `…<|eom|>` was emitted as text and the call was lost, which is the
     /// same defect as the one this method exists to prevent, in the other direction.
+    fn note_message_boundary(
+        &mut self,
+        at: usize,
+        len: usize,
+        output: &mut Vec<UnifiedParserEvent>,
+    ) {
+        if !self.preserve_phases {
+            return;
+        }
+        let state = self.channel_state();
+        let transition =
+            self.reasoning.find_transition(&self.input, true, state) == Some((at, len));
+        let close = self.reasoning.find_close(&self.input) == Some((at, len))
+            || self.reasoning.find_turn_end(&self.input) == Some((at, len));
+        if (transition || close) && std::mem::take(&mut self.open_message) {
+            output.push(UnifiedParserEvent::MessageEnd);
+        }
+        if transition {
+            // Only a grammar-recognized routing header reaches this branch.
+            let header = &self.input[at..at + len];
+            let phase = if header.contains("to=commentary") {
+                MessagePhase::Commentary
+            } else {
+                MessagePhase::FinalAnswer
+            };
+            output.push(UnifiedParserEvent::MessageStart(phase));
+            self.open_message = true;
+        }
+    }
+
     fn note_content_transition(&mut self, at: usize, len: usize) {
         let state = self.channel_state();
         if self
@@ -3217,6 +3361,7 @@ impl GuidedState {
                             }
                         }
                         self.stripped_markup = true;
+                        self.note_message_boundary(at, close_len, &mut output);
                         self.note_consumed(at, close_len);
                         self.note_content_transition(at, close_len);
                         self.input.drain(..at + close_len);
@@ -3354,7 +3499,8 @@ impl GuidedState {
                         let non_whitespace = self.input.trim_start();
                         let leading = self.input.len() - non_whitespace.len();
                         if let Some(open_len) = self.opener_len_at(leading, flush) {
-                            push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
+                            let reasoning = self.input[..leading].to_string();
+                            self.push_reasoning_text(&mut output, &reasoning);
                             self.note_consumed(leading, open_len);
                             self.input.drain(..leading + open_len);
                             self.accept_redundant_reasoning_start = false;
@@ -3365,7 +3511,8 @@ impl GuidedState {
                                 .reasoning
                                 .open_pending(non_whitespace, self.channel_state())
                         {
-                            push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
+                            let reasoning = self.input[..leading].to_string();
+                            self.push_reasoning_text(&mut output, &reasoning);
                             self.input.drain(..leading);
                             break;
                         }
@@ -3493,8 +3640,31 @@ impl GuidedState {
                         .flatten()
                         .min_by_key(|(at, _, _)| *at)
                     {
-                        push_run(&mut output, Kind::Reasoning, &self.input[..at]);
+                        let filter_owns_control = !closes
+                            && self.reasoning_filter.as_ref().is_some_and(|filter| {
+                                filter.owns_control(&self.input[at..at + consume])
+                            });
+                        if filter_owns_control {
+                            // A family filter owns this narrated control run. Feed it the
+                            // prefix and the complete run together so it can remove only
+                            // reserved syntax while preserving values between tags. The
+                            // generic path used to discard a complete invoke wholesale,
+                            // which made whole-buffer and token-stream parsing disagree.
+                            let reasoning = self.input[..at + consume].to_string();
+                            self.push_reasoning_text(&mut output, &reasoning);
+                            self.input.drain(..at + consume);
+                            self.stripped_markup = true;
+                            continue;
+                        }
+
+                        let reasoning = self.input[..at].to_string();
+                        if closes {
+                            self.finish_reasoning_text(&mut output, &reasoning);
+                        } else {
+                            self.push_reasoning_text(&mut output, &reasoning);
+                        }
                         self.stripped_markup = true;
+                        self.note_message_boundary(at, consume, &mut output);
                         self.note_consumed(at, consume);
                         self.note_content_transition(at, consume);
                         self.input.drain(..at + consume);
@@ -3554,8 +3724,14 @@ impl GuidedState {
                     };
                     let reasoning_len = self.input.len().saturating_sub(keep);
                     if reasoning_len > 0 {
-                        push_run(&mut output, Kind::Reasoning, &self.input[..reasoning_len]);
-                        self.input.drain(..reasoning_len);
+                        let reasoning: String = self.input.drain(..reasoning_len).collect();
+                        if flush {
+                            self.finish_reasoning_text(&mut output, &reasoning);
+                        } else {
+                            self.push_reasoning_text(&mut output, &reasoning);
+                        }
+                    } else if flush {
+                        self.finish_reasoning_text(&mut output, "");
                     }
                     break;
                 }
@@ -4240,6 +4416,7 @@ unified_registry! {
     "gemma4" => gemma4::gemma4_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
+    "muse_spark" | "muse_spark_open" => muse_spark::muse_spark_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,
 }
 
@@ -4285,6 +4462,10 @@ impl DebugUnifiedParser {
 }
 
 impl UnifiedParser for DebugUnifiedParser {
+    fn preserve_message_phases(&mut self, enabled: bool) {
+        self.inner.preserve_message_phases(enabled);
+    }
+
     fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
         let mode = match &init.tool_output_mode {
             UnifiedToolOutputMode::Native => "native".to_string(),
@@ -5179,6 +5360,7 @@ mod construction_parity_tests {
                 UnifiedParserEvent::Text(t) => out.push_text(t),
                 UnifiedParserEvent::Reasoning(t) => out.push_reasoning(t),
                 UnifiedParserEvent::ToolCall(c) => out.push_call(c),
+                boundary => out.events.push(boundary),
             }
         }
         out

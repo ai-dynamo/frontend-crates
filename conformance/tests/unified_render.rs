@@ -10,7 +10,7 @@
 //! native UnifiedParser where one exists, and the v1-reasoning + v2-tool split
 //! everywhere else. The split is the "before" state — it parses ALL reasoning
 //! first, so reasoning interleaved with tool calls loses its position. Every
-//! family in the current golden corpus (gemma4, kimi_k2, muse_glimmer, qwen3)
+//! family in the current golden corpus (gemma4, kimi_k2, muse_glimmer, muse_spark, qwen3)
 //! has a native UnifiedParser as of gemma4's migration, so nothing in this
 //! corpus exercises the split path today; a new split-only family reintroduces
 //! it.
@@ -70,6 +70,10 @@ struct Expect {
 #[derive(Deserialize, serde::Serialize, Clone, PartialEq, Debug)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 enum Ev {
+    MessageStart {
+        phase: dynamo_parsers_v2::unified::MessagePhase,
+    },
+    MessageEnd,
     Reasoning {
         text: String,
     },
@@ -86,6 +90,8 @@ enum Ev {
 impl Ev {
     fn render(&self) -> String {
         match self {
+            Ev::MessageStart { phase } => format!("message_start({phase:?})"),
+            Ev::MessageEnd => "message_end".into(),
             Ev::Reasoning { text } => format!("reasoning({text:?})"),
             Ev::Text { text } => format!("text({text:?})"),
             Ev::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
@@ -159,6 +165,8 @@ fn feed(
 impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
     fn from(e: dynamo_parsers_v2::UnifiedEvent) -> Self {
         match e {
+            dynamo_parsers_v2::UnifiedEvent::MessageStart { phase } => Ev::MessageStart { phase },
+            dynamo_parsers_v2::UnifiedEvent::MessageEnd => Ev::MessageEnd,
             dynamo_parsers_v2::UnifiedEvent::Reasoning { text } => Ev::Reasoning { text },
             dynamo_parsers_v2::UnifiedEvent::Text { text } => Ev::Text { text },
             dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => {
@@ -170,6 +178,10 @@ impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
 
 fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
     match d {
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            json!({"kind":"message_start","phase":phase})
+        }
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => json!({"kind":"message_end"}),
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             json!({"kind": "reasoning", "text": text})
         }
@@ -183,7 +195,7 @@ fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
 /// Compute the Dynamo v2 unified event list for one input.
 ///
 /// A family with a native unified parser is parsed by one state machine per
-/// stream owning reasoning + content + tool calls. All four families in the
+/// stream owning reasoning + content + tool calls. All five families in the
 /// current corpus take this path; the split fallback remains for other inputs.
 ///
 /// Both paths are driven from the SAME chunking as `dynamo_chunks`, so the
@@ -407,7 +419,7 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
             .copied()
             .chain(family_leak.iter().map(String::as_str))
             .any(|m| text.contains(m)),
-        Ev::ToolCall { .. } => false,
+        Ev::ToolCall { .. } | Ev::MessageStart { .. } | Ev::MessageEnd => false,
     });
     if leaks {
         return "LEAK";
@@ -742,7 +754,7 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
 .legend span{{display:inline-block;padding:2px 8px;border-radius:4px;margin-right:8px;font-size:12px}}
 </style>
 <h1>Unified conformance — reasoning + content + tool calls, one ordered stream</h1>
-<p class=lede>Truth column is <b>GOLDEN</b> — the authored, spec-derived oracle (best-effort error recovery), <i>not</i> captured from any implementation. Both engines are measured against it. <b>Dynamo today</b> is computed LIVE this run with native unified parsers for all four current corpus families. <b>vLLM 0.25.x</b> is the documented expectation (live capture = U1; only gemma4 uses a native unified parser, the rest are combined). Hover any cell.</p>
+<p class=lede>Truth column is <b>GOLDEN</b> — the authored, spec-derived oracle (best-effort error recovery), <i>not</i> captured from any implementation. Both engines are measured against it. <b>Dynamo today</b> is computed LIVE this run with native unified parsers for all five current corpus families. <b>vLLM 0.25.x</b> is the documented expectation (live capture = U1; only gemma4 uses a native unified parser, the rest are combined). Hover any cell.</p>
 <p class=legend><span class=MATCH>matches golden</span><span class=RED>diverges (class shown)</span> &nbsp; Dynamo red: <b>{dynamo_red}</b>/{total} · vLLM red: <b>{vllm_red}</b>/{total}</p>
 <table><tr><td>case</td><td>GOLDEN</td><td>vLLM 0.25.x<br><span class=sub>(expected)</span></td><td>Dynamo today<br><span class=sub>(native unified, LIVE)</span></td></tr>
 {rows}
@@ -764,7 +776,7 @@ td.c:hover .tip,td.gold:hover .tip{{display:block}}
     std::fs::create_dir_all(yaml_out.parent().unwrap()).unwrap();
     let feed = serde_json::json!({
         "schema": "unified-results/v1",
-        "note": "GOLDEN = authored oracle. dynamo = LIVE (native unified for all four current corpus families). vllm = documented expectation (live capture pending U1).",
+        "note": "GOLDEN = authored oracle. dynamo = LIVE (native unified for all five current corpus families). vllm = documented expectation (live capture pending U1).",
         "cases": json_cases,
     });
     std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();

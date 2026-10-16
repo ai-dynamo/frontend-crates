@@ -474,7 +474,7 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     shared = min(per_family.values())
     for fam in FAMILIES:
-        expected = shared + (2 if fam == "gemma4" else 0)
+        expected = shared + (2 if fam == "gemma4" else 1 if fam == "muse_spark" else 0)
         assert per_family[fam] == expected, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == sum(len(build_cases(f)) for f in FAMILIES)
 

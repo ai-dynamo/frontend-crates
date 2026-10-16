@@ -1,9 +1,9 @@
 {
-  "snapshot": "20260902_030000",
-  "created_pt": "20260902_030000 (stamp override) America/Los_Angeles",
+  "snapshot": "20261016_135234",
+  "created_pt": "2026-10-16 13:52:34 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "8.2.0",
-    "dynamo-parsers-v2": "0.4.0"
+    "dynamo-parsers-v2": "0.5.0-muse-spark-open-dev.1"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -121,9 +121,19 @@
       "size": 6612
     },
     {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.4.1+gfce910c.tar.gz",
+      "sha256": "46625728083d7901a8a70e87937db119404cd423adbf349d41c0da275dfad296",
+      "size": 6772
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v2/dynamo_v2-0.5.0-muse-spark-open-dev.1.tar.gz",
+      "sha256": "43019bb61d61af632281028fe99bb0a3cec29e13e9b4bae13f1f59662fafe733",
+      "size": 10174
+    },
+    {
       "path": "toolcalling/fixtures-stream-v2/inputs.tar.gz",
-      "sha256": "90ec091c899366ea4c668fec3de33c722ba06c35d3aa4556b31e7fbb0b1de218",
-      "size": 40660
+      "sha256": "89bc0cdbb0816d326de2f2ac53f0a2947f807c6136f54e91db729f9b96f9054c",
+      "size": 41136
     },
     {
       "path": "toolcalling/fixtures-stream-v2/sglang_python-0.5.12.post1.tar.gz",
@@ -246,14 +256,24 @@
       "size": 13751
     },
     {
+      "path": "unified/dynamo_v2-0.4.1+gfce910c.tar.gz",
+      "sha256": "d0ddcf0f71656c04cf7ecfa2dd3c1fe557c3db630d0b2fcc16624c5ae9636a6d",
+      "size": 17733
+    },
+    {
+      "path": "unified/dynamo_v2-0.5.0-muse-spark-open-dev.1.tar.gz",
+      "sha256": "c991897c8ea47ed4efb2cc34bab75b2c0ef2733bc6c8531dda114ffeff800596",
+      "size": 17770
+    },
+    {
       "path": "unified/golden.tar.gz",
-      "sha256": "5ff3c90633c3c4a849ee824f2e45e8e6e58d67a5449ce327253c24732600f313",
-      "size": 9982
+      "sha256": "5e8e036d67f224c8d948f617bd974a55dab83868f60739b47f3c412483b8c037",
+      "size": 12417
     },
     {
       "path": "unified/inputs.tar.gz",
-      "sha256": "644104ccc823dd3a50477a121be07f70aef514efe15648374c008a46b49bd87b",
-      "size": 53671
+      "sha256": "b3323d83832cbbe47b7c1d286db61b588f5f1749253e8d85f11c90bddbde87d2",
+      "size": 67311
     },
     {
       "path": "unified/sglang_python-0.5.14.tar.gz",

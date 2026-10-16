@@ -33,7 +33,10 @@ use crate::tool_calling::scan::{
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
-use crate::unified::{GuidedChannelState, Kind, UnifiedParserEvent, UnifiedParserStartingState};
+use crate::unified::{
+    GuidedChannelState, GuidedReasoningFilter, Kind, MessagePhase, UnifiedParserEvent,
+    UnifiedParserStartingState,
+};
 
 const START: &str = "<|start|>";
 const MESSAGE: &str = "<|message|>";
@@ -41,8 +44,12 @@ const EOM: &str = "<|eom|>";
 const EOT: &str = "<|eot|>";
 const INVOKE_OPEN_PREFIX: &str = "<atem:invoke";
 const INVOKE_CLOSE: &str = "</atem:invoke>";
+const PARAMETER_OPEN_PREFIX: &str = "<atem:parameter";
+const PARAMETER_CLOSE: &str = "</atem:parameter>";
 const REASONING_RECIPIENT: &str = "self";
 const USER_RECIPIENT: &str = "user";
+const COMMENTARY_RECIPIENT: &str = "commentary";
+const SELF_RECIPIENT_MARKER: &str = "to=self";
 
 /// Structural markers held back when split across a chunk boundary.
 const MARKERS: [&str; 4] = [START, MESSAGE, EOM, EOT];
@@ -56,7 +63,9 @@ const BLOCK_CLOSE: &str = "</atem:function_calls>";
 // and `quoted_atem_in_content_is_not_a_call` pin that, and it is the safety rule that
 // keeps a model quoting ATEM in prose from being read as a call. Only the guided
 // reader strips it, because guided decoding constrains the payload to bare JSON and
-// leaves any native markup around it stray by construction.
+// leaves any native markup around it stray by construction. Muse Spark additionally
+// filters reserved ATEM examples from its reasoning channel at the public boundary;
+// visible content and Muse Glimmer reasoning retain this rule.
 
 /// One complete ATEM invoke open tag, capturing the tool name. `[^>]*?` ends the tag at
 /// the first `>`, so only a `>` inside a non-`name` attribute value (which the template
@@ -243,6 +252,37 @@ fn valid_header_fragment(after: &str) -> bool {
     rest.is_empty() || (rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest))
 }
 
+/// Whether Muse Spark reached EOF after committing to a framed channel header but
+/// before emitting its `<|message|>` terminator.
+///
+/// Framing supplies the provenance: an unframed `assistant to=user` remains visible
+/// prose. This predicate is only enabled by [`muse_spark_scanner`] and the Muse Spark
+/// guided callback, so Muse Glimmer retains its existing EOF behavior.
+fn is_incomplete_muse_spark_framed_header(buffered: &str) -> bool {
+    let Some(mut rest) = buffered.strip_prefix(START) else {
+        return false;
+    };
+    rest = rest.trim_start_matches(|character: char| character.is_whitespace());
+
+    if "assistant".starts_with(rest) {
+        return true;
+    }
+    if let Some(after_role) = rest.strip_prefix("assistant") {
+        rest = after_role.trim_start_matches(|character: char| character.is_whitespace());
+    }
+
+    if rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest) {
+        return true;
+    }
+    if "to=".starts_with(rest) {
+        return true;
+    }
+    let Some(after_to) = rest.strip_prefix("to=") else {
+        return false;
+    };
+    valid_header_fragment(after_to)
+}
+
 /// The markers the guided reader may strip ON THEIR OWN, without reading anything
 /// around them.
 ///
@@ -370,8 +410,25 @@ pub(crate) fn guided_reasoning_open(
 /// marker, so `…<|message|>still thinking` split one thought into a thought plus a
 /// visible answer, while the native scan strips the marker and keeps thinking.
 fn is_content_header(recipient: Option<&str>, framed: bool) -> bool {
+    is_content_header_with_commentary(recipient, framed, false)
+}
+
+/// Muse Spark extends the Muse recipient grammar with a user-visible intermediate
+/// `commentary` channel. Keep that model-specific choice out of the shared header
+/// resolver so Muse Glimmer continues to treat every non-`self`/`user` recipient as
+/// a tool channel.
+fn is_muse_spark_content_header(recipient: Option<&str>, framed: bool) -> bool {
+    is_content_header_with_commentary(recipient, framed, true)
+}
+
+fn is_content_header_with_commentary(
+    recipient: Option<&str>,
+    framed: bool,
+    commentary_is_content: bool,
+) -> bool {
     match recipient {
         Some(USER_RECIPIENT) => true,
+        Some(COMMENTARY_RECIPIENT) => commentary_is_content,
         None => framed,
         _ => false,
     }
@@ -390,6 +447,16 @@ pub(crate) fn guided_content_header(
     state: GuidedChannelState,
 ) -> Option<(usize, usize)> {
     guided_header(haystack, state, is_content_header)
+}
+
+/// Muse Spark counterpart to [`guided_content_header`]. Commentary is a real visible
+/// channel transition, not strippable tool-recipient framing.
+pub(crate) fn muse_spark_guided_content_header(
+    haystack: &str,
+    _flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    guided_header(haystack, state, is_muse_spark_content_header)
 }
 
 /// Earliest header that actually ROUTES the turn — one that names a channel.
@@ -434,6 +501,32 @@ pub(crate) fn guided_stray_header(
     // native path; anything after it is ordinary prose and stays visible.
     if flush {
         return haystack.find(START).map(|at| (at, START.len()));
+    }
+    None
+}
+
+/// Muse Spark counterpart to [`guided_stray_header`]. In particular, a
+/// `to=commentary` header must never be stripped as if it named a tool.
+pub(crate) fn muse_spark_guided_stray_header(
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    if let Some(found) = guided_header(haystack, state, |recipient, framed| {
+        recipient != Some(REASONING_RECIPIENT) && !is_muse_spark_content_header(recipient, framed)
+    }) {
+        return Some(found);
+    }
+    if flush {
+        return haystack.find(START).map(|at| {
+            let framed = &haystack[at..];
+            let consumed = if is_incomplete_muse_spark_framed_header(framed) {
+                framed.len()
+            } else {
+                START.len()
+            };
+            (at, consumed)
+        });
     }
     None
 }
@@ -489,6 +582,23 @@ pub(crate) fn guided_strip_text(text: &str) -> String {
 }
 
 pub(crate) fn guided_header_holdback(haystack: &str, state: GuidedChannelState) -> usize {
+    guided_header_holdback_with(haystack, state, guided_stray_header)
+}
+
+/// Muse Spark holdback uses Muse Spark's recipient classification for the same reason
+/// its transition and stray-header callbacks do.
+pub(crate) fn muse_spark_guided_header_holdback(
+    haystack: &str,
+    state: GuidedChannelState,
+) -> usize {
+    guided_header_holdback_with(haystack, state, muse_spark_guided_stray_header)
+}
+
+fn guided_header_holdback_with(
+    haystack: &str,
+    state: GuidedChannelState,
+    find_stray: fn(&str, bool, GuidedChannelState) -> Option<(usize, usize)>,
+) -> usize {
     if let Some(at) = haystack.rfind(START)
         && !haystack[at..].contains(MESSAGE)
     {
@@ -498,7 +608,7 @@ pub(crate) fn guided_header_holdback(haystack: &str, state: GuidedChannelState) 
     // follows decides whether a tool-routed header is narration or the recovery point
     // for a thought whose terminator never arrived. Releasing it before that byte
     // arrives made a per-character stream answer differently from a whole-input push.
-    if let Some((at, len)) = guided_stray_header(haystack, true, state)
+    if let Some((at, len)) = find_stray(haystack, true, state)
         && haystack[at + len..].trim().is_empty()
     {
         return haystack.len() - at;
@@ -532,6 +642,215 @@ fn stripped(text: &str) -> String {
         }
     }
     cleaned
+}
+
+/// Muse Spark does not expose native grammar examples in `reasoning_content`.
+///
+/// The model sometimes narrates its own ATEM syntax while thinking (for example,
+/// `</atem:invoke>` or `<atem:parameter name="tier">`). Those bytes are not live
+/// calls, so the channel scanner correctly routes them as reasoning, but they are
+/// still reserved protocol markers and must not cross the public reasoning boundary.
+/// Muse Glimmer intentionally retains its historical quoted-markup behavior; only the
+/// Muse Spark construction installs this filter.
+///
+/// `buffered` holds only a possible fixed-marker prefix. Once an opening ATEM tag is
+/// recognized, `dropping_open_tag` consumes its attributes incrementally until `>` so
+/// a malformed, unterminated tag cannot make buffering grow with the rest of a long
+/// reasoning response.
+#[derive(Debug, Default)]
+struct MuseSparkReasoningSanitizer {
+    buffered: String,
+    previous_raw_char: Option<char>,
+    dropping_open_tag: bool,
+}
+
+impl MuseSparkReasoningSanitizer {
+    fn reset(&mut self) {
+        self.buffered.clear();
+        self.previous_raw_char = None;
+        self.dropping_open_tag = false;
+    }
+
+    fn push(&mut self, text: &str) -> String {
+        self.filter(text, false)
+    }
+
+    fn finish(&mut self, text: &str) -> String {
+        self.filter(text, true)
+    }
+
+    fn take_buffered(&mut self) -> String {
+        let buffered = std::mem::take(&mut self.buffered);
+        self.reset();
+        buffered
+    }
+
+    fn filter(&mut self, text: &str, finish: bool) -> String {
+        let mut input = std::mem::take(&mut self.buffered);
+        input.push_str(text);
+
+        let mut output = String::with_capacity(input.len());
+        let mut cursor = 0;
+        let mut previous = self.previous_raw_char;
+        let mut dropping_open_tag = self.dropping_open_tag;
+
+        while cursor < input.len() {
+            let remaining = &input[cursor..];
+
+            if dropping_open_tag {
+                if let Some(end) = remaining.find('>') {
+                    let consumed = &remaining[..end + 1];
+                    previous = consumed.chars().next_back().or(previous);
+                    cursor += end + 1;
+                    dropping_open_tag = false;
+                    continue;
+                }
+
+                previous = remaining.chars().next_back().or(previous);
+                cursor = input.len();
+                break;
+            }
+
+            let mut removed_fixed = false;
+            for marker in [INVOKE_CLOSE, PARAMETER_CLOSE, BLOCK_OPEN, BLOCK_CLOSE] {
+                if remaining.starts_with(marker) {
+                    previous = marker.chars().next_back().or(previous);
+                    cursor += marker.len();
+                    removed_fixed = true;
+                    break;
+                }
+            }
+            if removed_fixed {
+                continue;
+            }
+
+            let mut opened_tag = false;
+            for prefix in [INVOKE_OPEN_PREFIX, PARAMETER_OPEN_PREFIX] {
+                if !remaining.starts_with(prefix) {
+                    continue;
+                }
+
+                let after = &remaining[prefix.len()..];
+                match after.chars().next() {
+                    Some('>') => {
+                        previous = Some('>');
+                        cursor += prefix.len() + 1;
+                        opened_tag = true;
+                    }
+                    Some(character) if character.is_whitespace() => {
+                        previous = prefix.chars().next_back().or(previous);
+                        cursor += prefix.len();
+                        dropping_open_tag = true;
+                        opened_tag = true;
+                    }
+                    None if !finish => {}
+                    _ => {}
+                }
+                break;
+            }
+            if opened_tag {
+                continue;
+            }
+
+            if remaining.starts_with(SELF_RECIPIENT_MARKER) && recipient_marker_boundary(previous) {
+                let after = &remaining[SELF_RECIPIENT_MARKER.len()..];
+                let right_boundary = after
+                    .chars()
+                    .next()
+                    .map(|character| recipient_marker_boundary(Some(character)))
+                    .unwrap_or(finish);
+                if right_boundary {
+                    previous = SELF_RECIPIENT_MARKER.chars().next_back().or(previous);
+                    cursor += SELF_RECIPIENT_MARKER.len();
+                    continue;
+                }
+                if after.is_empty() && !finish {
+                    break;
+                }
+            }
+
+            if !finish
+                && ([INVOKE_CLOSE, PARAMETER_CLOSE, BLOCK_OPEN, BLOCK_CLOSE]
+                    .iter()
+                    .any(|marker| marker.starts_with(remaining))
+                    || [INVOKE_OPEN_PREFIX, PARAMETER_OPEN_PREFIX]
+                        .iter()
+                        .any(|prefix| prefix.starts_with(remaining))
+                    || (recipient_marker_boundary(previous)
+                        && SELF_RECIPIENT_MARKER.starts_with(remaining)))
+            {
+                break;
+            }
+
+            let character = remaining
+                .chars()
+                .next()
+                .expect("cursor is inside the input");
+            output.push(character);
+            previous = Some(character);
+            cursor += character.len_utf8();
+        }
+
+        if cursor < input.len() {
+            self.buffered.push_str(&input[cursor..]);
+        }
+        self.previous_raw_char = previous;
+        self.dropping_open_tag = dropping_open_tag;
+
+        if finish {
+            // A complete marker has already been removed. Any fixed-marker prefix left
+            // at EOF is ordinary incomplete prose; emit it, while an open ATEM tag that
+            // was positively recognized remains parser-owned and is dropped.
+            if !self.dropping_open_tag {
+                output.push_str(&self.buffered);
+            }
+            self.reset();
+        }
+
+        output
+    }
+}
+
+impl GuidedReasoningFilter for MuseSparkReasoningSanitizer {
+    fn push(&mut self, text: &str) -> String {
+        Self::push(self, text)
+    }
+
+    fn finish(&mut self, text: &str) -> String {
+        Self::finish(self, text)
+    }
+
+    fn owns_control(&self, text: &str) -> bool {
+        [
+            INVOKE_OPEN_PREFIX,
+            INVOKE_CLOSE,
+            PARAMETER_OPEN_PREFIX,
+            PARAMETER_CLOSE,
+            BLOCK_OPEN,
+            BLOCK_CLOSE,
+        ]
+        .iter()
+        .any(|marker| text.starts_with(marker))
+    }
+
+    fn recover(&mut self) -> String {
+        self.take_buffered()
+    }
+}
+
+/// Construct a request-local copy of Muse Spark's reasoning sanitizer for the
+/// guided-JSON reader. The native scanner owns a separate instance because exactly
+/// one of those two paths is active for any request.
+pub(crate) fn muse_spark_guided_reasoning_filter() -> Box<dyn GuidedReasoningFilter> {
+    Box::new(MuseSparkReasoningSanitizer::default())
+}
+
+/// `to=self` is structural only as a complete recipient word. Preserve prose such as
+/// `mailto=self` and `to=selfish`; punctuation and whitespace delimit the reserved word.
+fn recipient_marker_boundary(character: Option<char>) -> bool {
+    character.is_none_or(|character| {
+        !(character.is_ascii_alphanumeric() || matches!(character, '_' | '-' | '.'))
+    })
 }
 
 /// At end of stream, drop a committed partial special token from the tail of held
@@ -658,6 +977,18 @@ pub(crate) struct MuseChannelScanner {
     /// must reject a late call rather than silently reinterpret a live stream.
     started: bool,
     next_index: usize,
+    /// Muse Spark reserves `commentary` for user-visible intermediate updates. Muse
+    /// Glimmer does not, so its existing unknown-recipient-as-tool behavior remains
+    /// unchanged when this flag is false.
+    commentary_is_content: bool,
+    preserve_phases: bool,
+    open_message: bool,
+    /// Muse Spark treats native grammar examples as reserved even when the model
+    /// narrates them inside a thought. Muse Glimmer keeps its historical behavior.
+    reasoning_sanitizer: Option<MuseSparkReasoningSanitizer>,
+    /// Muse Spark drops a framed channel header that reaches EOF before
+    /// `<|message|>`. Muse Glimmer retains its existing recovery behavior.
+    drop_incomplete_framed_header_at_eof: bool,
 }
 
 /// Build the scan core for the Muse Glimmer grammar.
@@ -666,6 +997,15 @@ pub(crate) struct MuseChannelScanner {
 /// both call it, so the two surfaces cannot drift on routing, recovery or value
 /// typing.
 pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
+    channel_scanner(tools, false)
+}
+
+/// Build the shared ATEM scanner with Muse Spark's additional visible recipient.
+pub(crate) fn muse_spark_scanner(tools: &[Tool]) -> MuseChannelScanner {
+    channel_scanner(tools, true)
+}
+
+fn channel_scanner(tools: &[Tool], commentary_is_content: bool) -> MuseChannelScanner {
     MuseChannelScanner {
         emitter: MuseInvokeEmitter {
             tools: tools.iter().map(ToolDefinition::from).collect(),
@@ -679,10 +1019,29 @@ pub(crate) fn muse_scanner(tools: &[Tool]) -> MuseChannelScanner {
         reasoning_body_emitted: false,
         started: false,
         next_index: 0,
+        commentary_is_content,
+        preserve_phases: false,
+        open_message: false,
+        reasoning_sanitizer: commentary_is_content.then(MuseSparkReasoningSanitizer::default),
+        drop_incomplete_framed_header_at_eof: commentary_is_content,
     }
 }
 
 impl MuseChannelScanner {
+    pub(crate) fn set_message_phases(&mut self, enabled: bool) {
+        self.preserve_phases = enabled && self.commentary_is_content;
+    }
+
+    fn close_message(&mut self, out: &mut Vec<UnifiedParserEvent>) {
+        if std::mem::take(&mut self.open_message) {
+            out.push(UnifiedParserEvent::MessageEnd);
+        }
+    }
+
+    pub(crate) fn commentary_is_content(&self) -> bool {
+        self.commentary_is_content
+    }
+
     pub(crate) fn push_ordered(&mut self, chunk: &str) -> anyhow::Result<Vec<UnifiedParserEvent>> {
         let mut out = Vec::new();
         self.push_ordered_into(chunk, &mut out)?;
@@ -729,6 +1088,9 @@ impl MuseChannelScanner {
         // latch only stays armed when this stream really does begin at `Idle`.
         self.allow_bare_header = starting_state != UnifiedParserStartingState::Response;
         self.last_body_char = None;
+        if let Some(sanitizer) = &mut self.reasoning_sanitizer {
+            sanitizer.reset();
+        }
     }
 
     pub(crate) fn finish_ordered(&mut self) -> anyhow::Result<Vec<UnifiedParserEvent>> {
@@ -764,7 +1126,27 @@ impl MuseChannelScanner {
     /// reading is deliberate — the conformance suite will score these two cases as
     /// divergences until the engines follow.
     fn emit_reasoning(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) -> bool {
+        self.emit_reasoning_filtered(out, text, false)
+    }
+
+    /// Close one reasoning body, committing any marker prefix held across the last
+    /// chunk and resetting the Muse Spark-only filter before the next routed message.
+    fn finish_reasoning(&mut self, out: &mut Vec<UnifiedParserEvent>, text: &str) -> bool {
+        self.emit_reasoning_filtered(out, text, true)
+    }
+
+    fn emit_reasoning_filtered(
+        &mut self,
+        out: &mut Vec<UnifiedParserEvent>,
+        text: &str,
+        finish: bool,
+    ) -> bool {
         let text = stripped(text);
+        let text = match &mut self.reasoning_sanitizer {
+            Some(sanitizer) if finish => sanitizer.finish(&text),
+            Some(sanitizer) => sanitizer.push(&text),
+            None => text,
+        };
         if text.is_empty() {
             return false;
         }
@@ -885,7 +1267,7 @@ impl MuseChannelScanner {
                         // Only a thought that PRODUCED something can be adjacent to the
                         // next one. A redundant opener cuts a zero-length body, and
                         // arming on that prefixed the real thought with a newline.
-                        self.emit_reasoning(out, &body);
+                        self.finish_reasoning(out, &body);
                         self.pending_reasoning_join =
                             std::mem::take(&mut self.reasoning_body_emitted);
                     }
@@ -895,6 +1277,7 @@ impl MuseChannelScanner {
                     State::InToolChannel => {}
                     State::Idle => unreachable!("Idle is handled above"),
                 }
+                self.close_message(out);
                 self.state = State::Idle;
                 continue;
             }
@@ -941,8 +1324,20 @@ impl MuseChannelScanner {
         let prefix = self.buffer[..header_start].to_string();
         self.buffer.drain(..msg_pos + MESSAGE.len());
         self.emit_text(out, &prefix);
+        self.close_message(out);
         self.allow_bare_header = false;
         self.last_body_char = None;
+        if self.preserve_phases {
+            let phase = match recipient.as_deref() {
+                Some(COMMENTARY_RECIPIENT) => Some(MessagePhase::Commentary),
+                Some(USER_RECIPIENT) => Some(MessagePhase::FinalAnswer),
+                _ => None,
+            };
+            if let Some(phase) = phase {
+                out.push(UnifiedParserEvent::MessageStart(phase));
+                self.open_message = true;
+            }
+        }
         match recipient.as_deref() {
             Some(REASONING_RECIPIENT) => {
                 // Adjacent thoughts join with a newline, matching v1 and both
@@ -954,7 +1349,12 @@ impl MuseChannelScanner {
                 self.reasoning_join_armed |= std::mem::take(&mut self.pending_reasoning_join);
                 self.state = State::InReasoning;
             }
-            Some(rcpt) if rcpt != USER_RECIPIENT => self.state = State::InToolChannel,
+            Some(rcpt)
+                if rcpt != USER_RECIPIENT
+                    && !(self.commentary_is_content && rcpt == COMMENTARY_RECIPIENT) =>
+            {
+                self.state = State::InToolChannel
+            }
             _ => self.state = State::InContent,
         }
         true
@@ -1013,15 +1413,32 @@ impl MuseChannelScanner {
     /// The carry is NOT emitted, unlike `flush`: it belongs to a stream the caller
     /// abandoned and must re-parse as a NEW one.
     pub(crate) fn reset_stream(&mut self) -> String {
-        self.take_stream_state().0
+        self.open_message = false;
+        let scanner_buffer = self.take_stream_state().0;
+        let mut buffered = self
+            .reasoning_sanitizer
+            .as_mut()
+            .map(MuseSparkReasoningSanitizer::take_buffered)
+            .unwrap_or_default();
+        buffered.push_str(&scanner_buffer);
+        buffered
     }
 
     /// End of stream: promote what is provably complete, drop parser-owned
     /// markup, and never leak an unfinished tool call.
     fn flush(&mut self, out: &mut Vec<UnifiedParserEvent>) {
+        self.flush_body(out);
+        // EOF has no explicit terminator. The serving layer owns truncation status.
+        self.open_message = false;
+    }
+
+    fn flush_body(&mut self, out: &mut Vec<UnifiedParserEvent>) {
         // Taken before the empty-buffer return so a drainless finish still resets.
         let (buffered, state) = self.take_stream_state();
         if buffered.is_empty() {
+            if state == State::InReasoning {
+                self.finish_reasoning(out, "");
+            }
             return;
         }
         match state {
@@ -1029,12 +1446,21 @@ impl MuseChannelScanner {
             // into framing. Complete markers are stripped; a committed partial
             // special token (`<|sta`) is parser-owned markup and dropped; the
             // ambiguous `<` / `<|` and any `to=`-shaped prose stay visible.
+            State::Idle
+                if self.drop_incomplete_framed_header_at_eof
+                    && is_incomplete_muse_spark_framed_header(&buffered) =>
+            {
+                tracing::debug!(
+                    buffered_bytes = buffered.len(),
+                    "dropping incomplete framed Muse Spark header at end of stream"
+                );
+            }
             State::Idle | State::InContent => {
                 let text = flush_open_text(&buffered);
                 self.emit_text(out, &text);
             }
             State::InReasoning => {
-                self.emit_reasoning(out, &flush_open_text(&buffered));
+                self.finish_reasoning(out, &flush_open_text(&buffered));
             }
             // Complete invokes already emitted during `push`; a truncated one is
             // dropped, markup and all, because the spec requires the literal close.

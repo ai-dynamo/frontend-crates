@@ -31,6 +31,10 @@ FAMILY_PARSERS = {
     # released muse parser, so `capture_vllm_unified.py` gets no entry — an entry
     # that cannot capture renders a misleading empty cell instead of an honest gap.
     "muse_glimmer": ("muse", "muse"),
+    # The current SGLang branch exposes the shared Muse detector. Keeping Muse Spark
+    # as its own corpus family lets the commentary-specific row show whether that
+    # detector preserves the reserved recipient or treats it like a tool channel.
+    "muse_spark": ("muse", "muse"),
 }
 
 TOOLS = [

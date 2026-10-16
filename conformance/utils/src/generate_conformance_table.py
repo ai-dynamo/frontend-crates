@@ -1028,14 +1028,14 @@ def _candidate_name_key(label: str) -> str:
     "(mode)" suffix. "vLLM Rust 0.25.1 (stream)" -> "vllm rust". Sorting candidates on
     this puts PARSERS alphabetically (Dynamo < SGLang < vLLM Python < vLLM Rust)."""
     base = re.sub(r"\s*\([^)]*\)\s*$", "", label)   # drop "(batch)"/"(stream)"/"(jail+batch)"
-    base = re.sub(r"\s+\d[\w.+]*$", "", base)          # drop the trailing version token
+    base = re.sub(r"\s+\d[\w.+-]*$", "", base)          # drop the trailing version token
     return base.lower()
 
 
 # `+` is part of a version token: change-scoped captures like `0.1.24+pr163` are
-# supported (test_model.py), and excluding `+` made the whole regex fail to match, so
-# such a candidate sorted as version-less — LAST instead of first.
-_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+]*)\s*(?:\([^)]*\))?\s*$")
+# supported (test_model.py). Hyphens also belong to prerelease versions such as
+# 0.5.0-muse-spark-open-dev.1. Excluding either made a candidate version-less.
+_CANDIDATE_VERSION_RE = re.compile(r"\s(\d[\w.+-]*)\s*(?:\([^)]*\))?\s*$")
 
 
 def _sort_candidates(items: list[dict]) -> list[dict]:
@@ -1729,7 +1729,6 @@ def _tab_label(
 import model as _model  # noqa: E402  (schema + serialization; leaf module)
 
 _MODE_PAREN_RE = re.compile(r"\(([^)]*)\)\s*$")
-_LABEL_VERSION_RE = re.compile(r"(\d[\w.]*)\s*\([^)]*\)\s*$")
 
 
 def _cand_engine_group(key: str) -> str:
@@ -1752,7 +1751,7 @@ def _parse_mode_of_label(label: str) -> str | None:
 
 
 def _version_of_label(label: str) -> str | None:
-    m = _LABEL_VERSION_RE.search(label)
+    m = _CANDIDATE_VERSION_RE.search(label)
     return m.group(1) if m else None
 
 

@@ -437,22 +437,38 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         self.supports_add_generation_prompt
     }
 
+    fn supports_native_tools(&self, request: &dyn OAIChatLikeRequest) -> bool {
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && request.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let has_tools = !exclude
+            && request
+                .tools()
+                .as_ref()
+                .and_then(|tools| tools.len())
+                .is_some_and(|len| len > 0);
+        if has_tools {
+            self.tool_use_template_handles_native_tools
+        } else {
+            self.default_template_handles_native_tools
+        }
+    }
+
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let mixins = Value::from_dyn_object(self.mixins.clone());
 
-        let tools = req.tools();
-        // Strip tools when tool_choice is "none" and the flag is enabled, so the model
-        // doesn't see tool definitions and generate raw XML tool calls in its response.
-        let tools = if self.exclude_tools_when_tool_choice_none {
-            match req.tool_choice() {
-                Some(ref tc) if tc.as_str() == Some("none") => None,
-                _ => tools,
-            }
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && req.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let flat_tools = if exclude { None } else { req.tools() };
+        // Resolve the template variant before selecting its tool representation.
+        let has_tools = flat_tools
+            .as_ref()
+            .and_then(|tools| tools.len())
+            .is_some_and(|len| len > 0);
+        let tools = if !exclude && self.supports_native_tools(req) {
+            req.template_tools().or(flat_tools)
         } else {
-            tools
+            flat_tools
         };
-        // has_tools should be true if tools is a non-empty array
-        let has_tools = tools.as_ref().and_then(|v| v.len()).is_some_and(|l| l > 0);
         let add_generation_prompt = req.should_add_generation_prompt();
 
         tracing::trace!(

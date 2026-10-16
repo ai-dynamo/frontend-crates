@@ -36,6 +36,9 @@ families:
   # vLLM's muse_glimmer parsers exist only in PR #51655 (unmerged); until a release
   # carries them, `check.sh vllm` cannot capture this family.
   muse_glimmer:   {vllm_python: muse_glimmer,   vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_glimmer, preferred_input: text}
+  # Muse Spark inherits the ATEM grammar but reserves `commentary` as visible text.
+  # Its vLLM parser currently lives only in the private Muse Spark branch.
+  muse_spark:     {vllm_python: musespark1x,    vllm_rust: null,         sglang_python: muse,        dynamo_v2: muse_spark,   preferred_input: text}
   nemotron_deci:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   nemotron_nano:  {vllm_python: hermes,         vllm_rust: hermes,       sglang_python: null,        dynamo_v2: null,        preferred_input: text}
   phi4:           {vllm_python: phi4_mini_json, vllm_rust: phi4_mini_json, sglang_python: null,      dynamo_v2: null,        preferred_input: text}
@@ -133,6 +136,11 @@ markers:
     # (`I7`) — same shape as qwen3_coder's `<parameter=K>`.
     opaque: ["atem:parameter"]
     leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
+  muse_spark:
+    pairs: [["<atem:function_calls>", "</atem:function_calls>"]]
+    singletons: ["<|start|>", "<|message|>", "<|eom|>", "<|eot|>"]
+    opaque: ["atem:parameter"]
+    leak: ["<atem:invoke", "</atem:invoke", "<atem:parameter", "</atem:parameter"]
   nemotron_deci:
     pairs: [["<TOOLCALL>", "</TOOLCALL>"]]
   nemotron_nano:
@@ -222,6 +230,15 @@ unified:
     reasoning_parser: muse_glimmer
     tool_parser: muse_glimmer
     golden_spec: muse_glimmer.yaml
+    leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
+  muse_spark:
+    native: true
+    guided_tool_output: true
+    # The legacy split names are retained only for old cross-version harnesses;
+    # current builds always construct the native Muse Spark unified parser.
+    reasoning_parser: muse_glimmer
+    tool_parser: muse_spark
+    golden_spec: muse_spark.yaml
     leak_markers: ["<atem:function_calls>", "</atem:function_calls>", "<atem:invoke", "</atem:invoke>", "<atem:parameter", "</atem:parameter>"]
   qwen3:
     registry: qwen3_coder

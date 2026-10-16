@@ -12,6 +12,7 @@ pub mod kimi_k2;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;
+pub mod muse_spark;
 pub mod qwen3_coder;
 /// Shared marker-scan core. Crate-visible because `crate::unified` builds on the
 /// same scanner rather than reimplementing marker handling.
@@ -34,9 +35,10 @@ use self::kimi_k2::KimiK2ToolStreamParser;
 use self::minimax_m2::MiniMaxM2ToolStreamParser;
 use self::minimax_m3::MiniMaxM3ToolStreamParser;
 use self::muse_glimmer::MuseGlimmerToolStreamParser;
+use self::muse_spark::MuseSparkToolStreamParser;
 use self::qwen3_coder::Qwen3CoderToolStreamParser;
 
-/// Every family name `create_tool_parser_for_family` accepts, exactly one entry
+/// Canonical family names, excluding compatibility aliases, exactly one entry
 /// per match arm. Test harnesses iterate this to enforce coverage: a family
 /// registered below without sweep/parity coverage must fail the suite, not
 /// silently skip (`registered_families_all_create` guards const/match drift).
@@ -46,6 +48,7 @@ pub const REGISTERED_FAMILIES: &[&str] = &[
     "deepseek_v4",
     "qwen3_coder",
     "muse_glimmer",
+    "muse_spark",
     "minimax_m2",
     "minimax_m3",
     "gemma4",
@@ -63,6 +66,7 @@ pub fn create_tool_parser_for_family(
         "deepseek_v4" => DeepSeekV4ToolStreamParser::create(tools),
         "qwen3_coder" => Qwen3CoderToolStreamParser::create(tools),
         "muse_glimmer" => MuseGlimmerToolStreamParser::create(tools),
+        "muse_spark" | "muse_spark_open" => MuseSparkToolStreamParser::create(tools),
         "minimax_m2" => MiniMaxM2ToolStreamParser::create(tools),
         "minimax_m3" => MiniMaxM3ToolStreamParser::create(tools),
         "gemma4" => Gemma4ToolStreamParser::create(tools),

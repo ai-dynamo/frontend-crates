@@ -103,6 +103,8 @@ fn render(events: &[UnifiedEvent]) -> String {
     events
         .iter()
         .map(|e| match e {
+            UnifiedEvent::MessageStart { phase } => format!("message_start({phase:?})"),
+            UnifiedEvent::MessageEnd => "message_end".into(),
             UnifiedEvent::Reasoning { text } => format!("reasoning({text:?})"),
             UnifiedEvent::Text { text } => format!("text({text:?})"),
             UnifiedEvent::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
@@ -352,7 +354,10 @@ fn manifest_and_parser_registry_agree_on_native_families() {
         .flat_map(|(family, row)| [family.clone(), row.registry_key(family).to_string()])
         .collect();
     for registered in REGISTERED_UNIFIED_FAMILIES {
-        if !declared.contains(*registered) {
+        // Routing aliases share their canonical family's golden coverage.
+        let canonical =
+            dynamo_parsers_v2::canonical_unified_family(registered).unwrap_or(registered);
+        if !declared.contains(canonical) {
             wrong.push(format!(
                 "{registered}: in `unified_registry!` but no native `unified:` row declares it \
                  — add one in conformance/utils/src/parser_families.yaml, or it gets no \
