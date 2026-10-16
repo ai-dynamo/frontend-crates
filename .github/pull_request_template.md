@@ -8,7 +8,7 @@
 
 ## Bug Fix Evidence
 
-Bug-fix PRs must provide the concrete input and before/after outputs below. Parser bug fixes must complete all five subsections, including Unified regression cases and visual conformance verification, before requesting review.
+Bug-fix PRs must provide the concrete input and before/after outputs below. Parser bug fixes must complete all five subsections, including Unified regression cases and visual conformance verification, before requesting review. See the [minimal input/output examples](https://github.com/ai-dynamo/frontend-crates/blob/main/CONTRIBUTING.md#minimal-bug-fix-examples).
 
 <!-- REQUIRED for bug fixes. Follow CONTRIBUTING.md#required-pr-description-format. For changes with no bug fix, replace this section's contents with "Not applicable" and the reason. -->
 

@@ -77,6 +77,56 @@ Use the [PR template](.github/pull_request_template.md) and include Overview, De
 
 For parser bug fixes, all five subsections are required before requesting review. For other bug fixes, provide the concrete input and before/after outputs, and explain why Unified cases and visual conformance verification do not apply. For changes with no bug fix, mark Bug Fix Evidence as not applicable and state why.
 
+#### Minimal Bug-Fix Examples
+
+Keep the input and output excerpts as small as possible while preserving the failure. These examples come from the linked fixes and illustrate the first three required subsections; your PR must also supply its own reproduction command/test, Unified case IDs, and visual verification where applicable. The output excerpts show only the relevant fields, with generated IDs and other unchanged fields omitted.
+
+**Dotted tool name truncated ([#416](https://github.com/ai-dynamo/frontend-crates/pull/416)).** V1 Harmony complete parsing with default configuration and no tool definitions:
+
+```text
+input:  <|channel|>commentary to=functions.a.b<|message|>{}<|call|>
+bad:    {"name":"a","arguments":"{}"}
+good:   {"name":"a.b","arguments":"{}"}
+```
+
+The tool name must remain whole. The PR's minimal example uses `a.b`; its [committed regression test](https://github.com/ai-dynamo/frontend-crates/blob/4cc56ca5e06434bd720080013d4090eef3f676df/parsers/v1/src/tool_calling/harmony/harmony_parser.rs#L553) uses `my-tool.v2`.
+
+**DeepSeek separator leaked as content ([#405](https://github.com/ai-dynamo/frontend-crates/pull/405)).** DeepSeek V4 Unified parsing in the Response starting state, with no tool definitions. The input below is a JSON string: `\n\n` represents two actual leading newline characters.
+
+```json
+"\n\n<｜DSML｜tool_calls><｜DSML｜invoke name=\"run\"><｜DSML｜parameter name=\"value\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+```
+
+```text
+bad:    content = "\n\n"
+good:   content = ""
+both:   call = {"name":"run","arguments":{"value":"Paris"}}
+```
+
+The two newlines are tool-call framing, not visible content. The [regression test](https://github.com/ai-dynamo/frontend-crates/blob/75f04d5c03c1701340d94ae3d450da19603b1c06/parsers/v2/tests/dsml_separator.rs#L127) exercises the separator across chunk splits. Only the content changes; the call stays intact.
+
+**Gemma marker leaked between streamed calls ([#408](https://github.com/ai-dynamo/frontend-crates/pull/408)).** V1 `JailedStream` with the `gemma4` tool-call parser. Feed these exact chunks in order, then finish the stream:
+
+```json
+[
+  "<|tool_call>call",
+  ":f{",
+  "a:<|\"|>1<|\"|>",
+  "}<tool_call|><|tool_call>ca",
+  "ll:g{",
+  "b:",
+  "<|\"|>2<|\"|>}<tool_call|>"
+]
+```
+
+```text
+bad:    content = "<|tool_call>"
+good:   content = ""
+both:   tool_call_names = ["f", "g"]
+```
+
+Keep the chunk boundaries: the fourth chunk closes one call and begins the next, which triggers the bug. Joining the chunks into one input loses that reproduction. The [committed regression test](https://github.com/ai-dynamo/frontend-crates/blob/f9f8e8788b2efaa41407248d9549a28512efa47d/parsers/v1/tests/jail.rs#L4253) preserves this sequence.
+
 ### Reporting Issues
 
 - **Bugs / unexpected behavior**: open a [GitHub issue](https://github.com/ai-dynamo/frontend-crates/issues) with a minimal repro and the crate version (`cargo pkgid`).
