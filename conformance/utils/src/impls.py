@@ -102,7 +102,7 @@ FIXTURE_IMPL_ALIASES: dict[str, str] = {
 PARSER_NOT_CAPTURED = "parser not captured"
 
 
-# Batch histories must not inherit streaming observations at the same version.
+# Adapter-backed batch rows require final fields; preserved legacy rows retain their recorded contract.
 _BATCH_POLICY = _REGISTRY["unified_batch"]
 UNIFIED_PEER_SOURCES = _REGISTRY["unified_peer_sources"]
 UNIFIED_BATCH_IMPLS = tuple(_BATCH_POLICY)

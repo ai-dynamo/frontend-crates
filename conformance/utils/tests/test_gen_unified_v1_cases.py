@@ -42,15 +42,23 @@ def test_v1_split_inputs_and_captures_cover_every_family_with_a_v1_capture_path(
     for family in sorted(expected_families):
         input_case = input_documents[family]["cases"]["v1_split_parallel_tool_calls"]
         capture = capture_documents[family]
+        capture_path = next(path for path in documents if path.parent.name == family and path.name.startswith("dynamo_v1-"))
+        version = capture_path.stem.removeprefix("dynamo_v1-")
         assert input_case["scenario"] == "v1_split_parallel_tool_calls"
         assert input_case["display_id"] == unified_taxonomy.numbered_id(input_case["scenario"])
         assert len(input_case["golden"]["assembled"]) == 2
-        assert capture["provenance"]["status"] == "legacy"
         assert capture["document"]["mode"] == "unified"
         assert capture["changes"]["v1_split_parallel_tool_calls"]["case_key"] == input_case["display_id"]
         assert capture["changes"]["v1_split_parallel_tool_calls"]["observation"]["value"] == input_case["golden"]
-        assert (ROOT / "conformance/fixtures-unified-v2/families" / family / "inputs_and_golden.yaml").read_text() == documents[ROOT / "conformance/fixtures-unified-v2/families" / family / "inputs_and_golden.yaml"]
-        capture_path = ROOT / "conformance/fixtures-unified-v2/families" / family / f"dynamo_v1-{capture['provenance']['captured_with']['dynamo_v1']}.yaml"
+        record_provenance = capture["document_overrides"]["v1_split_parallel_tool_calls"]["capture_provenance"]
+        assert record_provenance == {
+            "captured_with": {"dynamo_v1": version},
+            "capture_origin": None,
+            "inherited_from": None,
+        }
+        input_path = ROOT / "conformance/fixtures-unified-v2/families" / family / "inputs_and_golden.yaml"
+        capture_path = ROOT / "conformance/fixtures-unified-v2/families" / family / capture_path.name
+        assert input_path.read_text() == documents[input_path]
         assert capture_path.read_text() == documents[capture_path]
 
 

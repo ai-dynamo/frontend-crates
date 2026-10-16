@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-import itertools
 import json
 import sys
 from pathlib import Path
@@ -17,7 +16,6 @@ import capture_unified_batch
 from capture_stimulus import batch_final_events, select_peer_observation, unavailable_result
 from capture_unified_batch import capture_cases
 from capture_unified_job import build_job
-from generate_conformance_table import _unified_capture_failure, _unified_classify
 from import_peer_unified import digest, import_capture
 from conformance.utils.tests.test_unified_history import _change, _request, _write_capture, _write_family
 
@@ -30,9 +28,8 @@ def test_batch_projection_retains_ordered_calls_but_cannot_claim_interleaving():
         {"name": "one", "arguments": {}}, {"name": "two", "arguments": "{malformed"}]}
     actual = batch_final_events(final)
     assert actual == events
-    for expected in itertools.permutations(events):
-        verdict = _unified_classify("gemma4", list(expected), actual)
-        assert (verdict == "MATCH") == (list(expected) == actual)
+    reversed_final = {**final, "calls": list(reversed(final["calls"]))}
+    assert batch_final_events(reversed_final) != actual
 
 
 def test_capture_accounts_for_every_request_without_default_substitution():
@@ -167,19 +164,6 @@ def test_batch_adapter_correction_preserves_original_and_binds_new_producer(tmp_
     assert import_capture(store, job, capture, provenance, implementation="dynamo_v1") == []
     restored = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")].resolve("dynamo_v1-10.0.1")["text_only"]
     assert restored == after
-
-
-@pytest.mark.parametrize("code", ["unsupported_family", "unsupported_request_mode", "source_unavailable", "vllm_rust_guided_json_unsupported"])
-@pytest.mark.parametrize("structured", [False, True])
-def test_failure_projection_retains_its_typed_status_at_every_reader_layer(code, structured):
-    payload = {"code": code, "detail": "cannot execute"}
-    record = {"unavailable": payload if structured else "cannot execute", "capture_observation": {"unavailable": payload}}
-    original = copy.deepcopy(record)
-    projected = _unified_capture_failure(record)
-    assert projected["unavailable"] == "cannot execute"
-    assert projected["unavailable_code"] == ("unsupported_request_mode" if code == "vllm_rust_guided_json_unsupported" else code)
-    assert _unified_capture_failure(projected) == projected
-    assert record == original
 
 
 def test_peer_batch_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):

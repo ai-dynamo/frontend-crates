@@ -1,5 +1,5 @@
 /* Transport state is separate from recorded parser outcomes. */
-.tab-panel:not([data-load-state="ready"]) > :not(.cmpctl):not(.load-status):not([data-parity-table]) { display: none; }
+.tab-panel:not([data-load-state="ready"]) > :not(.cmpctl):not(.capture-slots):not(.load-status) { display: none; }
 .load-status { padding: 1rem; }
 .load-status[role="alert"], .error { color: #b00; }
 #viewer > pre { white-space: pre-wrap; overflow-wrap: anywhere; }

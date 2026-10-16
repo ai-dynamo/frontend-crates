@@ -6,7 +6,8 @@ import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { createNodeResourceStore } from './data.js';
 import { FixtureResources } from './resources.js';
-import { parseJson, sameValue, yamlTemporal, stringifyValue } from './values.js';
+import { decodeTyped } from './typed_json.js';
+import { parseJson, sameValue, stringifyValue } from './values.js';
 import { materializeUnifiedRecord } from './unified.js';
 import { classifyUnified } from './model.js';
 import { comparisonEntries, comparisonFacts, declaredLeakTokens, equivalenceGroups, legacyOutcome } from './comparison.js';
@@ -30,22 +31,6 @@ function firstDifference(expected, actual, path = '$') {
   return path;
 }
 
-function decodeTyped(value) {
-  const [type, content] = value;
-  switch (type) {
-    case 'int': return BigInt(content);
-    case 'float': return content === 'nan' ? NaN : content === 'inf' ? Infinity : content === '-inf' ? -Infinity : Number(content);
-    case 'null': return null;
-    case 'str': case 'bool': return content;
-    case 'array': return content.map(decodeTyped);
-    case 'object': {
-      const pairs = content.map(([key, child]) => [decodeTyped(key), decodeTyped(child)]);
-      return pairs.every(([key]) => typeof key === 'string') ? Object.fromEntries(pairs) : new Map(pairs);
-    }
-    case 'date': case 'datetime': return yamlTemporal(content, type);
-    default: throw new Error(`unsupported oracle scalar type: ${type}`);
-  }
-}
 
 function normalizeModelNumbers(tab) {
   delete tab.cand_meta;

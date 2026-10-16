@@ -44,22 +44,38 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
   const latest = (implementation, dataMode = mode) => sources.filter((item) => item.implementation === implementation && item.mode === dataMode).sort((a, b) => compare(b.version, a.version))[0];
   const control = (source, key, label, bucket = 'C') => ({
     source,
-    control: { key, impl: metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
+    control: { key, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,
       label, label_html: mode === 'unified' ? label : candidateLabelHtml(label), default_bucket: bucket,
-      version: source.version, parse_mode: mode === 'unified' ? 'unified' : /\([^)]*stream/.test(label) ? 'stream' : /\([^)]*batch/.test(label) ? 'batch' : null },
+      version: source.version, parse_mode: mode === 'unified' ? (source.capture_mode || metadata.unified_capture_policy?.[source.implementation]?.mode || 'stream') : /\([^)]*stream/.test(label) ? 'stream' : /\([^)]*batch/.test(label) ? 'batch' : null,
+      language: source.language || metadata.unified_capture_policy?.[source.implementation]?.language || null,
+      source_blocker: source.source_blocker || null },
   });
   const oracle = (parseMode, bucket) => ({ source: { implementation: 'golden', mode: parseMode, version: null, id: `golden@${parseMode}` },
     control: { key: 'golden', impl: 'golden', label: 'GOLDEN (oracle)', label_html: 'GOLDEN (oracle)', default_bucket: bucket, version: null, parse_mode: parseMode } });
   if (mode === 'unified') {
     const reference = latest(policy.reference);
     if (!reference) throw new Error('Unified reference history missing');
-    const result = [control(reference, 'dynamo', fullLabel(reference.implementation, reference.version, 'stream', metadata), 'A'), oracle('unified', policy.golden_bucket)];
-    for (const implementation of policy.implementation_order) {
-      const versions = sources.filter((item) => item.implementation === implementation && item.id !== reference.id).sort((a, b) => compare(b.version, a.version));
+    const implementationOrder = [...new Set([...policy.implementation_order, ...sources.map(item => item.implementation)])];
+    const labelFor = source => {
+      const capture = metadata.unified_capture_policy?.[source.implementation] || {};
+      const producer = metadata.implementations.find(item => item.key === capture.producer);
+      const engine = capture.engine || source.engine;
+      const producerLabel = producer?.label || (engine === 'dynamo' ? 'Dynamo v1 Rust' : engine === 'vllm' ? 'vLLM Python' : engine === 'sglang' ? 'SGLang Python' : source.implementation);
+      const flavor = source.implementation === 'dynamo_v1_jail' ? 'batch, jail-buffer'
+        : capture.mode === 'batch' ? 'batch'
+          : policy.capture_contracts?.[source.implementation]?.label || 'stream';
+      return `${producerLabel} ${source.version} (${flavor})`;
+    };
+    const makeControl = (source, key, bucket = 'C') => control(source, key, labelFor(source), bucket);
+    const result = [makeControl(reference, 'dynamo', 'A'), oracle('unified', policy.golden_bucket)];
+    for (const implementation of implementationOrder) {
+      const versions = sources.filter((item) => item.implementation === implementation && item.id !== reference.id)
+        .sort((a, b) => compare(b.version, a.version));
       for (const source of versions) {
-        const key = implementation === policy.reference ? `dynamo@${source.version}` : policy.historical_control_aliases[`${implementation}@${source.version}`] || `${implementation}@${source.version}`;
-        const label = `${metadata.implementations.find(item => item.key === implementation).label} ${source.version} (${policy.capture_contracts?.[implementation]?.label || 'stream'})`;
-        result.push(control(source, key, label));
+        const identity = `${implementation}@${source.version}`;
+        const key = implementation === policy.reference ? `dynamo@${source.version}`
+          : policy.historical_control_aliases[identity] || identity;
+        result.push(makeControl(source, key));
       }
     }
     return result;

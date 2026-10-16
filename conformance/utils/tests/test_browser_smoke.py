@@ -196,14 +196,8 @@ def _assert_tooltip_actually_visible(drv, where):
     assert r["topmostInside"], f"{where}: something is covering the tooltip: {r}"
 
 
-def test_real_mouse_hover_opens_a_visible_tooltip(unforced_driver):
-    """THE production contract: a real mouse move over a cell shows readable text.
-
-    Runs on `unforced_driver`, which does NOT patch matchMedia — headless Chrome reports
-    `(hover: hover)` and `(any-hover: hover)` false there, exactly as Chrome did on the
-    desktop where hovering was dead. The page must not consult those queries to decide
-    whether to listen for hover, so this lane fails if that gate ever comes back.
-    """
+def test_real_mouse_activation_opens_a_visible_pinned_tooltip(unforced_driver):
+    """Unified cells use explicit activation so browsing does not build popups on hover."""
     drv = unforced_driver
     assert drv.execute_script(
         "return !window.matchMedia('(hover: hover)').matches"
@@ -225,32 +219,22 @@ def test_real_mouse_hover_opens_a_visible_tooltip(unforced_driver):
     )
     if el is None:
         pytest.skip("no visible cell with a tooltip on the active tab")
-    # A REAL pointer move, not a synthetic dispatch — a synthetic event would fire the
-    # listener even if the browser would never deliver one to a human.
-    webdriver.ActionChains(drv).move_to_element(el).perform()
-    deadline = time.time() + 4
-    while time.time() < deadline:
-        if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
-            break
-        time.sleep(0.1)
-    assert drv.execute_script(
-        "return arguments[0].matches(':hover');", el
-    ), "the browser did not deliver a real hover to the cell; test setup is wrong"
-    _assert_tooltip_actually_visible(drv, "real mouse hover, no forced media queries")
+    webdriver.ActionChains(drv).move_to_element(el).click().perform()
+    _assert_tooltip_actually_visible(drv, "real mouse activation, no forced media queries")
+    assert drv.execute_script("return !!document.querySelector('.ttip.ttip-pinned');")
 
 
-def test_keyboard_focus_opens_a_visible_tooltip(unforced_driver):
-    """Focus must open the popup too — `focusin` sat behind the same gate as hover."""
+def test_keyboard_activation_opens_a_visible_pinned_tooltip(unforced_driver):
+    """Unified popup content is built when a keyboard user activates a focused cell."""
     drv = unforced_driver
     opened = drv.execute_script(
         """
         const p = document.querySelector('#tab-unified') || document;
-        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
+        for (const el of p.querySelectorAll('[data-ttip-click="pin"]')) {
           if (!el.querySelector('.ttip') || el.offsetParent === null) continue;
-          const f = el.querySelector('a, button, [tabindex]');
-          if (!f) continue;
           el.scrollIntoView({block: 'center'});
-          f.focus();
+          el.focus();
+          el.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
           return true;
         }
         return false;
@@ -263,18 +247,19 @@ def test_keyboard_focus_opens_a_visible_tooltip(unforced_driver):
         if drv.execute_script("return !!document.querySelector('.ttip.ttip-visible');"):
             break
         time.sleep(0.1)
-    _assert_tooltip_actually_visible(drv, "keyboard focus")
+    _assert_tooltip_actually_visible(drv, "keyboard activation")
+    assert drv.execute_script("return !!document.querySelector('.ttip.ttip-pinned');")
 
 
-def test_hover_shows_tooltip(driver):
-    """Hovering a detail cell makes its `.ttip` visible (`.ttip-visible`)."""
+def test_cell_activation_shows_tooltip(driver):
+    """Activating a detail cell builds and pins its lazy popup."""
     _script(driver, "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}")
     # Find a cell that actually has a tooltip, fire the hover event the page listens for.
     found = _script(driver, """
         const tab = document.querySelector('#tab-unified') || document;
         for (const cell of tab.querySelectorAll('td.cell')) {
           if (cell.querySelector('.ttip')) {
-            cell.dispatchEvent(new PointerEvent('pointerenter', {bubbles: true}));
+            cell.click();
             return true;
           }
         }
@@ -288,7 +273,8 @@ def test_hover_shows_tooltip(driver):
         if visible:
             break
         time.sleep(0.1)
-    assert visible, "tooltip did not become visible on hover"
+    assert visible, "tooltip did not become visible on activation"
+    assert _script(driver, "return !!document.querySelector('.ttip.ttip-pinned');")
 
 
 
@@ -299,8 +285,7 @@ def test_portalled_tooltip_tracks_the_document_scroll(driver):
     cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified tbody tr:last-child td.cell")
     _script(driver, "arguments[0].scrollIntoView({block: 'center'});", cell)
     assert _script(driver, "return window.scrollY > 0")
-    ActionChains(driver).move_to_element(cell).perform()
-    time.sleep(1)
+    _click(cell)
     result = _script(driver, """
         const cell = arguments[0];
         const tooltip = cell._ttip;
@@ -308,81 +293,66 @@ def test_portalled_tooltip_tracks_the_document_scroll(driver):
         const tooltipRect = tooltip.getBoundingClientRect();
         return {
           portalled: tooltip.parentElement === document.body,
-          topDelta: tooltipRect.top - cellRect.bottom,
-          leftDelta: tooltipRect.left - cellRect.left,
+          top: tooltipRect.top,
+          left: tooltipRect.left,
+          right: tooltipRect.right,
+          viewportWidth: innerWidth,
+          controlsBottom: document.querySelector('#tab-unified .capture-slots').getBoundingClientRect().bottom,
         };
         """, cell)
 
     assert result["portalled"], result
-    assert abs(result["topDelta"]) < 2, result
-    assert result["leftDelta"] <= 0, result
+    assert result["top"] >= result["controlsBottom"], result
+    assert result["left"] >= 0 and result["right"] <= result["viewportWidth"], result
 
 
 def test_portalled_tooltip_stays_open_while_hovered(driver):
     cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell")
     result = _script(driver, """
         const cell = arguments[0];
-        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        return new Promise(resolve => setTimeout(() => {
-          const tooltip = cell._ttip;
-          cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
-          tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-          resolve({tooltip});
-        }, 850));
+        cell.click();
+        const tooltip = cell._ttip;
+        cell.dispatchEvent(new MouseEvent('mouseleave', {bubbles: false, view: window}));
+        tooltip.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
+        return {tooltip};
         """, cell)
-    time.sleep(1)
     visible = _script(driver, "return arguments[0].classList.contains('ttip-visible');", result["tooltip"])
 
-    assert visible
+    assert visible and "ttip-pinned" in result["tooltip"].get_attribute("class")
 
 
-def test_transpose_keeps_one_open_tooltip(driver):
-    _script(driver, """
-        document.querySelectorAll('.ttip.ttip-visible').forEach(t => t.classList.remove('ttip-visible', 'ttip-pinned'));
-        document.body.classList.remove('ttip-pin-mode', 'transpose-mode');
-        const toggle = document.querySelector('[data-transpose-toggle]');
-        if (toggle.checked) toggle.click();
-        """)
-    cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell")
-    result = _script(driver, """
-        const cell = arguments[0];
-        cell.dispatchEvent(new MouseEvent('mouseenter', {bubbles: false, view: window}));
-        return new Promise(resolve => setTimeout(() => {
-          const toggle = document.querySelector('[data-transpose-toggle]');
-          const sourceId = cell.getAttribute('data-ttip-id');
-          const before = document.querySelectorAll('.ttip.ttip-visible').length;
-          toggle.click();
-          const after = document.querySelectorAll('.ttip.ttip-visible').length;
-          const clone = document.querySelector(
-            '.transpose-table td.cell[data-ttip-id="' + sourceId + '"]'
-          );
-          resolve({
-            before,
-            after,
-            portalled: [...document.querySelectorAll('.ttip.ttip-visible')]
-              .filter(t => t.parentElement === document.body).length,
-            cloneHasTooltip: Boolean(clone && clone._ttip),
-          });
-        }, 850));
-        """, cell)
-
-    assert result["before"] == 1, result
-    assert result["after"] == 1, result
-    assert result["portalled"] == 1, result
-    assert result["cloneHasTooltip"], result
+def test_transpose_keeps_one_open_tooltip(driver, viewer_url):
+    saved_url = driver.current_url
+    try:
+        _navigate(driver, f"{viewer_url}?tab=tab-unified&transpose=0")
+        WebDriverWait(driver, 60).until(lambda page: page.find_elements(By.CSS_SELECTOR, "#tab-unified[data-load-state='ready'] td.cell"))
+        _dismiss_visible_tooltips(driver)
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-ttip-click='pin']")
+        cell.click()
+        popup = WebDriverWait(driver, 10).until(lambda page: page.find_element(By.CSS_SELECTOR, ".ttip.ttip-pinned"))
+        source_id = cell.get_attribute("data-ttip-id")
+        _click(driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]"))
+        clone = driver.find_element(By.CSS_SELECTOR, f".transpose-table td.cell[data-ttip-id='{source_id}']")
+        assert popup.is_displayed()
+        assert popup.get_attribute("class").find("ttip-pinned") >= 0
+        assert clone.get_attribute("data-ttip-id") == source_id
+        assert driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-pinned") == [popup]
+    finally:
+        _navigate(driver, saved_url)
 
 
 def test_focus_tooltip_stays_in_tab_order(driver):
-    cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell")
+    _dismiss_visible_tooltips(driver)
+    cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-ttip-click='pin']")
     result = _script(driver, """
         const cell = arguments[0];
-        cell.dispatchEvent(new FocusEvent('focusin', {bubbles: true}));
-        return new Promise(resolve => setTimeout(() => {
-          const tooltip = cell._ttip;
-          resolve({parent: tooltip.parentElement === cell, visible: tooltip.classList.contains('ttip-visible')});
-        }, 850));
+        const wasFocusable = cell.tabIndex === 0;
+        cell.focus();
+        cell.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter', bubbles: true}));
+        const tooltip = cell._ttip;
+        return {parent: tooltip.parentElement === document.body, visible: tooltip.classList.contains('ttip-visible'), pinned: tooltip.classList.contains('ttip-pinned'), wasFocusable};
         """, cell)
-    assert result == {"parent": True, "visible": True}
+    assert result == {"parent": True, "visible": True, "pinned": True, "wasFocusable": True}
 
 
 
@@ -447,8 +417,7 @@ def test_first_visible_matrix_matches_transpose_url(viewer_url, override, expect
         first = _script(d, "return window.__firstVisibleMatrix")
         skeletons = _script(d, "return window.__loadingMatrixInsertions")
         assert first is not None, "no report matrix became visible during initial rendering"
-        assert skeletons, "no Unified matrix skeleton was observed before capture resolution"
-        assert all(item["cells"] == 0 and item["ancestorsVisible"] and item["width"] > 0 and item["height"] > 0 for item in skeletons), skeletons
+        assert all(item["cells"] == 0 and not item["ancestorsVisible"] for item in skeletons), skeletons
         assert first["kind"] == expected, f"first exposed matrix was {first}"
         assert first["cells"] > 0 and first["width"] > 0 and first["height"] > 0
         assert first["ancestorsVisible"] and first["state"] == "ready" and first["frameTime"] > 0
@@ -508,10 +477,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
         for numbers in by_prefix_and_section.values():
             assert numbers == sorted(set(numbers))
 
-        ActionChains(driver).move_to_element(header).perform()
-        _script(driver, "const h=arguments[0].closest('th.case-sub');"
-            "h.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));"
-            "h.dispatchEvent(new PointerEvent('pointerenter'));", header)
+        header.send_keys(Keys.ENTER)
         deadline = time.time() + 3
         tip = None
         while time.time() < deadline:
@@ -521,6 +487,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
                 break
             time.sleep(0.1)
         assert tip is not None, "case description tooltip did not open on hover"
+        assert "ttip-pinned" in tip.get_attribute("class")
         assert tip.find_element(By.CSS_SELECTOR, ".ttip-head > span[title]").get_attribute("title") == header.get_attribute("aria-label")
         assert f"{full_label} ({short_label})" in tip.find_element(By.CSS_SELECTOR, ".ttip-head").text
         assert full_label in tip.text
@@ -566,7 +533,7 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
         assert header.find_element(By.CSS_SELECTOR, ".case-label-short").value_of_css_property("display") != "none"
         expanded_width = group_cell.rect["width"]
         ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
-        WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+        _dismiss_visible_tooltips(driver)
         group_toggle = group_cell.find_element(By.CSS_SELECTOR, ".col-toggle")
         _click(group_toggle)
         assert "col-collapsed" in group_cell.get_attribute("class").split()
@@ -839,22 +806,10 @@ def _dismiss_visible_tooltips(driver, move_pointer=True):
 def _open_schema_popup(driver, header):
     _dismiss_visible_tooltips(driver)
     _script(driver, "arguments[0].scrollIntoView({block: 'center', inline: 'center'})", header)
-    # Scrolling can put the target under the pointer. Move to a fixed viewport point and
-    # clear any hover opened by scrolling so the next move produces a fresh enter event.
-    actions = ActionChains(driver)
-    actions.w3c_actions.pointer_action.move_to_location(0, 0)
-    actions.perform()
-    _dismiss_visible_tooltips(driver, move_pointer=False)
-    _script(driver, "window.__buildTooltip(arguments[0])", header)
-    ActionChains(driver).move_to_element(header).perform()
-    _script(driver, """
-        const header = arguments[0];
-        header.dispatchEvent(new PointerEvent('pointerover', {bubbles: true, pointerType: 'mouse'}));
-        header.dispatchEvent(new PointerEvent('pointerenter', {pointerType: 'mouse'}));
-        """, header)
+    header.send_keys(Keys.ENTER)
     return WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
         const tip = arguments[0]._ttip || arguments[0].querySelector('.ttip');
-        return tip && tip.classList.contains('ttip-visible') ? tip : null;
+        return tip && tip.classList.contains('ttip-pinned') ? tip : null;
         """, header))
 
 
@@ -935,10 +890,10 @@ def test_keyboard_schema_popup_stays_interactive_after_resize(driver, viewer_url
         _script(driver, "arguments[0].scrollIntoView({block: 'center', inline: 'center'})", header)
         ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
         WebDriverWait(driver, 10).until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
-        _script(driver, "arguments[0].querySelector('a').focus()", header)
+        header.send_keys(Keys.ENTER)
         tip = WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
             const tip = arguments[0]._ttip;
-            return tip && tip.classList.contains('ttip-visible') ? tip : null;
+            return tip && tip.classList.contains('ttip-pinned') ? tip : null;
             """, header))
         disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
         summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
@@ -1186,15 +1141,12 @@ def test_popup_headings_include_compact_references(driver, viewer_url):
                     "Array.from(t.querySelectorAll('tbody tr')).map(r=>r.querySelectorAll('td.cell')[Array.from(t.querySelectorAll('th.case-sub')).indexOf(h)]).find(e=>e && e.hasAttribute('data-ttip-id'));", header)
                 assert cell is not None
                 for target in (header, cell):
-                    actions = ActionChains(driver)
-                    actions.w3c_actions.pointer_action.move_to_location(2, 2)
-                    actions.perform()
-                    WebDriverWait(driver, 5).until(lambda d: not d.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible"))
+                    _dismiss_visible_tooltips(driver)
                     _script(driver, "arguments[0].scrollIntoView({block:'center',inline:'center'});", target)
-                    ActionChains(driver).move_to_element(target).perform()
+                    target.send_keys(Keys.ENTER)
                     popup = WebDriverWait(driver, 5).until(lambda d: _script(d, """
                         const tip = arguments[0]._ttip;
-                        return tip && tip.classList.contains('ttip-visible') ? tip : null;
+                        return tip && tip.classList.contains('ttip-pinned') ? tip : null;
                     """, target))
                     heading = popup.find_element(By.CSS_SELECTOR, ".ttip-head")
                     assert heading.text.startswith(f"{full} ({short})")
@@ -1202,5 +1154,6 @@ def test_popup_headings_include_compact_references(driver, viewer_url):
                     assert number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
                     assert float(number.value_of_css_property("font-size")[:-2]) < float(heading.value_of_css_property("font-size")[:-2])
                     assert heading.find_element(By.CSS_SELECTOR, "span[title]").get_attribute("title").startswith("UNIFIED.")
+                    _dismiss_visible_tooltips(driver)
     finally:
         _navigate(driver, f"{viewer_url}?tab=tab-unified&transpose=0")

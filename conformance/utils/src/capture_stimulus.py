@@ -206,6 +206,19 @@ def original_capture_input(record: dict, raw: bytes, relative: str, bindings: di
     return original
 
 
+def unified_record_contract(implementation: str, document: dict) -> str:
+    if implementation not in UNIFIED_BATCH_IMPLS:
+        return "stream"
+    origin = document.get("capture_origin", {})
+    adapter = origin.get("adapter_sha256")
+    job = origin.get("job_sha256")
+    if adapter or job:
+        if not adapter or not job:
+            raise ValueError("adapter-backed batch observation needs adapter and job identities")
+        return "batch"
+    return "batch" if "batch_final" in document.get("record_metadata", {}) else "legacy-stream"
+
+
 def select_peer_observation(record: dict, current: dict, *, implementation: str, version: str) -> dict:
     """Use a bound recapture while retaining the original historical observation."""
     recapture = record.get("verified_recapture")

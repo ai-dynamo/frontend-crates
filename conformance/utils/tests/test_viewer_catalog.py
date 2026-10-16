@@ -51,6 +51,39 @@ def test_availability_projection_preserves_sparse_stream_state_and_shape():
     }
 
 
+def test_unified_catalog_projection_keeps_legacy_selection_identities_without_archives():
+    catalog = {
+        "schema": 1,
+        "revision": "revision",
+        "metadata": {
+            "tabs": [{"id": "tab-toolcalling-streamv1", "suite": "toolcalling"}, {"id": "tab-unified", "suite": "unified"}],
+            "selection_policy": {"unified": {"reference": "dynamo_v2"}, "stream": {"reference": "dynamo_v2"}},
+        },
+        "sources": {
+            "archives": [{"path": "legacy.tar.gz"}],
+            "unified": [{"path": "family/capture.yaml"}],
+            "candidates": [
+                {"mode": "stream", "implementation": "dynamo_v2", "version": "0.7.22"},
+                {"mode": "stream", "implementation": "vllm_python", "version": "0.31.0"},
+                {"mode": "batch", "implementation": "sglang_python", "version": "0.5.21"},
+                {"mode": "batch-on-stream", "implementation": "vllm_python", "version": "0.30.0"},
+                {"mode": "reasoning", "implementation": "dynamo_v1", "version": "1.0.0"},
+            ],
+        },
+    }
+
+    projected = viewer_catalog.unified_projection(catalog)
+
+    assert projected["metadata"]["legacy_candidate_identities"] == {
+        "dynamo_v2-0-7-22": "dynamo_v2@0.7.22",
+        "vllm_python-0-31-0": "vllm_python@0.31.0",
+        "sglang_python-b-0-5-21": "sglang_python@0.5.21",
+        "vllm_python-s-0-30-0": "vllm_python@0.30.0",
+    }
+    assert projected["sources"]["archives"] == []
+    assert [tab["id"] for tab in projected["metadata"]["tabs"]] == ["tab-unified"]
+
+
 def test_unavailable_failure_controls_use_shared_predicate_without_raw_reasons():
     controls = []
     projection = _availability_document({"family": "probe", "mode": "batch", "cases": {

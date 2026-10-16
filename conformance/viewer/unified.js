@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { sha256 } from './data.js';
 import { canonicalJson, sameValue } from './values.js';
-import { getField, hasField, deleteField, mergeMappings } from './mappings.js';
+import { getField, hasField, deleteField, mergeMappings, mappingEntries } from './mappings.js';
+import { compareVersions } from './model.js';
 
 function mapping(value, where) {
   if (!value || typeof value !== 'object' || (!(value instanceof Map) && ![Object.prototype, null].includes(Object.getPrototypeOf(value)))) throw new Error(`${where} must be a mapping`);
@@ -91,10 +92,56 @@ export function validateUnifiedInputs(document, family, path, aliasMetadata = nu
 }
 
 function origin(value, where, version = null) {
-  keys(value, ['crate_version', 'source_sha256'], ['crate_version', 'source_sha256', 'git_commit'], where);
+  keys(value, ['crate_version', 'source_sha256'], ['crate_version', 'source_sha256', 'git_commit', 'adapter_sha256', 'job_sha256'], where);
   if (typeof value.crate_version !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.crate_version) || (version !== null && value.crate_version !== version)) throw new Error(`${where} has invalid crate_version`);
   if (!/^[0-9a-f]{64}$/.test(value.source_sha256 || '')) throw new Error(`${where} has invalid source hash`);
+  for (const field of ['adapter_sha256', 'job_sha256']) if (Object.hasOwn(value, field) && !/^[0-9a-f]{64}$/.test(value[field])) throw new Error(`${where} has invalid ${field}`);
+  if (Object.hasOwn(value, 'adapter_sha256') !== Object.hasOwn(value, 'job_sha256')) throw new Error(`${where} needs both adapter and job identities`);
   if (Object.hasOwn(value, 'git_commit') && !/^[0-9a-f]{40}$/.test(value.git_commit)) throw new Error(`${where} has invalid git commit`);
+}
+
+export function unifiedRecordContract(implementation, document, captureMode) {
+  if (!['batch', 'stream'].includes(captureMode)) throw new Error(`invalid Unified capture mode for ${implementation}`);
+  if (captureMode !== 'batch') return 'stream';
+  const origin = getField(document, 'capture_origin') || {};
+  const adapter = getField(origin, 'adapter_sha256');
+  const job = getField(origin, 'job_sha256');
+  if (Boolean(adapter) !== Boolean(job)) throw new Error(`${implementation} adapter-backed batch observation needs adapter and job identities`);
+  if (adapter && job) return 'batch';
+  return hasField(getField(document, 'record_metadata') || {}, 'batch_final') ? 'batch' : 'legacy-stream';
+}
+
+function batchFinalEvents(final, where) {
+  const fields = mappingEntries(final);
+  if (fields.length !== 3 || !['reasoning_text', 'normal_text', 'calls'].every(key => hasField(final, key))) throw new Error(`${where} needs reasoning_text, normal_text, and calls`);
+  const reasoning = getField(final, 'reasoning_text');
+  const text = getField(final, 'normal_text');
+  const calls = getField(final, 'calls');
+  if (typeof reasoning !== 'string' || typeof text !== 'string' || !Array.isArray(calls)) throw new Error(`${where} has invalid batch final field types`);
+  const events = [];
+  if (reasoning) events.push({ kind: 'reasoning', text: reasoning });
+  if (text) events.push({ kind: 'text', text });
+  for (const [index, call] of calls.entries()) {
+    if (mappingEntries(call).length !== 2 || typeof getField(call, 'name') !== 'string' || !hasField(call, 'arguments')) throw new Error(`${where}.calls[${index}] is invalid`);
+    events.push({ kind: 'tool_call', name: getField(call, 'name'), arguments: getField(call, 'arguments') });
+  }
+  return events;
+}
+
+export function validateResolvedRecordContracts(records, implementation, captureMode, where = implementation) {
+  for (const [caseId, record] of records) {
+    const contract = unifiedRecordContract(implementation, getField(getField(record, 'value'), 'document'), captureMode);
+    const observation = getField(getField(record, 'value'), 'observation');
+    if (contract !== 'batch' || !hasField(observation, 'value')) continue;
+    const value = getField(observation, 'value');
+    const metadata = getField(getField(record, 'value'), 'document');
+    const recordMetadata = getField(metadata, 'record_metadata') || {};
+    const final = getField(recordMetadata, 'batch_final');
+    if (!final || hasField(value, 'chunks') || !sameValue(getField(value, 'assembled'), batchFinalEvents(final, `${where}:${caseId}.batch_final`))) {
+      throw new Error(`${where}:${caseId} batch observation does not match its final fields`);
+    }
+  }
+  return records;
 }
 
 export async function validateUnifiedCapture(document, inputDocument, { path, implementation, version }) {
@@ -149,7 +196,7 @@ export async function validateUnifiedCapture(document, inputDocument, { path, im
       mapping(value, `${path}:${caseId}.${field}`);
       if (field !== 'document_overrides') continue;
       keys(value, [], ['parser_path', 'capture_provenance'], `${path}:${caseId}.${field}`);
-      if (Object.hasOwn(value, 'parser_path')) string(value.parser_path, `${path}:${caseId}.parser_path`);
+      if (Object.hasOwn(value, 'parser_path') && value.parser_path !== null) string(value.parser_path, `${path}:${caseId}.parser_path`);
       if (Object.hasOwn(value, 'capture_provenance')) {
         const provenance = value.capture_provenance;
         keys(provenance, ['captured_with', 'capture_origin', 'inherited_from'], ['captured_with', 'capture_origin', 'inherited_from'], `${path}:${caseId}.capture_provenance`);
@@ -161,6 +208,29 @@ export async function validateUnifiedCapture(document, inputDocument, { path, im
     }
   }
   return document;
+}
+
+export async function validateResolvedUnified(records, inputDocument, resource, originals) {
+  stringMapping(records, resource.path);
+  const changes = {};
+  for (const [caseId, record] of Object.entries(records)) {
+    keys(record, ['value', 'member'], ['value', 'member'], `${resource.path}:${caseId}`);
+    const source = originals.find(item => item.path === record.member);
+    if (!source || source.kind !== 'history' || source.family !== resource.family || source.implementation !== resource.implementation || compareVersions(source.version, resource.version) > 0) throw new Error(`resolved observation has an invalid source: ${caseId}`);
+    const value = record.value;
+    keys(value, ['case_key', 'stimulus', 'observation', 'document'], ['case_key', 'stimulus', 'observation', 'document'], `${resource.path}:${caseId}.value`);
+    mapping(value.document, `${resource.path}:${caseId}.document`);
+    const capturedWith = getField(value.document, 'captured_with');
+    if (!hasField(capturedWith, resource.implementation)
+        || mappingEntries(capturedWith).some(([implementation, version]) => typeof implementation !== 'string' || typeof version !== 'string' || !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version))) {
+      throw new Error(`resolved observation has a false producer identity: ${caseId}`);
+    }
+    if (hasField(value.document, 'capture_origin')) origin(getField(value.document, 'capture_origin'), `${resource.path}:${caseId}.capture_origin`);
+    Object.defineProperty(changes, caseId, { value: { case_key: value.case_key, stimulus: value.stimulus, observation: value.observation }, enumerable: true });
+  }
+  await validateUnifiedCapture({ provenance: { status: 'legacy', captured_with: { [resource.implementation]: resource.version } }, document: {}, changes, metadata_changes: {}, document_overrides: {} }, inputDocument, resource);
+  validateResolvedRecordContracts(new Map(Object.entries(records)), resource.implementation, resource.record_contract, resource.path);
+  return records;
 }
 
 export function materializeUnifiedRecord(input, record, family) {

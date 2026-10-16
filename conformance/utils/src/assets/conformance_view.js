@@ -164,13 +164,13 @@
   const tooltipIds = new WeakMap();
   function registerTooltip(td, model, fixtureHref, stateKey) {
     if (fixtureHref) td.dataset.ttipFixture = fixtureHref;
-    if (stateKey) td.dataset.ttipKey = stateKey;
+    if (stateKey) {
+      td.dataset.ttipKey = stateKey;
+      td.dataset.popupKey = stateKey;
+    }
     const id = tooltipIds.get(model) || String(++_ttipSeq);
     tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
-    td.dataset.popupKey = td.classList.contains('cell')
-      ? `cell:${td.dataset.family}:${td.dataset.sub}:${td.dataset.caseId}`
-      : `grammar:${model.popupCase?.sub || model.head}`;
     _ttipModels[id] = model;
   }
 
@@ -238,11 +238,14 @@
         + (b.inherited_from ? '\n<span class="expl">Inherited observation from ' + escapeHtml(b.inherited_from) + '</span>' : '')
       : '';
     if (b.unavailable != null) {
-      const code = b.unavailable_code || b.unavailable.code;
-      const reason = code === 'source_unavailable' ? 'Producer source unavailable.'
-        : ['scenario_not_applicable', 'duplicate_scenario'].includes(code)
-          ? String(b.unavailable) : 'Result not yet captured';
-      return '<span class="expl">' + escapeHtml(reason) + '</span>' + producerNote;
+      const unavailable = b.unavailable;
+      const detail = unavailable && typeof unavailable === 'object' ? unavailable.detail : null;
+      const code = b.unavailable_code || (unavailable && typeof unavailable === 'object' ? unavailable.code : null);
+      const reason = typeof detail === 'string' && detail ? detail
+        : code === 'source_unavailable' ? 'Producer source unavailable.'
+          : unavailable && typeof unavailable === 'object' ? String(code || 'Result not yet captured')
+            : String(unavailable);
+      return '<span class="expl">unavailable: ' + escapeHtml(reason) + '</span>' + producerNote;
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named
@@ -1346,8 +1349,8 @@
       disposePanel(panel);
       const next = buildPanel(prepare(tab), page, true);
       // Candidate controls and their event handlers survive asynchronous data updates.
-      for (const child of [...panel.children]) if (!child.matches('.cmpctl')) child.remove();
-      for (const child of [...next.children]) if (!child.matches('.cmpctl')) panel.appendChild(child);
+      for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots')) child.remove();
+      for (const child of [...next.children]) if (!child.matches('.cmpctl, .capture-slots')) panel.appendChild(child);
     },
     dispose: disposePanel,
     buildTooltip: buildTooltipInto,

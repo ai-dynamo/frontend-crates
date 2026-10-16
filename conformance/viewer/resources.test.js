@@ -128,3 +128,27 @@ for (const mode of ['stream', 'reasoning']) {
   if (mode === 'reasoning') assert.deepEqual(records.get('probe/case.yaml').value.cases.sample.expected, { vllm_python: { normal_text: 'fresh' } });
 }
 console.log('stream and reasoning provenance replace aliases without stale stamps');
+
+const savedNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { connection: { saveData: true } } });
+let prefetchReadyCalls = 0;
+let prefetchReads = 0;
+try {
+  const prefetchCatalog = { sources: { unified: [
+    { kind: 'inputs-and-golden', format: 'typed-json-v1' },
+    { kind: 'resolved-capture', format: 'typed-json-v1', implementation: 'dynamo_v2', version: '1.0.0' },
+  ] } };
+  const prefetchStore = {
+    scheduler: { ready() { prefetchReadyCalls++; } },
+    has: () => false,
+    async read() { prefetchReads++; },
+  };
+  const prefetchReader = new FixtureResources(prefetchCatalog, prefetchStore, {});
+  await prefetchReader.prefetchUnified([['dynamo']], [{ control: { key: 'dynamo' }, source: { implementation: 'dynamo_v2', version: '1.0.0' } }]);
+  assert.equal(prefetchReadyCalls, 0, 'data-saving mode must not start background scheduling');
+  assert.equal(prefetchReads, 0, 'data-saving mode must not fetch alternate capture shards');
+} finally {
+  if (savedNavigator) Object.defineProperty(globalThis, 'navigator', savedNavigator);
+  else delete globalThis.navigator;
+}
+console.log('data-saving mode suppresses background Unified prefetch');

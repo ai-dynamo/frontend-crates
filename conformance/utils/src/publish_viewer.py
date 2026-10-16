@@ -14,6 +14,7 @@ from contextlib import nullcontext
 
 import unified_history
 from viewer_catalog import catalog_generation, unified_projection
+from viewer_snapshots import publish_snapshots
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -39,14 +40,16 @@ def copy_validated(source: Path, target: Path, expected_hash: str | None = None,
 
 
 def _copy_site(destination: Path, revision: str, catalog: dict) -> None:
-    for relative in ("index.html", "conformance/CONFORMANCE_v2.html", "conformance/viewer-catalog.json"):
+    for relative in ("index.html", "conformance/CONFORMANCE_v2.html"):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source_path(relative), target)
-    (destination / "conformance/viewer-unified-catalog.json").write_text(json.dumps(unified_projection(catalog), ensure_ascii=False, separators=(",", ":")) + "\n")
+    published_catalog = publish_snapshots(ROOT, destination, catalog, store=unified_history._load_store_unlocked(ROOT / "conformance/fixtures-unified-v2") if catalog["sources"]["unified"] else None)
+    (destination / "conformance/viewer-catalog.json").write_text(json.dumps(published_catalog, ensure_ascii=False, separators=(",", ":")) + "\n")
+    (destination / "conformance/viewer-unified-catalog.json").write_text(json.dumps(unified_projection(published_catalog), ensure_ascii=False, separators=(",", ":")) + "\n")
     shutil.copytree(ROOT / "conformance/viewer", destination / "conformance/viewer", dirs_exist_ok=True)
     shutil.copytree(ROOT / "conformance/utils/src/assets", destination / "conformance/utils/src/assets", dirs_exist_ok=True)
-    (destination / "conformance/viewer-publication.json").write_text(json.dumps({"schema": 1, "revision": revision, "catalog_revision": catalog["revision"]}, sort_keys=True) + "\n")
+    (destination / "conformance/viewer-publication.json").write_text(json.dumps({"schema": 1, "revision": revision, "catalog_revision": published_catalog["revision"]}, sort_keys=True) + "\n")
     for resource in (*catalog["sources"]["archives"], *catalog["sources"]["unified"]):
         copy_validated(source_path(resource["path"]), destination / resource["path"], resource["sha256"], resource["size"])
     for relative in ("conformance/utils/README.md", *catalog["metadata"]["source_hashes"]["documentation"]):

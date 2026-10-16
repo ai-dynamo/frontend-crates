@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { createWorkerParser, validateResource } from './data.js';
 import { compareLegacyVersions, compareVersions, resolveUnified } from './model.js';
-import { validateUnifiedInputs, validateUnifiedCapture } from './unified.js';
+import { validateUnifiedInputs, validateUnifiedCapture, validateResolvedUnified, validateResolvedRecordContracts } from './unified.js';
 import { isMapping, getField, hasField, setField, deleteField, mappingEntries, ensureMappingField } from './mappings.js';
 import { implementationKeys, implementationValue, replaceImplementation, normalizeImplementations } from './comparison.js';
 
@@ -27,7 +27,7 @@ export class FixtureResources {
   }
 
   unifiedDependencies(descriptors) {
-    return this.catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden' || descriptors.some(item => item.source.implementation === resource.implementation && compareVersions(resource.version, item.source.version) <= 0));
+    return this.catalog.sources.unified.filter(resource => resource.kind === 'inputs-and-golden' || descriptors.some(item => item.source.implementation === resource.implementation && (resource.format === 'typed-json-v1' ? resource.version === item.source.version : compareVersions(resource.version, item.source.version) <= 0)));
   }
 
   async prepareUnified(descriptors) {
@@ -55,6 +55,10 @@ export class FixtureResources {
   }
 
   async yaml(resource, member = null, unified = false) {
+    if (resource.format === 'typed-json-v1') {
+      if (member || !unified || resource.kind !== 'inputs-and-golden') throw new Error('snapshot is not an authored Unified document');
+      return this.snapshot(resource);
+    }
     validateResource(resource);
     const key = `${resource.sha256}:${resource.size}:${member || ''}:${unified}`;
     const parsed = await cachedTask(this.documents, key, async () => {
@@ -64,6 +68,12 @@ export class FixtureResources {
       return { value, sourceBytes: bytes };
     });
     return { ...parsed, member: member || resource.path, resource: resource.path };
+  }
+
+  async snapshot(resource) {
+    validateResource(resource);
+    const value = await cachedTask(this.documents, `${resource.sha256}:${resource.size}:snapshot`, async () => this.parser.parseSnapshot(await this.store.read(resource), resource));
+    return { value, member: resource.path, resource: resource.path };
   }
 
   async legacyDocuments(resource, families = null) {
@@ -77,15 +87,25 @@ export class FixtureResources {
   async unified(family, implementation, version) {
     const input = this.catalog.sources.unified.find((item) => item.family === family && item.kind === 'inputs-and-golden');
     if (!input) throw new Error(`Unified input and GOLDEN document missing for ${family}`);
-    const inputs = await this.yaml(input, null, true);
+    const inputs = input.format === 'typed-json-v1' ? await this.snapshot(input) : await this.yaml(input, null, true);
     validateUnifiedInputs(inputs.value, family, input.path, this.catalog.metadata.unified_aliases);
+    if (input.format === 'typed-json-v1') {
+      const resource = this.catalog.sources.unified.find(item => item.family === family && item.implementation === implementation && item.version === version);
+      if (!resource) return { inputs, records: new Map() };
+      if (resource.kind !== 'resolved-capture' || resource.format !== input.format || resource.source_fingerprint !== input.source_fingerprint) throw new Error('inconsistent Unified resource format or fingerprint');
+      const resolved = await this.snapshot(resource);
+      await validateResolvedUnified(resolved.value, inputs.value, resource, this.catalog.sources.original_unified || []);
+      return { inputs, records: new Map(Object.entries(structuredClone(resolved.value))) };
+    }
+    const captureMode = this.catalog.metadata.unified_capture_policy?.[implementation]?.mode;
+    if (!captureMode) throw new Error(`Unified capture mode missing for ${implementation}`);
     const files = this.catalog.sources.unified.filter((item) => item.family === family && item.implementation === implementation && compareVersions(item.version, version) <= 0);
     const captures = await Promise.all(files.map((file) => cachedTask(this.captures, `${input.sha256}:${input.size}:${file.sha256}:${file.size}`, async () => {
       const parsed = await this.yaml(file, null, true);
-      await validateUnifiedCapture(parsed.value, inputs.value, file);
+      await validateUnifiedCapture(parsed.value, inputs.value, file, captureMode);
       return { ...file, document: parsed.value, bytes: parsed.sourceBytes };
     })));
-    return { inputs, records: resolveUnified(captures, version) };
+    return { inputs, records: validateResolvedRecordContracts(resolveUnified(captures, version), implementation, captureMode) };
   }
 
   async legacy({ root, implementation, version, mode }, families = null) {

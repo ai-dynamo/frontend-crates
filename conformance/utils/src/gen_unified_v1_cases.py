@@ -179,7 +179,15 @@ def generated_documents(root: Path = ROOT) -> dict[Path, str]:
                 }
             },
             "metadata_changes": {},
-            "document_overrides": {},
+            "document_overrides": {
+                CASE_KEY: {
+                    "capture_provenance": {
+                        "captured_with": {"dynamo_v1": version},
+                        "capture_origin": None,
+                        "inherited_from": None,
+                    }
+                }
+            },
         }
         family_root = Path("conformance/fixtures-unified-v2/families") / family
         input_path = family_root / "inputs_and_golden.yaml"

@@ -168,66 +168,6 @@ window.initializeConformanceController = function (hooks = {}) {
       cb.checked = cb.value !== base && inB.has(cb.value);
     });
   }
-  function tooltipCandidate(cell, key) {
-    function find(model) {
-      const candidate = ((model && model.candidates) || []).find(item => item.key === key);
-      if (candidate) return candidate;
-      for (const variant of (model && model.variants) || []) {
-        const nested = find(variant);
-        if (nested) return nested;
-      }
-      return null;
-    }
-    return find(cell && cell.tooltip);
-  }
-
-  function sourceMatches(key, impl) {
-    return typeof key === 'string' && typeof impl === 'string'
-      && (key === impl || key.startsWith(impl + '-') || key.startsWith(impl + '@'));
-  }
-
-  function captureIssue(cell, key) {
-    if (!cell || cell.kind === 'blank' || cell.kind === 'missing') return 'missing';
-    const entry = (cell.cmp || {})[key];
-    const candidateTip = tooltipCandidate(cell, key);
-    const block = candidateTip && candidateTip.block;
-    if (!entry || entry.na === 1) {
-      const reason = String((block && block.unavailable) || '');
-      const code = block && (block.unavailable_code || (block.capture_observation && block.capture_observation.unavailable && block.capture_observation.unavailable.code));
-      if (code === 'missing_capture') return 'missing';
-      if (['unsupported_family', 'unsupported_request_mode', 'scenario_not_applicable', 'duplicate_scenario'].includes(code)) return 'unsupported';
-      if (code === 'source_unavailable' || /source unavailable|source blocked|historical source/i.test(reason)) return 'blocked';
-      return /\bno(?: [\w.-]+)* parser\b|\bnot (?:yet )?implemented\b|unsupported (?:family|request|mode)|cannot apply/i.test(reason) ? 'unsupported' : 'missing';
-    }
-    if (entry.err === 1 || (block && (block.exception || (block.error && typeof block.error === 'object')))) return 'error';
-    if (block && typeof block.error === 'string') return 'expected';
-    if (entry.leak === 1 || (candidateTip && candidateTip.leak)) return 'leak';
-    return null;
-  }
-
-  function outputStatus(tab, cell, candidate, reference) {
-    const issue = captureIssue(cell, candidate.key);
-    if (issue) return issue;
-    const entry = cell.cmp[candidate.key];
-    const oracleTab = tab.id === 'tab-unified';
-    const compareKey = oracleTab ? 'golden' : reference;
-    const compareEntry = (cell.cmp || {})[compareKey];
-    if (['missing', 'unsupported', 'error', 'expected'].includes(captureIssue(cell, compareKey))) return 'uncompared';
-    if (entry.sig === compareEntry.sig) return 'pass';
-    const intentional = ((cell.tooltip && cell.tooltip.reasons) || []).some(reason => {
-      if (reason.intentional !== true) return false;
-      const forward = sourceMatches(candidate.key, reason.impl) && sourceMatches(compareKey, reason.reference_impl)
-        && entry.sig === reason.candidate_sig && compareEntry.sig === reason.reference_sig;
-      const reverse = sourceMatches(compareKey, reason.impl) && sourceMatches(candidate.key, reason.reference_impl)
-        && compareEntry.sig === reason.candidate_sig && entry.sig === reason.reference_sig;
-      const block = (tooltipCandidate(cell, forward ? candidate.key : compareKey) || {}).block;
-      return (forward || reverse) && block && reason.reason === (block.explanation || block.reason);
-    });
-    if (intentional) return 'documented';
-    return 'diverge';
-  }
-
-  window.__conformanceOutputStatus = outputStatus;
   const segmentLabels = window.__conformanceSegmentLabels;
   function renderSegments(cell, keys) {
     const model = window.__conformanceTooltipModel && window.__conformanceTooltipModel(cell);
@@ -242,7 +182,7 @@ window.initializeConformanceController = function (hooks = {}) {
     }
     segments.replaceChildren();
     const labels = keys.map(key => {
-      const status = outputStatus({ id: 'tab-unified' }, data, { key }, 'golden');
+      const status = window.__conformanceCaptureOutcome(data, key, 'golden');
       const segment = document.createElement('i');
       segment.className = 'matrix-status status-' + status;
       segment.dataset.capture = key;
@@ -468,7 +408,7 @@ window.initializeConformanceController = function (hooks = {}) {
     btn.addEventListener('click', function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
       const u = new URL(window.location.href);
-      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['tab', 'ref', 'cmp', 'view', 'transpose', 'cols', 'show', 'hide'].includes(key)) u.searchParams.delete(key);
+      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['slots_tab-unified', 'tab', 'ref', 'cmp', 'view', 'transpose', 'cols', 'show', 'hide'].includes(key)) u.searchParams.delete(key);
       if (tab) { u.searchParams.set('tab', tab); }
       window.location.href = u.href;  // reload at defaults, same tab
     });
@@ -762,11 +702,19 @@ window.initializeConformanceController = function (hooks = {}) {
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
     if (cell.dataset.ttipClick === 'pin') {
-      ttip.style.maxWidth = (window.innerWidth * .97) + 'px';
-      ttip.style.maxHeight = (window.innerHeight * .97) + 'px';
+      ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
+      const controls = cell.closest('#tab-unified')?.querySelector('.capture-slots');
+      const requestedTop = controls ? controls.getBoundingClientRect().bottom + margin : margin;
+      const resized = ttip.style.height && ttip.style.height !== 'auto';
+      const controlsBottom = resized
+        ? requestedTop
+        : Math.max(margin, Math.min(requestedTop, Math.max(margin, window.innerHeight - 160 - margin)));
+      const availableHeight = Math.max(160, window.innerHeight - controlsBottom - margin);
+      ttip.style.maxHeight = (resized ? window.innerHeight * .97 : availableHeight) + 'px';
       const rect = ttip.getBoundingClientRect();
       ttip.style.left = ((window.innerWidth - rect.width) / 2 + window.scrollX) + 'px';
-      ttip.style.top = ((window.innerHeight - rect.height) / 2 + window.scrollY) + 'px';
+      const top = resized ? Math.min(controlsBottom, Math.max(margin, window.innerHeight - rect.height - margin)) : controlsBottom;
+      ttip.style.top = (top + window.scrollY) + 'px';
       ttip.style.visibility = '';
       ttip.style.opacity = '';
       return;
@@ -904,7 +852,7 @@ window.initializeConformanceController = function (hooks = {}) {
   // Only the pin present at event entry belongs to the outside-click gesture.
   document.addEventListener('click', event => { pinsAtClickStart.set(event, pinnedCell); }, true);
   document.addEventListener('click', function (e) {
-    if (e.target.closest('.capture-slots, .comparison-picker')) return;
+    if (e.target.closest('.capture-slots, .comparison-picker, [data-transpose-toggle], [data-theme-toggle], [data-view-detailed]')) return;
     // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
     if (pinnedCell && pinnedCell === pinsAtClickStart.get(e) && !e.target.closest(WIRED) && !e.target.closest('.ttip')) { unpinCell(pinnedCell); }
   });
@@ -1187,7 +1135,7 @@ window.initializeConformanceController = function (hooks = {}) {
           && Boolean(candidate.closest('table[data-transpose-table]')) === transposed;
       });
     if (cell && cell._ttipPin) { cell._ttipPin(); }
-    else {
+    else if (!(panel && panel.id === 'tab-unified' && panel.dataset.loadState !== 'ready')) {
       const url = new URL(window.location.href);
       url.searchParams.delete('popup');
       window.history.replaceState(null, '', url.toString());
@@ -1511,6 +1459,7 @@ window.initializeConformanceController = function (hooks = {}) {
         cell._ttipPin?.();
       }
     }
+    restorePinnedTooltip();
     updateStickyOffsets();
   }
   return { refreshPanel, updatePanel, disposePanel, activePanel,

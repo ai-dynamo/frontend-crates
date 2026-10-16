@@ -60,6 +60,16 @@ function quotedLabel(label) {
 export function cellState(cell, reference) {
   if (cell == null) return ['empty', 'no cell was emitted for this model/case pair'];
   if (cell.applicable === false || cell.kind === 'cell' && !isApplicableCell(cell)) return ['na', cell.tooltip?.na_note || 'not applicable to this family'];
+  if (cell.red_on_diff) {
+    const outcome = selectedCellOutcome({ cmp: cell.cmp || {}, base: 'golden', shown: [reference.key], redOnDiff: true });
+    const label = quotedLabel(reference.label);
+    if (outcome.missingGolden) return ['red', 'Unified cell has no GOLDEN comparison entry'];
+    if (outcome.category === 'na') return ['empty', `the default Reference ${label} has no captured result`];
+    if (outcome.errorComparisons) return ['red', 'the default Reference returned an error'];
+    if (outcome.leakedComparisons) return ['red', 'the default Reference leaked structured markup'];
+    if (outcome.category === 'problem') return ['red', 'the default Reference differs from GOLDEN'];
+    return ['green', ''];
+  }
   const outcome = selectedCellOutcome({ cmp: cell.cmp || {}, base: reference.key, redOnDiff: Boolean(cell.red_on_diff) });
   const label = quotedLabel(reference.label);
   if (outcome.referenceState === 'missing') return ['empty', `the default Reference ${label} has no comparison entry`];

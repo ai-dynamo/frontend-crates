@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildStatus, cellState, defaultReference, parseStatusArguments, printStatus, runStatus, selectRows, selectTabs, statusTotals, validateUnifiedKnownDivergences } from './status.js';
-import { selectedCellOutcome } from './selection_comparison.js';
+import { selectedCellOutcome, selectedCaptureOutcome } from './selection_comparison.js';
 
 const reference = { key: 'reference', label: 'Dynamo sample', default_bucket: 'A' };
 const comparison = { reference: { sig: 0, na: 0, err: 0, leak: 0 }, golden: { sig: 0, na: 0, err: 0, leak: 0 } };
@@ -16,7 +16,8 @@ assert.equal(cellState({ ...cell, cmp: { reference: { ...comparison.reference, n
 assert.equal(cellState({ ...cell, cmp: { reference: { ...comparison.reference, err: 1 } } }, reference)[0], 'red');
 assert.equal(cellState({ ...cell, red_on_diff: true, cmp: { reference: comparison.reference } }, reference)[1], 'Unified cell has no GOLDEN comparison entry');
 assert.equal(cellState({ ...cell, red_on_diff: true, cmp: { ...comparison, golden: { ...comparison.golden, sig: 1 } } }, reference)[1], 'the default Reference differs from GOLDEN');
-assert.equal(cellState({ ...cell, red_on_diff: true, cmp: { ...comparison, reference: { ...comparison.reference, leak: 1 } } }, reference)[0], 'green');
+assert.deepEqual(cellState({ ...cell, red_on_diff: true, cmp: { ...comparison, reference: { ...comparison.reference, err: 1 } } }, reference), ['red', 'the default Reference returned an error']);
+assert.deepEqual(cellState({ ...cell, red_on_diff: true, cmp: { ...comparison, reference: { ...comparison.reference, leak: 1 } } }, reference), ['red', 'the default Reference leaked structured markup']);
 assert.equal(cellState({ ...cell, cmp: { ...comparison, reference: { ...comparison.reference, leak: 1 } } }, reference)[1], 'the default Reference leaked structured markup');
 assert.equal(cellState({ ...cell, red_on_diff: true, cmp: { reference: { ...comparison.reference, sig: ['golden', 'reference'] }, golden: { ...comparison.golden, sig: ['golden', 'reference'] } } }, reference)[0], 'green');
 const clean = { sig: 0, na: 0, err: 0, leak: 0 };
@@ -24,8 +25,8 @@ const choices = { base: clean, equal: clean, different: { ...clean, sig: 1 }, mi
 const outcome = (overrides = {}) => selectedCellOutcome({ cmp: choices, base: 'base', shown: ['equal'], ...overrides });
 assert.equal(outcome().marker, '=');
 assert.equal(outcome({ shown: ['base', 'equal', 'missing'] }).marker, '?');
-assert.equal(outcome({ shown: ['different', 'missing', 'failed'] }).marker, '1Δ');
-assert.equal(outcome({ shown: ['failed', 'missing'] }).marker, '');
+assert.equal(outcome({ shown: ['different', 'missing', 'failed'] }).marker, '✗');
+assert.equal(outcome({ shown: ['failed', 'missing'] }).marker, '✗');
 assert.equal(outcome({ base: null }).className, 'cmp-nobase');
 assert.equal(outcome({ base: 'unknown' }).referenceState, 'missing');
 assert.equal(outcome({ base: 'missing' }).referenceState, 'unavailable');
@@ -33,11 +34,22 @@ assert.equal(outcome({ base: 'failed', shown: [] }).category, 'na');
 assert.equal(outcome({ base: 'failed', shown: ['equal'] }).marker, '1Δ');
 assert.equal(outcome({ base: 'failed', shown: [], redOnDiff: true }).marker, '✗');
 assert.equal(outcome({ family: 'unsupported', parserNi: { base: { label: 'Selected parser', families: ['supported'] } } }).marker, 'x');
-assert.equal(outcome({ cmp: { ...choices, golden: clean }, redOnDiff: true, shown: ['different'] }).category, 'ok');
+assert.equal(outcome({ cmp: { ...choices, golden: clean }, base: 'golden', redOnDiff: true, shown: ['different'] }).category, 'problem');
+assert.equal(outcome({ cmp: choices, base: 'golden', redOnDiff: true, shown: ['different'] }).category, 'problem');
 assert.equal(outcome({ cmp: { ...choices, golden: clean }, redOnDiff: true, shown: ['different'] }).marker, '1Δ');
-assert.equal(outcome({ cmp: { ...choices, base: choices.different, golden: clean }, redOnDiff: true }).marker, '✗');
+assert.equal(outcome({ cmp: { ...choices, base: choices.different, golden: clean }, redOnDiff: true }).marker, '=');
 assert.equal(outcome({ cmp: { ...choices, base: { ...clean, leak: 1 }, golden: clean }, redOnDiff: true }).marker, '↯=');
 assert.equal(outcome({ cmp: { ...choices, base: { ...clean, leak: 1 } } }).category, 'problem');
+const goldenComparisons = { golden: clean, good: clean, bad: { ...clean, err: 1 }, leaky: { ...clean, leak: 1 } };
+const goldenOutcome = (shown) => selectedCellOutcome({ cmp: goldenComparisons, base: 'golden', shown, redOnDiff: true });
+assert.equal(goldenOutcome(['good', 'bad']).category, 'problem');
+assert.equal(goldenOutcome(['bad']).referenceState, 'error');
+assert.equal(goldenOutcome(['leaky']).category, 'problem');
+assert.equal(goldenOutcome(['leaky']).leakedComparisons, 1);
+assert.equal(selectedCaptureOutcome({ kind: 'cell', cmp: { ...comparison, selected: { ...clean, sig: 1 } } }, 'selected'), 'diverge');
+assert.equal(selectedCaptureOutcome({ kind: 'cell', cmp: { ...comparison, selected: clean } }, 'selected'), 'pass');
+assert.equal(selectedCaptureOutcome({ kind: 'cell', cmp: { ...comparison, selected: { ...clean, err: 1 } } }, 'selected'), 'error');
+assert.equal(selectedCaptureOutcome({ kind: 'cell', cmp: { ...comparison, selected: { ...clean, leak: 1 } } }, 'selected'), 'leak');
 
 const tab = { id: 'tab-unified', kind: 'unified', label: 'Unified v2 (reasoning + tools)', candidates: [reference],
   columns: [{ sub: 'present', label: '1' }, { sub: 'missing', label: '2' }, { sub: 'absent', label: '3' }],

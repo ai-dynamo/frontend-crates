@@ -5,9 +5,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # conformance
 
-Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The maintained root `index.html` loads the compact Unified catalog and active versioned YAML over HTTP; the full catalog remains available to Node model checks and legacy raw archive links.
+Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The checkout root `index.html` reads the compact Unified catalog and selected versioned YAML over HTTP. Publication generates gzip-compressed typed JSON inputs and resolved captures in the site output; YAML remains authoritative, and raw-source links retain original YAML bytes. The full catalog remains available to Node model checks and legacy raw archive links.
 
-## Unified storage contract: plain versioned YAML only
+## Unified source format: plain versioned YAML only
 
 The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
 

@@ -42,17 +42,21 @@ export function resolveUnified(captures, version) {
   const ordered = captures.filter((entry) => compareVersions(entry.version, version) <= 0)
     .sort((left, right) => compareVersions(left.version, right.version));
   const stateByCase = new Map();
+  const originByCase = new Map();
+  const metadataOriginByCase = new Map();
   for (const capture of ordered) {
     for (const [caseId, change] of Object.entries(capture.document.changes || {})) {
       if (change?.absent === true && Object.keys(change).length === 1) {
         stateByCase.delete(caseId);
+        originByCase.delete(caseId);
+        metadataOriginByCase.delete(caseId);
         continue;
       }
       const prior = stateByCase.get(caseId);
       if (!prior && ['case_key', 'stimulus', 'observation'].some(key => !Object.hasOwn(change, key))) throw new Error(`first capture change must provide a complete record: ${caseId} (${capture.path})`);
       const next = { ...structuredClone(prior || {}), ...structuredClone(change) };
       if (!prior || Object.hasOwn(change, 'observation')) {
-        next.__origin = capture;
+        originByCase.set(caseId, capture);
         delete next._document_overrides;
       }
       if (prior?._record_metadata !== undefined) next._record_metadata = prior._record_metadata;
@@ -66,8 +70,13 @@ export function resolveUnified(captures, version) {
     for (const [caseId, metadata] of Object.entries(capture.document.metadata_changes || {})) {
       if (!stateByCase.has(caseId)) throw new Error(`metadata change has no observation: ${caseId} (${capture.path})`);
       const record = stateByCase.get(caseId);
-      if (metadata instanceof Map ? metadata.size : Object.keys(metadata || {}).length) record._record_metadata = structuredClone(metadata);
-      else delete record._record_metadata;
+      if (metadata instanceof Map ? metadata.size : Object.keys(metadata || {}).length) {
+        record._record_metadata = structuredClone(metadata);
+        metadataOriginByCase.set(caseId, capture.version);
+      } else {
+        delete record._record_metadata;
+        metadataOriginByCase.delete(caseId);
+      }
     }
     for (const [caseId, override] of Object.entries(capture.document.document_overrides || {})) {
       if (!stateByCase.has(caseId)) throw new Error(`document override has no observation: ${caseId} (${capture.path})`);
@@ -76,8 +85,9 @@ export function resolveUnified(captures, version) {
     }
   }
   return new Map([...stateByCase].map(([caseId, record]) => {
-    const { __origin, _record_metadata, _document_overrides, ...observation } = record;
-    const document = mergeMappings(__origin.document.document, { captured_with: { [__origin.implementation]: __origin.version } });
+    const { _record_metadata, _document_overrides, ...observation } = record;
+    const __origin = originByCase.get(caseId);
+    const document = mergeMappings(structuredClone(__origin.document.document), { captured_with: { [__origin.implementation]: __origin.version } });
     const origin = __origin.document.provenance?.origin;
     if (__origin.document.provenance?.status === 'captured' && origin) setField(document, 'capture_origin', structuredClone(origin));
     if (ordered.at(-1)?.version !== __origin.version) setField(document, 'inherited_from', __origin.version);
@@ -89,9 +99,14 @@ export function resolveUnified(captures, version) {
       }
     }
     for (const [key, value] of Object.entries(_document_overrides || {})) {
-      if (key !== 'capture_provenance') setField(document, key, structuredClone(value));
+      if (key === 'parser_path' && value === null) deleteField(document, key);
+      else if (key !== 'capture_provenance') setField(document, key, structuredClone(value));
     }
-    if (_record_metadata instanceof Map ? _record_metadata.size : _record_metadata && Object.keys(_record_metadata).length) setField(document, 'record_metadata', _record_metadata);
+    if (_record_metadata instanceof Map ? _record_metadata.size : _record_metadata && Object.keys(_record_metadata).length) {
+      const metadata = structuredClone(_record_metadata);
+      if (metadataOriginByCase.get(caseId) !== version) deleteField(metadata, 'verified_recapture');
+      setField(document, 'record_metadata', metadata);
+    }
     observation.document = document;
     return [caseId, { value: observation, member: __origin.path, sourceBytes: __origin.bytes }];
   }));

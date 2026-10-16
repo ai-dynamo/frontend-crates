@@ -25,7 +25,7 @@ import unified_history
 import unified_taxonomy
 import gen_unified_golden
 from unified_tools import unified_tools
-from impls import IMPL_SPECS, VLLM_RUST_UNAVAILABLE
+from impls import IMPL_SPECS, VLLM_RUST_UNAVAILABLE, UNIFIED_BATCH_IMPLS, BATCH_SOURCE_IMPL, BATCH_SOURCE_BLOCKERS, UNIFIED_DISPLAY
 from fixture_disposition import TOOLCALLING_CASE_ALIASES
 from null_cases import NULL_DESCRIPTIONS, MIXED_CASE_FAMILIES
 from schema_cases import schema_fold
@@ -284,6 +284,20 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
     return {
         "tabs": [dict(item) for item in VIEWER_TAB_SPECS],
         "selection_policy": VIEWER_SELECTION_POLICY,
+        "unified_display": {
+            **{key: value for key, value in UNIFIED_DISPLAY.items() if key != "group_labels"},
+            "group_labels": {str(key): value for key, value in UNIFIED_DISPLAY.get("group_labels", {}).items()},
+        },
+        "unified_capture_policy": {
+            implementation: {
+                "producer": BATCH_SOURCE_IMPL.get(implementation, implementation),
+                "engine": "dynamo" if implementation.startswith("dynamo") else "vllm" if implementation.startswith("vllm") else "sglang",
+                "language": "rust" if implementation.startswith("dynamo") or implementation == "vllm_rust" else "python",
+                "mode": "batch" if implementation in UNIFIED_BATCH_IMPLS else "stream",
+                "source_blockers": {version: reason for (key, version), reason in BATCH_SOURCE_BLOCKERS.items() if key == implementation},
+            }
+            for implementation in sorted({*UNIFIED_BATCH_IMPLS, *(spec.key for spec in IMPL_SPECS)})
+        },
         "reasoning_display": {
             "groups": CASE_GROUPS,
             "parser_families": PARSER_TO_REASONING_FAMILY,
@@ -415,8 +429,12 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
                                "archive": "conformance/fixtures/reasoning/fixtures-v1/inputs.tar.gz"})
     for item in unified:
         if item["implementation"]:
+            policy = source_metadata["unified_capture_policy"].get(item["implementation"], {})
             candidates.append({"mode": "unified", "implementation": item["implementation"],
-                               "version": item["version"], "source": item["path"]})
+                               "version": item["version"], "source": item["path"],
+                               "engine": policy.get("engine"), "language": policy.get("language"),
+                               "capture_mode": policy.get("mode"), "producer": policy.get("producer"),
+                               "source_blocker": policy.get("source_blockers", {}).get(item["version"])})
     overlay = next((item for item in archives if item["path"] == "conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz"), None)
     if overlay:
         versions = {}
@@ -461,13 +479,26 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
 
 def unified_projection(catalog: dict) -> dict:
     """Keep browser initialization independent of legacy archives and metadata."""
-    keys = ["selection_policy", "implementations", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
+    keys = ["selection_policy", "implementations", "unified_display", "unified_capture_policy", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
     metadata = {key: catalog["metadata"][key] for key in keys if key in catalog["metadata"]}
+    legacy_candidate_identities = {}
+    for candidate in catalog["sources"].get("candidates", []):
+        mode = candidate["mode"]
+        if mode not in {"batch", "stream", "batch-on-stream", "unified"}:
+            continue
+        implementation = candidate["implementation"]
+        version = candidate["version"]
+        version_slug = re.sub(r"[^a-zA-Z0-9]+", "-", version).strip("-")
+        mode_key = "b-" if mode == "batch" else "s-" if mode == "batch-on-stream" else ""
+        legacy_candidate_identities[f"{implementation}-{mode_key}{version_slug}"] = f"{implementation}@{version}"
+    metadata["legacy_candidate_identities"] = legacy_candidate_identities
     metadata["tabs"] = [tab for tab in catalog["metadata"].get("tabs", []) if tab["suite"] == "unified"]
     metadata["selection_policy"] = {"unified": metadata.get("selection_policy", {}).get("unified", {})}
     metadata["folds"] = metadata.get("folds", {})
-    return {"schema": catalog.get("schema", 1), "revision": catalog["revision"], "snapshot": catalog.get("snapshot"),
-            "metadata": metadata, "sources": {"archives": [], "unified": catalog["sources"]["unified"],
+    return {**({"source_revision": catalog["source_revision"]} if "source_revision" in catalog else {}),
+            "schema": catalog.get("schema", 1), "revision": catalog["revision"], "snapshot": catalog.get("snapshot"),
+            "metadata": metadata, "sources": {**({"original_unified": catalog["sources"]["original_unified"]} if "original_unified" in catalog["sources"] else {}),
+            "archives": [], "unified": catalog["sources"]["unified"],
             "candidates": [item for item in catalog["sources"].get("candidates", []) if item["mode"] == "unified"]}}
 
 

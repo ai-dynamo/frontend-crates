@@ -23,7 +23,8 @@ def test_browser_data_primitives_and_tar_guards():
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { gzipSync } from './conformance/viewer/vendor/fflate/esm/browser.js';
-import { parseYaml, readTarGzip, sha256 } from './conformance/viewer/data.js';
+import { readTarGzip, sha256 } from './conformance/viewer/data.js';
+import { parseYaml } from './conformance/viewer/yaml_data.js';
 
 const enc = new TextEncoder();
 function octal(block, offset, length, value) {

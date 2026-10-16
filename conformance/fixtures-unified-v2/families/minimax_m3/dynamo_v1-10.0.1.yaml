@@ -72,4 +72,10 @@ changes:
             timezone: EST
         chunks: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  v1_split_parallel_tool_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin: null
+      inherited_from: null
