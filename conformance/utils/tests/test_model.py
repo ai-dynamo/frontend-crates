@@ -1425,7 +1425,16 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
     for row in tab["rows"]:
         family = row["family"]
         for scenario in scenarios:
-            cmp = leaf_cells(row)[scenario]["cmp"]
+            cell = leaf_cells(row)[scenario]
+            cmp = cell["cmp"]
+            if family == "gpt_oss":
+                assert cmp["dynamo"]["na"] == 0, (family, scenario, "split capture is measured")
+                candidate = next(candidate for candidate in cell["tooltip"]["candidates"]
+                                 if candidate["key"] == "dynamo")
+                assert candidate["parse_mode"] == "split"
+                assert candidate["block"]["events"] == []
+                assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "red"
+                continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families | {"gpt_oss"}:
                 _assert_unmeasured_versions(cmp, older_keys)
@@ -1492,11 +1501,17 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
         assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
+        shared_blocks = {candidate["key"]: candidate["block"]
+                         for candidate in shared["tooltip"]["candidates"]}
+        if family == "gpt_oss":
+            assert shared["cmp"]["dynamo"]["na"] == 0
+            assert shared_blocks["golden"]["events"] == events
+            assert shared_blocks["dynamo"]["events"] == []
+            assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == "red"
+            continue
         assert shared["status"] != "na"
-        candidates = {candidate["key"]: candidate["block"]
-                      for candidate in shared["tooltip"]["candidates"]}
-        assert candidates["golden"]["events"] == events
-        measured = candidates["dynamo"]
+        assert shared_blocks["golden"]["events"] == events
+        measured = shared_blocks["dynamo"]
         assert "error" not in measured and "unavailable" not in measured
         assert measured["events"], family
         expected_color = "green" if measured["events"] == events else "red"
