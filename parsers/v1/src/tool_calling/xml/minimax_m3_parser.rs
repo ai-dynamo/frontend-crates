@@ -269,13 +269,15 @@ fn parse_parameters(
         };
         let value_end = value_start + value_end_rel;
         let raw_value = &body[value_start..value_end];
-        let declared = SchemaWalker::new(root_schema).parameter_schemas(parameter_name);
+        let (required, alternatives) =
+            SchemaWalker::new(root_schema).parameter_schemas(parameter_name);
         let union;
-        let schema = match declared.as_slice() {
-            [] => param_config.get(parameter_name),
-            [schema] => Some(*schema),
-            _ => {
-                union = serde_json::json!({ "anyOf": declared });
+        let schema = match (required.first(), alternatives.as_slice()) {
+            (Some(schema), _) => Some(*schema),
+            (None, []) => param_config.get(parameter_name),
+            (None, [schema]) => Some(*schema),
+            (None, _) => {
+                union = serde_json::json!({ "anyOf": alternatives });
                 Some(&union)
             }
         };
@@ -746,30 +748,50 @@ impl<'a> SchemaWalker<'a> {
         })
     }
 
-    // Tool parameters may be declared under top-level allOf/anyOf/oneOf variants; a
-    // parameter declared by several of them is typed by the union of those schemas.
-    fn parameter_schemas(&mut self, tag: &str) -> Vec<&'a Value> {
-        let mut declared = Vec::new();
-        self.collect_parameter_schemas(self.root, tag, &mut declared);
-        if self.exhausted { Vec::new() } else { declared }
+    // Tool parameters may be declared at the root, under allOf, or under anyOf/oneOf
+    // variants. Root and allOf declarations always apply, so they win over variant
+    // declarations; a parameter declared only by several variants is typed by their union.
+    fn parameter_schemas(&mut self, tag: &str) -> (Vec<&'a Value>, Vec<&'a Value>) {
+        let mut required = Vec::new();
+        let mut alternatives = Vec::new();
+        self.collect_parameter_schemas(self.root, tag, false, &mut required, &mut alternatives);
+        if self.exhausted {
+            (Vec::new(), Vec::new())
+        } else {
+            (required, alternatives)
+        }
     }
 
     fn collect_parameter_schemas(
         &mut self,
         schema: &'a Value,
         tag: &str,
-        declared: &mut Vec<&'a Value>,
+        in_variant: bool,
+        required: &mut Vec<&'a Value>,
+        alternatives: &mut Vec<&'a Value>,
     ) {
         self.with_schema(schema, (), |walker, schema| {
-            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag))
-                && !declared.contains(&child)
-            {
-                declared.push(child);
+            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+                let declared = if in_variant {
+                    &mut *alternatives
+                } else {
+                    &mut *required
+                };
+                if !declared.contains(&child) {
+                    declared.push(child);
+                }
             }
             for keyword in ["allOf", "anyOf", "oneOf"] {
                 if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let in_variant = in_variant || keyword != "allOf";
                     for branch in branches {
-                        walker.collect_parameter_schemas(branch, tag, declared);
+                        walker.collect_parameter_schemas(
+                            branch,
+                            tag,
+                            in_variant,
+                            required,
+                            alternatives,
+                        );
                     }
                 }
             }
@@ -1456,14 +1478,6 @@ NS|</tool_call>"#;
             (
                 [
                     serde_json::json!({"type": "integer"}),
-                    serde_json::json!({"type": "integer"}),
-                ],
-                "2",
-                serde_json::json!(2),
-            ),
-            (
-                [
-                    serde_json::json!({"type": "integer"}),
                     serde_json::json!({"type": "boolean"}),
                 ],
                 "2",
@@ -1504,6 +1518,30 @@ NS|</tool_call>"#;
                 parse_with_parameters(parameters.clone(), &raw_value),
                 serde_json::json!({"value": expected}),
                 "{parameters}: {raw}"
+            );
+        }
+    }
+
+    #[test]
+    fn root_and_all_of_parameters_take_precedence_over_variants() {
+        let tok = "]<]minimax[>[";
+        let variants = serde_json::json!([
+            {"properties": {"value": {"type": "string"}}},
+            {"properties": {"other": {"type": "string"}}}
+        ]);
+        let declaration = serde_json::json!({"properties": {"value": {"type": "integer"}}});
+        let raw = format!("{tok}<value>2{tok}</value>");
+        for parameters in [
+            serde_json::json!({
+                "properties": {"value": {"type": "integer"}},
+                "oneOf": variants
+            }),
+            serde_json::json!({"allOf": [declaration], "anyOf": variants}),
+        ] {
+            assert_eq!(
+                parse_with_parameters(parameters.clone(), &raw),
+                serde_json::json!({"value": 2}),
+                "{parameters}"
             );
         }
     }
