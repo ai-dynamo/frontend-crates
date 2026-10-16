@@ -349,6 +349,22 @@ def refresh_batch_on_stream(v2_ver: str) -> None:
                 (fam_dir / src.name).write_text(dump_yaml(doc))
             print(f"[batch-on-stream] {family}: created dir, recorded {len(rec)} cases")
             continue
+        # A new authored batch file must also acquire a stream-on-batch capture
+        # when this family already has older files in the overlay.
+        for src in sorted((batch_inputs / family).glob("TOOLCALLING.batch*.yaml")):
+            dst = fam_dir / src.name
+            if dst.exists():
+                continue
+            source = yaml.safe_load(src.read_text())
+            if source.get("mode") != "batch":
+                continue
+            cases = {cid: {"dynamo_v2": rec[cid]}
+                     for cid in (source.get("cases") or {}) if cid in rec}
+            if cases:
+                dst.write_text(dump_yaml({
+                    "family": family, "mode": "batch-on-stream",
+                    "captured_with": {"dynamo_v2": v2_ver}, "cases": cases,
+                }))
         for fp in sorted(fam_dir.glob("TOOLCALLING.batch*.yaml")):
             doc = yaml.safe_load(fp.read_text())
             # Refuse a partial refresh: if the recorder omitted a case that already

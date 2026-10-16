@@ -646,7 +646,7 @@
   function activateTab(id, shouldUpdateUrl) {
     if (!id) return;
     if (pinnedCell) unpinCell(pinnedCell);
-    portalledTooltips.forEach(function (ttip) {
+    visibleTooltips.forEach(function (ttip) {
       const owner = ttip._ttipOwner;
       if (owner && owner.closest('.tab-panel')?.id !== id) {
         owner._ttipUnpin ? owner._ttipUnpin() : ttip.classList.remove('ttip-visible');
@@ -720,13 +720,14 @@
   function place(cell) {
     const ttip = cell._ttip || cell.querySelector('.ttip');
     if (!ttip) return;
+    visibleTooltips.add(ttip);
     equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
     const isPortalled = ttip.parentNode === document.body;
     ttip.style.left = '0px';
-    ttip.style.top = isPortalled ? '0px' : '100%';
+    ttip.style.top = '0px';
     ttip.style.right = 'auto';
     ttip.style.bottom = 'auto';
     // Cap the width at the viewport MINUS both gutters — that is the most a popup may
@@ -737,6 +738,12 @@
     // gutter's worth of usable room on top of the two real gutters.)
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
+    // An expanded schema may fit on neither side; scroll it within the larger space.
+    const schemaOpen = ttip.querySelector('.case-schema[open]');
+    ttip.style.maxHeight = schemaOpen
+      ? Math.max(0, Math.min(window.innerHeight - 2 * margin,
+        Math.max(cellRect.top - margin, window.innerHeight - cellRect.bottom - margin))) + 'px'
+      : '';
     const tipRect = ttip.getBoundingClientRect();
     const vw = window.innerWidth, vh = window.innerHeight;
     let shiftX = 0;
@@ -744,42 +751,50 @@
     if (overflowRight > 0) shiftX = -overflowRight;
     const absLeft = cellRect.left + shiftX;
     if (absLeft < margin) shiftX += (margin - absLeft);
+    const placeAbove = cellRect.bottom + tipRect.height > vh - margin
+      && cellRect.top - tipRect.height >= margin;
+    let top = placeAbove ? cellRect.top - tipRect.height : cellRect.bottom;
+    if (schemaOpen) {
+      // Resizing can move the focused owner outside the viewport; keep its disclosure readable.
+      top = Math.max(margin, Math.min(top, vh - margin - tipRect.height));
+    }
     if (isPortalled) {
       ttip.style.left = (cellRect.left + window.scrollX + shiftX) + 'px';
-      ttip.style.top = (cellRect.bottom + window.scrollY) + 'px';
-      if (cellRect.bottom + tipRect.height > vh - margin && cellRect.top - tipRect.height > margin) {
-        ttip.style.top = (cellRect.top + window.scrollY - tipRect.height) + 'px';
-      }
+      ttip.style.top = (top + window.scrollY) + 'px';
     } else {
-      ttip.style.left = shiftX + 'px';
-    }
-    if (!isPortalled && cellRect.bottom + tipRect.height > vh - margin
-        && cellRect.top - tipRect.height > margin) {
-      ttip.style.top = 'auto';
-      ttip.style.bottom = '100%';
+      // Measure the containing origin so table-cell borders count toward the viewport gutters.
+      ttip.style.left = (cellRect.left + shiftX - tipRect.left) + 'px';
+      ttip.style.top = (top - tipRect.top) + 'px';
     }
     ttip.style.visibility = '';
     ttip.style.opacity = '';
   }
 
   let placeScheduled = false;
-  const portalledTooltips = new Set();
-  function repositionPortalledTooltips() {
+  const visibleTooltips = new Set();
+  function repositionVisibleTooltips() {
     if (placeScheduled) return;
     placeScheduled = true;
     window.requestAnimationFrame(function () {
       placeScheduled = false;
-      portalledTooltips.forEach(function (ttip) {
+      visibleTooltips.forEach(function (ttip) {
         if (ttip.classList.contains('ttip-visible') && ttip._ttipOwner) {
           place(ttip._ttipOwner);
         } else {
-          portalledTooltips.delete(ttip);
+          visibleTooltips.delete(ttip);
         }
       });
     });
   }
-  window.addEventListener('scroll', repositionPortalledTooltips, true);
-  window.addEventListener('resize', repositionPortalledTooltips);
+  window.addEventListener('scroll', repositionVisibleTooltips, true);
+  window.addEventListener('resize', repositionVisibleTooltips);
+  document.addEventListener('toggle', function (event) {
+    if (!event.target.matches('.case-schema')) return;
+    const ttip = event.target.closest('.ttip');
+    if (ttip && ttip._ttipOwner && ttip.classList.contains('ttip-visible')) {
+      place(ttip._ttipOwner);
+    }
+  }, true);
 
   // Touch devices have no hover, so the tooltip is opened by TAP and pinned open
   // (with an ✕ to close) rather than shown on pointerenter. Where hover EXISTS, hover is
@@ -876,14 +891,12 @@
       if (cell._focusTooltip || (document.activeElement && cell.contains(document.activeElement))) return;
       portalParent = ttip.parentNode;
       document.body.appendChild(ttip);
-      portalledTooltips.add(ttip);
     }
 
     function restoreTooltip() {
       if (!portalParent) return;
       portalParent.appendChild(ttip);
       portalParent = null;
-      portalledTooltips.delete(ttip);
     }
 
     // ✕ close button (shown only while pinned) — inserted once per tooltip.
@@ -918,6 +931,7 @@
     }
     function unpin() {
       ttip.classList.remove('ttip-visible', 'ttip-pinned');
+      visibleTooltips.delete(ttip);
       restoreTooltip();
       isVisible = false;
       isActive = false;
@@ -955,6 +969,8 @@
     }
 
     function scheduleHide() {
+      // A portalled disclosure still belongs to this popup while it owns focus.
+      if (ttip.contains(document.activeElement)) { return; }
       isActive = false;
       if (showTimer !== null) {
         window.clearTimeout(showTimer);
@@ -962,6 +978,7 @@
       }
       if (!isVisible) {
         ttip.classList.remove('ttip-visible');
+        visibleTooltips.delete(ttip);
         restoreTooltip();
         return;
       }
@@ -972,6 +989,7 @@
         hideTimer = null;
         if (isActive) return;
         ttip.classList.remove('ttip-visible');
+        visibleTooltips.delete(ttip);
         restoreTooltip();
         isVisible = false;
       }, hideDelayMs);
@@ -1053,10 +1071,18 @@
         scheduleShow();
       }
     });
-    cell.addEventListener('focusout', function () {
+    const focusWithinTooltip = function (target) {
+      return target && (cell.contains(target) || ttip.contains(target));
+    };
+    const onFocusOut = function (event) {
+      if (focusWithinTooltip(event.relatedTarget)) { return; }
       if (!ttip.classList.contains('ttip-pinned')) { scheduleHide(); }
       cell._focusTooltip = false;
-    });
+    };
+    cell.addEventListener('focusout', onFocusOut);
+    // Portal placement changes ancestry, so the popup owns its own focus events.
+    ttip.addEventListener('focusin', keepTooltipOpen);
+    ttip.addEventListener('focusout', onFocusOut);
     ttip.addEventListener('pointerenter', keepTooltipOpen);
     ttip.addEventListener('mouseenter', keepTooltipOpen);
     ttip.addEventListener('pointerleave', onLeave);
@@ -1338,6 +1364,7 @@
     if (enabled) {
       document.querySelectorAll('.tab-panel').forEach(ensureTransposed);
     }
+    document.documentElement.classList.remove('transpose-pending');
     if (shouldUpdateUrl) {
       updateTransposeUrl(Boolean(enabled));
     }

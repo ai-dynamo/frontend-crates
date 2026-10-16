@@ -361,6 +361,12 @@ impl InvokeEmitter for DeepSeekV41 {
             complete: true,
         }))
     }
+
+    fn defer_parse_error(&self, _invoke: &str, error: &anyhow::Error) -> bool {
+        error
+            .downcast_ref::<serde_json::Error>()
+            .is_some_and(serde_json::Error::is_eof)
+    }
 }
 
 #[cfg(test)]
@@ -688,6 +694,8 @@ mod tests {
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{} trailing junk</｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">1</｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
         ] {
             for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
                 let mut parser = deepseek_v41_unified(&[]);
@@ -699,6 +707,82 @@ mod tests {
                 assert!(result.is_err(), "split {split}");
                 assert!(output.events.is_empty(), "split {split}");
             }
+        }
+    }
+
+    /// Reset returns parser-owned bytes, a lifecycle result the Unified corpus cannot assert.
+    #[test]
+    fn reset_preserves_deferred_malformed_input() {
+        let input = "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>";
+        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+            let mut parser = deepseek_v41_unified(&[]);
+            let mut output = UnifiedParserOutput::default();
+            parser.parse_into(&input[..split], &mut output).unwrap();
+            parser.parse_into(&input[split..], &mut output).unwrap();
+            assert!(parser.finish().is_err(), "split {split}");
+            assert!(output.events.is_empty(), "split {split}");
+            assert_eq!(parser.reset(), input, "reset split {split}");
+        }
+    }
+
+    #[test]
+    fn reset_preserves_multiple_malformed_invokes() {
+        let first = concat!(
+            "<｜DSML｜ calls>",
+            "<｜DSML｜ invoke name=\"first\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke>"
+        );
+        let second = concat!(
+            "<｜DSML｜ invoke name=\"second\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":}</｜DSML｜ parameter></｜DSML｜ invoke>",
+            "</｜DSML｜ calls>"
+        );
+        for separator in ["", "\n", " \té"] {
+            let input = format!("{first}{separator}{second}");
+            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+                let mut parser = deepseek_v41_unified(&[]);
+                let mut output = UnifiedParserOutput::default();
+                let mut received = &input[..split];
+                let mut result = parser.parse_into(received, &mut output);
+                if result.is_ok() {
+                    received = &input;
+                    result = parser.parse_into(&input[split..], &mut output);
+                }
+                if result.is_ok() {
+                    result = parser.finish().map(|_| ());
+                }
+                assert!(result.is_err(), "separator {separator:?}, split {split}");
+                assert!(
+                    output.events.is_empty(),
+                    "separator {separator:?}, split {split}"
+                );
+                assert_eq!(
+                    parser.reset(),
+                    received,
+                    "separator {separator:?}, split {split}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn truncated_json_parameter_drops_bad_call_and_recovers_the_next_call() {
+        let input = concat!(
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+            "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
+        );
+        for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
+            let mut parser = deepseek_v41_unified(&[]);
+            let mut output = UnifiedParserOutput::default();
+            parser.parse_into(&input[..split], &mut output).unwrap();
+            parser.parse_into(&input[split..], &mut output).unwrap();
+            output.append(&mut parser.finish().unwrap());
+            assert_eq!(
+                output.assembled(),
+                vec![UnifiedEvent::ToolCall {
+                    name: "echo".into(),
+                    arguments: serde_json::json!({"value": "Café"}),
+                }],
+                "split {split}"
+            );
         }
     }
 
