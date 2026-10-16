@@ -921,8 +921,8 @@ impl ChoiceJailState {
         }
     }
 
-    /// `logprobs` are the records this trailing text owns, which excludes any
-    /// already emitted with the completed jail.
+    /// `logprobs` are the records this trailing text owns. `None` means the
+    /// completed jail already emitted them, so the text counts as released.
     fn handle_trailing_content(
         &mut self,
         content: &str,
@@ -933,6 +933,10 @@ impl ChoiceJailState {
     ) {
         if content.is_empty() {
             return;
+        }
+        if logprobs.is_none() {
+            // Text held from here must not claim a later chunk's records.
+            self.partial_released_chars += content.chars().count();
         }
 
         // Combine a pending hold with this chunk, mirroring process_content:
@@ -1005,7 +1009,7 @@ impl ChoiceJailState {
                     }
                     format!("{marker}{suffix}")
                 };
-                let remaining = self.partial_logprobs_buffer.take();
+                let remaining = self.take_held_entries();
                 self.begin_jail(jailed, remaining);
                 return;
             }

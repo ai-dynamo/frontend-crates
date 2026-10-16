@@ -303,7 +303,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_held_text_records_stay_aligned_after_contentless_chunks() {
+    async fn test_held_text_records_stay_aligned() {
         let chunk = |text: Option<&str>, tokens: &[&str]| {
             let mut chunk =
                 test_utils::create_mock_response_chunk(text.unwrap_or_default().to_string(), 0);
@@ -329,8 +329,17 @@ mod tests {
             });
             chunk
         };
-        let mut k3_last = chunk(Some("x<|close|>mes"), &["x", "<|close|>", "mes"]);
-        k3_last.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+        let k3_last = || {
+            let mut last = chunk(Some("x<|close|>mes"), &["x", "<|close|>", "mes"]);
+            last.data.as_mut().unwrap().choices[0].finish_reason = Some(FinishReason::Length);
+            last
+        };
+        let k3_call = concat!(
+            "<|open|>tools<|sep|><|open|>call tool=\"calc\" index=\"1\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>323<|close|>argument<|sep|>",
+            "<|close|>call<|sep|><|close|>tools<|sep|>"
+        );
+        let call_then_marker = format!("{k3_call}<|close|>mes");
         let cases = [
             (
                 "deepseek_v4",
@@ -347,9 +356,18 @@ mod tests {
                 vec![
                     chunk(Some("<|close|>mes"), &["<|close|>", "mes"]),
                     chunk(None, &["thinking"]),
-                    k3_last,
+                    k3_last(),
                 ],
                 vec!["<|close|>", "mes", "thinking", "x"],
+            ),
+            (
+                // The completed call's emission already carries its trailing marker's records.
+                "kimi_k3",
+                vec![
+                    chunk(Some(&call_then_marker), &[k3_call, "<|close|>", "mes"]),
+                    k3_last(),
+                ],
+                vec![k3_call, "<|close|>", "mes", "x"],
             ),
         ];
         for (parser, chunks, expected) in cases {
@@ -373,7 +391,11 @@ mod tests {
             };
             let all: Vec<_> = choices.iter().flat_map(|choice| tokens(choice)).collect();
             assert_eq!(all, expected, "parser={parser}");
-            for choice in &choices {
+            // A call emission owns its whole chunk's records; check text emissions.
+            for choice in choices
+                .iter()
+                .filter(|choice| choice.delta.tool_calls.is_none())
+            {
                 if let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
                     &choice.delta.content
                 {
