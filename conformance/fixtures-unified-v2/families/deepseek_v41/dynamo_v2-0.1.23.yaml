@@ -48,6 +48,42 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for deepseek_v41
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: 5ded88a1e8b5a03f4c899b349296adcd64576930c22355389ca8ed2d148e4441
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: c12048f3969ed6802498f874c00c951ffe2f9c8fd84574d203217b327624fde5
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: 4dc350b53e9d95aa20d51bf30a6a128d44117e00d5a502c2a893a3027c1dbc9d
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: dd6ae40c9599030333c3198c450a1b356124381436cfbf9da322d63d4e684d86
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -1202,6 +1238,26 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   content_then_reason_then_tool:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
     init:
       starting_state: None
       tool_output_mode: Native

@@ -14740,3 +14740,170 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  dotted_name_minimal:
+    lifecycle: active
+    scenario: dotted_name_minimal
+    description: A native call to a.b preserves the complete name and empty arguments.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_minimal
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="a.b"></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: a.b
+        parameters:
+          type: object
+          properties: {}
+          required: []
+          additionalProperties: false
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="a.b">
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+  dotted_name_mixed_punctuation:
+    lifecycle: active
+    scenario: dotted_name_mixed_punctuation
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    policy: []
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="my-tool.v2"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: my-tool.v2
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="my-tool.v2">
+      - delta_text: <｜DSML｜ parameter name="location" string="true">
+      - delta_text: Beijing
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+  dotted_name_multiple_segments:
+    lifecycle: active
+    scenario: dotted_name_multiple_segments
+    description: A native call preserves every segment of server.tools.weather.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="server.tools.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.tools.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="server.tools.weather">
+      - delta_text: <｜DSML｜ parameter name="location" string="true">
+      - delta_text: Beijing
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+  dotted_name_shared_prefix:
+    lifecycle: active
+    scenario: dotted_name_shared_prefix
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    policy: []
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="server.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="server.time"><｜DSML｜ parameter name="timezone" string="true">Asia/Shanghai</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      - name: server.time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+          required:
+          - timezone
+          additionalProperties: false
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="server.weather">
+      - delta_text: <｜DSML｜ parameter name="location" string="true">
+      - delta_text: Beijing
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: <｜DSML｜ invoke name="server.time">
+      - delta_text: <｜DSML｜ parameter name="timezone" string="true">
+      - delta_text: Asia/Shanghai
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai

@@ -19299,3 +19299,287 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  dotted_name_minimal:
+    lifecycle: active
+    scenario: dotted_name_minimal
+    description: A native call to a.b preserves the complete name and empty arguments.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_minimal
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=a.b<|message|><atem:function_calls>
+
+        <atem:invoke name="a.b">
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: a.b
+        parameters:
+          type: object
+          properties: {}
+          required: []
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=a.b
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="a.b">
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+  dotted_name_mixed_punctuation:
+    lifecycle: active
+    scenario: dotted_name_mixed_punctuation
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    policy: []
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=my-tool.v2<|message|><atem:function_calls>
+
+        <atem:invoke name="my-tool.v2">
+
+        <atem:parameter name="location">Beijing</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: my-tool.v2
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=my-tool.v2
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="my-tool.v2">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="location">
+      - delta_text: Beijing
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+  dotted_name_multiple_segments:
+    lifecycle: active
+    scenario: dotted_name_multiple_segments
+    description: A native call preserves every segment of server.tools.weather.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=server.tools.weather<|message|><atem:function_calls>
+
+        <atem:invoke name="server.tools.weather">
+
+        <atem:parameter name="location">Beijing</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.tools.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=server.tools.weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="server.tools.weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="location">
+      - delta_text: Beijing
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+  dotted_name_shared_prefix:
+    lifecycle: active
+    scenario: dotted_name_shared_prefix
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    policy: []
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=server.weather<|message|><atem:function_calls>
+
+        <atem:invoke name="server.weather">
+
+        <atem:parameter name="location">Beijing</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=server.time<|message|><atem:function_calls>
+
+        <atem:invoke name="server.time">
+
+        <atem:parameter name="timezone">Asia/Shanghai</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      - name: server.time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+          required:
+          - timezone
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=server.weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="server.weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="location">
+      - delta_text: Beijing
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=server.time
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="server.time">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="timezone">
+      - delta_text: Asia/Shanghai
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai

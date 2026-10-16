@@ -111,6 +111,100 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
   empty_args:
     observation:
       value:

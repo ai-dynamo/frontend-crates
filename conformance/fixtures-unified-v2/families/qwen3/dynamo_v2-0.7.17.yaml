@@ -7,6 +7,26 @@ provenance:
 document:
   mode: unified
 changes:
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-4
     stimulus:
@@ -42,7 +62,11 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
-metadata_changes: {}
+metadata_changes:
+  dotted_name_minimal: {}
+  dotted_name_mixed_punctuation: {}
+  dotted_name_multiple_segments: {}
+  dotted_name_shared_prefix: {}
 document_overrides:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
@@ -97,4 +121,28 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
         source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin: null
       inherited_from: null

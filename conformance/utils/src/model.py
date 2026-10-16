@@ -60,7 +60,7 @@ candidate = {
   "impl": str,                       # engine group prefix: dynamo|vllm|sglang
   "label": str, "label_html": str,
   "default_bucket": "A"|"B"|"C",     # A=reference, A/B=checked-compare, C=off
-  "version": str | None, "parse_mode": "batch"|"stream"|None,
+  "version": str | None, "parse_mode": "batch"|"stream"|"unified"|"split"|None,
 }
 
 row = {

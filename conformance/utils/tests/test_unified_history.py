@@ -392,6 +392,77 @@ def test_history_accepts_partial_peer_backfill_and_preserves_inherited_rows(tmp_
     ]
 
 
+def test_legacy_checkpoint_appends_bound_case_with_matching_source_origin(tmp_path):
+    root = _store(tmp_path / "store")
+    _write_capture(root, "0.5.0", {"text_only": _change()})
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    original = history.resolve("dynamo_v2-0.5.0")["text_only"]
+    _add_backfill_case(root)
+    loose = tmp_path / "loose"
+    unified_history.materialize_store(root, loose)
+    _add_loose_backfill_record(loose, "0.5.0", "captured")
+    path = loose / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-2.yaml"
+    document = unified_history.load_yaml(path)
+    document["capture_provenance"] = {
+        "kind": "unpublished",
+        "crate_version": "0.5.0",
+        "source_sha256": "a" * 64,
+        "source_id": "sha256:" + "a" * 64,
+    }
+    path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
+
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
+
+    updated = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    resolved = updated.resolve("dynamo_v2-0.5.0")
+    assert resolved["text_only"] == original
+    assert resolved["new_case"]["document"]["capture_origin"] == {
+        "crate_version": "0.5.0",
+        "source_sha256": "a" * 64,
+    }
+    assert updated.captures["dynamo_v2-0.5.0"]["provenance"]["status"] == "legacy"
+
+
+def test_source_capture_origin_is_pinned_for_an_inherited_unchanged_observation(tmp_path):
+    root = _store(tmp_path / "store")
+    _write_capture(root, "0.5.0", {"text_only": _change()})
+    _write_capture(root, "0.5.1", {})
+    original = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")].resolve(
+        "dynamo_v2-0.5.0"
+    )["text_only"]
+    before = tmp_path / "before"
+    unified_history.materialize_store(root, before, include_current_inputs=False)
+    loose = tmp_path / "loose" / "dynamo_v2-0.5.1" / "gemma4"
+    loose.mkdir(parents=True)
+    document = unified_history.load_yaml(
+        before / "dynamo_v2-0.5.0/gemma4/UNIFIED.1-1.yaml"
+    )
+    document["captured_with"] = {"dynamo_v2": "0.5.1"}
+    document["capture_provenance"] = {
+        "kind": "unpublished",
+        "crate_version": "0.5.1",
+        "source_sha256": "a" * 64,
+        "source_id": "sha256:" + "a" * 64,
+        "git_commit": "b" * 40,
+        "label": "0.5.1+source." + "a" * 64,
+    }
+    (loose / "UNIFIED.1-1.yaml").write_text(
+        unified_history.dump_yaml(document), encoding="utf-8"
+    )
+
+    unified_history.update_store_from_loose(root, tmp_path / "loose", complete_snapshot=False)
+
+    updated = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert updated.resolve("dynamo_v2-0.5.0")["text_only"] == original
+    latest = updated.resolve("dynamo_v2-0.5.1")["text_only"]
+    assert latest["observation"] == original["observation"]
+    assert latest["document"]["capture_origin"] == {
+        "crate_version": "0.5.1",
+        "source_sha256": "a" * 64,
+        "git_commit": "b" * 40,
+    }
+
+
 @pytest.mark.parametrize("later_absent", [False, True])
 def test_sparse_historical_insertion_keeps_unchanged_sibling_inherited(tmp_path, later_absent):
     root = tmp_path / "store"

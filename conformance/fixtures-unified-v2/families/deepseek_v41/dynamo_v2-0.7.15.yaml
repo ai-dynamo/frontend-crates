@@ -219,6 +219,99 @@ changes:
     absent: true
   native_unmatched_quote_then_call:
     absent: true
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes:
   guided_json_native_parameter_array_before_payload:
     init:
@@ -244,6 +337,26 @@ metadata_changes:
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
       named_tool: null
 document_overrides:
   adjacent_calls_partial_header:

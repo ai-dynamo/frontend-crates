@@ -17365,3 +17365,222 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  dotted_name_minimal:
+    lifecycle: active
+    scenario: dotted_name_minimal
+    description: A native call to a.b preserves the complete name and empty arguments.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_minimal
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="a.b" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: a.b
+        parameters:
+          type: object
+          properties: {}
+          required: []
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="a.b" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+  dotted_name_mixed_punctuation:
+    lifecycle: active
+    scenario: dotted_name_mixed_punctuation
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    policy: []
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="my-tool.v2" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: my-tool.v2
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="my-tool.v2" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+  dotted_name_multiple_segments:
+    lifecycle: active
+    scenario: dotted_name_multiple_segments
+    description: A native call preserves every segment of server.tools.weather.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="server.tools.weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.tools.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.tools.weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+  dotted_name_shared_prefix:
+    lifecycle: active
+    scenario: dotted_name_shared_prefix
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    policy: []
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="server.weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="server.time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>Asia/Shanghai<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      - name: server.time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+          required:
+          - timezone
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.time" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="timezone" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Asia/Shanghai
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai

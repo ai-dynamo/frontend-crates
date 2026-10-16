@@ -221,8 +221,10 @@ def _split_only_cases(family, document):
             # The request schema stores an empty offered-tool set as [], matching
             # the legacy batch API's required slice without inventing a schema.
             "tools": case.get("tools") or [],
-            "chunks": [{"delta_text": raw_input}],
+            "chunks": [{"delta_text": text} for text in case.get("input_chunks", [raw_input])],
         }
+        if case.get("finish_step"):
+            request["chunks"].append({"delta_text": "‹finish›"})
         rows[key] = {
             "scenario": scenario,
             "description": case.get("description", ""),

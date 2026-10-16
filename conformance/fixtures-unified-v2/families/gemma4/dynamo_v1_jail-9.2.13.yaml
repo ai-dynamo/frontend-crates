@@ -85,6 +85,26 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
   empty_args:
     observation:
       unavailable:
@@ -1187,6 +1207,34 @@ metadata_changes:
   content_then_reason: {}
   content_then_reason_then_tool: {}
   deepseek_v41_mixed_control_text_in_string: {}
+  dotted_name_minimal:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
+  dotted_name_mixed_punctuation:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
+  dotted_name_multiple_segments:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
+  dotted_name_shared_prefix:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
   empty_args: {}
   glm_ref_encoded_targets: {}
   glm_ref_json_looking_strings: {}

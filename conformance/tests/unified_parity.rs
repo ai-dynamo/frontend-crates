@@ -335,7 +335,7 @@ fn unified_parser_is_chunk_invariant() {
 }
 
 #[test]
-fn reference_argument_cases_preserve_results_at_every_split() {
+fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
     let scenarios = [
         "glm_ref_object",
         "glm_ref_encoded_targets",
@@ -344,6 +344,10 @@ fn reference_argument_cases_preserve_results_at_every_split() {
         "unused_reference_graph_parameter_types",
         "nullable_reference_alias_literals",
         "local_schema_id_preserves_type",
+        "dotted_name_minimal",
+        "dotted_name_mixed_punctuation",
+        "dotted_name_multiple_segments",
+        "dotted_name_shared_prefix",
     ];
     let mut checked = 0;
     let files = load_native_golden();
@@ -364,6 +368,15 @@ fn reference_argument_cases_preserve_results_at_every_split() {
                 &tools,
             );
             assert!(whole.is_ok(), "{id}: {}", render(&whole));
+            if id.contains(".dotted_name_") {
+                assert_eq!(whole.as_ref(), Ok(&case.golden), "{id}");
+                let characters = chunk_every(&case.input, 1);
+                assert_eq!(
+                    events(&file.family, &characters, &case.init, &tools),
+                    whole,
+                    "{id}: characters"
+                );
+            }
             for split in case
                 .input
                 .char_indices()
