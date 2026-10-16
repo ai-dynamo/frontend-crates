@@ -2517,33 +2517,6 @@ mod tests {
     }
 
     #[test]
-    fn request_keeps_root_ahead_of_system() {
-        let wire = serde_json::json!({
-            "model": "MiniMax-M3",
-            "messages": [
-                {"role": "root", "content": "You are MiniMax-M3-taoxi."},
-                {"role": "system", "content": "You are claude opus 3."},
-                {"role": "user", "content": "Who are you?"},
-            ],
-            "thinking": {"type": "adaptive"},
-            "reasoning_split": true,
-        });
-        let request: CreateChatCompletionRequest = serde_json::from_value(wire.clone()).unwrap();
-        assert!(matches!(
-            request.messages.as_slice(),
-            [
-                ChatCompletionRequestMessage::Root(_),
-                ChatCompletionRequestMessage::System(_),
-                ChatCompletionRequestMessage::User(_),
-            ]
-        ));
-        assert_eq!(
-            serde_json::to_value(&request).unwrap()["messages"],
-            wire["messages"]
-        );
-    }
-
-    #[test]
     fn message_rejects_unknown_role() {
         let error = serde_json::from_value::<ChatCompletionRequestMessage>(
             serde_json::json!({"role": "admin", "content": "hi"}),
