@@ -45,7 +45,10 @@ tab = {
   "captured_note": str,              # "captured against ..." provenance line
   "candidates": [ candidate, ... ],  # compare-bar rows (ordered)
   "column_groups": [ {"key","label","span"} ],   # top header row
-  "columns": [ {"sub","group_key","band","label","desc"} ],  # sub-case header row
+  "columns": [ {"sub","group_key","band","label","desc","schemas"?} ],
+                                     # sub-case headers; optional schemas are
+                                     # deduplicated {families, tools, cases?} variants;
+                                     # folded cases retain labels/family associations
   "rows": [ row, ... ],
   "glossary": [ {"label": str, "rows": [[sub, desc], ...]} ],
   "stats": { ... },                  # families/sub_cases/slots/real/parity/... counts
@@ -81,6 +84,7 @@ cell = {
   "facts": [ fact, ... ],            # structured per-impl comparison facts
   "known_divergence": bool,          # ≠ corner mark (v1-vs-v2 by design)
   "tooltip": tooltip | None,         # raw popup data (view builds the DOM lazily)
+  "duplicate_of": str | None,         # canonical case ID when this is an intentional duplicate
 }
 
 fact = { "impl","status","present","agrees","intentional","reason","leak","error_kind" }
@@ -94,13 +98,15 @@ tooltip = {
   "candidates": [ {"key","label","impl","version","parse_mode","is_ref",
                    "block": output_block, "chunk_deltas": [per-chunk], "leak": bool} ],
   "baseline": {"impl","label","block"} | None,   # per-chunk chart baseline column
-  "reasons": [ {"impl","label","reason","intentional"} ],  # divergence reasons
+  "reasons": [ {"impl","label","reason","intentional","candidate_sig","reference_impl","reference_sig"} ],
   "dynamo_notes": [ [label, text] ], "refs": [ [label, value] ],
   "leak_note": str | None,
   "na_note": str | None,             # n/a-stub cells: the explanation-only note
+  "duplicate_of": str | None,        # canonical case ID for an intentional duplicate
 }
 
-output_block = {"calls":[...], "normal_text":str, "error":..., "unavailable":str,
+output_block = {"calls":[...], "normal_text":str, "error":...,
+                "unavailable":str|{"code":str,"detail":str},
                 "explanation":str} | None
 per-chunk = {"deltas":[{index,name?,arguments?}], "normal_text":str}
             # one entry per input chunk, aligned to input.chunks (chart rows)
@@ -160,6 +166,18 @@ def to_script_json(page: dict) -> str:
                .replace("&", "\\u0026"))
 
 
+def comparison_reasons(facts: list[dict], labels: dict[str, str], reference_impl: str,
+                       entries: dict[str, dict]) -> list[dict]:
+    return [
+        {"impl": fact["impl"], "label": labels.get(fact["impl"], fact["impl"]),
+         "reason": fact["reason"], "intentional": fact["intentional"],
+         "candidate_sig": entries[fact["impl"]]["sig"],
+         "reference_impl": reference_impl, "reference_sig": entries[reference_impl]["sig"]}
+        for fact in facts
+        if fact["impl"] != reference_impl and fact["agrees"] is False and fact["reason"]
+    ]
+
+
 def make_cell(**fields: Any) -> dict:
     """Normalize a cell dict to the schema, filling defaults for omitted keys. Both the
     toolcalling and reasoning extractors funnel through this so the cell SHAPE is
@@ -176,6 +194,7 @@ def make_cell(**fields: Any) -> dict:
         "cmp": None,
         "facts": [],
         "known_divergence": False,
+        "duplicate_of": None,
         "tooltip": None,
     }
     cell.update(fields)
@@ -239,6 +258,7 @@ def _iter_intern_slots(page: dict) -> Iterator[tuple[Any, Any]]:
             continue
         yield tip, "description"
         yield tip, "na_note"
+        yield tip, "duplicate_of"
         yield tip, "leak_note"
         if tip.get("input"):
             yield tip["input"], "text"

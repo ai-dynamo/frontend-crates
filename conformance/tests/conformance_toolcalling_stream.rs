@@ -3,7 +3,7 @@
 
 //! Streaming tool-calling parity for Dynamo parser v2.
 //!
-//! Fixtures live in `conformance/toolcalling/fixtures-stream-v2/` (the frontend-crates overlay).
+//! Fixtures live in `conformance/toolcalling/fixtures-stream-v1/` (the frontend-crates overlay).
 //! Each chunk records, under `expected.<impl>`, the tool-call deltas that impl
 //! emits at that chunk boundary. This test drives the DYNAMO parser (the only
 //! impl with a Rust streaming parser) and asserts:
@@ -159,12 +159,41 @@ fn merge_dynamo(fx: &mut Fixture, dyn_dir: &Path, rel: &Path) {
     }
 }
 
-fn stream_dynamo_dirs(sv2: &Path) -> Vec<std::path::PathBuf> {
+fn stream_dynamo_dirs(sv1: &Path) -> Vec<std::path::PathBuf> {
     common::version_dirs_ascending_with_current(
-        sv2,
+        sv1,
         "dynamo_v2-",
         common::STREAM_DYNAMO_V2_CURRENT_CAPTURE,
     )
+}
+
+#[test]
+fn minimax_m3_required_stream_cases_have_captured_expectations() {
+    let root = common::ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let inputs = root.join("inputs");
+    let captures = stream_dynamo_dirs(&root);
+    for suffix in [
+        "2.a", "2.c", "2.d", "4.a", "5.b", "5.c", "5.d", "5.e", "6.a", "6.b", "8.a", "8.b", "8.c",
+        "8.d", "50",
+    ] {
+        let id = format!("TOOLCALLING.streamv1.{suffix}");
+        let relative = std::path::PathBuf::from(format!("minimax_m3/{id}.yaml"));
+        let mut fixture: Fixture =
+            serde_yaml::from_str(&std::fs::read_to_string(inputs.join(&relative)).unwrap())
+                .unwrap();
+        for capture in &captures {
+            merge_dynamo(&mut fixture, capture, &relative);
+        }
+        let case = &fixture.cases[&id];
+        assert!(!case.chunks.is_empty(), "{id}: missing real input");
+        assert!(!dynamo_unavailable(&case.unavailable), "{id}: unavailable");
+        for (index, chunk) in case.chunks.iter().enumerate() {
+            assert!(
+                chunk.expected.contains_key("dynamo_v2"),
+                "{id} chunk {index}: missing captured expectation"
+            );
+        }
+    }
 }
 
 #[test]
@@ -397,12 +426,12 @@ fn toolcalling_stream_parity() {
     // impl-key split every dynamo_v2-* dir belongs to it (the v1 jail reference has
     // its own dynamo_v1-* namespace, tested elsewhere). Old version dirs are capture
     // history, folded ASCENDING so the latest capture wins per case.
-    let sv2 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v2");
-    let inputs_root = sv2.join("inputs");
-    let dyn_dirs = stream_dynamo_dirs(&sv2);
+    let sv1 = common::ensure_fixtures().join("toolcalling/fixtures-stream-v1");
+    let inputs_root = sv1.join("inputs");
+    let dyn_dirs = stream_dynamo_dirs(&sv1);
     assert!(
         !dyn_dirs.is_empty(),
-        "no dynamo_v2-<version> dir under fixtures-stream-v2"
+        "no dynamo_v2-<version> dir under fixtures-stream-v1"
     );
     let mut files = Vec::new();
     collect_yaml(&inputs_root, &mut files);
@@ -430,7 +459,7 @@ fn toolcalling_stream_parity() {
         for dyn_dir in &dyn_dirs {
             merge_dynamo(&mut fx, dyn_dir, rel);
         }
-        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv2")) {
+        if !matches!(fx.mode.as_deref(), Some("stream" | "streamv1")) {
             continue;
         }
         // Data-driven coverage (reuse the family registry, no hardcoded list):
@@ -556,7 +585,7 @@ fn toolcalling_stream_parity() {
         total.saturating_sub(failures.len()),
         total,
     );
-    assert!(total > 0, "no Dynamo streamv2 cases were exercised");
+    assert!(total > 0, "no Dynamo streamv1 cases were exercised");
     if !failures.is_empty() {
         for f in &failures {
             eprintln!("FAIL {f}");

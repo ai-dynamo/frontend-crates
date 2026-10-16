@@ -335,6 +335,29 @@ splits along four type-handling axes:
   literals above `f64`'s exact integer range must preserve the original
   value rather than round through float parsing.
 
+Null coercion probes remain in the capture archive and are displayed only in Unified (`UNIFIED.7-arg_json_null` and `UNIFIED.7-arg_string_null`). The legacy batch and stream matrices omit those columns.
+
+The optional nested-union cases below exercise request tool schemas against native MiniMax M3 input (PR #270). They have matching legacy-stream cases with the same numeric suffixes.
+
+- **`TOOLCALLING.batch.7-6`** Nested members retain declared types through a unique object branch in `anyOf` or `oneOf`. Pagination fields remain integers and flags remain booleans. A child allowing string or object preserves scalar text as a string; a nullable object accepts bare `null`, and a typed object field preserves nested content.
+- **`TOOLCALLING.batch.7-7`** Null-only union alternatives do not make object selection ambiguous. Branches restricted by `const: null` or `enum: [null]` cannot describe the emitted object, so its `page` field retains the integer type from the unique object branch. Covers both `anyOf` and `oneOf`.
+- **`TOOLCALLING.batch.7-8`** Ambiguous object unions preserve the existing fallback. When multiple object branches remain possible, nested scalar values stay strings rather than selecting one branch's types arbitrarily.
+
+The local-reference cases below use constructed native MiniMax M3 inputs (PR #273), with matching legacy-stream cases. GLM adds batch and Unified probes for PR #271 under `7-9`, `7-11`, `7-12`, and `7-13`; those request schemas retain unresolved refs so the parser must consult the tool parameters root.
+
+- **`TOOLCALLING.batch.7-9`** A parameter references an object definition through `$ref`; JSON text becomes an object rather than a string.
+- **`TOOLCALLING.batch.7-10`** Nested properties, array items, and `additionalProperties` resolve local references before coercion. Integer and boolean values retain their types, and referenced objects and arrays retain their shape.
+- **`TOOLCALLING.batch.7-11`** URI-encoded local reference fragments are decoded before JSON Pointer lookup. `#/$defs/postal%20code` resolves the `postal code` definition and applies its declared integer type. GLM also covers UTF-8 with a literal `+`, and encoded `~1` / `~0` escapes for definition names containing `/` and `~`.
+- **`TOOLCALLING.batch.7-12`** GLM referenced strings preserve JSON-looking object text, array text, and quoted text, including the literal quote characters. An inline string field with the same object-looking bytes is a control.
+- **`TOOLCALLING.batch.7-13`** GLM references to integer, number, and boolean definitions retain those scalar types. A sibling integer constraint narrows a referenced string-or-integer definition, so bare `42` becomes an integer.
+
+The nested-whitespace cases below are Single Family Tests on constructed native MiniMax M3 inputs (PR #360), with matching legacy-stream cases. MiniMax M3 is the only registered grammar that encodes nested argument structure as markup elements; every other family carries nested values as JSON or as one raw parameter value, so it has no text between nested argument tags to classify.
+
+- **`TOOLCALLING.batch.7.m`** Pretty-printed nested containers. Newlines and indentation between nested tags are formatting, so an `array<integer>` parses to `[1, 50]` without whitespace items and a nested object gains no `$text` member.
+- **`TOOLCALLING.batch.7.n`** Whitespace-only and padded string leaves inside nested containers are values. The chat template emits leaf text verbatim, so `<sep>  </sep>` stays two spaces and a newline-only `<item>` stays a newline.
+
+Streaming-only parser regressions for argument schemas, entities, and string boundaries are listed in `TOOLCALLING_STREAMING_V1_CASES.md` with their source PRs.
+
 ## `TOOLCALLING.batch.8` — Normal text interleaved with tool calls
 
 Model emits narration text before / after / between tool-call blocks.
@@ -366,6 +389,8 @@ shape is being exercised so divergences land on a precise row.
 - **`TOOLCALLING.batch.8.d`** Narration **between** multiple tool calls —
   text → call → text → call → text. Tests that inter-call text is
   preserved (not just leading/trailing).
+
+- **`TOOLCALLING.batch.8.f`** through **`TOOLCALLING.batch.8.l`** DSML content-to-call separator (DeepSeek V3.2 and V4). The encoder renders a tool turn as `content + "\n\n" + calls`; exactly that separator is framing, so `normal_text` excludes it while any other whitespace stays content. `.f` one separator after prose, `.g` four newlines keep two, `.h` no separator, `.i` empty content, `.j` and `.k` the same for a bare invocation, `.l` whitespace-only content. Inputs use the encoder's call layout; authored by `utils/src/gen_dsml_framing_cases.py`. Single Family Test scope: the separator exists only in the DeepSeek templates.
 
 All four sub-cases share the same parser contract — `tool_calls` extracted,
 `normal_text` preserved by position. `.a`/`.b`/`.c` are single-call shapes
@@ -436,7 +461,7 @@ not present in the request's supplied `tools` list.
   of range for grammars that reference tools by ordinal instead of
   name.
 
-New sub-cases use numeric suffixes (`13-1`, `13-2`, ...) rather than letters. Existing lettered IDs remain historical identifiers.
+Follow the existing dot-letter convention for legacy Tool Calling sub-cases. Unified case numbering is separate; see `conformance/README.md` for the suite-specific rules.
 
 ## `TOOLCALLING.batch.30` — Separator characters inside argument strings
 
@@ -752,3 +777,21 @@ Minimum viable set:
    for XML grammars, `TOOLCALLING.harmony.{1, 2}` for Harmony.
 
 For reasoning parsers, see `REASONING_CASES.md`.
+
+## Shared schema conformance probes
+
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. Both union branches and branch orders are exercised. Each group has immutable named variants for its schemas.
+
+- **`TOOLCALLING.batch.7.o.*`** Declared JSON argument types.
+- **`TOOLCALLING.batch.7.p.*`** String constants retain their literal spelling.
+- **`TOOLCALLING.batch.7.q.*`** anyOf constant and typed alternatives in both orders.
+- **`TOOLCALLING.batch.7.r.*`** oneOf constant and typed alternatives in both orders.
+- **`TOOLCALLING.batch.7.s.*`** Local references and sibling type intersections.
+- **`TOOLCALLING.batch.7.t.*`** Composition intersects union type hints.
+- **`TOOLCALLING.batch.7.u.*`** Enums preserve declared argument types.
+- **`TOOLCALLING.batch.7.v.*`** Type arrays and nullable argument interpretation.
+- **`TOOLCALLING.batch.7.w.*`** Ambiguous native strings retain established preference.
+
+All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
+
+Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.

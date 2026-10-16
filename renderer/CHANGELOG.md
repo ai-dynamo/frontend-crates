@@ -5,6 +5,110 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.2...dynamo-renderer-v8.0.3) - 2026-10-15
+
+### Bug fixes
+
+- *(renderer)* Honor MiniMax disabled thinking ([#327](https://github.com/ai-dynamo/frontend-crates/pull/327))
+
+## [8.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.1...dynamo-renderer-v8.0.2) - 2026-10-14
+
+### Bug fixes
+
+- *(renderer)* Strip and split with Python's whitespace in HF templates ([#395](https://github.com/ai-dynamo/frontend-crates/pull/395))
+
+## [8.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.0...dynamo-renderer-v8.0.1) - 2026-10-09
+
+### Bug fixes
+
+- *(renderer)* Keep whitespace-only reasoning in Kimi K3 history ([#370](https://github.com/ai-dynamo/frontend-crates/pull/370))
+
+## [8.0.0] - 2026-10-08
+
+### Breaking changes
+
+- Use `dynamo-protocols` 8.0 for the protocol types exposed in the public API.
+  Consumers sharing those types must upgrade to protocols 8.x.
+
+## [7.1.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.1.0...dynamo-renderer-v7.1.1) - 2026-10-08
+
+### Bug fixes
+
+- *(renderer)* Join reasoning segments for string-only reasoning templates ([#367](https://github.com/ai-dynamo/frontend-crates/pull/367))
+
+## [7.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.4...dynamo-renderer-v7.1.0) - 2026-10-08
+
+### Features
+
+- *(renderer)* Report Kimi K3 generation stub as pending segments ([#341](https://github.com/ai-dynamo/frontend-crates/pull/341))
+
+### Chore
+
+- *(renderer)* Spell floats like vLLM and SGLang in HF chat templates ([#368](https://github.com/ai-dynamo/frontend-crates/pull/368))
+
+## [7.0.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.3...dynamo-renderer-v7.0.4) - 2026-10-08
+
+### Bug fixes
+
+- *(renderer)* Match DeepSeek V4 reference on empty tool lists and merged tasks ([#366](https://github.com/ai-dynamo/frontend-crates/pull/366))
+
+## [7.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.2...dynamo-renderer-v7.0.3) - 2026-10-07
+
+### Bug fixes
+
+- *(renderer)* Preserve Hugging Face generation block semantics ([#359](https://github.com/ai-dynamo/frontend-crates/pull/359))
+
+## [7.0.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.1...dynamo-renderer-v7.0.2) - 2026-10-07
+
+### Bug fixes
+
+- *(renderer)* Only pass string tool-call arguments to templates that render them ([#342](https://github.com/ai-dynamo/frontend-crates/pull/342))
+
+## [7.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v7.0.0...dynamo-renderer-v7.0.1) - 2026-10-06
+
+### Bug fixes
+
+- *(renderer)* Format floats like Python json.dumps in DeepSeek to_json ([#340](https://github.com/ai-dynamo/frontend-crates/pull/340))
+
+## [7.0.0] - 2026-10-02
+
+### Breaking changes
+
+- Use `dynamo-tokenizers` 3.0 for the public tokenizer re-export and rendered
+  prompt segment types. Consumers must use tokenizer 3.x with renderer 7.x and
+  call `DecodeStream::finish()` when token input ends.
+
+## [6.0.0] - 2026-09-30
+
+### Breaking changes
+
+- Use `dynamo-tokenizers` 2.0 for the public tokenizer re-export and rendered
+  prompt segment types. Consumers must use tokenizer 2.x with renderer 6.x.
+
+## [5.4.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.4.0...dynamo-renderer-v5.4.1) - 2026-09-29
+
+### Performance
+
+- *(renderer)* Reduce message copies across chat renderers ([#261](https://github.com/ai-dynamo/frontend-crates/pull/261))
+
+## [5.4.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.3.2...dynamo-renderer-v5.4.0) - 2026-09-23
+
+### Features
+
+- *(renderer)* Share DeepSeek V4.1 prompt and media ordering ([#279](https://github.com/ai-dynamo/frontend-crates/pull/279))
+
+## [5.3.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.3.1...dynamo-renderer-v5.3.2) - 2026-09-22
+
+### Bug fixes
+
+- *(renderer)* Support DeepSeek V4.1 image inputs ([#254](https://github.com/ai-dynamo/frontend-crates/pull/254))
+
+## [5.3.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.3.0...dynamo-renderer-v5.3.1) - 2026-09-17
+
+### Bug fixes
+
+- *(renderer)* Reject unsupported extensions in DeepSeek V4.1 ([#240](https://github.com/ai-dynamo/frontend-crates/pull/240))
+
 ## [5.3.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v5.2.0...dynamo-renderer-v5.3.0) - 2026-09-11
 
 ### Features

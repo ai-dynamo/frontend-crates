@@ -1,0 +1,277 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.7
+    git_commit: da34ba9aeaffd8c92a61b9697dfbec4c8ebf4f85
+    source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-4.ref
+    stimulus:
+      ref: current
+      semantic_sha256: 21ea667d0468b4d5b7f456cf930d3255458b813b30eb04f53df076a052410784
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-5.ref
+    stimulus:
+      ref: current
+      semantic_sha256: 9a96c2d0f8a9fddaada0b350c2c3d757529d281c043c06b7882ee3e33f2b83b4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+metadata_changes:
+  guided_quoted_reasoning_closer_named:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+  guided_quoted_reasoning_closer_required:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_quoted_control_braces_named:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: get_weather
+  guided_response_quoted_control_braces_required:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  native_quoted_control_in_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_incomplete_header:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_control_in_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quoted_word_control:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_control_then_call:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_unmatched_quote_then_call:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+document_overrides: {}

@@ -13,6 +13,21 @@ For all *transitive* third-party crates pulled in as `Cargo.toml` `[dependencies
 
 ---
 
+## `dynamo-multimodal` — DSV4.1 geometry adapted from SGLang
+
+The geometry math in `multimodal/src/models/deepseek_v41.rs` is adapted from
+SGLang's `python/sglang/srt/multimodal/deepseek_v41_image_processing.py` at
+commit `ffac53d779c08dcdab2d07e5e2a41dba83f0e65c`.
+
+- **Project**: [SGLang](https://github.com/sgl-project/sglang)
+- **Source**: [Pinned image processor](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/python/sglang/srt/multimodal/deepseek_v41_image_processing.py)
+- **License**: [Apache License, Version 2.0](https://github.com/sgl-project/sglang/blob/ffac53d779c08dcdab2d07e5e2a41dba83f0e65c/LICENSE), also reproduced in this repository's `LICENSE`.
+
+The Rust adaptation adds configuration and input validation, checked output
+dimensions, typed geometry results, and Python-derived parity fixtures.
+
+---
+
 ## `dynamo-protocols` — based on `async-openai`
 
 The `dynamo-protocols` crate is a derivative work of [`async-openai`](https://github.com/64bit/async-openai) by Himanshu Neema. The OpenAI request/response type hierarchy in this crate originated from that project and has been extended and modified for inference-serving use cases.

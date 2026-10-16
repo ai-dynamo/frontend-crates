@@ -1,0 +1,84 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.23
+    git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
+    source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
+document:
+  mode: unified
+changes:
+  muse_unterminated_parameter_then_call:
+    case_key: UNIFIED.muse-unterminated_parameter_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: fc16356e4f646f2c69f3f99e4de8cc9029eca68115c3956f59a7e4400845c8a4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  muse_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.muse-unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 15172b6c47b69e34fd75d5d5c320735bb75a3161749f6497f19b79a6867a1bae
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  muse_unterminated_parameter_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
+        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
+      inherited_from: null
+  muse_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
+        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
+      inherited_from: null

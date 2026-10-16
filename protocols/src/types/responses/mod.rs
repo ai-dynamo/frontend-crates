@@ -118,7 +118,7 @@ where
 }
 
 /// Deserialize `tool_choice`, coercing the object form `{"type": "auto" |
-/// "none" | "required", ...}` into the upstream `Mode` variant.
+/// "none" | "required", ...}` into the upstream `Option` variant.
 ///
 /// Upstream `ToolChoiceParam` only accepts `auto`/`none`/`required` as a bare
 /// string; the object form is reserved for naming a *specific* tool
@@ -147,7 +147,7 @@ where
             _ => None,
         };
         if let Some(mode) = mode {
-            return Ok(Some(ToolChoiceParam::Mode(mode)));
+            return Ok(Some(ToolChoiceParam::Option(mode)));
         }
     }
     ToolChoiceParam::deserialize(value)
@@ -572,7 +572,7 @@ pub struct CreateResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub safety_identifier: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub service_tier: Option<ServiceTier>,
+    pub service_tier: Option<ServiceTierResponses>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub store: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1024,18 +1024,18 @@ mod tests {
     #[test]
     fn tool_choice_mode_object_coerces_to_mode() {
         // Anthropic-style / litellm shape: a mode expressed as an object with
-        // extra keys. Must coerce to the corresponding `Mode`, ignoring extras.
+        // extra keys. Must coerce to the corresponding `Option`, ignoring extras.
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "auto", "disable_parallel_tool_use": true})),
-            Some(ToolChoiceParam::Mode(ToolChoiceOptions::Auto)),
+            Some(ToolChoiceParam::Option(ToolChoiceOptions::Auto)),
         );
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "none"})),
-            Some(ToolChoiceParam::Mode(ToolChoiceOptions::None)),
+            Some(ToolChoiceParam::Option(ToolChoiceOptions::None)),
         );
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "required"})),
-            Some(ToolChoiceParam::Mode(ToolChoiceOptions::Required)),
+            Some(ToolChoiceParam::Option(ToolChoiceOptions::Required)),
         );
     }
 
@@ -1043,7 +1043,7 @@ mod tests {
     fn tool_choice_bare_string_still_works() {
         assert_eq!(
             tool_choice_of(serde_json::json!("auto")),
-            Some(ToolChoiceParam::Mode(ToolChoiceOptions::Auto)),
+            Some(ToolChoiceParam::Option(ToolChoiceOptions::Auto)),
         );
     }
 
@@ -1331,6 +1331,7 @@ mod tests {
         );
         let parts = vec![InputContent::InputText(InputTextContent {
             text: "captured".to_string(),
+            prompt_cache_breakpoint: None,
         })];
         let item = FunctionCallOutputItemParam {
             call_id: "c1".to_string(),
@@ -2240,5 +2241,21 @@ mod tests {
             serde_json::to_value(CountInputTokensResponse::new(42)).unwrap(),
             serde_json::json!({"object": "response.input_tokens", "input_tokens": 42})
         );
+    }
+}
+
+#[cfg(test)]
+mod reasoning_effort_tests {
+    use super::CreateResponse;
+
+    #[test]
+    fn every_reasoning_effort_deserializes() {
+        for effort in ["none", "minimal", "low", "medium", "high", "xhigh", "max"] {
+            let body = serde_json::json!({
+                "model": "m", "input": "hi", "reasoning": {"effort": effort}
+            });
+            serde_json::from_value::<CreateResponse>(body)
+                .unwrap_or_else(|e| panic!("effort {effort} must deserialize: {e}"));
+        }
     }
 }

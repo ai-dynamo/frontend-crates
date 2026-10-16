@@ -58,6 +58,9 @@ pub(super) struct DebugToolParser {
 
 impl DebugToolParser {
     pub(super) fn wrap(family: &str, inner: Box<dyn ToolParser>) -> Box<dyn ToolParser> {
+        if !debug_enabled() {
+            return inner;
+        }
         emit(format_args!("family={family} created"));
         Box::new(Self {
             family: family.to_string(),
@@ -159,7 +162,7 @@ mod tests {
 
         assert_eq!(result.calls.len(), 1);
         assert_eq!(result.calls[0].name.as_deref(), Some("get_weather"));
-        assert_eq!(result.calls[0].arguments, r#"{"location":"NYC"}"#);
+        assert_eq!(result.calls[0].arguments, r#"{"location":" NYC "}"#);
     }
 
     #[test]

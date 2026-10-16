@@ -24,20 +24,54 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
-import tomllib
 import yaml
 import sys
 import tempfile
 from pathlib import Path
 
+from capture_stimulus import capture_input, capture_peer_results, unavailable_result, validate_family_scoped_cases
+from dynamo_version import git_subprocess_env
+from unified_tools import SCHEMA_PATH
+
 # Family parser wiring for the released 0.25.1 capture.
 FAMILY_PARSERS = {
     "gemma4": ("unified", None, None),
+    "deepseek_v4": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
+    "deepseek_v41": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
+    "glm47": ("combined", "Glm45ReasoningParser", "Glm47MoeToolParser"),
     "qwen3": ("combined", "Qwen3ReasoningParser", "Qwen3CoderToolParser"),
     "kimi_k2": ("combined", "KimiReasoningParser", "KimiK2ToolParser"),
 }
+
+
+def _unsupported_request(case: dict) -> tuple[str, str] | None:
+    """Classify request state the Rust parser API cannot receive."""
+    init = case.get("init") or {}
+    if init.get("tool_output_mode", "Native") == "GuidedJson":
+        return (
+            "vllm_rust_guided_json_unsupported",
+            "vLLM Rust UnifiedParser accepts native model text only; it has no GuidedJson/tool-choice request API.",
+        )
+    if init.get("named_tool") is not None:
+        return (
+            "vllm_rust_named_tool_unsupported",
+            "vLLM Rust UnifiedParser has no named-tool request API.",
+        )
+    starting_state = init.get("starting_state", "None")
+    if starting_state == "Response":
+        return (
+            "vllm_rust_starting_state_unsupported",
+            "vLLM Rust UnifiedParser has no request-prefilled Response starting-state API.",
+        )
+    if starting_state not in {"None", "Reasoning"}:
+        return (
+            "vllm_rust_starting_state_unsupported",
+            f"vLLM Rust UnifiedParser capture does not recognize starting_state={starting_state!r}.",
+        )
+    return None
 
 RUST_MAIN = r'''
 use std::collections::BTreeMap;
@@ -47,7 +81,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use vllm_parser::reasoning::{Qwen3ReasoningParser, ReasoningParser};
-use vllm_parser::tool::{KimiK2ToolParser, Qwen3CoderToolParser, Tool, ToolParser};
+use vllm_parser::tool::{DeepSeekV4ToolParser, Glm47MoeToolParser, KimiK2ToolParser, Qwen3CoderToolParser, Tool, ToolParser};
 use vllm_parser::unified::{
     CombinedParser, Gemma4UnifiedParser, UnifiedParser, UnifiedParserEvent, UnifiedParserOutput,
 };
@@ -63,8 +97,19 @@ struct Case {
     id: String,
     family: String,
     input: String,
+    tools: Vec<Tool>,
     #[serde(default)]
     chunks: Vec<String>,
+    #[serde(default)]
+    terminal_step: bool,
+    #[serde(default)]
+    init: Init,
+}
+
+#[derive(Default, Deserialize)]
+struct Init {
+    #[serde(default)]
+    starting_state: String,
 }
 
 #[derive(Serialize)]
@@ -76,63 +121,53 @@ struct CaseOut {
     error: Option<String>,
 }
 
-fn tools() -> Vec<Tool> {
-    let mk = |name: &str, key: &str| Tool {
-        name: name.to_string(),
-        description: None,
-        parameters: json!({"type":"object","properties":{key:{"type":"string"}}}),
-        strict: None,
+fn make_parser(family: &str, tools: &[Tool]) -> (Box<dyn UnifiedParser>, String) {
+    if family == "gemma4" {
+        let tok: DynTokenizer = Arc::new(
+            TestTokenizer::new()
+                .with_special_token("<|channel>", 256)
+                .with_special_token("<channel|>", 257),
+        );
+        return (
+            Gemma4UnifiedParser::create(tools, tok).expect("gemma4 unified create"),
+            "vLLM Rust (UnifiedParser)".to_string(),
+        );
+    }
+    let tokenizer = if family == "kimi_k2" {
+        TestTokenizer::new()
+            .with_special_token("<think>", 256)
+            .with_special_token("</think>", 257)
+    } else {
+        TestTokenizer::new()
+            .with_regular_token("<think>", 256)
+            .with_regular_token("</think>", 257)
     };
-    vec![
-        mk("get_weather", "city"),
-        mk("f", "x"),
-        mk("g", "y"),
-        mk("run", "cmd"),
-        // Keep in step with `tools()` in conformance/tests/unified_parity.rs.
-        mk("log", "note"),
-    ]
+    let reasoning = Qwen3ReasoningParser::create(Arc::new(tokenizer))
+        .expect("standard think reasoning parser");
+    let tool = match family {
+        "qwen3" => Qwen3CoderToolParser::create(tools),
+        "kimi_k2" => KimiK2ToolParser::create(tools),
+        "deepseek_v4" | "deepseek_v41" => DeepSeekV4ToolParser::create(tools),
+        "glm47" => Glm47MoeToolParser::create(tools),
+        other => panic!("no vLLM Rust unified mapping for family `{other}`"),
+    }.expect("registered tool parser");
+    (
+        Box::new(CombinedParser::new(Some(reasoning), Some(tool))),
+        "vLLM Rust (CombinedParser)".to_string(),
+    )
 }
 
-fn make_parser(family: &str) -> (Box<dyn UnifiedParser>, String) {
-    match family {
-        "gemma4" => {
-            let tok: DynTokenizer = Arc::new(
-                TestTokenizer::new()
-                    .with_special_token("<|channel>", 256)
-                    .with_special_token("<channel|>", 257),
-            );
-            (
-                Gemma4UnifiedParser::create(&tools(), tok).expect("gemma4 unified create"),
-                "vLLM Rust (UnifiedParser)".to_string(),
-            )
-        }
-        "qwen3" => {
-            let tok: DynTokenizer = Arc::new(
-                TestTokenizer::new()
-                    .with_regular_token("<think>", 256)
-                    .with_regular_token("</think>", 257),
-            );
-            let reasoning = Qwen3ReasoningParser::create(tok).expect("qwen3 reasoning");
-            let tool = Qwen3CoderToolParser::create(&tools()).expect("qwen3 tool");
-            (
-                Box::new(CombinedParser::new(Some(reasoning), Some(tool))),
-                "vLLM Rust (CombinedParser)".to_string(),
-            )
-        }
-        "kimi_k2" => {
-            let tok: DynTokenizer = Arc::new(
-                TestTokenizer::new()
-                    .with_special_token("<think>", 256)
-                    .with_special_token("</think>", 257),
-            );
-            let reasoning = Qwen3ReasoningParser::create(tok).expect("kimi reasoning");
-            let tool = KimiK2ToolParser::create(&tools()).expect("kimi tool");
-            (
-                Box::new(CombinedParser::new(Some(reasoning), Some(tool))),
-                "vLLM Rust (CombinedParser)".to_string(),
-            )
-        }
-        other => panic!("no vLLM Rust unified mapping for family `{other}`"),
+fn prompt_token_ids(case: &Case) -> Vec<u32> {
+    if case.init.starting_state != "Reasoning" {
+        return Vec::new();
+    }
+    match case.family.as_str() {
+        // These IDs match the TestTokenizer profiles in make_parser(). The
+        // parser only needs the open-reasoning marker to detect the prompt's
+        // initial state; generated text still supplies the closing marker.
+        "gemma4" => vec![256],
+        "qwen3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
+        other => panic!("no prompt marker profile for family `{other}`"),
     }
 }
 
@@ -193,34 +228,64 @@ fn main() {
     let mut results: BTreeMap<String, CaseOut> = BTreeMap::new();
 
     for case in &job.cases {
-        let (mut p, parser) = make_parser(&case.family);
+        let (mut p, parser) = make_parser(&case.family, &case.tools);
         let mut error: Option<String> = None;
+
+        let prompt_ids = prompt_token_ids(case);
+        if !prompt_ids.is_empty() {
+            if let Err(e) = p.initialize(&prompt_ids) {
+                error = Some(format!("UnifiedParserError::{e:?}"));
+            }
+        }
 
         // Batch: whole input -> assembled events.
         let mut out = UnifiedParserOutput::default();
-        if let Err(e) = p.parse_into(&case.input, &mut out) {
+        if error.is_none() {
+            if let Err(e) = p.parse_into(&case.input, &mut out) {
             error = Some(format!("UnifiedParserError::{e:?}"));
-        }
-        match p.finish() {
-            Ok(fin) => out.events.extend(fin.events),
-            Err(e) => {
-                error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
             }
-        };
+        }
+        if error.is_none() {
+            match p.finish() {
+                Ok(fin) => out.events.extend(fin.events),
+                Err(e) => {
+                    error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+                }
+            }
+        }
         let assembled = events_to_json(&out.events);
 
         // Streaming: fresh parser, per-chunk deltas.
-        let (mut ps, _) = make_parser(&case.family);
+        let (mut ps, _) = make_parser(&case.family, &case.tools);
+        if !prompt_ids.is_empty() {
+            if let Err(e) = ps.initialize(&prompt_ids) {
+                error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+            }
+        }
         let mut chunk_rows: Vec<Vec<Value>> = Vec::new();
         for (i, ch) in case.chunks.iter().enumerate() {
             let mut co = UnifiedParserOutput::default();
-            let _ = ps.parse_into(ch, &mut co);
-            if i == case.chunks.len() - 1 {
-                if let Ok(fin) = ps.finish() {
-                    co.events.extend(fin.events);
+            if let Err(e) = ps.parse_into(ch, &mut co) {
+                error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+            }
+            if !case.terminal_step && i == case.chunks.len() - 1 {
+                match ps.finish() {
+                    Ok(fin) => co.events.extend(fin.events),
+                    Err(e) => {
+                        error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+                    }
                 }
             }
             chunk_rows.push(deltas_to_json(&co.events));
+        }
+        if case.terminal_step {
+            match ps.finish() {
+                Ok(fin) => chunk_rows.push(deltas_to_json(&fin.events)),
+                Err(e) => {
+                    error.get_or_insert_with(|| format!("UnifiedParserError::{e:?}"));
+                    chunk_rows.push(Vec::new());
+                }
+            }
         }
 
         results.insert(
@@ -237,27 +302,31 @@ fn main() {
 
 def _vllm_rust_version(vllm_rust_source: Path, parser_crate: Path) -> str:
     """Read the version from the checked-out vLLM Rust workspace, never a literal."""
+    root = vllm_rust_source.parent.resolve()
+    git_env = git_subprocess_env()
+    top = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=root, env=git_env, capture_output=True, text=True,
+    )
+    if top.returncode != 0 or Path(top.stdout.strip()).resolve() != root:
+        raise ValueError(f"vLLM Rust capture requires its own Git checkout: {root}")
+    status = subprocess.run(
+        ["git", "status", "--porcelain", "--untracked-files=all", "--", str(vllm_rust_source.resolve())],
+        cwd=root, env=git_env, capture_output=True, text=True,
+    )
+    if status.returncode != 0 or status.stdout.strip():
+        raise ValueError(f"vLLM Rust capture requires clean Rust source: {vllm_rust_source}")
     tag = subprocess.run(
         ["git", "describe", "--tags", "--exact-match", "HEAD"],
-        cwd=vllm_rust_source.parent, capture_output=True, text=True,
+        cwd=root, env=git_env, capture_output=True, text=True,
     )
     if tag.returncode == 0 and re.fullmatch(r"v?\d+\.\d+\.\d+", tag.stdout.strip()):
         return tag.stdout.strip().removeprefix("v")
-    parser_manifest = tomllib.loads((parser_crate / "Cargo.toml").read_text())
-    version = (parser_manifest.get("package") or {}).get("version")
-    if isinstance(version, str):
-        return version
-    for parent in (parser_crate, *parser_crate.parents):
-        if parent == vllm_rust_source.parent:
-            break
-        manifest = parent / "Cargo.toml"
-        if not manifest.exists():
-            continue
-        workspace_version = (tomllib.loads(manifest.read_text()).get("workspace", {})
-                             .get("package", {}).get("version"))
-        if isinstance(workspace_version, str):
-            return workspace_version
-    raise ValueError(f"could not determine vLLM Rust version below {vllm_rust_source}")
+    # The parser crate has its own version, and a checkout's directory can be
+    # renamed. Neither establishes which vLLM release produced the observation.
+    raise ValueError(
+        f"vLLM Rust capture requires an exact semantic release tag at HEAD: {vllm_rust_source}"
+    )
 
 
 def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
@@ -272,9 +341,12 @@ def build_and_run(vllm_rust_source: Path, job_json: str) -> str:
 
     with tempfile.TemporaryDirectory(prefix="vllm-rust-uni-") as td:
         crate = Path(td)
+        # Cargo's build lock ends before execution; each harness must own its
+        # binary even when concurrent jobs share the dependency target directory.
+        package_name = f"vllm-rust-unified-capture-{crate.name}"
         (crate / "src").mkdir()
         (crate / "Cargo.toml").write_text(f'''[package]
-name = "vllm-rust-unified-capture"
+name = "{package_name}"
 version = "0.0.0"
 edition = "2024"
 
@@ -290,17 +362,67 @@ serde_json = "1"
             RUST_MAIN.replace('"vllm_rust_version": "0.25.1"',
                               f'"vllm_rust_version": {json.dumps(version)}')
         )
+        subprocess.run(["cargo", "fmt"], cwd=crate, check=True, capture_output=True, text=True)
         build = subprocess.run(
-            ["cargo", "build", "--release", "--quiet"],
+            ["cargo", "build", "--quiet"],
             cwd=crate, capture_output=True, text=True)
         if build.returncode != 0:
             sys.exit(f"cargo build failed:\n{build.stderr}")
+        target = Path(os.environ.get("CARGO_TARGET_DIR", str(crate / "target")))
+        if not target.is_absolute():
+            target = (crate / target).resolve()
         run = subprocess.run(
-            [str(crate / "target/release/vllm-rust-unified-capture")],
+            [str(target / "debug" / package_name)],
             input=job_json, capture_output=True, text=True)
         if run.returncode != 0:
             sys.exit(f"capture run failed:\n{run.stderr}")
         return run.stdout
+
+
+def capture_job(vllm_rust_source, job):
+    validate_family_scoped_cases(job.get("cases", []))
+    feed = {}
+    schema_bytes = SCHEMA_PATH.read_bytes()
+    version = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
+
+    unsupported = {}
+    for case in job.get("cases", []):
+        if case["family"] in FAMILY_PARSERS:
+            continue
+        request = capture_input({**case, "chunks": [{"delta_text": chunk} for chunk in case.get("chunks", [])]})
+        detail = f"No vLLM Rust Unified parser is registered for {case['family']} at {version}."
+        unsupported[case["id"]] = unavailable_result(
+            "vllm_rust_parser_not_registered",
+            detail,
+            capture=request,
+            observation=True,
+        )
+
+    if unsupported and all(case["family"] not in FAMILY_PARSERS for case in job.get("cases", [])):
+        return {
+            "vllm_rust_version": version,
+            "results": unsupported,
+        }
+
+    def capture(cases):
+        feed.update(json.loads(build_and_run(vllm_rust_source, json.dumps({"cases": cases}))))
+        return feed["results"]
+
+    results = capture_peer_results(
+        job.get("cases", []),
+        FAMILY_PARSERS,
+        capture,
+        tools=json.loads(schema_bytes),
+        supports_finish=True,
+        supports_init=True,
+        supports_tools=True,
+        unsupported_reason=_unsupported_request,
+    )
+    if SCHEMA_PATH.read_bytes() != schema_bytes:
+        raise ValueError("tool schema changed during peer capture")
+    if not feed:
+        feed["vllm_rust_version"] = _vllm_rust_version(vllm_rust_source, vllm_rust_source / "src/parser")
+    return {**feed, "results": {**unsupported, **results}}
 
 
 def main():
@@ -309,8 +431,7 @@ def main():
     ap.add_argument("--job", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     args = ap.parse_args()
-    out = build_and_run(args.vllm_rust_source, args.job.read_text())
-    data = json.loads(out)
+    data = capture_job(args.vllm_rust_source, json.loads(args.job.read_text()))
     args.out.write_text(yaml.dump(data, default_flow_style=False, sort_keys=False,
                                   allow_unicode=True, width=4096))
     print(f"wrote {args.out} "

@@ -1,0 +1,2154 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.23.0
+    source_sha256: a1f8c0b390b1506b5d952f4faa64a0761992e84bec00c10c2a13979f7878d344
+    adapter_sha256: aa8605e4b960eee9cc3245169f53f6e58dc4ceada9c2ae5f7e006c3bdee14660
+    job_sha256: d985771aa6b5607bfcbb05e419b9ec50f623597990c621661ea6b5e1df67594a
+document:
+  mode: unified
+changes:
+  arg_json_null_anyof:
+    case_key: arg_json_null_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 79bc00bc7bcbb5d76b0ce230c7e837d80fcfd08d2249499a8c1ac52dc1be24f7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_json_null_const:
+    case_key: arg_json_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 74a0b404d06414aed5f7d5728a7a6c413e0442924b100c5554b038db2d77b7d5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_json_null_nullable:
+    case_key: arg_json_null_nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 5ebd57cc22cbf6762fdf50ec65a615f2c7603c7d6002889a7fb634efdd519d97
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_json_null_oneof:
+    case_key: arg_json_null_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: ac03150dfb907e34e7503d8b89dc45dd49e3e55708854a58b6441c92a85d8c5d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_marker_in_string:
+    case_key: arg_marker_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 416e2616cf21f289c06eaedaf9912a9f72fbc85a7f098ee155c3be6d051fa054
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null:
+    case_key: arg_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: 152bb15f3a7f3244e746b17072a03af9b15d2281b878d55fbe760a26049dcb6c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_const:
+    case_key: arg_string_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: c324ccf31604a7ec5347fdb3e8794a91dd49b15d8ec93ce203667ddce780b4da
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_enum:
+    case_key: arg_string_null_enum
+    stimulus:
+      ref: current
+      semantic_sha256: 4f001079d6dd58d50ec3c7eaa4b8c41027fbe2310f210781d47ed706f5d70042
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_sibling_anyof:
+    case_key: arg_string_null_sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: afada5af865e9b20a751369fed2340738fe3b82824f77dd151c64d3708cd2b05
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_sibling_oneof:
+    case_key: arg_string_null_sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: ade6847890ab6318d71d74afbe24fd5e21f67e3508dabc915b97e0585e7720ff
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_union:
+    case_key: arg_string_null_union
+    stimulus:
+      ref: current
+      semantic_sha256: 02e928f1899d7e4d08c17ac8432067f0f6e9b927c958535243bd1926ded7d632
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_string_null_untyped_branch:
+    case_key: arg_string_null_untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: 16d534f1868140367a7466bfc5901fc2891ebb19dd2a16f7334e89ce5bffa8e0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  arg_unicode:
+    case_key: arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: 1e66b1f2321f4255ad5c05602312be62e710ba8e3ed03c2ad7da2bacf7bce591
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  content_then_reason:
+    case_key: content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: e0e8d67f0a3bebb807f360c640b92008494ec53cb5bfd07ff78acbb15c511925
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: a5212f3418bf2b0a6757e079f45c12b34916a8f5cd7215007a7182e2d6026cd1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: deepseek_v41_mixed_control_text_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 66e81e8f4c11497934b0e8691dbee4134cfb1d8ef2b291338dfec1b36f31a589
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  empty_args:
+    case_key: empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: b729f25ebecd348771a03fa5a46e3e72269721efc204be9e7486c4f69b594dcc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  glm_ref_encoded_targets:
+    case_key: glm_ref_encoded_targets
+    stimulus:
+      ref: current
+      semantic_sha256: 851aff8557bdd4c4c5e924edb7a310da3939fe5e9459f0ead7134cd51916cb70
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  glm_ref_json_looking_strings:
+    case_key: glm_ref_json_looking_strings
+    stimulus:
+      ref: current
+      semantic_sha256: 6f05784f6054f5a409e3adeff7fae90f91f26d6e5ab415a5b0cd93197eac4656
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  glm_ref_object:
+    case_key: glm_ref_object
+    stimulus:
+      ref: current
+      semantic_sha256: 08c8211cb7daa4a7767eacc9ef0540a17795bf5bc8be11eef4f7f3a7a17b5d90
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  glm_ref_scalar_types:
+    case_key: glm_ref_scalar_types
+    stimulus:
+      ref: current
+      semantic_sha256: 96dd78142067b82bb7c14666ae8da51a2feddfcb2210efa12c334134e991bdeb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_after_reasoning:
+    case_key: guided_json_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: b64c724d8c16db5a18d6415fbb2f6a68b09a2da5031667745ce9253311468536
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_array_argument:
+    case_key: guided_json_array_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 11a2ee39dec2236687927e29ba9b9758122cffa49916bf9bd4c8c80d2187c358
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    case_key: guided_json_bare_tool_header_recovers_inside_a_thought
+    stimulus:
+      ref: current
+      semantic_sha256: 2c47c29f8e4b97f081adf9cb0b47faf044cb999bfd286d09addc751d9eb6455e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_escaped_string_args:
+    case_key: guided_json_escaped_string_args
+    stimulus:
+      ref: current
+      semantic_sha256: bef0a68b3d467442f4411166ab9278ccffe59628db6dc33c20491f819cf2bedd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_gt_in_argument_bare_opener:
+    case_key: guided_json_gt_in_argument_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 5ea31bea66ad5d3fef9170bf00a8449cd9d9eaa36c152118e9fe2c004ac6ac6d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_gt_in_argument_trailing_close:
+    case_key: guided_json_gt_in_argument_trailing_close
+    stimulus:
+      ref: current
+      semantic_sha256: 2cd1e4d275f1c0814a62eff238a950c98c0c8013376a83b5f30a74698e54d8c5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_gt_in_argument_wrapped:
+    case_key: guided_json_gt_in_argument_wrapped
+    stimulus:
+      ref: current
+      semantic_sha256: 5d3d2adb68b1f5d0657f128811a74bf8132b3b86cad4bfe92389b84502a51875
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_invalid_call:
+    case_key: guided_json_invalid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 9d6cc5393ee3ca5be0208357c69cc2fc4c3aa30546af29b4f1797414c778ae00
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_list_with_broken_element:
+    case_key: guided_json_list_with_broken_element
+    stimulus:
+      ref: current
+      semantic_sha256: d2580196860c1b853ba6b1562e4acaa0a13ba28752e4b048ba2c4e5a8f5a61db
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_malformed_json:
+    case_key: guided_json_malformed_json
+    stimulus:
+      ref: current
+      semantic_sha256: 99ef8b80e069a28f177bdcc7229cdc6521d502d66578503a86362766e4832cb3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_marker_inside_argument:
+    case_key: guided_json_marker_inside_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 026142bc7188b9c1d3c050498477e7dd71cbc5b6e41248d421fbbda6d31fd40e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_named_tool:
+    case_key: guided_json_named_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 3742b49382ed2048332332940ef2c667a9caf11922c94e6842b1849dd9e0292d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_narrated_invoke_in_reasoning:
+    case_key: guided_json_narrated_invoke_in_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: f3f1e5fa566c3ecfa48e3984663639e83f716e146f9b14bd2c83e68f249e320e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_narrated_prefix_inside_reasoning:
+    case_key: guided_json_narrated_prefix_inside_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 496f3a93f5db16fd116b06e489a566b2664e2b1b46734332437d0b37e1b2e14b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_native_markup_only:
+    case_key: guided_json_native_markup_only
+    stimulus:
+      ref: current
+      semantic_sha256: 2428de24fb46db892f60dc97af20425b201ef6af9d2767519a97940658d92b8b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_orphan_reason_close_before_payload:
+    case_key: guided_json_orphan_reason_close_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 5744b3fc5d239ca180dee70fe43b1b6a23037064d94f109fdc5f362bfc6277f5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_orphan_tool_close_before_payload:
+    case_key: guided_json_orphan_tool_close_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: dbf3c17a3ed0113e28e69ad3e59577d7f2951789b040c81e46e8baec9a8214ae
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_partial_calls:
+    case_key: guided_json_partial_calls
+    stimulus:
+      ref: current
+      semantic_sha256: f3b1d347bb1d87657c80c196f0c30c1d162bcd127e604c52efbbb5fed2b9dae1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_prose_before_reasoning:
+    case_key: guided_json_prose_before_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 03a67ea6bb9b72d8dc2ee5bb1b7d188d970d4ed0eb5d88e3c16c3a0729f0d48c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_quoted_bare_header_after_payload:
+    case_key: guided_json_quoted_bare_header_after_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 2d456f3e62d7b09fb15e338134486877c419b0d421bd654d5816f4dbb38d7cbc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_quoted_bare_header_in_answer:
+    case_key: guided_json_quoted_bare_header_in_answer
+    stimulus:
+      ref: current
+      semantic_sha256: 8386c6b3a245d7a0f8c6b36b66a73eac64687a923945a3ebd26b03e76da0a97d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_quoted_bare_tool_header_in_answer:
+    case_key: guided_json_quoted_bare_tool_header_in_answer
+    stimulus:
+      ref: current
+      semantic_sha256: 7a204611bcf637d650c4720cdae3227153183a43e72610c681a71cf6f068ef32
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_required_tool:
+    case_key: guided_json_required_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 681fe00810605ea89ef3e4e9e51fba25936c2b81841c80e3b8ff6f122e0b8bf6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_nameless_element_bare_opener:
+    case_key: guided_json_schema_error_nameless_element_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 4d1b257c1eb8f67404f5f25db28eb3dc03edc3bc797652f01d3b3254da9bcd47
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_nameless_element_trailing_close:
+    case_key: guided_json_schema_error_nameless_element_trailing_close
+    stimulus:
+      ref: current
+      semantic_sha256: a3157b91659e0864a95af7725ab25e22b925e6c201c393ef1a477cc5d8d34b63
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_nameless_element_wrapped:
+    case_key: guided_json_schema_error_nameless_element_wrapped
+    stimulus:
+      ref: current
+      semantic_sha256: 7a30057171c5c84fcd4968b409ee7d4ed3e8adedd1dfb7dffac1a84283ffd527
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_not_a_call_bare_opener:
+    case_key: guided_json_schema_error_not_a_call_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 0cb676db8150f3b8d800726a3b05a24efca8701530b53c45c107b40e7da6d3e5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_not_a_call_trailing_close:
+    case_key: guided_json_schema_error_not_a_call_trailing_close
+    stimulus:
+      ref: current
+      semantic_sha256: d3d3f314d9832133483fbe4c9a5288f896a3f1bc258ac95057d2ed09d1d3b348
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_schema_error_not_a_call_wrapped:
+    case_key: guided_json_schema_error_not_a_call_wrapped
+    stimulus:
+      ref: current
+      semantic_sha256: db868bf0507e657da05a3125d2889a327836699f08798ef3ce6585a8e20a1da8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_stray_prefix_before_reasoning:
+    case_key: guided_json_stray_prefix_before_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: c49ba597c5b5bce6548d00e69ab4c9a18666bf48abc3fcc26c72e0d9c016a816
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_syntax_error_bare_opener:
+    case_key: guided_json_syntax_error_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: a5e17f038034d5e6f1a447cd37a138daa078bf5dffd336c391fd86bf4277bd24
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_syntax_error_trailing_close:
+    case_key: guided_json_syntax_error_trailing_close
+    stimulus:
+      ref: current
+      semantic_sha256: d883002e7e34cea579d32cbbf4066070470b5615adaf07765526648e952b758c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_syntax_error_wrapped:
+    case_key: guided_json_syntax_error_wrapped
+    stimulus:
+      ref: current
+      semantic_sha256: c8d039e2872228cde57f3536f7ff959872cd909871f918fb60e7f38aa7fd14a8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_tool_close_after_payload:
+    case_key: guided_json_tool_close_after_payload
+    stimulus:
+      ref: current
+      semantic_sha256: db97a0cc74656e22af910919885fbc2e1f13f499ed95f89e0fdde992295fd038
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_tool_open_before_payload:
+    case_key: guided_json_tool_open_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 055b3bbbbe1cb708db725526109e2cdf3d7123571de1f16fae4bd9ffcd14eec0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_two_calls:
+    case_key: guided_json_two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 547c2c88865d061ec7dd0f4700b3e7961f19465cab9e97529242ef819492ddac
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    case_key: guided_json_unterminated_reasoning_then_wrapped_payload
+    stimulus:
+      ref: current
+      semantic_sha256: aa23943993f9887f78808b091a04d4dba4280cedaa895cae82c722cf53b1daef
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_json_wrapped_in_tool_markup:
+    case_key: guided_json_wrapped_in_tool_markup
+    stimulus:
+      ref: current
+      semantic_sha256: 1bbef524d60b0277689aa7d7002e861d9ce52de288d8ae4b8d754eb5199a2038
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_quoted_reasoning_closer_named:
+    case_key: guided_quoted_reasoning_closer_named
+    stimulus:
+      ref: current
+      semantic_sha256: f582c9b2e2d6145f7cacec2a416697e509730d1cb05832bcd9051c5dcd7cb6a6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_quoted_reasoning_closer_required:
+    case_key: guided_quoted_reasoning_closer_required
+    stimulus:
+      ref: current
+      semantic_sha256: ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_response_quoted_control_braces_named:
+    case_key: guided_response_quoted_control_braces_named
+    stimulus:
+      ref: current
+      semantic_sha256: ea4fbbf015c371203e74ff14a516e900f26b79cbdeb7290e4915263cb720214d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  guided_response_quoted_control_braces_required:
+    case_key: guided_response_quoted_control_braces_required
+    stimulus:
+      ref: current
+      semantic_sha256: e4cf6ec0478d651cf359ab658505ec4dbe3a360364983acc4df45da743b482dc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  interstitial_text:
+    case_key: interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: 8149b30eb0982921060bed030041aa84d7b8685cae63e49d8291455ae232cd37
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  local_schema_id_preserves_type:
+    case_key: local_schema_id_preserves_type
+    stimulus:
+      ref: current
+      semantic_sha256: ff3c2cd78fcfd00dfa571930f1d7d99e8ed639623fa8cea5f0b2c45328a82495
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  malformed_json_then_two_valid_calls:
+    case_key: malformed_json_then_two_valid_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 6fc5ae94578218d433a32cfefaaf22bc1a65665b45da5c28bcb0338ce615f5a7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_quoted_reserved_eom_argument:
+    case_key: muse_quoted_reserved_eom_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 41d4f45d0c87e570b1dada9c90adcaf65831ec04f5bfaedf61f910f7d230e6a6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_quoted_reserved_eot_argument:
+    case_key: muse_quoted_reserved_eot_argument
+    stimulus:
+      ref: current
+      semantic_sha256: dfea8211f5785e755620c2e892867ad9011ed8d981691d92a7affdfe6cf88d28
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  muse_quoted_reserved_start_argument:
+    case_key: muse_quoted_reserved_start_argument
+    stimulus:
+      ref: current
+      semantic_sha256: 6a982cca4c1916b8e76f44510ad476ef5cecd8aa8a0f89d442f5cc80ddb7b6cf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  narrated_calls:
+    case_key: narrated_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 07eea82f3dbfac15e560bb09ea80e39a7854c39a1d49675320b8de82b5905eb4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_quoted_control_in_reasoning:
+    case_key: native_quoted_control_in_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 6f75ed469619f443316bdd896b365abfbf9960a3e9aa538886d974a9042ce414
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_quoted_control_in_response:
+    case_key: native_quoted_control_in_response
+    stimulus:
+      ref: current
+      semantic_sha256: 48c0bdb9e8e946eab34bbe8f34b33c79919a7ca96595df13062ecb4d093290e3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_quoted_control_then_call:
+    case_key: native_quoted_control_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: 87417644fbdfb59dc40c130e032847e68b4420a7e12d7d2fccb5c41f220f84d9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_quoted_incomplete_header:
+    case_key: native_quoted_incomplete_header
+    stimulus:
+      ref: current
+      semantic_sha256: 39a9c789aeedbb9c7604bc2a86989e31ff11458102bfcf99bcc46adac0273b84
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_single_quote_contraction_reasoning:
+    case_key: native_single_quote_contraction_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 625602f9f5b1ec7586ed450f311243ac2e96f1b7d872f52db652dbc38d2e0ec7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_single_quote_contraction_response:
+    case_key: native_single_quote_contraction_response
+    stimulus:
+      ref: current
+      semantic_sha256: 34e524946dbff6033f75acefb08223b06f564ba2c2d320579eb2339e47c22684
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_single_quoted_word_control:
+    case_key: native_single_quoted_word_control
+    stimulus:
+      ref: current
+      semantic_sha256: b39af74534b89c4891e49f0cf0ceaff3b1a72017048d4105dc7d83c4f2cd2ff8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  native_unmatched_quote_then_call:
+    case_key: native_unmatched_quote_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: c41e7a54a5e757db3f56395959266291cae01fe14d274f7776b563c8cd35bd9e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  nullable_reference_alias_literals:
+    case_key: nullable_reference_alias_literals
+    stimulus:
+      ref: current
+      semantic_sha256: 51e351b1ac17995aa6c7c9e06bb7a30070daedea07ba66b67e9033a31fa7320a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  orphan_close_after_prose:
+    case_key: orphan_close_after_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 18756a59a414cb3341e4797c075aba35d853ef197499129549b962e5a3c88b93
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_redundant_opener:
+    case_key: prefilled_reasoning_redundant_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 0fc0444324f4a858435ab38128e8fe41a3733e0d29501c8ef1221442a67c7514
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_then_text:
+    case_key: prefilled_reasoning_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 461926fc66ee26ee136ccd2b239c2cfa33b2978ae78edd57b83648dd68e2646c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_then_text_then_tool:
+    case_key: prefilled_reasoning_then_text_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: c3c114f7bd8af3f1415be9341f3e3277858f7b51057af7d67c76e1825ed444f9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_truncated:
+    case_key: prefilled_reasoning_truncated
+    stimulus:
+      ref: current
+      semantic_sha256: 731dc04dbafb88f02e36944febe827ead4982f285421d95edc388186d2695293
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_with_guided_json:
+    case_key: prefilled_reasoning_with_guided_json
+    stimulus:
+      ref: current
+      semantic_sha256: 94c4d8e01900a415f34696c5a95ce839b4d1fe9d4399bc1166ec63556e9da113
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_reasoning_with_tool:
+    case_key: prefilled_reasoning_with_tool
+    stimulus:
+      ref: current
+      semantic_sha256: b115a6330473dbeb63a2bc7c4f2c5a552419246e582061d441d636ea3cd35dc6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  prefilled_response_reasoning_markers_literal:
+    case_key: prefilled_response_reasoning_markers_literal
+    stimulus:
+      ref: current
+      semantic_sha256: 28f7fdfc71ae2facc4c38a928669e3c8ace8bbb9c1f773d1b011b690c9689e2b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  qwen_string_null:
+    case_key: qwen_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: 57debb41560aeb1cc4038801e858fc46a0b1a780a37bf4c438ffa2112f3c1e7f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_after_tool:
+    case_key: reason_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 593ba97cf6f2e9f5218e0f8b19a0bbb21292ead2e06befebc518a88c0ef3cd27
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_between_calls:
+    case_key: reason_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: ee876969c41c3fa976801e29df90a31362e13afab1f03ed0baedcf6fbeb29c15
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_interleaved:
+    case_key: reason_interleaved
+    stimulus:
+      ref: current
+      semantic_sha256: f80f52cecf8f6cd12bacfe63b638e5eb15a1d47e7b782f3af731ff9508edad39
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_markup_in_arg:
+    case_key: reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: b33b749cf33288ae566693cb1dc1590b500b98364381061ef956bf995440e2d9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_markup_in_arg_with_text:
+    case_key: reason_markup_in_arg_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 6b63e7df972791caa34ba476ab6c3ff20bb61ccf8117f0ad8659947455af6fb5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_only:
+    case_key: reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: e6bef04fd51dee2c7a72b12d1b4883f997f5faf4b2b6bbb93978d026f4766695
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_then_content:
+    case_key: reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: f439424769087bf1eccdf6ad19840071decda01d395b3558a3e0801ad2911bf5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_then_tool:
+    case_key: reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: c474df582788cc72058028b728970cd673bdec969e57066a1ebdfc4d37a35b2c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    stimulus:
+      ref: current
+      semantic_sha256: d92c882f1e26d4d88a094c50831e64fd6f20a4e388024cc72d48035380476e7f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: dbc9c6badbc310e51fcd9445bc7297355e25a01288512362524cc8491f90632c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  reason_unterminated:
+    case_key: reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: 9ea322bd442ec9f43d41b97e7cfe1a0d09ef095cdd4c0383292c21ca439be89d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__30_14:
+    case_key: retired__30_14
+    stimulus:
+      ref: current
+      semantic_sha256: bcd6168f92fecc5e6e24410cd264997d817dc7afc4923a611dea556a84b51845
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__31_33:
+    case_key: retired__31_33
+    stimulus:
+      ref: current
+      semantic_sha256: 38c69804b0c0e8594888e87b279d1394984d92b6b5b9a91e1ef4c5ea75c8b333
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__31_34:
+    case_key: retired__31_34
+    stimulus:
+      ref: current
+      semantic_sha256: bd8b6a55ba78310104cd1364d1e6dddbf14c14ef12813e30675a63342dc493a9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__31_35:
+    case_key: retired__31_35
+    stimulus:
+      ref: current
+      semantic_sha256: ce480575e6e3b70f09dcd2c7c3dd6aabee0e2af6fbe0597c629565ef1d2420a0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__31_37:
+    case_key: retired__31_37
+    stimulus:
+      ref: current
+      semantic_sha256: 6269c6337ef93200bbb2fc2e3a435928e736059400d16f4f6b122e2d75f25d4c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__31_40:
+    case_key: retired__31_40
+    stimulus:
+      ref: current
+      semantic_sha256: 757d8810a6859a8d8ee5f41632a58ae76590fdfa4e9c076fbef67ba533e61ba2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  retired__50_2:
+    case_key: retired__50_2
+    stimulus:
+      ref: current
+      semantic_sha256: 24dfaf4b5ccbbfa48a367185873c0ad0af5534cc1e79f2aeab466f393b706a66
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_array_allof:
+    case_key: schema_const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 050a6052c4e462d02d40c5699314d629f1d7928fb7292d07c3c952fed9c96858
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_array_bare:
+    case_key: schema_const_array_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 36eef517d1fca480a653e1be688475bb53d36dc4e55858d3deb0d4a766bbd370
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_array_ref:
+    case_key: schema_const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: e6e611da4705acbddf96c4f9091fe9ea66f77dc660aa6c942f97e52afaefba3b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_array_typed:
+    case_key: schema_const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: bab3cf004ca61a574d665b7ec59e94645f837ab8481e207d70c8420abb6820f6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_boolean_allof:
+    case_key: schema_const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 84081eebe6f8dd3be5faa5fced39c9d8ddf03263f36c542f6755c7177e3094b9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_boolean_bare:
+    case_key: schema_const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 81e4a72487de46c79700b380b28b83860207f886e14e9ce70a0fb878dde1cf52
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_boolean_ref:
+    case_key: schema_const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 378cb058f300a6040c078984a5c7465b3cf9a0dadb1fcb49652d5123debdfdfe
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_boolean_typed:
+    case_key: schema_const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8601ed04dd39c3ff7b16e571767497936387c82f4ce5496c711f409f9002aaf0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_entity_allof:
+    case_key: schema_const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: dd567bf7b362edef3175d9dc49dbdbc089db08f19c4ec6ab41dfe4e6c850b78f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_entity_bare:
+    case_key: schema_const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 044743afcf89f3fe389da10e619551e5342d9319a7beb247710154d658f8d985
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_entity_ref:
+    case_key: schema_const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 1c1eca3834b566c5a9fbc1bfef08f47ee76068d8b2396bfd780586dc48c2be0a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_entity_typed:
+    case_key: schema_const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: fd5ee08a419748245402569b1f1bc9a9f38205394a17cc4ac5dc71c79e49be4c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_null_allof:
+    case_key: schema_const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: a6bfbcc199bc0f7ea58ecdd6dd4beb3e68192ab4b12d99e149b96a59125be1b1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_null_bare:
+    case_key: schema_const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 7ef1b4a84ab872172073e26ca69b63f477642fe8826edfa6e89eaea493d36344
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_null_ref:
+    case_key: schema_const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: e3dea03978ea402be68853ba730bd7756ef0473b70551137363c652ca0a0fb5b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_null_typed:
+    case_key: schema_const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1447934da8b72d1104019357268cdad660e37ee322bddbc3246dc22a457a7b3c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_number_allof:
+    case_key: schema_const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 525f62970b595c55560f639ce3465de34ff65afdaa3aa5a1191fa37253d573ce
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_number_bare:
+    case_key: schema_const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: e075d804cde076cb6a312e7dd8c43d930bfb1dcdce64d1843cfb573a5df3570f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_number_ref:
+    case_key: schema_const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: df97a617d8e668b7c85b55f79052ad2c8f2bdc941578db47651daabafc77e894
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_number_typed:
+    case_key: schema_const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4104379d04b4eac64aaa9cb6230f9577c7e699eb1715a5a27731782e731ee693
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_object_allof:
+    case_key: schema_const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 9bf8b09ca0100ef46a395569fbcabe6dfb56760d57b2507b200224e167a68539
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_object_bare:
+    case_key: schema_const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: b758b061e34da7cfc1ea93e94fc33454e296e47d9355def4cf8577238dae83a3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_object_ref:
+    case_key: schema_const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 64cf85519511cf9f27f673c4a8c45e92c0c0dfef30dddba89550bc772db4ec9d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_object_typed:
+    case_key: schema_const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3455e47ff6f83e438e1eff9fef2328ee8426e8b29fb52a42e8e368c853e3fbca
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_plain_allof:
+    case_key: schema_const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: d600d1de89f9ff22d7f1c914a61df8f46adb8a50b3caeb3c126e4fbfff5d3e7c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_plain_bare:
+    case_key: schema_const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 935af88a2b6433c9936a9d2fad6caa5cdce98bb6270f9f5f542cdcdfe97e9fa8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_plain_ref:
+    case_key: schema_const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ff20fff962b636a25695148e9ba32ffb76acdc780969dcb7460fc9dfcca5f4d9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_plain_typed:
+    case_key: schema_const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: aed2e236a3ba3053062578496536dad4856942a90257c19c4a598b4642b16f1d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_quoted_allof:
+    case_key: schema_const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 362c4ef6fb36cd306b1d3ffcfd1078bfd0ce99ba43e08f1a82383511c28fef14
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_quoted_bare:
+    case_key: schema_const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 34b822e64d797780eec27fbcaf17d55939d48f15a91a8426e7a7062ddd88b62f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_quoted_ref:
+    case_key: schema_const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: b8aad019f486ad8665d2a88da014f5747c31e7434da57788c13370ac91679442
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_quoted_typed:
+    case_key: schema_const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1cccbd4c97e17d5aead155f40b66a2336c5c167cfe0211e379fc7763fddf103a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_space_allof:
+    case_key: schema_const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: db75130a908b4a5e462cab0b9e63bb10f795b9aed2f77e65b5f9dc6bb2158cb0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_space_bare:
+    case_key: schema_const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 93715bae77a52af679015933aa7d2bd6717ad2c960ad737adb1d458b2f0c90c7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_space_ref:
+    case_key: schema_const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 5beacb68c80d1a48f4f63e6c9bb44ab39758fa5d88c5d8fb8bcded679d2ef200
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_space_typed:
+    case_key: schema_const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d893a6ba2499b1c22bf626cd864a2badc64b2b94037bb82ac28e777688eebad2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_unicode_allof:
+    case_key: schema_const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 6f1ba3dd00653351740d3735fc70248bb6f3021ef0ede1b889f0a513c4d128cf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_unicode_bare:
+    case_key: schema_const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 94b056f0b359623993215a4c0bbd2561d64566e3054a83af1761ec93de3f4fd4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_unicode_ref:
+    case_key: schema_const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f07eb217214babe9501a354e90ba50dde77a390b27feafb0dfa866abb91486b1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_const_unicode_typed:
+    case_key: schema_const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7fa3c645af85f14945001755ac0b3363bc3247bf674a44b6ea899fc5f304b6fd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_array:
+    case_key: schema_declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: 7174f952f6243cf151c20d14490c32c338b1afbdf110346e140208e573dba808
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_boolean:
+    case_key: schema_declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: ecfc4d71bf8feafff83415882df79623cdc49062dbd4228a5bf1c10ad15e469c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_integer:
+    case_key: schema_declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: c1824fd635b6ef319600d7581d5aa28ae78068df24acdff82b0ce3f97c5cea0e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_null:
+    case_key: schema_declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: 05532fd04ca5ead9e27256523459a3b821f3d9e72cf7e04e3f5f2cb53cb4743b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_number:
+    case_key: schema_declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: 9e9088452842205c07b34287ea821531ece1e52a7f70c4dcda6cc37ab0a18ff1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_object:
+    case_key: schema_declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 99c65cb64ba52503faebf4a3205297c24087c2e70f2f01d58b089894de8a0921
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_declared_string:
+    case_key: schema_declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: 20893291f74dc459415804cb28df25c4e04743935b274440e5825aa3f23fd838
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_enum_integer:
+    case_key: schema_enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 965474388052025520e361fd758233988a5781a1bd53c4ca4206078037170bbd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_enum_string:
+    case_key: schema_enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: ddf33259d5786cc8949fee4148ed02e9b652c7e9aeafeb07eb984e15890f3d34
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_escaped_ref_const:
+    case_key: schema_escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 3d148c8127301281b2297193572272bb3328d0e9254f504259b65d2ab92bd5bd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_id_direct_integer:
+    case_key: schema_id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: a998008c4c8c37e8ab0be07dcd158cb7481b388c7728d27183c5e61c725b4238
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_integer_const_ambiguous:
+    case_key: schema_integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 3dbf81c2343c734d26e5c4f3de615b6948568cf0ca7af71f2f964e46d6fe90f7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_intersection_anyof:
+    case_key: schema_intersection_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 794f46a68c17f29b3b814fe766c465601630a95dfe6de46e28781a6c9dcdcab7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_intersection_oneof:
+    case_key: schema_intersection_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: ed4caffa59924828b5f3a44f6b23257ed74b099eb232896bdcf00b8634475236
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_null_union_ambiguous:
+    case_key: schema_null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 543007bd6c8499c8bb270cfb3e50a6181e372942872c99485d1ceeac74316a14
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_nullable_string:
+    case_key: schema_nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: c70cb7d31c6cf357aa2326cf5185da8872c1a54ed127702efc001159bf78f9bf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_object_const_union:
+    case_key: schema_object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 7cae92b755770d9ab2471a9cb787fd1292e895b7fd77084d71fbdad305027b36
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_percent_ref_const:
+    case_key: schema_percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 7810191156f27ea56e90c5b4947d4162ccb61b4afc5a4bfcb7f3c148de1ff004
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_ref_sibling_integer:
+    case_key: schema_ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: dc50d34c9f77016af1138b8e4e516b03cc603038817d0dc48154251d5773a4ba
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_ref_union_anyof_integer:
+    case_key: schema_ref_union_anyof_integer
+    stimulus:
+      ref: current
+      semantic_sha256: b8c0fe648bdfd082572dab216aa2ca65d30c814d97111577a6f16d01d30083c4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_ref_union_anyof_string:
+    case_key: schema_ref_union_anyof_string
+    stimulus:
+      ref: current
+      semantic_sha256: 137dfbe47d2b2f80fedf9e7e61b6bef2c25e17f4f6f807b47b2ac33933b01c4d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_ref_union_oneof_integer:
+    case_key: schema_ref_union_oneof_integer
+    stimulus:
+      ref: current
+      semantic_sha256: f9a08cc1748fb89014bc57a7a8df49f61c7663fa4db9810fc6bf582436a58300
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_ref_union_oneof_string:
+    case_key: schema_ref_union_oneof_string
+    stimulus:
+      ref: current
+      semantic_sha256: 127d8d08289bf8c1041431f643c506e27a50013ab9e34990f7860641cf2be73b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_type_array_integer_null:
+    case_key: schema_type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: 3a5c72d653dd0289b7f170502a6edaf3084a5850b3586e92f25c44e04f4d6320
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_type_array_integer_null_null:
+    case_key: schema_type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: d211fabd7ea68833f42248c52d40388fd3098b0fdfc174b2849b2045443950f8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_type_array_string_integer:
+    case_key: schema_type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 40e1b1eb33b1883a5463b97dca3f29d03d6185410de58abbd903338a7b9f8ebe
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_array_reverse_string:
+    case_key: schema_union_anyof_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 5115f812712466e14f9f3109061f1b28db79b2e57454ec69dc499a8ba1247269
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_array_reverse_typed:
+    case_key: schema_union_anyof_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e39e3d58a58a7a378607fdf6592bd30f550021c1342019141a33bda8ca468675
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_array_string:
+    case_key: schema_union_anyof_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: f726ca5fbcb8c2aa5a0f507cf3821dc1185054e92c5ee480319d03bc4a5b1435
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_array_typed:
+    case_key: schema_union_anyof_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6d8d3026eb88759a032ba8b68bb4c3666792c7d706920994144e0a8264641a4a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_boolean_reverse_string:
+    case_key: schema_union_anyof_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: be91038c31d088ae4a07a021684d7b68f406eabfad672cb2addf38fa3dd2c2e1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_boolean_reverse_typed:
+    case_key: schema_union_anyof_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: fa2e4b2e48f38ad9cc70245b36ae46efad9ce59e21e07dab7504b8635393749b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_boolean_string:
+    case_key: schema_union_anyof_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 6bd1bf3ad8e3315f1cf21acca495ffe86d984af4d7e736ec5590de96f2c1a058
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_boolean_typed:
+    case_key: schema_union_anyof_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 9db98e949893e567f484f426cc08408b60ee5af43f34949fc162c5eb00c2a6aa
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_integer_reverse_string:
+    case_key: schema_union_anyof_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 03a15e65b33c0aafdf217126ef9167b9a19ffb0a69a0315549eac6482ccf3d8d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_integer_reverse_typed:
+    case_key: schema_union_anyof_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2adb30d85b3d30c589a9e5743195272854277ce5aa2725508786779f4190498c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_integer_string:
+    case_key: schema_union_anyof_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 829cd564f2999203f19b2c9c810143a5045888b009544e0eaa30a3202cf298fb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_integer_typed:
+    case_key: schema_union_anyof_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ca139a21762b287e1dd421d2ed2c5f32654b6655c0142500abe4066a8337822a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_null_reverse_string:
+    case_key: schema_union_anyof_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 75c91190d73d8e0b415fc10c8df1c9b11d6ef8d370f43d4708a4206e7a5b3176
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_null_reverse_typed:
+    case_key: schema_union_anyof_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5607f841d1c5a0a75464e94e8ecafdcf162b1e1755d3256174adc91d7dfaac6f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_null_string:
+    case_key: schema_union_anyof_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 92bbc2a0ef44f76416ab84d784f0f3ce35c01dde1c8042987648bafc3c889bfd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_null_typed:
+    case_key: schema_union_anyof_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2e92031b8f4d9943a3d083516a8b9807fd60ffa9013a014ef6e46a44115addbf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_number_reverse_string:
+    case_key: schema_union_anyof_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 960b6a1851b6102fc8627614490324a22d9773da8cedbf39717e81dabc39c4eb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_number_reverse_typed:
+    case_key: schema_union_anyof_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 93cb236261a5d10d1cfba3a453c7f9f01688fdad9fe97d32b98fba30fb66d321
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_number_string:
+    case_key: schema_union_anyof_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 6f3250be497b33d348e1d2f5666d323d9aa624a185003967dbbd361930a89a38
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_number_typed:
+    case_key: schema_union_anyof_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 29fdcbd744111223b2efe8a064963c035f1c4b00dd9835292a61b6295f2a55f8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_object_reverse_string:
+    case_key: schema_union_anyof_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: dcc2cd4bdf044471ae45236ac974462a3c64df4c28ac6232e3789f0644df436b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_object_reverse_typed:
+    case_key: schema_union_anyof_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5f237085ce3bada3b86871ff67d6da8e643236c68123f9f4cea61a34be5a4245
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_object_string:
+    case_key: schema_union_anyof_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: daa7de263cec83e20458c739023a618ec3f0672ccdbae29c8d5e139794317e89
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_anyof_object_typed:
+    case_key: schema_union_anyof_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1fe54768a05c4574a0effb4a73490877c03955d63229c077563eed216912e85f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_array_reverse_string:
+    case_key: schema_union_oneof_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 971992a6b3985c93561d3df615d8588e07808aa6b672333a066acd906b662b8d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_array_reverse_typed:
+    case_key: schema_union_oneof_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2df1b6b1db30523047bfca1c93653adfdbb59e7b2eb12c9ebb34d68c80be6cee
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_array_string:
+    case_key: schema_union_oneof_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0d97eff826013ef1627709bc15763210ff9684bc032d1f7fe56326b2b7ebdc1a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_array_typed:
+    case_key: schema_union_oneof_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f32b0abc5ac0bc738d5f756916e974c51470c1752566e427f0ec4feaf96f8516
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_boolean_reverse_string:
+    case_key: schema_union_oneof_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d1d83aaaa4bd870c9a7b963e207c621a94a1e346f627e4919eefc4f98d04be87
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_boolean_reverse_typed:
+    case_key: schema_union_oneof_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: c6c90701b773308feec42eb3af79db702a40f51c242bbd1e17fe8d1545cc4140
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_boolean_string:
+    case_key: schema_union_oneof_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 765e41d923f2baf4a0e915bbab781b4e88b9da175382c4cfd3144173897ba355
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_boolean_typed:
+    case_key: schema_union_oneof_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4eddcc806624a5fea980f7ffcabef278003eaab27b74e20f2d03d120bdbe9f5c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_integer_reverse_string:
+    case_key: schema_union_oneof_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 98040e8c80f4e3d4311a17ea4736297c5de01fa8ec33c77cb6e3046e2ae8cb85
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_integer_reverse_typed:
+    case_key: schema_union_oneof_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b07c34da75245467d2cee469713f8e3dc018b573966c3b5982af9fc8db834ef0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_integer_string:
+    case_key: schema_union_oneof_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: d69025bc9eb6c15ad8371604656507bd61b96cc3c0067bc18d273280f435cca1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_integer_typed:
+    case_key: schema_union_oneof_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3ec1122624fe815c05a6ef5ace52041761cb8af4f250ff16260b2d92f785d38d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_null_reverse_string:
+    case_key: schema_union_oneof_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: f14c11fd519ef83dd7ca29c80ccb5258a24aa15db378f07a6012aa0265d52332
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_null_reverse_typed:
+    case_key: schema_union_oneof_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 286f7e60d16ddd743bf5d12127421e59feb36eb3e34c5a9a9a6bf72bc44d1423
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_null_string:
+    case_key: schema_union_oneof_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 918355d1af6b021a47013da45be92fb9191dc26409e9d0f2729d88d40a89326b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_null_typed:
+    case_key: schema_union_oneof_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3317b31f87cb0772b05b9cf69727533826e9ebcb9629e45b371a15d6d8a9b9e1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_number_reverse_string:
+    case_key: schema_union_oneof_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 82288adda34214107041ad468957332265a07dfa948111a4d64970e25776141f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_number_reverse_typed:
+    case_key: schema_union_oneof_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 41424e1ea85297ee787dc0355cc2d7a61e3bdb1082764bc867c471bb512e65ac
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_number_string:
+    case_key: schema_union_oneof_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: f7615d128fcc6cb14d933301192b51e039a3cde469906479f0ef0e89291f7993
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_number_typed:
+    case_key: schema_union_oneof_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4bf6b507d8d588460ac0c4d0b177f3aa27042ab075b70ff1d17658eed73d5b11
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_object_reverse_string:
+    case_key: schema_union_oneof_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: b026868cfd7a436f3649f81a89b9cae9d106ed53b0d7276b144028dd1ae27534
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_object_reverse_typed:
+    case_key: schema_union_oneof_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a19e5a94ba157525fcc1c63697e22590ab45dc17c557c793a76dd2d96c878157
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_object_string:
+    case_key: schema_union_oneof_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1c6c6a6ad69870a0a9f592d08a9c710bbec52ce989cb5ccd2d2de6ca71c3b534
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  schema_union_oneof_object_typed:
+    case_key: schema_union_oneof_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 368bd1ca3fced886900200a81924c608be833f3c30dc09dd9487fa9e164cf8e7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  text_before_tool:
+    case_key: text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: a9d855ec61b91888c62c8d0c411d040a58bc7a60f91094ca553e04b9919d0494
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  text_between_calls:
+    case_key: text_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 1e037101034748a5bb0e008ca78fe69e399bd30b69b04b25359287ba57e1da76
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  text_only:
+    case_key: text_only
+    stimulus:
+      ref: current
+      semantic_sha256: e48c31b03a97bd69e2fbdec62b94fc4ab114f9d3fd3fefa216ba4ff6b81ea4b3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 6bf756d873ad89ff4e6b976169432047e1e55e7bf861fceeb5f8e03f344f97be
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  text_sandwich:
+    case_key: text_sandwich
+    stimulus:
+      ref: current
+      semantic_sha256: 03aa8233467a3246b468a174cd2035aef23f1b9b4b8619b52ac03d9e0c311e98
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_block_never_closed_then_text:
+    case_key: tool_block_never_closed_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 20efd98acb60d47f210d66b7ada5c11aa0cc7bde75cdef8b7fde533ff727f8dc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_in_reason:
+    case_key: tool_in_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 8ead35b22972449a30d89fcbcab03ed9a0973ec61b25fc35e58c72aa7f85b566
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_in_reason_with_text:
+    case_key: tool_in_reason_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: db74a172bb3cdcb2525929c5841ae5b60b949dbebf47c5384347631ce8a98144
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_markup_only_emits_nothing:
+    case_key: tool_markup_only_emits_nothing
+    stimulus:
+      ref: current
+      semantic_sha256: 0d2dace69ffcf23a11870231f21763ff0b19444c3b56d077af74120212f1f5a0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_no_close:
+    case_key: tool_no_close
+    stimulus:
+      ref: current
+      semantic_sha256: f441ebcc13eef3dd6fac4b594dc3087467af1fada6172764e96cf54b83fdb32f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  tool_only:
+    case_key: tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: 738f1674fb7c8e3e4205144f4c60be2eefc3ffeab8879928b98beb85062490b6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: ab1a9805a84a69ab37e02238ee994cb93e389f41008e35dae5106c88ba5429f4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: 53a88c1830bb51718d961eb64924dd5be2c357ca19b49fd127ef7adfa751dad9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  two_adjacent_reason_spans:
+    case_key: two_adjacent_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: a9fcb6ebc0c88e1787664f139edd59871d4dbf45d1d99621923123fb497bb9be
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  two_calls:
+    case_key: two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 2fde160ed1dec6fb0cb956fb79ee600550fc52cbc3411836c4871f7bb616510c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: e5c85c983d15ab01705247ceae8955b2b57d28afbb12e661fc4c611f172b5d54
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  two_reason_spans:
+    case_key: two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 8b611579b746b4e2867477b6c12c16a91eab5fe97104c056d1f17196d59cfda9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+  unused_reference_graph_parameter_types:
+    case_key: unused_reference_graph_parameter_types
+    stimulus:
+      ref: current
+      semantic_sha256: 8d50ccff57bc7c997be92abf22ab821a6f10e18c51d3dfabf9bcbf6b38466ccc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: No registered reasoning + batch tool parser for this family
+metadata_changes: {}
+document_overrides: {}

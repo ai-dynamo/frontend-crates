@@ -3,7 +3,7 @@
 
 //! Record Dynamo parser v2 per-chunk streaming emit into stream fixtures.
 //!
-//! Reads conformance/toolcalling/fixtures-stream-v2/harmony/TOOLCALLING.stream.*.yaml, runs
+//! Reads conformance/toolcalling/fixtures-stream-v1/harmony/TOOLCALLING.stream.*.yaml, runs
 //! HarmonyToolStreamParser over each case's chunks through one selected input path:
 //!   - default: token path (parse_tool_call_streaming_incremental), using
 //!     delta_token_ids only

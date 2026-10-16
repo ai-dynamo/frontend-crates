@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.1.0...dynamo-protocols-v8.2.0) - 2026-10-14
+
+### Features
+
+- *(protocols)* Add decision API wire contracts ([#362](https://github.com/ai-dynamo/frontend-crates/pull/362))
+
+## [8.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v8.0.0...dynamo-protocols-v8.1.0) - 2026-10-09
+
+### Features
+
+- *(protocols)* Add opt-in chat and completion schema exports ([#338](https://github.com/ai-dynamo/frontend-crates/pull/338))
+
+## [8.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v7.1.0...dynamo-protocols-v8.0.0) - 2026-10-08
+
+### Bug fixes
+
+- *(protocols)* Preserve Anthropic tool strict ([#322](https://github.com/ai-dynamo/frontend-crates/pull/322))
+
+## [7.1.0] - 2026-10-06
+
+### Performance
+
+- Move owned Anthropic content fields during deserialization instead of cloning them.
+- Add `AnthropicCreateMessageRequest::estimate_tokens` to share the borrowed count-token estimate without copying the request.
+
+## [7.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v6.1.0...dynamo-protocols-v7.0.0) - 2026-10-05
+
+### Bug fixes
+
+- *(protocols)* [**breaking**] Bump async-openai to 0.42 ([#258](https://github.com/ai-dynamo/frontend-crates/pull/258))
+
+## [6.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v6.0.1...dynamo-protocols-v6.1.0) - 2026-09-18
+
+### Features
+
+- *(protocols)* Add experimental realtime text input events ([#212](https://github.com/ai-dynamo/frontend-crates/pull/212))
+
+## [6.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v6.0.0...dynamo-protocols-v6.0.1) - 2026-09-17
+
+### Bug fixes
+
+- *(protocols)* Accept null stream option flags ([#239](https://github.com/ai-dynamo/frontend-crates/pull/239))
+
 ## [6.0.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-protocols-v5.4.3...dynamo-protocols-v6.0.0) - 2026-09-11
 
 ### Features

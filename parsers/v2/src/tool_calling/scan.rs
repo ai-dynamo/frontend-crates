@@ -135,6 +135,34 @@ where
         .unwrap_or(0)
 }
 
+/// Resumable JSON quote ownership for boundary scans and whitespace projection.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct JsonStringState {
+    inside: bool,
+    escaped: bool,
+}
+
+impl JsonStringState {
+    /// True when this character belongs to a quoted string, including its quotes.
+    pub(crate) fn advance(&mut self, character: char) -> bool {
+        if self.inside {
+            if self.escaped {
+                self.escaped = false;
+            } else if character == '\\' {
+                self.escaped = true;
+            } else if character == '"' {
+                self.inside = false;
+            }
+            true
+        } else if character == '"' {
+            self.inside = true;
+            true
+        } else {
+            false
+        }
+    }
+}
+
 /// Byte offset just past the first complete top-level JSON value (object or
 /// array) in `text`, skipping leading whitespace before it — or `None` if the
 /// value is absent, not object/array-shaped, or still open (unterminated
@@ -163,21 +191,12 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
     // BEFORE a string that legitimately belongs to the same value, reopening
     // exactly that corruption.
     let mut stack = vec![if first == '{' { '}' } else { ']' }];
-    let mut in_string = false;
-    let mut escape = false;
+    let mut quoted = JsonStringState::default();
     for (idx, c) in chars {
-        if in_string {
-            if escape {
-                escape = false;
-            } else if c == '\\' {
-                escape = true;
-            } else if c == '"' {
-                in_string = false;
-            }
+        if quoted.advance(c) {
             continue;
         }
         match c {
-            '"' => in_string = true,
             '{' => stack.push('}'),
             '[' => stack.push(']'),
             '}' | ']' => {
@@ -205,10 +224,11 @@ pub(crate) fn json_value_end(text: &str) -> Option<usize> {
 /// key); keys absent from the source order are appended in object order
 /// (defensive; normally empty). Non-object payloads pass through untouched.
 pub(crate) fn reorder_arguments(arguments: &str, source_names: &[String]) -> String {
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(arguments) else {
-        return arguments.to_string();
-    };
-    let Some(obj) = value.as_object() else {
+    // Only reorder keys. Parsing values through Value would round large/fractional
+    // JSON numbers that the coercer deliberately preserved as raw text.
+    let Ok(obj) = serde_json::from_str::<
+        std::collections::BTreeMap<String, Box<serde_json::value::RawValue>>,
+    >(arguments) else {
         return arguments.to_string();
     };
     let mut parts: Vec<String> = Vec::new();
@@ -224,7 +244,7 @@ pub(crate) fn reorder_arguments(arguments: &str, source_names: &[String]) -> Str
             ));
         }
     }
-    for (key, val) in obj {
+    for (key, val) in &obj {
         if !seen.contains(key.as_str()) {
             parts.push(format!(
                 "{}:{}",
@@ -288,6 +308,8 @@ pub(crate) struct InvokeScan {
 pub(crate) enum InvokeBoundaryFactory {
     Stateless(InvokeScan),
     Custom(fn() -> Box<dyn InvokeBoundary>),
+    /// Native XML boundaries with a separate guided-prefix grammar.
+    NativeOnly(fn() -> Box<dyn InvokeBoundary>),
 }
 
 #[derive(Clone, Copy)]
@@ -313,7 +335,14 @@ impl InvokeBoundaryFactory {
     pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
         match self {
             Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
-            Self::Custom(create) => create(),
+            Self::Custom(create) | Self::NativeOnly(create) => create(),
+        }
+    }
+
+    pub(crate) fn for_guided(self) -> Option<Self> {
+        match self {
+            Self::NativeOnly(_) => None,
+            other => Some(other),
         }
     }
 
@@ -325,6 +354,34 @@ impl InvokeBoundaryFactory {
 /// Family-owned request-local invoke-boundary contract.
 ///
 pub(crate) trait InvokeBoundary: Send {
+    /// Restore request/channel context after a retained candidate is rebased.
+    fn set_guided_context(&mut self, _context: GuidedInvokePrefixContext) {}
+
+    /// Whether the outer block is also the invoke consumed by the emitter.
+    fn block_is_invoke(&self) -> bool {
+        false
+    }
+
+    /// Locate an opener-less invoke owned by this family.
+    fn bare_invoke_start(&self, _text: &str) -> Option<usize> {
+        None
+    }
+
+    /// Hold back an undecidable suffix of an opener-less invoke.
+    fn bare_invoke_holdback(&self, _text: &str) -> usize {
+        0
+    }
+
+    /// Whether a syntactically located opener-less invoke is safe to recover.
+    fn accepts_bare_invoke(&self, _invoke: &str) -> bool {
+        true
+    }
+
+    /// Whether a bare invoke may finish from a family-owned saved closer at EOF.
+    fn bare_invoke_uses_eof_boundary(&self) -> bool {
+        false
+    }
+
     fn owns_guided_prefix(&self) -> bool {
         false
     }
@@ -359,7 +416,21 @@ pub(crate) trait InvokeBoundary: Send {
         tool_index: usize,
     ) -> Option<usize>;
     fn opens(&self, text: &str, at: usize) -> bool;
+    fn accepts_buffer_start(&self, _previous: Option<char>) -> bool {
+        true
+    }
+    fn discard_prefix(&mut self, _bytes: usize) {}
+    fn discard_unified_prefix(&mut self, _bytes: usize) {}
+    /// A recovery opener can accept malformed prose; quoting shields only grammar-owned headers.
+    fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
+        self.opens(text, at)
+    }
     fn holdback(&self, text: &str) -> usize;
+    /// The Unified consumer owns a separate input buffer from the wrapped scanner.
+    /// Keep consumer-specific incremental scans apart when a boundary is shared.
+    fn holdback_for_unified_input(&self, text: &str) -> usize {
+        self.holdback(text)
+    }
     fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
     fn reset(&mut self) {}
 }
@@ -402,6 +473,8 @@ pub(crate) struct WrappedBlockSpec {
     /// Block closers, matched earliest-first.
     pub block_ends: Vec<String>,
     /// Invoke opener (prefix form is fine — it only anchors scanning).
+    /// Inner invoke opener. For grammars where the block itself is the invoke,
+    /// this is set to the block opener and the scanner derives the block-is-invoke shape.
     pub invoke_start: String,
     /// Invoke closer; an invoke is parsed only once this has streamed.
     pub invoke_end: String,
@@ -480,6 +553,12 @@ pub(crate) trait InvokeEmitter {
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
 
+    /// Whether an incomplete structured value may be held until a later invoke
+    /// either recovers the stream or EOF confirms that the malformed call is final.
+    fn defer_parse_error(&self, _invoke: &str, _error: &anyhow::Error) -> bool {
+        false
+    }
+
     /// Emit the wire-level updates for one complete invoke. Families normally
     /// have one completed update; DSML preserves its historical name-first
     /// projection at the legacy ToolParser boundary.
@@ -510,6 +589,271 @@ pub(crate) trait InvokeEmitter {
     fn reset(&mut self) {}
 }
 
+#[derive(Clone, Default)]
+struct ProseQuoteState {
+    quote: Option<char>,
+    escaped: bool,
+    previous: Option<char>,
+    pending_apostrophe: bool,
+}
+
+impl ProseQuoteState {
+    fn resolve_apostrophe(&mut self, next: Option<char>) {
+        if self.pending_apostrophe {
+            if !next.is_some_and(char::is_alphanumeric) {
+                self.quote = None;
+            }
+            self.pending_apostrophe = false;
+        }
+    }
+
+    fn advance(&mut self, character: char, next: Option<char>) {
+        self.resolve_apostrophe(Some(character));
+        if self.escaped {
+            self.escaped = false;
+        } else if character == '\\' {
+            self.escaped = true;
+        } else if self.quote == Some(character)
+            && !(character == '\''
+                && self.previous.is_some_and(char::is_alphanumeric)
+                && next.is_some_and(char::is_alphanumeric))
+        {
+            if character == '\''
+                && next.is_none()
+                && self.previous.is_some_and(char::is_alphanumeric)
+            {
+                self.pending_apostrophe = true;
+            } else {
+                self.quote = None;
+            }
+        } else if self.quote.is_none()
+            && matches!(character, '"' | '\'' | '`')
+            && !(character == '\'' && self.previous.is_some_and(char::is_alphanumeric))
+        {
+            self.quote = Some(character);
+        }
+        self.previous = Some(character);
+    }
+
+    fn consume(&mut self, text: &str) {
+        let mut characters = text.chars().peekable();
+        while let Some(character) = characters.next() {
+            self.advance(character, characters.peek().copied());
+        }
+    }
+}
+
+#[derive(Clone)]
+struct PendingProseControl {
+    at: usize,
+    scanned: usize,
+    state: ProseQuoteState,
+    grammar_pending: bool,
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct ProseControlState {
+    state: ProseQuoteState,
+    pending: Option<PendingProseControl>,
+    inactive_invoke_header: bool,
+    #[cfg(test)]
+    examined_bytes: usize,
+}
+
+pub(crate) enum ProseGrammarSpan {
+    NotOwned,
+    Owned(usize),
+    Pending,
+}
+
+pub(crate) enum ProseControl {
+    Ordinary,
+    Literal(usize),
+    Pending(usize),
+    Unmatched(usize),
+}
+
+pub(crate) fn prose_invoke_span(
+    text: &str,
+    at: usize,
+    flush: bool,
+    invoke_start: &str,
+    invoke_end: &str,
+    factory: Option<InvokeBoundaryFactory>,
+) -> ProseGrammarSpan {
+    let suffix = &text[at..];
+    if !flush && invoke_start.starts_with(suffix) {
+        return ProseGrammarSpan::Pending;
+    }
+    if !suffix.starts_with(invoke_start) {
+        return ProseGrammarSpan::NotOwned;
+    }
+    if !flush {
+        return ProseGrammarSpan::Pending;
+    }
+    if let Some(factory) = factory {
+        let mut boundary = factory.create();
+        if !boundary.owns_prose_invoke(text, at) {
+            return ProseGrammarSpan::NotOwned;
+        }
+        boundary
+            .end_append(suffix, suffix, true, 0)
+            .map(ProseGrammarSpan::Owned)
+            .unwrap_or(ProseGrammarSpan::Pending)
+    } else {
+        suffix
+            .find(invoke_end)
+            .map(|end| ProseGrammarSpan::Owned(end + invoke_end.len()))
+            .unwrap_or(ProseGrammarSpan::Pending)
+    }
+}
+
+impl ProseControlState {
+    pub(crate) fn has_active_quote(&self) -> bool {
+        self.state.quote.is_some() || self.state.pending_apostrophe || self.pending.is_some()
+    }
+
+    pub(crate) fn consume(&mut self, text: &str) {
+        self.state.consume(text);
+        self.pending = None;
+    }
+
+    /// A rejected native header remains grammar debris until the next control;
+    /// its attribute quotation cannot become a prose quote after chunking.
+    pub(crate) fn consume_recovery(&mut self, text: &str, invoke_start: &str) {
+        self.inactive_invoke_header |= text.contains(invoke_start);
+        if self.inactive_invoke_header {
+            self.state = ProseQuoteState::default();
+            self.pending = None;
+        } else {
+            self.consume(text);
+        }
+    }
+
+    /// A stripped control token cannot open a prose quote with its own `"`.
+    pub(crate) fn consume_control(&mut self, consumed: &str, invoke_start: &str) {
+        self.consume_recovery(consumed, invoke_start);
+        self.state = ProseQuoteState::default();
+        self.pending = None;
+    }
+
+    pub(crate) fn clear(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Only prose owns quotation. Invoke headers and argument bodies must never
+    /// enter this lexer. A candidate waits for its closing quote or EOF because
+    /// an unmatched quote cannot turn a genuine control token into literal text.
+    pub(crate) fn classify<'a>(
+        &mut self,
+        text: &str,
+        markers: impl IntoIterator<Item = &'a str>,
+        flush: bool,
+        mut grammar: impl FnMut(&str, usize, bool) -> ProseGrammarSpan,
+    ) -> ProseControl {
+        if self.inactive_invoke_header {
+            return ProseControl::Ordinary;
+        }
+        let (at, scanned, mut state) = if let Some(pending) = self.pending.take() {
+            if pending.grammar_pending && !flush {
+                let at = pending.at;
+                self.pending = Some(pending);
+                return ProseControl::Pending(at);
+            }
+            (pending.at, pending.scanned, pending.state)
+        } else {
+            let Some(at) = markers
+                .into_iter()
+                .filter_map(|marker| text.find(marker))
+                .min()
+            else {
+                return ProseControl::Ordinary;
+            };
+            let mut state = self.state.clone();
+            state.resolve_apostrophe(text.chars().next());
+            let mut cursor = 0;
+            while cursor < at {
+                match grammar(text, cursor, flush) {
+                    ProseGrammarSpan::Owned(length) => {
+                        cursor = (cursor + length).min(at);
+                        continue;
+                    }
+                    ProseGrammarSpan::Pending => break,
+                    ProseGrammarSpan::NotOwned => {}
+                }
+                let character = text[cursor..].chars().next().expect("prose cursor");
+                state.advance(
+                    character,
+                    text[cursor + character.len_utf8()..].chars().next(),
+                );
+                cursor += character.len_utf8();
+            }
+            if state.quote.is_none() {
+                return ProseControl::Ordinary;
+            }
+            (at, at, state)
+        };
+        let mut cursor = scanned;
+        while cursor < text.len() {
+            match grammar(text, cursor, flush) {
+                ProseGrammarSpan::Owned(length) => {
+                    cursor += length;
+                    continue;
+                }
+                ProseGrammarSpan::Pending => {
+                    if !flush {
+                        self.pending = Some(PendingProseControl {
+                            at,
+                            scanned: cursor,
+                            state,
+                            grammar_pending: true,
+                        });
+                        return ProseControl::Pending(at);
+                    }
+                }
+                ProseGrammarSpan::NotOwned => {}
+            }
+            let character = text[cursor..].chars().next().expect("prose cursor");
+            if !flush && character == '\'' && cursor + character.len_utf8() == text.len() {
+                self.pending = Some(PendingProseControl {
+                    at,
+                    scanned: cursor,
+                    state,
+                    grammar_pending: false,
+                });
+                return ProseControl::Pending(at);
+            }
+            #[cfg(test)]
+            {
+                self.examined_bytes += character.len_utf8();
+            }
+            cursor += character.len_utf8();
+            state.advance(character, text[cursor..].chars().next());
+            if flush && cursor == text.len() {
+                state.resolve_apostrophe(None);
+            }
+            if state.quote.is_none() {
+                return ProseControl::Literal(cursor);
+            }
+        }
+        if flush {
+            ProseControl::Unmatched(at)
+        } else {
+            self.pending = Some(PendingProseControl {
+                at,
+                scanned: text.len(),
+                state,
+                grammar_pending: false,
+            });
+            ProseControl::Pending(at)
+        }
+    }
+
+    pub(crate) fn punctuation_holdback(&self, text: &str) -> usize {
+        usize::from(text.ends_with('\''))
+    }
+}
+
 /// First occurrence of any of `markers` in `text`: `(position, marker_len)`.
 fn find_first(text: &str, markers: &[String]) -> Option<(usize, usize)> {
     markers
@@ -533,21 +877,9 @@ pub(crate) fn find_first_outside_strings<'a, I>(text: &str, markers: I) -> Optio
 where
     I: Clone + IntoIterator<Item = &'a str>,
 {
-    let mut in_string = false;
-    let mut escape = false;
+    let mut quoted = JsonStringState::default();
     for (idx, c) in text.char_indices() {
-        if in_string {
-            if escape {
-                escape = false;
-            } else if c == '\\' {
-                escape = true;
-            } else if c == '"' {
-                in_string = false;
-            }
-            continue;
-        }
-        if c == '"' {
-            in_string = true;
+        if quoted.advance(c) {
             continue;
         }
         if let Some((_, len)) = markers
@@ -652,6 +984,11 @@ pub(crate) fn push_run<S: EventSink + ?Sized>(out: &mut S, kind: Kind, text: &st
     }
 }
 
+struct ToolSeparator {
+    separator: &'static str,
+    prefixed_openers: Vec<String>,
+}
+
 /// The shared buffer-and-scan drain loop for wrapped-invoke grammars.
 ///
 /// Streaming contract (identical to the loops it replaces): natural text
@@ -669,6 +1006,9 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// Effective request-scoped start, separate from the family declaration.
     reasoning_forced_start: bool,
     buffer: String,
+    buffer_previous: Option<char>,
+    prose: ProseControlState,
+    tool_separator: Option<ToolSeparator>,
     /// Raw block bytes consumed before any call delta commits them.
     uncommitted_block: String,
     in_block: bool,
@@ -680,8 +1020,15 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     resume_reasoning: bool,
     suppress_normal_text: bool,
     next_index: usize,
+    pending_parse_error: Option<DeferredParseError>,
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
     invoke_boundary_len: usize,
+}
+
+struct DeferredParseError {
+    error: anyhow::Error,
+    tool_index: usize,
+    bytes: usize,
 }
 
 impl<E: InvokeEmitter> WrappedBlockScanner<E> {
@@ -696,6 +1043,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             reasoning_enabled: false,
             reasoning_forced_start: false,
             buffer: String::new(),
+            buffer_previous: None,
+            prose: ProseControlState::default(),
+            tool_separator: None,
             uncommitted_block: String::new(),
             in_block: false,
             in_reasoning: false,
@@ -703,9 +1053,32 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             resume_reasoning: false,
             suppress_normal_text: false,
             next_index: 0,
+            pending_parse_error: None,
             invoke_boundary,
             invoke_boundary_len: 0,
         }
+    }
+
+    /// Consume one template separator before native tool openers, retaining it
+    /// across chunk boundaries until the opener is distinguished from text.
+    pub(crate) fn with_tool_separator(
+        mut self,
+        separator: &'static str,
+        bare_invoke_prefixes: &[&str],
+    ) -> Self {
+        let prefixed_openers = self
+            .spec
+            .block_starts
+            .iter()
+            .map(String::as_str)
+            .chain(bare_invoke_prefixes.iter().copied())
+            .map(|opener| format!("{separator}{opener}"))
+            .collect();
+        self.tool_separator = Some(ToolSeparator {
+            separator,
+            prefixed_openers,
+        });
+        self
     }
 
     /// Also own the reasoning channel, making this scanner unified.
@@ -842,14 +1215,20 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         &mut self,
         out: &mut S,
     ) -> anyhow::Result<()> {
-        self.drain(true, out)
+        self.drain(true, out)?;
+        if let Some(deferred) = self.pending_parse_error.take() {
+            return Err(deferred.error);
+        }
+        Ok(())
     }
 
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
+        self.buffer_previous = None;
         self.in_block = false;
+        self.prose.clear();
         self.in_reasoning = self.reasoning_enabled && self.reasoning_forced_start;
         self.accept_redundant_reasoning_start = self.in_reasoning;
         // Without this a reset mid-thought leaves "resume reasoning after the call"
@@ -857,14 +1236,67 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.resume_reasoning = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
+        self.pending_parse_error = None;
         self.emitter.reset();
         self.reset_invoke_boundary();
         pending
     }
 
+    fn consume_buffer_prefix(&mut self, bytes: usize) {
+        if bytes == 0 {
+            return;
+        }
+        if self.pending_parse_error.is_some() && self.in_block {
+            self.uncommitted_block.push_str(&self.buffer[..bytes]);
+        }
+        self.buffer_previous = self.buffer[..bytes].chars().next_back();
+        self.buffer.drain(..bytes);
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.discard_prefix(bytes);
+        }
+    }
+
+    fn clear_uncommitted_block(&mut self) {
+        if self.pending_parse_error.is_none() {
+            self.uncommitted_block.clear();
+        }
+    }
+
     /// Whether one invoke closer also closes the surrounding block.
     fn invoke_closes_block(&self) -> bool {
         self.spec.block_ends.contains(&self.spec.invoke_end)
+    }
+
+    fn parse_complete_invoke(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<Vec<ToolCallDelta>>> {
+        match self.emitter.parse_invoke_deltas(invoke, tool_index) {
+            Ok(Some(deltas)) if !deltas.is_empty() => {
+                if let Some(deferred) = self.pending_parse_error.take() {
+                    tracing::warn!(
+                        why = %format!("{}_incomplete_invoke_recovered", self.spec.family),
+                        tool_index = deferred.tool_index,
+                        dropped_bytes = deferred.bytes,
+                        "Dropped an incomplete invoke after a later call parsed successfully"
+                    );
+                }
+                Ok(Some(deltas))
+            }
+            Err(error) if self.emitter.defer_parse_error(invoke, &error) => {
+                let deferred = self
+                    .pending_parse_error
+                    .get_or_insert_with(|| DeferredParseError {
+                        error,
+                        tool_index,
+                        bytes: 0,
+                    });
+                deferred.bytes += invoke.len();
+                Ok(None)
+            }
+            result => result,
+        }
     }
 
     fn reset_invoke_boundary(&mut self) {
@@ -874,20 +1306,49 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.invoke_boundary_len = 0;
     }
 
+    fn block_is_invoke(&self) -> bool {
+        self.invoke_boundary
+            .as_ref()
+            .is_some_and(|boundary| boundary.block_is_invoke())
+    }
+
     /// Find the next real invoke opener, applying the family hook when present.
     fn find_invoke_start(&self, text: &str) -> Option<usize> {
+        if self.block_is_invoke() && self.in_block {
+            return Some(0);
+        }
+        if self.block_is_invoke() {
+            let boundary = self
+                .invoke_boundary
+                .as_ref()
+                .expect("block-is-invoke requires a family boundary");
+            return boundary
+                .bare_invoke_start(text)
+                .filter(|&start| boundary.accepts_bare_invoke(&text[start..]));
+        }
+        let invoke_start = &self.spec.invoke_start;
         let Some(boundary) = self.invoke_boundary.as_ref() else {
-            return text.find(self.spec.invoke_start.as_str());
+            return text.find(invoke_start.as_str());
         };
         let mut cursor = 0;
-        while let Some(relative) = text[cursor..].find(self.spec.invoke_start.as_str()) {
+        while let Some(relative) = text[cursor..].find(invoke_start.as_str()) {
             let at = cursor + relative;
-            if boundary.opens(text, at) {
+            if (at > 0 || boundary.accepts_buffer_start(self.buffer_previous))
+                && boundary.opens(text, at)
+            {
                 return Some(at);
             }
-            cursor = at + self.spec.invoke_start.len();
+            cursor = at + invoke_start.len();
         }
         None
+    }
+
+    fn active_invoke_start(&self) -> Option<usize> {
+        if self.block_is_invoke() {
+            Some(0)
+        } else {
+            self.find_invoke_start(&self.buffer)
+        }
     }
 
     /// Offset just past the closer of the invoke beginning at byte zero.
@@ -971,12 +1432,60 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let invoke = self
             .invoke_boundary
             .as_ref()
-            .map(|boundary| boundary.holdback(&self.buffer))
+            .map(|boundary| {
+                let keep = boundary.holdback(&self.buffer);
+                if keep == self.buffer.len() && !boundary.accepts_buffer_start(self.buffer_previous)
+                {
+                    0
+                } else {
+                    keep
+                }
+            })
+            .unwrap_or_default();
+        let bare = self
+            .invoke_boundary
+            .as_ref()
+            .map(|boundary| boundary.bare_invoke_holdback(&self.buffer))
+            .unwrap_or_default();
+        let separator = self
+            .tool_separator
+            .as_ref()
+            .filter(|_| !self.in_reasoning && !self.suppress_normal_text)
+            .map(|framing| {
+                marker_prefix_suffix_len(
+                    &self.buffer,
+                    framing.prefixed_openers.iter().map(String::as_str),
+                )
+            })
             .unwrap_or_default();
         regular
+            .max(self.prose.punctuation_holdback(&self.buffer))
             .max(reasoning)
             .max(self.pending_label_len())
             .max(invoke)
+            .max(bare)
+            .max(separator)
+    }
+
+    fn tool_separator_len_at(&self, at: usize) -> usize {
+        let Some(framing) = self
+            .tool_separator
+            .as_ref()
+            .filter(|_| !self.in_reasoning && !self.suppress_normal_text)
+        else {
+            return 0;
+        };
+        if !self.buffer[..at].ends_with(framing.separator) {
+            return 0;
+        }
+        let tail = &self.buffer[at..];
+        if self.spec.block_starts.iter().any(|m| tail.starts_with(m))
+            || self.find_invoke_start(tail) == Some(0)
+        {
+            framing.separator.len()
+        } else {
+            0
+        }
     }
 
     /// Retain a complete reasoning opener while its optional role label is only
@@ -1059,7 +1568,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 InReasoning::Stray(len) => (len, true, false),
             };
             push_run(out, Kind::Reasoning, &self.buffer[..at]);
-            self.buffer.drain(..at + consume);
+            self.prose
+                .consume_recovery(&self.buffer[..at], &self.spec.invoke_start);
+            self.prose.clear();
+            self.consume_buffer_prefix(at + consume);
             self.in_reasoning = in_reasoning;
             self.resume_reasoning = resume;
             if matches!(what, InReasoning::Stray(_)) {
@@ -1077,7 +1589,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         let emit_len = self.buffer.len().saturating_sub(keep);
         if emit_len > 0 {
             push_run(out, Kind::Reasoning, &self.buffer[..emit_len]);
-            self.buffer.drain(..emit_len);
+            self.prose
+                .consume_recovery(&self.buffer[..emit_len], &self.spec.invoke_start);
+            self.consume_buffer_prefix(emit_len);
         }
         if flush {
             // 4.e: the stream ended mid-thought. The open reasoning is promoted
@@ -1094,6 +1608,60 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     fn drain<S: EventSink + ?Sized>(&mut self, flush: bool, out: &mut S) -> anyhow::Result<()> {
         loop {
+            if !self.in_block {
+                let control = self.prose.classify(
+                    &self.buffer,
+                    self.spec
+                        .holdback_markers
+                        .iter()
+                        .map(String::as_str)
+                        .chain(self.reasoning.iter().flat_map(|r| [r.start, r.end])),
+                    flush,
+                    |text, at, flush| {
+                        prose_invoke_span(
+                            text,
+                            at,
+                            flush,
+                            &self.spec.invoke_start,
+                            &self.spec.invoke_end,
+                            self.spec.invoke_boundary_factory,
+                        )
+                    },
+                );
+                let (length, waiting, unmatched) = match control {
+                    ProseControl::Literal(length) => (length, false, false),
+                    ProseControl::Pending(at) => (at - self.tool_separator_len_at(at), true, false),
+                    ProseControl::Unmatched(at) => {
+                        (at - self.tool_separator_len_at(at), false, true)
+                    }
+                    ProseControl::Ordinary => (0, false, false),
+                };
+                if length > 0 {
+                    let prose = self.buffer[..length].to_owned();
+                    self.consume_buffer_prefix(length);
+                    self.prose.consume(&prose);
+                    if self.in_reasoning || !self.suppress_normal_text {
+                        push_run(
+                            out,
+                            if self.in_reasoning {
+                                Kind::Reasoning
+                            } else {
+                                Kind::Text
+                            },
+                            &prose,
+                        );
+                    }
+                }
+                if waiting {
+                    break;
+                }
+                if unmatched {
+                    self.prose.clear();
+                } else if length > 0 {
+                    continue;
+                }
+            }
+
             // While a thought is open, `drain_reasoning` owns precedence: its
             // closer ends the span, a tool opener suspends it so the call can be
             // extracted, and a stray marker is stripped. The reverse nesting is
@@ -1106,19 +1674,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             }
 
             if self.in_block {
-                let invoke_start = self.find_invoke_start(&self.buffer);
+                let invoke_start = self.active_invoke_start();
 
                 // Close the block once no more complete invokes precede its end.
-                if let Some((end_pos, end_len)) = find_first(&self.buffer, &self.spec.block_ends) {
+                if !self.block_is_invoke()
+                    && let Some((end_pos, end_len)) =
+                        find_first(&self.buffer, &self.spec.block_ends)
+                {
                     let invoke_before_end = invoke_start.is_some_and(|start| start < end_pos);
                     if !invoke_before_end {
                         // Complete block fully closed: drop its markup and resume
                         // keeping natural text (inter-block / trailing). Any later
                         // block re-enters `in_block` and re-suppresses its markup.
                         // Matches the v1 batch parsers (cases 8.b/8.c/8.d).
-                        self.buffer.drain(..end_pos + end_len);
+                        self.consume_buffer_prefix(end_pos + end_len);
                         self.reset_invoke_boundary();
-                        self.uncommitted_block.clear();
+                        self.clear_uncommitted_block();
                         self.in_block = false;
                         self.suppress_normal_text = false;
                         self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
@@ -1132,15 +1703,17 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
                             "stream dropped incomplete block at EOF"
                         );
-                        self.buffer.clear();
-                        self.uncommitted_block.clear();
+                        self.consume_buffer_prefix(self.buffer.len());
+                        self.clear_uncommitted_block();
                         self.in_block = false;
                     }
                     break;
                 };
                 if start > 0 {
-                    self.uncommitted_block.push_str(&self.buffer[..start]);
-                    self.buffer.drain(..start);
+                    if self.pending_parse_error.is_none() {
+                        self.uncommitted_block.push_str(&self.buffer[..start]);
+                    }
+                    self.consume_buffer_prefix(start);
                     self.reset_invoke_boundary();
                 }
                 let Some(end) = self.invoke_end_at(flush) else {
@@ -1158,9 +1731,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             skipped_bytes = next_block,
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
-                        self.buffer.drain(..next_block);
+                        self.consume_buffer_prefix(next_block);
                         self.reset_invoke_boundary();
-                        self.uncommitted_block.clear();
+                        self.clear_uncommitted_block();
                         self.in_block = false;
                         self.suppress_normal_text = false;
                         self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
@@ -1196,9 +1769,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
-                            self.buffer.drain(..be_pos + be_len);
+                            self.consume_buffer_prefix(be_pos + be_len);
                             self.reset_invoke_boundary();
-                            self.uncommitted_block.clear();
+                            self.clear_uncommitted_block();
                             self.in_block = false;
                             self.suppress_normal_text = false;
                             self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
@@ -1208,8 +1781,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             why = %format!("{}_incomplete_invoke", self.spec.family),
                             "stream dropped incomplete invoke at EOF"
                         );
-                        self.buffer.clear();
-                        self.uncommitted_block.clear();
+                        self.consume_buffer_prefix(self.buffer.len());
+                        self.clear_uncommitted_block();
                         self.in_block = false;
                     }
                     break;
@@ -1244,8 +1817,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         why = %format!("{}_incomplete_invoke", self.spec.family),
                         "stream dropped invoke missing its close before the block end"
                     );
-                    self.buffer.drain(..be_pos + be_len);
-                    self.uncommitted_block.clear();
+                    self.consume_buffer_prefix(be_pos + be_len);
+                    self.clear_uncommitted_block();
                     self.in_block = false;
                     self.suppress_normal_text = false;
                     continue;
@@ -1255,8 +1828,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // meant a failing emitter destroyed the invoke bytes: they were gone from
                 // the buffer, so `reset` could no longer hand them back and the
                 // documented recovery contract was false for the only shipped family.
-                let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
-                self.buffer.drain(..end);
+                let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                self.consume_buffer_prefix(end);
                 self.reset_invoke_boundary();
                 if let Some(deltas) = emitted {
                     let emitted_call = !deltas.is_empty();
@@ -1264,18 +1837,20 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         out.push_call(delta);
                     }
                     self.next_index += 1;
-                    self.uncommitted_block.clear();
+                    self.clear_uncommitted_block();
                     if emitted_call && self.spec.invoke_latch == InvokeLatch::IfEmitted {
                         self.suppress_normal_text = true;
                     }
                 } else {
-                    self.uncommitted_block.push_str(&invoke);
+                    if self.pending_parse_error.is_none() {
+                        self.uncommitted_block.push_str(&invoke);
+                    }
                 }
                 if self.spec.invoke_latch == InvokeLatch::Always {
                     self.suppress_normal_text = true;
                 }
                 if self.invoke_closes_block() {
-                    self.uncommitted_block.clear();
+                    self.clear_uncommitted_block();
                     self.in_block = false;
                     self.suppress_normal_text = false;
                     self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
@@ -1302,7 +1877,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     if !self.suppress_normal_text && pos > 0 {
                         push_run(out, Kind::Text, &self.buffer[..pos]);
                     }
-                    self.buffer.drain(..pos + len);
+                    self.prose
+                        .consume_recovery(&self.buffer[..pos], &self.spec.invoke_start);
+                    self.prose.clear();
+                    self.consume_buffer_prefix(pos + len);
                     self.suppress_normal_text = false;
                     continue;
                 }
@@ -1328,28 +1906,36 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     if !self.suppress_normal_text {
                         push_run(out, Kind::Text, &self.buffer[..emit_len]);
                     }
-                    self.buffer.drain(..emit_len);
+                    self.prose
+                        .consume_recovery(&self.buffer[..emit_len], &self.spec.invoke_start);
+                    self.consume_buffer_prefix(emit_len);
                 }
                 break;
             };
 
             if start > 0 {
+                let emit_len = start - self.tool_separator_len_at(start);
                 if !self.suppress_normal_text {
-                    push_run(out, Kind::Text, &self.buffer[..start]);
+                    push_run(out, Kind::Text, &self.buffer[..emit_len]);
                 }
-                self.buffer.drain(..start);
+                self.uncommitted_block
+                    .push_str(&self.buffer[emit_len..start]);
+                self.prose
+                    .consume_recovery(&self.buffer[..start], &self.spec.invoke_start);
+                self.consume_buffer_prefix(start);
             }
 
+            self.prose.clear();
             match marker {
                 Marker::Block(blen) => {
                     self.uncommitted_block.push_str(&self.buffer[..blen]);
-                    self.buffer.drain(..blen);
+                    self.consume_buffer_prefix(blen);
                     self.reset_invoke_boundary();
                     self.in_block = true;
                     self.suppress_normal_text = true;
                 }
                 Marker::ReasoningStart(rlen) => {
-                    self.buffer.drain(..rlen);
+                    self.consume_buffer_prefix(rlen);
                     self.in_reasoning = true;
                     // An explicit reasoning opener is an unambiguous return to
                     // real content, so it ends any markup-suppression context
@@ -1364,7 +1950,12 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     // only after a real closer arrives. Passing `flush` here used
                     // to combine missing-start and missing-end recovery and turn
                     // narrated syntax into a dispatched call.
-                    let Some(end) = self.invoke_end_at(false) else {
+                    let use_eof_boundary = flush
+                        && self
+                            .invoke_boundary
+                            .as_ref()
+                            .is_some_and(|boundary| boundary.bare_invoke_uses_eof_boundary());
+                    let Some(end) = self.invoke_end_at(use_eof_boundary) else {
                         if !flush
                             && let Some(delta) = self
                                 .emitter
@@ -1378,14 +1969,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
                                 "stream dropped incomplete bare invoke at EOF"
                             );
-                            self.buffer.clear();
+                            self.consume_buffer_prefix(self.buffer.len());
+                            self.clear_uncommitted_block();
                         }
                         break;
                     };
                     let invoke = self.buffer[..end].to_string();
                     // Emit before consuming — same recovery contract as the wrapped site.
-                    let emitted = self.emitter.parse_invoke_deltas(&invoke, self.next_index)?;
-                    self.buffer.drain(..end);
+                    let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
+                    self.consume_buffer_prefix(end);
+                    self.clear_uncommitted_block();
                     self.reset_invoke_boundary();
                     if let Some(deltas) = emitted {
                         tracing::warn!(
@@ -1397,8 +1990,11 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             out.push_call(delta);
                         }
                         self.next_index += 1;
+                        self.clear_uncommitted_block();
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
+                    } else if self.pending_parse_error.is_some() {
+                        self.uncommitted_block.push_str(&invoke);
                     }
                     // A bare invoke nested in a thought has no block close to
                     // resume on, so resume here.
@@ -1504,6 +2100,34 @@ mod recovery_tests {
 mod tests {
     use super::test_support::failing_scanner;
     use super::*;
+
+    #[test]
+    fn speculative_prose_quote_tail_advances_once_and_clear_releases_state() {
+        let mut prose = ProseControlState::default();
+        prose.consume("Quoted \"");
+        let mut input = String::from("<control>");
+        for _ in 0..4096 {
+            input.push('x');
+            assert!(matches!(
+                prose.classify(&input, ["<control>"], false, |_, _, _| {
+                    ProseGrammarSpan::NotOwned
+                }),
+                ProseControl::Pending(0)
+            ));
+        }
+        input.push('"');
+        assert!(
+            matches!(prose.classify(&input, ["<control>"], false, |_, _, _| ProseGrammarSpan::NotOwned), ProseControl::Literal(length) if length == input.len())
+        );
+        assert_eq!(prose.examined_bytes, input.len());
+        prose.clear();
+        assert!(matches!(
+            prose.classify("<control>", ["<control>"], true, |_, _, _| {
+                ProseGrammarSpan::NotOwned
+            }),
+            ProseControl::Ordinary
+        ));
+    }
 
     #[test]
     fn invoke_boundary_factory_constructs_and_dispatches_stateless_callbacks() {

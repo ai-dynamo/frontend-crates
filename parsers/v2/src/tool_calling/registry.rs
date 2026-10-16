@@ -4,6 +4,7 @@
 //! Model-family capabilities shared by parser construction and guided decoding.
 
 use crate::structural_tag::StructuralTagBuilder;
+use crate::unified::canonical_unified_family;
 
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
@@ -84,9 +85,13 @@ pub fn create_tool_parser_for_family(
     Ok(parser)
 }
 
-/// Return the structural-tag builder registered for a model family, if any.
+/// Return the structural-tag builder for a model family, accepting Unified aliases.
 pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static StructuralTagBuilder> {
-    family_spec(family).and_then(|spec| spec.structural_tag_builder)
+    let canonical = canonical_unified_family(family).unwrap_or(family);
+    FAMILY_SPECS
+        .iter()
+        .find(|spec| canonical_unified_family(spec.name).unwrap_or(spec.name) == canonical)
+        .and_then(|spec| spec.structural_tag_builder)
 }
 
 #[cfg(test)]
@@ -126,6 +131,7 @@ mod tests {
         }];
 
         for (family, trigger) in [
+            ("qwen3", "<tool_call>\n<function="),
             ("qwen3_coder", "<tool_call>\n<function="),
             ("deepseek_v4", "<｜DSML｜tool_calls>"),
             ("glm47", "<tool_call>"),

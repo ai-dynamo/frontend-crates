@@ -12,6 +12,7 @@ test_browser_smoke.py).
 """
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import time
@@ -22,6 +23,10 @@ import pytest
 selenium = pytest.importorskip("selenium")
 from selenium import webdriver  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.common.action_chains import ActionChains  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402
+from selenium.webdriver.common.keys import Keys  # noqa: E402
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
 
 UTILS = Path(__file__).resolve().parents[1]
 SRC = UTILS / "src"
@@ -47,7 +52,7 @@ def _dynamo_key(impl: str) -> str:
 
     dirs = [
         d
-        for d in (root / "toolcalling/fixtures-stream-v2").glob(f"{impl}-*")
+        for d in (root / "toolcalling/fixtures-stream-v1").glob(f"{impl}-*")
         if d.is_dir()
     ]
     latest = max(
@@ -63,7 +68,7 @@ V1_KEY = _dynamo_key("dynamo_v1")
 
 
 @pytest.fixture(scope="module")
-def driver(rendered_page):
+def driver(reference_page):
     opts = Options()
     for a in ("--headless=new", "--no-sandbox", "--disable-gpu",
               "--disable-dev-shm-usage", "--window-size=1600,1200"):
@@ -72,7 +77,7 @@ def driver(rendered_page):
         d = webdriver.Chrome(options=opts)
     except Exception as exc:  # noqa: BLE001 — environment without a usable driver
         pytest.skip(f"could not start Chrome webdriver: {exc}")
-    d.get(f"file://{rendered_page}")
+    d.get(f"file://{reference_page}?transpose=0")
     d.implicitly_wait(2)
     yield d
     d.quit()
@@ -464,6 +469,11 @@ def test_batch_tab_uses_candidate_chart(driver):
     assert not _chart_tooltip_has_cand_list(driver), (
         "batch tab: tooltip shows BOTH chart and legacy list"
     )
+    batch_notes = driver.execute_script(
+        "return [...document.querySelectorAll('.ttip-chunks .parser-base')]"
+        ".map(node => node.textContent.trim()).filter(Boolean);"
+    )
+    assert "Order/chunk not applicable for batch" in batch_notes
 
 
 def test_reasoning_tabs_use_candidate_chart(driver):
@@ -498,7 +508,7 @@ def test_tooltip_builds_lazily_on_first_interaction(driver):
     before = driver.execute_script(
         """
         const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
-        const t = td.querySelector('.ttip');
+        const t = td._ttip;
         // conformance.js may insert a .ttip-close/.cmp-why into the empty .ttip at wire
         // time; the CONTENT (head + candidate chart) is what must be deferred.
         return {noContent: !t.querySelector('.ttip-chunks') && !t.querySelector('.ttip-head')};
@@ -508,14 +518,197 @@ def test_tooltip_builds_lazily_on_first_interaction(driver):
     built = driver.execute_script(
         """
         const td = document.querySelector('.tab-panel.active td.cell[data-ttip-id]');
-        window.__buildTooltip(td);
-        const t = td.querySelector('.ttip');
-        return {chart: !!t.querySelector('.ttip-chunks'),
-                thCand: t.querySelectorAll('.ttip-chunks th[data-cand]').length,
-                head: !!t.querySelector('.ttip-head')};
+        td.click();
+        const t = td._ttip;
+        try {
+            return {chart: !!t.querySelector('.ttip-chunks'),
+                    thCand: t.querySelectorAll('.ttip-chunks th[data-cand]').length,
+                    head: !!t.querySelector('.ttip-head'),
+                    portalled: t.parentNode === document.body,
+                    visible: t.classList.contains('ttip-visible')};
+        } finally {
+            t.querySelector('.ttip-close').click();
+        }
         """
     )
-    assert built["chart"] and built["thCand"] > 0 and built["head"], f"lazy build incomplete: {built}"
+    assert built["chart"] and built["thCand"] > 0 and built["head"] and built["portalled"] and built["visible"], f"lazy build incomplete: {built}"
+
+
+@pytest.mark.parametrize("viewport_width", [1600, 480])
+@pytest.mark.parametrize("transpose", [False, True])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
+    driver, transpose, theme, viewport_width
+):
+    saved_url = driver.current_url
+    saved_size = driver.get_window_size()
+    saved_theme = driver.execute_script("return document.documentElement.dataset.theme")
+    saved_scroll = driver.execute_script("return [scrollX, scrollY]")
+    try:
+        driver.set_window_size(viewport_width, 1200)
+        _open_tab(driver, "unified")
+        toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
+        if toggle.is_selected() != transpose:
+            toggle.click()
+        if driver.execute_script("return document.documentElement.dataset.theme") != theme:
+            driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]").click()
+        selector = "th.trow-case" if transpose else "th.case-sub"
+        headers = driver.execute_script("""
+            const page = JSON.parse(document.getElementById('conformance-model').textContent);
+            const tab = page.tabs.find(item => item.id === 'tab-unified');
+            const headers = [...document.querySelectorAll('#tab-unified ' + arguments[0])];
+            const schemaIndex = tab.columns.findIndex(column => column.sub === 'schema_const_plain_bare');
+            const plainIndex = tab.columns.findIndex(column => column.sub === 'tool_only');
+            const schemaFamilies = tab.rows.filter(row => row.family
+              && (row.cells[tab.columns[schemaIndex].sub].variants || []).length).length;
+            return {schema: headers[schemaIndex], plain: headers[plainIndex], schemaFamilies,
+                    expected: tab.columns[schemaIndex].schemas.map(variant => variant.tools)};
+        """, selector)
+        wait = WebDriverWait(driver, 10)
+        detailed = driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]")
+        if detailed.is_selected():
+            detailed.click()
+        indicator = headers["schema"].find_element(By.CSS_SELECTOR, ".case-schema-indicator")
+        assert not indicator.is_displayed()
+        assert not headers["plain"].find_elements(By.CSS_SELECTOR, ".case-schema-indicator")
+        detailed.click()
+        assert indicator.is_displayed()
+        assert indicator.text == "{}"
+        assert indicator.get_attribute("aria-label") == "Has explicit schema."
+        assert len(headers["schema"].find_elements(By.CSS_SELECTOR, "a")) == 1
+        if not transpose:
+            section_button = driver.find_element(By.CSS_SELECTOR, '#tab-unified [data-col-toggle="unified_g7_const"]')
+            section_button.click()
+            assert driver.execute_script("""
+                return [...document.querySelectorAll('#tab-unified [data-col-hide-group="unified_g7_const"]')]
+                    .every(element => getComputedStyle(element).display === 'none');
+            """)
+            section_button.click()
+            assert headers["schema"].is_displayed()
+
+        def open_popup(header):
+            driver.execute_script("arguments[0].scrollIntoView({block: 'end', inline: 'center'})", header)
+            ActionChains(driver).move_to_element(header).perform()
+            driver.execute_script("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))")
+            wait.until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
+            header.click()
+            return wait.until(lambda browser: browser.execute_script("""
+                const tip = arguments[0]._ttip || arguments[0].querySelector('.ttip');
+                return tip && tip.classList.contains('ttip-visible') ? tip : null;
+            """, header))
+
+        plain_tip = open_popup(headers["plain"])
+        assert not plain_tip.find_elements(By.CSS_SELECTOR, ".case-schema")
+        tip = open_popup(headers["schema"])
+        variant_rows = tip.find_elements(By.CSS_SELECTOR, ".ttip-grammar tbody tr")
+        assert len(variant_rows) == len(headers["expected"]) * headers["schemaFamilies"]
+        for label in ("Direct", "Explicit string type", "allOf", "Reference"):
+            assert any(label in row.get_attribute("textContent") for row in variant_rows)
+        disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
+        summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
+        assert summary.is_displayed()
+        assert disclosure.get_dom_attribute("open") is None
+        collapsed_width = tip.size["width"]
+        summary.click()
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is not None)
+        wait.until(lambda browser: tip.size["width"] >= collapsed_width)
+        popup_rect = driver.execute_script("""
+            const rect = arguments[0].getBoundingClientRect();
+            return {left: rect.left, right: rect.right, width: rect.width,
+                    viewport: innerWidth};
+        """, tip)
+        if viewport_width >= 800:
+            assert popup_rect["width"] >= 720, popup_rect
+        else:
+            assert popup_rect["left"] >= popup_rect["viewport"] * .015 - 1, popup_rect
+            assert popup_rect["right"] <= popup_rect["viewport"] * .985 + 1, popup_rect
+        blocks = disclosure.find_elements(By.CSS_SELECTOR, ".case-schema-json")
+        assert all(block.is_displayed() for block in blocks)
+        assert [json.loads(block.get_attribute("textContent")) for block in blocks] == headers["expected"]
+        assert not tip.find_elements(By.CSS_SELECTOR, ".ttip")
+        assert len(headers["expected"]) == 4
+        for label in ("Direct", "Explicit string type", "allOf", "Reference"):
+            assert label in disclosure.get_attribute("textContent"), disclosure.get_attribute("textContent")
+        wait.until(lambda browser: browser.execute_script("""
+            const rect = arguments[0].getBoundingClientRect();
+            return rect.top >= 0 && rect.bottom <= innerHeight;
+        """, tip), "expanded schema popup extends outside the viewport")
+        visible_until = time.monotonic() + 1
+
+        def remains_visible(browser):
+            assert tip.is_displayed(), "expanded popup hid while reading"
+            return time.monotonic() >= visible_until
+
+        wait.until(remains_visible)
+        summary.send_keys(Keys.ENTER)
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is None)
+        summary.send_keys(Keys.SPACE)
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is not None)
+        assert summary.is_displayed()
+        summary.send_keys(Keys.ENTER)
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is None)
+    finally:
+        driver.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+        assert not driver.find_elements(By.CSS_SELECTOR, ".ttip-pinned")
+        if driver.execute_script("return document.documentElement.dataset.theme") != saved_theme:
+            driver.find_element(By.CSS_SELECTOR, "[data-theme-toggle]").click()
+        driver.get(saved_url)
+        driver.set_window_size(saved_size["width"], saved_size["height"])
+        driver.execute_script("scrollTo(arguments[0], arguments[1])", *saved_scroll)
+
+
+@pytest.mark.parametrize("transpose", [False, True])
+def test_keyboard_schema_popup_stays_interactive_after_resize(driver, transpose):
+    saved_url = driver.current_url
+    saved_size = driver.get_window_size()
+    saved_scroll = driver.execute_script("return [scrollX, scrollY]")
+    try:
+        driver.set_window_size(1000, 700)
+        _open_tab(driver, "unified")
+        toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
+        if toggle.is_selected() != transpose:
+            toggle.click()
+        selector = "th.trow-case" if transpose else "th.case-sub"
+        header = driver.execute_script("""
+            const page = JSON.parse(document.getElementById('conformance-model').textContent);
+            const tab = page.tabs.find(item => item.id === 'tab-unified');
+            const index = tab.columns.findIndex(column => column.sub === 'schema_const_plain_bare');
+            return document.querySelectorAll('#tab-unified ' + arguments[0])[index];
+        """, selector)
+        driver.execute_script("""
+            arguments[0].scrollIntoView({block: 'center', inline: 'center'});
+        """, header)
+        actions = ActionChains(driver)
+        actions.w3c_actions.pointer_action.move_to_location(2, 2)
+        actions.perform()
+        wait = WebDriverWait(driver, 10)
+        wait.until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
+        driver.execute_script("arguments[0].focus()", header)
+        header.send_keys(Keys.ENTER)
+        tip = wait.until(lambda browser: browser.execute_script("""
+            const tip = arguments[0]._ttip;
+            return tip && tip.classList.contains('ttip-visible') ? tip : null;
+        """, header))
+        assert driver.execute_script("return arguments[0].parentNode === document.body", tip)
+        disclosure = tip.find_element(By.CSS_SELECTOR, "details.case-schema")
+        summary = disclosure.find_element(By.CSS_SELECTOR, "summary")
+        # A native click proves sibling sticky case rows do not cover the disclosure.
+        summary.click()
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is not None)
+        assert driver.execute_script("return document.activeElement === arguments[0]", summary)
+        driver.set_window_size(480, 500)
+        wait.until(lambda browser: browser.execute_script("""
+            const rect = arguments[0].getBoundingClientRect();
+            return rect.left >= innerWidth * .015 - 1 && rect.right <= innerWidth * .985 + 1
+                && rect.top >= 0 && rect.bottom <= innerHeight;
+        """, tip), "keyboard-origin schema popup did not fit after resize")
+        summary.send_keys(Keys.ENTER)
+        wait.until(lambda browser: disclosure.get_dom_attribute("open") is None)
+        assert tip.is_displayed()
+    finally:
+        driver.get(saved_url)
+        driver.set_window_size(saved_size["width"], saved_size["height"])
+        driver.execute_script("scrollTo(arguments[0], arguments[1])", *saved_scroll)
 
 
 def test_popup_columns_match_compare_bar_candidates(driver):
@@ -558,3 +751,36 @@ def test_no_doubled_assembled_call_names_in_dom(driver):
         """
     )
     assert not dupes, f"doubled assembled call names in the DOM: {dupes[:3]}"
+
+
+def test_unified_recovery_colors_follow_selected_reference(driver):
+    driver.execute_script("document.querySelector('[data-tab-target=tab-unified]').click()")
+    try:
+        for version in ("dynamo", "dynamo@0.7.13"):
+            _select(driver, version, [])
+            cells = driver.execute_script("""
+                const model = JSON.parse(document.getElementById('conformance-model').textContent);
+                const tab = model.tabs.find(t => t.id === 'tab-unified');
+                return tab.rows.filter(row => row.cells.malformed_json_then_two_valid_calls.cmp.dynamo.na !== 1).map(row => {
+                    const expected = row.cells.malformed_json_then_two_valid_calls.cmp;
+                    const cell = [...document.querySelectorAll('#tab-unified td.cell[data-cmp]')]
+                        .find(cell => cell.dataset.family === row.family &&
+                            cell.dataset.cmp === JSON.stringify(expected));
+                    return {family: row.family, classes: cell.className,
+                        marker: cell.querySelector('.marker-text').textContent};
+                });
+            """)
+            assert cells
+            for cell in cells:
+                red = version == "dynamo@0.7.13" and cell["family"] in {
+                    "gemma4", "deepseek_v41", "kimi_k3"}
+                assert ("cmp-leak" if red else "cmp-eq") in cell["classes"], cell
+                assert cell["marker"] == ("✗" if red else "="), cell
+    finally:
+        _select(driver, "dynamo", [])
+        _open_stream_tab(driver)
+
+
+@pytest.fixture(scope="session")
+def rendered_page(legacy_rendered_page):
+    return legacy_rendered_page

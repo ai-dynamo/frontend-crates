@@ -1,13 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Text prompt encoding for DeepSeek V4.1.
+//! Text and image prompt encoding for DeepSeek V4.1.
 
 use anyhow::{Context, Result, ensure};
 use serde_json::Value;
 
 use super::common::{ThinkingMode, resolve_thinking_mode, to_json};
-use super::v4::{Encoding, encode_messages_with_encoding};
+use super::v4::{Encoding, encode_owned_messages as encode_v4_messages};
+
+const IMAGE_PLACEHOLDER: &str = "<｜deepseek_image｜>";
+
+fn validate_text(text: &str) -> Result<&str> {
+    ensure!(
+        !text.contains(IMAGE_PLACEHOLDER),
+        "Images must be supplied as image content blocks, not literal image placeholders"
+    );
+    Ok(text)
+}
 
 pub(super) fn find_last_user_index(messages: &[Value]) -> Option<usize> {
     messages.iter().enumerate().rposition(|(index, message)| {
@@ -62,7 +72,97 @@ pub(super) fn encode_arguments(tool_call: &Value) -> Result<String> {
     Ok(parameters.join("\n"))
 }
 
-fn normalize_text(messages: &mut [Value]) -> Result<()> {
+enum OrderMessage<'a> {
+    Assistant(Option<Vec<&'a str>>),
+    User { has_task: bool },
+    Tool(&'a str),
+    Boundary,
+}
+
+// Both raw encoding and typed media collection use this order. Boundaries end
+// the sortable group but retain call ranks, matching the reference encoder.
+fn message_order<'a>(messages: impl Iterator<Item = OrderMessage<'a>>) -> Vec<usize> {
+    let mut order = Vec::new();
+    let mut calls = std::collections::HashMap::new();
+    let mut slots = Vec::new();
+    let mut group_has_task = false;
+    let mut in_group = false;
+    fn flush(order: &mut [usize], slots: &mut Vec<(usize, usize)>) {
+        let mut sorted = slots.clone();
+        sorted.sort_by_key(|&(_, rank)| rank);
+        for ((target, _), (source, _)) in slots.drain(..).zip(sorted) {
+            order[target] = source;
+        }
+    }
+    for (index, message) in messages.enumerate() {
+        order.push(index);
+        match message {
+            OrderMessage::Tool(id) => {
+                slots.push((index, *calls.get(id).unwrap_or(&0)));
+                in_group = true;
+            }
+            OrderMessage::User { has_task } => {
+                // A task stays on the merged group until the next user starts a new one.
+                if group_has_task {
+                    flush(&mut order, &mut slots);
+                    in_group = false;
+                }
+                // A user merged into the group drops its task, as in the reference.
+                if !in_group {
+                    group_has_task = has_task;
+                }
+                in_group = true;
+            }
+            boundary => {
+                flush(&mut order, &mut slots);
+                group_has_task = false;
+                in_group = false;
+                // As in the reference, an empty tool_calls list keeps the previous ranks.
+                if let OrderMessage::Assistant(Some(ids)) = boundary
+                    && !ids.is_empty()
+                {
+                    calls.clear();
+                    for (rank, id) in ids.into_iter().enumerate() {
+                        if !id.is_empty() {
+                            calls.insert(id, rank);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    flush(&mut order, &mut slots);
+    order
+}
+
+fn raw_message_order(messages: &[Value]) -> Vec<usize> {
+    message_order(
+        messages
+            .iter()
+            .map(|message| match message["role"].as_str() {
+                Some("assistant") => {
+                    OrderMessage::Assistant(message["tool_calls"].as_array().map(|calls| {
+                        calls
+                            .iter()
+                            .map(|call| {
+                                call["id"]
+                                    .as_str()
+                                    .or_else(|| call["function"]["id"].as_str())
+                                    .unwrap_or("")
+                            })
+                            .collect()
+                    }))
+                }
+                Some("user") => OrderMessage::User {
+                    has_task: !message["task"].is_null(),
+                },
+                Some("tool") => OrderMessage::Tool(message["tool_call_id"].as_str().unwrap_or("")),
+                _ => OrderMessage::Boundary,
+            }),
+    )
+}
+
+fn normalize_content(messages: &mut [Value]) -> Result<()> {
     for message in messages {
         for field in ["tools", "tool_calls"] {
             for tool in message
@@ -83,14 +183,14 @@ fn normalize_text(messages: &mut [Value]) -> Result<()> {
         }
         ensure!(
             message.get("content_blocks").is_none(),
-            "DeepSeek V4.1 expects OpenAI text content blocks in content"
+            "DeepSeek V4.1 expects OpenAI content blocks in content"
         );
         ensure!(
             !message
                 .get("reasoning_content")
                 .and_then(Value::as_str)
-                .is_some_and(|text| text.contains("<｜deepseek_image｜>")),
-            "DeepSeek V4.1 native formatter supports text content only"
+                .is_some_and(|text| text.contains(IMAGE_PLACEHOLDER)),
+            "Images must be supplied as image content blocks, not literal image placeholders"
         );
         if message.get("role").and_then(Value::as_str) == Some("developer") {
             message["role"] = Value::String("system".into());
@@ -98,36 +198,51 @@ fn normalize_text(messages: &mut [Value]) -> Result<()> {
         if let Some(content) = message.get("content") {
             let text = match content {
                 Value::Null => String::new(),
-                Value::String(text) => text.clone(),
+                Value::String(text) => {
+                    validate_text(text)?;
+                    continue;
+                }
                 Value::Array(blocks) => {
                     let mut texts = Vec::with_capacity(blocks.len());
                     for block in blocks {
-                        ensure!(
-                            block.get("type").and_then(Value::as_str) == Some("text"),
-                            "DeepSeek V4.1 native formatter supports text content only"
-                        );
-                        texts.push(
-                            block
-                                .get("text")
-                                .and_then(Value::as_str)
-                                .context("Text block requires text")?,
-                        );
+                        match block.get("type").and_then(Value::as_str) {
+                            Some("text") => texts.push(validate_text(
+                                block
+                                    .get("text")
+                                    .and_then(Value::as_str)
+                                    .context("Text block requires text")?,
+                            )?),
+                            Some("image_url") => {
+                                let source = &block["image_url"];
+                                let url = source.as_str().or_else(|| source["url"].as_str());
+                                ensure!(
+                                    url.is_some_and(|url| !url.is_empty())
+                                        || block["uuid"]
+                                            .as_str()
+                                            .is_some_and(|uuid| !uuid.is_empty()),
+                                    "Image block does not contain a valid source"
+                                );
+                                // The official encoder replaces each image in order.
+                                // Normalize only this rendering copy: Dynamo's media
+                                // collector still needs the original URLs/data URLs.
+                                texts.push(IMAGE_PLACEHOLDER);
+                            }
+                            _ => anyhow::bail!(
+                                "DeepSeek V4.1 native formatter supports text and image_url content only"
+                            ),
+                        }
                     }
                     texts.join("\n\n")
                 }
-                _ => anyhow::bail!("DeepSeek V4.1 message content must be text"),
+                _ => anyhow::bail!("DeepSeek V4.1 message content must be text or content blocks"),
             };
-            ensure!(
-                !text.contains("<｜deepseek_image｜>"),
-                "DeepSeek V4.1 native formatter supports text content only"
-            );
             message["content"] = Value::String(text);
         }
     }
     Ok(())
 }
 
-/// Encode text messages with the model's numeric reasoning effort (1–100).
+/// Encode text/image messages with the model's numeric reasoning effort (1–100).
 pub fn encode_messages(
     messages: &[Value],
     thinking_mode: ThinkingMode,
@@ -138,10 +253,34 @@ pub fn encode_messages(
         (1..=100).contains(&reasoning_effort),
         "DeepSeek V4.1 reasoning effort must be within 1–100"
     );
-    let mut messages = messages.to_vec();
-    normalize_text(&mut messages)?;
-    encode_messages_with_encoding(
-        &messages,
+    encode_owned_messages(
+        messages.to_vec(),
+        thinking_mode,
+        drop_thinking,
+        reasoning_effort,
+    )
+}
+
+fn encode_owned_messages(
+    mut messages: Vec<Value>,
+    thinking_mode: ThinkingMode,
+    drop_thinking: bool,
+    reasoning_effort: u8,
+) -> Result<String> {
+    ensure!(
+        (1..=100).contains(&reasoning_effort),
+        "DeepSeek V4.1 reasoning effort must be within 1–100"
+    );
+    normalize_content(&mut messages)?;
+    if messages.iter().any(|message| message["role"] == "tool") {
+        let order = raw_message_order(&messages);
+        messages = order
+            .into_iter()
+            .map(|index| std::mem::take(&mut messages[index]))
+            .collect();
+    }
+    encode_v4_messages(
+        messages,
         thinking_mode,
         true,
         drop_thinking,
@@ -149,7 +288,7 @@ pub fn encode_messages(
     )
 }
 
-/// Native text formatter with OpenAI reasoning-effort names mapped as in the
+/// Native text/image formatter with OpenAI reasoning-effort names mapped as in the
 /// DeepSeek V4.1 reference encoder.
 #[derive(Debug, Default)]
 pub struct DeepSeekV41Formatter;
@@ -159,7 +298,44 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
         false
     }
 
+    fn media_message_order(&self, request: &dyn crate::OAIChatLikeRequest) -> Option<Vec<usize>> {
+        use dynamo_protocols::types::ChatCompletionRequestMessage as Message;
+        let Some(messages) = request.typed_messages() else {
+            // Custom requests may expose only the same raw view used by render.
+            // Invalid raw messages are rejected by render before media collection.
+            let messages = serde_json::to_value(request.messages()).ok()?;
+            let messages = messages.as_array()?;
+            return messages
+                .iter()
+                .any(|message| message["role"] == "tool")
+                .then(|| raw_message_order(messages));
+        };
+        if !messages
+            .iter()
+            .any(|message| matches!(message, Message::Tool(_)))
+        {
+            return None;
+        }
+        Some(message_order(messages.iter().map(|message| {
+            match message {
+                Message::Assistant(assistant) => OrderMessage::Assistant(
+                    assistant
+                        .tool_calls
+                        .as_ref()
+                        .map(|calls| calls.iter().map(|call| call.id.as_str()).collect()),
+                ),
+                Message::User(_) => OrderMessage::User { has_task: false },
+                Message::Tool(tool) => OrderMessage::Tool(tool.tool_call_id.as_str()),
+                _ => OrderMessage::Boundary,
+            }
+        })))
+    }
+
     fn render(&self, req: &dyn crate::OAIChatLikeRequest) -> Result<String> {
+        let messages_json = crate::messages_to_json(req)?;
+        crate::reject_unsupported_partial_assistant(&messages_json)?;
+        crate::reject_unsupported_message_tools(&messages_json, &["developer"])?;
+
         let args = req.chat_template_args();
         let effort = req
             .reasoning_effort()
@@ -188,8 +364,9 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             None => true,
             Some(value) => value.as_bool().context("drop_thinking must be a boolean")?,
         };
-        let mut messages: Vec<Value> =
-            serde_json::from_value(serde_json::to_value(req.messages())?)?;
+        let Value::Array(mut messages) = messages_json else {
+            anyhow::bail!("Messages is not an array");
+        };
         let tools_enabled =
             req.tool_choice().as_ref().and_then(|value| value.as_str()) != Some("none");
         let tools = req
@@ -202,13 +379,22 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
             .map(serde_json::to_value)
             .transpose()?;
         if tools.is_some() || response_format.is_some() {
-            if !matches!(
-                messages
-                    .first()
-                    .and_then(|m| m.get("role"))
-                    .and_then(Value::as_str),
-                Some("system" | "developer")
-            ) {
+            let developer_tools_would_be_overwritten = tools.is_some()
+                && messages.first().is_some_and(|message| {
+                    message.get("role").and_then(Value::as_str) == Some("developer")
+                        && message.get("tools").is_some_and(|tools| {
+                            !tools.is_null() && !tools.as_array().is_some_and(Vec::is_empty)
+                        })
+                });
+            if developer_tools_would_be_overwritten
+                || !matches!(
+                    messages
+                        .first()
+                        .and_then(|m| m.get("role"))
+                        .and_then(Value::as_str),
+                    Some("system" | "developer")
+                )
+            {
                 messages.insert(0, serde_json::json!({"role": "system", "content": ""}));
             }
             if let Some(tools) = tools {
@@ -218,6 +404,6 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                 messages[0]["response_format"] = response_format;
             }
         }
-        encode_messages(&messages, thinking_mode, drop_thinking, budget)
+        encode_owned_messages(messages, thinking_mode, drop_thinking, budget)
     }
 }

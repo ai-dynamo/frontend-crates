@@ -14,41 +14,67 @@ use crate::tool_calling::scan::{
     InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, WrappedBlockScanner, WrappedBlockSpec,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
-use crate::unified::{UnifiedParser, UnifiedParserExt};
+use crate::unified::{
+    UnifiedParser, UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState, deepseek_v41,
+};
 
 pub(crate) const BLOCK_START: &str = "<｜DSML｜tool_calls>";
+pub(crate) const BLOCK_SEPARATOR: &str = "\n\n";
 pub(crate) const BLOCK_END: &str = "</｜DSML｜tool_calls>";
 pub(crate) const INVOKE_START_PREFIX: &str = "<｜DSML｜invoke name=\"";
 pub(crate) const INVOKE_END: &str = "</｜DSML｜invoke>";
 pub(crate) const PARAMETER_PREFIX: &str = "<｜DSML｜parameter name=";
 pub(crate) const PARAMETER_END: &str = "</｜DSML｜parameter>";
 
-pub(crate) fn deepseek_v4_scanner(_tools: &[Tool]) -> WrappedBlockScanner<DsmlEmitter> {
-    WrappedBlockScanner::new(
-        WrappedBlockSpec {
-            family: "deepseek_v4",
-            block_starts: vec![BLOCK_START.to_string()],
-            block_ends: vec![BLOCK_END.to_string()],
-            invoke_start: INVOKE_START_PREFIX.to_string(),
-            invoke_end: INVOKE_END.to_string(),
-            orphan_markers: vec![BLOCK_END.to_string(), INVOKE_END.to_string()],
-            holdback_markers: vec![
-                BLOCK_START.to_string(),
-                BLOCK_END.to_string(),
-                INVOKE_START_PREFIX.to_string(),
-                INVOKE_END.to_string(),
-                PARAMETER_PREFIX.to_string(),
-                PARAMETER_END.to_string(),
-            ],
-            bare_recovery_latch: BareRecoveryLatch::Set,
-            invoke_latch: InvokeLatch::IfEmitted,
-            // A DSML block may omit its outer close after a complete invoke.
-            drop_invoke_crossing_block_end: false,
-            invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(dsml_invoke_boundary)),
-            preserve_special_tokens: true,
-        },
-        DsmlEmitter,
-    )
+pub(crate) fn deepseek_v4_scanner(both_dialects: bool) -> WrappedBlockScanner<DsmlEmitter> {
+    let mut spec = WrappedBlockSpec {
+        family: "deepseek_v4",
+        block_starts: vec![BLOCK_START.to_string()],
+        block_ends: vec![BLOCK_END.to_string()],
+        invoke_start: INVOKE_START_PREFIX.to_string(),
+        invoke_end: INVOKE_END.to_string(),
+        orphan_markers: vec![BLOCK_END.to_string(), INVOKE_END.to_string()],
+        holdback_markers: vec![
+            BLOCK_START.to_string(),
+            BLOCK_END.to_string(),
+            INVOKE_START_PREFIX.to_string(),
+            INVOKE_END.to_string(),
+            PARAMETER_PREFIX.to_string(),
+            PARAMETER_END.to_string(),
+        ],
+        bare_recovery_latch: BareRecoveryLatch::Set,
+        invoke_latch: InvokeLatch::IfEmitted,
+        // A DSML block may omit its outer close after a complete invoke.
+        drop_invoke_crossing_block_end: false,
+        invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(dsml_invoke_boundary)),
+        preserve_special_tokens: true,
+    };
+    if both_dialects {
+        spec.block_starts.push(deepseek_v41::BLOCK_START.into());
+        spec.block_ends.push(deepseek_v41::BLOCK_END.into());
+        // Both invocation openers share this anchor; the boundary's opens()
+        // distinguishes complete invocation headers from other DSML markup.
+        spec.invoke_start = "<｜DSML｜".into();
+        spec.orphan_markers.extend([
+            deepseek_v41::BLOCK_END.into(),
+            deepseek_v41::INVOKE_END.into(),
+        ]);
+        spec.holdback_markers.extend([
+            deepseek_v41::BLOCK_START.into(),
+            deepseek_v41::BLOCK_END.into(),
+            deepseek_v41::INVOKE_START.into(),
+            deepseek_v41::INVOKE_END.into(),
+            deepseek_v41::PARAMETER_START.into(),
+            deepseek_v41::PARAMETER_END.into(),
+        ]);
+    }
+    let invoke_prefixes: &[&str] = if both_dialects {
+        &[INVOKE_START_PREFIX, deepseek_v41::INVOKE_START]
+    } else {
+        &[INVOKE_START_PREFIX]
+    };
+    WrappedBlockScanner::new(spec, DsmlEmitter)
+        .with_tool_separator(BLOCK_SEPARATOR, invoke_prefixes)
 }
 
 pub(crate) struct DsmlEmitter;
@@ -77,13 +103,16 @@ pub(crate) fn boundary_examined_bytes() -> usize {
 
 #[derive(Default)]
 struct DsmlInvokeBoundary {
+    // Delegate spaced invocations to the existing V4.1 grammar. Selection is
+    // per invocation, so parallel calls can use either dialect without rewriting data.
+    v41: Option<Box<dyn InvokeBoundary>>,
     candidate_len: usize,
     cursor: usize,
     mode: DsmlLexMode,
     unterminated_parameter_block_end: Option<usize>,
     guided_prefix_scanned: usize,
-    guided_prefix_starts_payload: bool,
-    guided_prefix_has_terminator: bool,
+    guided_prefix_name_closed: bool,
+    guided_prefix_rejected: bool,
 }
 
 enum DsmlLexMode {
@@ -123,11 +152,8 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         _append: &str,
         context: GuidedInvokePrefixContext,
     ) -> Option<GuidedInvokePrefix> {
-        if context.followed_by_competing_marker
-            || !context.outside_reasoning
-            || !context.payload_is_empty
-        {
-            return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
+        if self.guided_prefix_rejected {
+            return Some(GuidedInvokePrefix::NoMatch);
         }
         if self.guided_prefix_scanned == 0 {
             if !candidate.starts_with(INVOKE_START_PREFIX) {
@@ -139,21 +165,39 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         while self.guided_prefix_scanned < candidate.len() {
             let ch = candidate[self.guided_prefix_scanned..].chars().next()?;
             count_boundary_bytes(ch.len_utf8());
-            if self.guided_prefix_scanned == INVOKE_START_PREFIX.len() && matches!(ch, '{' | '[') {
-                self.guided_prefix_starts_payload = true;
+            if !self.guided_prefix_name_closed {
+                if matches!(ch, '{' | '[') {
+                    return Some(if context.outside_reasoning {
+                        GuidedInvokePrefix::Match(INVOKE_START_PREFIX.len())
+                    } else {
+                        GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len())
+                    });
+                }
+                if context.followed_by_competing_marker || ch == '<' {
+                    return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
+                }
+                self.guided_prefix_name_closed = ch == '"';
+                self.guided_prefix_scanned += ch.len_utf8();
+                continue;
+            }
+            if matches!(ch, '{' | '[') {
+                let prefix_len = self.guided_prefix_scanned;
+                return Some(if context.outside_reasoning {
+                    GuidedInvokePrefix::Match(prefix_len)
+                } else {
+                    GuidedInvokePrefix::Strip(prefix_len)
+                });
             }
             if ch == '>' {
-                self.guided_prefix_has_terminator = true;
+                self.guided_prefix_rejected = true;
+                return Some(GuidedInvokePrefix::NoMatch);
+            }
+            if context.followed_by_competing_marker || ch == '<' {
+                return Some(GuidedInvokePrefix::Strip(INVOKE_START_PREFIX.len()));
             }
             self.guided_prefix_scanned += ch.len_utf8();
         }
-        Some(if self.guided_prefix_starts_payload {
-            GuidedInvokePrefix::Match(INVOKE_START_PREFIX.len())
-        } else if self.guided_prefix_has_terminator {
-            GuidedInvokePrefix::NoMatch
-        } else {
-            GuidedInvokePrefix::Pending
-        })
+        Some(GuidedInvokePrefix::Pending)
     }
 
     fn end_append(
@@ -161,8 +205,14 @@ impl InvokeBoundary for DsmlInvokeBoundary {
         candidate: &str,
         append: &str,
         flush: bool,
-        _tool_index: usize,
+        tool_index: usize,
     ) -> Option<usize> {
+        if candidate.starts_with(deepseek_v41::INVOKE_START) {
+            return self
+                .v41
+                .get_or_insert_with(deepseek_v41::invocation_boundary)
+                .end_append(candidate, append, flush, tool_index);
+        }
         if candidate.len() != self.candidate_len + append.len() {
             self.reset();
         }
@@ -325,6 +375,7 @@ impl InvokeBoundary for DsmlInvokeBoundary {
 
     fn opens(&self, text: &str, at: usize) -> bool {
         text[at..].starts_with(INVOKE_START_PREFIX)
+            || text[at..].starts_with(deepseek_v41::INVOKE_START)
     }
 
     fn holdback(&self, text: &str) -> usize {
@@ -354,6 +405,9 @@ impl InvokeEmitter for DsmlEmitter {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
+        if invoke.starts_with(deepseek_v41::INVOKE_START) {
+            return deepseek_v41::DeepSeekV41.parse_invoke(invoke, tool_index);
+        }
         let Some((name, header_len)) = parse_invoke_header(invoke) else {
             return Ok(None);
         };
@@ -367,6 +421,11 @@ impl InvokeEmitter for DsmlEmitter {
             arguments,
             complete: true,
         }))
+    }
+
+    fn defer_parse_error(&self, invoke: &str, error: &anyhow::Error) -> bool {
+        invoke.starts_with(deepseek_v41::INVOKE_START)
+            && deepseek_v41::DeepSeekV41.defer_parse_error(invoke, error)
     }
 
     fn parse_invoke_deltas(
@@ -394,7 +453,7 @@ impl InvokeEmitter for DsmlEmitter {
     }
 }
 
-/// Compatibility adapter for callers that still need `ToolParseResult`.
+/// Compatibility adapter for V4 and V4.1 DSML through the `deepseek_v4` selector.
 pub struct DeepSeekV4ToolStreamParser {
     parser: Box<dyn UnifiedParser>,
 }
@@ -404,10 +463,16 @@ impl DeepSeekV4ToolStreamParser {
         Self::new_with_tools(&[])
     }
 
-    pub fn new_with_tools(tools: &[Tool]) -> Self {
-        Self {
-            parser: crate::unified::deepseek_v4::deepseek_v4_unified(tools),
-        }
+    pub fn new_with_tools(_tools: &[Tool]) -> Self {
+        let mut parser = crate::unified::deepseek_v4::deepseek_dsml_unified(true);
+        // Tool-only callers own reasoning extraction and need its delimiters intact.
+        parser
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                ..Default::default()
+            })
+            .expect("native response-mode initialization is valid");
+        Self { parser }
     }
 }
 
@@ -470,10 +535,11 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
         let Some(value_end_rel) = body[value_start..].find(PARAMETER_END) else {
             break;
         };
-        let raw_value = body[value_start..value_start + value_end_rel].trim();
+        let raw_value = &body[value_start..value_start + value_end_rel];
         let value = if attrs.contains(r#"string="true""#) {
             Value::String(raw_value.to_string())
         } else {
+            let raw_value = raw_value.trim();
             serde_json::from_str(raw_value).unwrap_or_else(|_| Value::String(raw_value.to_string()))
         };
         params.insert(name.to_string(), value);
@@ -490,10 +556,9 @@ fn parse_parameters(body: &str) -> anyhow::Result<Map<String, Value>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::unified::UnifiedParserInit;
     use crate::unified::{
-        InvalidGuidedPayloadPolicy, UnifiedParserStartingState, UnifiedToolOutputMode,
-        guided_append_work, reset_guided_append_work,
+        InvalidGuidedPayloadPolicy, UnifiedToolOutputMode, guided_append_work,
+        reset_guided_append_work,
     };
 
     fn boundary_work_for_parameter_bytes(value_len: usize) -> usize {
@@ -502,7 +567,7 @@ mod tests {
             "{BLOCK_START}{INVOKE_START_PREFIX}run\">{PARAMETER_PREFIX}\"payload\" string=\"true\">{}{PARAMETER_END}",
             "x".repeat(value_len)
         );
-        let mut scanner = deepseek_v4_scanner(&[]);
+        let mut scanner = deepseek_v4_scanner(false);
         for ch in input.chars() {
             scanner
                 .push_ordered(&ch.to_string())
@@ -510,6 +575,56 @@ mod tests {
         }
         scanner.finish_ordered().expect("finish");
         boundary_examined_bytes()
+    }
+
+    #[test]
+    fn tool_selector_accepts_both_dialects_without_rewriting_arguments() {
+        let value = "café 杭州 </｜DSML｜invoke> </｜DSML｜ invoke> &amp; <think>literal</think>";
+        let invokes = ["", " "].map(|gap| format!(
+            "<｜DSML｜{gap}invoke name=\"inspect\"><｜DSML｜{gap}parameter name=\"value\" string=\"true\">{value}</｜DSML｜{gap}parameter></｜DSML｜{gap}invoke>"
+        ));
+        let blocks = ["tool_calls", " calls"]
+            .into_iter()
+            .zip(&invokes)
+            .map(|(tag, invoke)| format!("<｜DSML｜{tag}>{invoke}</｜DSML｜{tag}>"))
+            .collect::<Vec<_>>();
+        let prefix = "<think>reason café</think>before ";
+        for body in [
+            blocks.concat(),
+            format!("{}{}", blocks[1], blocks[0]),
+            invokes.concat(),
+        ] {
+            let input = format!("{prefix}{body}");
+            let boundaries: Vec<_> = input
+                .char_indices()
+                .map(|(i, _)| i)
+                .chain([input.len()])
+                .collect();
+            let chars: Vec<_> = boundaries.windows(2).map(|w| &input[w[0]..w[1]]).collect();
+            for chunks in boundaries
+                .iter()
+                .map(|&split| vec![&input[..split], "", &input[split..]])
+                .chain(std::iter::once(chars))
+            {
+                let mut parser = crate::create_tool_parser_for_family("deepseek_v4", &[]).unwrap();
+                let mut result = ToolParseResult::default();
+                for chunk in chunks {
+                    result.append(parser.push(chunk).unwrap());
+                }
+                result.append(parser.finish().unwrap());
+                let result = result.coalesce_calls();
+                assert_eq!(result.normal_text, prefix);
+                assert_eq!(result.calls.len(), 2);
+                for (index, call) in result.calls.iter().enumerate() {
+                    assert_eq!(call.tool_index, index);
+                    assert_eq!(call.name.as_deref(), Some("inspect"));
+                    assert_eq!(
+                        serde_json::from_str::<Value>(&call.arguments).unwrap(),
+                        serde_json::json!({"value": value})
+                    );
+                }
+            }
+        }
     }
 
     #[test]
@@ -606,7 +721,7 @@ mod tests {
     }
 
     #[test]
-    fn legacy_parser_projects_the_unified_dsml_events() {
+    fn legacy_parser_projects_response_mode_unified_dsml_events() {
         let input = "before<think>reason</think><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>after";
         let split = input.find("<｜DSML｜tool_calls>").expect("DSML block");
         let mut legacy = DeepSeekV4ToolStreamParser::default();
@@ -616,7 +731,10 @@ mod tests {
 
         let mut unified = crate::unified::deepseek_v4::deepseek_v4_unified(&[]);
         unified
-            .initialize_request(UnifiedParserInit::native(&[]))
+            .initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                ..UnifiedParserInit::native(&[])
+            })
             .expect("initialize unified");
         let mut unified_events = unified.push(&input[..split]).expect("unified prefix");
         unified_events.extend(unified.push(&input[split..]).expect("unified suffix"));
@@ -654,6 +772,26 @@ mod tests {
             result.append(parser.push(&input[split..]).expect("suffix"));
             result.append(parser.finish().expect("finish"));
             assert_eq!(result.coalesce_calls(), expected, "split at {split}");
+        }
+    }
+
+    #[test]
+    fn string_parameters_preserve_whitespace() {
+        for value in ["  café\n", "\t\r\n ", "", "null"] {
+            let input = format!(
+                "<｜DSML｜tool_calls><｜DSML｜invoke name=\"edit\">\
+                 <｜DSML｜parameter name=\"text\" string=\"true\">{value}</｜DSML｜parameter>\
+                 <｜DSML｜parameter name=\"count\" string=\"false\"> 42 </｜DSML｜parameter>\
+                 </｜DSML｜invoke></｜DSML｜tool_calls>"
+            );
+            let mut parser = DeepSeekV4ToolStreamParser::new();
+            let mut result = parser.push(&input).expect("push");
+            result.append(parser.finish().expect("finish"));
+            let result = result.coalesce_calls();
+            assert!(result.normal_text.is_empty());
+            assert_eq!(result.calls.len(), 1);
+            let arguments: Value = serde_json::from_str(&result.calls[0].arguments).unwrap();
+            assert_eq!(arguments, serde_json::json!({"text": value, "count": 42}));
         }
     }
 

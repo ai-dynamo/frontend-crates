@@ -95,123 +95,65 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
 
 /// Convert media URL content parts to empty placeholder types.
 fn convert_media_url_to_placeholder(
-    content_array: &[serde_json::Value],
+    content_array: &mut [serde_json::Value],
     conversions: &[(&str, &str)],
-) -> Vec<serde_json::Value> {
-    content_array
-        .iter()
-        .map(|part| {
-            let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
-
-            if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
-                serde_json::json!({"type": target_type})
-            } else {
-                part.clone()
-            }
-        })
-        .collect()
+) {
+    for part in content_array {
+        let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
+        if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
+            *part = serde_json::json!({"type": target_type});
+        }
+    }
 }
 
 fn may_be_fix_msg_content(
-    messages: serde_json::Value,
+    mut messages: serde_json::Value,
     preserve_arrays: bool,
     image_placeholder_template: Option<&str>,
-) -> Value {
-    // preserve_arrays=true: strings → arrays (multimodal)
-    // preserve_arrays=false: text-only arrays → strings (standard)
-    // image_placeholder_template: when `preserve_arrays=false` and the array
-    // mixes text + image parts, this template (e.g. `<|image_{n}|>`) lets us
-    // flatten by substituting image parts with model-family placeholders
-    // instead of leaving the raw array for the template, which would crash
-    // string-content templates like Phi-3-vision's `'+' message.content`.
-
-    let Some(arr) = messages.as_array() else {
-        return Value::from_serialize(&messages);
+) -> serde_json::Value {
+    let Some(arr) = messages.as_array_mut() else {
+        return messages;
     };
-
-    let updated_messages: Vec<_> = arr
-        .iter()
-        .map(|msg| {
-            match msg.get("content") {
-                // Case 1: String to Array (for multimodal templates)
-                Some(serde_json::Value::String(text)) if preserve_arrays => {
-                    let mut modified_msg = msg.clone();
-                    if let Some(msg_object) = modified_msg.as_object_mut() {
-                        let content_array = serde_json::json!([{
-                            "type": "text",
-                            "text": text
-                        }]);
-                        msg_object.insert("content".to_string(), content_array);
-                    }
-                    modified_msg
-                }
-                // Case 2: Array processing
-                Some(serde_json::Value::Array(content_array)) => {
-                    // First, convert any media URL parts to placeholders (e.g., image_url → image)
-                    let content_array = convert_media_url_to_placeholder(
-                        content_array,
-                        DEFAULT_MEDIA_TYPE_CONVERSIONS,
-                    );
-
-                    // Check if it's text-only (after media URL conversion)
-                    let is_text_only_array = !content_array.is_empty()
-                        && content_array.iter().all(|part| {
-                            part.get("type")
-                                .and_then(|type_field| type_field.as_str())
-                                .map(|type_str| type_str == "text")
-                                .unwrap_or(false)
-                        });
-
-                    let mut modified_msg = msg.clone();
-                    if let Some(msg_object) = modified_msg.as_object_mut() {
-                        if is_text_only_array && !preserve_arrays {
-                            // Flatten text-only arrays to string for standard templates
-                            let text_parts: Vec<&str> = content_array
-                                .iter()
-                                .filter_map(|part| part.get("text")?.as_str())
-                                .collect();
-                            let concatenated_text = text_parts.join("\n");
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::String(concatenated_text),
-                            );
-                        } else if !preserve_arrays
-                            && !content_array.is_empty()
-                            && let Some(placeholder_tpl) = image_placeholder_template
-                        {
-                            // Mixed text+image array for a string-content
-                            // template — flatten with model-family image
-                            // placeholders inlined where the image parts were.
-                            // An empty `placeholder_tpl` ("") drops the image
-                            // parts entirely while keeping the text — used by
-                            // pure pass-through / encoder-decoder templates
-                            // (Nemotron-Parse) whose vision encoder consumes the
-                            // image out-of-band, so no text token represents it.
-                            // The `is_empty` guard preserves a literal `[]`
-                            // content (matches pre-PR behavior); flattening
-                            // an empty array to `""` would silently change
-                            // what the template renders.
-                            let flattened = flatten_mixed_content(&content_array, placeholder_tpl);
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::String(flattened),
-                            );
-                        } else {
-                            // Keep as array (with media_url → media placeholder conversion applied)
-                            msg_object.insert(
-                                "content".to_string(),
-                                serde_json::Value::Array(content_array),
-                            );
-                        }
-                    }
-                    modified_msg
-                }
-                _ => msg.clone(), // No conversion needed
+    for msg in arr {
+        let Some(content) = msg.get_mut("content") else {
+            continue;
+        };
+        match content {
+            serde_json::Value::String(_) if preserve_arrays => {
+                let text = content.take();
+                *content = serde_json::Value::Array(vec![serde_json::Value::Object(
+                    serde_json::Map::from_iter([
+                        ("type".into(), serde_json::Value::String("text".into())),
+                        ("text".into(), text),
+                    ]),
+                )]);
             }
-        })
-        .collect();
-
-    Value::from_serialize(&updated_messages)
+            serde_json::Value::Array(parts) => {
+                convert_media_url_to_placeholder(parts, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+                // An empty array must remain an array. Templates distinguish it
+                // from an empty string, including when the placeholder is "".
+                let text_only = !parts.is_empty()
+                    && parts
+                        .iter()
+                        .all(|part| part.get("type").and_then(|v| v.as_str()) == Some("text"));
+                if text_only && !preserve_arrays {
+                    let text = parts
+                        .iter()
+                        .filter_map(|part| part.get("text")?.as_str())
+                        .collect::<Vec<_>>()
+                        .join("\n");
+                    *content = serde_json::Value::String(text);
+                } else if !preserve_arrays
+                    && !parts.is_empty()
+                    && let Some(template) = image_placeholder_template
+                {
+                    *content = serde_json::Value::String(flatten_mixed_content(parts, template));
+                }
+            }
+            _ => {}
+        }
+    }
+    messages
 }
 
 /// Concatenate a mixed-content array (text parts + image placeholders) into a
@@ -370,6 +312,34 @@ fn inject_reasoning_content_into_messages(messages: &mut serde_json::Value) {
         // and the original reasoning_content field.
         if let Some(obj) = msg.as_object_mut() {
             obj.remove("reasoning_content");
+        }
+    }
+}
+
+/// Join `reasoning_content` segments into the flat string a template that only
+/// renders it when it `is string` expects; given the array, such templates
+/// silently drop the prior turn's reasoning. The flat form matches
+/// `ReasoningContent::to_flat_string` (non-empty segments joined by `\n`) and how
+/// SGLang merges consecutive reasoning items.
+fn join_reasoning_content_segments_in_messages(messages: &mut serde_json::Value) {
+    let Some(msgs) = messages.as_array_mut() else {
+        return;
+    };
+
+    for msg in msgs.iter_mut() {
+        if msg.get("role").and_then(|r| r.as_str()) != Some("assistant") {
+            continue;
+        }
+        if let Some(reasoning) = msg.get_mut("reasoning_content")
+            && let Some(segments) = reasoning.as_array()
+        {
+            let joined = segments
+                .iter()
+                .filter_map(|s| s.as_str())
+                .filter(|s| !s.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n");
+            *reasoning = joined.into();
         }
     }
 }
@@ -575,12 +545,14 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             template_name,
             template_handles_tool_calls_args_string,
             template_handles_reasoning,
+            template_requires_reasoning_string,
             system_normalization,
         ) = if has_tools {
             (
                 "tool_use",
                 self.tool_use_template_handles_tool_calls_arguments_string,
                 self.tool_use_template_handles_reasoning,
+                self.tool_use_template_requires_reasoning_string,
                 self.tool_use_system_normalization,
             )
         } else {
@@ -588,13 +560,12 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
                 "default",
                 self.default_template_handles_tool_calls_arguments_string,
                 self.default_template_handles_reasoning,
+                self.default_template_requires_reasoning_string,
                 self.default_system_normalization,
             )
         };
 
-        let messages_canonical = req.messages();
-        let mut messages_for_template: serde_json::Value =
-            serde_json::to_value(&messages_canonical).unwrap();
+        let mut messages_for_template = crate::messages_to_json(req)?;
 
         crate::reject_unsupported_partial_assistant(&messages_for_template)?;
         crate::reject_unsupported_message_tools(&messages_for_template, &[])?;
@@ -603,12 +574,11 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
             normalize_system_messages(&mut messages_for_template, system_normalization);
         }
 
-        messages_for_template = serde_json::to_value(may_be_fix_msg_content(
+        messages_for_template = may_be_fix_msg_content(
             messages_for_template,
             self.requires_content_arrays,
             self.image_placeholder_template,
-        ))
-        .unwrap();
+        );
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -630,6 +600,8 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         // would produce duplicate <think> blocks.
         if !template_handles_reasoning {
             inject_reasoning_content_into_messages(&mut messages_for_template);
+        } else if template_requires_reasoning_string {
+            join_reasoning_content_segments_in_messages(&mut messages_for_template);
         }
 
         let ctx = context! {
@@ -658,6 +630,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use dynamo_protocols::types::ChatCompletionRequestMessage as Msg;
     // The crate's renderer tests exercise the bare-protocol request type via the
     // default `OAIChatLikeRequest` impl above; Dynamo's `Nv*` wrapper lives in lib/llm.
@@ -745,6 +718,20 @@ mod tests {
 
     fn render_raw_shape(f: &SysFormatter, messages: serde_json::Value) -> Result<String> {
         f.render(&RawMessagesRequest(Value::from_serialize(&messages)))
+    }
+
+    #[test]
+    fn content_normalization_preserves_unchanged_values() {
+        let messages = json!([
+            {"role": "user", "content": "  中文 <special>\n", "name": "user"},
+            {"role": "assistant", "content": null},
+            {"role": "user", "content": []},
+            {"role": "assistant", "tool_calls": []}
+        ]);
+        assert_eq!(
+            may_be_fix_msg_content(messages.clone(), false, Some("")),
+            messages
+        );
     }
 
     const PERMISSIVE_TMPL: &str = concat!(
@@ -1404,49 +1391,49 @@ mod tests {
     /// Tests that media URL content parts are converted to empty placeholders.
     #[test]
     fn test_convert_media_url_to_placeholder_single_type() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "text", "text": "Check this image:"}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "What do you see?"}),
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
+        assert_eq!(content_array.len(), 3);
         // Text parts should be unchanged
-        assert_eq!(result[0]["type"], "text");
-        assert_eq!(result[0]["text"], "Check this image:");
+        assert_eq!(content_array[0]["type"], "text");
+        assert_eq!(content_array[0]["text"], "Check this image:");
         // image_url should be converted to image placeholder
-        assert_eq!(result[1]["type"], "image");
-        assert!(result[1].get("image_url").is_none());
+        assert_eq!(content_array[1]["type"], "image");
+        assert!(content_array[1].get("image_url").is_none());
         // Text parts should be unchanged
-        assert_eq!(result[2]["type"], "text");
-        assert_eq!(result[2]["text"], "What do you see?");
+        assert_eq!(content_array[2]["type"], "text");
+        assert_eq!(content_array[2]["text"], "What do you see?");
     }
 
     /// Tests that multiple media URL parts of the same type are all converted.
     #[test]
     fn test_convert_media_url_to_placeholder_multiple_same_type() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image1.jpg"}}),
             serde_json::json!({"type": "text", "text": "vs"}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image2.jpg"}}),
         ];
 
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
-        assert_eq!(result[0]["type"], "image");
-        assert_eq!(result[1]["type"], "text");
-        assert_eq!(result[2]["type"], "image");
+        assert_eq!(content_array.len(), 3);
+        assert_eq!(content_array[0]["type"], "image");
+        assert_eq!(content_array[1]["type"], "text");
+        assert_eq!(content_array[2]["type"], "image");
     }
 
     /// Tests that only specified media types are converted, others preserved.
     #[test]
     fn test_convert_media_url_to_placeholder_selective_conversion() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
             serde_json::json!({"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}}),
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
@@ -1454,23 +1441,23 @@ mod tests {
 
         // Only convert image_url
         let conversions = &[("image_url", "image")];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 3);
+        assert_eq!(content_array.len(), 3);
         // audio_url and video_url should be preserved as-is
-        assert_eq!(result[0]["type"], "audio_url");
-        assert!(result[0].get("audio_url").is_some());
-        assert_eq!(result[1]["type"], "video_url");
-        assert!(result[1].get("video_url").is_some());
+        assert_eq!(content_array[0]["type"], "audio_url");
+        assert!(content_array[0].get("audio_url").is_some());
+        assert_eq!(content_array[1]["type"], "video_url");
+        assert!(content_array[1].get("video_url").is_some());
         // Only image_url should be converted
-        assert_eq!(result[2]["type"], "image");
-        assert!(result[2].get("image_url").is_none());
+        assert_eq!(content_array[2]["type"], "image");
+        assert!(content_array[2].get("image_url").is_none());
     }
 
     /// Tests converting multiple different media types at once.
     #[test]
     fn test_convert_media_url_to_placeholder_multiple_types() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "and listen to"}),
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
@@ -1484,42 +1471,42 @@ mod tests {
             ("audio_url", "audio"),
             ("video_url", "video"),
         ];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 5);
-        assert_eq!(result[0]["type"], "image");
-        assert!(result[0].get("image_url").is_none());
-        assert_eq!(result[1]["type"], "text");
-        assert_eq!(result[2]["type"], "audio");
-        assert!(result[2].get("audio_url").is_none());
-        assert_eq!(result[3]["type"], "text");
-        assert_eq!(result[4]["type"], "video");
-        assert!(result[4].get("video_url").is_none());
+        assert_eq!(content_array.len(), 5);
+        assert_eq!(content_array[0]["type"], "image");
+        assert!(content_array[0].get("image_url").is_none());
+        assert_eq!(content_array[1]["type"], "text");
+        assert_eq!(content_array[2]["type"], "audio");
+        assert!(content_array[2].get("audio_url").is_none());
+        assert_eq!(content_array[3]["type"], "text");
+        assert_eq!(content_array[4]["type"], "video");
+        assert!(content_array[4].get("video_url").is_none());
     }
 
     /// Tests that empty conversions list preserves all content.
     #[test]
     fn test_convert_media_url_to_placeholder_no_conversions() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "text", "text": "hello"}),
         ];
 
         let conversions: &[(&str, &str)] = &[];
-        let result = convert_media_url_to_placeholder(&content_array, conversions);
+        convert_media_url_to_placeholder(&mut content_array, conversions);
 
-        assert_eq!(result.len(), 2);
+        assert_eq!(content_array.len(), 2);
         // Everything should be preserved as-is
-        assert_eq!(result[0]["type"], "image_url");
-        assert!(result[0].get("image_url").is_some());
-        assert_eq!(result[1]["type"], "text");
+        assert_eq!(content_array[0]["type"], "image_url");
+        assert!(content_array[0].get("image_url").is_some());
+        assert_eq!(content_array[1]["type"], "text");
     }
 
     /// Tests that DEFAULT_MEDIA_TYPE_CONVERSIONS only converts image_url,
     /// and preserves other media types like video_url and audio_url.
     #[test]
     fn test_default_media_type_conversions_only_converts_image_url() {
-        let content_array = vec![
+        let mut content_array = vec![
             serde_json::json!({"type": "image_url", "image_url": {"url": "https://example.com/image.jpg"}}),
             serde_json::json!({"type": "video_url", "video_url": {"url": "https://example.com/video.mp4"}}),
             serde_json::json!({"type": "audio_url", "audio_url": {"url": "https://example.com/audio.mp3"}}),
@@ -1527,26 +1514,25 @@ mod tests {
         ];
 
         // Use the actual DEFAULT_MEDIA_TYPE_CONVERSIONS
-        let result =
-            convert_media_url_to_placeholder(&content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
+        convert_media_url_to_placeholder(&mut content_array, DEFAULT_MEDIA_TYPE_CONVERSIONS);
 
-        assert_eq!(result.len(), 4);
+        assert_eq!(content_array.len(), 4);
 
         // image_url SHOULD be converted to image (it's in the default map)
-        assert_eq!(result[0]["type"], "image");
-        assert!(result[0].get("image_url").is_none());
+        assert_eq!(content_array[0]["type"], "image");
+        assert!(content_array[0].get("image_url").is_none());
 
         // video_url should NOT be converted (not in the default map)
-        assert_eq!(result[1]["type"], "video");
-        assert!(result[1].get("video_url").is_none());
+        assert_eq!(content_array[1]["type"], "video");
+        assert!(content_array[1].get("video_url").is_none());
 
         // audio_url should NOT be converted (not in the default map)
-        assert_eq!(result[2]["type"], "audio");
-        assert!(result[2].get("audio_url").is_none());
+        assert_eq!(content_array[2]["type"], "audio");
+        assert!(content_array[2].get("audio_url").is_none());
 
         // text should be unchanged
-        assert_eq!(result[3]["type"], "text");
-        assert_eq!(result[3]["text"], "hello");
+        assert_eq!(content_array[3]["type"], "text");
+        assert_eq!(content_array[3]["text"], "hello");
     }
 
     #[test]
@@ -2409,6 +2395,101 @@ NORMAL MODE
         );
     }
 
+    /// MiniMax-M3's `to_xml` prints history argument floats with `{{ val }}`;
+    /// HF (vLLM/SGLang `json.loads` the arguments) renders Python `str(float)`.
+    #[test]
+    fn test_minimax_m3_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- set ns_token = ']<]minimax[>[' -%}
+{%- macro to_xml(val, ns) -%}
+{%- if val is mapping -%}
+{%- for k, v in val.items() if v is not none -%}
+{{ ns }}<{{ k }}>{{ to_xml(v, ns) }}{{ ns }}</{{ k }}>
+{%- endfor -%}
+{%- elif val is iterable and val is not string -%}
+{%- for item in val -%}
+{{ ns }}<item>{{ to_xml(item, ns) }}{{ ns }}</item>
+{%- endfor -%}
+{%- elif val is none -%}
+{%- elif val is boolean -%}
+{{ val | tojson }}
+{%- else -%}
+{{ val }}
+{%- endif -%}
+{%- endmacro -%}
+{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls -%}
+{%- if tool_call.function -%}
+{%- set tool_call = tool_call.function -%}
+{%- endif -%}
+{{- ns_token + '<invoke name="' + tool_call.name + '">' }}
+{%- set _args = tool_call.arguments -%}
+{%- for k, v in _args.items() if v is not none %}
+{{- ns_token + '<' + k + '>' -}}
+{{- to_xml(v, ns_token) -}}
+{{- ns_token + '</' + k + '>' }}
+{%- endfor -%}
+{{- ns_token + '</invoke>' ~ '\n' }}
+{%- endfor -%}
+{%- endfor -%}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "]<]minimax[>[<invoke name=\"fit\">]<]minimax[>[<tolerance>1e-07]<]minimax[>[</tolerance>]<]minimax[>[<bounds>]<]minimax[>[<item>1e-05]<]minimax[>[</item>]<]minimax[>[<item>1e+16]<]minimax[>[</item>]<]minimax[>[</bounds>]<]minimax[>[</invoke>\n"
+        );
+    }
+
+    /// Qwen3-Coder prints scalar history arguments with `| string`, which HF
+    /// renders as Python `str(float)`.
+    #[test]
+    fn test_qwen3_coder_history_tool_call_float_arguments_match_hf() {
+        let template = r#"{%- for message in messages if message.tool_calls -%}
+{%- for tool_call in message.tool_calls %}
+    {%- if tool_call.function is defined %}
+        {%- set tool_call = tool_call.function %}
+    {%- endif %}
+    {%- for args_name, args_value in tool_call.arguments|items %}
+        {{- '<parameter=' + args_name + '>\n' }}
+        {%- set args_value = args_value | tojson | safe if args_value is mapping or (args_value is sequence and args_value is not string) else args_value | string %}
+        {{- args_value }}
+        {{- '\n</parameter>\n' }}
+    {%- endfor %}
+{%- endfor %}
+{%- endfor %}"#;
+        let rendered = render_shape(
+            &formatter_for(template),
+            json!([
+                {"role": "user", "content": "u"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "fit",
+                        "arguments": r#"{"tolerance": 1e-07, "bounds": [0.00001, 1e16]}"#
+                    }
+                }]}
+            ]),
+        )
+        .unwrap();
+        assert_eq!(
+            rendered,
+            "<parameter=tolerance>\n1e-07\n</parameter>\n<parameter=bounds>\n[1e-05, 1e+16]\n</parameter>\n"
+        );
+    }
+
     /// Tests string → array normalization for multimodal templates
     #[test]
     fn test_may_be_fix_msg_content_string_to_array() {
@@ -2843,6 +2924,66 @@ NORMAL_MODE
         );
     }
 
+    /// An assistant turn with reasoning and two tool calls, then their results.
+    fn reasoning_tool_call_turn(reasoning: serde_json::Value) -> serde_json::Value {
+        let call = |id: &str, expr: &str| {
+            json!({"id": id, "type": "function",
+                "function": {"name": "calc", "arguments": json!({"expr": expr}).to_string()}})
+        };
+        json!([
+            {"role": "user", "content": "sqrt(144) + sqrt(256)?"},
+            {"role": "assistant", "content": null, "reasoning_content": reasoning,
+                "tool_calls": [call("call_0", "sqrt(144)"), call("call_1", "sqrt(256)")]},
+            {"role": "tool", "tool_call_id": "call_0", "content": "12"},
+            {"role": "tool", "tool_call_id": "call_1", "content": "16"}
+        ])
+    }
+
+    /// MiniMax-M2's assistant branch: `reasoning_content` renders only when it
+    /// `is string`, so the segment array the Responses and Anthropic converters
+    /// send with tool calls must reach it joined, not as an array.
+    #[test]
+    fn test_string_reasoning_template_joins_reasoning_content_segments() {
+        const MINIMAX_REASONING_TMPL: &str = r#"{%- for message in messages -%}
+{%- if message.role == 'assistant' -%}
+{{- ']~b]ai' ~ '\n' -}}
+{%- set reasoning_content = '' -%}
+{%- if message.reasoning_content is string -%}
+{%- set reasoning_content = message.reasoning_content -%}
+{%- endif -%}
+{%- if reasoning_content -%}
+{{- '<think>' ~ '\n' ~ reasoning_content ~ '\n' ~ '</think>' ~ '\n\n' -}}
+{%- endif -%}
+{%- for tool_call in message.tool_calls -%}
+{{- '<invoke name="' ~ tool_call.function.name ~ '">' -}}
+{%- endfor -%}
+{{- '[e~[\n' -}}
+{%- else -%}
+{{- ']~b]' ~ message.role ~ '\n' ~ message.content ~ '[e~[\n' -}}
+{%- endif -%}
+{%- endfor -%}"#;
+        let f = formatter_for(MINIMAX_REASONING_TMPL);
+        // HF transformers render of this template with the equivalent string.
+        let expected = concat!(
+            "]~b]user\nsqrt(144) + sqrt(256)?[e~[\n",
+            "]~b]ai\n<think>\nCheck both.\nThen add.\n</think>\n\n",
+            "<invoke name=\"calc\"><invoke name=\"calc\">[e~[\n",
+            "]~b]tool\n12[e~[\n]~b]tool\n16[e~[\n",
+        );
+        // `default` (no tools) and `tool_use` are probed separately.
+        for render in [render_shape, render_shape_with_tools] {
+            for reasoning in [
+                json!(["Check both.", "Then add.", ""]),
+                json!("Check both.\nThen add."),
+            ] {
+                assert_eq!(
+                    render(&f, reasoning_tool_call_turn(reasoning)).unwrap(),
+                    expected
+                );
+            }
+        }
+    }
+
     #[test]
     fn test_inject_reasoning_content_text_variant() {
         let mut messages = serde_json::json!([
@@ -3224,6 +3365,66 @@ NORMAL_MODE
         );
     }
 
+    /// Tool-call loop of unsloth's Qwen3.8 template (unsloth/Qwen3.8-27B): it
+    /// renders mapping arguments as `<parameter=...>` and uses `arguments is
+    /// string` only to reject strings.
+    const QWEN38_REJECTS_STRING_ARGS_TEMPLATE: &str = r##"{%- for message in messages %}
+    {%- if message.role == "assistant" and message.tool_calls %}
+        {%- for tool_call in message.tool_calls %}
+            {%- if tool_call.function %}
+                {%- set tool_call = tool_call.function %}
+            {%- endif %}
+            {{- '<tool_call>\n<function=' + tool_call.name + '>\n' }}
+            {%- if tool_call.arguments is mapping %}
+                {%- for args_name, args_value in tool_call.arguments|items %}
+                    {{- '<parameter=' + args_name + '>\n' + args_value + '\n</parameter>\n' }}
+                {%- endfor %}
+            {%- elif tool_call.arguments is string %}
+                {%- if tool_call.arguments|trim %}
+                    {{- raise_exception('Tool call arguments were passed as a JSON string.') }}
+                {%- endif %}
+            {%- endif %}
+            {{- '</function>\n</tool_call>' }}
+        {%- endfor %}
+    {%- else %}
+        {{- '<|im_start|>' + message.role + '\n' + message.content + '<|im_end|>\n' }}
+    {%- endif %}
+{%- endfor %}"##;
+
+    /// A template that mentions `arguments is string` only to reject strings
+    /// must still get parsed arguments; otherwise every request with a tool call
+    /// in its history fails.
+    #[test]
+    fn test_template_rejecting_string_arguments_gets_objects() {
+        let chat_template: ChatTemplate = serde_json::from_value(serde_json::json!({
+            "chat_template": QWEN38_REJECTS_STRING_ARGS_TEMPLATE,
+        }))
+        .unwrap();
+        let formatter =
+            HfTokenizerConfigJsonFormatter::new(chat_template, ContextMixins::new(&[])).unwrap();
+        assert!(!formatter.default_template_handles_tool_calls_arguments_string);
+        assert!(!formatter.tool_use_template_handles_tool_calls_arguments_string);
+
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+            "model": "qwen3.8",
+            "messages": [
+                {"role": "user", "content": "What's the weather in San Francisco?"},
+                {"role": "assistant", "content": "", "tool_calls": [{
+                    "id": "call_sf",
+                    "type": "function",
+                    "function": {"name": "get_weather", "arguments": "{\"location\": \"San Francisco\"}"}
+                }]},
+                {"role": "tool", "tool_call_id": "call_sf", "content": "Foggy"}
+            ],
+        }))
+        .unwrap();
+        let rendered = formatter.render(&request).unwrap();
+        assert!(
+            rendered.contains("<parameter=location>\nSan Francisco\n</parameter>"),
+            "{rendered}"
+        );
+    }
+
     /// Across a multi-step tool-use turn, the rendered prompt for turn N+1
     /// must be a strict prefix-extension of [turn-N prompt + bytes the model
     /// emitted on turn N]. Otherwise KV-cache prefix matching falls off a
@@ -3342,5 +3543,31 @@ NORMAL_MODE
             suffix.ends_with("<|im_start|>assistant\n<think>\n"),
             "appended bytes must end with the next generation prompt, got: {suffix}"
         );
+    }
+
+    /// Qwen3 reads `reasoning_content` only when it `is string`, so segments sent
+    /// with tool calls must render exactly as the equivalent string does (keeping
+    /// the append-only prefix above), with and without tools.
+    #[test]
+    fn test_qwen3_thinking_renders_reasoning_content_segments_as_string() {
+        let formatter = qwen3_thinking_formatter();
+        assert!(formatter.default_template_requires_reasoning_string);
+        assert!(formatter.tool_use_template_requires_reasoning_string);
+
+        for render in [render_shape, render_shape_with_tools] {
+            let segments = json!(["Check both.", "Then add.", ""]);
+            let rendered = render(&formatter, reasoning_tool_call_turn(segments)).unwrap();
+            assert!(
+                rendered.contains(
+                    "<|im_start|>assistant\n<think>\nCheck both.\nThen add.\n</think>\n\n<tool_call>"
+                ),
+                "{rendered}"
+            );
+            let string = json!("Check both.\nThen add.");
+            assert_eq!(
+                rendered,
+                render(&formatter, reasoning_tool_call_turn(string)).unwrap()
+            );
+        }
     }
 }

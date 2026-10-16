@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Generate the harmony_text TC stream-v2 fixtures by cloning the harmony
+"""Generate the harmony_text legacy stream-v1 fixtures by cloning the harmony
 (token-id) fixtures and re-recording only the Dynamo per-chunk emit through the
 TEXT path.
 
@@ -49,10 +49,10 @@ from build_stream_fixtures import _delta_flow, _indent, _q  # noqa: E402  (reuse
 
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))  # frontend-crates/
 TOKEN_DIR = os.path.join(
-    REPO_ROOT, "conformance/toolcalling/fixtures-stream-v2/harmony"
+    REPO_ROOT, "conformance/toolcalling/fixtures-stream-v1/harmony"
 )
 TEXT_DIR = os.path.join(
-    REPO_ROOT, "conformance/toolcalling/fixtures-stream-v2/harmony_text"
+    REPO_ROOT, "conformance/toolcalling/fixtures-stream-v1/harmony_text"
 )
 # Peer impls carried verbatim from the token fixture (their per-chunk data is
 # tied to these exact chunk boundaries). dynamo_v2 is re-recorded via the text path.
@@ -169,7 +169,7 @@ def gen_file(token_file):
     lines.append("")
     lines.append("family: harmony_text")
     lines.append(f"model_label: {_q(MODEL_LABEL)}")
-    lines.append("mode: streamv2")
+    lines.append("mode: streamv1")
     if captured:
         lines.append("captured_with:")
         for k, v in captured.items():

@@ -1,0 +1,1238 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+//! Qwen VL family (Qwen2-VL / 2.5-VL / 3-VL / 3.5) image processor.
+//!
+//! Pure-Rust equivalent of the HF `Qwen2VLImageProcessor` pipeline:
+//! `smart_resize` → bicubic resize → rescale + normalize → patchify into
+//! `[grid_h*grid_w, C*tps*ps*ps]` in HF flatten order (patches ordered
+//! `(gh/m, gw/m, m, m)`, features `(C, tps, ps, ps)`, temporal copies
+//! duplicated for stills) — plus the image-only M-RoPE fast path. All
+//! parameters come from the runtime spec.
+//!
+//! Video sizing is separate: [`Qwen3VlVideo`] mirrors HF's
+//! `Qwen3VLVideoProcessor` and reads the model's
+//! `video_preprocessor_config.json`, not the image spec.
+
+use crate::image::resize;
+use crate::processor::{
+    DecodedMedia, Geometry, MediaMetadata, MmFamilyProcessor, PositionOutput, ProcessedItem,
+    Tensor, TensorData, TokenLayout,
+};
+use crate::video::VideoPixelBudget;
+use crate::{MmError, Result, execution, token_layout};
+
+const MAX_RATIO: f64 = 200.0;
+
+/// One media item's placement for M-RoPE: inclusive token range + patch grid.
+pub struct MropeItem {
+    pub start: u32,
+    pub end: u32,
+    pub grid: [u32; 3],
+}
+
+/// Resolved processor params, deserialized from the consumer-side spec JSON
+/// (unknown fields like `family` are ignored here).
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct QwenVlSpec {
+    pub image_token_id: i32,
+    pub patch_size: usize,
+    pub merge_size: usize,
+    pub temporal_patch_size: usize,
+    pub min_pixels: usize,
+    pub max_pixels: usize,
+    pub image_mean: [f32; 3],
+    pub image_std: [f32; 3],
+    #[serde(default)]
+    pub resample: Resampler,
+}
+
+/// The HF image processor the pipeline must match bit-exactly. Defaults to
+/// the one a default server runs.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Resampler {
+    /// `Qwen2VLImageProcessor` / `…Fast` — torchvision on a uint8 tensor.
+    #[default]
+    AtenU8,
+    /// `Qwen2VLImageProcessorPil`, behind `--disable-fast-image-processor`.
+    Pil,
+}
+
+impl From<Resampler> for resize::Resample {
+    fn from(r: Resampler) -> Self {
+        match r {
+            Resampler::AtenU8 => resize::Resample::AtenU8,
+            Resampler::Pil => resize::Resample::Pil(resize::Filter::Bicubic),
+        }
+    }
+}
+
+pub struct QwenVlProcessor {
+    spec: QwenVlSpec,
+    /// Per-channel u8 → normalized-f32 lookup; see [`normalize_lut`].
+    lut: [[f32; 256]; 3],
+}
+
+/// `1 / rescale_factor`; the consumer's spec resolution must reject any
+/// other factor.
+const INV_RESCALE: f32 = 255.0;
+
+/// u8 → normalized f32, rounded as the mirrored processor rounds. The slow one
+/// rescales then normalizes; the fast one folds the rescale into mean/std first
+/// (`_fuse_mean_std_and_rescale_factor`), which differs on 128 of the 256 inputs.
+fn normalize_lut(resample: Resampler, mean: f32, std: f32) -> [f32; 256] {
+    match resample {
+        Resampler::Pil => core::array::from_fn(|v| (v as f32 / INV_RESCALE - mean) / std),
+        Resampler::AtenU8 => {
+            let (mean, std) = (mean * INV_RESCALE, std * INV_RESCALE);
+            core::array::from_fn(|v| (v as f32 - mean) / std)
+        }
+    }
+}
+
+impl QwenVlProcessor {
+    pub fn new(spec: QwenVlSpec) -> Result<Self> {
+        if spec.patch_size == 0 || spec.merge_size == 0 || spec.temporal_patch_size == 0 {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: sizes must be positive",
+            ));
+        }
+        // These products are used by header-only accounting and patchification.
+        // Reject malformed runtime specs here rather than panicking (or wrapping
+        // in release builds) when their first image is processed.
+        if spec.patch_size.checked_mul(spec.merge_size).is_none()
+            || spec.merge_size.checked_mul(spec.merge_size).is_none()
+            || 3usize
+                .checked_mul(spec.temporal_patch_size)
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .and_then(|n| n.checked_mul(spec.patch_size))
+                .is_none()
+        {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: resize factor, merge area and patch feature dimension must fit in usize",
+            ));
+        }
+        if spec.min_pixels == 0 || spec.min_pixels > spec.max_pixels {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: min_pixels must be positive and no greater than max_pixels",
+            ));
+        }
+        if spec
+            .image_std
+            .iter()
+            .any(|std| !std.is_finite() || *std <= 0.0)
+        {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: image_std values must be finite and positive",
+            ));
+        }
+        if spec.image_mean.iter().any(|mean| !mean.is_finite()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl spec: image_mean values must be finite",
+            ));
+        }
+        let lut = core::array::from_fn(|c| {
+            normalize_lut(spec.resample, spec.image_mean[c], spec.image_std[c])
+        });
+        Ok(Self { spec, lut })
+    }
+
+    pub fn from_spec_json(json: &str) -> Result<Self> {
+        let spec: QwenVlSpec = serde_json::from_str(json)
+            .map_err(|error| MmError::invalid_input_with_source("invalid qwen_vl spec", error))?;
+        Self::new(spec)
+    }
+
+    fn factor(&self) -> usize {
+        self.spec.patch_size * self.spec.merge_size
+    }
+
+    /// Patch grid of the resized image, `[t, h, w]` with `t = 1` for a still.
+    fn grid(&self, resized_h: usize, resized_w: usize) -> [u32; 3] {
+        let (gh, gw) = (
+            resized_h / self.spec.patch_size,
+            resized_w / self.spec.patch_size,
+        );
+        [1, gh as u32, gw as u32]
+    }
+
+    /// The ViT merges `merge_size²` patches per token.
+    fn tokens_per_image(&self, grid: &[u32; 3]) -> usize {
+        (grid[0] as usize * grid[1] as usize * grid[2] as usize)
+            / (self.spec.merge_size * self.spec.merge_size)
+    }
+
+    /// Floats per flattened patch: `C * tps * ps * ps`.
+    fn patch_dim(&self) -> usize {
+        3 * self.spec.temporal_patch_size * self.spec.patch_size * self.spec.patch_size
+    }
+
+    /// HF flatten: patches ordered `(gh/m, gw/m, m, m)`, features `(C, tps,
+    /// ps, ps)`; parallel over merged-block rows.
+    fn patchify(&self, rgb: &[u8], h: usize, w: usize) -> Vec<f32> {
+        let (ps, m, tps) = (
+            self.spec.patch_size,
+            self.spec.merge_size,
+            self.spec.temporal_patch_size,
+        );
+        let (gh, gw) = (h / ps, w / ps);
+        let dim = self.patch_dim();
+        let block_row = gw * m * dim; // one merged-block row of patches
+        let mut out = vec![0.0f32; gh * gw * dim];
+
+        execution::for_chunks_mut(&mut out, block_row, |i, chunk| {
+            let mut p = 0;
+            for j in 0..gw / m {
+                for mh in 0..m {
+                    for mw in 0..m {
+                        let y0 = (i * m + mh) * ps;
+                        let x0 = (j * m + mw) * ps;
+                        let patch = &mut chunk[p * dim..(p + 1) * dim];
+                        for (c, ch) in patch.chunks_exact_mut(tps * ps * ps).enumerate() {
+                            for py in 0..ps {
+                                let src = ((y0 + py) * w + x0) * 3 + c;
+                                for px in 0..ps {
+                                    ch[py * ps + px] = self.lut[c][rgb[src + px * 3] as usize];
+                                }
+                            }
+                            // Temporal copies of a still are duplicates.
+                            let (t0, rest) = ch.split_at_mut(ps * ps);
+                            for frame in rest.chunks_exact_mut(ps * ps) {
+                                frame.copy_from_slice(t0);
+                            }
+                        }
+                        p += 1;
+                    }
+                }
+            }
+        });
+        out
+    }
+}
+
+impl MmFamilyProcessor for QwenVlProcessor {
+    fn num_media_tokens(&self, media: &MediaMetadata) -> Result<usize> {
+        match media {
+            MediaMetadata::Image { width, height } => {
+                let (th, tw) = smart_resize(
+                    *height as usize,
+                    *width as usize,
+                    self.factor(),
+                    self.spec.min_pixels,
+                    self.spec.max_pixels,
+                )?;
+                Ok(self.tokens_per_image(&self.grid(th, tw)))
+            }
+            _ => Err(MmError::unsupported(
+                "qwen_vl: only image token accounting is supported",
+            )),
+        }
+    }
+
+    fn process_item(&self, media: &DecodedMedia) -> Result<ProcessedItem> {
+        let DecodedMedia::Image { rgb, height, width } = media;
+        let (h, w) = (*height, *width);
+        if h.checked_mul(w).and_then(|n| n.checked_mul(3)) != Some(rgb.len()) {
+            return Err(MmError::invalid_input(
+                "qwen_vl: rgb length does not match height * width * 3",
+            ));
+        }
+        let (th, tw) = smart_resize(
+            h,
+            w,
+            self.factor(),
+            self.spec.min_pixels,
+            self.spec.max_pixels,
+        )?;
+        let resized;
+        let data = if (th, tw) != (h, w) {
+            resized = resize::resize_rgb(rgb, h, w, th, tw, self.spec.resample.into());
+            &resized
+        } else {
+            rgb.as_slice()
+        };
+        let grid = self.grid(th, tw);
+        let num_patches = grid[1] as usize * grid[2] as usize;
+        Ok(ProcessedItem {
+            modality: media.modality(),
+            feature_token_count: self.tokens_per_image(&grid),
+            feature: Tensor {
+                shape: vec![num_patches, self.patch_dim()],
+                data: TensorData::F32(self.patchify(data, th, tw)),
+            },
+            aux: vec![(
+                "image_grid_thw".to_string(),
+                Tensor {
+                    shape: vec![3],
+                    data: TensorData::I64(grid.iter().map(|&g| g as i64).collect()),
+                },
+            )],
+            geometry: Some(Geometry::Grid(grid)),
+        })
+    }
+
+    fn layout(&self, input_ids: &[i32], items: &[ProcessedItem]) -> Result<TokenLayout> {
+        let counts = items
+            .iter()
+            .map(|item| item.feature_token_count)
+            .collect::<Vec<_>>();
+        token_layout::layout_by_placeholder(input_ids, self.spec.image_token_id, &counts)
+    }
+
+    fn positions(
+        &self,
+        input_len: usize,
+        offsets: &[(u32, u32)],
+        items: &[ProcessedItem],
+    ) -> Result<PositionOutput> {
+        if offsets.len() != items.len() {
+            return Err(MmError::invalid_input(
+                "qwen_vl: offset and item counts differ",
+            ));
+        }
+        let mrope_items = offsets
+            .iter()
+            .zip(items)
+            .map(|(&(start, end), item)| match &item.geometry {
+                Some(Geometry::Grid(grid)) => Ok(MropeItem {
+                    start,
+                    end,
+                    grid: *grid,
+                }),
+                None => Err(MmError::invalid_input("qwen_vl: item is missing its grid")),
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let (positions, delta) = mrope_image_only(input_len, &mrope_items, self.spec.merge_size)?;
+        Ok(PositionOutput::MRope { positions, delta })
+    }
+}
+
+/// HF's `smart_resize`: round to multiples of `factor`, then adjust toward
+/// the pixel budget. Clamping thin images can exceed `max_pixels`.
+pub fn smart_resize(
+    height: usize,
+    width: usize,
+    factor: usize,
+    min_pixels: usize,
+    max_pixels: usize,
+) -> Result<(usize, usize)> {
+    if factor == 0 || min_pixels == 0 || min_pixels > max_pixels {
+        return Err(MmError::invalid_input(
+            "smart_resize: invalid factor or pixel bounds",
+        ));
+    }
+    let (h, w) = (height as f64, width as f64);
+    if height == 0 || width == 0 {
+        return Err(MmError::invalid_input("empty image"));
+    }
+    let ratio = h.max(w) / h.min(w);
+    if ratio > MAX_RATIO {
+        return Err(MmError::invalid_input(format!(
+            "absolute aspect ratio must be smaller than {MAX_RATIO}, got {ratio}"
+        )));
+    }
+    let f = factor as f64;
+    let mut h_bar = ((h / f).round_ties_even() * f) as usize;
+    let mut w_bar = ((w / f).round_ties_even() * f) as usize;
+    // Rounded metadata dimensions can have an area larger than usize::MAX.
+    let pixels = h_bar as u128 * w_bar as u128;
+    if pixels > max_pixels as u128 {
+        let beta = (h * w / max_pixels as f64).sqrt();
+        h_bar = (((h / beta / f).floor() * f) as usize).max(factor);
+        w_bar = (((w / beta / f).floor() * f) as usize).max(factor);
+    } else if pixels < min_pixels as u128 {
+        let beta = (min_pixels as f64 / (h * w)).sqrt();
+        h_bar = ((h * beta / f).ceil() * f) as usize;
+        w_bar = ((w * beta / f).ceil() * f) as usize;
+    }
+    Ok((h_bar, w_bar))
+}
+
+/// HF's video `smart_resize` (`Qwen3VLVideoProcessor`): like [`smart_resize`]
+/// but the pixel budget bounds the whole clip, `t_bar * h_bar * w_bar`, where
+/// `t_bar` is `num_frames` rounded to a multiple of `temporal_factor`. Frames
+/// smaller than `factor` are scaled up first, as HF does.
+pub fn smart_video_resize(
+    num_frames: usize,
+    height: usize,
+    width: usize,
+    temporal_factor: usize,
+    factor: usize,
+    min_pixels: usize,
+    max_pixels: usize,
+) -> Result<(usize, usize)> {
+    if factor == 0 || temporal_factor == 0 || min_pixels == 0 || min_pixels > max_pixels {
+        return Err(MmError::invalid_input(
+            "smart_video_resize: invalid factor or pixel bounds",
+        ));
+    }
+    if factor > u32::MAX as usize || temporal_factor > u32::MAX as usize {
+        return Err(MmError::invalid_input(
+            "smart_video_resize: factor out of range",
+        ));
+    }
+    if num_frames < temporal_factor {
+        return Err(MmError::invalid_input(format!(
+            "smart_video_resize: {num_frames} frames is fewer than temporal_factor {temporal_factor}"
+        )));
+    }
+    if height == 0 || width == 0 {
+        return Err(MmError::invalid_input("empty video frame"));
+    }
+    // Frame metadata can be untrusted; keep the u128 volumes below far from
+    // overflow (and the f64 conversions exact enough).
+    if height > u32::MAX as usize || width > u32::MAX as usize || num_frames > u32::MAX as usize {
+        return Err(MmError::invalid_input(
+            "smart_video_resize: frame count or dimensions out of range",
+        ));
+    }
+    let f = factor as f64;
+    let (mut h, mut w) = (height as f64, width as f64);
+    if height < factor || width < factor {
+        // `int(height * scale)`: truncate toward zero, as Python does.
+        let scale = (f / h).max(f / w);
+        h = (h * scale).trunc();
+        w = (w * scale).trunc();
+    }
+    let ratio = h.max(w) / h.min(w);
+    if ratio > MAX_RATIO {
+        return Err(MmError::invalid_input(format!(
+            "absolute aspect ratio must be smaller than {MAX_RATIO}, got {ratio}"
+        )));
+    }
+    let mut h_bar = ((h / f).round_ties_even() * f) as usize;
+    let mut w_bar = ((w / f).round_ties_even() * f) as usize;
+    let t_bar =
+        (num_frames as f64 / temporal_factor as f64).round_ties_even() as usize * temporal_factor;
+    let clip = (t_bar as u128)
+        .saturating_mul(h_bar as u128)
+        .saturating_mul(w_bar as u128);
+    // The unrounded clip volume; `h` and `w` are whole numbers here. HF divides
+    // exact integers, so past 2^53 the f64 quotients below would round
+    // differently: refuse rather than return a size that differs from HF.
+    let volume = (num_frames as u128)
+        .saturating_mul(h as u128)
+        .saturating_mul(w as u128);
+    if volume > 1 << 53 {
+        return Err(MmError::invalid_input(
+            "smart_video_resize: clip volume out of range",
+        ));
+    }
+    if clip > max_pixels as u128 {
+        let beta = (volume as f64 / max_pixels as f64).sqrt();
+        h_bar = (((h / beta / f).floor() * f) as usize).max(factor);
+        w_bar = (((w / beta / f).floor() * f) as usize).max(factor);
+    } else if clip < min_pixels as u128 {
+        let beta = (min_pixels as f64 / volume as f64).sqrt();
+        h_bar = ((h * beta / f).ceil() * f) as usize;
+        w_bar = ((w * beta / f).ceil() * f) as usize;
+    }
+    Ok((h_bar, w_bar))
+}
+
+/// The video processor type [`Qwen3VlVideo`] accepts.
+const QWEN3_VL_VIDEO_PROCESSOR: &str = "Qwen3VLVideoProcessor";
+/// Cosmos3-Edge's video processor: the same sizing, built for one temporal
+/// patch (it refuses any other `temporal_patch_size`).
+const COSMOS3_EDGE_VIDEO_PROCESSOR: &str = "Cosmos3EdgeVideoProcessor";
+
+/// Video sizing of HF's `Qwen3VLVideoProcessor`, deserialized from the
+/// model's `video_preprocessor_config.json` (unknown keys are ignored).
+///
+/// Deserializing fails unless `video_processor_type` is
+/// `Qwen3VLVideoProcessor` (or `Cosmos3EdgeVideoProcessor` with
+/// `temporal_patch_size` 1) and `size` gives both bounds. Video is never sized
+/// with a model's image bounds, which can differ (Qwen3-VL-8B: 65,536 to
+/// 16,777,216 pixels for images, 4,096 to 25,165,824 for a clip), or with the
+/// rules of Qwen2-VL and Qwen2.5-VL, which size video differently.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Deserialize)]
+#[serde(try_from = "RawQwen3VlVideo")]
+pub struct Qwen3VlVideo {
+    patch_size: usize,
+    merge_size: usize,
+    temporal_patch_size: usize,
+    /// `size["shortest_edge"]`: lower bound on the clip's pixels.
+    min_pixels: usize,
+    /// `size["longest_edge"]`: upper bound on the clip's pixels, and the
+    /// ceiling for any request budget.
+    max_pixels: usize,
+}
+
+/// The wire form of [`Qwen3VlVideo`], before validation.
+#[derive(serde::Deserialize)]
+struct RawQwen3VlVideo {
+    video_processor_type: String,
+    patch_size: usize,
+    merge_size: usize,
+    temporal_patch_size: usize,
+    size: RawVideoSize,
+    /// Must be absent or `true`: `false` skips resizing in HF.
+    #[serde(default)]
+    do_resize: Option<bool>,
+    /// Must be absent or `false`: `true` caps frames at `max_video_tokens`,
+    /// which this crate does not implement.
+    #[serde(default)]
+    cap_pixels_per_frame: Option<bool>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RawVideoSize {
+    shortest_edge: usize,
+    longest_edge: usize,
+}
+
+impl TryFrom<RawQwen3VlVideo> for Qwen3VlVideo {
+    type Error = MmError;
+
+    fn try_from(raw: RawQwen3VlVideo) -> Result<Self> {
+        match raw.video_processor_type.as_str() {
+            QWEN3_VL_VIDEO_PROCESSOR => {}
+            COSMOS3_EDGE_VIDEO_PROCESSOR if raw.temporal_patch_size == 1 => {}
+            other => {
+                return Err(MmError::unsupported(format!(
+                    "video processor {other} is not {QWEN3_VL_VIDEO_PROCESSOR} \
+                     (or {COSMOS3_EDGE_VIDEO_PROCESSOR} with temporal_patch_size 1)"
+                )));
+            }
+        }
+        if raw.do_resize == Some(false) || raw.cap_pixels_per_frame == Some(true) {
+            return Err(MmError::unsupported(
+                "video processor configs with do_resize = false or cap_pixels_per_frame = true are not supported",
+            ));
+        }
+        if raw.patch_size == 0 || raw.merge_size == 0 || raw.temporal_patch_size == 0 {
+            return Err(MmError::invalid_input(
+                "video processor patch, merge and temporal patch sizes must be at least 1",
+            ));
+        }
+        // `smart_video_resize` refuses factors above u32::MAX; refuse them here
+        // so a config that loads can always be resized.
+        let factor = raw.patch_size.checked_mul(raw.merge_size);
+        if factor.is_none_or(|f| f > u32::MAX as usize)
+            || raw.temporal_patch_size > u32::MAX as usize
+        {
+            return Err(MmError::invalid_input(
+                "video processor patch_size * merge_size and temporal_patch_size must fit in 32 bits",
+            ));
+        }
+        let size = raw.size;
+        if size.shortest_edge == 0 || size.shortest_edge > size.longest_edge {
+            return Err(MmError::invalid_input(format!(
+                "video processor size must have 0 < shortest_edge <= longest_edge, got {} and {}",
+                size.shortest_edge, size.longest_edge
+            )));
+        }
+        Ok(Self {
+            patch_size: raw.patch_size,
+            merge_size: raw.merge_size,
+            temporal_patch_size: raw.temporal_patch_size,
+            min_pixels: size.shortest_edge,
+            max_pixels: size.longest_edge,
+        })
+    }
+}
+
+impl Qwen3VlVideo {
+    /// Target `(height, width)` for each of `num_frames` sampled frames, as
+    /// HF's `Qwen3VLVideoProcessor` computes it.
+    ///
+    /// A request can only tighten the model's clip budget:
+    /// `budget.total_pixels` is clamped to the model's maximum, so a payload
+    /// cannot raise memory use above what the model config allows. The
+    /// model's minimum is lowered to the effective budget when a small
+    /// request would otherwise invert the bounds (HF does not validate this).
+    /// `max_pixels_per_frame` follows HF's `cap_pixels_per_frame`: a frame gets
+    /// at most the cap or its even share of the clip budget, whichever is
+    /// smaller, but never less than `1.05 * min_pixels`, so the cap can be
+    /// exceeded when it is below that floor. Unlike HF, the resulting clip
+    /// budget is clamped to the model's maximum: with many frames, HF's floor
+    /// can push it past `longest_edge`.
+    ///
+    /// The budget is the target of HF's algorithm, not a hard limit, and HF's
+    /// result can exceed it: dimensions round to the nearest multiple of the
+    /// factor, the frame count rounds to the temporal factor, a side never goes
+    /// below the factor (thin frames), and too-small clips round up to the
+    /// minimum. A budget under one `factor`-sized cell per frame is rejected.
+    pub fn resize(
+        &self,
+        num_frames: usize,
+        height: usize,
+        width: usize,
+        budget: &VideoPixelBudget,
+    ) -> Result<(usize, usize)> {
+        budget.validate()?;
+        if num_frames == 0 {
+            return Err(MmError::invalid_input("video has no sampled frames"));
+        }
+        // Checked for overflow when the config was read.
+        let factor = self.patch_size * self.merge_size;
+        let mut max_pixels = budget
+            .total_pixels
+            .map_or(self.max_pixels, |t| t.min(self.max_pixels));
+        let cell = factor.saturating_mul(factor).saturating_mul(num_frames);
+        if max_pixels < cell {
+            return Err(MmError::invalid_input(format!(
+                "video pixel budget {max_pixels} is below one {factor}x{factor} cell per frame for {num_frames} frames"
+            )));
+        }
+        let min_pixels = self.min_pixels.min(max_pixels);
+        if let Some(cap) = budget.max_pixels_per_frame {
+            let floor = (min_pixels as f64 * 1.05) as usize;
+            let per_frame = cap.min(max_pixels / num_frames).max(floor);
+            // HF lets the floor push the clip past `longest_edge`; a request
+            // never raises the model's maximum, so clamp it back.
+            max_pixels = per_frame.saturating_mul(num_frames).min(self.max_pixels);
+        }
+        smart_video_resize(
+            num_frames,
+            height,
+            width,
+            self.temporal_patch_size,
+            factor,
+            min_pixels,
+            max_pixels,
+        )
+    }
+}
+
+/// [`Qwen3VlVideo`] as the decoder's [`crate::video_decode::Fit`]: HF's
+/// `Qwen3VLVideoProcessor` sizing under a request budget, resampled as the
+/// torchvision-backed video processors do (bicubic on uint8 frames, before
+/// rescaling). Cosmos3-Nano / Super ship that processor unchanged, and
+/// Cosmos3-Edge the same sizing.
+#[cfg(feature = "video-decode")]
+#[derive(Clone, Copy, Debug)]
+pub struct Qwen3VlVideoFit<'a> {
+    pub video: &'a Qwen3VlVideo,
+    pub budget: VideoPixelBudget,
+}
+
+#[cfg(feature = "video-decode")]
+impl crate::video_decode::Fit for Qwen3VlVideoFit<'_> {
+    fn fit(&self, num_frames: usize, width: u32, height: u32) -> Result<(u32, u32)> {
+        let (h, w) =
+            self.video
+                .resize(num_frames, height as usize, width as usize, &self.budget)?;
+        let side = |v: usize| {
+            u32::try_from(v).map_err(|_| MmError::invalid_input("resized frame side out of range"))
+        };
+        Ok((side(w)?, side(h)?))
+    }
+
+    fn filter(&self) -> resize::Resample {
+        resize::Resample::AtenU8
+    }
+}
+
+/// Image-only M-RoPE (the image branch of `MRotaryEmbedding.get_rope_index`):
+/// text runs sequentially on all three rows, each image spans `(t, h/m, w/m)`
+/// index grids, and positions advance by the grid's max past an image.
+/// Returns row-major `[3, input_len]` positions and the delta
+/// (`max + 1 - input_len`). `items` must be in prompt order.
+pub fn mrope_image_only(
+    input_len: usize,
+    items: &[MropeItem],
+    merge_size: usize,
+) -> Result<(Vec<i64>, i64)> {
+    if merge_size == 0 {
+        return Err(MmError::invalid_input("mrope: merge_size must be positive"));
+    }
+    let len = input_len;
+    let mut pos = vec![0i64; 3 * len];
+    let fill_text = |st: usize, n: usize, base: i64, pos: &mut [i64]| {
+        for k in 0..n {
+            let v = base + k as i64;
+            pos[st + k] = v;
+            pos[len + st + k] = v;
+            pos[2 * len + st + k] = v;
+        }
+    };
+    let mut st = 0usize;
+    let mut next_pos = 0i64;
+    for item in items {
+        let (start, end) = (item.start as usize, item.end as usize);
+        if start < st || end < start || end >= len {
+            return Err(MmError::invalid_input(format!(
+                "mrope: item range ({start},{end}) out of order/bounds"
+            )));
+        }
+        fill_text(st, start - st, next_pos, &mut pos);
+        next_pos += (start - st) as i64;
+
+        if item.grid[0] != 1
+            || !(item.grid[1] as usize).is_multiple_of(merge_size)
+            || !(item.grid[2] as usize).is_multiple_of(merge_size)
+        {
+            return Err(MmError::invalid_input("mrope: invalid image grid"));
+        }
+        let gh = item.grid[1] as usize / merge_size;
+        let gw = item.grid[2] as usize / merge_size;
+        if gh * gw != end - start + 1 {
+            return Err(MmError::invalid_input(
+                "mrope: token span does not match grid",
+            ));
+        }
+        for hi in 0..gh {
+            for wi in 0..gw {
+                let idx = start + hi * gw + wi;
+                pos[idx] = next_pos;
+                pos[len + idx] = next_pos + hi as i64;
+                pos[2 * len + idx] = next_pos + wi as i64;
+            }
+        }
+        next_pos += gh.max(gw) as i64;
+        st = end + 1;
+    }
+    if st < len {
+        fill_text(st, len - st, next_pos, &mut pos);
+    }
+    let max = pos.iter().copied().max().unwrap_or(-1);
+    Ok((pos, max + 1 - len as i64))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::processor::Modality;
+
+    fn valid_spec() -> QwenVlSpec {
+        QwenVlSpec {
+            image_token_id: 0,
+            patch_size: 14,
+            merge_size: 2,
+            temporal_patch_size: 2,
+            min_pixels: 56 * 56,
+            max_pixels: 28 * 28 * 1280,
+            image_mean: [0.481_454_66, 0.457_827_5, 0.408_210_73],
+            image_std: [0.268_629_54, 0.261_302_6, 0.275_777_1],
+            resample: Resampler::AtenU8,
+        }
+    }
+
+    fn tiny_spec() -> QwenVlSpec {
+        QwenVlSpec {
+            image_token_id: 1,
+            patch_size: 2,
+            merge_size: 2,
+            temporal_patch_size: 2,
+            min_pixels: 4,
+            max_pixels: 1 << 30,
+            image_mean: [0.0; 3],
+            image_std: [1.0; 3],
+            resample: Resampler::default(),
+        }
+    }
+
+    #[test]
+    fn rejects_overflowing_spec_dimensions() {
+        for (patch_size, merge_size, temporal_patch_size) in [
+            (usize::MAX, 2, 1),         // Resize factor overflows.
+            (1, usize::MAX, 1),         // Merge area overflows.
+            (1, 1, usize::MAX / 3 + 1), // Flattened patch dimension overflows.
+        ] {
+            let mut spec = valid_spec();
+            spec.patch_size = patch_size;
+            spec.merge_size = merge_size;
+            spec.temporal_patch_size = temporal_patch_size;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_pixel_bounds() {
+        for (min_pixels, max_pixels) in [(0, 1), (2, 1)] {
+            let mut spec = valid_spec();
+            spec.min_pixels = min_pixels;
+            spec.max_pixels = max_pixels;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_image_std() {
+        for invalid_std in [0.0, -1.0, f32::NAN, f32::INFINITY] {
+            let mut spec = valid_spec();
+            spec.image_std[1] = invalid_std;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn rejects_non_finite_image_mean() {
+        for invalid_mean in [f32::NAN, f32::INFINITY] {
+            let mut spec = valid_spec();
+            spec.image_mean[1] = invalid_mean;
+
+            assert!(matches!(
+                QwenVlProcessor::new(spec),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    /// The fused and unfused normalize forms are not interchangeable: with
+    /// mean = std = 0.5 they disagree on 128 of the 256 u8 inputs, so picking
+    /// the wrong one silently costs bit-exactness with the HF processor.
+    #[test]
+    fn normalize_lut_differs_per_resampler() {
+        let pil = normalize_lut(Resampler::Pil, 0.5, 0.5);
+        let aten = normalize_lut(Resampler::AtenU8, 0.5, 0.5);
+        assert_eq!(pil.iter().zip(aten).filter(|(p, a)| *p != a).count(), 128);
+        // Both still span [-1, 1] — this is rounding, not a scale error.
+        for lut in [pil, aten] {
+            assert_eq!(lut[0], -1.0);
+            assert_eq!(lut[255], 1.0);
+        }
+    }
+
+    #[test]
+    fn smart_resize_matches_python_reference() {
+        // Values from the Python `smart_resize` (qwen_vl.py) run offline.
+        assert_eq!(
+            smart_resize(1365, 2048, 28, 3136, 12845056).unwrap(),
+            (1372, 2044)
+        );
+        assert_eq!(
+            smart_resize(100, 100, 28, 3136, 12845056).unwrap(),
+            (112, 112)
+        );
+        // Downscale branch: 4000x3000 exceeds 1280*28*28 → floor_by_factor.
+        assert_eq!(
+            smart_resize(3000, 4000, 28, 3136, 1003520).unwrap(),
+            (840, 1148)
+        );
+        // Upscale branch: tiny image below min_pixels → ceil_by_factor.
+        assert_eq!(smart_resize(20, 20, 28, 3136, 12845056).unwrap(), (56, 56));
+        // Qwen3.5 factors (patch 16 * merge 2, min 65536, max 16777216).
+        assert_eq!(
+            smart_resize(1365, 2048, 32, 65536, 16777216).unwrap(),
+            (1376, 2048)
+        );
+        // Banker's rounding tie: 48/32 = 1.5 rounds to 2 (even), not 1.
+        assert_eq!(smart_resize(4000, 48, 32, 4, 1 << 30).unwrap(), (4000, 64));
+        // Extreme aspect ratio rejected.
+        assert!(smart_resize(10000, 10, 28, 3136, 12845056).is_err());
+    }
+
+    #[test]
+    fn smart_resize_thin_images_match_hf() {
+        assert_eq!(smart_resize(10, 2000, 28, 3136, 3136).unwrap(), (28, 812));
+        assert_eq!(smart_resize(28, 5600, 28, 3136, 3136).unwrap(), (28, 784));
+    }
+
+    /// Qwen3-VL-8B-Instruct's `video_preprocessor_config.json`, verbatim.
+    const QWEN3_VL_8B_VIDEO_CONFIG: &str = r#"{
+        "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+        "patch_size": 16,
+        "temporal_patch_size": 2,
+        "merge_size": 2,
+        "image_mean": [0.5, 0.5, 0.5],
+        "image_std": [0.5, 0.5, 0.5],
+        "processor_class": "Qwen3VLProcessor",
+        "video_processor_type": "Qwen3VLVideoProcessor"
+    }"#;
+
+    /// Qwen3-VL's factors with the given clip bounds.
+    fn qwen3_video(min_pixels: usize, max_pixels: usize) -> Qwen3VlVideo {
+        Qwen3VlVideo {
+            patch_size: 16,
+            merge_size: 2,
+            temporal_patch_size: 2,
+            min_pixels,
+            max_pixels,
+        }
+    }
+
+    fn default_video() -> Qwen3VlVideo {
+        qwen3_video(65536, 16_777_216)
+    }
+
+    #[test]
+    fn video_bounds_come_from_the_video_processor_config() {
+        let video: Qwen3VlVideo = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        assert_eq!(video, qwen3_video(4096, 25_165_824));
+        // HF's smart_resize for these bounds; the model's image bounds
+        // (65,536 to 16,777,216) would give (512, 960) instead.
+        let none = VideoPixelBudget::default();
+        assert_eq!(video.resize(32, 1080, 1920, &none).unwrap(), (640, 1152));
+    }
+
+    #[test]
+    fn other_video_processors_and_incomplete_configs_are_refused() {
+        let config: serde_json::Value = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        let with = |key: &str, value: serde_json::Value| {
+            let mut c = config.clone();
+            c[key] = value;
+            c
+        };
+        let without = |key: &str| {
+            let mut c = config.clone();
+            c.as_object_mut().unwrap().remove(key);
+            c
+        };
+        let refused = [
+            // Another generation's processor, and an image processor config.
+            with("video_processor_type", "Qwen2VLVideoProcessor".into()),
+            without("video_processor_type"),
+            without("size"),
+            with("size", serde_json::json!({"longest_edge": 25165824})),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 4096, "shortest_edge": 8192}),
+            ),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 4096, "shortest_edge": 0}),
+            ),
+            with("merge_size", 0.into()),
+            with("patch_size", usize::MAX.into()),
+            // No overflow, but past the 32 bits smart_video_resize accepts:
+            // the config would load and then never resize.
+            with("patch_size", (1u64 << 31).into()),
+            with("temporal_patch_size", (1u64 << 32).into()),
+            // Settings that change HF's sizing in ways not implemented here.
+            with("do_resize", false.into()),
+            with("cap_pixels_per_frame", true.into()),
+            with(
+                "size",
+                serde_json::json!({"longest_edge": 25165824, "shortest_edge": 4096, "max_pixels": 1}),
+            ),
+        ];
+        for c in refused {
+            assert!(
+                serde_json::from_value::<Qwen3VlVideo>(c.clone()).is_err(),
+                "{c}"
+            );
+        }
+        // Their defaults, spelled out, are fine.
+        let mut explicit = with("do_resize", true.into());
+        explicit["cap_pixels_per_frame"] = false.into();
+        assert!(serde_json::from_value::<Qwen3VlVideo>(explicit).is_ok());
+        let r = serde_json::from_value::<Qwen3VlVideo>(with(
+            "video_processor_type",
+            "Qwen2VLVideoProcessor".into(),
+        ));
+        assert!(r.is_err_and(|e| e.to_string().contains("is not Qwen3VLVideoProcessor")));
+    }
+
+    #[test]
+    fn cosmos3_edge_video_processor_is_the_same_sizing_with_one_temporal_patch() {
+        // Cosmos3-Edge's video_preprocessor_config.json: HF's
+        // Cosmos3EdgeVideoProcessor runs Qwen3-VL's smart_resize with
+        // temporal_patch_size 1 (it refuses any other value).
+        let edge: serde_json::Value = serde_json::json!({
+            "image_mean": [0.5, 0.5, 0.5], "image_std": [0.5, 0.5, 0.5],
+            "merge_size": 2, "patch_size": 16, "processor_class": "Cosmos3EdgeProcessor",
+            "return_metadata": true,
+            "size": {"longest_edge": 25165824, "shortest_edge": 4096},
+            "temporal_patch_size": 1, "video_processor_type": "Cosmos3EdgeVideoProcessor"
+        });
+        let video: Qwen3VlVideo = serde_json::from_value(edge.clone()).unwrap();
+        assert_eq!(video.temporal_patch_size, 1);
+        // 20 frames of 720p: 1280x704 as HF's formula gives (t_bar = 20).
+        let none = VideoPixelBudget::default();
+        assert_eq!(video.resize(20, 720, 1280, &none).unwrap(), (704, 1280));
+        let mut two = edge;
+        two["temporal_patch_size"] = 2.into();
+        assert!(serde_json::from_value::<Qwen3VlVideo>(two).is_err());
+    }
+
+    #[test]
+    fn video_request_budget_cannot_exceed_the_model_maximum() {
+        let video = default_video();
+        let huge = VideoPixelBudget {
+            total_pixels: Some(usize::MAX),
+            max_pixels_per_frame: None,
+        };
+        let base = video
+            .resize(32, 2160, 3840, &VideoPixelBudget::default())
+            .unwrap();
+        assert_eq!(video.resize(32, 2160, 3840, &huge).unwrap(), base);
+    }
+
+    #[test]
+    fn video_budget_below_one_cell_per_frame_is_rejected() {
+        let video = default_video();
+        let tiny = VideoPixelBudget {
+            total_pixels: Some(1_000),
+            max_pixels_per_frame: Some(10),
+        };
+        assert!(video.resize(8, 1080, 1920, &tiny).is_err());
+        // Exactly one 32x32 cell per frame is the smallest accepted budget.
+        let edge = VideoPixelBudget {
+            total_pixels: Some(8 * 32 * 32),
+            max_pixels_per_frame: None,
+        };
+        assert_eq!(video.resize(8, 1080, 1920, &edge).unwrap(), (32, 32));
+    }
+
+    #[test]
+    fn video_budget_is_a_target_that_hf_rounding_can_overshoot() {
+        // Pinned from HF's own function (see tests/video_golden.rs): the budget
+        // steers the algorithm but is not enforced afterwards.
+        let video = default_video();
+        let one_point_three = VideoPixelBudget {
+            total_pixels: Some(1_300_000),
+            max_pixels_per_frame: None,
+        };
+        // 5 frames round to t_bar = 4, so 4 * 480 * 640 fits; the real clip is 5 frames.
+        let (h, w) = video.resize(5, 480, 640, &one_point_three).unwrap();
+        assert_eq!((h, w), (480, 640));
+        assert!(5 * h * w > 1_300_000);
+    }
+
+    #[test]
+    fn video_request_total_below_the_minimum_lowers_the_minimum() {
+        // A 3 MP budget under a 4 MP minimum would invert the bounds; the
+        // minimum drops to 3 MP. HF's smart_resize with min = max = 3,000,000
+        // gives (640, 1152).
+        let video = qwen3_video(4_000_000, 16_777_216);
+        let budget = VideoPixelBudget {
+            total_pixels: Some(3_000_000),
+            max_pixels_per_frame: None,
+        };
+        assert_eq!(video.resize(4, 1080, 1920, &budget).unwrap(), (640, 1152));
+        // Small frames take the scale-up branch, which reads the minimum:
+        // HF gives (768, 1024) for a 3,000,000 minimum, (256, 320) for 1.
+        assert_eq!(video.resize(4, 240, 320, &budget).unwrap(), (768, 1024));
+    }
+
+    #[test]
+    fn a_per_frame_cap_never_raises_the_clip_past_the_model_maximum() {
+        // 18,000 frames: HF's 1.05 * min floor (4,300 px a frame) times the
+        // frame count is about 77M, three times Qwen3-VL-8B's 25,165,824.
+        // Clamped, the cap changes nothing; HF's own result for these bounds
+        // without a cap is (32, 32).
+        let video: Qwen3VlVideo = serde_json::from_str(QWEN3_VL_8B_VIDEO_CONFIG).unwrap();
+        let capped = VideoPixelBudget {
+            total_pixels: None,
+            max_pixels_per_frame: Some(1_000),
+        };
+        assert_eq!(video.resize(18_000, 1080, 1920, &capped).unwrap(), (32, 32));
+    }
+
+    #[test]
+    fn video_resize_rejects_empty_input_and_bad_budgets() {
+        let video = default_video();
+        let none = VideoPixelBudget::default();
+        assert!(video.resize(0, 480, 640, &none).is_err());
+        assert!(video.resize(8, 0, 640, &none).is_err());
+        let zero = VideoPixelBudget {
+            total_pixels: Some(0),
+            max_pixels_per_frame: None,
+        };
+        assert!(video.resize(8, 480, 640, &zero).is_err());
+    }
+
+    #[test]
+    fn video_sampling_and_resize_compose() {
+        // fps=0.1 on 5 s samples 1 frame (floor 1); HF's smart_resize needs at
+        // least `temporal_factor` frames, so the pair errors cleanly instead of
+        // producing a size for a clip the processor cannot patchify.
+        use crate::video::{VideoOptions, resolve_num_frames};
+        let options = VideoOptions {
+            fps: Some(0.1),
+            ..Default::default()
+        };
+        let n = resolve_num_frames(&options, 5.0, 150).unwrap();
+        assert_eq!(n, 1);
+        let none = VideoPixelBudget::default();
+        assert!(default_video().resize(n as usize, 480, 640, &none).is_err());
+    }
+
+    #[test]
+    fn smart_video_resize_rejects_out_of_range_input() {
+        assert!(smart_video_resize(8, usize::MAX, 640, 2, 32, 1, 1 << 30).is_err());
+        assert!(smart_video_resize(usize::MAX, 480, 640, 2, 32, 1, 1 << 30).is_err());
+        // An enormous factor must not overflow the volume arithmetic.
+        assert!(smart_video_resize(2, 1, 1, 2, usize::MAX, 1, usize::MAX).is_err());
+        assert!(smart_video_resize(2, 1, 1, 2, u32::MAX as usize, 1, usize::MAX).is_err());
+    }
+
+    #[test]
+    fn smart_video_resize_rejects_volumes_past_exact_f64_division() {
+        // HF divides exact integers; beyond 2^53 f64 quotients can differ, so
+        // this input (HF returns (60_000_000, 60_000_000)) is refused.
+        assert!(
+            smart_video_resize(3, 60_000_000, 60_000_000, 2, 32, 1, 10_799_999_999_999_997)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn num_media_tokens_handles_large_dimensions() {
+        let proc = QwenVlProcessor::new(QwenVlSpec {
+            patch_size: 16,
+            min_pixels: 65536,
+            max_pixels: 16777216,
+            ..valid_spec()
+        })
+        .unwrap();
+        // Rounding these dimensions to factor 32 gives an area of 2^64.
+        // HF downsizes to 4096x4096, producing 16384 merged image tokens.
+        assert_eq!(
+            proc.num_media_tokens(&MediaMetadata::Image {
+                width: u32::MAX,
+                height: u32::MAX,
+            })
+            .unwrap(),
+            16384
+        );
+    }
+
+    /// The consumer's message layer gates modalities on what a family
+    /// declares, so a family gaining video/audio support must not silently
+    /// inherit the images-only default.
+    #[test]
+    fn qwen_declares_images_only() {
+        let caps = QwenVlProcessor::new(tiny_spec()).unwrap().capabilities();
+        assert!(caps.supports(Modality::Image));
+        assert!(!caps.supports(Modality::Video) && !caps.supports(Modality::Audio));
+    }
+
+    /// Routers must get the exact expanded token count from header metadata
+    /// alone — the §2.3 example: 100×76 → 112×84 → 6×8 grid → 12 tokens.
+    #[test]
+    fn num_media_tokens_matches_process_item() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        let counted = proc
+            .num_media_tokens(&MediaMetadata::Image {
+                width: 100,
+                height: 76,
+            })
+            .unwrap();
+        assert_eq!(counted, 12);
+
+        let item = proc
+            .process_item(&DecodedMedia::Image {
+                rgb: vec![7u8; 76 * 100 * 3],
+                height: 76,
+                width: 100,
+            })
+            .unwrap();
+        assert_eq!(item.feature_token_count, counted);
+        assert_eq!(item.feature.shape, vec![48, 1176]);
+    }
+
+    #[test]
+    fn process_item_rejects_mismatched_rgb_length() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        // 112x84 needs no resize, so a short buffer would reach patchify.
+        for len in [112 * 84 * 3 - 1, 112 * 84 * 3 + 3] {
+            assert!(matches!(
+                proc.process_item(&DecodedMedia::Image {
+                    rgb: vec![7u8; len],
+                    height: 112,
+                    width: 84,
+                }),
+                Err(MmError::InvalidInput { .. })
+            ));
+        }
+    }
+
+    #[test]
+    fn positions_reject_unpaired_items() {
+        let proc = QwenVlProcessor::new(valid_spec()).unwrap();
+        let item = proc
+            .process_item(&DecodedMedia::Image {
+                rgb: vec![7u8; 76 * 100 * 3],
+                height: 76,
+                width: 100,
+            })
+            .unwrap();
+        assert!(matches!(
+            proc.positions(16, &[], &[item]),
+            Err(MmError::InvalidInput { .. })
+        ));
+    }
+
+    #[test]
+    fn patchify_layout_matches_hf_order() {
+        // 4x8 image, ps=2, m=2, tps=2 → gh=2, gw=4, dim=3*2*2*2=24.
+        // Pixel value encodes its (y, x): v = y*16 + x*2 (fits u8).
+        let (h, w) = (4usize, 8usize);
+        let mut rgb = vec![0u8; h * w * 3];
+        for y in 0..h {
+            for x in 0..w {
+                for c in 0..3 {
+                    rgb[(y * w + x) * 3 + c] = (y * 16 + x * 2 + c) as u8;
+                }
+            }
+        }
+        let proc = QwenVlProcessor::new(tiny_spec()).unwrap();
+        let pv = proc.patchify(&rgb, h, w);
+        let dim = 24; // 3 * tps * ps * ps
+        assert_eq!(pv.len(), 2 * 4 * dim);
+
+        // Patch order (gh/m=1, gw/m=2, m, m): patch 0 = block(0,0) offset (0,0),
+        // patch 1 = (0,0)+(0,1) → x0=2, patch 2 = (0,0)+(1,0) → y0=2,
+        // patch 4 = block(0,1) → x0=4.
+        let lut = |y: usize, x: usize, c: usize| ((y * 16 + x * 2 + c) as f32) / 255.0;
+        // patch 1, channel 0, t=0, (py=0, px=0) → pixel (0, 2).
+        assert_eq!(pv[dim], lut(0, 2, 0));
+        // patch 2, channel 0, t=0, (0,0) → pixel (2, 0).
+        assert_eq!(pv[2 * dim], lut(2, 0, 0));
+        // patch 4, channel 0 → pixel (0, 4).
+        assert_eq!(pv[4 * dim], lut(0, 4, 0));
+        // Temporal duplicate: t=1 block equals t=0 block.
+        let ps2 = 4; // ps*ps
+        assert_eq!(pv[dim + ps2], pv[dim]);
+        // Channel 1 block of patch 0 → same pixel, c=1.
+        assert_eq!(pv[2 * ps2], lut(0, 0, 1)); // c stride = tps*ps*ps = 8
+    }
+
+    #[test]
+    fn mrope_image_only_matches_reference() {
+        // 3 text tokens, image of grid [1, 4, 6] (m=2 → 2x3 = 6 tokens), 2 text.
+        // input: [T T T I I I I I I T T], len 11.
+        let items = [MropeItem {
+            start: 3,
+            end: 8,
+            grid: [1, 4, 6],
+        }];
+        let (pos, delta) = mrope_image_only(11, &items, 2).unwrap();
+        let len = 11;
+        // Text prefix 0..3: all rows 0,1,2.
+        for k in 0..3 {
+            assert_eq!(
+                (pos[k], pos[len + k], pos[2 * len + k]),
+                (k as i64, k as i64, k as i64)
+            );
+        }
+        // Image tokens: t=0, h in 0..2, w in 0..3, +3 offset.
+        assert_eq!((pos[3], pos[len + 3], pos[2 * len + 3]), (3, 3, 3));
+        assert_eq!((pos[4], pos[len + 4], pos[2 * len + 4]), (3, 3, 4));
+        assert_eq!((pos[6], pos[len + 6], pos[2 * len + 6]), (3, 4, 3));
+        // Text tail resumes at 3 + max(1,2,3) = 6.
+        assert_eq!((pos[9], pos[len + 9], pos[2 * len + 9]), (6, 6, 6));
+        assert_eq!((pos[10], pos[len + 10], pos[2 * len + 10]), (7, 7, 7));
+        // delta = max + 1 - len = 7 + 1 - 11.
+        assert_eq!(delta, -3);
+    }
+
+    #[test]
+    fn mrope_rejects_invalid_geometry() {
+        for (start, end, grid, merge) in [
+            (2, 1, [1, 2, 2], 2),
+            (0, 0, [1, 2, 2], 0),
+            (0, 0, [1, 3, 2], 2),
+            (0, 1, [2, 2, 2], 2),
+        ] {
+            assert!(mrope_image_only(3, &[MropeItem { start, end, grid }], merge).is_err());
+        }
+    }
+}

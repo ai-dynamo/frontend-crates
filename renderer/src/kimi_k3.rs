@@ -55,11 +55,15 @@ impl KimiK3Formatter {
         }
     }
 
-    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<Vec<RenderedSegment>> {
-        let messages = json_value(req.messages()).context("Failed to convert K3 messages")?;
-        let messages = messages
-            .as_array()
-            .context("Kimi K3 messages must be an array")?;
+    /// Render the conversation into segments, also returning how many trailing
+    /// segments form the assistant generation stub (`<|open|>think<|sep|>` or
+    /// `<|open|>response<|sep|>`). Moonshot's K3 API feeds that stub to the
+    /// model but excludes it from reported `usage.prompt_tokens`.
+    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<ChatSegments> {
+        let messages = crate::messages_to_json(req).context("Failed to convert K3 messages")?;
+        let Value::Array(messages) = messages else {
+            anyhow::bail!("Kimi K3 messages must be an array");
+        };
         let messages = normalize_tool_result_messages(messages)?;
 
         let tool_choice = req.tool_choice().map(json_value).transpose()?;
@@ -118,11 +122,25 @@ impl OAIPromptFormatter for KimiK3Formatter {
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?).into_text())
+        Ok(self.build_segments(req)?.into_prompt().into_text())
     }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
-        Ok(RenderedPrompt::segmented(self.build_segments(req)?))
+        Ok(self.build_segments(req)?.into_prompt())
+    }
+}
+
+struct ChatSegments {
+    segments: Vec<RenderedSegment>,
+    /// Trailing segments that open the assistant channel for generation.
+    /// Zero when no generation prompt was added or a partial assistant
+    /// message is being continued.
+    pending_segments: usize,
+}
+
+impl ChatSegments {
+    fn into_prompt(self) -> RenderedPrompt {
+        RenderedPrompt::segmented_with_pending(self.segments, self.pending_segments)
     }
 }
 
@@ -619,7 +637,9 @@ fn render_think_channel(
         .transpose()?;
 
     open_tag(segments, "think", []);
-    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.trim().is_empty()) {
+    // Match encoding_k3.py: only an empty string means "no reasoning", so
+    // whitespace-only reasoning is still rendered.
+    if let Some(reasoning) = reasoning.filter(|reasoning| !reasoning.is_empty()) {
         text(segments, reasoning);
     }
     close_tag(segments, "think");
@@ -750,51 +770,43 @@ fn tool_call_index(tool_calls: Option<&Value>) -> HashMap<String, (usize, Option
     index
 }
 
-fn normalize_tool_result_messages(messages: &[Value]) -> Result<Vec<Value>> {
+fn normalize_tool_result_messages(messages: Vec<Value>) -> Result<Vec<Value>> {
     let mut output = Vec::with_capacity(messages.len());
     let mut current_index = HashMap::new();
-    let mut position = 0;
+    let mut messages = messages.into_iter().peekable();
 
-    while position < messages.len() {
-        let message = &messages[position];
+    while let Some(message) = messages.peek() {
         let role = message.get("role").and_then(Value::as_str);
         if role == Some("assistant") {
             current_index = tool_call_index(message.get("tool_calls"));
-            output.push(message.clone());
-            position += 1;
+            output.push(messages.next().expect("peeked message"));
             continue;
         }
         if role != Some("tool") {
-            output.push(message.clone());
-            position += 1;
+            output.push(messages.next().expect("peeked message"));
             continue;
         }
 
         let mut run: Vec<(Option<usize>, usize, Value, Option<String>)> = Vec::new();
         let mut unresolved = false;
         let mut offset = 0;
-        while position < messages.len()
-            && messages[position].get("role").and_then(Value::as_str) == Some("tool")
+        while messages
+            .peek()
+            .is_some_and(|message| message.get("role").and_then(Value::as_str) == Some("tool"))
         {
-            let tool_message = &messages[position];
+            let tool_message = messages.next().expect("peeked tool message");
             let call_id = tool_message
                 .get("tool_call_id")
                 .or_else(|| tool_message.get("id"))
                 .and_then(Value::as_str);
             let matched = call_id.and_then(|id| current_index.get(id));
             if let Some((tool_position, name)) = matched {
-                run.push((
-                    Some(*tool_position),
-                    offset,
-                    tool_message.clone(),
-                    name.clone(),
-                ));
+                run.push((Some(*tool_position), offset, tool_message, name.clone()));
             } else {
                 unresolved = true;
-                run.push((None, offset, tool_message.clone(), None));
+                run.push((None, offset, tool_message, None));
             }
             offset += 1;
-            position += 1;
         }
 
         if unresolved {
@@ -825,8 +837,9 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-) -> Result<Vec<RenderedSegment>> {
+) -> Result<ChatSegments> {
     let mut segments = Vec::new();
+    let mut pending_segments = 0usize;
     let mut previous_tool_calls: Option<&Value> = None;
     let mut tool_index = 0usize;
 
@@ -1039,14 +1052,22 @@ fn build_chat_segments(
             "message",
             [("role".to_string(), "assistant".to_string())],
         );
+        // Only the channel-opening tag is the "pending" stub under Moonshot's
+        // accounting; the assistant message header above still counts as
+        // prompt. Measure it rather than assuming its segment count.
+        let before_channel_tag = segments.len();
         open_tag(
             &mut segments,
             if thinking { "think" } else { "response" },
             [],
         );
+        pending_segments = segments.len() - before_channel_tag;
     }
 
-    Ok(segments)
+    Ok(ChatSegments {
+        segments,
+        pending_segments,
+    })
 }
 
 #[cfg(test)]
@@ -2046,6 +2067,34 @@ mod tests {
     }
 
     #[test]
+    fn tool_result_order_preserves_unresolved_runs() {
+        let assistant = json!({"role": "assistant", "tool_calls": [
+            {"id": "first", "function": {"name": "one"}},
+            {"id": "second", "function": {"name": "two"}}
+        ]});
+        let second =
+            json!({"role": "tool", "tool_call_id": "second", "content": "第二", "name": "old"});
+        let first = json!({"role": "tool", "tool_call_id": "first", "content": "第一"});
+        let sorted =
+            normalize_tool_result_messages(vec![assistant.clone(), second.clone(), first]).unwrap();
+        assert_eq!(sorted[1]["content"], "第一");
+        assert_eq!(sorted[1]["tool"], "one");
+        assert_eq!(sorted[2]["content"], "第二");
+        assert_eq!(sorted[2]["tool"], "two");
+        assert_eq!(sorted[2]["name"], "two");
+
+        let unresolved = vec![
+            assistant,
+            second,
+            json!({"role": "tool", "tool_call_id": "unknown", "content": "keep order"}),
+        ];
+        assert_eq!(
+            normalize_tool_result_messages(unresolved.clone()).unwrap(),
+            unresolved
+        );
+    }
+
+    #[test]
     fn thinking_history_renders_an_empty_think_channel() {
         let request = Request::new(json!([
             {"role": "user", "content": "question"},
@@ -2135,5 +2184,112 @@ mod tests {
             "{\"a\": 1, \"b\": [true, false]}",
             "<|close|>argument<|sep|>"
         )));
+    }
+
+    #[test]
+    fn assistant_history_keeps_whitespace_only_reasoning() {
+        let request = Request::new(json!([
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "reasoning_content": "\n\n", "content": "Hi"},
+            {"role": "user", "content": "Again"}
+        ]));
+        let rendered = fmt().render(&request).unwrap();
+
+        assert!(
+            rendered.contains("<|open|>think<|sep|>\n\n<|close|>think<|sep|>"),
+            "whitespace-only reasoning must be rendered like encoding_k3.py"
+        );
+    }
+
+    fn pending_texts(prompt: &RenderedPrompt) -> Vec<String> {
+        let segments = prompt.segments().unwrap();
+        segments[segments.len() - prompt.pending_segments()..]
+            .iter()
+            .map(|segment| segment.text.clone())
+            .collect()
+    }
+
+    #[test]
+    fn non_thinking_generation_stub_is_reported_as_pending_segments() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "response", "<|sep|>"]);
+        // The assistant message header stays part of the prompt proper.
+        let pending = prompt.pending_encode_segments().unwrap();
+        assert_eq!(pending.len(), 3);
+        assert!(pending[0].allow_special, "open marker is a control token");
+        assert!(!pending[1].allow_special, "channel name is ordinary text");
+        assert!(pending[2].allow_special, "sep marker is a control token");
+        assert!(prompt.as_str().ends_with(concat!(
+            "<|open|>message role=\"assistant\"<|sep|>",
+            "<|open|>response<|sep|>"
+        )));
+    }
+
+    #[test]
+    fn thinking_generation_stub_is_reported_as_pending_segments() {
+        let request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "think", "<|sep|>"]);
+    }
+
+    #[test]
+    fn response_format_instructions_are_prompt_not_pending() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        request.response_format = Some(json!({
+            "type": "json_schema",
+            "json_schema": {
+                "name": "capital_answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {"capital": {"type": "boolean"}},
+                    "required": ["capital"],
+                    "additionalProperties": false
+                }
+            }
+        }));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 3);
+        assert_eq!(pending_texts(&prompt), ["<|open|>", "response", "<|sep|>"]);
+        let stub_start = prompt.as_str().len() - "<|open|>response<|sep|>".len();
+        let schema_at = prompt
+            .as_str()
+            .find("type=\"response-format\"")
+            .expect("response_format renders a system message");
+        assert!(
+            schema_at < stub_start,
+            "schema instructions precede the stub"
+        );
+    }
+
+    #[test]
+    fn no_generation_prompt_has_no_pending_segments() {
+        let mut request = Request::new(json!([{"role": "user", "content": "Hello"}]));
+        request.add_generation_prompt = false;
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 0);
+        assert!(prompt.pending_encode_segments().unwrap().is_empty());
+        assert!(prompt.as_str().ends_with("<|end_of_msg|>"));
+    }
+
+    #[test]
+    fn partial_assistant_continuation_has_no_pending_segments() {
+        let mut request = Request::new(json!([
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi", "partial": true}
+        ]));
+        request
+            .args
+            .insert("thinking".to_string(), Value::Bool(false));
+        let prompt = fmt().render_prompt(&request).unwrap();
+        assert_eq!(prompt.pending_segments(), 0);
     }
 }

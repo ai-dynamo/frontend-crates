@@ -7,8 +7,16 @@ use std::collections::HashMap;
 
 use chrono::{DateTime, Local};
 use either::Either;
-use minijinja::{Error, ErrorKind, Value, value::Kwargs};
+use std::borrow::Cow;
+
+use minijinja::value::{Kwargs, StringInput, from_args};
+use minijinja::{Error, ErrorKind, Output, State, Value, escape_formatter};
 use serde::{Deserialize, Serialize};
+
+use crate::python::{
+    PyFloats, PyJsonFormatter, is_python_space, python_float_repr, python_split_whitespace,
+    python_splitlines,
+};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
@@ -111,38 +119,109 @@ pub struct GenerationConfig {
     eos_token_id: Either<u32, Vec<u32>>,
 }
 
-/// Formatter matching Python `json.dumps` default separators (`", "` and
-/// `": "`). serde_json's `CompactFormatter` writes `","`/`":"` instead, and
-/// chat templates embed these strings directly into the prompt, so the
-/// separator choice is model-visible.
-struct PyJsonFormatter;
-
-impl serde_json::ser::Formatter for PyJsonFormatter {
-    fn begin_array_value<W>(&mut self, writer: &mut W, first: bool) -> std::io::Result<()>
-    where
-        W: ?Sized + std::io::Write,
-    {
-        if !first {
-            writer.write_all(b", ")?;
-        }
-        Ok(())
+/// Python `str` of a non-integer float (`1e-06`, `1e+16`, `nan`); minijinja never uses
+/// an exponent (`0.000001`, `10000000000000000.0`) and prints `NaN`. `None` for every
+/// other value.
+fn python_float_str(value: &Value) -> Option<String> {
+    if !value.is_number() || value.is_integer() {
+        return None;
     }
+    f64::try_from(value.clone()).ok().map(python_float_repr)
+}
 
-    fn begin_object_key<W>(&mut self, writer: &mut W, first: bool) -> std::io::Result<()>
-    where
-        W: ?Sized + std::io::Write,
-    {
-        if !first {
-            writer.write_all(b", ")?;
-        }
-        Ok(())
+/// Output formatter for `{{ x }}`. HF renders through Python, which prints a float
+/// with `str`; see [`python_float_str`]. Other values are unchanged. `~` concatenation
+/// is a VM op that can't be overridden, and filters that stringify values themselves
+/// (`join`, `replace`, ...) use minijinja's spelling, so `'x' ~ 1e-6` and
+/// `[1e-6] | join` still render `0.000001`.
+pub fn python_formatter(out: &mut Output, state: &State, value: &Value) -> Result<(), Error> {
+    match python_float_str(value) {
+        Some(text) => out.write_str(&text).map_err(Error::from),
+        None => escape_formatter(out, state, value),
     }
+}
 
-    fn begin_object_value<W>(&mut self, writer: &mut W) -> std::io::Result<()>
-    where
-        W: ?Sized + std::io::Write,
-    {
-        writer.write_all(b": ")
+/// The `string` filter with Python `str` floats, matching [`python_formatter`];
+/// other values go to the builtin.
+pub fn python_string(state: &State, value: &Value) -> Result<Value, Error> {
+    match python_float_str(value) {
+        Some(text) => Ok(Value::from(text)),
+        None => minijinja::filters::string(state, value),
+    }
+}
+
+/// minijinja-contrib's pycompat string methods, with Python's whitespace where
+/// Rust's differs: `strip`, `lstrip`, `rstrip` and `split()` also treat U+001C..U+001F
+/// as whitespace, `isspace` is false for `""`, and `splitlines` ends lines at every
+/// Python line break. HF renders templates through Python, so `m.content.strip()` must
+/// strip what Python strips.
+pub fn python_methods(
+    state: &State,
+    value: &Value,
+    method: &str,
+    args: &[Value],
+) -> Result<Value, Error> {
+    if let Some(s) = value.as_str() {
+        match method {
+            "strip" | "lstrip" | "rstrip" => {
+                let (chars,): (Option<&str>,) = from_args(args)?;
+                if chars.is_none() {
+                    let trimmed = match method {
+                        "strip" => s.trim_matches(is_python_space),
+                        "lstrip" => s.trim_start_matches(is_python_space),
+                        _ => s.trim_end_matches(is_python_space),
+                    };
+                    return Ok(StringInput::new(state, value)?.preserve_safety(trimmed.to_owned()));
+                }
+            }
+            "split" => {
+                let (sep, maxsplit): (Option<&str>, Option<i64>) = from_args(args)?;
+                if sep.is_none() {
+                    let maxsplit = maxsplit.and_then(|n| usize::try_from(n).ok());
+                    return Ok(python_split_whitespace(s, maxsplit)
+                        .into_iter()
+                        .map(|part| {
+                            if value.is_safe() {
+                                Value::from_safe_string(part.to_owned())
+                            } else {
+                                Value::from(part)
+                            }
+                        })
+                        .collect());
+                }
+            }
+            "splitlines" => {
+                let (keepends,): (Option<bool>,) = from_args(args)?;
+                return Ok(python_splitlines(s, keepends.unwrap_or(false))
+                    .into_iter()
+                    .map(|part| {
+                        if value.is_safe() {
+                            Value::from_safe_string(part.to_owned())
+                        } else {
+                            Value::from(part)
+                        }
+                    })
+                    .collect());
+            }
+            "isspace" => {
+                let () = from_args(args)?;
+                return Ok(Value::from(!s.is_empty() && s.chars().all(is_python_space)));
+            }
+            _ => {}
+        }
+    }
+    minijinja_contrib::pycompat::unknown_method_callback(state, value, method, args)
+}
+
+/// Jinja2's `trim` filter, `str.strip(chars)`, with Python's whitespace by default;
+/// see [`python_methods`].
+pub fn python_trim(value: StringInput<'_>, chars: Option<Cow<'_, str>>) -> Value {
+    match chars {
+        Some(chars) => minijinja::filters::trim(value, Some(chars)),
+        None => {
+            let trimmed = value.as_str().trim_matches(is_python_space).to_owned();
+            value.preserve_safety(trimmed)
+        }
     }
 }
 
@@ -159,7 +238,7 @@ pub fn tojson(value: Value, kwargs: Kwargs) -> Result<Value, Error> {
         // Python `json.dumps(indent=n)` separators are `(",", ": ")` with the
         // item separator followed by newline + indent — PrettyFormatter matches.
         let repeat = b" ".repeat(indent);
-        let formatter = serde_json::ser::PrettyFormatter::with_indent(&repeat);
+        let formatter = PyFloats(serde_json::ser::PrettyFormatter::with_indent(&repeat));
         let mut serializer = serde_json::Serializer::with_formatter(&mut buf, formatter);
         value.serialize(&mut serializer)
     } else {

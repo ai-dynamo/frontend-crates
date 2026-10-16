@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Resolve the versioned TC stream-v2 fixtures into a flat tree for a selected
+"""Resolve the versioned legacy stream-v1 fixtures into a flat tree for a selected
 version set, mirroring resolve_fixtures.py for the batch corpus.
 
-Layout under <root>/conformance/toolcalling/fixtures-stream-v2/ (batch convention —
+Layout under <root>/conformance/toolcalling/fixtures-stream-v1/ (batch convention —
 no unversioned "baseline"; the anchor is whichever version is lowest, per impl):
-  inputs/<family>/TOOLCALLING.streamv2.*.yaml        shared per-chunk delta_text
+  inputs/<family>/TOOLCALLING.streamv1.*.yaml        shared per-chunk delta_text
                                                      (+ finish_reason/tools) — NO expected
-  <impl>-<version>/<family>/TOOLCALLING.streamv2.*.yaml
+  <impl>-<version>/<family>/TOOLCALLING.streamv1.*.yaml
                                                      per-impl per-chunk `expected`
                                                      (+ `normal_text`); lowest version
                                                      is the full anchor, higher versions
@@ -20,10 +20,11 @@ impl merge its version dirs ascending up to the target, folding that impl's per-
 `captured_with[impl] = target`. Every impl present is included at its LOWEST version by
 default; `--select <impl>-<version>` bumps a specific impl to that version. So a
 single-version impl (vllm_rust, dynamo_v2) needs no explicit select.
-Readers (load_all_cases("streamv2")) consume the flat output unchanged.
+Readers (load_all_cases("streamv1")) consume the flat output unchanged.
 """
 import argparse
 import copy
+import re
 import sys
 from pathlib import Path
 
@@ -31,21 +32,7 @@ import yaml
 import yaml_fast  # noqa: F401 — routes safe_load/safe_dump through libyaml
 # Re-exported: test_render_invariants.py and the generator import version_key/load
 # from this module by name.
-from fixture_corpus import load, load_corpus, split_sel, version_key  # noqa: F401
-
-
-def _impl_version_dirs(root: Path) -> dict[str, list[tuple]]:
-    """{impl: [(version_key, version, dir), ...] ascending} discovered from the
-    <impl>-<version>/ dirs (no hardcoded anchor)."""
-    out: dict[str, list[tuple]] = {}
-    for d in root.iterdir():
-        if not d.is_dir() or d.name == "inputs" or "-" not in d.name:
-            continue
-        impl, ver = split_sel(d.name)
-        out.setdefault(impl, []).append((version_key(ver), ver, d))
-    for impl in out:
-        out[impl].sort(key=lambda t: t[0])
-    return out
+from fixture_corpus import index_corpus, load, load_corpus, split_sel, version_key  # noqa: F401
 
 
 def _merge_impl(base_doc, vdoc, impl):
@@ -104,7 +91,7 @@ def _merge_impl(base_doc, vdoc, impl):
                 bchunks[i]["normal_text"].pop(impl, None)
 
 
-def resolve_docs(sv2_root, select, corpus=None):
+def resolve_docs(sv1_root, select, corpus=None, *, implementations=None):
     """Resolve one version selection entirely in memory.
 
     Returns `(docs, folded)`: `docs` is {(family, filename): doc} for the whole staged
@@ -113,33 +100,43 @@ def resolve_docs(sv2_root, select, corpus=None):
     back, once per impl per version layer — which meant every output file was parsed
     and re-emitted several times per run. Keeping the accumulator in memory does the
     identical merge with one parse of each source file and at most one dump.
+    `implementations` limits overlays, retaining every shared input case; omitted
+    filters retain the lowest-version defaults for all implementations.
     """
-    root = Path(sv2_root)
-    if corpus is None:
-        corpus = load_corpus(root)
+    root = Path(sv1_root)
+    corpus = index_corpus(root, corpus)
 
     # 1) the shared inputs tree is the base every impl folds into.
-    docs = {key[1:]: copy.deepcopy(doc) for key, doc in corpus.items() if key[0] == "inputs"}
+    docs = {key: copy.deepcopy(doc) for key, doc in corpus.by_directory.get("inputs", {}).items()}
 
     # 2) per-impl target: default = that impl's lowest version; --select bumps it.
-    dirs = _impl_version_dirs(root)
-    targets = {impl: vers[0][1] for impl, vers in dirs.items()}  # lowest by default
+    dirs = corpus.version_dirs
+    targets = {
+        impl: vers[0][1] for impl, vers in dirs.items()
+        if implementations is None or impl in implementations
+    }  # lowest by default
     for sel in select:
         impl, ver = split_sel(sel)
-        if impl in dirs:
+        if impl in targets:
             targets[impl] = ver
 
     # 3) fold each impl's version dirs ascending up to its target into the base tree.
     folded: set[tuple[str, str]] = set()
     for impl, target in targets.items():
         tk = version_key(target)
+        if re.fullmatch(r".+\.patch\d+", target) is None:
+            patches = [
+                key
+                for key, version, _vdir in dirs[impl]
+                if version.startswith(target + ".patch")
+            ]
+            if patches:
+                tk = max(tk, max(patches))
         for k, _v, vdir in dirs[impl]:
             if k > tk:
                 continue
-            for key, vdoc in corpus.items():
-                if key[0] != vdir.name:
-                    continue
-                doc = docs.get(key[1:])
+            for key, vdoc in corpus.by_directory.get(vdir.name, {}).items():
+                doc = docs.get(key)
                 if doc is None:
                     continue
                 # deepcopy: _merge_impl grafts the overlay's own lists/dicts into the
@@ -147,12 +144,12 @@ def resolve_docs(sv2_root, select, corpus=None):
                 # same objects into every resolved selection.
                 _merge_impl(doc, copy.deepcopy(vdoc), impl)
                 doc.setdefault("captured_with", {})[impl] = target
-                folded.add(key[1:])
+                folded.add(key)
     return docs, folded
 
 
-def resolve(sv2_root, out, select, verbose=False):
-    root = Path(sv2_root)
+def resolve(sv1_root, out, select, verbose=False):
+    root = Path(sv1_root)
     out = Path(out)
     docs, folded = resolve_docs(root, select)
 
@@ -169,7 +166,7 @@ def resolve(sv2_root, out, select, verbose=False):
             dst.write_text((root / "inputs" / family / name).read_text())
 
     if verbose:
-        n = len(list(out.glob("*/TOOLCALLING.streamv2.*.yaml")))
+        n = len(list(out.glob("*/TOOLCALLING.streamv1.*.yaml")))
         print(f"resolve_stream_fixtures: staged {n} files (select: {select or 'defaults'})",
               file=sys.stderr)
 
@@ -177,7 +174,7 @@ def resolve(sv2_root, out, select, verbose=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--fixtures-root", required=True,
-                    help="the fixtures-stream-v2 dir (inputs/ + <impl>-<version>/)")
+                    help="the fixtures-stream-v1 dir (inputs/ + <impl>-<version>/)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--select", nargs="*", default=[],
                     help="bump an impl to a version, e.g. vllm_python-0.24.0 "

@@ -24,7 +24,7 @@
 //    - Continuation - Detected on user turns, where we can return
 //      partial assistant responses without add_generation_prompt
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use minijinja::value::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -37,6 +37,7 @@ pub use dynamo_tokenizers;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
+mod python;
 mod template;
 
 pub use template::{
@@ -122,6 +123,15 @@ impl RenderedSegment {
 pub struct RenderedPrompt {
     text: String,
     segments: Option<Vec<RenderedSegment>>,
+    /// Number of trailing segments that form the assistant generation stub.
+    ///
+    /// Some reference APIs (Moonshot's Kimi K3) render a channel-opening stub
+    /// such as `<|open|>response<|sep|>` after the conversation so the model
+    /// starts inside the right channel, but exclude those tokens from the
+    /// reported `usage.prompt_tokens`. The renderer records how many trailing
+    /// segments belong to that stub so callers can apply the same convention
+    /// without hardcoding a token count. Zero for every other prompt.
+    pending_segments: usize,
 }
 
 impl RenderedPrompt {
@@ -129,10 +139,27 @@ impl RenderedPrompt {
         Self {
             text,
             segments: None,
+            pending_segments: 0,
         }
     }
 
     pub fn segmented(segments: Vec<RenderedSegment>) -> Self {
+        Self::segmented_with_pending(segments, 0)
+    }
+
+    /// Build a segmented prompt whose last `pending_segments` segments are the
+    /// assistant generation stub (see [`RenderedPrompt::pending_segments`]).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `pending_segments` exceeds the number of segments; a renderer
+    /// that claims more pending segments than it produced is a bug.
+    pub fn segmented_with_pending(segments: Vec<RenderedSegment>, pending_segments: usize) -> Self {
+        assert!(
+            pending_segments <= segments.len(),
+            "pending_segments ({pending_segments}) exceeds rendered segments ({})",
+            segments.len()
+        );
         let text = segments
             .iter()
             .map(|segment| segment.text.as_str())
@@ -140,6 +167,7 @@ impl RenderedPrompt {
         Self {
             text,
             segments: Some(segments),
+            pending_segments,
         }
     }
 
@@ -154,6 +182,29 @@ impl RenderedPrompt {
     pub fn encode_segments(&self) -> Option<Vec<dynamo_tokenizers::EncodeSegment<'_>>> {
         Some(
             self.segments()?
+                .iter()
+                .map(RenderedSegment::as_encode_segment)
+                .collect(),
+        )
+    }
+
+    /// Number of trailing segments that form the assistant generation stub.
+    ///
+    /// Zero when the prompt is unsegmented, when no generation prompt was
+    /// added, or when the renderer has no stub convention to report.
+    pub fn pending_segments(&self) -> usize {
+        self.pending_segments
+    }
+
+    /// The trailing generation-stub segments, or `None` for unsegmented prompts.
+    ///
+    /// Callers that report usage under the reference API's convention encode
+    /// these and subtract their token count from the physical prompt length.
+    pub fn pending_encode_segments(&self) -> Option<Vec<dynamo_tokenizers::EncodeSegment<'_>>> {
+        let segments = self.segments()?;
+        let start = segments.len() - self.pending_segments;
+        Some(
+            segments[start..]
                 .iter()
                 .map(RenderedSegment::as_encode_segment)
                 .collect(),
@@ -200,6 +251,11 @@ impl std::error::Error for PromptRenderError {}
 pub trait OAIChatLikeRequest {
     fn model(&self) -> String;
     fn messages(&self) -> Value;
+    /// Optional fast path for rendering without calling [`Self::messages`].
+    ///
+    /// Returning `Some` requires the same serialized messages, including all
+    /// transformations, as `messages()`. Adapters that rewrite messages must
+    /// return `None` unless this slice includes those same changes.
     fn typed_messages(&self) -> Option<&[dynamo_protocols::types::ChatCompletionRequestMessage]> {
         None
     }
@@ -245,9 +301,27 @@ pub trait OAIChatLikeRequest {
     }
 }
 
+/// Native renderers and normalization work on JSON, so avoid a MiniJinja
+/// round trip when the request exposes its typed messages.
+pub(crate) fn messages_to_json(req: &dyn OAIChatLikeRequest) -> Result<serde_json::Value> {
+    if let Some(messages) = req.typed_messages() {
+        serde_json::to_value(messages)
+    } else {
+        serde_json::to_value(req.messages())
+    }
+    .context("Failed to convert messages to JSON")
+}
+
 pub trait OAIPromptFormatter: Send + Sync + 'static {
     fn supports_add_generation_prompt(&self) -> bool;
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String>;
+
+    /// Source message indices in rendered media order; `None` preserves arrival order.
+    /// An explicit order must be a permutation of all source-message indices.
+    /// Parts within each message retain their original order.
+    fn media_message_order(&self, _request: &dyn OAIChatLikeRequest) -> Option<Vec<usize>> {
+        None
+    }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         self.render(req).map(RenderedPrompt::text)
@@ -406,5 +480,46 @@ mod rendered_prompt_tests {
             Some(PromptRenderError::InvalidRequest(message))
                 if message.contains("message-level `tools`")
         ));
+    }
+
+    #[test]
+    fn rendered_prompt_pending_segments_default_to_zero() {
+        let prompt = RenderedPrompt::segmented(vec![RenderedSegment::new("a", false)]);
+        assert_eq!(prompt.pending_segments(), 0);
+        assert!(prompt.pending_encode_segments().unwrap().is_empty());
+        assert_eq!(RenderedPrompt::text("a".to_string()).pending_segments(), 0);
+        assert!(
+            RenderedPrompt::text("a".to_string())
+                .pending_encode_segments()
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn rendered_prompt_exposes_trailing_pending_segments() {
+        let prompt = RenderedPrompt::segmented_with_pending(
+            vec![
+                RenderedSegment::new("prompt", false),
+                RenderedSegment::new("<|open|>", true),
+                RenderedSegment::new("response", false),
+                RenderedSegment::new("<|sep|>", true),
+            ],
+            3,
+        );
+        assert_eq!(prompt.as_str(), "prompt<|open|>response<|sep|>");
+        assert_eq!(prompt.pending_segments(), 3);
+        let pending: Vec<&str> = prompt
+            .pending_encode_segments()
+            .unwrap()
+            .iter()
+            .map(|segment| segment.text)
+            .collect();
+        assert_eq!(pending, ["<|open|>", "response", "<|sep|>"]);
+    }
+
+    #[test]
+    #[should_panic(expected = "pending_segments")]
+    fn rendered_prompt_rejects_more_pending_than_segments() {
+        RenderedPrompt::segmented_with_pending(vec![RenderedSegment::new("a", false)], 2);
     }
 }

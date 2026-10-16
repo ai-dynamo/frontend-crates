@@ -1,0 +1,226 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.3.2
+    source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+    git_commit: c4b8f391e83af58781b024894b79620acd323389
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  arg_unicode:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  content_then_reason:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  content_then_reason_then_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  empty_args:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  interstitial_text:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_elided_think_close_to_response:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_malformed_call_then_valid:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_message_end_after_response:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_raw_json_arguments:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_raw_json_eof:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_spaced_xtml_markers:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  kimi_k3_typed_argument_values:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  narrated_calls:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  orphan_close_after_prose:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_after_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_between_calls:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_interleaved:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_markup_in_arg:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_markup_in_arg_with_text:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_only:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_then_content:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_then_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_tool_reason_tool_reason:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_tool_text_reason_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  reason_unterminated:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  text_before_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  text_between_calls:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  text_only:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  text_reason_tool_text_reason_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  text_sandwich:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_block_never_closed_then_text:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_in_reason:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_in_reason_with_text:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_markup_only_emits_nothing:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_no_close:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  tool_only:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  trailing_text_after_tool:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  truncated_tool_eof:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  two_adjacent_reason_spans:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  two_calls:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  two_calls_same_name:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  two_reason_spans:
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+metadata_changes: {}
+document_overrides: {}

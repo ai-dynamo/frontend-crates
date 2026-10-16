@@ -15,12 +15,12 @@ the generator's import graph.
 import html as html_lib
 import json
 import re
-from pathlib import Path
 from typing import Any
 
 import yaml
 
 from impls import (
+    parser_families_path,
     BASELINE_IMPLS,
     BASELINE_STREAM_IMPL,
     BATCH_IMPL_KEYS,
@@ -133,22 +133,6 @@ def peer_status(case: dict, dyn: dict, impl: str) -> tuple[str, bool]:
 # are matched verbatim. Substring semantics (no anchors), longest-first alternation.
 _LEAK_PREFIX_MIN = 7
 
-
-def parser_families_path() -> Path:
-    """The registry lives at src/parser_families.yaml in the repo; the render stage
-    copies this module flat into tests/parity/ and the registry to <stage>/src/.
-
-    Public because every consumer of the registry has to resolve BOTH layouts, and a
-    second copy of this walk is a second thing to get wrong -- `unified_taxonomy` did
-    exactly that and broke the render, which only runs from the stage."""
-    here = Path(__file__).resolve()
-    for cand in (
-        here.parent / "parser_families.yaml",
-        here.parents[2] / "src" / "parser_families.yaml",
-    ):
-        if cand.is_file():
-            return cand
-    raise FileNotFoundError(f"parser_families.yaml not found relative to {here}")
 
 
 def _declared_leak_patterns() -> list[str]:

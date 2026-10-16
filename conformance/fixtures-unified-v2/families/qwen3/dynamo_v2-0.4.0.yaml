@@ -1,0 +1,83 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.4.0
+document:
+  mode: unified
+changes:
+  retired__50_a:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: output
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: output
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+        - expected: []
+        - expected: []
+  retired__50_b:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+  retired__50_c:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+  retired__51_a:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Working on it... '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Working on it... '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__51_b:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+metadata_changes: {}
+document_overrides: {}

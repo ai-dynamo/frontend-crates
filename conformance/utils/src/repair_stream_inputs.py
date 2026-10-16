@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Repair stream-v2 `inputs/` whose newlines were folded into spaces by YAML quoting.
+"""Repair stream-v1 `inputs/` whose newlines were folded into spaces by YAML quoting.
 
 THE BUG
 -------
@@ -127,7 +127,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--stream-inputs", required=True,
-                    help="extracted toolcalling/fixtures-stream-v2/inputs")
+                    help="extracted toolcalling/fixtures-stream-v1/inputs")
     ap.add_argument("--batch-inputs", required=True,
                     help="extracted toolcalling/fixtures-batch-v1/inputs (the intact source)")
     ap.add_argument("--apply", action="store_true",
@@ -136,7 +136,7 @@ def main() -> None:
 
     batch = _batch_model_text(pathlib.Path(args.batch_inputs))
     files = cases = lines = 0
-    for f in sorted(pathlib.Path(args.stream_inputs).glob("*/TOOLCALLING.streamv2*.yaml")):
+    for f in sorted(pathlib.Path(args.stream_inputs).glob("*/TOOLCALLING.streamv1*.yaml")):
         c, n = repair_file(f, batch, args.apply)
         if n:
             files += 1

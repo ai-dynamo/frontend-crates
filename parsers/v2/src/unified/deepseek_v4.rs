@@ -9,9 +9,13 @@ use crate::tool_calling::traits::Tool;
 use crate::unified::{GuidedRouted, ScannerUnified, UnifiedParser};
 
 /// Build DeepSeek V4's single DSML and reasoning parser.
-pub(crate) fn deepseek_v4_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+pub(crate) fn deepseek_v4_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    deepseek_dsml_unified(false)
+}
+
+pub(crate) fn deepseek_dsml_unified(both_dialects: bool) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(ScannerUnified::new(
-        deepseek_v4_scanner(tools).with_reasoning(ReasoningSpec {
+        deepseek_v4_scanner(both_dialects).with_reasoning(ReasoningSpec {
             start: "<think>",
             end: "</think>",
             forced_start: false,
@@ -216,6 +220,31 @@ mod tests {
         assert_eq!(assemble(&whole), want);
         for (at, got) in at_every_split(input, init).into_iter().enumerate() {
             assert_eq!(got, want, "split at byte {at}");
+        }
+    }
+
+    #[test]
+    fn incomplete_dsml_invoke_before_a_nested_thought_stays_suppressed_at_every_split() {
+        let input = "<think><｜DSML｜invoke name=\"x\"><think>x</think>";
+        let init = UnifiedParserInit {
+            tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
+            ..UnifiedParserInit::default()
+        };
+        for at in 0..=input.len() {
+            if !input.is_char_boundary(at) {
+                continue;
+            }
+            let mut parser = deepseek_v4_unified(&[]);
+            parser.initialize_request(init.clone()).expect("initialize");
+            let mut events = parser.push(&input[..at]).expect("push prefix");
+            events.extend(parser.push(&input[at..]).expect("push suffix"));
+            events.extend(parser.finish().expect("finish").events);
+            assert_eq!(
+                assemble(&events),
+                Vec::<UnifiedEvent>::new(),
+                "split at byte {at}"
+            );
         }
     }
 }
