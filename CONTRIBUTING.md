@@ -19,9 +19,31 @@ What this means for contributors:
 - **Changes to Dynamo integration code** that consumes these crates should be opened against [ai-dynamo/dynamo](https://github.com/ai-dynamo/dynamo).
 - **Changes to repository scaffolding** — crate `Cargo.toml` metadata, `examples/dynamo-demo-server/`, `scripts/`, `.github/`, and docs in this repo — should be opened as PRs here.
 
-If you're not sure where a change belongs, open the PR in either place and we'll route it.
+If you're not sure where a change belongs, open an issue in either repository and we'll route it.
 
 ## How to Contribute
+
+### Plan Large Changes Before Implementation
+
+This workflow aligns with Dynamo's [contribution guide](https://github.com/ai-dynamo/dynamo/blob/05e984e968c9a30fea0d574359d728e9c86768bb/docs/fern/pages/community/contributing/contribution-flow.mdx#L12) and [Contribution Request format](https://github.com/ai-dynamo/dynamo/blob/05e984e968c9a30fea0d574359d728e9c86768bb/.github/ISSUE_TEMPLATE/contribution_request.yml).
+
+For external contributions of **100 or more changed lines (additions plus deletions)**, new features, or substantial refactors, open a [Contribution Request](https://github.com/ai-dynamo/frontend-crates/issues/new?template=contribution_request.yml) before starting implementation. This includes new model parsers and changes that span multiple crates or modify public APIs. Wait for explicit maintainer approval of the proposed approach before implementing the change or submitting a PR.
+
+Use the Contribution Request form with a `[CONTRIBUTION]:` title and complete all five required fields:
+
+| Field | What to include |
+| --- | --- |
+| Type of Change | Bug fix, new feature, refactoring, or performance improvement. |
+| Problem Statement | The problem or use case you want to address. For a new parser, include representative raw model output. |
+| Proposed Solution | Your proposed approach and any public API changes. |
+| Estimated PR Size | The expected number of changed lines. |
+| Files/Components Affected | The crates, files, or components you expect to modify. |
+
+If an existing issue already describes the work, add the same proposal fields there and wait for maintainer approval rather than opening a duplicate. Link the approved issue in the PR description with `Fixes #123` when the PR completes the issue, or `Relates to #123` when it addresses only part of the work.
+
+Small, focused changes below 100 changed lines, such as typo fixes, documentation corrections, or narrow bug fixes, can go directly to a PR unless they introduce a feature or require agreement on the approach. Keep security disclosures private as described in [Reporting Issues](#reporting-issues).
+
+### Implement and Submit
 
 Standard GitHub fork-and-PR workflow:
 
@@ -39,7 +61,7 @@ Standard GitHub fork-and-PR workflow:
 5. Add tests for new parser families, new tokenizer code paths, and any new public surface.
 6. Make sure every new source file carries the SPDX header block (see [Source Headers](#source-headers) below).
 7. Sign off your commits (see [Signing Your Work](#signing-your-work) below).
-8. Open the PR. CI must pass.
+8. Open the PR and link the approved issue when one is required above. CI must pass.
 
 ### Reporting Issues
 
