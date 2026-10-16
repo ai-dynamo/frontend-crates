@@ -153,7 +153,8 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
     monkeypatch.setattr(generator, "CLEAN", [row for row in generator.CLEAN if row[0] == "text_only"])
     monkeypatch.setattr(generator, "EDGE", [])
     model = table._unified_tab_model(tmp_path, {})
-    cell = model["rows"][0]["cells"]["text_only"]
+    row = next(row for row in model["rows"] if row["family"] == "gemma4")
+    cell = row["cells"]["text_only"]
     key = {"vllm_python": "vllm", "vllm_rust": "vllm_rust", "sglang_python": "sglang"}[engine]
     blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
     if key in blocks:

@@ -305,8 +305,8 @@ unified:
     capture_pipelines:
       dynamo_v1: ["gpt_oss", "harmony"]
     registry: harmony
-    native: false
-    guided_tool_output: false
+    native: true
+    guided_tool_output: true
     reasoning_parser: gpt_oss
     tool_parser: harmony
     golden_spec: gpt_oss.yaml
@@ -393,9 +393,11 @@ unified_display:
     kimi: 'Single Family Test: Kimi K3 XTML'
     muse: 'Single Family Test: Muse-specific'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
+    gpt_oss: 'Single Family Test: GPT-OSS Harmony'
   group_overrides:
     guided_response_rejected_header_quote_ownership: deepseek_v4
   prefixes:
     deepseek: [deepseek_v41, ds41]
     deepseek_v4: [deepseek_v4, ds4]
     deepseek_v41: [deepseek_v41, ds41]
+    gpt_oss: [gpt_oss, gpt_oss]

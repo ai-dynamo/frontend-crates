@@ -24,6 +24,7 @@ Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 import argparse
 import shutil
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -157,6 +158,39 @@ def _canonical_dynamo_capture_version(provenance):
     return provenance["crate_version"]
 
 
+def _request_stimulus(record, *, keep_finish_chunk):
+    """Keep authored model chunks separate from the parser's finish() step."""
+    request = capture_input(record)
+    chunks = request["chunks"]
+    has_finish_chunk = (
+        chunks
+        and chunks[-1].get("delta_text") == "‹finish›"
+        and "".join(chunk.get("delta_text", "") for chunk in chunks[:-1])
+        == request["input"]
+    )
+    if has_finish_chunk and not keep_finish_chunk:
+        request["chunks"] = chunks[:-1]
+    return request
+
+
+@lru_cache(maxsize=None)
+def _historical_finish_chunks(family):
+    path = CONF / f"fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
+    historical = yaml.safe_load(path.read_text())
+    finish_chunks = {}
+    for case in historical["cases"].values():
+        request = case.get("request") or {}
+        chunks = request.get("chunks") or []
+        finish_chunks[case["scenario"]] = bool(
+            chunks and chunks[-1].get("delta_text") == "‹finish›"
+        )
+    return finish_chunks
+
+
+def _historical_finish_chunk(family, scenario):
+    return _historical_finish_chunks(family).get(scenario, True)
+
+
 def _split_only_cases(family, document):
     """Build input/GOLDEN rows for a family without a native Unified parser."""
     if document.get("family") != family or not isinstance(document.get("cases"), dict):
@@ -266,12 +300,14 @@ def main():
         cid = c["id"]
         key, fam, scenario = _case_key(cid)
         chunks = c.get("chunks") or []
-        request = capture_input(c)
+        request = _request_stimulus(
+            c, keep_finish_chunk=_historical_finish_chunk(fam, scenario)
+        )
         active_cases[(fam, scenario)] = (key, request)
 
         slot("inputs", fam, model_label=fam)[key] = _input_case(
             {**c, "scenario": scenario},
-            {**request, "chunks": [{"delta_text": ch.get("delta_text", "")} for ch in chunks]},
+            request,
         )
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)
@@ -288,7 +324,7 @@ def main():
         }
 
         if c.get("dynamo_error"):
-            slot(ddir, fam)[key] = {"capture_input": capture_input(c), "error": c["dynamo_error"]}
+            slot(ddir, fam)[key] = {"capture_input": request, "error": c["dynamo_error"]}
 
         # peer engine overlays
         for impl in ("vllm_python", "vllm_rust", "sglang_python"):

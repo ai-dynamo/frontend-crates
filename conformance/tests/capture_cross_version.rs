@@ -746,7 +746,7 @@ fn capture_rejects_missing_or_malformed_input_fields() {
         (
             6,
             "cases: {probe: {input: text, chunks: []}}",
-            "recorded schedule requires finish",
+            "authored input_chunks must reproduce input",
         ),
         (
             7,

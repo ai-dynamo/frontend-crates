@@ -73,13 +73,10 @@ pub fn replay_chunks(input: &str, recorded: Option<&[InputChunk]>) -> Vec<String
     match recorded {
         None => input_chunks(input, None),
         Some(rows) => {
-            let (finish, rows) = rows
+            let rows = rows
                 .split_last()
-                .expect("recorded schedule requires finish");
-            assert_eq!(
-                finish.delta_text, "‹finish›",
-                "recorded schedule requires finish"
-            );
+                .filter(|(last, _)| last.delta_text == "‹finish›")
+                .map_or(rows, |(_, rows)| rows);
             let chunks: Vec<_> = rows.iter().map(|row| row.delta_text.clone()).collect();
             input_chunks(input, Some(&chunks))
         }
@@ -109,17 +106,27 @@ fn authored_and_recorded_schedules_preserve_utf8_and_empty_chunks() {
     let input = "<call>éCafé</call>";
     let authored = vec![input.to_string(), String::new()];
     assert_eq!(input_chunks(input, Some(&authored)), authored);
-    let mut rows: Vec<_> = authored
+    let rows: Vec<_> = authored
         .iter()
         .map(|s| InputChunk {
             delta_text: s.clone(),
         })
         .collect();
-    rows.push(InputChunk {
+    assert_eq!(replay_chunks(input, Some(&rows)), authored);
+    let mut recorded: Vec<_> = rows
+        .iter()
+        .map(|row| InputChunk {
+            delta_text: row.delta_text.clone(),
+        })
+        .collect();
+    recorded.push(InputChunk {
         delta_text: "‹finish›".into(),
     });
-    assert_eq!(replay_chunks(input, Some(&rows)), authored);
+    assert_eq!(replay_chunks(input, Some(&recorded)), authored);
     assert_eq!(input_chunks(input, None), chunk_input(input));
     assert!(std::panic::catch_unwind(|| input_chunks(input, Some(&["wrong".into()]))).is_err());
-    assert!(std::panic::catch_unwind(|| replay_chunks(input, Some(&rows[..1]))).is_err());
+    let mismatched = [InputChunk {
+        delta_text: "wrong".into(),
+    }];
+    assert!(std::panic::catch_unwind(|| replay_chunks(input, Some(&mismatched))).is_err());
 }

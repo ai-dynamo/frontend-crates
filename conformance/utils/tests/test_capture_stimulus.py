@@ -155,7 +155,27 @@ def test_each_stimulus_dimension_is_bound(dimension):
                     "tools": [{"name": "f", "parameters": {"type": "object"}}]}
     current[dimension] = replacements[dimension]
     reason = capture_stimulus.comparison_failure({"capture_input": original}, current, b"", "case.yaml", {})
-    assert f"({dimension})" in reason
+    changed = reason.partition("mismatch (")[2].partition(")")[0].split(", ")
+    assert dimension in changed
+
+
+def test_synthetic_finish_step_does_not_change_authored_chunk_schedule():
+    original = _input("same")
+    current = copy.deepcopy(original)
+    current["chunks"] = current["chunks"][:-1]
+    assert capture_stimulus.comparison_failure(
+        {"capture_input": original}, current, b"", "case.yaml", {}
+    ) is None
+
+
+def test_synthetic_finish_step_does_not_hide_real_chunk_boundary_changes():
+    original = _input("same")
+    current = copy.deepcopy(original)
+    current["chunks"] = [{"delta_text": "sa"}, {"delta_text": "me"}]
+    reason = capture_stimulus.comparison_failure(
+        {"capture_input": original}, current, b"", "case.yaml", {}
+    )
+    assert "(chunks)" in reason
 
 
 def test_missing_stimulus_is_not_a_parser_failure():

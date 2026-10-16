@@ -1,0 +1,97 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.27
+    git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+    source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+document:
+  mode: unified
+changes:
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: to=selfliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 315fa7e8a2d51710ddd61a2bd8a9294a0e6737acc9ac59b5ee9bf1fd803cce34
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}to=selfliteral'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}to=self'
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null

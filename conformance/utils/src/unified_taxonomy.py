@@ -164,14 +164,29 @@ UNIFIED_TAX = {
     "guided_json_native_parameter_body_inside_reasoning": (34, "10"),
     "guided_json_native_parameter_object_before_payload": (35, "6"),
     "guided_json_native_parameter_array_before_payload": (35, "7"),
+    "guided_json_noncall_before_native_array_before_payload": (35, "8"),
+    "guided_json_native_parameter_string_before_payload": (35, "9"),
     "qwen3_guided_reasoning_opener_inside_native_header": ("qwen3", "3"),
     "muse_glimmer_guided_message_end_inside_native_header": ("muse", "5"),
     "deepseek_v4_guided_reasoning_opener_inside_native_body": ("deepseek_v4", "1"),
     "gemma4_guided_reasoning_opener_after_call_prefix": ("gemma", "3"),
+    "gemma4_guided_response_extra_body_opener": ("gemma", "4"),
     "guided_json_reasoning_markers_inside_native_parameter": (34, "11"),
     "gemma4_guided_json_visible_call_prose_before_reasoning": ("gemma", "1"),
     "gemma4_guided_json_malformed_call_prefix_before_reasoning": ("gemma", "2"),
     "glm47_parameterless_call_shape_inside_argument": ("glm5", "1"),
+    "gpt_oss_channel_header_variants": ("gpt_oss", "1"),
+    "gpt_oss_channel_first_tool_header": ("gpt_oss", "6"),
+    "gpt_oss_chat_template_tool_header": ("gpt_oss", "7"),
+    "gpt_oss_multiple_unknown_and_empty_tools": ("gpt_oss", "2"),
+    "gpt_oss_control_marker_inside_argument_string": ("gpt_oss", "3"),
+    "gpt_oss_truncated_tool_resynchronizes_at_next_message": ("gpt_oss", "4"),
+    "gpt_oss_truncated_tool_at_eof_is_dropped": ("gpt_oss", "5"),
+    "gpt_oss_interrupted_reasoning_then_tool": ("gpt_oss", "8"),
+    "gpt_oss_interrupted_reasoning_then_tool_with_text": ("gpt_oss", "9"),
+    "gpt_oss_invalid_tool_body_then_empty_call": ("gpt_oss", "10"),
+    "gpt_oss_invalid_tool_body_then_valid_call": ("gpt_oss", "11"),
+    "gpt_oss_interrupted_reasoning_then_response": ("gpt_oss", "12"),
 
     # Group 40 — Prefilled reasoning, happy
     "prefilled_reasoning_with_tool": (40, "1"), "prefilled_reasoning_with_guided_json": (40, "2"),
@@ -271,6 +286,7 @@ GROUP_DESCRIPTION_PREFIXES = {
     "deepseek": ("deepseek_v41_",),
     "muse": ("muse_",),
     "dsml": ("dsml_",),
+    "gpt_oss": ("gpt_oss_",),
 }
 
 

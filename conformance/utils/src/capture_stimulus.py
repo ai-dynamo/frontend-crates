@@ -205,6 +205,19 @@ def original_capture_input(record: dict, raw: bytes, relative: str, bindings: di
     return original
 
 
+def _without_synthetic_finish_step(request: dict) -> dict:
+    chunks = request.get("chunks")
+    input_text = request.get("input")
+    if not isinstance(chunks, list) or not chunks or not isinstance(input_text, str):
+        return request
+    if (
+        chunks[-1] == {"delta_text": "‹finish›"}
+        and "".join(chunk.get("delta_text", "") for chunk in chunks[:-1]) == input_text
+    ):
+        return {**request, "chunks": chunks[:-1]}
+    return request
+
+
 def select_peer_observation(record: dict, current: dict, *, implementation: str, version: str) -> dict:
     """Use a bound recapture while retaining the original historical observation."""
     recapture = record.get("verified_recapture")
@@ -272,6 +285,8 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
         return "Capture stimulus unavailable: displayed request tool schema was not retained; request equality cannot be verified."
     if not isinstance(original, dict) or original.keys() != expected.keys():
         raise ValueError(f"incomplete capture input binding: {relative}")
+    original = _without_synthetic_finish_step(original)
+    expected = _without_synthetic_finish_step(expected)
     changed = [key for key in expected if original[key] != expected[key]]
     if changed:
         return f"Capture stimulus mismatch ({', '.join(changed)}): historical output belongs to a different request and is not scored against this input."

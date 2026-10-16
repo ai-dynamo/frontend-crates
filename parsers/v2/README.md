@@ -55,7 +55,7 @@ Reasoning families:
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
 | **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair | `muse_glimmer_parser.rs` | Muse-Glimmer-30B |
 
-Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
+Tool-only streaming (v2) entry points exist for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM). GPT-OSS `harmony` now routes through the Unified Harmony reader; its legacy `ToolParser` adapter projects the same events. Unified registrations include `gpt_oss` (`harmony` alias), `deepseek_v4`, `deepseek_v41`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, and `qwen3`.
 
 The `deepseek_v4` tool-only selector also accepts V4.1's spaced DSML tags (`<｜DSML｜ calls>`, `<｜DSML｜ invoke ...>`). Both dialects use one scanner with their existing boundary parsers and decoders; there is no separate tool-only selector. Reasoning behavior and V4.1 JSON-body support remain separate changes (#253 and #250).
 
@@ -228,7 +228,7 @@ Unified parser work is complete only when the affected family's selected current
 
 Do not hide a failure with `reason:`, `unavailable:`, a historical capture, stale HTML, or an unsupported GOLDEN edit. Run the standard gate `conformance/utils/check.sh status --model <family> --tab unified`; it rerenders, reads the same model as the browser, names every empty or red case, and exits nonzero until the selected row is clear. Finish with `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.
 
-Harmony is only the first example; DS4 and the other streaming families follow the same file layout, fixture schema, capture flow, and validation flow.
+GPT-OSS shows the Harmony exception to the marker-scanner template: one incremental Harmony reader owns text and token-ID input, and the compatibility tool parser projects its Unified events. Other families use the same capture and validation flow with their own shared scanner or reader.
 
 ## Which Fixture Do I Edit?
 

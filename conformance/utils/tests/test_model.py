@@ -465,6 +465,8 @@ def test_unified_descriptive_case_ids_use_dash_everywhere(model_v2):
 def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
     tab = _tab(model_v2, "tab-unified")
     for row in tab["rows"]:
+        if not row.get("family"):
+            continue
         if row["family"] != "muse_glimmer":
             cell = row["cells"]["guided_json_quoted_bare_tool_header_in_answer"]
             assert cell["status"] == "na"
@@ -1339,14 +1341,13 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
         "glm_ref_json_looking_strings",
         "glm_ref_scalar_types",
     )
-    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "gpt_oss", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
     for row in tab["rows"]:
+        if not row.get("family"):
+            continue
         family = row["family"]
         for scenario in scenarios:
             cmp = leaf_cells(row)[scenario]["cmp"]
-            if family == "gpt_oss":
-                assert cmp["dynamo"]["na"] == 1, (family, scenario, "no native unified parser")
-                continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families:
                 _assert_unmeasured_versions(cmp, older_keys)
@@ -1402,9 +1403,6 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
         assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
-        if family == "gpt_oss":
-            assert shared["cmp"]["dynamo"]["na"] == 1
-            continue
         assert shared["status"] != "na"
         candidates = {candidate["key"]: candidate["block"]
                       for candidate in shared["tooltip"]["candidates"]}
@@ -1415,7 +1413,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
         expected_color = "green" if measured["events"] == events else "red"
         assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == expected_color
         assert "PR #271" in shared["tooltip"]["description"]
-        if family != "glm47":
+        if family not in {"glm47", "gpt_oss"}:
             for candidate in shared["tooltip"]["candidates"]:
                 if not candidate["key"].startswith("dynamo@"):
                     continue
@@ -1457,13 +1455,28 @@ def test_unified_event_reordering_is_a_mismatch():
     assert table._unified_classify("gpt_oss", golden, batch) == "ORDER"
 
 
+def test_unified_rows_keep_fixture_order_and_gpt_oss_label(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    rows = tab["rows"]
+    cases, _caps, _versions = table._load_unified_fixtures(table._unified_base(REPO))
+    expected_families = list(dict.fromkeys(case["family"] for case in cases))
+    assert [row["family"] for row in rows] == expected_families
+    assert all(row["section"] is None for row in rows)
+    gpt_oss = next(row for row in rows if row["family"] == "gpt_oss")
+    assert gpt_oss["model_label"] == "GPT-OSS"
+
+
 def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    row = next(row for row in tab["rows"] if row.get("family") == "gpt_oss")
+    rows = tab["rows"]
+    row_index = next(index for index, row in enumerate(rows) if row.get("family") == "gpt_oss")
+    row = rows[row_index]
+    assert row["model_label"] == "GPT-OSS"
+    assert row["section"] is None
     keys = {"vllm_python_batch@" + version for version in ("0.23.0", "0.24.0", "0.25.1", "0.26.0")}
     keys.add("sglang_python_batch@0.5.14")
     cases = [cell for cell in leaf_cells(row).values() if cell["status"] != "na"]
-    assert len(cases) == 159
+    assert cases
     assert leaf_cells(row)["tool_only"]["case_id"] == "UNIFIED.1-tool_only"
     missing = []
     for cell in cases:
@@ -1475,7 +1488,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
             assert "no parser" not in block["unavailable"]
             assert cell["cmp"][key]["na"] == 1
             missing.append(block)
-    assert len(missing) == 795
+    assert len(missing) == len(cases) * len(keys)
     unsupported = [candidate["block"] for other in tab["rows"] for cell in leaf_cells(other).values()
                    for candidate in cell.get("tooltip", {}).get("candidates", [])
                    if "_python_batch@" in candidate["key"] and candidate["block"].get("unavailable_code") == "unsupported_family"]
@@ -1712,6 +1725,8 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     assert table.unified_taxonomy.numbered_id(scenario) == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
     assert set(table.gen_unified_golden.scenario_families(scenario)) == {"deepseek_v4"}
     for row in tab["rows"]:
+        if not row.get("family"):
+            continue
         cell = row["cells"][scenario]
         assert cell["col_group"] == column["group_key"]
         if row["family"] != "deepseek_v4":

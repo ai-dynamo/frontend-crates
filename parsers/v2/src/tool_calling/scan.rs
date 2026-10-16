@@ -386,6 +386,11 @@ pub(crate) trait InvokeBoundary: Send {
         false
     }
 
+    /// Locate a lexical native body whose nested JSON is data in guided mode.
+    fn guided_native_body_start(&self, _text: &str, _at: usize) -> Option<usize> {
+        None
+    }
+
     /// Find a family-owned guided invoke opener, including accepted spelling variants.
     fn guided_invoke_at(&self, _text: &str) -> Option<(usize, usize)> {
         None

@@ -761,7 +761,11 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
             cells = driver.execute_script("""
                 const model = JSON.parse(document.getElementById('conformance-model').textContent);
                 const tab = model.tabs.find(t => t.id === 'tab-unified');
-                return tab.rows.filter(row => row.cells.malformed_json_then_two_valid_calls.cmp.dynamo.na !== 1).map(row => {
+                return tab.rows.filter(row => {
+                    if (!row.family) { return false; }
+                    const selected = row.cells.malformed_json_then_two_valid_calls.cmp[arguments[0]];
+                    return selected && selected.na !== 1;
+                }).map(row => {
                     const expected = row.cells.malformed_json_then_two_valid_calls.cmp;
                     const cell = [...document.querySelectorAll('#tab-unified td.cell[data-cmp]')]
                         .find(cell => cell.dataset.family === row.family &&
@@ -769,7 +773,7 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
                     return {family: row.family, classes: cell.className,
                         marker: cell.querySelector('.marker-text').textContent};
                 });
-            """)
+            """, version)
             assert cells
             for cell in cells:
                 red = version == "dynamo@0.7.13" and cell["family"] in {

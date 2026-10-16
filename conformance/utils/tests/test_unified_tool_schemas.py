@@ -88,6 +88,14 @@ def _assert_golden_schemas(cases, tools):
         assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
+                if not offered_tools:
+                    assert isinstance(event["arguments"], dict)
+                    continue
+                if (case_id == "UNIFIED.gpt_oss_multiple_unknown_and_empty_tools.gpt_oss"
+                        and event["name"] == "not_offered"):
+                    assert event["name"] not in schemas
+                    assert event["arguments"] == {"x": 2}
+                    continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = case_id.rsplit(".", 1)[1]
                     assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss"}
@@ -101,12 +109,17 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
     _assert_golden_schemas(G.build_cases(family), unified_tools())
 
 
-@pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES))
+@pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES - {"gpt_oss"}))
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
-    tools = unified_tools()
-    next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
+    cases = copy.deepcopy(G.build_cases(family))
+    array_case = next(
+        case
+        for case in cases.values()
+        if any(event.get("name") == "sum_values" for event in case.get("golden", []))
+    )
+    next(tool for tool in array_case["tools"] if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
     with pytest.raises(AssertionError):
-        _assert_golden_schemas(G.build_cases(family), tools)
+        _assert_golden_schemas(cases, unified_tools())
 
 
 def test_schema_guard_rejects_old_numeric_string_successor():

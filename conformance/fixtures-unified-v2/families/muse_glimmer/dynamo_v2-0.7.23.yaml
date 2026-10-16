@@ -63,22 +63,4 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides:
-  muse_unterminated_parameter_then_call:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.23
-      capture_origin:
-        crate_version: 0.7.23
-        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
-        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
-      inherited_from: null
-  muse_unterminated_parameter_then_empty_call:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.23
-      capture_origin:
-        crate_version: 0.7.23
-        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
-        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
-      inherited_from: null
+document_overrides: {}

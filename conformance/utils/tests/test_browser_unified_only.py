@@ -111,6 +111,22 @@ def test_unavailable_capture_is_omitted_and_older_links_can_select_it(matrix_dri
     assert not d.find_elements(By.CSS_SELECTOR, "[data-slot-capture='0'] option[value='dynamo_v1@9.2.13']")
 
 
+def test_gpt_oss_is_visible_in_unified_order_with_harmony_and_current_default(matrix_driver, rendered_page):
+    d = matrix_driver
+    load(d, rendered_page)
+    labels = d.find_elements(By.CSS_SELECTOR, "#tab-unified table[data-parity-table] td.model")
+    label = next(node for node in labels if node.text == "GPT-OSS")
+    assert label.is_displayed()
+    assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified table[data-parity-table] tr.section")
+    row = label.find_element(By.XPATH, "..")
+    assert row.find_elements(By.CSS_SELECTOR, "td.cell[data-family='gpt_oss']")
+    assert any("Harmony" in header.text for header in d.find_elements(By.CSS_SELECTOR, "#tab-unified th"))
+    assert selection(d) == {"keys": DEFAULTS, "reference": None}
+    selected = d.find_element(By.CSS_SELECTOR, "[data-slot-capture='0'] option:checked")
+    assert selected.get_attribute("value") == "dynamo"
+    assert "v2 Rust" in selected.text
+
+
 def test_gpt_oss_v1_batch_is_scored_against_ordered_golden(rendered_page):
     model = load_model(rendered_page)
     tab = next(item for item in model["tabs"] if item["id"] == "tab-unified")

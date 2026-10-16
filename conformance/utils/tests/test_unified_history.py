@@ -127,7 +127,7 @@ def test_current_corpus_adds_a_registered_family(tmp_path):
     input_document = {
         "family": "gpt_oss",
         "mode": "unified",
-        "model_label": "gpt_oss",
+        "model_label": "GPT-OSS",
         "cases": {
             case_key: {
                 "scenario": "tool_only",

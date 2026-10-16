@@ -199,6 +199,7 @@ from fixtures import (  # noqa: E402,F401
 # Row-label / visibility overrides keyed by tool calling family; ‡ is explained
 # by the legend note in conformance_table.html.j2.
 _TOOL_CALLING_LABEL_OVERRIDES = {
+    "gpt_oss": "GPT-OSS",
     "qwen3_coder": "Qwen 3 Coder / Nemotron V3‡",
 }
 # nemotron_nano: an alias for qwen3_coder, hide to avoid duplicate row
@@ -2961,13 +2962,16 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                 "duplicate_of": None,
                 "cmp": cmp, "facts": [], "tooltip": tooltip,
             }
-        rows.append({"family": f, "model_label": f, "model_label_html": f, "section": None,
+        label = _TOOL_CALLING_LABEL_OVERRIDES.get(f, f)
+        rows.append({"family": f, "model_label": label,
+                     "model_label_html": _model_label_html(label), "section": None,
                      "parser": None, "cells": cells})
 
     for column in columns:
         # Include reconstructed missing captures; their native prefills can differ.
         configs = [row["cells"][column["sub"]]["tooltip"]["init"] for row in rows
-                   if row["cells"][column["sub"]]["status"] != "na"]
+                   if row["family"] is not None
+                   and row["cells"][column["sub"]]["status"] != "na"]
         if configs and all(config == configs[0] for config in configs):
             column["init"] = configs[0]
 

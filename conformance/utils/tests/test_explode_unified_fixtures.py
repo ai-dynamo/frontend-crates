@@ -16,6 +16,48 @@ if str(SRC) not in sys.path:
 import explode_unified_fixtures as explode  # noqa: E402
 
 
+def test_request_stimulus_does_not_persist_the_finish_call_as_an_input_chunk() -> None:
+    record = {
+        "input": "first<|message|>second",
+        "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [
+            {"delta_text": "first"},
+            {"delta_text": "<|message|>second"},
+            {"delta_text": "‹finish›"},
+        ],
+    }
+
+    assert explode._request_stimulus(record, keep_finish_chunk=False) == {
+        "input": record["input"],
+        "init": record["init"],
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [{"delta_text": "first"}, {"delta_text": "<|message|>second"}],
+    }
+
+    assert explode._request_stimulus(record, keep_finish_chunk=True)["chunks"][-1] == {
+        "delta_text": "‹finish›"
+    }
+
+
+def test_historical_finish_chunk_ignores_retired_cases_without_request(tmp_path, monkeypatch) -> None:
+    historical = tmp_path / "fixtures-unified-v2" / "families" / "gpt_oss"
+    historical.mkdir(parents=True)
+    (historical / "inputs_and_golden.yaml").write_text(
+        "cases:\n  retired_case:\n    scenario: retired_case\n    request: null\n"
+    )
+    monkeypatch.setattr(explode, "CONF", tmp_path)
+    explode._historical_finish_chunks.cache_clear()
+
+    try:
+        assert explode._historical_finish_chunk("gpt_oss", "retired_case") is False
+        assert explode._historical_finish_chunk("gpt_oss", "new_case") is True
+    finally:
+        explode._historical_finish_chunks.cache_clear()
+
+
 def test_peer_error_wins_over_partial_output() -> None:
     result = {
         "error": "UnifiedParserError::ParsingFailed",

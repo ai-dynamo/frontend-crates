@@ -1,0 +1,360 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.27
+    git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+    source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+document:
+  mode: unified
+changes:
+  guided_json_native_parameter_array_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 8263013ea57a5c983d9bfd6c517a1add00e4fa23fd7223e10fdf0caeb89b49c5
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_object_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: f3bb49635572c920f9af31549c8f4d15df7a6d655a5cf126aa7da7ce6868d8e8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: e513c26acea175e94fd4bd63b01aac260d806333af45083dbdc0ce8dd30d1701
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: be4587b15ac19751e91139eed3ad246755738c24be5cdee3cbd615868cba0f40
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_quoted_bare_header_in_answer:
+    case_key: UNIFIED.35-guided_json_quoted_bare_header_in_answer
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <|open|>think<|sep|>self literal<|close|>think<|sep|>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|open|>think<|sep|>self literal<|close|>think<|sep|>
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-guided_response_quoted_control_braces_named
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|open|>call { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|open|>call { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-guided_response_quoted_control_braces_required
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|open|>call { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|open|>call { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+metadata_changes: {}
+document_overrides:
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_json_quoted_bare_header_in_answer:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_response_quoted_control_braces_named:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null
+  guided_response_quoted_control_braces_required:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin:
+        crate_version: 0.7.27
+        source_sha256: 4856ec040366f5395f3e77b70c664524ffa62956ff5ef35837e6512425d5be59
+        git_commit: cbdf6ccf2487871acabca4356f6dc5e9e93b3bed
+      inherited_from: null

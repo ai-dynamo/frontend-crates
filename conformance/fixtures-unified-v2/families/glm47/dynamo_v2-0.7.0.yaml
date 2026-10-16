@@ -2629,7 +2629,6 @@ changes:
           - kind: text
             text: done
 metadata_changes:
-  glm47_parameterless_call_shape_inside_argument: {}
   guided_quoted_reasoning_closer_named:
     init:
       starting_state: Reasoning
@@ -2655,9 +2654,14 @@ metadata_changes:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
+  native_quoted_control_in_response:
     init:
-      starting_state: Reasoning
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_quoted_control_then_call:
+    init:
+      starting_state: Response
       tool_output_mode: Native
       named_tool: null
   native_quoted_incomplete_header:
@@ -2665,22 +2669,17 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
   native_single_quote_contraction_response:
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-  native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
   native_single_quoted_word_control:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_then_call:
     init:
       starting_state: Response
       tool_output_mode: Native

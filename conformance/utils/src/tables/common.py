@@ -272,6 +272,7 @@ TOP_N_TOOL_CALLING_FAMILIES = [
     "gemma4",
     "glm47",
     "harmony",
+    "gpt_oss",
     "kimi_k2",
     "minimax_m2",
     "minimax_m3",
