@@ -41,6 +41,20 @@ Standard GitHub fork-and-PR workflow:
 7. Sign off your commits (see [Signing Your Work](#signing-your-work) below).
 8. Open the PR. CI must pass.
 
+### Link a tracked issue
+
+Non-draft PRs targeting `main` must reference the work they implement. The `PR Issue Link` workflow verifies that at least one referenced issue exists. Use `Fixes #123` to close a GitHub issue, `Relates to #123` to link without closing it, or an issue reference in another `ai-dynamo` repository. Members, owners, and collaborators can also use a Linear ID in the title, description, or branch name. Outside-org fork contributors use GitHub issues and do not need Linear access.
+
+References inside HTML comments, links to other pull requests, and Dynamo Enhancement Proposals alone do not satisfy the check. Draft PRs and PRs authored by `dependabot[bot]`, `github-actions[bot]`, or `copy-pr-bot[bot]` are exempt. Editing the PR title or description reruns the check; marking a draft ready for review also triggers it.
+
+### Issue-link rollout for maintainers
+
+The check starts advisory: a missing or invalid reference produces a failed check, but does not block merging until it is added to the required status checks. The announced enforcement date matches Dynamo's October 21, 2026 rollout, contingent on deployment and successful validation. The date in the workflow is notice text; it does not change repository settings automatically.
+
+1. Make `LINEAR_API_KEY` available to this repository through an organization Actions secret or a repository Actions secret. Verify that a known Linear issue from a member-authored PR reports **found**, not **present but unverified**. A missing key or API outage intentionally passes a present reference as unverified; it is not proof that the ticket exists. Linear titles are never published.
+2. After the workflow lands on `main`, verify that a non-draft PR without a reference fails and that editing its description to reference a valid GitHub issue passes. Verify draft-to-ready triggering and the outside-org fork policy. A PR introducing this workflow can test its checker code, but the trusted metadata workflow runs from the base repository.
+3. Once validation succeeds, a repository administrator adds **Require an issue link** from GitHub Actions to the default-branch ruleset alongside `rust`, on or after the announced date. Keep the check advisory if setup or validation is incomplete; update the workflow date, script default, PR template, and this notice together if rollout is postponed.
+
 ### Reporting Issues
 
 - **Bugs / unexpected behavior**: open a [GitHub issue](https://github.com/ai-dynamo/frontend-crates/issues) with a minimal repro and the crate version (`cargo pkgid`).
