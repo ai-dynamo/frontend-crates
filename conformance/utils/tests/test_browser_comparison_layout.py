@@ -17,6 +17,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
+from conformance.utils.src.dynamo_version import crate_version
+
 pytestmark = pytest.mark.skipif(
     not any(shutil.which(binary) for binary in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")),
     reason="no headless Chrome available",
@@ -24,6 +26,7 @@ pytestmark = pytest.mark.skipif(
 
 DEFAULTS = ["dynamo"]
 DEFAULT_SLOTS = [DEFAULTS[0], None, None]
+DYNAMO_V2_VERSION = crate_version(Path(__file__).resolve().parents[3] / "parsers/v2/Cargo.toml")
 
 
 def assert_semver_descending(labels):
@@ -148,7 +151,7 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
                     return styles;
                 """)
                 assert d.execute_script(legend_matches)
-                assert {item["status"] for item in styles} == {"pass", "unsupported"}
+                assert {item["status"] for item in styles} == {"pass", "unsupported", "diverge"}
                 assert all(item["matches"] and item["width"] > 0 for item in styles)
         choose_slot(d, 1, "vllm", "vllm_python_batch@0.26.0")
         assert d.execute_script(legend_matches)
@@ -205,7 +208,7 @@ def test_three_capture_slots_drive_the_original_report(matrix_driver, rendered_p
     assert selection(d) == {"keys": DEFAULTS, "reference": None}
     assert len(d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-capture]")) == 1
     assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("value") == DEFAULTS[0]
-    assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("aria-label") == "Choose capture for comparison slot 1: Dynamo, v2 Rust 0.7.22 (stream, UnifiedParser)"
+    assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("aria-label") == f"Choose capture for comparison slot 1: Dynamo, v2 Rust {DYNAMO_V2_VERSION} (stream, UnifiedParser)"
     assert not d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0'] option[value='']")
     assert [element.text for element in d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-engine]")] == ["Dynamo", "", ""]
     assert not d.find_elements(By.CSS_SELECTOR, "[data-slot-capture] option[value='']")
@@ -432,7 +435,7 @@ def test_engine_choice_opens_the_normal_sorted_version_select(matrix_driver, ren
     labels = {option.get_attribute("value"): option.text for option in dynamo.find_elements(By.TAG_NAME, "option")}
     assert labels["dynamo@0.6.1"].startswith("v2 Rust 0.6.1 ")
     assert labels["dynamo_v1@9.2.10"] == "v1 Rust 9.2.10 (batch)"
-    assert labels[DEFAULTS[0]].startswith("v2 Rust 0.7.22 ")
+    assert labels[DEFAULTS[0]].startswith(f"v2 Rust {DYNAMO_V2_VERSION} ")
     assert labels["dynamo_v1_jail@10.0.1"] == "v1 Rust 10.0.1 (batch + jail-buffer)"
     assert labels["dynamo_v1@10.0.1"] == "v1 Rust 10.0.1 (batch)"
     jail_option = dynamo.find_element(By.CSS_SELECTOR, "option[value='dynamo_v1_jail@10.0.1']")

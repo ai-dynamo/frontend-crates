@@ -11,6 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
 from conformance.utils.tests.test_browser_comparison_layout import DEFAULTS, DEFAULT_SLOTS, choose_slot, load, matrix_driver, selection
+from conformance.utils.src import gen_unified_golden
 from conformance.utils.src.validate_conformance_status import load_model, validate_unified_only_report
 
 
@@ -22,12 +23,15 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert {row["tab"] for row in status["reports"]} == {"tab-unified"}
     assert status["comparison_defaults"]["tab-unified"] == DEFAULT_SLOTS
     batch = [capture for capture in status["captures"] if capture["mode"] == "batch"]
+    applicable_pairs = sum(len(gen_unified_golden.build_cases(family)) for family in gen_unified_golden.FAMILIES)
     assert len(batch) == 35
-    assert all(capture["considered"] == 2027 for capture in batch)
+    assert all(capture["considered"] == applicable_pairs for capture in batch)
     assert all(capture["attempted"] == capture["captured"] + capture["parser_exception"] for capture in batch)
     assert any(capture["mismatches"] for capture in batch)
     blocked = next(capture for capture in batch if capture["capture"] == "dynamo_v1@9.2.13")
-    assert blocked["source_unavailable"] == 2027
+    assert blocked["source_unavailable"] > 0
+    assert blocked["source_unavailable"] + blocked["missing_capture"] == applicable_pairs
+    assert blocked["attempted"] == 0
 
 
 @pytest.mark.parametrize("transpose", [False, True])
