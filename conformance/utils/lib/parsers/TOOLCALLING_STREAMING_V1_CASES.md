@@ -66,6 +66,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.8.b`** Narration after tool call only. Streaming form of `TOOLCALLING.batch.8.b`.
 - **`TOOLCALLING.streamv1.8.c`** Narration both before and after (sandwich). Streaming form of `TOOLCALLING.batch.8.c`.
 - **`TOOLCALLING.streamv1.8.d`** Narration between multiple tool calls. Streaming form of `TOOLCALLING.batch.8.d`.
+- **`TOOLCALLING.streamv1.8.f`** through **`TOOLCALLING.streamv1.8.l`** DSML content-to-call separator (DeepSeek V3.2 and V4). Streaming form of `TOOLCALLING.batch.8.f` through `TOOLCALLING.batch.8.l`; DeepSeek V3.2 has no Dynamo v2 parser, so its v2 cell is unavailable.
 - **`TOOLCALLING.streamv1.9.a`** Empty model text. Streaming form of `TOOLCALLING.batch.9.a`.
 - **`TOOLCALLING.streamv1.9.b`** Blank / whitespace-only model text. Streaming form of `TOOLCALLING.batch.9.b`.
 - **`TOOLCALLING.streamv1.10`** Duplicate calls (same name twice). Streaming form of `TOOLCALLING.batch.10`.
@@ -80,10 +81,12 @@ batch analog live in a separate band (e.g. partial-token chunking is
 - **`TOOLCALLING.streamv1.31.a`** Two or more calls, with a call-separator character inside one argument string before the real inter-call separator. Streaming form of `TOOLCALLING.batch.31.a`.
 - **`TOOLCALLING.streamv1.31.b`** Two or more calls, with nested structures or structural delimiters inside one call before later calls. Streaming form of `TOOLCALLING.batch.31.b`.
 - **`TOOLCALLING.streamv1.50`** Partial-token chunking (chunk boundary splits a grammar token mid-string). Partial-token matching must return `keep buffering`, not flush as plain text. Streaming-only — no batch analog.
+- **`TOOLCALLING.streamv1.50.b`** DSML separator newlines and the calls opener arrive in separate chunks; the separator is held until the opener resolves and is not emitted as content.
+- **`TOOLCALLING.streamv1.50.c`** DSML punctuation and separator share one token-shaped chunk (`".\n\n"`) before a partial opener.
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
-Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
+Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `8.f` through `8.l`, `50.b` and `50.c`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
 
 ## `TOOLCALLING.streamv1.50` — Partial-token chunking
 

@@ -182,6 +182,12 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
+    **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
+        "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",
+        "dsml_empty_content_separator", "dsml_bare_invoke_two_lf", "dsml_bare_invoke_four_lf",
+        "dsml_whitespace_content_separator", "dsml_reasoning_then_separator",
+    ], 1)},
 }
 
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
@@ -264,6 +270,7 @@ GROUP_DESCRIPTION_PREFIXES = {
     "glm5": ("glm47_",),
     "deepseek": ("deepseek_v41_",),
     "muse": ("muse_",),
+    "dsml": ("dsml_",),
 }
 
 

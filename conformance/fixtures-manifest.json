@@ -1,9 +1,9 @@
 {
-  "snapshot": "20261015_174902",
-  "created_pt": "2026-10-15 17:49:02 America/Los_Angeles",
+  "snapshot": "20261015_232035",
+  "created_pt": "2026-10-15 23:20:35 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "10.0.6",
-    "dynamo-parsers-v2": "0.7.23"
+    "dynamo-parsers-v2": "0.7.24"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v1.tar.gz",
-      "sha256": "c183fb71bd18cfbb081918c360202787ac97c69cfc8079b7b7a7f2caaf2257ff",
-      "size": 28478
+      "sha256": "6c9a5d7f1ae9c538eb5b8a1d3ebb3a48d82f5205991536bd0755db0c53c789a2",
+      "size": 28552
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz",
@@ -107,8 +107,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
-      "sha256": "209c69c4d3a84f3dcbb581d2c2f7b8b2947635d875719a4ccf94c6abf62cdd97",
-      "size": 172321
+      "sha256": "8af3bce0811928ca5ea0972e34bb150aa8aad920d4c98fd0f3b0884ce5cadcf7",
+      "size": 173041
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -281,6 +281,11 @@
       "size": 34304
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.24.tar.gz",
+      "sha256": "af284cb42657bc42370084cdd296bdc9b583266524224223a24e1e83ea49910c",
+      "size": 603
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.3.tar.gz",
       "sha256": "0ac5755d9cffad2c11122661a98d67b874dac9905c664984ff646443fd22b29c",
       "size": 8717
@@ -317,8 +322,8 @@
     },
     {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
-      "sha256": "adc89cc3be3b34de095dec7e7401ea69ff15542d247f3fe8271d96a470bcdc7d",
-      "size": 200096
+      "sha256": "843c7dedb9126183b420f904ad0b2185523d98d956766613fe109b59ac222742",
+      "size": 201422
     },
     {
       "path": "toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -373,8 +378,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "ffc4d29e591effedfacb7b164bbb5a2fb6a30f58b0f3653cc5d11c17a355e937",
-      "size": 46276915
+      "sha256": "53479ca6e41cb13e0a2ed9aa21a83788447a49667811a171091d846f8b6acf47",
+      "size": 46334759
     }
   ],
   "inactive_shards": []

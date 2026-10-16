@@ -392,6 +392,7 @@ unified_display:
     qwen3: 'Single Family Test: Qwen3-specific tests'
     kimi: 'Single Family Test: Kimi K3 XTML'
     muse: 'Single Family Test: Muse-specific'
+    dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
     guided_response_rejected_header_quote_ownership: deepseek_v4
   prefixes:

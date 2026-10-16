@@ -245,6 +245,13 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          f: {desc: "DSML: the encoder's two-LF separator before a calls block is framing, not content", required: false}
+          g: {desc: "DSML: four LFs before a calls block keep the two that belong to the content", required: false}
+          h: {desc: "DSML: a calls block directly after content removes nothing from the content", required: false}
+          i: {desc: "DSML: a tool-only turn's separator before the calls block emits no content", required: false}
+          j: {desc: "DSML: a bare invocation consumes the two-LF separator", required: false}
+          k: {desc: "DSML: a bare invocation keeps the two LFs that belong to the content", required: false}
+          l: {desc: "DSML: whitespace-only content keeps its two LFs; only the separator is framing", required: false}
       "9":
         title: Empty / blank input
         required: true
@@ -501,6 +508,13 @@ suites:
           b: {desc: Narration after the tool call only, required: true}
           c: {desc: Narration both before and after (sandwich), required: true}
           d: {desc: Narration between multiple tool calls, required: true}
+          f: {desc: "DSML: the encoder's two-LF separator before a calls block is framing, not content", required: false}
+          g: {desc: "DSML: four LFs before a calls block keep the two that belong to the content", required: false}
+          h: {desc: "DSML: a calls block directly after content removes nothing from the content", required: false}
+          i: {desc: "DSML: a tool-only turn's separator before the calls block emits no content", required: false}
+          j: {desc: "DSML: a bare invocation consumes the two-LF separator", required: false}
+          k: {desc: "DSML: a bare invocation keeps the two LFs that belong to the content", required: false}
+          l: {desc: "DSML: whitespace-only content keeps its two LFs; only the separator is framing", required: false}
       "9":
         title: Empty / blank input
         required: true
@@ -543,6 +557,8 @@ suites:
         required: true
         cases:
           "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
+          b: {desc: "DSML: the separator's LFs and the calls opener arrive in separate chunks", required: false}
+          c: {desc: "DSML: punctuation and the separator share one chunk before a partial opener", required: false}
       "51":
         title: Tool-only reasoning projection
         required: false

@@ -390,6 +390,8 @@ shape is being exercised so divergences land on a precise row.
   text → call → text → call → text. Tests that inter-call text is
   preserved (not just leading/trailing).
 
+- **`TOOLCALLING.batch.8.f`** through **`TOOLCALLING.batch.8.l`** DSML content-to-call separator (DeepSeek V3.2 and V4). The encoder renders a tool turn as `content + "\n\n" + calls`; exactly that separator is framing, so `normal_text` excludes it while any other whitespace stays content. `.f` one separator after prose, `.g` four newlines keep two, `.h` no separator, `.i` empty content, `.j` and `.k` the same for a bare invocation, `.l` whitespace-only content. Inputs use the encoder's call layout; authored by `utils/src/gen_dsml_framing_cases.py`. Single Family Test scope: the separator exists only in the DeepSeek templates.
+
 All four sub-cases share the same parser contract — `tool_calls` extracted,
 `normal_text` preserved by position. `.a`/`.b`/`.c` are single-call shapes
 that vary only in where the narration sits; `.d` is the multi-call

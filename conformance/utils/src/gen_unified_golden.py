@@ -2587,6 +2587,63 @@ for _schema_probe in CONFORMANCE_CASES:
     ))
 
 
+_DSML_TEMPLATE_DIALECTS = {
+    "deepseek_v3_2": ("", "function_calls"),
+    "deepseek_v4": ("", "tool_calls"),
+    "deepseek_v41": (" ", " calls"),
+}
+
+
+def r_dsml_template_call(fam, bare=False):
+    """One get_weather call laid out exactly as the DeepSeek encoder renders it."""
+    gap, block = _DSML_TEMPLATE_DIALECTS[fam]
+    invoke = (
+        f'<｜DSML｜{gap}invoke name="get_weather">\n'
+        f'<｜DSML｜{gap}parameter name="location" string="true">NYC</｜DSML｜{gap}parameter>\n'
+        f'</｜DSML｜{gap}invoke>'
+    )
+    return invoke if bare else f"<｜DSML｜{block}>\n{invoke}\n</｜DSML｜{block}>"
+
+
+# The DeepSeek encoders render an assistant tool turn as `content + "\n\n" + calls`,
+# even when content is empty. Exactly that one separator is framing; any other
+# whitespace is content, so parsing and re-rendering reproduces the generated text.
+DSML_FRAMING = [
+    ("dsml_separator_two_lf", "The encoder's two-LF separator before a calls block is framing, not content.",
+     "I will check the weather.", "\n\n", False),
+    ("dsml_separator_four_lf", "Four LFs before a calls block keep the two that belong to the content.",
+     "I will check the weather.\n\n", "\n\n", False),
+    ("dsml_no_separator", "A calls block directly after content removes nothing from the content.",
+     "I will check the weather.", "", False),
+    ("dsml_empty_content_separator", "A tool-only turn renders just the separator before the calls block, so no content is emitted.",
+     "", "\n\n", False),
+    ("dsml_bare_invoke_two_lf", "A bare invocation consumes the two-LF separator, like a wrapped calls block.",
+     "I will check the weather.", "\n\n", True),
+    ("dsml_bare_invoke_four_lf", "A bare invocation keeps the two LFs that belong to the content.",
+     "I will check the weather.\n\n", "\n\n", True),
+    ("dsml_whitespace_content_separator", "Whitespace-only content keeps its two LFs; only the separator is framing.",
+     "\n\n", "\n\n", False),
+]
+_DSML_FAMILIES = ("deepseek_v4", "deepseek_v41")
+_DSML_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+_DSML_CALL = {"kind": "tool_call", "name": "get_weather", "arguments": {"location": "NYC"}}
+for _scenario, _description, _content, _separator, _bare in DSML_FRAMING:
+    EDGE.append((
+        _scenario, _description, ["I7"],
+        ([{"kind": "text", "text": _content}] if _content else []) + [_DSML_CALL],
+        _DSML_INIT,
+        OnlyFamilies({f: (_content + _separator + r_dsml_template_call(f, _bare), M, M) for f in _DSML_FAMILIES}),
+    ))
+EDGE.append((
+    "dsml_reasoning_then_separator",
+    "Reasoning, the separator, then a calls block: the common tool-only turn emits no content.",
+    ["I7"],
+    [{"kind": "reasoning", "text": "Check weather."}, _DSML_CALL],
+    _DSML_INIT,
+    OnlyFamilies({f: (r_reason(f, "Check weather.") + "\n\n" + r_dsml_template_call(f), M, M) for f in _DSML_FAMILIES}),
+))
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}

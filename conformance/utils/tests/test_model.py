@@ -32,6 +32,7 @@ if str(UTILS / "src") not in sys.path:
     sys.path.insert(0, str(UTILS / "src"))
 
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
+from fixtures import _version_sort_key  # noqa: E402
 from case_variants import leaf_cells
 from schema_cases import ARGUMENT_SECTIONS, schema_fold
 import unified_taxonomy
@@ -1740,12 +1741,26 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
         # Each surface records its own release; Unified's manifest version can advance independently.
         candidate = next(c for c in tab["candidates"] if c["key"].startswith(candidate_prefix))
         candidate_key = candidate["key"]
-        captures = root / (capture_tree if mode == "batch-stream" else f"{capture_tree}{candidate['version']}")
-        assert captures.is_dir(), captures
+        if mode == "batch-stream":
+            capture_dirs = [root / capture_tree]
+        else:
+            # Release shards are changed-only: a case's capture is its newest one up to the candidate.
+            base = root / capture_tree
+            capture_dirs = sorted(
+                (path for path in base.parent.glob(f"{base.name}*")
+                 if _version_sort_key(path.name.removeprefix(base.name)) <= _version_sort_key(candidate["version"])),
+                key=lambda path: _version_sort_key(path.name.removeprefix(base.name)),
+            )
+        assert capture_dirs and capture_dirs[-1].is_dir(), (mode, candidate["version"])
+        files = {}
+        for captures in capture_dirs:
+            for path in sorted(captures.glob("*/TOOLCALLING.*.7.schema.yaml")):
+                doc = yaml.safe_load(path.read_text())
+                entry = files.setdefault((path.parent.name, path.name), {"family": doc["family"], "cases": {}})
+                entry["cases"].update(doc["cases"])
         mode_checked = 0
-        for path in sorted(captures.glob("*/TOOLCALLING.*.7.schema.yaml")):
-            doc = yaml.safe_load(path.read_text())
-            inputs = yaml.safe_load((root / input_tree / "inputs" / path.parent.name / path.name).read_text())["cases"]
+        for (family_dir, filename), doc in sorted(files.items()):
+            inputs = yaml.safe_load((root / input_tree / "inputs" / family_dir / filename).read_text())["cases"]
             for cid, capture in doc["cases"].items():
                 if "unavailable" in capture:
                     continue
