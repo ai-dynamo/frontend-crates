@@ -5,6 +5,7 @@
 
 use crate::structural_tag::StructuralTagBuilder;
 
+use super::beam::BeamToolStreamParser;
 use super::debug::{self, DebugToolParser};
 use super::dsml::DeepSeekV4ToolStreamParser;
 use super::gemma4::Gemma4ToolStreamParser;
@@ -56,6 +57,10 @@ family_registry! {
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
     "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
+    "beam"         => (
+        BeamToolStreamParser::create,
+        Some(&crate::structural_tag::builders::BEAM)
+    ),
     "glm47"        => (
         Glm47ToolStreamParser::create,
         Some(&crate::structural_tag::builders::GLM47)
@@ -112,6 +117,7 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        assert!(structural_tag_builder_for_family("beam").is_some());
         assert!(structural_tag_builder_for_family("gemma4").is_none());
         assert!(structural_tag_builder_for_family("unknown").is_none());
     }

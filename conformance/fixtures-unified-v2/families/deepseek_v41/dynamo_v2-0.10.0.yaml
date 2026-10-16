@@ -1,0 +1,17 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.10.0
+    git_commit: 622d4ebada6824c72ef3143603f0c1056cbdfb90
+    source_sha256: 22028c172bdf3c2979b9120f81895140a1512a86c16627257e06d61e670f2f65
+document:
+  mode: unified
+changes:
+  prefilled_reasoning_then_text:
+    absent: true
+  prefilled_reasoning_then_text_then_tool:
+    absent: true
+  prefilled_reasoning_with_tool:
+    absent: true
+metadata_changes: {}
+document_overrides: {}

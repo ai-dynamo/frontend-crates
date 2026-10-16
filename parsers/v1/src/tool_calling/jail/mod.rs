@@ -42,6 +42,10 @@ use serde_json::value::RawValue;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
+use crate::tool_calling::beam::{
+    BeamArgumentFraming, BeamCompletion, scan_completion_with as beam_scan_completion,
+    try_tool_call_parse_beam_with,
+};
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
@@ -346,6 +350,7 @@ struct ChoiceJailState {
     accumulated_logprobs: Option<ChatChoiceLogprobs>,
     /// Buffer for partial marker matches across chunks
     partial_match_buffer: String,
+    partial_logprobs_buffer: Option<ChatChoiceLogprobs>,
     /// Possible parser-owned terminal suffix, held until EOF or more visible text.
     terminal_suffix_buffer: String,
     /// Whole token records belonging to the held suffix.
@@ -365,6 +370,8 @@ struct ChoiceJailState {
     /// grammar the payload's shape is already known, so calls can be released as
     /// they arrive instead of at the closing brace.
     guided_cursor: Option<GuidedStreamCursor>,
+    /// Fatal strict-mode failure waiting to be surfaced on `Annotated::error`.
+    error: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -529,6 +536,75 @@ struct CompletedJail {
 enum JailCompletion {
     Incomplete,
     Complete(CompletedJail),
+    /// The jailed call can never complete and the request asked for strict rejection.
+    Failed(String),
+}
+
+/// A token that would cross `prefix_chars` stays with the suffix: entries
+/// are emitted with the chunk where their token completes, so the prefix
+/// never carries an entry for bytes it did not emit.
+fn split_logprobs_at_chars(
+    logprobs: &Option<ChatChoiceLogprobs>,
+    prefix_chars: usize,
+) -> (Option<ChatChoiceLogprobs>, Option<ChatChoiceLogprobs>) {
+    let Some(lp) = logprobs else {
+        return (None, None);
+    };
+    let Some(content) = lp.content.as_ref() else {
+        return (Some(lp.clone()), None);
+    };
+    let mut split_at = content.len();
+    let mut chars = 0usize;
+    for (i, entry) in content.iter().enumerate() {
+        if chars >= prefix_chars {
+            split_at = i;
+            break;
+        }
+        let token_chars = entry.token.chars().count();
+        if chars + token_chars > prefix_chars {
+            split_at = i;
+            break;
+        }
+        chars += token_chars;
+    }
+    let mut prefix = lp.clone();
+    let mut suffix = lp.clone();
+    prefix.content = Some(content[..split_at].to_vec());
+    suffix.content = Some(content[split_at..].to_vec());
+    // Refusal entries have no char alignment to the content split; emit
+    // them once with the prefix instead of cloning them into both halves.
+    suffix.refusal = None;
+    if suffix.content.as_ref().is_some_and(|c| c.is_empty()) {
+        suffix.content = None;
+    }
+    if prefix.content.as_ref().is_some_and(|c| c.is_empty()) {
+        prefix.content = None;
+    }
+    (Some(prefix), Some(suffix))
+}
+
+fn merge_held_logprobs(
+    held: &mut Option<ChatChoiceLogprobs>,
+    current: Option<ChatChoiceLogprobs>,
+) -> Option<ChatChoiceLogprobs> {
+    let held_taken = held.take();
+    match (held_taken, current) {
+        (None, c) => c,
+        (h, None) => h,
+        (Some(mut h), Some(c)) => {
+            match (h.content.as_mut(), c.content.as_ref()) {
+                (Some(hc), Some(cc)) => hc.extend(cc.iter().cloned()),
+                (None, Some(cc)) => h.content = Some(cc.clone()),
+                _ => {}
+            }
+            match (h.refusal.as_mut(), c.refusal.as_ref()) {
+                (Some(hr), Some(cr)) => hr.extend(cr.iter().cloned()),
+                (None, Some(cr)) => h.refusal = Some(cr.clone()),
+                _ => {}
+            }
+            Some(h)
+        }
+    }
 }
 
 fn create_choice_stream(
@@ -605,6 +681,7 @@ impl ChoiceJailState {
             accumulated_content: String::new(),
             accumulated_logprobs: None,
             partial_match_buffer: String::new(),
+            partial_logprobs_buffer: None,
             terminal_suffix_buffer: String::new(),
             terminal_suffix_logprobs: Vec::new(),
             terminal_suffix_after_tool_call: false,
@@ -613,7 +690,27 @@ impl ChoiceJailState {
             pending_reasoning_content: None,
             completion_progress: JailCompletionProgress::default(),
             guided_cursor: guided.map(GuidedStreamCursor::new),
+            error: None,
         }
+    }
+
+    /// Append a chunk's logprob entries to the pending pool. Every arm
+    /// below draws from this pool, so entries stay in text order whether
+    /// the chunk is emitted, held, or jailed.
+    fn feed_entries(&mut self, current: Option<ChatChoiceLogprobs>) {
+        let merged = merge_held_logprobs(&mut self.partial_logprobs_buffer, current);
+        self.partial_logprobs_buffer = merged;
+    }
+
+    /// Consume pending logprob entries for `chars` characters of emitted
+    /// text, leaving the remainder held for the text still buffered; a
+    /// token that crosses the boundary stays pending for the next
+    /// emission.
+    fn consume_pending_entries(&mut self, chars: usize) -> Option<ChatChoiceLogprobs> {
+        let available = self.partial_logprobs_buffer.take()?;
+        let (front, rest) = split_logprobs_at_chars(&Some(available), chars);
+        self.partial_logprobs_buffer = rest;
+        front
     }
 
     fn begin_jail(&mut self, content: String, logprobs: Option<ChatChoiceLogprobs>) {
@@ -756,11 +853,30 @@ impl ChoiceJailState {
             return;
         }
 
+        // Combine a pending hold with this chunk, mirroring process_content:
+        // the matcher resolves it and the split re-measures against the
+        // combined text, so a second consecutive short-suffix chunk cannot
+        // discard the first hold's text.
+        let held_text;
+        let content = if self.partial_match_buffer.is_empty() {
+            content
+        } else {
+            held_text = format!(
+                "{}{}",
+                std::mem::take(&mut self.partial_match_buffer),
+                content
+            );
+            &held_text
+        };
+
+        self.feed_entries(choice.logprobs.clone());
+
         if let MatchResult::Partial {
             prefix, partial, ..
         } = jail_stream.marker_matcher.process_chunk(content, "")
         {
             if !prefix.is_empty() {
+                let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                 #[allow(deprecated)]
                 let trailing_choice = create_choice_stream(
                     choice.index,
@@ -768,7 +884,7 @@ impl ChoiceJailState {
                     &prefix,
                     None,
                     None,
-                    choice.logprobs.clone(),
+                    prefix_lp,
                 );
                 emissions.push(ChoiceEmission::Trailing(trailing_choice));
             }
@@ -778,6 +894,7 @@ impl ChoiceJailState {
 
         if let Some((prefix, partial)) = jail_stream.split_partial_tool_call_start(content) {
             if !prefix.is_empty() {
+                let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                 #[allow(deprecated)]
                 let trailing_choice = create_choice_stream(
                     choice.index,
@@ -785,14 +902,16 @@ impl ChoiceJailState {
                     prefix,
                     None,
                     None,
-                    choice.logprobs.clone(),
+                    prefix_lp,
                 );
                 emissions.push(ChoiceEmission::Trailing(trailing_choice));
             }
             self.partial_match_buffer = partial.to_string();
         } else if jail_stream.should_start_jail(content) {
-            self.begin_jail(content.to_string(), None);
+            let remaining = self.partial_logprobs_buffer.take();
+            self.begin_jail(content.to_string(), remaining);
         } else {
+            let all = self.partial_logprobs_buffer.take();
             #[allow(deprecated)]
             let trailing_choice = create_choice_stream(
                 choice.index,
@@ -800,7 +919,7 @@ impl ChoiceJailState {
                 content,
                 None,
                 choice.finish_reason,
-                choice.logprobs.clone(),
+                all,
             );
             emissions.push(ChoiceEmission::Trailing(trailing_choice));
         }
@@ -974,6 +1093,10 @@ impl ChoiceJailState {
         let (jailed_part, trailing_part) = self.accumulated_content.split_at(split_pos);
         let jailed_owned = jailed_part.to_string();
         let trailing_owned = trailing_part.to_string();
+        if let Some(error) = jail_stream.strict_rejection(&jailed_owned) {
+            self.error = Some(error);
+            return;
+        }
         let jail_logprobs = self.take_accumulated_logprobs();
 
         let mut unjailed_choice = jail_stream
@@ -1011,6 +1134,8 @@ impl ChoiceJailState {
     ) -> Vec<ChoiceEmission> {
         let mut emissions = Vec::new();
         if !self.is_jailed {
+            self.feed_entries(choice.logprobs.clone());
+
             // Use the marker matcher to detect complete/partial markers
             let match_result = jail_stream
                 .marker_matcher
@@ -1029,6 +1154,7 @@ impl ChoiceJailState {
 
                     // Emit prefix if any
                     if !prefix.is_empty() && !prefix_has_harmony_protocol {
+                        let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                         #[allow(deprecated)]
                         let prefix_choice = create_choice_stream(
                             choice.index,
@@ -1036,7 +1162,7 @@ impl ChoiceJailState {
                             &prefix,
                             None,
                             choice.finish_reason,
-                            choice.logprobs.clone(),
+                            prefix_lp,
                         );
                         emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                     }
@@ -1048,7 +1174,8 @@ impl ChoiceJailState {
                         format!("{}{}", marker, suffix)
                     };
 
-                    self.begin_jail(full_content, choice.logprobs.clone());
+                    let remaining = self.partial_logprobs_buffer.take();
+                    self.begin_jail(full_content, remaining);
                     let completion = jail_stream
                         .check_jail_completion(
                             &self.accumulated_content,
@@ -1057,9 +1184,18 @@ impl ChoiceJailState {
                         .await;
                     self.partial_match_buffer.clear();
 
-                    if let JailCompletion::Complete(completed) = completion {
-                        self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
+                    match completion {
+                        JailCompletion::Complete(completed) => {
+                            self.emit_completed_jail(
+                                completed,
+                                choice,
+                                jail_stream,
+                                &mut emissions,
+                            )
                             .await;
+                        }
+                        JailCompletion::Failed(error) => self.error = Some(error),
+                        JailCompletion::Incomplete => {}
                     }
                 }
 
@@ -1071,13 +1207,15 @@ impl ChoiceJailState {
                     if is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                         && contains_harmony_protocol(&prefix)
                     {
-                        self.begin_jail(format!("{}{}", prefix, partial), choice.logprobs.clone());
+                        let remaining = self.partial_logprobs_buffer.take();
+                        self.begin_jail(format!("{}{}", prefix, partial), remaining);
                         self.partial_match_buffer.clear();
                         return emissions;
                     }
 
                     // Emit the safe prefix
                     if !prefix.is_empty() {
+                        let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                         #[allow(deprecated)]
                         let prefix_choice = create_choice_stream(
                             choice.index,
@@ -1085,7 +1223,7 @@ impl ChoiceJailState {
                             &prefix,
                             None,
                             choice.finish_reason,
-                            choice.logprobs.clone(),
+                            prefix_lp,
                         );
                         emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                     }
@@ -1106,6 +1244,7 @@ impl ChoiceJailState {
                         jail_stream.split_partial_tool_call_start(&content)
                     {
                         if !prefix.is_empty() {
+                            let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                             #[allow(deprecated)]
                             let prefix_choice = create_choice_stream(
                                 choice.index,
@@ -1113,17 +1252,19 @@ impl ChoiceJailState {
                                 prefix,
                                 None,
                                 None,
-                                choice.logprobs.clone(),
+                                prefix_lp,
                             );
                             emissions.push(ChoiceEmission::PassThrough(prefix_choice));
                         }
                         self.partial_match_buffer = partial.to_string();
                     } else if jail_stream.should_start_jail(&content) {
-                        self.begin_jail(content, choice.logprobs.clone());
+                        let remaining = self.partial_logprobs_buffer.take();
+                        self.begin_jail(content, remaining);
                         self.partial_match_buffer.clear();
                     } else {
                         // No markers - emit everything
                         if !content.is_empty() {
+                            let all = self.partial_logprobs_buffer.take();
                             #[allow(deprecated)]
                             let pass_through_choice = create_choice_stream(
                                 choice.index,
@@ -1131,7 +1272,7 @@ impl ChoiceJailState {
                                 &content,
                                 None,
                                 choice.finish_reason,
-                                choice.logprobs.clone(),
+                                all,
                             );
                             emissions.push(ChoiceEmission::PassThrough(pass_through_choice));
                         }
@@ -1152,9 +1293,13 @@ impl ChoiceJailState {
                 .check_jail_completion(&self.accumulated_content, &mut self.completion_progress)
                 .await;
 
-            if let JailCompletion::Complete(completed) = completion {
-                self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
-                    .await;
+            match completion {
+                JailCompletion::Complete(completed) => {
+                    self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
+                        .await;
+                }
+                JailCompletion::Failed(error) => self.error = Some(error),
+                JailCompletion::Incomplete => {}
             }
             // If not unjailing, only the guided deltas above (if any) are emitted.
         }
@@ -1306,6 +1451,11 @@ impl ChoiceJailState {
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
+            if let Some(error) = jail_stream.strict_rejection(&self.accumulated_content) {
+                self.error = Some(error);
+                self.end_jail();
+                return Vec::new();
+            }
             // Create a dummy choice for the method call
             #[allow(deprecated)]
             let dummy_choice = create_choice_stream(
@@ -1354,6 +1504,7 @@ impl ChoiceJailState {
             }
         } else if !self.partial_match_buffer.is_empty() {
             let mut content = std::mem::take(&mut self.partial_match_buffer);
+            let mut held_logprobs = self.partial_logprobs_buffer.take();
             if self.stream_finish_reason == Some(FinishReason::Length)
                 && policy.truncated_end_markers.iter().any(|(marker, prefix)| {
                     content.starts_with(prefix) && marker.starts_with(&content)
@@ -1362,6 +1513,7 @@ impl ChoiceJailState {
                 // The limit interrupted a reserved close marker, not prose.
                 // Still emit its terminal chunk with the original finish reason.
                 content.clear();
+                held_logprobs = None;
             }
             let choice = create_choice_stream(
                 self.index,
@@ -1369,7 +1521,7 @@ impl ChoiceJailState {
                 &content,
                 None,
                 self.stream_finish_reason,
-                None,
+                held_logprobs,
             );
             Some(ChoiceEmission::Content(choice))
         } else {
@@ -1467,12 +1619,35 @@ pub struct JailedStream {
     /// of this jail (one terminal delta becomes many), so the serving layer opts in
     /// per request rather than inheriting it. Mirrors `StreamBestEffort` in v2.
     guided_streaming: bool,
+    /// Surface a malformed tool call as `Annotated::error` instead of dropping it.
+    /// Honoured by the Beam parsers only; other families keep their defaults.
+    strict_tool_errors: bool,
 }
 
 impl JailedStream {
     /// Create a new builder for configuring a JailedStream
     pub fn builder() -> JailedStreamBuilder {
         JailedStreamBuilder::new()
+    }
+
+    /// The Beam argument framing when the configured parser is a Beam parser.
+    fn beam_framing(&self) -> Option<BeamArgumentFraming> {
+        let name = self.tool_call_parser.as_deref()?;
+        match &get_tool_parser_map().get(name)?.parser_config {
+            ParserConfig::Beam(beam_config) => Some(beam_config.argument_framing),
+            _ => None,
+        }
+    }
+
+    /// In strict mode, why `content` (a jailed Beam span) is not a valid call.
+    fn strict_rejection(&self, content: &str) -> Option<String> {
+        if !self.strict_tool_errors {
+            return None;
+        }
+        let framing = self.beam_framing()?;
+        try_tool_call_parse_beam_with(content, self.tool_definitions.as_deref(), framing)
+            .err()
+            .map(|error| error.to_string())
     }
 
     /// Whether the jail starts already-jailed (tool_choice=required/named path).
@@ -1544,6 +1719,7 @@ impl JailedStream {
                     last_stream_created = chat_response.created;
 
                     let mut all_emissions = Vec::new();
+                    let mut fatal: Option<String> = None;
 
                     if chat_response.choices.is_empty() {
                         // No choices processed (e.g., usage-only chunk)
@@ -1599,6 +1775,9 @@ impl JailedStream {
                                     &mut emissions,
                                     self.terminal_marker_policy,
                                 );
+                                if fatal.is_none() {
+                                    fatal = choice_state.error.take();
+                                }
                                 choice_state.normalize_terminal_emissions(
                                     choice,
                                     had_tool_calls_before,
@@ -1729,6 +1908,12 @@ impl JailedStream {
                             }
                         }
                     }
+
+                    // A strict failure ends the stream: no empty success, no stop.
+                    if let Some(error) = fatal {
+                        yield Annotated::from_error(error);
+                        return;
+                    }
                 } else {
                     // No response data, pass through as-is
                     yield response;
@@ -1737,6 +1922,7 @@ impl JailedStream {
 
             // Stream ended - finalize any remaining jailed choices
             let mut final_emissions = Vec::new();
+            let mut final_error: Option<String> = None;
             for state in choice_states.states.iter_mut() {
                 if separates_k3_reasoning
                     && let Some(reasoning_emission) = state.take_pending_reasoning_emission()
@@ -1744,6 +1930,13 @@ impl JailedStream {
                     final_emissions.push(reasoning_emission);
                 }
                 final_emissions.extend(state.finalize(&self).await);
+                if final_error.is_none() {
+                    final_error = state.error.take();
+                }
+            }
+            if let Some(error) = final_error {
+                yield Annotated::from_error(error);
+                return;
             }
 
             if !final_emissions.is_empty() {
@@ -1834,6 +2027,19 @@ impl JailedStream {
     fn split_partial_tool_call_start<'a>(&self, content: &'a str) -> Option<(&'a str, &'a str)> {
         if self.tool_call_parser.as_deref() == Some("gemma4") {
             return split_partial_call_prefix_gemma4(content);
+        }
+        if is_harmony_parser(self.tool_call_parser.as_deref()) {
+            // A `<` / `<|` tail is ambiguous between prose and the head of a
+            // text-split marker. The stateless start detector cannot tell
+            // them apart, so hold the tail and let the next chunk resolve it
+            // through the marker matcher instead of jailing immediately.
+            let trimmed = content.trim_end();
+            for short in ["<|", "<"] {
+                if trimmed.ends_with(short) {
+                    let idx = content.rfind(short).expect("rfind after ends_with");
+                    return Some((&content[..idx], &content[idx..]));
+                }
+            }
         }
         None
     }
@@ -1985,6 +2191,40 @@ impl JailedStream {
                 // Inkling parser, which requires a complete JSON value followed
                 // by the real outer fence. This also keeps a complete JSON body
                 // without its fence jailed until finalize/EOF recovery.
+                //
+                // Beam is the same shape of problem: `<|call|>` / `<|end|>` are only
+                // terminators outside a `<rfl:parameter>` value, so the lexical end
+                // marker would cut a call at a literal inside its argument. The Beam
+                // walker decides, and text after the call stays trailing text.
+                if let Some(framing) = self.beam_framing() {
+                    // Strict rejection reads the body strictly; the default reads it as
+                    // the template's tag search.
+                    return match beam_scan_completion(
+                        accumulated_content,
+                        framing,
+                        !self.strict_tool_errors,
+                    ) {
+                        BeamCompletion::Incomplete => JailCompletion::Incomplete,
+                        BeamCompletion::Invalid(error) if self.strict_tool_errors => {
+                            JailCompletion::Failed(error)
+                        }
+                        BeamCompletion::Invalid(_) => JailCompletion::Incomplete,
+                        BeamCompletion::Complete(split_pos) => {
+                            let marker_parse_result = match self
+                                .parse_marker_tool_calls(&accumulated_content[..split_pos])
+                                .await
+                            {
+                                Ok(parsed) if !parsed.0.is_empty() => Some(Ok(parsed)),
+                                _ => None,
+                            };
+                            JailCompletion::Complete(CompletedJail {
+                                split_pos,
+                                marker_parse_result,
+                            })
+                        }
+                    };
+                }
+
                 if self.tool_call_parser.as_deref() == Some("inkling") {
                     let Some(split_pos) =
                         find_tool_call_end_position(accumulated_content, Some("inkling"))
@@ -2678,6 +2918,7 @@ pub struct JailedStreamBuilder {
     emission_mode: EmissionMode,
     jail_mode: JailMode,
     guided_streaming: bool,
+    strict_tool_errors: bool,
 }
 
 impl JailedStreamBuilder {
@@ -2688,6 +2929,7 @@ impl JailedStreamBuilder {
             jail_end_sequences: Vec::new(),
             has_custom_end_sequences: false,
             guided_streaming: false,
+            strict_tool_errors: false,
             tool_call_parser: None,
             named_tool_name: None,
             tool_definitions: None,
@@ -2784,6 +3026,17 @@ impl JailedStreamBuilder {
     /// followed by argument fragments.
     pub fn guided_streaming(mut self, enabled: bool) -> Self {
         self.guided_streaming = enabled;
+        self
+    }
+
+    /// Request-scoped strict rejection of malformed tool calls (Beam parsers).
+    ///
+    /// A call that can never complete, or a stream that ends inside one, yields an
+    /// `Annotated` with `error` set and no data, and the stream stops: there is no
+    /// empty success and no `finish_reason: stop` after the failure. Off by default,
+    /// where the malformed call is dropped.
+    pub fn strict_tool_call_errors(mut self, enabled: bool) -> Self {
+        self.strict_tool_errors = enabled;
         self
     }
 
@@ -2928,6 +3181,7 @@ impl JailedStreamBuilder {
             marker_matcher,
             jail_mode: self.jail_mode,
             guided_streaming: self.guided_streaming,
+            strict_tool_errors: self.strict_tool_errors,
         }
     }
 }
@@ -3314,6 +3568,122 @@ mod tests {
         )
         .collect()
         .await
+    }
+
+    const BEAM_H: &str =
+        "<|start|>assistant to=weather<|channel|>analysis <|constrain|>xml<|message|>";
+
+    async fn run_beam(
+        parser: &str,
+        strict: bool,
+        pieces: &[&str],
+    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+        let mut chunks: Vec<_> = pieces.iter().map(|p| text_chunk(p)).collect();
+        chunks.push(terminal_chunk());
+        JailedStream::builder()
+            .tool_call_parser(parser)
+            .strict_tool_call_errors(strict)
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await
+    }
+
+    fn beam_calls(
+        responses: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> Vec<(String, serde_json::Value)> {
+        collect_tool_calls(responses)
+            .into_iter()
+            .map(|(name, args)| (name, serde_json::from_str(&args).expect("json args")))
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn beam_jail_keeps_terminator_literals_inside_a_parameter() {
+        let whole = format!("{BEAM_H}<rfl:parameter name=\"x\">a<|call|>b</rfl:parameter><|call|>");
+        for split in (0..=whole.len()).filter(|&i| whole.is_char_boundary(i)) {
+            let responses = run_beam("beam", false, &[&whole[..split], &whole[split..]]).await;
+            assert_eq!(
+                beam_calls(&responses),
+                vec![(
+                    "weather".to_string(),
+                    serde_json::json!({"x": "a<|call|>b"})
+                )],
+                "split {split}"
+            );
+            assert_eq!(collect_text_content(&responses), "", "split {split}");
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_jail_keeps_text_after_an_end_terminated_call() {
+        let whole =
+            format!("BEFORE {BEAM_H}<rfl:parameter name=\"x\">1</rfl:parameter><|end|> AFTER");
+        for split in (0..=whole.len()).filter(|&i| whole.is_char_boundary(i)) {
+            let responses = run_beam("beam", false, &[&whole[..split], &whole[split..]]).await;
+            assert_eq!(beam_calls(&responses).len(), 1, "split {split}");
+            assert_eq!(
+                collect_text_content(&responses),
+                "BEFORE  AFTER",
+                "split {split}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_jail_strict_mode_reports_invalid_and_truncated_calls() {
+        for body in [
+            "<rfl:parameter name=\"x\">pending".to_string(),
+            "<rfl:parameter name=\"\">x</rfl:parameter><|call|>".to_string(),
+            "<rfl:parameter name=\"a\" extra=\"b\">x</rfl:parameter><|call|>".to_string(),
+        ] {
+            let input = format!("{BEAM_H}{body}");
+            let responses = run_beam("beam", true, &[&input]).await;
+            let last = responses.last().expect("error item");
+            assert!(last.error.is_some() && last.data.is_none(), "{body}");
+            assert!(beam_calls(&responses).is_empty(), "{body}");
+            assert!(
+                responses
+                    .iter()
+                    .flat_map(|r| r.data.iter())
+                    .flat_map(|d| d.choices.iter())
+                    .all(|c| c.finish_reason.is_none()),
+                "no stop after a fatal error: {body}"
+            );
+            // Default mode keeps its contract: dropped, no error item.
+            let responses = run_beam("beam", false, &[&input]).await;
+            assert!(responses.iter().all(|r| r.error.is_none()), "{body}");
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_constrained_parser_reads_json_with_a_literal_closer() {
+        let tools = vec![crate::tool_calling::ToolDefinition {
+            name: "weather".into(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {"o": {"type": "object"}},
+            })),
+            strict: None,
+        }];
+        let input = format!(
+            "{BEAM_H}<rfl:parameter name=\"o\">{{\"text\": \"</rfl:parameter>\"}}</rfl:parameter><|call|>"
+        );
+        let chunks = vec![text_chunk(&input), terminal_chunk()];
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("beam_constrained")
+            .tool_definitions(tools)
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await;
+        assert_eq!(
+            beam_calls(&responses),
+            vec![(
+                "weather".to_string(),
+                serde_json::json!({"o": {"text": "</rfl:parameter>"}})
+            )]
+        );
     }
 
     #[tokio::test]
@@ -4274,6 +4644,237 @@ mod tests {
             .flat_map(|d| d.choices.iter())
             .map(|c| c.logprobs.clone())
             .collect()
+    }
+
+    fn collect_stream_content(
+        responses: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> String {
+        let mut content = String::new();
+        for r in responses {
+            let Some(resp) = r.data.as_ref() else {
+                continue;
+            };
+            for choice in &resp.choices {
+                if let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(t)) =
+                    choice.delta.content.as_ref()
+                {
+                    content.push_str(t);
+                }
+            }
+        }
+        content
+    }
+
+    #[tokio::test]
+    async fn test_jailed_stream_keeps_prose_with_lt_operators() {
+        // gpt-oss models emit prose containing '<' operators; chunked at
+        // token boundaries, a chunk ending in '<' must be held only as a
+        // potential marker prefix and released when no marker follows —
+        // never dropped.
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let chunks: Vec<_> = ["\\(2", " <", " x", " <", " 10", "\\)", "\nBANANA"]
+            .into_iter()
+            .map(text_chunk)
+            .collect();
+
+        let responses: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+        let content = collect_stream_content(&responses);
+        assert_eq!(content, "\\(2 < x < 10\\)\nBANANA");
+    }
+
+    #[tokio::test]
+    async fn test_stream_end_flushes_held_partial_as_content() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+        let chunks: Vec<_> = ["answer is x <"].into_iter().map(text_chunk).collect();
+
+        let responses: Vec<_> = jail
+            .apply_with_finish_reason(stream::iter(chunks))
+            .collect()
+            .await;
+        let content = collect_stream_content(&responses);
+        assert_eq!(content, "answer is x <");
+    }
+
+    #[test]
+    fn test_split_partial_tool_call_start_harmony_short_suffix() {
+        let jail = JailedStream::builder().tool_call_parser("harmony").build();
+
+        assert_eq!(jail.split_partial_tool_call_start("< "), Some(("", "< ")));
+        assert_eq!(jail.split_partial_tool_call_start("<|"), Some(("", "<|")));
+        assert_eq!(
+            jail.split_partial_tool_call_start("Django >= 4.2, <"),
+            Some(("Django >= 4.2, ", "<"))
+        );
+        assert_eq!(jail.split_partial_tool_call_start("10"), None);
+        assert_eq!(jail.split_partial_tool_call_start("<|channel|>comm"), None);
+        assert_eq!(jail.split_partial_tool_call_start("a < b"), None);
+    }
+
+    #[test]
+    fn test_merge_held_logprobs_then_resplit_keeps_entries() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let held = ChatChoiceLogprobs {
+            content: Some(vec![entry("< ")]),
+            refusal: None,
+        };
+        let current = ChatChoiceLogprobs {
+            content: Some(vec![entry("x "), entry("< ")]),
+            refusal: None,
+        };
+        let mut held_buf = Some(held);
+        let combined = merge_held_logprobs(&mut held_buf, Some(current));
+        let (prefix, suffix) = split_logprobs_at_chars(&combined, 3);
+        let tokens = |lp: &Option<ChatChoiceLogprobs>| {
+            lp.as_ref()
+                .and_then(|l| l.content.clone())
+                .map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        // "x " crosses the 3-char boundary, so it rides with the suffix
+        assert_eq!(tokens(&prefix), vec!["< "]);
+        assert_eq!(tokens(&suffix), vec!["x ", "< "]);
+        assert!(held_buf.is_none());
+    }
+
+    #[test]
+    fn test_merge_held_logprobs_fills_missing_channels() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let held = ChatChoiceLogprobs {
+            content: None,
+            refusal: Some(vec![entry("no")]),
+        };
+        let current = ChatChoiceLogprobs {
+            content: Some(vec![entry("x ")]),
+            refusal: Some(vec![entry("go")]),
+        };
+        let mut held_buf = Some(held);
+        let combined = merge_held_logprobs(&mut held_buf, Some(current));
+        let combined = combined.expect("merge keeps the combined logprobs");
+        let tok = |v: Option<Vec<dynamo_protocols::types::ChatCompletionTokenLogprob>>| {
+            v.map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        assert_eq!(tok(combined.content), vec!["x "]);
+        assert_eq!(tok(combined.refusal), vec!["no", "go"]);
+    }
+
+    #[test]
+    fn test_trailing_double_hold_keeps_first_hold_text_and_logprobs() {
+        let jail_stream = JailedStream::builder().tool_call_parser("harmony").build();
+        let mut state = ChoiceJailState::new(0, false, None);
+
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let lp = |tokens: &[&str]| {
+            Some(ChatChoiceLogprobs {
+                content: Some(tokens.iter().map(|t| entry(t)).collect::<Vec<_>>()),
+                refusal: None,
+            })
+        };
+        let choice = |tokens: &[&str]| ChatChoiceStream {
+            index: 0,
+            delta: dynamo_protocols::types::ChatCompletionStreamResponseDelta {
+                role: None,
+                content: None,
+                tool_calls: None,
+                function_call: None,
+                refusal: None,
+                reasoning_content: None,
+            },
+            logprobs: lp(tokens),
+            finish_reason: None,
+        };
+
+        let mut emissions = Vec::new();
+        state.handle_trailing_content(
+            "answer < ",
+            &choice(&["answer", " ", "<", " "]),
+            &jail_stream,
+            &mut emissions,
+        );
+        state.handle_trailing_content(
+            "more < ",
+            &choice(&["more", " ", "<", " "]),
+            &jail_stream,
+            &mut emissions,
+        );
+
+        // The first hold's text survives the second split: the second prefix
+        // emission covers "< more " and only the final "< " stays held.
+        assert_eq!(state.partial_match_buffer, "< ");
+        // The held entries are the second chunk's tail; the first hold's
+        // entries merged into the second prefix emission, not discarded.
+        let held_tokens: Vec<String> = state
+            .partial_logprobs_buffer
+            .as_ref()
+            .and_then(|l| l.content.clone())
+            .map(|c| c.iter().map(|e| e.token.clone()).collect())
+            .unwrap_or_default();
+        assert_eq!(held_tokens, vec!["<", " "]);
+    }
+
+    #[test]
+    fn test_split_logprobs_at_chars_partitions_token_entries() {
+        let entry = |token: &str| dynamo_protocols::types::ChatCompletionTokenLogprob {
+            token: token.to_string(),
+            logprob: 0.0,
+            token_id: None,
+            bytes: None,
+            top_logprobs: vec![],
+        };
+        let logprobs = ChatChoiceLogprobs {
+            content: Some(vec![entry("x "), entry("< "), entry("10")]),
+            refusal: None,
+        };
+        let (prefix, suffix) = split_logprobs_at_chars(&Some(logprobs.clone()), 2);
+        let tokens = |lp: &Option<ChatChoiceLogprobs>| {
+            lp.as_ref()
+                .and_then(|l| l.content.clone())
+                .map(|c| c.iter().map(|e| e.token.clone()).collect::<Vec<_>>())
+                .unwrap_or_default()
+        };
+        assert_eq!(tokens(&prefix), vec!["x "]);
+        assert_eq!(tokens(&suffix), vec!["< ", "10"]);
+
+        let crossing = ChatChoiceLogprobs {
+            content: Some(vec![entry("x<")]),
+            refusal: Some(vec![entry("refused")]),
+        };
+        let (cross_pre, cross_suf) = split_logprobs_at_chars(&Some(crossing), 1);
+        assert_eq!(tokens(&cross_pre), Vec::<String>::new());
+        assert_eq!(tokens(&cross_suf), vec!["x<"]);
+        assert_eq!(
+            cross_pre
+                .as_ref()
+                .and_then(|l| l.refusal.as_ref().map(|r| r.len())),
+            Some(1)
+        );
+        assert!(
+            cross_suf
+                .as_ref()
+                .and_then(|l| l.refusal.as_ref())
+                .is_none()
+        );
     }
 
     #[tokio::test]

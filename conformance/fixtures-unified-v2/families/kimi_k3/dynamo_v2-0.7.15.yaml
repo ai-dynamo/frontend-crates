@@ -30,9 +30,5 @@ changes:
             name: echo
             arguments: '{"value":"Café"}'
             complete: true
-    case_key: UNIFIED.5-4
-    stimulus:
-      ref: current
-      semantic_sha256: 0787ab8c2229e3c2d6391cdb11e439f4e66a0f0fb22982c92550526404a2caee
 metadata_changes: {}
 document_overrides: {}

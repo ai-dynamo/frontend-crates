@@ -15,6 +15,7 @@ from case_variants import aggregate_cells, group_null_variants, leaf_cells
 from gen_null_stream_cases import FAMILIES, build_cases
 from null_cases import NULL_DESCRIPTIONS, NULL_VARIANTS
 from validate_conformance_status import cell_state
+import unified_taxonomy
 
 
 def make_cell(label, sig=1, missing=False):
@@ -49,15 +50,37 @@ def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str) -> None:
                                     for label in labels],
            "rows": [{"family": "glm47", "cells": {label: make_cell(label) for label in labels}}],
            "column_groups": [{"key": "7", "span": len(labels)}], "stats": {}}
+    if tab_id == "tab-unified":
+        for column in tab["columns"]:
+            column["sub"] = unified_taxonomy.scenario_for_label(column["label"])
+            column["label"] = unified_taxonomy.case_label(column["sub"])
+        tab["rows"][0]["cells"] = {
+            column["sub"]: {**make_cell(column["label"]), "sub": column["sub"]}
+            for column in tab["columns"]
+        }
     original = copy.deepcopy(tab["rows"][0])
     group_null_variants(tab)
-    assert [column["label"] for column in tab["columns"]] == ["7-3", "7-4", "7-5"]
+    expected = ["7-3", "7-4", "7-5"]
+    if tab_id == "tab-unified":
+        expected = [unified_taxonomy.historical_case_label(label) for label in expected]
+    assert [column["label"] for column in tab["columns"]] == expected
     row = tab["rows"][0]
     assert leaf_cells(row) == original["cells"]
     assert tab["stats"]["fixture_cases"] == len(labels)
     assert tab["column_groups"][0]["span"] == 3
     for parent in ("7-4", "7-5"):
-        assert "7-4.mixed_labels" in {child["sub"] for child in row["cells"][parent]["variants"]}
+        mixed = "7-4.mixed_labels"
+        if tab_id == "tab-unified":
+            parent = unified_taxonomy.scenario_for_label(parent)
+            mixed = unified_taxonomy.scenario_for_label(mixed)
+        assert mixed in {child["sub"] for child in row["cells"][parent]["variants"]}
+
+
+def test_grouped_unified_named_variant_keeps_a_valid_case_id():
+    children = [make_cell("7-arg_string_null_ref"), make_cell("7-arg_null_mixed_labels")]
+    result = aggregate_cells(children, "7-arg_string_null", "string null probes")
+    assert result["case_id"] == "UNIFIED.7-arg_string_null"
+    assert result["variants"] == children
 
 
 @pytest.mark.parametrize("scenario,label,schema,value,description", NULL_VARIANTS)
@@ -105,9 +128,27 @@ def test_other_families_do_not_gain_missing_mixed_probes():
     labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5"]
     row = {"family": "qwen3", "cells": {label: make_cell(label) for label in labels}}
     row["cells"]["7-4.mixed_labels"].update(kind="missing", status="missing", cmp=None)
-    tab = {"id": "tab-unified", "columns": [{"label": label, "sub": label, "group_key": "7"}
+    tab = {"id": "tab-toolcalling-streamv1", "columns": [{"label": label, "sub": label, "group_key": "7"}
                                                 for label in labels], "rows": [row],
            "column_groups": [{"key": "7", "span": 4}], "stats": {}}
     group_null_variants(tab)
     assert "7-4.mixed_labels" not in leaf_cells(row)
     assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+
+
+def test_unified_display_order_does_not_change_variant_aggregation():
+    labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
+    columns = [{"label": unified_taxonomy.historical_case_label(label),
+                "sub": unified_taxonomy.scenario_for_label(label), "group_key": "7"}
+               for label in labels]
+    tab = {"id": "tab-unified", "columns": columns,
+           "rows": [{"family": "glm47", "cells": {
+               col["sub"]: {**make_cell(col["label"], sig=i + 1), "sub": col["sub"]}
+               for i, col in enumerate(columns)}}],
+           "column_groups": [{"key": "7", "span": len(columns)}], "stats": {}}
+    reordered = copy.deepcopy(tab)
+    reordered["columns"].reverse()
+    group_null_variants(tab)
+    group_null_variants(reordered)
+    assert tab["rows"] == reordered["rows"]
+    assert tab["stats"] == reordered["stats"]

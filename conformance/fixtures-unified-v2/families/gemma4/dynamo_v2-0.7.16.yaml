@@ -8,10 +8,10 @@ document:
   mode: unified
 changes:
   guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
     stimulus:
       ref: current
       semantic_sha256: 51b5c2a871283dd5b62e0690ca1ebb90117ca8bb6d95c0252eafbffebff20426
-    case_key: UNIFIED.34-8
     observation:
       value:
         assembled:
@@ -37,10 +37,10 @@ changes:
             complete: true
         - expected: []
   guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
     stimulus:
       ref: current
       semantic_sha256: b348ad16ff780b42f3ca7304c79b251d2863e63d23f8d987ef24705fd1285666
-    case_key: UNIFIED.34-9
     observation:
       value:
         assembled:
@@ -66,10 +66,10 @@ changes:
             complete: true
         - expected: []
   guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
     stimulus:
       ref: current
       semantic_sha256: 9281cf51cf6688061f08561e117b6cb15c8f69174d987ac091f30aad761928b1
-    case_key: UNIFIED.35-3
     observation:
       value:
         assembled:
@@ -93,10 +93,10 @@ changes:
             complete: true
         - expected: []
   guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
     stimulus:
       ref: current
       semantic_sha256: 24c1b9fd2268b585d947594b40e6076676fe7174d142ff72150ce89b489648f2
-    case_key: UNIFIED.35-4
     observation:
       value:
         assembled:
@@ -122,10 +122,10 @@ changes:
   malformed_json_then_two_valid_calls:
     absent: true
   native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
     stimulus:
       ref: current
       semantic_sha256: bc7858e169c9a0257be1faaa10e0d3bcf22341379cac2ca3be755aaa1809f29b
-    case_key: UNIFIED.40-5
     observation:
       value:
         assembled:
@@ -141,10 +141,10 @@ changes:
             text: <|tool_call>" marker is part of the explanation.
         - expected: []
   native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
     stimulus:
       ref: current
       semantic_sha256: 2045e2019bd341cdb201d694560bb6d6e7493fe39be9e2eff1613f6f9ba5fde8
-    case_key: UNIFIED.8-6
     observation:
       value:
         assembled:
@@ -160,10 +160,10 @@ changes:
             text: <|tool_call>" marker is part of the explanation.
         - expected: []
   native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
     stimulus:
       ref: current
       semantic_sha256: d58d94ef6a101b3b7aae905904069813a4c0d2dfd9d69ca602c53d398cb6f081
-    case_key: UNIFIED.8-8
     observation:
       value:
         assembled:
@@ -194,10 +194,10 @@ changes:
             complete: true
         - expected: []
   native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
     stimulus:
       ref: current
       semantic_sha256: f042ce8f86c34947487f99876e81802d36262bbb3f4173c09b78f597ea6fcb05
-    case_key: UNIFIED.8-10
     observation:
       value:
         assembled:
@@ -215,10 +215,10 @@ changes:
           - kind: text
             text: <|tool_call>call:get_weather{city:<|"|>` header is part of the explanation.
   native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
     stimulus:
       ref: current
       semantic_sha256: 602b3218f624a2ec8eb3f8df773ec83d7bc1678dbc5e04a1435ec9ce0a33b00f
-    case_key: UNIFIED.40-6
     observation:
       value:
         assembled:
@@ -234,10 +234,10 @@ changes:
             text: <|tool_call> marker' stays quoted.
         - expected: []
   native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
     stimulus:
       ref: current
       semantic_sha256: 0bc6378eee6d141fdedb57ad461d745436a32d6a8dd56fbdf8211f2f66d916c8
-    case_key: UNIFIED.8-11
     observation:
       value:
         assembled:
@@ -253,10 +253,10 @@ changes:
             text: <|tool_call> marker' stays quoted.
         - expected: []
   native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
     stimulus:
       ref: current
       semantic_sha256: 4961d36eac601e405dfcac5aae2d2141ba3767bed8138b8b10aaedb85268b667
-    case_key: UNIFIED.8-7
     observation:
       value:
         assembled:
@@ -272,10 +272,10 @@ changes:
             text: <|tool_call> marker' is part of the explanation.
         - expected: []
   native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
     stimulus:
       ref: current
       semantic_sha256: 0ba915b753b2a79ece06cef1c8a604d2e2b6607b8d745a8a3bc050527b397279
-    case_key: UNIFIED.8-9
     observation:
       value:
         assembled:
@@ -301,56 +301,8 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
-metadata_changes:
-  guided_quoted_reasoning_closer_named: {}
-  guided_quoted_reasoning_closer_required: {}
-  guided_response_quoted_control_braces_named: {}
-  guided_response_quoted_control_braces_required: {}
-  native_quoted_control_in_reasoning: {}
-  native_quoted_control_in_response: {}
-  native_quoted_control_then_call: {}
-  native_quoted_incomplete_header: {}
-  native_single_quote_contraction_reasoning: {}
-  native_single_quote_contraction_response: {}
-  native_single_quoted_word_control: {}
-  native_unmatched_quote_then_call: {}
+metadata_changes: {}
 document_overrides:
-  arg_json_null_anyof:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_json_null_const:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_json_null_nullable:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_json_null_oneof:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
   arg_marker_in_string:
     capture_provenance:
       captured_with:
@@ -360,69 +312,6 @@ document_overrides:
         git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
         source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
       inherited_from: 0.7.9
-  arg_string_null:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_const:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_enum:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_sibling_anyof:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_sibling_oneof:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_union:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
-  arg_string_null_untyped_branch:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
   arg_unicode:
     capture_provenance:
       captured_with:
@@ -450,15 +339,6 @@ document_overrides:
         git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
         source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
       inherited_from: 0.7.9
-  deepseek_v41_mixed_control_text_in_string:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
   empty_args:
     capture_provenance:
       captured_with:
@@ -819,42 +699,6 @@ document_overrides:
         git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
         source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
       inherited_from: 0.7.9
-  guided_quoted_reasoning_closer_named:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  guided_quoted_reasoning_closer_required:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  guided_response_quoted_control_braces_named:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  guided_response_quoted_control_braces_required:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
   interstitial_text:
     capture_provenance:
       captured_with:
@@ -873,78 +717,6 @@ document_overrides:
         git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
         source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
       inherited_from: 0.7.9
-  native_quoted_control_in_reasoning:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_quoted_control_in_response:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_quoted_control_then_call:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_quoted_incomplete_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_single_quote_contraction_reasoning:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_single_quote_contraction_response:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_single_quoted_word_control:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  native_unmatched_quote_then_call:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
   orphan_close_after_prose:
     capture_provenance:
       captured_with:
@@ -1017,15 +789,6 @@ document_overrides:
         git_commit: 1b0303f439df480dd290fec2a2a890df43438fea
         source_sha256: b86371288b5d86d3d9ccc93cb3e259f55f132939424db130e5439ddfd1815a88
       inherited_from: 0.7.9
-  qwen_string_null:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: 0.7.4
   reason_after_tool:
     capture_provenance:
       captured_with:

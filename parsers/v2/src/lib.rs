@@ -7,6 +7,7 @@ pub mod structural_tag;
 pub mod tool_calling;
 pub mod unified;
 
+pub use tool_calling::beam::BeamToolStreamParser;
 pub use tool_calling::debug::{DEBUG_ENV, debug_enabled};
 pub use tool_calling::dsml::DeepSeekV4ToolStreamParser;
 pub use tool_calling::gemma4::Gemma4ToolStreamParser;
@@ -30,6 +31,7 @@ pub use tool_calling::{
 pub use tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
 // One state machine per stream owning reasoning + content + tool calls, emitting
 // ONE ordered event stream (see `unified`).
+pub use unified::{ArgumentFraming, MalformedToolCall, MalformedToolCallPolicy, ToolCallPolicy};
 pub use unified::{
     CommittedCall, GuidedJsonCursor, InvalidGuidedPayload, InvalidGuidedPayloadKind,
     InvalidGuidedPayloadPolicy, REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, UnifiedParser,

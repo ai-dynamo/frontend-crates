@@ -12,12 +12,14 @@
 //! - [`builder`] — public builder API used by the preprocessor
 //! - [`triggered_tags`] — `triggered_tags` format implementation
 //! - [`dsml`] — DeepSeek V3.2+ DSML tool-call format implementation
+//! - [`glm47`] — GLM-4.7 / GLM-5.x native tool-call format
 //! - [`kimi_k2`] — Kimi K2 native tool-call section format
 //! - [`kimi_k3`] — Kimi K3 native XTML channel format
 
 pub mod builder;
 pub mod dsml;
 pub mod format;
+pub mod glm47;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod triggered_tags;
