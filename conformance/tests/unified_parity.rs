@@ -246,20 +246,21 @@ fn unified_parser_is_chunk_invariant() {
 
 #[test]
 fn reference_argument_cases_preserve_results_at_every_split() {
+    let scenarios = [
+        "glm_ref_object",
+        "glm_ref_encoded_targets",
+        "glm_ref_json_looking_strings",
+        "glm_ref_scalar_types",
+        "unused_reference_graph_parameter_types",
+        "nullable_reference_alias_literals",
+        "local_schema_id_preserves_type",
+    ];
     let mut checked = 0;
     for file in load_native_golden() {
         for (id, case) in &file.cases {
-            if ![
-                "glm_ref_object",
-                "glm_ref_encoded_targets",
-                "glm_ref_json_looking_strings",
-                "glm_ref_scalar_types",
-                "unused_reference_graph_parameter_types",
-                "nullable_reference_alias_literals",
-                "local_schema_id_preserves_type",
-            ]
-            .iter()
-            .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
+            if !scenarios
+                .iter()
+                .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
             {
                 continue;
             }
@@ -284,7 +285,11 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 56);
+    let native_families = common::unified_families()
+        .values()
+        .filter(|family| family.native)
+        .count();
+    assert_eq!(checked, native_families * scenarios.len());
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

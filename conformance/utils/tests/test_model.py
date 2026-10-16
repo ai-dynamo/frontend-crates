@@ -1289,9 +1289,7 @@ def test_v2_no_verbose_todo_baked_in_cells(model_v2):
             assert cell["status"] in {"ok", "problem", "na", "missing"}
 
 
-@pytest.mark.parametrize("family", [
-    "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3",
-])
+@pytest.mark.parametrize("family", sorted(table.gen_unified_golden.UNIFIED_FAMILIES))
 def test_unified_argument_edge_cases_have_current_captures(model_v2, family):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == family)
@@ -1339,7 +1337,7 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
         "glm_ref_json_looking_strings",
         "glm_ref_scalar_types",
     )
-    peer_families = {"deepseek_v4", "deepseek_v41", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    peer_families = table.gen_unified_golden.UNIFIED_FAMILIES - {"glm47"}
     for row in tab["rows"]:
         family = row["family"]
         for scenario in scenarios:
@@ -1395,8 +1393,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     events = [{"kind": "tool_call", **call} for call in calls]
     assert blocks["golden"]["events"] == blocks["dynamo"]["events"] == events
     assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
-    families = {"deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
-                "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3"}
+    families = set(table.gen_unified_golden.FAMILIES)
     rows = {other["family"]: other for other in unified["rows"] if other.get("family")}
     assert rows.keys() == families
     for family, other in rows.items():
@@ -1689,7 +1686,7 @@ def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2)
         for label, count in (("7-arg_json_null", 5), ("7-arg_string_null", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = row["family"] == "qwen3" and label == "7-arg_string_null"
+            qwen_ref = table.gen_unified_golden.unified_grammar_family(row["family"]) == "qwen3" and label == "7-arg_string_null"
             assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})

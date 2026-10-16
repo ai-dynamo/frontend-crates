@@ -122,6 +122,10 @@ UNIFIED_MARKER_FAMILIES = {
 }
 
 
+def unified_grammar_family(family: str) -> str:
+    return _REGISTRY["unified"].get(family, {}).get("grammar", family)
+
+
 def _unified_pipelines(implementation: str) -> dict[str, tuple[str, str]]:
     return {family: tuple(row["capture_pipelines"][implementation])
             for family, row in _REGISTRY["unified"].items()
