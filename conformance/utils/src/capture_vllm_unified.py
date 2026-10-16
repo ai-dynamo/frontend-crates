@@ -316,7 +316,7 @@ def _capture_cases(cases):
             else:
                 # Batch: the real final-message fields, projected to an ordered
                 # list. Response-prefilled rows are represented by request kwargs.
-                reasoning, content, tool_calls = parser.parse(case["input"], req, True, None)
+                reasoning, content, tool_calls = parser.parse(case["input"], req, True)
                 assembled = _assembled_events(reasoning, content, tool_calls)
             results[case["id"]] = {"assembled": assembled, "chunks": per_chunk}
         except Exception as exc:  # per-case parser supervisor; retain concrete failure evidence

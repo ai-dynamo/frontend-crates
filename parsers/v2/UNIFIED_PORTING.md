@@ -2,7 +2,7 @@
 
 The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
 
-This doc is for adding a family to the unified path. `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, and `qwen3` are on it today.
+This doc is for adding a family to the unified path. `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, and `qwen3` are on it today. `nemotron_v3` shares the Qwen XML factory with forced reasoning enabled.
 
 ## What you get for free
 

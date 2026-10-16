@@ -158,6 +158,31 @@ def test_current_corpus_adds_a_registered_family(tmp_path):
     assert documents[family.path] == family.document
 
 
+def test_first_capture_for_existing_family_is_published_and_idempotent(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    prior_path = _write_capture(root, "0.26.0", {"text_only": _change()}, implementation="vllm_python")
+    prior_bytes = prior_path.read_bytes()
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.7.27/gemma4/case.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(unified_history.dump_yaml({
+        "family": "gemma4", "mode": "unified",
+        "captured_with": {"dynamo_v2": "0.7.27"},
+        "cases": {"UNIFIED.1-1": {"assembled": [{"kind": "text", "text": "hello"}]}},
+    }))
+    changed = unified_history.update_from_loose(root, loose)
+    capture_path = root / "families/gemma4/dynamo_v2-0.7.27.yaml"
+    assert changed == [capture_path]
+    store = unified_history.load_store(root)
+    record = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.7.27")["text_only"]
+    assert record["observation"]["value"]["assembled"] == [{"kind": "text", "text": "hello"}]
+    original = capture_path.read_bytes()
+    assert unified_history.update_from_loose(root, loose) == []
+    assert capture_path.read_bytes() == original
+    assert prior_path.read_bytes() == prior_bytes
+
+
 def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):
     _write_family(tmp_path)
     family_path = tmp_path / "families/gemma4/inputs_and_golden.yaml"
@@ -1327,6 +1352,20 @@ def test_sparse_checkpoint_does_not_inherit_version_scoped_recapture(tmp_path, i
                    metadata_changes={"text_only": {"verified_recapture": supplement, "audit_note": "preserve me"}})
     history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
     prior = history.resolve(f"{implementation}-0.25.1")
+    derived = tmp_path.parent / f"{tmp_path.name}-derived"
+    unified_history.materialize_store(
+        tmp_path, derived, derived_release_versions={implementation: "0.26.0"},
+    )
+    derived_paths = list((derived / f"{implementation}-0.26.0/gemma4").glob("*.yaml"))
+    assert len(derived_paths) == 1
+    derived_document = unified_history.load_yaml(derived_paths[0])
+    derived_record = next(iter(derived_document["cases"].values()))
+    assert "verified_recapture" not in derived_record
+    assert derived_record["audit_note"] == "preserve me"
+    selected = select_peer_observation(
+        derived_record, _request(), implementation=implementation, version="0.26.0",
+    )
+    assert selected["assembled"] == [{"kind": "text", "text": "old output"}]
     _write_capture(tmp_path, "0.26.0", {}, implementation=implementation)
     _write_capture(tmp_path, "0.27.0", {}, implementation=implementation)
     history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
