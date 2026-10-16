@@ -466,6 +466,7 @@ fn get_arguments_config(
 struct SchemaCoercion {
     direct_type: Option<String>,
     allowed_types: HashSet<SchemaType>,
+    has_type_constraints: bool,
 }
 
 impl SchemaCoercion {
@@ -474,9 +475,11 @@ impl SchemaCoercion {
             .get("type")
             .and_then(Value::as_str)
             .map(str::to_lowercase);
+        let (allowed_types, has_type_constraints) = collect_allowed_types(root, schema, remaining);
         Self {
             direct_type,
-            allowed_types: collect_allowed_types(root, schema, remaining),
+            allowed_types,
+            has_type_constraints,
         }
     }
 
@@ -615,6 +618,15 @@ fn convert_prepared_param_value(
             categorize_type(name).is_some_and(|category| {
                 param_schema.is_some_and(|schema| schema.allowed_types.contains(&category))
             })
+        })
+        // Keep explicit custom types on the legacy literal-eval path when
+        // there are no recognized constraints to resolve instead.
+        .or_else(|| {
+            param_schema
+                .filter(|schema| !schema.has_type_constraints)
+                .and_then(|schema| schema.direct_type.as_ref())
+                .filter(|name| categorize_type(name).is_none())
+                .cloned()
         })
         // References and allOf can leave a single effective boolean type without
         // a direct local `type`. Preserve the legacy malformed-boolean fallback
@@ -807,18 +819,23 @@ fn collect_allowed_types(
     root: &Value,
     schema: &Value,
     remaining: &mut usize,
-) -> HashSet<SchemaType> {
+) -> (HashSet<SchemaType>, bool) {
     let mut active_refs = HashSet::new();
-    collect_type_constraints(
-        root,
-        schema,
-        0,
-        remaining,
-        &mut active_refs,
-        false,
-        !has_unsupported_schema_ref_scope(root),
-    )
-    .unwrap_or_default()
+    let mut context = TypeConstraintContext {
+        inherited_nullable: false,
+        refs_allowed: !has_unsupported_schema_ref_scope(root),
+        has_type_constraints: false,
+    };
+    let allowed_types =
+        collect_type_constraints(root, schema, 0, remaining, &mut active_refs, &mut context)
+            .unwrap_or_default();
+    (allowed_types, context.has_type_constraints)
+}
+
+struct TypeConstraintContext {
+    inherited_nullable: bool,
+    refs_allowed: bool,
+    has_type_constraints: bool,
 }
 
 // None is an absent type constraint, not an empty intersection.
@@ -828,24 +845,25 @@ fn collect_type_constraints(
     depth: usize,
     remaining: &mut usize,
     active_refs: &mut HashSet<String>,
-    inherited_nullable: bool,
-    refs_allowed: bool,
+    context: &mut TypeConstraintContext,
 ) -> Option<HashSet<SchemaType>> {
     *remaining = remaining.checked_sub(1)?;
     if depth >= 16 || !schema.is_object() {
         return None;
     }
-    let refs_allowed = refs_allowed && !has_unsupported_schema_ref_scope(schema);
+    let refs_allowed = context.refs_allowed && !has_unsupported_schema_ref_scope(schema);
     let mut out = HashSet::new();
     if let Some(ty) = schema.get("type") {
         if let Some(name) = ty.as_str() {
             if let Some(cat) = categorize_type(name) {
                 out.insert(cat);
+                context.has_type_constraints = true;
             }
         } else if let Some(arr) = ty.as_array() {
             for item in arr.iter().filter_map(Value::as_str) {
                 if let Some(cat) = categorize_type(item) {
                     out.insert(cat);
+                    context.has_type_constraints = true;
                 }
             }
         }
@@ -856,35 +874,47 @@ fn collect_type_constraints(
     let nullable = schema.get("nullable").and_then(Value::as_bool) == Some(true);
     // On a $ref sibling, nullable extends the target's type alternatives; it is
     // not a separate `null` constraint to intersect with the referenced type.
-    if (inherited_nullable && !out.is_empty())
+    if (context.inherited_nullable && !out.is_empty())
         || (nullable && (schema.get("$ref").is_none() || schema.get("type").is_some()))
     {
         out.insert(SchemaType::Null);
+        context.has_type_constraints = true;
     }
     let mut constraints = Vec::new();
     if !out.is_empty() {
         constraints.push(out);
     }
     if let Some(value) = schema.get("const") {
+        context.has_type_constraints = true;
         constraints.push(literal_type_constraints(value));
     }
     if let Some(values) = schema.get("enum").and_then(Value::as_array) {
+        context.has_type_constraints = true;
         constraints.push(values.iter().flat_map(literal_type_constraints).collect());
+    }
+    if schema.get("$ref").is_some() {
+        context.has_type_constraints = true;
     }
     if refs_allowed
         && let Some(reference) = schema.get("$ref").and_then(Value::as_str)
         && active_refs.insert(reference.to_string())
     {
         if let Some(target) = resolve_local_schema_ref(reference, root)
-            && let Some(target_types) = collect_type_constraints(
-                root,
-                target,
-                depth + 1,
-                remaining,
-                active_refs,
-                inherited_nullable || nullable,
-                refs_allowed,
-            )
+            && let Some(target_types) = {
+                let mut target_context = TypeConstraintContext {
+                    inherited_nullable: context.inherited_nullable || nullable,
+                    refs_allowed,
+                    has_type_constraints: false,
+                };
+                collect_type_constraints(
+                    root,
+                    target,
+                    depth + 1,
+                    remaining,
+                    active_refs,
+                    &mut target_context,
+                )
+            }
         {
             constraints.push(target_types);
         }
@@ -892,15 +922,20 @@ fn collect_type_constraints(
     }
     for key in ["anyOf", "oneOf"] {
         if let Some(options) = schema.get(key).and_then(Value::as_array) {
+            context.has_type_constraints = true;
             let branches = options.iter().map(|option| {
+                let mut option_context = TypeConstraintContext {
+                    inherited_nullable: context.inherited_nullable,
+                    refs_allowed,
+                    has_type_constraints: false,
+                };
                 collect_type_constraints(
                     root,
                     option,
                     depth + 1,
                     remaining,
                     active_refs,
-                    inherited_nullable,
-                    refs_allowed,
+                    &mut option_context,
                 )
             });
             if let Some(alternatives) = branches.collect::<Option<Vec<_>>>() {
@@ -909,17 +944,24 @@ fn collect_type_constraints(
         }
     }
     if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
-        constraints.extend(branches.iter().filter_map(|branch| {
-            collect_type_constraints(
+        context.has_type_constraints = true;
+        for branch in branches {
+            let mut branch_context = TypeConstraintContext {
+                inherited_nullable: context.inherited_nullable,
+                refs_allowed,
+                has_type_constraints: false,
+            };
+            if let Some(types) = collect_type_constraints(
                 root,
                 branch,
                 depth + 1,
                 remaining,
                 active_refs,
-                inherited_nullable,
-                refs_allowed,
-            )
-        }));
+                &mut branch_context,
+            ) {
+                constraints.push(types);
+            }
+        }
     }
     constraints.into_iter().reduce(|mut left, right| {
         left.retain(|ty| right.contains(ty));
