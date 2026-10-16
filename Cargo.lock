@@ -1245,6 +1245,7 @@ version = "8.0.3"
 dependencies = [
  "anyhow",
  "chrono",
+ "dynamo-parsers-v2",
  "dynamo-protocols",
  "dynamo-tokenizers",
  "either",

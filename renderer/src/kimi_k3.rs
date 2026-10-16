@@ -15,8 +15,8 @@ use anyhow::{Context, Result, bail};
 use serde_json::{Map, Value};
 
 use crate::{
-    OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt, RenderedSegment,
-    thinking_bool_from_args,
+    GenerationState, OAIChatLikeRequest, OAIPromptFormatter, PromptRenderError, RenderedPrompt,
+    RenderedSegment, thinking_bool_from_args,
 };
 
 const OPEN_TOKEN: &str = "<|open|>";
@@ -55,11 +55,7 @@ impl KimiK3Formatter {
         }
     }
 
-    /// Render the conversation into segments, also returning how many trailing
-    /// segments form the assistant generation stub (`<|open|>think<|sep|>` or
-    /// `<|open|>response<|sep|>`). Moonshot's K3 API feeds that stub to the
-    /// model but excludes it from reported `usage.prompt_tokens`.
-    fn build_segments(&self, req: &dyn OAIChatLikeRequest) -> Result<ChatSegments> {
+    fn build_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
         let messages = crate::messages_to_json(req).context("Failed to convert K3 messages")?;
         let Value::Array(messages) = messages else {
             anyhow::bail!("Kimi K3 messages must be an array");
@@ -122,25 +118,11 @@ impl OAIPromptFormatter for KimiK3Formatter {
     }
 
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
-        Ok(self.build_segments(req)?.into_prompt().into_text())
+        Ok(self.render_prompt(req)?.into_text())
     }
 
     fn render_prompt(&self, req: &dyn OAIChatLikeRequest) -> Result<RenderedPrompt> {
-        Ok(self.build_segments(req)?.into_prompt())
-    }
-}
-
-struct ChatSegments {
-    segments: Vec<RenderedSegment>,
-    /// Trailing segments that open the assistant channel for generation.
-    /// Zero when no generation prompt was added or a partial assistant
-    /// message is being continued.
-    pending_segments: usize,
-}
-
-impl ChatSegments {
-    fn into_prompt(self) -> RenderedPrompt {
-        RenderedPrompt::segmented_with_pending(self.segments, self.pending_segments)
+        self.build_prompt(req)
     }
 }
 
@@ -837,7 +819,7 @@ fn build_chat_segments(
     add_generation_prompt: bool,
     thinking: bool,
     thinking_effort: &str,
-) -> Result<ChatSegments> {
+) -> Result<RenderedPrompt> {
     let mut segments = Vec::new();
     let mut pending_segments = 0usize;
     let mut previous_tool_calls: Option<&Value> = None;
@@ -1044,8 +1026,9 @@ fn build_chat_segments(
     // A partial assistant turn *is* the generation prompt: it is left open so
     // the model continues from its prefix, so the generic prompt is skipped
     // regardless of `add_generation_prompt`.
-    if let Some(partial) = partial_tail {
+    let generation_state = if let Some(partial) = partial_tail {
         render_partial_assistant_segments(&mut segments, partial, thinking)?;
+        GenerationState::Response
     } else if add_generation_prompt {
         open_tag(
             &mut segments,
@@ -1062,12 +1045,19 @@ fn build_chat_segments(
             [],
         );
         pending_segments = segments.len() - before_channel_tag;
-    }
+        if thinking {
+            GenerationState::Reasoning
+        } else {
+            GenerationState::Response
+        }
+    } else {
+        GenerationState::Unknown
+    };
 
-    Ok(ChatSegments {
-        segments,
-        pending_segments,
-    })
+    Ok(
+        RenderedPrompt::segmented_with_pending(segments, pending_segments)
+            .with_generation_state(generation_state),
+    )
 }
 
 #[cfg(test)]
