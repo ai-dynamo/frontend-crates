@@ -382,7 +382,7 @@ class History:
             case_document.update(overrides)
             if record_metadata:
                 case_document["record_metadata"] = record_metadata
-            if self.implementation in impls.UNIFIED_BATCH_IMPLS and "value" in record["observation"]:
+            if capture_stimulus.unified_record_contract(self.implementation, case_document) == "batch" and "value" in record["observation"]:
                 value = record["observation"]["value"]
                 final = (record_metadata or {}).get("batch_final", {})
                 if "chunks" in value or value.get("assembled") != capture_stimulus.batch_final_events(final):
@@ -843,6 +843,8 @@ def _fsync_regular_file(path: Path) -> None:
 
 
 def _fsync_candidate_payload(candidate: Path) -> None:
+    if candidate.is_symlink():
+        raise ValueError(f"transaction candidate must be a regular file or directory: {candidate}")
     if candidate.is_file():
         _fsync_regular_file(candidate)
     elif candidate.is_dir():

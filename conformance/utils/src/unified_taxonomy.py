@@ -28,6 +28,7 @@ from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, ar
 UNIFIED_TAX = {
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "v1_split_parallel_tool_calls": ("v1_split", "parallel_tool_calls"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
@@ -187,6 +188,7 @@ UNIFIED_TAX = {
 # Axis prefix makes each group's channel explicit: "TC" = tool-calling only (groups
 # 1-9 mirror the tool STREAM suite), "Reasoning" = reasoning only, groups 11-12 mix both.
 UNIFIED_GROUP_LABEL = UNIFIED_DISPLAY["group_labels"]
+V1_SPLIT_SCENARIOS = tuple(scenario for scenario, taxonomy in UNIFIED_TAX.items() if taxonomy[0] == "v1_split")
 
 
 def tax(scenario):
@@ -259,6 +261,7 @@ def legacy_case_label(scenario):
 
 
 GROUP_DESCRIPTION_PREFIXES = {
+    "v1_split": ("v1_split_",),
     "kimi": ("kimi_k3_",),
     "gemma": ("gemma4_",),
     "glm5": ("glm47_",),
@@ -386,6 +389,9 @@ FAMILY_LEGACY_CASE_LABELS = {
 }
 
 
+HISTORICAL_FAMILY_LABEL_ALIASES = {"gemma4": {"31-29": "g4-1", "31-30": "g4-2"}}
+
+
 def scenario_for_label(label, family=None, scenario=None):
     """Resolve aliases without changing the meaning of older published labels."""
     label = label.removeprefix("UNIFIED.")
@@ -398,8 +404,7 @@ def scenario_for_label(label, family=None, scenario=None):
         return family_scenario
     if label in UNIFIED_TAX:
         return label
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
+    label = HISTORICAL_FAMILY_LABEL_ALIASES.get(family, {}).get(label, label)
     dotted_group_31 = re.fullmatch(r"31\.([a-x])", label)
     if dotted_group_31:
         label = f"31-{ord(dotted_group_31[1]) - ord('a') + 1}"

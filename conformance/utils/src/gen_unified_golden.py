@@ -25,6 +25,7 @@ import yaml
 import markers
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -34,6 +35,15 @@ FAMILIES = sorted(_MANIFEST)
 SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
 UNIFIED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("native")}
+_REGISTRY_UNIFIED_FAMILIES = {row.get("registry", family) for family, row in _MANIFEST.items()}
+# The v1 archive has native family captures for every registered parser family
+# except Muse Glimmer, which was introduced only in the v2 parser registry. Keep
+# those captures alongside native Unified-v2 histories so the viewer can compare
+# the generations on the same family-specific stimulus.
+V1_SPLIT_FAMILIES = frozenset(
+    set(yaml.safe_load(markers.parser_families_path().read_text())["families"])
+    - {"muse_glimmer"}
+) | {"gpt_oss"}
 # Families whose unified parser accepts GUIDED tool output, declared in the manifest.
 # Every family with a native unified parser does today. The gate is kept rather than
 # deleted because "can this family honour a guided request mode" is a real per-family
@@ -2731,6 +2741,8 @@ def scenario_families(scenario):
     uses this same declaration to render explicit n/a cells instead of
     silently dropping them.
     """
+    if scenario in V1_SPLIT_SCENARIOS:
+        return V1_SPLIT_FAMILIES
     for name, *_rest in CLEAN:
         if name == scenario:
             return frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)

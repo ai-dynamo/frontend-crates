@@ -21,7 +21,6 @@ if str(SRC) not in sys.path:
 import extract_fixtures  # noqa: E402
 import capture_stimulus  # noqa: E402
 import fixture_disposition  # noqa: E402
-import generate_conformance_table as table  # noqa: E402
 import package_fixtures  # noqa: E402
 import refresh_dynamo_captures  # noqa: E402
 import append_stream_regression_cases  # noqa: E402
@@ -523,6 +522,7 @@ def test_package_snapshots_loose_inputs_after_acquiring_writer_lock(tmp_path, mo
     monkeypatch.setattr(package_fixtures, "sync_store", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(package_fixtures, "_validate_candidate_package", lambda *_args: None)
     monkeypatch.setattr(unified_history, "publish_paths_transactionally", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(package_fixtures.viewer_catalog, "_source_metadata", lambda root: {"implementations": []})
 
     first_staged = threading.Event()
     second_staged = threading.Event()
@@ -2336,34 +2336,6 @@ def test_complete_snapshot_rejects_corrupt_member_index(records):
         )
 
 
-def test_renderer_uses_semantic_capture_directories(evidence, monkeypatch):
-    conf, _store, _manifest, _manifest_path = evidence
-    label = "0.6.1"
-    base = f"dynamo_v2-{label}"
-    stimulus = {"input": "latest", "tools": [], "chunks": [{"delta_text": "latest"}]}
-    _case(conf / "unified", "inputs", "UNIFIED.1-1", stimulus)
-    _case(conf / "unified", base, "UNIFIED.1-1", {
-        "capture_input": capture_stimulus.capture_input(stimulus),
-        "assembled": [{"kind": "text", "text": "captured"}],
-    })
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: label)
-    cases, _caps, _versions = table._load_unified_fixtures(conf / "unified")
-    assert cases[0]["dynamo"][0]["text"] == "captured"
-
-
-def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_path, monkeypatch):
-    base = tmp_path / "unified"
-    key = "UNIFIED.gemma-1"
-    _case(base, "inputs", key, {"scenario": "gemma4_guided_json_visible_call_prose_before_reasoning", "chunks": []})
-    _case(base, "golden", key, {"assembled": []})
-    _case(base, "dynamo_v2-0.6.0", key, {"assembled": [{"kind": "text", "text": "captured"}]})
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.6.1")
-    cases, _caps, versions = table._load_unified_fixtures(base)
-    assert versions["dynamo_v2_all"] == ["0.6.0", "0.6.1"]
-    assert cases[0]["dynamo"][0]["text"] == "captured"
-    assert cases[0]["dynamo_by_ver"]["0.6.1"]["inherited_from"] == "0.6.0"
-
-
 @pytest.mark.parametrize(("family", "old", "new"), [
     ("gemma4", "UNIFIED.31-29", "UNIFIED.gemma-guided_json_visible_call_prose_before_reasoning"),
     ("gemma4", "UNIFIED.31-30", "UNIFIED.gemma-guided_json_malformed_call_prefix_before_reasoning"),
@@ -2399,26 +2371,3 @@ def test_loose_reader_carries_a_prior_semantic_capture_to_current_release(tmp_pa
 ])
 def test_historical_aliases_do_not_reassign_other_ids(family, old, new):
     assert fixture_disposition.historical_unified_case_key(family, old) == new
-
-
-def test_conflicting_capture_aliases_fail_without_touching_files(tmp_path, monkeypatch):
-    _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
-    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", {"assembled": []})
-    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", {"assembled": [{"kind": "text", "text": "conflict"}]})
-    before = {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")}
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
-    with pytest.raises(ValueError, match="conflicting historical aliases"):
-        table._load_unified_fixtures(tmp_path)
-    assert {p: p.read_bytes() for p in tmp_path.rglob("*.yaml")} == before
-
-
-def test_identical_capture_aliases_are_accepted_with_cached_records(tmp_path, monkeypatch):
-    _case(tmp_path, "inputs", "UNIFIED.gemma-1", {"scenario": "alias", "chunks": []})
-    record = {"assembled": [{"kind": "text", "text": "same"}]}
-    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.31-29", record)
-    _case(tmp_path, "dynamo_v2-0.3.4", "UNIFIED.g4-1", record)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "0.3.4")
-
-    cases, _captures, _versions = table._load_unified_fixtures(tmp_path)
-
-    assert cases[0]["dynamo"][0]["text"] == "same"

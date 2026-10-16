@@ -14,9 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import unified_history
 from capture_stimulus import select_peer_observation
-import generate_conformance_table as table
-import markers
-from tables.reasoning import table as reasoning_table
+from viewer_codec import encode_typed
 
 
 def _request(text: str = "hello") -> dict:
@@ -33,7 +31,7 @@ def _request(text: str = "hello") -> dict:
     }
 
 
-def test_structured_parser_error_survives_store_and_view_projection(tmp_path):
+def test_structured_parser_error_survives_store_and_resolved_record(tmp_path):
     _write_family(tmp_path)
     change = _change()
     detail = {"message": "parser threw", "offset": 17}
@@ -44,10 +42,8 @@ def test_structured_parser_error_survives_store_and_view_projection(tmp_path):
     resolved = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.26.0")["text_only"]
     record, _document = unified_history.materialized_record(store.families["gemma4"].cases["text_only"], resolved)
     assert record["error"] == detail
-    for reader in (table._output_block_model, reasoning_table._reasoning_output_model):
-        projected = reader(record)
-        assert projected["error"] == detail
-        assert markers._error_kind(projected) == "parser_error"
+    assert record["capture_observation"] == {"error": {"code": "legacy_unclassified", "detail": detail}}
+    assert encode_typed(record)[0] == "object"
     assert path.read_bytes() == original
 
 
@@ -64,7 +60,7 @@ def test_materialized_unavailable_reimport_does_not_add_view_metadata(tmp_path):
     resolved = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.26.0")["text_only"]
     record, _document = unified_history.materialized_record(store.families["gemma4"].cases["text_only"], resolved)
     assert "unavailable_code" not in record
-    assert table._unified_capture_failure(record)["unavailable_code"] == "unsupported_request_mode"
+    assert record["capture_observation"] == {"unavailable": payload}
     stimulus, observation, metadata = unified_history._legacy_state(record, b"", "case.yaml", {}, _request())
     assert observation == change["observation"]
     assert metadata == {}

@@ -11,6 +11,7 @@ import yaml
 
 from fixture_disposition import canonical_unified_record_key, canonicalize_unified_inputs
 from impls import UNIFIED_BATCH_IMPLS
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 
 _UNAVAILABLE_CATEGORIES = {
@@ -205,6 +206,19 @@ def original_capture_input(record: dict, raw: bytes, relative: str, bindings: di
     return original
 
 
+def unified_record_contract(implementation: str, document: dict) -> str:
+    if implementation not in UNIFIED_BATCH_IMPLS:
+        return "stream"
+    origin = document.get("capture_origin", {})
+    adapter = origin.get("adapter_sha256")
+    job = origin.get("job_sha256")
+    if adapter or job:
+        if not adapter or not job:
+            raise ValueError("adapter-backed batch observation needs adapter and job identities")
+        return "batch"
+    return "batch" if "batch_final" in document.get("record_metadata", {}) else "legacy-stream"
+
+
 def select_peer_observation(record: dict, current: dict, *, implementation: str, version: str) -> dict:
     """Use a bound recapture while retaining the original historical observation."""
     recapture = record.get("verified_recapture")
@@ -312,10 +326,15 @@ def validated_current_capture_docs(
         ident = canonical_unified_record_key(family, key, input_aliases)
         if inputs.get(ident) == record:
             input_keys[ident] = key
+    intentionally_v1_only = {
+        ident for ident, record in inputs.items()
+        if directory.name.startswith("dynamo_v2-") and record.get("scenario") in V1_SPLIT_SCENARIOS
+    }
+    checked_inputs = {ident: record for ident, record in inputs.items() if ident not in intentionally_v1_only}
     captures = _effective_capture_records(directory, input_aliases)
-    if not inputs or inputs.keys() != captures.keys():
-        raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
-    for ident, current in inputs.items():
+    if not inputs or checked_inputs.keys() != captures.keys():
+        raise ValueError(f"current capture/input sets differ: missing={sorted(checked_inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - checked_inputs.keys())}")
+    for ident, current in checked_inputs.items():
         if not isinstance(current.get("tools"), list):
             raise ValueError(f"current input has no executable tool schema: {ident}")
         record, raw, relative, bindings = captures[ident]

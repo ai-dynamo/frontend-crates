@@ -20,7 +20,6 @@ import capture_stimulus
 import capture_peer_versions
 import explode_unified_fixtures as explode
 import gen_unified_golden as generator
-import generate_conformance_table as table
 import package_fixtures
 from unified_tools import unified_tools
 
@@ -148,22 +147,12 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
         path = tmp_path / directory / "gemma4/UNIFIED.3-text_only.yaml"
         path.parent.mkdir(parents=True)
         path.write_text(yaml.safe_dump({"family": "gemma4", "cases": {"UNIFIED.3-text_only": value}}))
-    monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "missing-source")
-    monkeypatch.setattr(generator, "CLEAN", [row for row in generator.CLEAN if row[0] == "text_only"])
-    monkeypatch.setattr(generator, "EDGE", [])
-    model = table._unified_tab_model(tmp_path, {})
-    cell = model["rows"][0]["cells"]["text_only"]
-    key = {"vllm_python": "vllm", "vllm_rust": "vllm_rust", "sglang_python": "sglang"}[engine]
-    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
-    if key in blocks:
-        assert blocks[key]["verdict"] == "MATCH"
-        assert blocks[key]["events"] == events
+    if engine == "sglang_python":
+        assert [chunk["expected"] for chunk in record["chunks"]] == [events]
     else:
-        assert engine == "sglang_python"
-        cases, caps, _versions = table._load_unified_fixtures(tmp_path)
-        assert "unavailable" not in caps[engine][cases[0]["id"]]
-        assert caps[engine][cases[0]["id"]]["chunks"] == [events]
+        assert record["assembled"] == events
+    capture_directory = tmp_path / f"{engine}-{version}"
+    assert capture_stimulus.validate_current_capture(capture_directory, [tmp_path / "inputs"]) == 1
 
 
 def test_stream_recapture_can_force_an_unchanged_result_into_the_patch():

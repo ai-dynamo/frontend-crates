@@ -1,28 +1,22 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-(function () {
-  'use strict';
-
-  const page = window.__CONFORMANCE_PAGE;
+window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}, onIntent = () => {}) {
   const tab = page && page.tabs && page.tabs.find(item => item.id === 'tab-unified');
-  const panel = document.getElementById('tab-unified');
-  if (!tab || !panel) return;
+  if (!tab || !panel) return null;
 
   const engines = tab.comparison_slot_engines || ['dynamo', 'sglang', 'vllm'];
   const engineNames = { dynamo: 'Dynamo', sglang: 'SGLang', vllm: 'vLLM' };
   const engineLetters = { dynamo: 'D', sglang: 'S', vllm: 'V' };
   const candidates = (tab.candidates || []).filter(item => item && item.key && item.impl !== 'golden');
   const byKey = new Map(candidates.map(item => [item.key, item]));
+  const byIdentity = new Map(candidates.flatMap(item => [[item.key, item.key], [item.source_id, item.key], [item.identity, item.key]]).filter(([identity]) => identity));
   const engineName = engine => engine ? engineNames[engine] : 'None';
   const engineOf = item => {
     const impl = String(item.impl || item.key).toLowerCase();
     return impl.startsWith('dynamo') ? 'dynamo' : impl.startsWith('sglang') ? 'sglang' : 'vllm';
   };
-  const hasCapture = key => (tab.rows || []).some(row => Object.values(row.cells || {}).some(cell => {
-    const value = cell.cmp && cell.cmp[key];
-    return value && value.na !== 1;
-  }));
-  const available = candidates.filter(item => hasCapture(item.key));
+  // Catalog descriptors define availability before any selected history is loaded.
+  const available = candidates;
   const languageOrder = tab.comparison_languages || [];
   const languageRank = item => {
     const rank = languageOrder.indexOf(item.language);
@@ -64,17 +58,41 @@
   const preferredByEngine = engines.map(engine => {
     return captureChoices(engine)[0]?.key || null;
   });
-  const preferred = tab.comparison_defaults || [preferredByEngine[0], null, null];
+  const preferred = [preferredByEngine[0], null, null];
   const params = new URLSearchParams(window.__CONFORMANCE_INITIAL_SEARCH || window.location.search);
   const slotsParam = 'slots_' + tab.id;
-  const legacyBaseParam = 'base_' + tab.id;
-  const legacyCompareParam = 'cmp_' + tab.id;
-  const legacy = params.has(legacyBaseParam) || params.has(legacyCompareParam)
-    ? [params.has(legacyBaseParam) ? params.get(legacyBaseParam) : preferred[0],
-      ...(params.get(legacyCompareParam) || '').split(',')]
-      .map(key => key && key !== 'golden' && byKey.has(key) ? key : '')
+  const initialTab = params.get('tab');
+  const legacyCandidates = new Map(Object.entries(page.legacy_candidate_identities || {}));
+  for (const item of page.tabs.find(item => item.id === initialTab)?.candidates || []) {
+    if (item.key && item.identity) legacyCandidates.set(item.key, item.identity);
+  }
+  const resolveSlotKey = key => {
+    if (!key || key === 'golden') return '';
+    if (byKey.has(key)) return key;
+    const identity = legacyCandidates.get(key) || key;
+    return byIdentity.get(identity) || byIdentity.get(key) || '';
+  };
+  const legacyTabs = [...new Set([initialTab, tab.id].filter(Boolean))];
+  const legacyBaseParam = legacyTabs.map(id => 'base_' + id).find(key => params.has(key));
+  const legacyCompareParam = legacyTabs.map(id => 'cmp_' + id).find(key => params.has(key));
+  const legacyRef = (legacyBaseParam && params.get(legacyBaseParam)) ?? params.get('ref');
+  const legacyCmp = (legacyCompareParam && params.get(legacyCompareParam)) ?? params.get('cmp');
+  const hasLegacy = Boolean(legacyBaseParam || legacyCompareParam || params.has('ref') || params.has('cmp'));
+  const legacySelection = hasLegacy
+    ? [(legacyBaseParam || params.has('ref')) ? legacyRef : preferred[0], ...(legacyCmp || '').split(',')]
+      .map(resolveSlotKey)
     : null;
-  const requested = params.has(slotsParam) ? (params.get(slotsParam) || '').split(',') : legacy;
+  // Stream-tab links encode engine columns; other legacy comparisons preserve their authored order.
+  const legacy = initialTab === 'tab-toolcalling-streamv1' && legacySelection
+    ? legacySelection.reduce((slots, key) => {
+      if (!key) return slots;
+      const engineIndex = engines.indexOf(engineOf(byKey.get(key)));
+      const target = engineIndex >= 0 && !slots[engineIndex] ? engineIndex : slots.findIndex(slot => !slot);
+      if (target >= 0) slots[target] = key;
+      return slots;
+    }, [null, null, null])
+    : legacySelection;
+  const requested = params.has(slotsParam) ? (params.get(slotsParam) || '').split(',').map(key => key && key !== 'none' ? resolveSlotKey(key) : '') : legacy;
   const initial = requested === null ? preferred : requested;
   const overflow = initial.filter(Boolean).length > 3;
   const slots = [null, null, null];
@@ -150,12 +168,15 @@
   panel._comparisonSelection = selection;
   function persist() {
     const url = new URL(window.location.href);
-    const current = state.slots.map(key => key || 'none').join(',');
+    const current = state.slots.map(key => key ? (byKey.get(key)?.identity || key) : 'none').join(',');
     const isDefault = state.slots.every((key, index) => key === preferred[index]);
     if (isDefault) url.searchParams.delete(slotsParam);
     else url.searchParams.set(slotsParam, current);
-    url.searchParams.delete(legacyBaseParam);
-    url.searchParams.delete(legacyCompareParam);
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:base_|cmp_)/.test(key)) url.searchParams.delete(key);
+    }
+    url.searchParams.delete('ref');
+    url.searchParams.delete('cmp');
     window.history.replaceState(null, '', url.toString());
   }
   function update() {
@@ -189,6 +210,7 @@
       slot.querySelector('[data-slot-open]').setAttribute('aria-label', 'Edit comparison slot ' + (index + 1) + ': ' + engineName(engine));
     });
     persist();
+    onChange();
   }
   update();
 
@@ -257,6 +279,8 @@
     trigger.setAttribute('aria-expanded', 'true');
     picker.showModal();
     window.requestAnimationFrame(positionPicker);
+    // First paint stays on selected resources; opening the picker signals likely alternates.
+    onIntent();
   }
   controls.addEventListener('click', event => {
     const trigger = event.target.closest('[data-slot-open]');
@@ -292,4 +316,23 @@
   });
   window.addEventListener('resize', positionPicker);
   window.addEventListener('scroll', positionPicker, true);
-})();
+  return {
+    selection() { return { reference: null, selected: state.slots.filter(Boolean) }; },
+    alternatives() {
+      const selected = state.slots.filter(Boolean);
+      const activeEngine = state.engines.find(Boolean) || engines[0];
+      const engineOrder = [activeEngine, ...engines.filter(engine => engine !== activeEngine)];
+      return engineOrder.flatMap(engine => captureChoices(engine).filter(item => !selected.includes(item.key)).map(item => {
+        const slot = state.slots.findIndex(key => key && engineOf(byKey.get(key)) === engine);
+        const index = slot >= 0 ? slot : state.slots.findIndex(key => !key);
+        if (index < 0) return null;
+        const next = [...state.slots]; next[index] = item.key;
+        return next.filter(Boolean);
+      })).filter(Boolean);
+    },
+    dispose() { selector.remove(); picker.remove(); window.removeEventListener('resize', positionPicker); window.removeEventListener('scroll', positionPicker, true); },
+  };
+};
+if (window.__CONFORMANCE_PAGE) {
+  window.mountConformanceCaptureSlots(window.__CONFORMANCE_PAGE, document.getElementById('tab-unified'));
+}

@@ -57,6 +57,8 @@ from unified_taxonomy import (  # noqa: E402
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
 NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES)
+V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
+NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS}
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -95,8 +97,8 @@ def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
 
 
 def corpus_scenarios() -> list[str]:
-    """Scenario slugs the generator actually emits — the first element of each case."""
-    return [spec[0] for spec in (*CLEAN, *EDGE)]
+    """Scenario slugs emitted by native-v2 and the separate v1-split generator."""
+    return sorted({spec[0] for spec in (*CLEAN, *EDGE)} | V1_SPLIT_SCENARIOS)
 
 
 def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
@@ -850,7 +852,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 150 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 150 + len(CONFORMANCE_CASES) + len(V1_SPLIT_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1576,7 +1578,7 @@ def _assert_cross_family_contract(corpus):
                         if isinstance(call["arguments"]["x"], str):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
-    assert set(by_scenario) == set(UNIFIED_TAX)
+    assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         contracts = list(families.items())

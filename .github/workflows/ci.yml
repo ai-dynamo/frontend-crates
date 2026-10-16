@@ -14,7 +14,8 @@ permissions:
   contents: read
 
 jobs:
-  # Parser and conformance changes activate the render, utility and browser jobs.
+  # The conformance jobs validate the maintained viewer and source resources and
+  # run only for conformance/parser changes.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -26,6 +27,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
 
       - name: Detect conformance/parser changes
         id: filter
@@ -80,11 +83,13 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      - name: Check workspace
+        run: cargo check --workspace --all-targets --locked
+
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
 
-      # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
-      # decode with it (runners have no GPU, so NVDEC's tests are ignored).
+      # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
       - name: Install libvpx
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvpx9
 
@@ -106,23 +111,14 @@ jobs:
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
 
-  # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
-  # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
+  # Validate the maintained conformance viewer and its source resources.
+  # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
-  conformance-table:
+  conformance-core:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    # Render cost scales with the number of peer version dirs: every <impl>-<version>
-    # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
-    # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
-    # Raised to match the `rust` lane's headroom. If this creeps toward 20m, the fix is
-    # to make the render cheaper (or shard it), not to raise the ceiling again.
     timeout-minutes: 20
-    permissions:
-      contents: read
-      pages: read
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -133,61 +129,110 @@ jobs:
           # The renderer needs release tags to distinguish releases from changed source.
           fetch-depth: 0
 
+      # The browser smoke file has three module-scoped Chrome drivers and is kept
+      # on its own runner to avoid contending with the file-level pytest workers.
+      - name: Conformance core shard (catalog + lint + invariants)
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=core conformance/utils/check.sh ci
+
+  conformance-browser:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Conformance browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=browser conformance/utils/check.sh ci
+
+  # This module's Selenium runs contend with the Node model-contract test under
+  # xdist, so keep it on a separate runner from the core and smoke shards.
+  conformance-viewer:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Conformance viewer browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=viewer conformance/utils/check.sh ci
+
+  # The first-visible-matrix tests each start an independent Chrome profile.
+  # Keep those initial-load checks on their own runner to bound the smoke shard.
+  conformance-first-matrix:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: First visible matrix browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=first-matrix conformance/utils/check.sh ci
+
+  # Preserve one stable required status and publish only after every test shard passes.
+  conformance-table:
+    needs: [changes, conformance-core, conformance-browser, conformance-viewer, conformance-first-matrix]
+    if: ${{ always() && (needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pages: read
+      pull-requests: write
+    steps:
+      - name: Require all conformance shards
+        env:
+          CORE_RESULT: ${{ needs.conformance-core.result }}
+          BROWSER_RESULT: ${{ needs.conformance-browser.result }}
+          VIEWER_RESULT: ${{ needs.conformance-viewer.result }}
+          FIRST_MATRIX_RESULT: ${{ needs.conformance-first-matrix.result }}
+        run: |
+          test "$CORE_RESULT" = success
+          test "$BROWSER_RESULT" = success
+          test "$VIEWER_RESULT" = success
+          test "$FIRST_MATRIX_RESULT" = success
+
+      - name: Checkout
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
       - name: Configure GitHub Pages
         if: ${{ github.ref == 'refs/heads/main' }}
         id: pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
-      # Rendering and utility tests use separate runners to stay within each job's budget.
-      - name: Conformance report and lint
-        env:
-          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
-          render_args=()
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            test -n "$PAGES_BASE_URL"
-            render_args=(
-              --github-repository "$GITHUB_REPOSITORY"
-              --github-revision "$GITHUB_SHA"
-              --fixture-base-url "${PAGES_BASE_URL%/}/fixtures/"
-            )
-          fi
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-render "${render_args[@]}"
-
-      - name: Upload conformance matrix
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: conformity-html
-          path: conformance/utils/CONFORMITY.html
-          retention-days: 14
-
       - name: Prepare GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           set -euo pipefail
-          site="$RUNNER_TEMP/pages"
-          fixtures_root="$(python3 conformance/utils/src/extract_fixtures.py)"
-          mkdir -p "$site"
-          cp conformance/CONFORMANCE_v2.html "$site/index.html"
-          for relative in \
-            toolcalling/fixtures-batch-v1/inputs \
-            toolcalling/fixtures-stream-v1/inputs \
-            reasoning/fixtures-v1/inputs
-          do
-            test -d "$fixtures_root/$relative"
-            mkdir -p "$site/fixtures/$(dirname "$relative")"
-            cp -R "$fixtures_root/$relative" "$site/fixtures/$relative"
-          done
-          if find "$site" -type l -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain symbolic links" >&2
-            exit 1
-          fi
-          if find "$site" -type f -links +1 -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain hard links" >&2
-            exit 1
-          fi
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml
+          /tmp/pvenv/bin/python3 conformance/utils/src/publish_viewer.py --output "$RUNNER_TEMP/pages" --revision "$GITHUB_SHA"
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -202,52 +247,13 @@ jobs:
         run: |
           PR_NUMBER="${GITHUB_REF_NAME#pull-request/}"
           gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
             --edit-last --create-if-none \
-            --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
-  conformance-utils:
-    needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Run utility tests
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-tests
-
-  conformance-browser:
-    needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Install browser test dependencies
-        run: |
-          python3 -m venv /tmp/browser-venv
-          /tmp/browser-venv/bin/pip install --quiet pyyaml jinja2 pytest selenium
-          google-chrome --version
-          node --version
-
-      - name: Run comparison matrix browser regressions
-        run: PATH="/tmp/browser-venv/bin:$PATH" python3 -m pytest conformance/utils/tests/test_browser_comparison_layout.py conformance/utils/tests/test_browser_unified_only.py conformance/utils/tests/test_comparison_status.py -q
+            --body "📊 **Parser conformance viewer** validated — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
-    needs: [conformance-table, conformance-utils]
+    needs: conformance-table
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -362,6 +362,7 @@ unified_display:
   comparison_slot_engines: [dynamo, sglang, vllm]
   comparison_languages: [python, rust]
   group_labels:
+    v1_split: V1 parser cases
     1: TC Single call
     2: TC Multiple calls
     3: TC No call

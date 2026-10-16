@@ -1,0 +1,79 @@
+input_document:
+  family: deepseek_v3_2
+  mode: unified
+  model_label: deepseek_v3_2
+golden_document:
+  family: deepseek_v3_2
+  mode: unified
+  captured_with:
+    golden: v1
+cases:
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native deepseek_v3_2 grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: deepseek_v3_2/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: '<｜DSML｜function_calls>
+
+        <｜DSML｜invoke name="get_weather">
+
+        <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        <｜DSML｜invoke name="get_time">
+
+        <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+        </｜DSML｜invoke>
+
+        </｜DSML｜function_calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: '<｜DSML｜function_calls>
+
+          <｜DSML｜invoke name="get_weather">
+
+          <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          <｜DSML｜invoke name="get_time">
+
+          <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+          </｜DSML｜invoke>
+
+          </｜DSML｜function_calls>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []

@@ -1,19 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Model-fold contract on the resolver (pure logic, no rendered HTML).
-
-Born from a real escape: the resolver fold doubled Dynamo v1 output into
-`calls=[get_weatherget_weather(...)]` and it shipped to the rendered page unnoticed
-because verification stopped at "the data exists", never "the output is right".
-
-DIS-2434: the page is now rendered by the JS view from the JSON model, so the former
-HTML-regex guards here (grid↔compare-bar keys, versions-latest-first, no doubled
-names, chart-vs-list exclusivity, v2 registry cross-check) moved to structural
-assertions on the model (test_model.py) and DOM smokes (test_browser_popup_compare.py)
-— stronger and less brittle. What remains is the one guard with no HTML at all: folding
-a higher Dynamo version reproduces that version's docs exactly (the fold contract the
-rendered stream cells depend on).
-"""
+"""Legacy storage resolution and authored regression input contracts. Matrix folds and bands are checked by the shared JavaScript suites."""
 from __future__ import annotations
 
 import json
@@ -31,28 +18,13 @@ if str(SRC) not in sys.path:
 
 from resolve_stream_fixtures import resolve, version_key  # noqa: E402
 from fixture_snapshot import fixture_snapshot_root  # noqa: E402
-import fixtures  # noqa: E402
-from case_variants import visible_null_groups  # noqa: E402
 
 FIXTURES_ROOT = fixture_snapshot_root()
 STREAM_SRC = FIXTURES_ROOT / "toolcalling" / "fixtures-stream-v1"
 
 
-def test_visible_null_issue_groups_follow_display_grouping():
-    assert visible_null_groups({"7-4.mixed_labels"}, "glm47") == {"7-4", "7-5"}
-    assert visible_null_groups({"7-4.mixed_grep"}, "minimax_m3") == {"7-4", "7-5"}
-    assert visible_null_groups({"7-4"}, "qwen3") == {"7-4"}
-    assert visible_null_groups({"7-7"}, "glm47") == {"7-7"}
 
 
-def test_stream_regression_cases_share_their_parent_case_bands():
-    assert fixtures._subcase_group_key("streamv1", "7.g") == "args"
-    assert fixtures._subcase_group_key("streamv1", "7.h") == "args"
-    for case_id in ("7.i", "7.j", "7.k", "7.l"):
-        assert fixtures._subcase_group_key("streamv1", case_id) == "args"
-    assert fixtures._subcase_group_key("streamv1", "51.a") == "reasoning_projection"
-    assert fixtures._subcase_group_key("streamv1", "51.b") == "reasoning_projection"
-    assert "50.a" not in fixtures._discover_sub_cases("streamv1", {("deepseek_v4", "50.a"): {}, ("deepseek_v4", "51.a"): {}})
 
 pytestmark = pytest.mark.skipif(
     not STREAM_SRC.is_dir(), reason="conformance fixtures not downloaded"
