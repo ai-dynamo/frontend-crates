@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpt-oss-unified-model
+  labels:
+    owner: rmccormick
+    purpose: gpt-oss-unified-parser-validation
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  containers:
+  - name: model
+    image: nvcr.io/nvidia/ai-dynamo/sglang-runtime:1.5.1@sha256:37badffd83eb334aee9d06fb442e36fc3c963314336c92622c78ac5c037d514d
+    command:
+    - bash
+    - -lc
+    - sleep infinity
+    resources:
+      requests:
+        cpu: '12'
+        memory: 160Gi
+        nvidia.com/gpu: '1'
+      limits:
+        cpu: '24'
+        memory: 220Gi
+        nvidia.com/gpu: '1'
+    volumeMounts:
+    - name: work
+      mountPath: /work
+    - name: model-cache
+      mountPath: /model-cache
+    - name: shm
+      mountPath: /dev/shm
+    env:
+    - name: HF_HOME
+      value: /model-cache
+    - name: HF_HUB_CACHE
+      value: /model-cache/hub
+    - name: HF_TOKEN_PATH
+      value: /root/.cache/huggingface/token
+    - name: PYTHONUNBUFFERED
+      value: '1'
+  volumes:
+  - name: work
+    emptyDir:
+      sizeLimit: 30Gi
+  - name: model-cache
+    persistentVolumeClaim:
+      claimName: shared-model-cache
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 16Gi

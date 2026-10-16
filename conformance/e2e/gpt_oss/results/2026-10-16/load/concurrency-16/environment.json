@@ -1,0 +1,45 @@
+{
+  "serving_configuration": {
+    "image": "nvcr.io/nvidia/ai-dynamo/sglang-runtime:1.5.1@sha256:37badffd83eb334aee9d06fb442e36fc3c963314336c92622c78ac5c037d514d",
+    "model_revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+    "model": "openai/gpt-oss-120b",
+    "engine_packages": {
+      "sglang": "0.5.18",
+      "xgrammar": "0.2.1",
+      "torch": "2.13.0+cu130",
+      "flashinfer-python": "0.6.17"
+    },
+    "gpu": "NVIDIA B200 (one GPU, tensor parallel 1)",
+    "dynamo_base": "b8f47842a6",
+    "frontend_base": "5c4c2089df85550e79428e5f682b3974ea595e10",
+    "frontend_capture_source_sha256": "27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61",
+    "core_sha256": {
+      "v2": "4ea2c3f46fccf170058eadbc20c54d6b5bbe9ddb8917f138327741fbfca65dd9",
+      "worker_and_v1": "43a3963fee9610bab3283a9d8a93aecc2373251bf614dfa63021dd61260996b2"
+    },
+    "dynamo_integration_patch_sha256": "96f91ab6e42b19f83530c988302ba6e0a6107ea94ec6193c7d38cb76307fe218",
+    "crate_versions": {
+      "dynamo-parsers": "10.0.7",
+      "dynamo-parsers-v2": "0.9.1",
+      "dynamo-renderer": "8.0.4",
+      "dynamo-tokenizers": "3.1.2"
+    },
+    "cluster_context": "nv-prd-dgxc.teleport.sh-dynamo-nscale-dev-cluster",
+    "namespace": "dyntest-rmccormick-bot-test",
+    "pod": "gpt-oss-unified-model",
+    "server_settings": {
+      "context_length": 8192,
+      "chunked_prefill_size": 4096,
+      "mem_fraction_static": 0.75,
+      "max_running_requests": 16,
+      "disable_cuda_graph": true,
+      "temperature": 0,
+      "reasoning_effort_enabled": "low",
+      "reasoning_disabled": "unsupported none must return HTTP400"
+    }
+  },
+  "stream_interval": 1,
+  "structural_tags": true,
+  "fresh_server": true,
+  "note": "This load capture used parser0.9.1/core4ea2. The0.9.2 parser has identical Rust runtime code; its new version records the capture YAML import correction. No comparative throughput claim."
+}

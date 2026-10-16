@@ -2317,6 +2317,19 @@ def _unified_capture_failure(record: dict | None) -> dict:
     return failure
 
 
+def _unified_chunk_rows(input_chunks, capture_chunks):
+    """Show the terminal observation when a published stimulus uses implicit EOF."""
+    delivery = list(input_chunks)
+    if (len(capture_chunks) == len(delivery) + 1
+            and (not delivery or delivery[-1].get("delta_text") != "‹finish›")):
+        delivery.append({"delta_text": "‹finish›"})
+    return [
+        {"delta_text": chunk.get("delta_text", ""),
+         "dynamo": (capture_chunks[index].get("expected") if index < len(capture_chunks) else []) or []}
+        for index, chunk in enumerate(delivery)
+    ]
+
+
 def _load_unified_fixtures(base: Path):
     """Read the exploded per-case / per-family / per-version unified fixtures (same
     layout as toolcalling/fixtures-stream-v1: inputs/ + golden/ + <impl>-<version>/)
@@ -2514,11 +2527,7 @@ def _load_unified_fixtures(base: Path):
                 }
                 for impl in _UNIFIED_PEER_SOURCES
             },
-            "chunks": [
-                {"delta_text": ic.get("delta_text", ""),
-                 "dynamo": (dyn_chunks[i].get("expected") if i < len(dyn_chunks) else []) or []}
-                for i, ic in enumerate(in_chunks)
-            ],
+            "chunks": _unified_chunk_rows(in_chunks, dyn_chunks),
         })
         for impl in _UNIFIED_PEER_SOURCES:
             edoc = engine_cases.get(impl, {}).get((fam, key))

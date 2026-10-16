@@ -1,0 +1,3 @@
+# Whitespace in captured output and patch context is evidence.
+results/** -whitespace
+deployment/*.patch -whitespace

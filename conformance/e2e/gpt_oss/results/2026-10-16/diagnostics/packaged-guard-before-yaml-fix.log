@@ -1,0 +1,51 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.40s
+     Running tests/unified_render.rs (target/debug/deps/unified_render-d746f8be9950c0e9)
+
+running 16 tests
+test common::resolve_snap_dir_tests::rejects_empty_stdout ... ok
+test common::resolve_snap_dir_tests::rejects_a_path_that_does_not_exist_on_disk ... ok
+test common::resolve_snap_dir_tests::rejects_a_malformed_or_missing_path ... ok
+test common::resolve_snap_dir_tests::rejects_a_directory_that_is_actually_a_file ... ok
+test common::resolve_snap_dir_tests::accepts_a_real_directory_on_the_last_line ... ok
+test common::resolve_snap_dir_tests::uses_only_the_last_line_ignoring_noisy_progress_output ... ok
+test release_qualified_capture_order_preserves_current_and_released_owners ... ok
+test common::unified_capture::authored_and_recorded_schedules_preserve_utf8_and_empty_chunks ... ok
+test finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing ... ok
+test shared_input_overlays_are_folded_after_the_released_shard ... ok
+test case_tools_control_capture_types_without_changing_legacy_defaults ... ok
+Cache hit: /Users/rmccormick/.cache/dynamo/conformance-fixtures/20261016_150016-9ff1f26eb160392e.refresh1
+test plain_capture_records_reach_live_guard ... ok
+test common::capture_selector_tests::tagless_rust_consumer_reuses_verified_release ... ok
+Cache hit: /Users/rmccormick/.cache/dynamo/conformance-fixtures/20261016_150016-9ff1f26eb160392e.refresh1
+test current_plain_version_reaches_live_guard_and_binds_tools ... ok
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/deepseek_v4.yaml (240 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/deepseek_v41.yaml (237 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/gemma4.yaml (233 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/glm47.yaml (231 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/gpt_oss.yaml (204 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/kimi.yaml (231 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/kimi_k3.yaml (238 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/muse_glimmer.yaml (240 cases)
+wrote /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/unified/golden_spec/qwen3.yaml (236 cases)
+test render_unified_conformance_html ... ok
+test committed_dynamo_capture_matches_the_live_parsers ... FAILED
+
+failures:
+
+---- committed_dynamo_capture_matches_the_live_parsers stdout ----
+
+thread 'committed_dynamo_capture_matches_the_live_parsers' (6806138) panicked at conformance/tests/unified_render.rs:1012:5:
+1 of 2090 committed Dynamo capture cases are STALE — the HTML tab will show the old parser behavior. Regenerate:
+  cargo test -p dynamo-conformance-fixtures-v2 --test unified_render
+  python3 conformance/utils/src/explode_unified_fixtures.py
+  python3 conformance/utils/src/package_fixtures.py
+
+UNIFIED.arg_marker_in_string.gpt_oss [UNIFIED.7-arg_marker_in_string] per-chunk deltas differ
+
+
+failures:
+    committed_dynamo_capture_matches_the_live_parsers
+
+test result: FAILED. 15 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 31.65s
+
+error: test failed, to rerun pass `-p dynamo-conformance-fixtures-v2 --test unified_render`

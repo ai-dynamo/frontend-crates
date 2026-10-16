@@ -1,0 +1,599 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.1
+    git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+    source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    case_key: UNIFIED.7-arg_marker_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: d1dc011ca8f714c1070c6f4ef99390d69ccb090ea40a8619ffee41da16b40f30
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|call|> --oneline
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: cmd
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: git
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' log'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: call
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' --'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: true
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: eline
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 2d5d42a8cb9a42a608f3183a678bc7a67d8d3faa3b39945a270629113ab4c5ff
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <|channel|>analysis<|message|>quoted<|end|> <|start|> <|message|> <|call|> <|return|> &amp; \"x\"\\\n "
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: x
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: channel
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: analysis
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: message
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: quoted
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: end
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: start
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: message
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: call
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: return
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' &'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: amp
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ;
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' \"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: x
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: \"
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: \\
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: \
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: n
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "}'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  guided_json_gt_in_argument_bare_opener:
+    absent: true
+  guided_json_gt_in_argument_named_bare_opener:
+    absent: true
+  guided_json_narrated_prefix_inside_reasoning:
+    absent: true
+  guided_json_schema_error_nameless_element_bare_opener:
+    absent: true
+  guided_json_schema_error_not_a_call_bare_opener:
+    absent: true
+  guided_json_stray_prefix_before_reasoning:
+    absent: true
+  guided_json_syntax_error_bare_opener:
+    absent: true
+  guided_json_tool_open_before_payload:
+    absent: true
+  harmony_guided_json_gt_in_argument_bare_opener:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 55b68477adb6276bf5d2aa97e995d7ae6349319fa77660e81e15af348a9a60e7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            complete: true
+        - expected: []
+  harmony_guided_json_gt_in_argument_named_bare_opener:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_gt_in_argument_named_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 6c8645ceff7a9a45d2115ab49de0112e8ee970219b9101abf98d09c84c7836d3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: a > b
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "a > b"}'
+            complete: true
+        - expected: []
+  harmony_guided_json_narrated_prefix_inside_reasoning:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_narrated_prefix_inside_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: f57aece643638775543123652d10bd9896a70e88888977ae7b1fc432b7b621ac
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call get_weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: I'll call get_weather
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  harmony_guided_json_schema_error_nameless_element_bare_opener:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_schema_error_nameless_element_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: a741c1e43d75cd7e912791c0d5684fb5eb4e802ef2206ae650a92733ee246500
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]'
+        - expected: []
+  harmony_guided_json_schema_error_not_a_call_bare_opener:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_schema_error_not_a_call_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 672f15c159baa487b442ee41e9ccb3bbacfadfeee38a9bd207ebfa839994264c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  harmony_guided_json_stray_prefix_before_reasoning:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_stray_prefix_before_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 580d9e35c0d214acef1327953252871df7193a987a45f88f9ff7a32421e2ea94
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: secret
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: secret
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  harmony_guided_json_syntax_error_bare_opener:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_syntax_error_bare_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 8b2e46dfff9f7e1c0cb9fc0486ce1622ad6542bfa85383a458b5265ff3f6e538
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": '
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": '
+  harmony_guided_json_tool_open_before_payload:
+    case_key: UNIFIED.gpt_oss-harmony_guided_json_tool_open_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: bf60f74a573d9a56c8b87ddcf85ec7eeca1ae8bc4d78d155e875988c5f82802c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  arg_marker_in_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  deepseek_v41_mixed_control_text_in_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_gt_in_argument_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_gt_in_argument_named_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_narrated_prefix_inside_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_schema_error_nameless_element_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_schema_error_not_a_call_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_stray_prefix_before_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_syntax_error_bare_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  harmony_guided_json_tool_open_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.1
+      capture_origin:
+        crate_version: 0.9.1
+        source_sha256: 27d1c6e1232ae8738112204d6689e69a10daff7d555c17f1c641ae3efa451e61
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null

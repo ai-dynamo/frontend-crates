@@ -1,0 +1,467 @@
+schema_version: 1
+model: openai/gpt-oss-120b
+matrix:
+  reasoning:
+  - enabled
+  - disabled
+  structural_tags:
+  - false
+  - true
+  stream_interval:
+  - 1
+  - 20
+  stream:
+  - false
+  - true
+cases:
+- id: single_integer
+  prompt: Call add with a=17 and b=25.
+  tools:
+  - &id001
+    type: function
+    function:
+      name: add
+      description: Execute add with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          a:
+            type: integer
+          b:
+            type: integer
+        required:
+        - a
+        - b
+        additionalProperties: false
+  tool_choice: auto
+  expected:
+    calls:
+    - name: add
+      arguments:
+        a: 17
+        b: 25
+- id: required_integer
+  prompt: Call add with a=17 and b=25.
+  tools:
+  - *id001
+  tool_choice: required
+  expected:
+    calls:
+    - name: add
+      arguments:
+        a: 17
+        b: 25
+- id: named_integer
+  prompt: Call add with a=17 and b=25.
+  tools:
+  - *id001
+  - &id003
+    type: function
+    function:
+      name: get_weather
+      description: Execute get_weather with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          city:
+            type: string
+        required:
+        - city
+        additionalProperties: false
+  tool_choice:
+    type: function
+    function:
+      name: add
+  expected:
+    calls:
+    - name: add
+      arguments:
+        a: 17
+        b: 25
+- id: typed_scalars
+  prompt: Call configure with ratio=0.125, enabled=false, mode="safe".
+  tools:
+  - type: function
+    function:
+      name: configure
+      description: Execute configure with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          ratio:
+            type: number
+          enabled:
+            type: boolean
+          mode:
+            type: string
+            enum:
+            - fast
+            - safe
+        required:
+        - ratio
+        - enabled
+        - mode
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: configure
+      arguments:
+        ratio: 0.125
+        enabled: false
+        mode: safe
+- id: nested_containers
+  prompt: Call record with items=[{"name":"alpha","count":2},{"name":"beta","count":3}] and tags=["one","two"].
+  tools:
+  - type: function
+    function:
+      name: record
+      description: Execute record with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          items:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                count:
+                  type: integer
+              required:
+              - name
+              - count
+              additionalProperties: false
+          tags:
+            type: array
+            items:
+              type: string
+        required:
+        - items
+        - tags
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: record
+      arguments:
+        items:
+        - name: alpha
+          count: 2
+        - name: beta
+          count: 3
+        tags:
+        - one
+        - two
+- id: nullable
+  prompt: Call lookup with id=42 and note=null. Use JSON null, not the string null.
+  tools:
+  - type: function
+    function:
+      name: lookup
+      description: Execute lookup with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          id:
+            type: integer
+          note:
+            type:
+            - string
+            - 'null'
+        required:
+        - id
+        - note
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: lookup
+      arguments:
+        id: 42
+        note: null
+- id: local_ref
+  prompt: Call capture_payload with count=42.
+  tools:
+  - type: function
+    function:
+      name: capture_payload
+      description: Execute capture_payload with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          count:
+            $ref: '#/$defs/count'
+        required:
+        - count
+        additionalProperties: false
+        $defs:
+          count:
+            type: integer
+  tool_choice: required
+  expected:
+    calls:
+    - name: capture_payload
+      arguments:
+        count: 42
+- id: unicode
+  prompt: 'Call echo with text exactly: São Paulo 東京 世界'
+  tools:
+  - &id002
+    type: function
+    function:
+      name: echo
+      description: Execute echo with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          text:
+            type: string
+        required:
+        - text
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: echo
+      arguments:
+        text: São Paulo 東京 世界
+- id: literal_markup
+  prompt: 'Call echo with the exact text between backticks: `literal <|channel|>analysis<|message|>x<|call|> & <tag>`'
+  tools:
+  - *id002
+  tool_choice: required
+  expected:
+    calls:
+    - name: echo
+      arguments:
+        text: literal <|channel|>analysis<|message|>x<|call|> & <tag>
+- id: parallel_distinct
+  prompt: 'Make exactly two independent calls in this order: add(a=17,b=25), then get_weather(city="Paris").'
+  tools:
+  - *id001
+  - *id003
+  tool_choice: required
+  expected:
+    calls:
+    - name: add
+      arguments:
+        a: 17
+        b: 25
+    - name: get_weather
+      arguments:
+        city: Paris
+  parallel_tool_calls: true
+- id: parallel_same_tool
+  prompt: 'Make exactly two get_weather calls in this order: city="Paris", then city="Tokyo".'
+  tools:
+  - *id003
+  tool_choice: required
+  expected:
+    calls:
+    - name: get_weather
+      arguments:
+        city: Paris
+    - name: get_weather
+      arguments:
+        city: Tokyo
+  parallel_tool_calls: true
+- id: single_call_policy
+  prompt: Call add with a=17 and b=25 exactly once.
+  tools:
+  - *id001
+  tool_choice: required
+  expected:
+    calls:
+    - name: add
+      arguments:
+        a: 17
+        b: 25
+  parallel_tool_calls: false
+- id: multi_turn_answer
+  prompt: Call get_weather for Paris. After the tool result, answer with the temperature in digits.
+  tools:
+  - *id003
+  tool_choice: auto
+  expected:
+    calls:
+    - name: get_weather
+      arguments:
+        city: Paris
+  follow_up:
+    tool_results:
+    - temperature: 18
+      unit: C
+    prompt: What temperature did the tool return? Reply with the digits only.
+    tool_choice: none
+    expected:
+      calls: []
+      contains: '18'
+- id: multi_turn_second_tool
+  prompt: Call get_weather for Paris.
+  tools:
+  - *id003
+  tool_choice: auto
+  expected:
+    calls:
+    - name: get_weather
+      arguments:
+        city: Paris
+  follow_up:
+    tool_results:
+    - temperature: 18
+      unit: C
+    prompt: Now call get_weather for Tokyo.
+    tool_choice: required
+    expected:
+      calls:
+      - name: get_weather
+        arguments:
+          city: Tokyo
+- id: auto_text
+  prompt: 'Do not use tools. Reply with exactly: plain-answer'
+  tools:
+  - *id001
+  tool_choice: auto
+  expected:
+    calls: []
+    contains: plain-answer
+- id: disabled_tools
+  prompt: 'Reply with exactly: plain-answer'
+  tools:
+  - *id001
+  tool_choice: none
+  expected:
+    calls: []
+    contains: plain-answer
+- id: no_tools
+  prompt: 'Reply with exactly: plain-answer'
+  expected:
+    calls: []
+    contains: plain-answer
+- id: invalid_required_no_tools
+  prompt: Call a tool.
+  tools: []
+  tool_choice: required
+  expected:
+    http_status: 400
+- id: invalid_named_tool
+  prompt: Call missing_tool.
+  tools:
+  - *id001
+  tool_choice:
+    type: function
+    function:
+      name: missing_tool
+  expected:
+    http_status: 400
+- id: long_string_streaming
+  prompt: 'Call echo with text exactly the following string, preserving every character: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789'
+  tools:
+  - type: function
+    function:
+      name: echo
+      description: Execute echo with the supplied arguments.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          text:
+            type: string
+            minLength: 288
+            maxLength: 288
+        required:
+        - text
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: echo
+      arguments:
+        text: abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789
+  expect_argument_fragments: true
+- id: parameterless
+  prompt: Call get_server_time exactly once with no arguments.
+  tools:
+  - type: function
+    function:
+      name: get_server_time
+      description: Call exactly as requested.
+      strict: true
+      parameters:
+        type: object
+        properties: {}
+        required: []
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: get_server_time
+      arguments: {}
+- id: string_scalar_literals
+  prompt: 'Call capture_strings using these exact string arguments: {"code": "001", "enabled": "true", "nothing":
+    "null", "decimal": "3.5"}'
+  tools:
+  - type: function
+    function:
+      name: capture_strings
+      description: Call exactly as requested.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          code:
+            type: string
+          enabled:
+            type: string
+          nothing:
+            type: string
+          decimal:
+            type: string
+        required:
+        - code
+        - enabled
+        - nothing
+        - decimal
+        additionalProperties: false
+  tool_choice: auto
+  expected:
+    calls:
+    - name: capture_strings
+      arguments:
+        code: '001'
+        enabled: 'true'
+        nothing: 'null'
+        decimal: '3.5'
+- id: json_escaping
+  prompt: 'Call echo with text equal to the DECODED JSON string: "line1\n\"quoted\"\\path\tend". Interpret JSON
+    escapes; do not keep the backslash escape spellings.'
+  tools:
+  - type: function
+    function:
+      name: echo
+      description: Call exactly as requested.
+      strict: true
+      parameters:
+        type: object
+        properties:
+          text:
+            type: string
+            const: "line1\n\"quoted\"\\path\tend"
+        required:
+        - text
+        additionalProperties: false
+  tool_choice: required
+  expected:
+    calls:
+    - name: echo
+      arguments:
+        text: "line1\n\"quoted\"\\path\tend"

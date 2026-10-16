@@ -22,6 +22,7 @@ Same schema shape as toolcalling/fixtures-stream-v1 (family/mode/captured_with/c
 Run:  python3 conformance/utils/src/explode_unified_fixtures.py
 """
 import argparse
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -38,6 +39,23 @@ CONF = Path(__file__).resolve().parents[2]   # <repo>/conformance
 REPO = Path(__file__).resolve().parents[3]   # <repo>
 BUILD = CONF / "unified"
 MODE = "unified"
+
+
+class RustCaptureLoader(getattr(yaml, "CSafeLoader", yaml.SafeLoader)):
+    """serde_yaml emits YAML 1.2; words like on/off remain string deltas."""
+    yaml_implicit_resolvers = {
+        key: [(tag, pattern) for tag, pattern in resolvers if tag != "tag:yaml.org,2002:bool"]
+        for key, resolvers in yaml.SafeLoader.yaml_implicit_resolvers.items()
+    }
+
+
+RustCaptureLoader.add_implicit_resolver(
+    "tag:yaml.org,2002:bool", re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"), list("tTfF"),
+)
+
+
+def _load_rust_capture(text):
+    return yaml.load(text, Loader=RustCaptureLoader)
 
 
 def _dump(doc, path):
@@ -223,7 +241,7 @@ def main():
     if args.split_only_family:
         write_split_only_family(args.split_only_family)
         return
-    feed = yaml.safe_load((BUILD / "unified_results.yaml").read_text())
+    feed = _load_rust_capture((BUILD / "unified_results.yaml").read_text())
     provenance = validate_capture_provenance(REPO, feed.get("capture_provenance"))
     caps = {}
     for impl, fname in (
@@ -267,11 +285,15 @@ def main():
         key, fam, scenario = _case_key(cid)
         chunks = c.get("chunks") or []
         request = capture_input(c)
+        # GPT-OSS's published split-era inputs represent EOF implicitly. The
+        # terminal observation still belongs in the capture, not in its stimulus.
+        if fam == "gpt_oss" and request["chunks"][-1:] == [{"delta_text": "‹finish›"}]:
+            request["chunks"].pop()
         active_cases[(fam, scenario)] = (key, request)
 
         slot("inputs", fam, model_label=fam)[key] = _input_case(
             {**c, "scenario": scenario},
-            {**request, "chunks": [{"delta_text": ch.get("delta_text", "")} for ch in chunks]},
+            request,
         )
 
         # golden/<family>/<key>.yaml — the authored oracle (assembled events)

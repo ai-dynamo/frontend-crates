@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpt-oss-unified-build
+  labels:
+    owner: rmccormick
+    purpose: gpt-oss-unified-parser-validation
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+  containers:
+  - name: build
+    image: nvcr.io/nvidia/ai-dynamo/sglang-runtime:1.5.1@sha256:37badffd83eb334aee9d06fb442e36fc3c963314336c92622c78ac5c037d514d
+    command:
+    - bash
+    - -lc
+    - sleep infinity
+    resources:
+      requests:
+        cpu: '8'
+        memory: 32Gi
+      limits:
+        cpu: '12'
+        memory: 48Gi
+    volumeMounts:
+    - name: work
+      mountPath: /work
+  volumes:
+  - name: work
+    emptyDir:
+      sizeLimit: 80Gi

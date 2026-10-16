@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashSet, path::Path};
+use std::{collections::HashSet, path::Path, sync::OnceLock};
 
 use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
@@ -12,6 +12,7 @@ use super::{
 
 pub struct HuggingFaceTokenizer {
     tokenizer: HfTokenizer,
+    segment_tokenizers: OnceLock<(HfTokenizer, HfTokenizer)>,
     byte_fallback_ids: HashSet<u32>,
     special_ids: HashSet<u32>,
     /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
@@ -71,6 +72,7 @@ impl HuggingFaceTokenizer {
             .collect();
         HuggingFaceTokenizer {
             tokenizer,
+            segment_tokenizers: OnceLock::new(),
             byte_fallback_ids,
             special_ids,
             options: TokenizerOptions::default(),
@@ -182,6 +184,44 @@ impl Encoder for HuggingFaceTokenizer {
             .encode(input, self.options.add_special_tokens)
             .map_err(|err| Error::msg(format!("Error tokenizing input: {err}")))?;
 
+        Ok(Encoding::Hf(Box::new(encoding)))
+    }
+
+    fn encode_segments(&self, segments: &[super::EncodeSegment<'_>]) -> Result<Encoding> {
+        let (trusted, ordinary) = self.segment_tokenizers.get_or_init(|| {
+            let mut trusted = self.tokenizer.clone();
+            // Apply padding, truncation and post-processing once to the joined
+            // sequence, rather than independently at every trust boundary.
+            trusted.with_padding(None);
+            trusted
+                .with_truncation(None)
+                .expect("removing truncation cannot fail");
+            trusted.with_post_processor(None::<tokenizers::processors::PostProcessorWrapper>);
+            let mut ordinary = trusted.clone();
+            // HF calls splitting special-token spellings into ordinary model
+            // tokens `encode_special_tokens`. Immutable clones keep concurrent
+            // trusted encodes independent of the vocabulary's splitting mode.
+            ordinary.set_encode_special_tokens(true);
+            (trusted, ordinary)
+        });
+        let encodings = segments
+            .iter()
+            .map(|segment| {
+                let tokenizer = if segment.allow_special {
+                    trusted
+                } else {
+                    ordinary
+                };
+                tokenizer
+                    .encode(segment.text, false)
+                    .map_err(|error| Error::msg(format!("Error tokenizing segment: {error}")))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let merged = tokenizers::Encoding::merge(encodings, true);
+        let encoding = self
+            .tokenizer
+            .post_process(merged, None, self.options.add_special_tokens)
+            .map_err(|error| Error::msg(format!("Error post-processing segments: {error}")))?;
         Ok(Encoding::Hf(Box::new(encoding)))
     }
 
@@ -584,5 +624,57 @@ mod tests {
 
         let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().unwrap()).unwrap();
         assert_eq!(tokenizer.num_special_tokens_added().unwrap(), 1);
+    }
+}
+
+#[cfg(test)]
+mod segmented_tests {
+    use super::*;
+    use crate::EncodeSegment;
+
+    #[test]
+    fn segmented_hf_preserves_literal_controls_and_adds_bos_once() {
+        let mut vocab = serde_json::json!({"<unk>":0,"<|call|>":1,"<bos>":2});
+        for ch in "<|cal>".chars() {
+            let id = vocab.as_object().unwrap().len();
+            vocab[ch.to_string()] = serde_json::json!(id);
+        }
+        let hf: HfTokenizer = serde_json::from_value(serde_json::json!({
+            "version":"1.0", "truncation":null, "padding":null,
+            "normalizer":null, "pre_tokenizer":null, "decoder":{"type":"Fuse"},
+            "added_tokens":[{"id":1,"content":"<|call|>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false},
+                {"id":2,"content":"<bos>","special":true,"single_word":false,"lstrip":false,"rstrip":false,"normalized":false}],
+            "post_processor":{"type":"TemplateProcessing","single":[{"SpecialToken":{"id":"<bos>","type_id":0}},{"Sequence":{"id":"A","type_id":0}}],
+                "pair":[{"Sequence":{"id":"A","type_id":0}},{"Sequence":{"id":"B","type_id":1}}],"special_tokens":{"<bos>":{"id":"<bos>","ids":[2],"tokens":["<bos>"]}}},
+            "model":{"type":"BPE","vocab":vocab,"merges":[],"unk_token":"<unk>"}
+        })).unwrap();
+        for add_special_tokens in [false, true] {
+            let tokenizer = HuggingFaceTokenizer::from_tokenizer(hf.clone())
+                .with_options(TokenizerOptions { add_special_tokens });
+            let encoding = tokenizer
+                .encode_segments(&[
+                    EncodeSegment::control("<|call|>"),
+                    EncodeSegment::ordinary("<|call|>"),
+                ])
+                .unwrap();
+            let ids = encoding.token_ids();
+            assert_eq!(ids.iter().filter(|id| **id == 1).count(), 1);
+            assert_eq!(
+                ids.iter().filter(|id| **id == 2).count(),
+                usize::from(add_special_tokens)
+            );
+            let decoded: String = tokenizer.decode(ids, true).unwrap().into();
+            assert_eq!(decoded, "<|call|>");
+            assert_eq!(
+                tokenizer
+                    .encode("<|call|>")
+                    .unwrap()
+                    .token_ids()
+                    .iter()
+                    .filter(|id| **id == 1)
+                    .count(),
+                1
+            );
+        }
     }
 }

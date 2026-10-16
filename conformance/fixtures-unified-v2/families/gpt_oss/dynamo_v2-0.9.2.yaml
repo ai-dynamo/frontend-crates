@@ -1,0 +1,103 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.2
+    git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+    source_sha256: 5a64213f443f5db41ca126f0f8a5c65e4e6d5fcceebedfe1a296afcbd73a006c
+document:
+  mode: unified
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|call|> --oneline
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: cmd
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: git
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' log'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: <
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: call
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '|'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' --'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: 'on'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: eline
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  arg_marker_in_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.9.2
+      capture_origin:
+        crate_version: 0.9.2
+        source_sha256: 5a64213f443f5db41ca126f0f8a5c65e4e6d5fcceebedfe1a296afcbd73a006c
+        git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null

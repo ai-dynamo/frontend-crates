@@ -1,0 +1,94 @@
+[
+  {
+    "case": "parallel_distinct",
+    "format_guidance": false,
+    "request": {
+      "text": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-10-16\n\nReasoning: low\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.\nCalls to these tools must go to the commentary channel: 'functions'.<|end|><|start|>developer<|message|># Instructions\n\nFollow the requested tool names and argument values exactly. Keep reasoning brief.\n\n# Tools\n\n## functions\n\nnamespace functions {\n\n// Execute add with the supplied arguments.\ntype add = (_: {\na: number,\nb: number,\n}) => any;\n\n// Execute get_weather with the supplied arguments.\ntype get_weather = (_: {\ncity: string,\n}) => any;\n\n} // namespace functions<|end|><|start|>user<|message|>Make exactly two independent calls in this order: add(a=17,b=25), then get_weather(city=\"Paris\").<|end|><|start|>assistant",
+      "sampling_params": {
+        "temperature": 0,
+        "max_new_tokens": 1024,
+        "skip_special_tokens": false,
+        "json_schema": "{\"type\": \"array\", \"minItems\": 1, \"items\": {\"anyOf\": [{\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"add\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"a\": {\"type\": \"integer\"}, \"b\": {\"type\": \"integer\"}}, \"required\": [\"a\", \"b\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}, {\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"get_weather\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}]}}"
+      },
+      "require_reasoning": true,
+      "stream": false
+    },
+    "status": 400,
+    "response": {
+      "object": "error",
+      "message": "Failed to deserialize the JSON body into the target type: missing field `input_ids` at line 1 column 1755",
+      "type": "Bad Request",
+      "param": null,
+      "code": 400
+    }
+  },
+  {
+    "case": "parallel_distinct",
+    "format_guidance": true,
+    "request": {
+      "text": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-10-16\n\nReasoning: low\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.\nCalls to these tools must go to the commentary channel: 'functions'.<|end|><|start|>developer<|message|># Instructions\n\nFollow the requested tool names and argument values exactly. Keep reasoning brief.\n\n# Tools\n\n## functions\n\nnamespace functions {\n\n// Execute add with the supplied arguments.\ntype add = (_: {\na: number,\nb: number,\n}) => any;\n\n// Execute get_weather with the supplied arguments.\ntype get_weather = (_: {\ncity: string,\n}) => any;\n\n} // namespace functions<|end|><|start|>user<|message|>Make exactly two independent calls in this order: add(a=17,b=25), then get_weather(city=\"Paris\").<|end|><|start|>assistant",
+      "sampling_params": {
+        "temperature": 0,
+        "max_new_tokens": 1024,
+        "skip_special_tokens": false,
+        "json_schema": "{\"type\": \"array\", \"minItems\": 1, \"items\": {\"anyOf\": [{\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"add\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"a\": {\"type\": \"integer\"}, \"b\": {\"type\": \"integer\"}}, \"required\": [\"a\", \"b\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}, {\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"get_weather\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}]}}"
+      },
+      "require_reasoning": true,
+      "stream": false
+    },
+    "status": 400,
+    "response": {
+      "object": "error",
+      "message": "Failed to deserialize the JSON body into the target type: missing field `input_ids` at line 1 column 1755",
+      "type": "Bad Request",
+      "param": null,
+      "code": 400
+    }
+  },
+  {
+    "case": "parallel_same_tool",
+    "format_guidance": false,
+    "request": {
+      "text": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-10-16\n\nReasoning: low\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.\nCalls to these tools must go to the commentary channel: 'functions'.<|end|><|start|>developer<|message|># Instructions\n\nFollow the requested tool names and argument values exactly. Keep reasoning brief.\n\n# Tools\n\n## functions\n\nnamespace functions {\n\n// Execute get_weather with the supplied arguments.\ntype get_weather = (_: {\ncity: string,\n}) => any;\n\n} // namespace functions<|end|><|start|>user<|message|>Make exactly two get_weather calls in this order: city=\"Paris\", then city=\"Tokyo\".<|end|><|start|>assistant",
+      "sampling_params": {
+        "temperature": 0,
+        "max_new_tokens": 1024,
+        "skip_special_tokens": false,
+        "json_schema": "{\"type\": \"array\", \"minItems\": 1, \"items\": {\"anyOf\": [{\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"get_weather\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}]}}"
+      },
+      "require_reasoning": true,
+      "stream": false
+    },
+    "status": 400,
+    "response": {
+      "object": "error",
+      "message": "Failed to deserialize the JSON body into the target type: missing field `input_ids` at line 1 column 1309",
+      "type": "Bad Request",
+      "param": null,
+      "code": 400
+    }
+  },
+  {
+    "case": "parallel_same_tool",
+    "format_guidance": true,
+    "request": {
+      "text": "<|start|>system<|message|>You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: 2024-06\nCurrent date: 2026-10-16\n\nReasoning: low\n\n# Valid channels: analysis, commentary, final. Channel must be included for every message.\nCalls to these tools must go to the commentary channel: 'functions'.<|end|><|start|>developer<|message|># Instructions\n\nFollow the requested tool names and argument values exactly. Keep reasoning brief.\n\n# Tools\n\n## functions\n\nnamespace functions {\n\n// Execute get_weather with the supplied arguments.\ntype get_weather = (_: {\ncity: string,\n}) => any;\n\n} // namespace functions<|end|><|start|>user<|message|>Make exactly two get_weather calls in this order: city=\"Paris\", then city=\"Tokyo\".<|end|><|start|>assistant",
+      "sampling_params": {
+        "temperature": 0,
+        "max_new_tokens": 1024,
+        "skip_special_tokens": false,
+        "json_schema": "{\"type\": \"array\", \"minItems\": 1, \"items\": {\"anyOf\": [{\"type\": \"object\", \"properties\": {\"name\": {\"const\": \"get_weather\"}, \"arguments\": {\"type\": \"object\", \"properties\": {\"city\": {\"type\": \"string\"}}, \"required\": [\"city\"], \"additionalProperties\": false}}, \"required\": [\"name\", \"arguments\"], \"additionalProperties\": false}]}}"
+      },
+      "require_reasoning": true,
+      "stream": false
+    },
+    "status": 400,
+    "response": {
+      "object": "error",
+      "message": "Failed to deserialize the JSON body into the target type: missing field `input_ids` at line 1 column 1309",
+      "type": "Bad Request",
+      "param": null,
+      "code": 400
+    }
+  }
+]

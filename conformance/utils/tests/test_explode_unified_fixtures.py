@@ -192,3 +192,15 @@ def test_regeneration_removes_all_materialized_capture_directories(tmp_path, mon
     assert not (tmp_path / "inputs").exists()
     assert not (tmp_path / "golden").exists()
     assert not (tmp_path / "vllm_python-0.25.1").exists()
+
+
+def test_rust_yaml_boolean_words_preserve_string_deltas_without_changing_python_yaml():
+    import yaml
+
+    words = ["on", "off", "yes", "no", "ON", "OFF", "Yes", "No"]
+    raw = "".join(f"- arguments: {word}\n  complete: false\n" for word in words)
+    rows = explode._load_rust_capture(raw)
+    assert [row["arguments"] for row in rows] == words
+    assert all(row["complete"] is False for row in rows)
+    assert yaml.safe_load("complete: true")["complete"] is True
+    assert yaml.safe_load("flag: on")["flag"] is True

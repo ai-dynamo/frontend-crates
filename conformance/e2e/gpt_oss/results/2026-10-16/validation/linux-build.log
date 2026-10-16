@@ -1,0 +1,13 @@
+     Locking 1 package to latest Rust 1.96.1 compatible version
+    Updating dynamo-parsers-v2 v0.9.1 (/work/frontend/parsers/v2) -> v0.9.2
+warning: dynamo-llm@1.6.0: Found FATBIN at default location: ./src/block_manager/block/transfer/kernels/vectorized_copy.fatbin
+warning: dynamo-llm@1.6.0: CUDA FATBIN found at: ./src/block_manager/block/transfer/kernels/vectorized_copy.fatbin - copied to OUT_DIR
+   Compiling dynamo-parsers-v2 v0.9.2 (/work/frontend/parsers/v2)
+   Compiling dynamo-py3 v1.6.0 (/work/dynamo/lib/bindings/python)
+   Compiling dynamo-llm v1.6.0 (/work/dynamo/lib/llm)
+   Compiling dynamo-backend-common v1.6.0 (/work/dynamo/lib/backend-common)
+   Compiling dynamo-sidecar-common v1.6.0 (/work/dynamo/lib/sidecar/common)
+   Compiling dynamo-trtllm-sidecar v1.6.0 (/work/dynamo/lib/sidecar/trtllm)
+   Compiling dynamo-sglang-sidecar v1.6.0 (/work/dynamo/lib/sidecar/sglang)
+   Compiling dynamo-vllm-sidecar v1.6.0 (/work/dynamo/lib/sidecar/vllm)
+    Finished `dev` profile [optimized] target(s) in 2m 40s

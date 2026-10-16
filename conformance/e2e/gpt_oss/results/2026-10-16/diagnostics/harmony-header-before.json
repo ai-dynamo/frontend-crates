@@ -1,0 +1,481 @@
+{
+  "capture_provenance": {
+    "crate_version": "0.9.1",
+    "git_commit": "5c4c2089df85550e79428e5f682b3974ea595e10",
+    "git_head_tree": "7726620efdf7493791b628aa4acf31c7302ac8d2",
+    "kind": "unpublished",
+    "label": "0.9.1+source.4b2f8b9fac976c2182140869d54a917402b3b89f40463b4a2e773aa03f9cd689",
+    "release_commit": null,
+    "release_tag": null,
+    "source_id": "sha256:4b2f8b9fac976c2182140869d54a917402b3b89f40463b4a2e773aa03f9cd689",
+    "source_paths": [
+      "parsers/v1/src",
+      "parsers/v1/Cargo.toml",
+      "parsers/v1/build.rs",
+      "parsers/v2/src",
+      "parsers/v2/Cargo.toml",
+      "parsers/v2/build.rs",
+      "protocols/src",
+      "protocols/Cargo.toml",
+      "protocols/build.rs",
+      "Cargo.toml",
+      "Cargo.lock",
+      "rust-toolchain",
+      "rust-toolchain.toml",
+      ".cargo"
+    ],
+    "source_sha256": "4b2f8b9fac976c2182140869d54a917402b3b89f40463b4a2e773aa03f9cd689"
+  },
+  "note": "Before-fix diagnostic, original scenario IDs. Final canonical Harmony scenarios have the identical inputs and goldens, verified before export. This source was not published as a checkpoint.",
+  "cases": [
+    {
+      "id": "UNIFIED.guided_json_gt_in_argument_bare_opener.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_gt_in_argument_bare_opener",
+      "description": "Guided JSON, payload is gt_in_argument, surrounded by a bare invoke HEADER before the payload, never terminated. Markers around a recoverable payload must not cost the call (`I3`).",
+      "policy": [
+        "I3"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "a > b"
+          }
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]"
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "I3"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_gt_in_argument_named_bare_opener.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_gt_in_argument_named_bare_opener",
+      "description": "Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).",
+      "policy": [
+        "I3"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.get_weather[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "a > b"
+          }
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.get_weather[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]"
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "I3"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.get_weather[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.get_weather[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"a > b\"}}]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_narrated_prefix_inside_reasoning.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_narrated_prefix_inside_reasoning",
+      "description": "The model NARRATES an invoke header inside its thought and never terminates it, so the only `>` in reach belongs to the thought's own closer. The header is literal text the model wrote, so it is stripped and the surrounding thought survives intact — it must not swallow the closer and it must not survive into the reasoning the user sees.",
+      "policy": [
+        "I3"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|channel|>analysis<|message|>I'll call <|start|>assistant<|channel|>commentary to=functions.get_weather<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "reasoning",
+          "text": "I'll call get_weather"
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "reasoning",
+          "text": "I'll call assistantcommentary to=functions.get_weather"
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "I3"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|channel|>analysis<|message|>I'll call <|start|>assistant<|channel|>commentary to=functions.get_weather<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "reasoning",
+              "text": "I'll call assistantcommentary to=functions.get_weather"
+            },
+            {
+              "kind": "tool_call",
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}",
+              "complete": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_schema_error_nameless_element_bare_opener.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_schema_error_nameless_element_bare_opener",
+      "description": "Guided JSON, payload is schema_error_nameless_element, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.",
+      "policy": [
+        "P2"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}, {\"arguments\": {}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "text",
+          "text": "[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}, {\"arguments\": {}}]"
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}, {\"arguments\": {}}]"
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "P2"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}, {\"arguments\": {}}]",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}, {\"arguments\": {}}]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_schema_error_not_a_call_bare_opener.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_schema_error_not_a_call_bare_opener",
+      "description": "Guided JSON, payload is schema_error_not_a_call, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.",
+      "policy": [
+        "P2"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.{\"unexpected\": \"shape\"}",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "text",
+          "text": "{\"unexpected\": \"shape\"}"
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.{\"unexpected\": \"shape\"}"
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "P2"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.{\"unexpected\": \"shape\"}",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.{\"unexpected\": \"shape\"}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_stray_prefix_before_reasoning.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_stray_prefix_before_reasoning",
+      "description": "A bare invoke HEADER with no terminator of its own sits before a reasoning span, so the only `>` in reach belongs to the thought opener. The header must NOT claim it: doing so consumed the opener, and the model's private reasoning was emitted as user-visible text (`I3`, and a privacy failure, not just a cosmetic leak). The header is incomplete markup and is stripped; the thought stays a thought.",
+      "policy": [
+        "I3"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.<|channel|>analysis<|message|>secret<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "reasoning",
+          "text": "secret"
+        },
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "MERGE",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "I3"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.<|channel|>analysis<|message|>secret<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+          "dynamo": [
+            {
+              "kind": "tool_call",
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}",
+              "complete": true
+            }
+          ]
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": []
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_syntax_error_bare_opener.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_syntax_error_bare_opener",
+      "description": "Guided JSON, payload is syntax_error, surrounded by a bare invoke HEADER before the payload, never terminated. Nothing parses as a call, so the payload surfaces as text — and the text must not contain the control markup that was stripped to attempt the parse (`I3`). This crossing had NO case before: every authored markup case carried a well-formed payload, and every malformed payload was authored bare.",
+      "policy": [
+        "P2"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": ",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "text",
+          "text": "[{\"name\": \"get_weather\", \"arguments\": {\"city\": "
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": "
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "P2"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": ",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": "
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "UNIFIED.guided_json_tool_open_before_payload.gpt_oss",
+      "family": "gpt_oss",
+      "scenario": "guided_json_tool_open_before_payload",
+      "description": "A native tool OPENER precedes the constrained payload. Guided decoding delivers the call as JSON, so leading markup is stray: it must be stripped, not carried into the payload buffer where it breaks the parse and costs the call.",
+      "policy": [
+        "P2"
+      ],
+      "init": {
+        "starting_state": "None",
+        "tool_output_mode": "GuidedJson",
+        "named_tool": null
+      },
+      "finish_reason": "stop",
+      "input": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+      "tools": [],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris"
+          }
+        }
+      ],
+      "dynamo": [
+        {
+          "kind": "text",
+          "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+        }
+      ],
+      "dynamo_error": null,
+      "dynamo_verdict": "LOSS",
+      "vllm_verdict": "UNSUPPORTED",
+      "vllm_note": "vLLM base case doesn't emit guided JSON; conformance captures native XML only",
+      "policy_tags": [
+        "P2"
+      ],
+      "chunks": [
+        {
+          "delta_text": "<|start|>assistant<|channel|>commentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]",
+          "dynamo": []
+        },
+        {
+          "delta_text": "‹finish›",
+          "dynamo": [
+            {
+              "kind": "text",
+              "text": "assistantcommentary to=functions.[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -479,6 +479,8 @@ def invoke_header_prefix(fam):
 
 
 def guided_invoke_prefix(fam):
+    if fam == "gpt_oss":
+        return ""
     if fam == "deepseek_v41":
         return '<｜DSML｜ invoke name="'
     return invoke_header_prefix(fam)
@@ -568,7 +570,7 @@ V_MUSE = {
 # per-family verdict published the other 22 as if an engine had produced them.
 VLLM_UNCAPTURABLE = {
     "muse_glimmer": V_MUSE,
-    "gpt_oss": "GPT-OSS uses the split Harmony parser; the Unified parser does not capture this family.",
+    "gpt_oss": D("UNSUPPORTED", "the vLLM Unified capture harness has no GPT-OSS entry; legacy batch captures are recorded separately"),
 }
 
 
@@ -712,6 +714,7 @@ _MIXED_CONTROL_STRINGS = {
             "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
             "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
             "muse_glimmer": "<atem:function_calls> </atem:function_calls> </atem:invoke>",
+            "gpt_oss": "<|start|> <|message|> <|call|> <|return|>",
         }.items()
     },
 }
@@ -816,6 +819,9 @@ EDGE = [
      [{"kind": "tool_call", "name": "run", "arguments": {"cmd": None}}],  # cmd filled per family below
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {
+        # A handoff appearing first inside a JSON string must not end the call.
+        "gpt_oss": (r_tool("gpt_oss", "run", "cmd", "git log <|call|> --oneline", 0),
+                    VLLM_UNCAPTURABLE["gpt_oss"], M, "git log <|call|> --oneline"),
         "deepseek_v41": (r_tool("deepseek_v41", "run", "cmd", "git log </｜DSML｜ invoke> --oneline", 0),
                          M, M, "git log </｜DSML｜ invoke> --oneline"),
         "gemma4": ("<|tool_call>call:run{cmd:<|\"|>git log }<tool_call|> --oneline<|\"|>}<tool_call|>",
@@ -2049,6 +2055,8 @@ EDGE += [
 def _entry(spec, fam):
     """Resolve a vllm/dynamo verdict spec (single or per-family) for `fam`."""
     if fam == "gpt_oss":
+        if fam in UNIFIED_FAMILIES:
+            return M
         return D(
             "UNSUPPORTED",
             "the comparison has no native GPT-OSS Unified parser; the legacy v1 batch capture is recorded separately",
@@ -2644,6 +2652,40 @@ EDGE.append((
 ))
 
 
+# Harmony partial headers are a distinct grammar boundary. The previous GPT-OSS
+# projections used no invocation prefix (or an orphan handoff); retain their
+# captured history and replace them with explicitly authored Harmony scenarios.
+GPT_OSS_RETIRED_HEADER_SCENARIOS = frozenset({
+    'guided_json_gt_in_argument_bare_opener',
+    'guided_json_gt_in_argument_named_bare_opener',
+    'guided_json_narrated_prefix_inside_reasoning',
+    'guided_json_schema_error_nameless_element_bare_opener',
+    'guided_json_schema_error_not_a_call_bare_opener',
+    'guided_json_stray_prefix_before_reasoning',
+    'guided_json_syntax_error_bare_opener',
+    'guided_json_tool_open_before_payload',
+})
+GPT_OSS_HEADER_INPUTS = {
+    'harmony_guided_json_gt_in_argument_bare_opener': '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "a > b"}}]',
+    'harmony_guided_json_gt_in_argument_named_bare_opener': '<|start|>assistant<|channel|>commentary to=functions.get_weather[{"name": "get_weather", "arguments": {"city": "a > b"}}]',
+    'harmony_guided_json_narrated_prefix_inside_reasoning': '<|channel|>analysis<|message|>I\'ll call <|start|>assistant<|channel|>commentary to=functions.get_weather<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]',
+    'harmony_guided_json_schema_error_nameless_element_bare_opener': '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]',
+    'harmony_guided_json_schema_error_not_a_call_bare_opener': '<|start|>assistant<|channel|>commentary to=functions.{"unexpected": "shape"}',
+    'harmony_guided_json_stray_prefix_before_reasoning': '<|start|>assistant<|channel|>commentary to=functions.<|channel|>analysis<|message|>secret<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]',
+    'harmony_guided_json_syntax_error_bare_opener': '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": ',
+    'harmony_guided_json_tool_open_before_payload': '<|start|>assistant<|channel|>commentary to=functions.[{"name": "get_weather", "arguments": {"city": "Paris"}}]',
+}
+for _edge in tuple(EDGE):
+    if _edge[0] in GPT_OSS_RETIRED_HEADER_SCENARIOS:
+        _name, _desc, _policy, _golden, _init, *_ = _edge
+        _harmony_name = "harmony_" + _name
+        EDGE.append((_harmony_name, "Harmony partial header: " + _desc,
+                     _policy, _golden, _init,
+                     OnlyFamilies({"gpt_oss": (GPT_OSS_HEADER_INPUTS[_harmony_name],
+                                               VLLM_UNCAPTURABLE["gpt_oss"], M,
+                                               *_edge_case_family_policy(_edge)["gpt_oss"][3:])})))
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
@@ -2672,12 +2714,20 @@ def build_cases(fam):
         case["expect"]["vllm"] = _vllm_entry_for_init(
             case["expect"]["vllm"], fam, case["init"]
         )
+    if fam == "gpt_oss":
+        # Preserve the split-era authored request and single-chunk schedule.
+        # Streaming schedules are exercised independently by native parity tests.
+        for case in cases.values():
+            case.setdefault("tools", [])
+            case.setdefault("input_chunks", [case["input"]])
     return cases
 
 
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
+        if fam == "gpt_oss" and edge_case[0] in GPT_OSS_RETIRED_HEADER_SCENARIOS:
+            continue
         if fam == "deepseek_v41" and edge_case[0] in DEEPSEEK_V41_REDUNDANT_SCENARIOS:
             continue
         # Support legacy tuples, stream config, and per-case request tool schemas.
@@ -2799,6 +2849,8 @@ def scenario_families(scenario):
         families = (set(per_fam) if isinstance(per_fam, OnlyFamilies)
                     else set(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES))
         if isinstance(per_fam, dict) and "gpt_oss" not in per_fam:
+            families.discard("gpt_oss")
+        if scenario in GPT_OSS_RETIRED_HEADER_SCENARIOS:
             families.discard("gpt_oss")
         init = edge_case[4] if len(edge_case) >= 6 else {}
         if (init or {}).get("tool_output_mode", "Native") != "Native":

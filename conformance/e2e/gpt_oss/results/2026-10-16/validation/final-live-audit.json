@@ -1,0 +1,77 @@
+{
+  "final_v2_core": "a2484b31048110248df6baf7572fd5e0a5b0ba4034cc78a6e4f456b56574fcb9",
+  "all_four_final_build_configurations_pass": true,
+  "all_80_passing_v1_rows_pass_in_v2": true,
+  "cases_per_configuration": 92,
+  "suite_sha256": "1682823dc67c74953d4315d29ab232699c03e2792f153e11ee888dc5ee9e090c",
+  "selected_captures": [
+    "sglang-tags-off-interval-1-20261016T203131159072Z.json",
+    "sglang-tags-off-interval-20-20261016T203551436485Z.json",
+    "sglang-tags-on-interval-1-20261016T203152505995Z.json",
+    "sglang-tags-on-interval-20-20261016T203613882730Z.json",
+    "v1-tags-off-interval-1-20261016T204437097862Z.json",
+    "v1-tags-off-interval-20-20261016T213149873766Z.json",
+    "v1-tags-on-interval-1-20261016T205746218256Z.json",
+    "v1-tags-on-interval-20-20261016T214313555189Z.json",
+    "v2-tags-off-interval-1-20261016T221926836410Z.json",
+    "v2-tags-off-interval-20-20261016T222245368766Z.json",
+    "v2-tags-on-interval-1-20261016T221537897737Z.json",
+    "v2-tags-on-interval-20-20261016T222602665595Z.json"
+  ],
+  "scores": {
+    "v2": {
+      "functional": {
+        "passed": 168,
+        "executed": 168
+      },
+      "unsupported_disable": {
+        "passed": 168,
+        "executed": 168
+      },
+      "invalid_tools": {
+        "passed": 32,
+        "executed": 32
+      },
+      "total": {
+        "passed": 368,
+        "executed": 368
+      }
+    },
+    "v1": {
+      "functional": {
+        "passed": 48,
+        "executed": 168
+      },
+      "unsupported_disable": {
+        "passed": 0,
+        "executed": 168
+      },
+      "invalid_tools": {
+        "passed": 32,
+        "executed": 32
+      },
+      "total": {
+        "passed": 80,
+        "executed": 368
+      }
+    },
+    "sglang": {
+      "functional": {
+        "passed": 28,
+        "executed": 168
+      },
+      "unsupported_disable": {
+        "passed": 168,
+        "executed": 168
+      },
+      "invalid_tools": {
+        "passed": 32,
+        "executed": 32
+      },
+      "total": {
+        "passed": 228,
+        "executed": 368
+      }
+    }
+  }
+}

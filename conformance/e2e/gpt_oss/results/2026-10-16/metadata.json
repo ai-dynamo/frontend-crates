@@ -1,0 +1,153 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "original_live_suite_sha256": "1682823dc67c74953d4315d29ab232699c03e2792f153e11ee888dc5ee9e090c",
+  "local_validation": {
+    "native_parser_tests": 753,
+    "unified_parity_tests": 16,
+    "legacy_stream_tests": 11,
+    "renderer_tests": 254,
+    "tokenizer_tests": 110,
+    "replay_harness_tests": 3,
+    "capture_yaml_tests": 12,
+    "strict_clippy": "0.9.2 parser, renderer, tokenizer; all targets clean",
+    "historical_requests_and_goldens_preserved": 2083,
+    "active_gpt_oss_cases": 204,
+    "first_implementation_history_regression": 1,
+    "packaged_capture_guard_tests": 16,
+    "dynamo_prompt_policy_unit_test": 1,
+    "canonical_gpt_oss_status": "0 red, 0 empty; 201 visible cells /204 active cases after table folding",
+    "table_model_tests": 573,
+    "linux_runtime_build": "success; exact deployed core a2484b31048110248df6baf7572fd5e0a5b0ba4034cc78a6e4f456b56574fcb9",
+    "v1_runtime_frozen_sha_verified": "43a3963fee9610bab3283a9d8a93aecc2373251bf614dfa63021dd61260996b2",
+    "deployment_scripts": "bash -n passed for build/start/stop scripts",
+    "rustfmt": "cargo fmt --all -- --check passed",
+    "final_v2_live": "368/368 on exact a2484b31048110248df6baf7572fd5e0a5b0ba4034cc78a6e4f456b56574fcb9 core",
+    "no_v1_regressions": "All 80 passing v1 rows also pass v2"
+  },
+  "findings": [
+    "Original live requests and expectations are unchanged. Rejected candidate prompt rewrites were not used for final scores.",
+    "GPT-OSS has no reasoning-off mode. The disabled axis requires HTTP 400 for reasoning_effort=none; it does not measure generation without reasoning.",
+    "Native v2 streams tool names and JSON argument fragments before the handoff token. Long-string cases require multiple argument frames.",
+    "Literal Harmony markers in message/tool data must be ordinary tokens. The renderer preserves prompt text while the HF tokenizer separates trusted template controls from untrusted marker spellings.",
+    "Required-tool JSON fallback with structural tags off needs matching prompt guidance. The serving integration adds output-format guidance without changing the client request, expected tool names, argument values, or call counts.",
+    "The final capture importer preserves YAML1.2 string fragments such as on/off. Earlier immutable checkpoints and failed captures are retained.",
+    "V1 and native SGLang failures were recorded and left unfixed. Native forced tool choice combined with an explicit structural-tag response format returns 400.",
+    "The aiperf load check used parser 0.9.1 / core 4ea2. Version 0.9.2 has identical Rust runtime source; its new checkpoint records the YAML importer correction. No comparative throughput claim.",
+    "GPU telemetry was unavailable during aiperf. API completion usage was 1,024 for all 160 requests; client-visible output averaged 1,011.9 tokens and prompt payload was 1,024 before template overhead.",
+    "All 80 passing v1 rows also pass v2. All four final v2 configurations use the same 0.9.2 core; original suite hash is identical across all full captures."
+  ],
+  "load": {
+    "concurrency": 16,
+    "requests": 160,
+    "warmup_requests": 10,
+    "successful": 160,
+    "errors": 0,
+    "client_output_tokens_per_second": 533.3857609752,
+    "request_latency_ms": {
+      "unit": "ms",
+      "avg": 30188.337204143747,
+      "p1": 29233.416672779997,
+      "p5": 29245.76545145,
+      "p10": 29249.349150299997,
+      "p25": 30076.148427,
+      "p50": 30290.801646,
+      "p75": 30322.96039525,
+      "p90": 30638.8351919,
+      "p95": 30692.1666958,
+      "p99": 32685.23522256,
+      "min": 29215.221374999997,
+      "max": 32703.560917,
+      "std": 651.4090054867958,
+      "count": 160,
+      "sum": 4830133.952663
+    },
+    "ttft_ms": {
+      "unit": "ms",
+      "avg": 637.02172240625,
+      "p1": 390.80074772,
+      "p5": 405.11477464999996,
+      "p10": 429.3359958,
+      "p25": 473.95625025,
+      "p50": 516.507354,
+      "p75": 537.4379584999999,
+      "p90": 916.0314374999965,
+      "p95": 1519.4902288499998,
+      "p99": 2380.17971581,
+      "min": 388.65749999999997,
+      "max": 2401.093542,
+      "std": 424.55520199758445,
+      "count": 160,
+      "sum": 101923.475585
+    },
+    "client_output_tokens": {
+      "unit": "tokens",
+      "avg": 1011.88125,
+      "p1": 995.13,
+      "p5": 1000.0,
+      "p10": 1001.0,
+      "p25": 1013.0,
+      "p50": 1015.0,
+      "p75": 1015.0,
+      "p90": 1015.0,
+      "p95": 1015.0,
+      "p99": 1015.41,
+      "min": 980.0,
+      "max": 1016.0,
+      "std": 6.087252946732211,
+      "count": 160,
+      "sum": 161901.0
+    },
+    "server_completion_tokens": {
+      "unit": "tokens",
+      "avg": 1024.0,
+      "p1": 1024.0,
+      "p5": 1024.0,
+      "p10": 1024.0,
+      "p25": 1024.0,
+      "p50": 1024.0,
+      "p75": 1024.0,
+      "p90": 1024.0,
+      "p95": 1024.0,
+      "p99": 1024.0,
+      "min": 1024.0,
+      "max": 1024.0,
+      "std": 0.0,
+      "count": 160,
+      "sum": 163840.0
+    },
+    "evidence": "load/concurrency-16/profile_export_aiperf.json"
+  },
+  "serving_environment": "environment.json",
+  "deployment_integration": "../../deployment/dynamo-integration.patch",
+  "scope": "One pinned GPT-OSS120B model revision, one B200, TP1; structural tags on/off; stream intervals1/20; stream and nonstream; all tool-choice modes and multi-turn cases in cases.yaml.",
+  "final_parser_version": "0.9.2",
+  "baseline_semantics": "All rows use the unchanged cases.yaml. Native SGLang tags-on requests include the exported production structural-tag response_format. Worker and v1 core remain frozen while only the v2 frontend is replaced.",
+  "canonical_report_sha256": {
+    "html": "8d841c835e20a55c2d654b7a9398607a177049341911d21b980c512bec8db550",
+    "json": "20d5b5d757acb1b21f2464ac56a352a59830eaa4682f7cd64752998b277cc7fc"
+  },
+  "local_binary_archives": {
+    "v1_frozen": "../../../../../work/gpt-oss-unified/frozen-worker-v1-core.so.gz",
+    "v2_final": "../../../../../work/gpt-oss-unified/final-core-092.so.gz"
+  },
+  "baseline_failure_groups": {
+    "sglang": {
+      "tool call or argument mismatch": 72,
+      "AssertionError:  missing answer 'plain-answer'": 4,
+      "rejected a valid tool request": 60,
+      "AssertionError:  enabled reasoning missing": 4
+    },
+    "v1": {
+      "accepted unsupported reasoning disable": 116,
+      "tool call or argument mismatch": 64,
+      "AssertionError:  stream ended without a finish reason": 108
+    }
+  },
+  "cleanup": {
+    "build_pod": "deleted; absence verified",
+    "model_pod": "deleted; absence verified",
+    "task_labeled_resources": "0 pods, services, jobs, configmaps, secrets or PVCs remain",
+    "namespace_and_shared_pvc": "preserved",
+    "runtime_logs": "../../../../../work/gpt-oss-unified/runtime-logs.tar.gz"
+  }
+}

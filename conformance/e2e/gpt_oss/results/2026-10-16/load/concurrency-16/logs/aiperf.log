@@ -1,0 +1,131 @@
+2026-10-16 15:03:51.614 - aiperf.cli_runner._single_run - INFO - Starting AIPerf System
+2026-10-16 15:03:53.078 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-10-16 15:03:53.221 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b "HTTP/1.1 200 OK"
+2026-10-16 15:03:53.231 - aiperf.config.resolution.resolvers - INFO - [OK] Tokenizer openai/gpt-oss-120b detected
+2026-10-16 15:03:53.232 - aiperf.config.resolution.resolvers - INFO - 1 tokenizer validated | 1.6s
+2026-10-16 15:03:53.232 - aiperf.config.resolution.resolvers - INFO - Prefetching 1 tokenizer into HF cache...
+2026-10-16 15:04:13.284 - aiperf.config.resolution.resolvers - INFO -   Cached openai/gpt-oss-120b (19.14s)
+2026-10-16 15:04:13.547 - aiperf.config.resolution.resolvers - INFO - 1 tokenizer cached • 20.3s
+2026-10-16 15:04:21.870 - _ServiceRegistry - INFO - Registered: Timing_Manager ('timing_manager') [0/0]
+2026-10-16 15:04:21.871 - system_controller - INFO - Registered Timing Manager (id: 'timing_manager')
+2026-10-16 15:04:21.871 - _ServiceRegistry - INFO - Registered: Worker_Manager ('worker_manager') [0/0]
+2026-10-16 15:04:21.871 - system_controller - INFO - Registered Worker Manager (id: 'worker_manager')
+2026-10-16 15:04:21.871 - _ServiceRegistry - INFO - Registered: Gpu_Telemetry_Manager ('gpu_telemetry_manager') [0/0]
+2026-10-16 15:04:21.871 - system_controller - INFO - Registered Gpu Telemetry Manager (id: 'gpu_telemetry_manager')
+2026-10-16 15:04:21.871 - _ServiceRegistry - INFO - Registered: Dataset_Manager ('dataset_manager') [0/0]
+2026-10-16 15:04:21.871 - system_controller - INFO - Registered Dataset Manager (id: 'dataset_manager')
+2026-10-16 15:04:21.969 - system_controller - INFO - Registered Gpu Telemetry Manager (id: 'gpu_telemetry_manager')
+2026-10-16 15:04:21.969 - system_controller - INFO - Registered Dataset Manager (id: 'dataset_manager')
+2026-10-16 15:04:21.969 - system_controller - INFO - Registered Worker Manager (id: 'worker_manager')
+2026-10-16 15:04:21.969 - system_controller - INFO - Registered Timing Manager (id: 'timing_manager')
+2026-10-16 15:04:24.447 - _ServiceRegistry - INFO - Registered: Worker ('worker_7a25eb57') [0/0]
+2026-10-16 15:04:24.448 - system_controller - INFO - Registered Worker (id: 'worker_7a25eb57')
+2026-10-16 15:04:24.448 - _ServiceRegistry - INFO - Registered: Worker ('worker_5c450a50') [0/0]
+2026-10-16 15:04:24.448 - system_controller - INFO - Registered Worker (id: 'worker_5c450a50')
+2026-10-16 15:04:24.448 - _ServiceRegistry - INFO - Registered: Worker ('worker_19e7ed00') [0/0]
+2026-10-16 15:04:24.448 - system_controller - INFO - Registered Worker (id: 'worker_19e7ed00')
+2026-10-16 15:04:24.449 - _ServiceRegistry - INFO - Registered: Worker ('worker_a76d922f') [0/0]
+2026-10-16 15:04:24.449 - system_controller - INFO - Registered Worker (id: 'worker_a76d922f')
+2026-10-16 15:04:24.450 - _ServiceRegistry - INFO - Registered: Worker ('worker_16256f9d') [0/0]
+2026-10-16 15:04:24.450 - system_controller - INFO - Registered Worker (id: 'worker_16256f9d')
+2026-10-16 15:04:24.451 - _ServiceRegistry - INFO - Registered: Worker ('worker_68ebe70a') [0/0]
+2026-10-16 15:04:24.451 - system_controller - INFO - Registered Worker (id: 'worker_68ebe70a')
+2026-10-16 15:04:24.452 - _ServiceRegistry - INFO - Registered: Worker ('worker_089c17a6') [0/0]
+2026-10-16 15:04:24.452 - system_controller - INFO - Registered Worker (id: 'worker_089c17a6')
+2026-10-16 15:04:24.513 - _ServiceRegistry - INFO - Registered: Record_Processor ('record_processor_17ddb37f') [0/0]
+2026-10-16 15:04:24.513 - system_controller - INFO - Registered Record Processor (id: 'record_processor_17ddb37f')
+2026-10-16 15:04:24.544 - system_controller - INFO - Registered Worker (id: 'worker_7a25eb57')
+2026-10-16 15:04:24.544 - system_controller - INFO - Registered Worker (id: 'worker_5c450a50')
+2026-10-16 15:04:24.545 - system_controller - INFO - Registered Worker (id: 'worker_089c17a6')
+2026-10-16 15:04:24.545 - system_controller - INFO - Registered Worker (id: 'worker_a76d922f')
+2026-10-16 15:04:24.545 - system_controller - INFO - Registered Worker (id: 'worker_68ebe70a')
+2026-10-16 15:04:24.545 - system_controller - INFO - Registered Worker (id: 'worker_16256f9d')
+2026-10-16 15:04:24.546 - system_controller - INFO - Registered Worker (id: 'worker_19e7ed00')
+2026-10-16 15:04:24.552 - _ServiceRegistry - INFO - Registered: Records_Manager ('records_manager') [0/0]
+2026-10-16 15:04:24.552 - system_controller - INFO - Registered Records Manager (id: 'records_manager')
+2026-10-16 15:04:24.553 - system_controller - INFO - Registered Records Manager (id: 'records_manager')
+2026-10-16 15:04:24.614 - system_controller - INFO - Registered Record Processor (id: 'record_processor_17ddb37f')
+2026-10-16 15:04:27.388 - _ServiceRegistry - INFO - Registered: Server_Metrics_Manager ('server_metrics_manager') [0/0]
+2026-10-16 15:04:27.388 - system_controller - INFO - Registered Server Metrics Manager (id: 'server_metrics_manager')
+2026-10-16 15:04:27.487 - system_controller - INFO - Registered Server Metrics Manager (id: 'server_metrics_manager')
+2026-10-16 15:04:27.532 - system_controller - INFO - System state: initializing -> configuring
+2026-10-16 15:04:27.532 - system_controller - INFO - AIPerf System is CONFIGURING
+2026-10-16 15:04:27.532 - system_controller - INFO - Configuring all services to start profiling
+2026-10-16 15:04:27.533 - timing_manager - INFO - Waiting for dataset to be configured before configuring timing
+2026-10-16 15:04:27.533 - dataset_manager - INFO - Configuring tokenizer(s) for dataset manager
+2026-10-16 15:04:27.533 - InferenceResultParser_13b9ccf8 - INFO - Configuring tokenizers for inference result parser (resolve_alias: True)
+2026-10-16 15:04:27.608 - gpu_telemetry_manager - WARNING - GPU Telemetry: http://localhost:9400/metrics is not reachable
+2026-10-16 15:04:27.609 - gpu_telemetry_manager - WARNING - GPU Telemetry: http://localhost:9401/metrics is not reachable
+2026-10-16 15:04:27.610 - system_controller - INFO - DCGM telemetry skipped: no telemetry sources reachable
+2026-10-16 15:04:28.125 - server_metrics_manager - INFO - Server Metrics: Capturing baseline metrics...
+2026-10-16 15:04:29.000 - system_controller - INFO - Server metrics enabled - 1/1 endpoint(s) reachable.
+2026-10-16 15:04:48.721 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-10-16 15:04:48.768 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-10-16 15:04:48.842 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-16 15:04:48.898 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-16 15:04:50.348 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b "HTTP/1.1 200 OK"
+2026-10-16 15:04:50.366 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b "HTTP/1.1 200 OK"
+2026-10-16 15:04:50.368 - dataset_manager - INFO - Tokenizer(s) configured in 22.83 seconds
+2026-10-16 15:04:50.368 - dataset_manager - INFO - Configuring dataset for dataset_manager
+2026-10-16 15:04:50.391 - InferenceResultParser_13b9ccf8 - INFO - Initialized tokenizers: {'openai/gpt-oss-120b': {'class': 'TokenizersBackend', 'name_or_path': 'openai/gpt-oss-120b'}} in 22.86 seconds
+2026-10-16 15:04:52.974 - MemoryMapDatasetBackingStore_52c8d99a - INFO - Memory-mapped backing store initialized (streaming to /var/folders/_g/sffdnjfj32q2vsyycmjp13lh0000gp/T/aiperf_mmap_eef2bf6980fc/dataset.dat)
+2026-10-16 15:04:52.987 - MemoryMapDatasetBackingStore_52c8d99a - INFO - Data file finalized: 160 conversations, 0.83 MB
+2026-10-16 15:04:52.988 - MemoryMapDatasetBackingStore_52c8d99a - INFO - Index file created: /var/folders/_g/sffdnjfj32q2vsyycmjp13lh0000gp/T/aiperf_mmap_eef2bf6980fc/index.dat
+2026-10-16 15:04:52.988 - dataset_manager - INFO - Backing store finalized: client_type=DatasetClientStoreType.MEMORY_MAP format=MemoryMapFormat.CONVERSATION data_file_path=PosixPath('/var/folders/_g/sffdnjfj32q2vsyycmjp13lh0000gp/T/aiperf_mmap_eef2bf6980fc/dataset.dat') index_file_path=PosixPath('/var/folders/_g/sffdnjfj32q2vsyycmjp13lh0000gp/T/aiperf_mmap_eef2bf6980fc/index.dat') conversation_count=160 total_size_bytes=869696 compressed=False compressed_data_file_path=None compressed_index_file_path=None compressed_size_bytes=0
+2026-10-16 15:04:52.991 - dataset_manager - INFO - sampling strategy: sequential, unique conversations: 160, unique turn count: 160
+2026-10-16 15:04:52.992 - dataset_manager - INFO - Generating inputs.json file at /Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/load/concurrency-16/inputs.json
+2026-10-16 15:04:53.035 - PhaseOrchestrator_a49dafc1 - INFO - Initialized 2 phase(s): ['Warmup', 'Profiling']
+2026-10-16 15:04:53.051 - dataset_manager - INFO - inputs.json file generated in 0.06 seconds
+2026-10-16 15:04:53.187 - dataset_manager - INFO - Dataset client initialized and freed 160 conversations from memory
+2026-10-16 15:04:53.187 - dataset_manager - INFO - Dataset configured in 2.82 seconds
+2026-10-16 15:04:53.188 - system_controller - INFO - All services configured in 25.66 seconds
+2026-10-16 15:04:53.189 - system_controller - INFO - System state: configuring -> ready
+2026-10-16 15:04:53.189 - system_controller - INFO - AIPerf System is CONFIGURED
+2026-10-16 15:04:53.195 - server_metrics_manager - INFO - Server Metrics: Started 1 collector(s) successfully
+2026-10-16 15:04:53.196 - system_controller - INFO - All services started profiling successfully
+2026-10-16 15:04:53.196 - system_controller - INFO - System state: ready -> profiling
+2026-10-16 15:04:53.197 - system_controller - INFO - AIPerf System is PROFILING
+2026-10-16 15:04:53.197 - system_controller - INFO - Waiting for result domains: profile, server_metrics
+2026-10-16 15:04:53.213 - RateTiming - INFO - Creating interval generator: pattern=concurrency_burst, rate=None, smoothness=None
+2026-10-16 15:04:53.213 - PhaseRunner - NOTICE - Phase warmup (warmup) started | phase_index=0 | target: 10 requests
+2026-10-16 15:04:53.215 - records_manager - INFO - Credit phase start: warmup
+2026-10-16 15:04:53.227 - RateTiming - INFO - Rate loop pacing via dedicated sleep thread
+2026-10-16 15:04:53.228 - PhaseRunner - NOTICE - Phase warmup (warmup) sending complete | sent=10, completed=0, in_flight=10 | sessions: sent=10, completed=0
+2026-10-16 15:05:17.999 - MultiProcessServiceManager_cba9d821 - WARNING - Optional service 'gpu_telemetry_manager' (gpu_telemetry_manager) missed heartbeats on 2 consecutive ticks; dropping it and continuing the benchmark without it.
+2026-10-16 15:05:23.230 - PhaseRunner - INFO - Phase warmup progress | returned=0/10 | sent=10 | in_flight=10 | errors=0 | elapsed=30.0s
+2026-10-16 15:05:29.076 - EventLoopMonitor - WARNING - Event loop for worker_5c450a50 is taking too long to run. Overhead: 162.05ms
+2026-10-16 15:05:29.076 - EventLoopMonitor - WARNING - Event loop for worker_16256f9d is taking too long to run. Overhead: 153.52ms
+2026-10-16 15:05:29.084 - EventLoopMonitor - WARNING - Event loop for worker_089c17a6 is taking too long to run. Overhead: 167.22ms
+2026-10-16 15:05:29.121 - EventLoopMonitor - WARNING - Event loop for worker_7a25eb57 is taking too long to run. Overhead: 219.77ms
+2026-10-16 15:05:29.123 - PhaseRunner - NOTICE - Phase warmup (warmup) complete | completed=10, cancelled=0, errors=0 | sessions: completed=10, cancelled=0 | elapsed=35.91s
+2026-10-16 15:05:29.124 - server_metrics_manager - INFO - Server Metrics: Warmup complete, capturing final warmup metrics...
+2026-10-16 15:05:29.126 - RateTiming - INFO - Creating interval generator: pattern=concurrency_burst, rate=None, smoothness=None
+2026-10-16 15:05:29.126 - PhaseRunner - NOTICE - Phase profiling (profiling) started | phase_index=1 | profiling_index=0 | target: 160 requests
+2026-10-16 15:05:29.130 - RateTiming - INFO - Rate loop pacing via dedicated sleep thread
+2026-10-16 15:05:29.130 - records_manager - INFO - Credit phase start: profiling
+2026-10-16 15:05:29.152 - EventLoopMonitor - WARNING - Event loop for worker_a76d922f is taking too long to run. Overhead: 252.77ms
+2026-10-16 15:05:29.162 - EventLoopMonitor - WARNING - Event loop for worker_19e7ed00 is taking too long to run. Overhead: 255.08ms
+2026-10-16 15:05:29.175 - EventLoopMonitor - WARNING - Event loop for worker_68ebe70a is taking too long to run. Overhead: 270.41ms
+2026-10-16 15:05:29.220 - records_manager - WARNING - Token usage is reported but no prompt-cache read tokens were seen (usage.prompt_tokens_details.cached_tokens absent). If your server uses prefix/KV caching, enable cache reporting so AIPerf can populate the prompt-cache metrics: vLLM --enable-prompt-tokens-details, SGLang --enable-cache-report (TRT-LLM reports it by default).
+2026-10-16 15:05:29.220 - MetricsAccumulator_5b3b9adb - WARNING - Token usage is reported but no prompt-cache read tokens were seen (usage.prompt_tokens_details.cached_tokens absent). If your server uses prefix/KV caching, enable cache reporting so AIPerf can populate the prompt-cache metrics: vLLM --enable-prompt-tokens-details, SGLang --enable-cache-report (TRT-LLM reports it by default).
+2026-10-16 15:10:02.656 - PhaseRunner - NOTICE - Phase profiling (profiling) sending complete | sent=160, completed=144, in_flight=16 | sessions: sent=160, completed=144
+2026-10-16 15:10:02.658 - records_manager - INFO - Sent 160 requests. Waiting for all to complete...
+2026-10-16 15:10:32.661 - PhaseRunner - NOTICE - Phase profiling (profiling) complete | completed=160, cancelled=0, errors=0 | sessions: completed=160, cancelled=0 | elapsed=303.53s
+2026-10-16 15:10:32.662 - PhaseOrchestrator_a49dafc1 - NOTICE - All credits completed
+2026-10-16 15:10:32.663 - records_manager - INFO - Received CREDIT_PHASE_COMPLETE message, Phase complete: PhaseRecordsStats(phase=CreditPhase.PROFILING, phase_index=1, profiling_index=0, phase_name='profiling', phase_kind='profiling', start_ns=1792188329126954000, sent_end_ns=1792188602656324000, requests_end_ns=1792188632661491000, baseline_start_ns=1792188329126908000, baseline_end_ns=1792188632661526000, total_expected_requests=160, expected_duration_sec=None, expected_num_sessions=None, expected_grace_period_sec=None, final_requests_sent=None, final_requests_completed=160, final_requests_cancelled=0, final_request_errors=0, final_sent_sessions=None, final_completed_sessions=None, final_cancelled_sessions=None, timeout_triggered=False, grace_period_timeout_triggered=False, was_cancelled=False, records_end_ns=None, success_records=159, error_records=0)
+2026-10-16 15:10:32.663 - records_manager - NOTICE - All requests have completed, please wait for the results to be processed (currently 159 of 160 records processed)...
+2026-10-16 15:10:32.664 - records_manager - INFO - All credits complete, please wait for the results to be processed...
+2026-10-16 15:10:32.664 - system_controller - INFO - Received credits complete from 'timing_manager'
+2026-10-16 15:10:32.665 - system_controller - INFO - System state: profiling -> processing
+2026-10-16 15:10:32.678 - records_manager - INFO - Processed 160 valid requests and 0 errors (160 total).
+2026-10-16 15:10:32.678 - records_manager - INFO - Received all records, processing now...
+2026-10-16 15:10:32.679 - server_metrics_manager - INFO - Waiting 2.0s for server metrics flush period...
+2026-10-16 15:10:34.663 - server_metrics_manager - INFO - Server Metrics: Profiling complete, capturing final metrics...
+2026-10-16 15:10:36.244 - records_manager - INFO - Processing records results...
+2026-10-16 15:10:36.252 - system_controller - INFO - Waiting for result domains: profile
+2026-10-16 15:10:36.578 - system_controller - INFO - System state: processing -> stopping
+2026-10-16 15:10:36.579 - system_controller - INFO - All results received, initiating shutdown
+2026-10-16 15:10:36.579 - system_controller - INFO - System state: stopping -> shutdown
+2026-10-16 15:10:36.579 - records_manager - INFO - _finalize_and_process_results completed
+2026-10-16 15:10:37.183 - ExporterManager - INFO - Exporting all records
+2026-10-16 15:10:37.372 - ExporterManager - INFO - Exporting console data

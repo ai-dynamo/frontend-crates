@@ -1,0 +1,211 @@
+15:03:51.614 INFO     Starting AIPerf System (_single_run.py:81)
+15:03:53.078 INFO     HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK" (_client.py:1025)
+15:03:53.221 INFO     HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b "HTTP/1.1 200 OK" (_client.py:1025)
+15:03:53.231 INFO     [OK] Tokenizer openai/gpt-oss-120b detected (tokenizer_display.py:297)
+15:03:53.232 INFO     1 tokenizer validated | 1.6s (tokenizer_display.py:306)
+15:03:53.232 INFO     Prefetching 1 tokenizer into HF cache... (tokenizer_validator.py:129)
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/config.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fconfig.json=&etag=%2242300b8993060d365b1d138a35998eb70c745285%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/config.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fconfig.json=&etag=%2242300b8993060d365b1d138a35998eb70c745285%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/tokenizer_config.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Ftokenizer_config.json=&etag=%22c021cddb0a9dd35b1bf83a9f145be2d9b3757891%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/tokenizer_config.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Ftokenizer_config.json=&etag=%22c021cddb0a9dd35b1bf83a9f145be2d9b3757891%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/tree/b5c939de8f754692c1647ca79fbf85e8c1e70f8a?recursive=true&expand=false "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/tokenizer.json "HTTP/1.1 302 Found"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b/xet-read-token/b5c939de8f754692c1647ca79fbf85e8c1e70f8a "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/tokenizer.model "HTTP/1.1 404 Not Found"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/added_tokens.json "HTTP/1.1 404 Not Found"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/special_tokens_map.json "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/special_tokens_map.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fspecial_tokens_map.json=&etag=%2273bd12e55e2004cdfff088f85092b39dba2ccdd0%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/special_tokens_map.json?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fspecial_tokens_map.json=&etag=%2273bd12e55e2004cdfff088f85092b39dba2ccdd0%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/openai/gpt-oss-120b/resolve/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/chat_template.jinja "HTTP/1.1 307 Temporary Redirect"
+INFO:httpx:HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/chat_template.jinja?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fchat_template.jinja=&etag=%22dc7bb11927d29f653ba2740f2db2c688fd77592f%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/resolve-cache/models/openai/gpt-oss-120b/b5c939de8f754692c1647ca79fbf85e8c1e70f8a/chat_template.jinja?%2Fopenai%2Fgpt-oss-120b%2Fresolve%2Fb5c939de8f754692c1647ca79fbf85e8c1e70f8a%2Fchat_template.jinja=&etag=%22dc7bb11927d29f653ba2740f2db2c688fd77592f%22 "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/openai/gpt-oss-120b "HTTP/1.1 200 OK"
+15:04:13.284 INFO       Cached openai/gpt-oss-120b (19.14s) (tokenizer_validator.py:146)
+15:04:13.547 INFO     1 tokenizer cached • 20.3s (tokenizer_validator.py:166)
+15:04:21.870 INFO     Registered: Timing_Manager ('timing_manager') [0/0] (service_registry.py:196)
+15:04:21.871 INFO     Registered Timing Manager (id: 'timing_manager') (system_controller_dispatch.py:146)
+15:04:21.871 INFO     Registered: Worker_Manager ('worker_manager') [0/0] (service_registry.py:196)
+15:04:21.871 INFO     Registered Worker Manager (id: 'worker_manager') (system_controller_dispatch.py:146)
+15:04:21.871 INFO     Registered: Gpu_Telemetry_Manager ('gpu_telemetry_manager') [0/0] (service_registry.py:196)
+15:04:21.871 INFO     Registered Gpu Telemetry Manager (id: 'gpu_telemetry_manager') (system_controller_dispatch.py:146)
+15:04:21.871 INFO     Registered: Dataset_Manager ('dataset_manager') [0/0] (service_registry.py:196)
+15:04:21.871 INFO     Registered Dataset Manager (id: 'dataset_manager') (system_controller_dispatch.py:146)
+15:04:21.969 INFO     Registered Gpu Telemetry Manager (id: 'gpu_telemetry_manager') (system_controller_dispatch.py:146)
+15:04:21.969 INFO     Registered Dataset Manager (id: 'dataset_manager') (system_controller_dispatch.py:146)
+15:04:21.969 INFO     Registered Worker Manager (id: 'worker_manager') (system_controller_dispatch.py:146)
+15:04:21.969 INFO     Registered Timing Manager (id: 'timing_manager') (system_controller_dispatch.py:146)
+15:04:24.447 INFO     Registered: Worker ('worker_7a25eb57') [0/0] (service_registry.py:196)
+15:04:24.448 INFO     Registered Worker (id: 'worker_7a25eb57') (system_controller_dispatch.py:146)
+15:04:24.448 INFO     Registered: Worker ('worker_5c450a50') [0/0] (service_registry.py:196)
+15:04:24.448 INFO     Registered Worker (id: 'worker_5c450a50') (system_controller_dispatch.py:146)
+15:04:24.448 INFO     Registered: Worker ('worker_19e7ed00') [0/0] (service_registry.py:196)
+15:04:24.448 INFO     Registered Worker (id: 'worker_19e7ed00') (system_controller_dispatch.py:146)
+15:04:24.449 INFO     Registered: Worker ('worker_a76d922f') [0/0] (service_registry.py:196)
+15:04:24.449 INFO     Registered Worker (id: 'worker_a76d922f') (system_controller_dispatch.py:146)
+15:04:24.450 INFO     Registered: Worker ('worker_16256f9d') [0/0] (service_registry.py:196)
+15:04:24.450 INFO     Registered Worker (id: 'worker_16256f9d') (system_controller_dispatch.py:146)
+15:04:24.451 INFO     Registered: Worker ('worker_68ebe70a') [0/0] (service_registry.py:196)
+15:04:24.451 INFO     Registered Worker (id: 'worker_68ebe70a') (system_controller_dispatch.py:146)
+15:04:24.452 INFO     Registered: Worker ('worker_089c17a6') [0/0] (service_registry.py:196)
+15:04:24.452 INFO     Registered Worker (id: 'worker_089c17a6') (system_controller_dispatch.py:146)
+15:04:24.513 INFO     Registered: Record_Processor ('record_processor_17ddb37f') [0/0] (service_registry.py:196)
+15:04:24.513 INFO     Registered Record Processor (id: 'record_processor_17ddb37f') (system_controller_dispatch.py:146)
+15:04:24.544 INFO     Registered Worker (id: 'worker_7a25eb57') (system_controller_dispatch.py:146)
+15:04:24.544 INFO     Registered Worker (id: 'worker_5c450a50') (system_controller_dispatch.py:146)
+15:04:24.545 INFO     Registered Worker (id: 'worker_089c17a6') (system_controller_dispatch.py:146)
+15:04:24.545 INFO     Registered Worker (id: 'worker_a76d922f') (system_controller_dispatch.py:146)
+15:04:24.545 INFO     Registered Worker (id: 'worker_68ebe70a') (system_controller_dispatch.py:146)
+15:04:24.545 INFO     Registered Worker (id: 'worker_16256f9d') (system_controller_dispatch.py:146)
+15:04:24.546 INFO     Registered Worker (id: 'worker_19e7ed00') (system_controller_dispatch.py:146)
+15:04:24.552 INFO     Registered: Records_Manager ('records_manager') [0/0] (service_registry.py:196)
+15:04:24.552 INFO     Registered Records Manager (id: 'records_manager') (system_controller_dispatch.py:146)
+15:04:24.553 INFO     Registered Records Manager (id: 'records_manager') (system_controller_dispatch.py:146)
+15:04:24.614 INFO     Registered Record Processor (id: 'record_processor_17ddb37f') (system_controller_dispatch.py:146)
+15:04:27.388 INFO     Registered: Server_Metrics_Manager ('server_metrics_manager') [0/0] (service_registry.py:196)
+15:04:27.388 INFO     Registered Server Metrics Manager (id: 'server_metrics_manager') (system_controller_dispatch.py:146)
+15:04:27.487 INFO     Registered Server Metrics Manager (id: 'server_metrics_manager') (system_controller_dispatch.py:146)
+15:04:27.532 INFO     System state: initializing -> configuring (system_controller.py:700)
+15:04:27.532 INFO     AIPerf System is CONFIGURING (system_controller.py:536)
+15:04:27.532 INFO     Configuring all services to start profiling (system_controller.py:713)
+15:04:27.610 INFO     DCGM telemetry skipped: no telemetry sources reachable (system_controller.py:1020)
+15:04:29.000 INFO     Server metrics enabled - 1/1 endpoint(s) reachable. (system_controller.py:1048)
+15:04:53.188 INFO     All services configured in 25.66 seconds (system_controller.py:722)
+15:04:53.189 INFO     System state: configuring -> ready (system_controller.py:700)
+15:04:53.189 INFO     AIPerf System is CONFIGURED (system_controller.py:539)
+15:04:53.196 INFO     All services started profiling successfully (system_controller.py:742)
+15:04:53.196 INFO     System state: ready -> profiling (system_controller.py:700)
+15:04:53.197 INFO     AIPerf System is PROFILING (system_controller.py:548)
+15:04:53.197 INFO     Waiting for result domains: profile, server_metrics (system_controller.py:1635)
+15:05:17.999 WARNING  Optional service 'gpu_telemetry_manager' (gpu_telemetry_manager) missed heartbeats on 2 consecutive ticks; dropping it and continuing the benchmark without it. (base_service_manager.py:145)
+15:10:32.664 INFO     Received credits complete from 'timing_manager' (system_controller.py:829)
+15:10:32.665 INFO     System state: profiling -> processing (system_controller.py:700)
+15:10:36.252 INFO     Waiting for result domains: profile (system_controller.py:1635)
+15:10:36.578 INFO     System state: processing -> stopping (system_controller.py:700)
+15:10:36.579 INFO     All results received, initiating shutdown (system_controller.py:1630)
+15:10:36.579 INFO     System state: stopping -> shutdown (system_controller.py:700)
+15:10:37.183 INFO     Exporting all records (exporter_manager.py:97)
+15:10:37.372 INFO     Exporting console data (exporter_manager.py:527)
+
+
+                                             NVIDIA AIPerf | LLM Metrics: Effective                                              
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
+┃                                    Metric ┃       avg ┃       min ┃        max ┃       p99 ┃       p90 ┃       p50 ┃      std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
+│          Effective Concurrency (requests) │     15.92 │      0.00 │      16.00 │     16.00 │     16.00 │     16.00 │     0.97 │
+│  Effective Decode Throughput (tokens/sec) │    532.86 │      0.00 │ 130,535.04 │  1,001.94 │    615.02 │    540.48 │   907.13 │
+│ Effective Prefill Throughput (tokens/sec) │    539.77 │      0.00 │  20,491.48 │ 19,072.39 │      0.00 │      0.00 │ 2,767.16 │
+│   Effective Decode Concurrency (requests) │     15.58 │      0.00 │      16.00 │     16.00 │     16.00 │     16.00 │     2.01 │
+│  Effective Prefill Concurrency (requests) │      0.34 │      0.00 │      16.00 │     10.00 │      0.00 │      0.00 │     1.77 │
+│   Effective Total Throughput (tokens/sec) │  1,072.63 │      0.00 │  20,702.15 │ 19,282.38 │    562.95 │    544.79 │ 2,714.05 │
+│      Effective Decode Throughput Per User │     33.93 │      0.00 │  13,053.50 │     63.28 │     38.55 │     33.90 │    58.36 │
+│                         (tokens/sec/user) │           │           │            │           │           │           │          │
+│     Effective Prefill Throughput Per User │     98.48 │      0.00 │   2,634.03 │  2,391.62 │      0.00 │      0.00 │   443.19 │
+│                         (tokens/sec/user) │           │           │            │           │           │           │          │
+│                 Tokens In Flight (tokens) │ 24,173.63 │      0.00 │  32,263.11 │ 32,055.17 │ 30,543.91 │ 23,881.19 │ 4,596.02 │
+│         Effective Latency (CO-aware) (ms) │ 30,198.94 │ 29,220.26 │  32,713.41 │ 32,709.42 │ 30,659.53 │ 30,299.27 │   654.91 │
+└───────────────────────────────────────────┴───────────┴───────────┴────────────┴───────────┴───────────┴───────────┴──────────┘
+                                           NVIDIA AIPerf | LLM Metrics: Active                                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
+┃                                 Metric ┃       avg ┃    min ┃        max ┃       p99 ┃       p90 ┃      p50 ┃      std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
+│  Active Decode Throughput (tokens/sec) │    535.56 │   0.00 │ 130,535.04 │  1,004.74 │    615.31 │   540.72 │   908.64 │
+│ Active Prefill Throughput (tokens/sec) │ 10,264.84 │ 430.23 │  20,491.48 │ 20,491.48 │ 19,456.24 │ 9,463.05 │ 6,766.79 │
+│      Active Decode Throughput Per User │     34.10 │   0.00 │  13,053.50 │     63.44 │     38.56 │    33.92 │    58.45 │
+│                      (tokens/sec/user) │           │        │            │           │           │          │          │
+│     Active Prefill Throughput Per User │  1,872.84 │ 430.23 │   2,634.03 │  2,634.03 │  2,533.65 │ 1,994.03 │   641.94 │
+│                      (tokens/sec/user) │           │        │            │           │           │          │          │
+│   Active Total Throughput (tokens/sec) │  1,072.68 │  34.26 │  20,702.15 │ 19,282.38 │    562.95 │   544.79 │ 2,714.10 │
+└────────────────────────────────────────┴───────────┴────────┴────────────┴───────────┴───────────┴──────────┴──────────┘
+                                           NVIDIA AIPerf | LLM Metrics: Usage                                           
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━┓
+┃                                  Metric ┃        avg ┃      min ┃      max ┃      p99 ┃      p90 ┃      p50 ┃    std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━┩
+│            Usage Prompt Tokens (tokens) │   1,091.00 │ 1,091.00 │ 1,091.00 │ 1,091.00 │ 1,091.00 │ 1,091.00 │   0.00 │
+│ Usage Prompt Cache Read Tokens (tokens) │     128.00 │    64.00 │ 1,088.00 │ 1,088.00 │    64.00 │    64.00 │ 247.87 │
+│        Usage Completion Tokens (tokens) │   1,024.00 │ 1,024.00 │ 1,024.00 │ 1,024.00 │ 1,024.00 │ 1,024.00 │   0.00 │
+│         Usage Reasoning Tokens (tokens) │      31.71 │    13.00 │    65.00 │    63.00 │    46.00 │    31.50 │  10.92 │
+│             Usage Total Tokens (tokens) │   2,115.00 │ 2,115.00 │ 2,115.00 │ 2,115.00 │ 2,115.00 │ 2,115.00 │   0.00 │
+│      Total Usage Prompt Tokens (tokens) │ 174,560.00 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+│    Total Usage Prompt Cache Read Tokens │  20,480.00 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+│                                (tokens) │            │          │          │          │          │          │        │
+│       Overall Usage Prompt Cache Read % │      11.73 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+│                                     (%) │            │          │          │          │          │          │        │
+│  Total Usage Completion Tokens (tokens) │ 163,840.00 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+│   Total Usage Reasoning Tokens (tokens) │   5,074.00 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+│       Total Usage Total Tokens (tokens) │ 338,400.00 │      N/A │      N/A │      N/A │      N/A │      N/A │    N/A │
+└─────────────────────────────────────────┴────────────┴──────────┴──────────┴──────────┴──────────┴──────────┴────────┘
+                                                   NVIDIA AIPerf | LLM Metrics                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┓
+┃                                        Metric ┃       avg ┃       min ┃       max ┃       p99 ┃       p90 ┃       p50 ┃    std ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━┩
+│                      Time to First Token (ms) │    637.02 │    388.66 │  2,401.09 │  2,380.18 │    916.03 │    516.51 │ 424.56 │
+│                     Time to Second Token (ms) │     31.84 │      0.00 │    119.10 │    118.86 │     52.08 │     28.43 │  21.19 │
+│               Time to First Output Token (ms) │  1,444.62 │    862.54 │  3,557.75 │  3,415.14 │  1,801.54 │  1,365.96 │ 469.51 │
+│                          Request Latency (ms) │ 30,188.34 │ 29,215.22 │ 32,703.56 │ 32,685.24 │ 30,638.84 │ 30,290.80 │ 651.41 │
+│                          Decode Duration (ms) │ 29,551.32 │ 28,719.77 │ 30,309.27 │ 30,305.40 │ 29,875.05 │ 29,757.61 │ 430.27 │
+│                      Inter Token Latency (ms) │     29.23 │     28.32 │     30.53 │     30.20 │     29.78 │     29.36 │   0.47 │
+│              Output Token Throughput Per User │     34.22 │     32.75 │     35.31 │     35.31 │     35.18 │     34.06 │   0.56 │
+│                             (tokens/sec/user) │           │           │           │           │           │           │        │
+│ E2E Output Token Throughput (tokens/sec/user) │     33.53 │     30.57 │     34.72 │     34.72 │     34.61 │     33.49 │   0.74 │
+│               Output Sequence Length (tokens) │  1,011.88 │    980.00 │  1,016.00 │  1,015.41 │  1,015.00 │  1,015.00 │   6.09 │
+│                Input Sequence Length (tokens) │  1,024.00 │  1,024.00 │  1,024.00 │  1,024.00 │  1,024.00 │  1,024.00 │   0.00 │
+│          Output Token Throughput (tokens/sec) │    533.39 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+│           Input Token Throughput (tokens/sec) │    539.77 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+│             Request Throughput (requests/sec) │      0.53 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+│          Completed Requests (Success + Error) │    160.00 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+│                                    (requests) │           │           │           │           │           │           │        │
+│                        Request Error Rate (%) │      0.00 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+│                      Request Count (requests) │    160.00 │       N/A │       N/A │       N/A │       N/A │       N/A │    N/A │
+└───────────────────────────────────────────────┴───────────┴───────────┴───────────┴───────────┴───────────┴───────────┴────────┘
+
+
+╭──────────────────────────────────────────── GPU Telemetry Platform ─────────────────────────────────────────────╮
+│  Platform: unknown                                                                                              │
+│  Metric semantics are platform-specific; cross-platform comparisons require workload and collector validation.  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+No GPU telemetry data collected during the benchmarking run.
+
+╭──────────────────────────────────── Token Count Discrepancy Warning ─────────────────────────────────────╮
+│  160 of 160 requests (100.0%) show a difference exceeding 10% between:                                   │
+│    - API-reported usage tokens (from 'usage' field)                                                      │
+│    - Client-computed token counts (from tokenization)                                                    │
+│                                                                                                          │
+│  Possible Causes:                                                                                        │
+│    - Different tokenization methods (API vs client)                                                      │
+│    - API special tokens or preprocessing                                                                 │
+│                                                                                                          │
+│  Investigation Steps:                                                                                    │
+│    1. Review profile_export.jsonl for per-request usage_*_diff_pct values                                │
+│    2. Verify client tokenizer matches the model's tokenizer                                              │
+│    3. Use server token counts: --use-server-token-count (disables client tokenization and diff metrics)  │
+│    4. Adjust threshold: AIPERF_METRICS_USAGE_PCT_DIFF_THRESHOLD=10                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+CLI Command: aiperf profile --model 'openai/gpt-oss-120b' --url 'http://127.0.0.1:31680' 
+--endpoint-type 'chat' --streaming --isl 1024 --isl-stddev 0 --osl 1024 --osl-stddev 0 
+--extra-inputs '{"ignore_eos":true,"reasoning_effort":"low"}' --random-seed 100 
+--warmup-request-count 10 --concurrency 16 --request-count 160 --tokenizer-revision 
+'b5c939de8f754692c1647ca79fbf85e8c1e70f8a' --artifact-dir 
+'conformance/e2e/gpt_oss/results/2026-10-16/load/concurrency-16'
+Benchmark Duration: 303.52 sec
+CSV Export: 
+/Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/l
+oad/concurrency-16/profile_export_aiperf.csv
+JSON Export: 
+/Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/l
+oad/concurrency-16/profile_export_aiperf.json
+Server Metrics CSV Export: 
+/Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/l
+oad/concurrency-16/server_metrics_export.csv
+Server Metrics JSON Export: 
+/Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/l
+oad/concurrency-16/server_metrics_export.json
+Log File: 
+/Users/rmccormick/codex/frontend-crates-gpt-oss-unified/conformance/e2e/gpt_oss/results/2026-10-16/l
+oad/concurrency-16/logs/aiperf.log
+

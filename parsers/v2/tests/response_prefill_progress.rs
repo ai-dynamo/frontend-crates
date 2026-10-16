@@ -231,6 +231,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
     for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
         let closer = match dynamo_parsers_v2::canonical_unified_family(family).unwrap() {
             "gemma4" => "<channel|>",
+            "gpt_oss" => "<|end|>",
             "kimi_k3" => "<|close|>think<|sep|>",
             "muse_glimmer" => "<|eom|>",
             _ => "</think>",

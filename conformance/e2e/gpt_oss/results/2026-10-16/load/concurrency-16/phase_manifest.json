@@ -1,0 +1,37 @@
+{
+  "phases": [
+    {
+      "end_ns": 1792188329122435000,
+      "error_request_count": 0,
+      "error_summary": [],
+      "metrics_csv": "phases/warmup/profile_export_aiperf.csv",
+      "metrics_json": "phases/warmup/profile_export_aiperf.json",
+      "phase_index": 0,
+      "phase_kind": "warmup",
+      "phase_name": "warmup",
+      "profiling_index": null,
+      "server_metrics_json": "phases/warmup/server_metrics.json",
+      "start_ns": 1792188293213841000,
+      "successful_request_count": 10,
+      "total_request_count": 10,
+      "was_cancelled": false
+    },
+    {
+      "end_ns": 1792188632661491000,
+      "error_request_count": 0,
+      "error_summary": [],
+      "metrics_csv": "phases/profiling/profile_export_aiperf.csv",
+      "metrics_json": "phases/profiling/profile_export_aiperf.json",
+      "phase_index": 1,
+      "phase_kind": "profiling",
+      "phase_name": "profiling",
+      "profiling_index": 0,
+      "server_metrics_json": "phases/profiling/server_metrics.json",
+      "start_ns": 1792188329126954000,
+      "successful_request_count": 160,
+      "total_request_count": 160,
+      "was_cancelled": false
+    }
+  ],
+  "schema_version": 1
+}

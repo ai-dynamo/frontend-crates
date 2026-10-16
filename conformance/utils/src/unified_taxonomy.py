@@ -26,6 +26,15 @@ from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_group
 
 UNIFIED_TAX = {
+    'harmony_guided_json_gt_in_argument_bare_opener': ("gpt_oss", "1"),
+    'harmony_guided_json_gt_in_argument_named_bare_opener': ("gpt_oss", "2"),
+    'harmony_guided_json_narrated_prefix_inside_reasoning': ("gpt_oss", "3"),
+    'harmony_guided_json_schema_error_nameless_element_bare_opener': ("gpt_oss", "4"),
+    'harmony_guided_json_schema_error_not_a_call_bare_opener': ("gpt_oss", "5"),
+    'harmony_guided_json_stray_prefix_before_reasoning': ("gpt_oss", "6"),
+    'harmony_guided_json_syntax_error_bare_opener': ("gpt_oss", "7"),
+    'harmony_guided_json_tool_open_before_payload': ("gpt_oss", "8"),
+
     # Group 1 — Single call
     "tool_only": (1, "1"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.

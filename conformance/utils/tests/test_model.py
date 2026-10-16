@@ -1344,11 +1344,8 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
         family = row["family"]
         for scenario in scenarios:
             cmp = leaf_cells(row)[scenario]["cmp"]
-            if family == "gpt_oss":
-                assert cmp["dynamo"]["na"] == 1, (family, scenario, "no native unified parser")
-                continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
-            if family in peer_families:
+            if family in peer_families | {"gpt_oss"}:
                 _assert_unmeasured_versions(cmp, older_keys)
             else:
                 assert cmp["dynamo@0.7.8"]["na"] == 0, (family, scenario, "original_capture")
@@ -1402,9 +1399,6 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
         assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
-        if family == "gpt_oss":
-            assert shared["cmp"]["dynamo"]["na"] == 1
-            continue
         assert shared["status"] != "na"
         candidates = {candidate["key"]: candidate["block"]
                       for candidate in shared["tooltip"]["candidates"]}
@@ -1463,7 +1457,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
     keys = {"vllm_python_batch@" + version for version in ("0.23.0", "0.24.0", "0.25.1", "0.26.0")}
     keys.add("sglang_python_batch@0.5.14")
     cases = [cell for cell in leaf_cells(row).values() if cell["status"] != "na"]
-    assert len(cases) == 159
+    assert len(cases) == 204
     assert leaf_cells(row)["tool_only"]["case_id"] == "UNIFIED.1-tool_only"
     missing = []
     for cell in cases:
@@ -1475,7 +1469,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
             assert "no parser" not in block["unavailable"]
             assert cell["cmp"][key]["na"] == 1
             missing.append(block)
-    assert len(missing) == 795
+    assert len(missing) == len(cases) * len(keys)
     unsupported = [candidate["block"] for other in tab["rows"] for cell in leaf_cells(other).values()
                    for candidate in cell.get("tooltip", {}).get("candidates", [])
                    if "_python_batch@" in candidate["key"] and candidate["block"].get("unavailable_code") == "unsupported_family"]

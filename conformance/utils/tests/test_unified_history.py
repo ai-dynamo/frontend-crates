@@ -205,6 +205,27 @@ def _write_capture(
     return path
 
 
+def test_first_capture_creates_a_new_implementation_history(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "0.5.14", {"text_only": _change()}, implementation="sglang_python")
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.26.0/gemma4/UNIFIED.1-1.yaml"
+    path.parent.mkdir(parents=True)
+    events = [{"kind": "text", "text": "hello"}]
+    path.write_text(unified_history.dump_yaml({
+        "family": "gemma4", "mode": "unified",
+        "captured_with": {"dynamo_v2": "0.26.0"},
+        "cases": {"UNIFIED.1-1": {
+            "capture_input": _request(), "assembled": events,
+            "chunks": [{"expected": events}],
+        }},
+    }))
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert history.resolve("dynamo_v2-0.26.0")["text_only"]["observation"]["value"]["assembled"] == events
+
+
 @pytest.mark.parametrize("later_changes", [False, True])
 def test_correcting_older_placeholder_preserves_later_observation(tmp_path, later_changes):
     store = tmp_path / "store"

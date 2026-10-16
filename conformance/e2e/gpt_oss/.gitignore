@@ -1,0 +1,3 @@
+# Full JSON captures already contain the incremental journal entries.
+results/*/*.jsonl
+__pycache__/

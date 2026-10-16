@@ -1869,7 +1869,9 @@ def _update_from_loose(
             key = (family_name, implementation)
             history = store.histories.get(key)
             if history is None:
-                raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
+                family = store.families[family_name]
+                history = History(family, implementation, {}, family.path.parent, {})
+                store.histories[key] = history
             case_by_external = {}
             for case_id, case in history.family.cases.items():
                 for external_id in [case["display_id"], *case["historical_ids"]]:
