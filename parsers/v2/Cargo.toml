@@ -13,6 +13,7 @@ exclude = ["tests/glm47_schema_conformance.rs"]
 test-utils = []
 
 [dependencies]
+dynamo-structural-tag.workspace = true
 openai-harmony = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

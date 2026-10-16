@@ -3,11 +3,13 @@
 
 mod deepseek_dsml;
 mod glm47;
+mod kimi;
 mod qwen3_coder;
 mod templated_tool_calls;
 
 pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
 pub(crate) use glm47::GLM47;
+pub(crate) use kimi::{KIMI_K2, KIMI_K3};
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
 use serde_json::Value;
