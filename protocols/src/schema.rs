@@ -49,7 +49,6 @@ macro_rules! imports {
 
 imports!(
     FunctionType,
-    ImageDetail,
     TopLogprobs,
     FunctionObject,
     ChatCompletionRequestMessageContentPartText,

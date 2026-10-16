@@ -101,6 +101,11 @@ schema generation and existing protocol tests.
 A few fields extend the upstream `async-openai` schema:
 
 - `reasoning_content` on assistant messages
+- `name` on tool messages, forwarded by SGLang and vLLM to chat templates that
+  render tool results by tool name; omitted on the wire when absent
+- `ImageDetail` adds `medium` (accepted by SGLang) to the upstream set, and an
+  omitted `detail` on `image_url` parses as `auto` while an explicit `null`
+  stays `null`
 - `mm_processor_kwargs` on chat-completion requests (vLLM multimodal)
 - `continuous_usage_stats` on chat stream options
 - `FunctionCall.arguments` accepts both string and object forms

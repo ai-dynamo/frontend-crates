@@ -157,6 +157,30 @@ fn multimodal_request_and_completion_preserve_native_shapes() {
 }
 
 #[test]
+fn image_detail_and_tool_name_are_owned_schemas() {
+    let doc = document();
+    let schemas = &doc["components"]["schemas"];
+    assert_eq!(ImageDetail::name(), "dynamo_protocols.chat.ImageDetail");
+    let detail = &schemas[ImageDetail::name().as_ref()];
+    assert!(detail.get("x-dynamo-schema-import").is_none());
+    assert_eq!(
+        detail["enum"],
+        json!(["auto", "low", "medium", "high", "original"])
+    );
+    assert!(schemas.get("async_openai.ImageDetail").is_none());
+
+    let tool = &schemas[ChatCompletionRequestToolMessage::name().as_ref()];
+    assert!(tool["properties"].get("name").is_some());
+    assert_eq!(tool["required"], json!(["content", "tool_call_id"]));
+
+    canonical::<CreateChatCompletionRequest>(json!({
+        "model":"test","messages":[{"role":"tool","tool_call_id":"call_1","name":"lookup_image",
+            "content":[{"type":"image_url","image_url":{"url":"https://example.com/a.png","detail":"medium"}}]
+        }]
+    }));
+}
+
+#[test]
 fn unary_and_stream_responses_retain_reasoning_and_usage() {
     canonical::<CreateChatCompletionResponse>(json!({
         "id":"chat-1","object":"chat.completion","created":1,"model":"test",

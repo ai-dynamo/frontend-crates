@@ -9,8 +9,9 @@
 // Licensed under Apache 2.0
 
 use dynamo_protocols::types::{
-    ChatCompletionRequestSystemMessageArgs, ChatCompletionRequestUserMessageArgs,
-    CreateChatCompletionRequest, CreateChatCompletionRequestArgs,
+    ChatCompletionRequestMessage, ChatCompletionRequestSystemMessageArgs,
+    ChatCompletionRequestToolMessageArgs, ChatCompletionRequestUserMessageArgs,
+    CreateChatCompletionRequest, CreateChatCompletionRequestArgs, ImageDetail, ImageUrl,
 };
 use serde_json::json;
 
@@ -74,4 +75,130 @@ fn system_message_tools_must_be_an_array() {
         "messages": [{"role": "system", "tools": {"name": "lookup"}}]
     });
     assert!(serde_json::from_value::<CreateChatCompletionRequest>(body).is_err());
+}
+
+#[test]
+fn tool_message_name_round_trips_and_is_omitted_when_absent() {
+    let body = json!({
+        "model": "test",
+        "messages": [{
+            "role": "tool", "tool_call_id": "call_1", "name": "lookup_image", "content": "ok"
+        }]
+    });
+
+    let request: CreateChatCompletionRequest = serde_json::from_value(body.clone()).unwrap();
+    let ChatCompletionRequestMessage::Tool(tool) = &request.messages[0] else {
+        panic!("expected a tool message");
+    };
+    assert_eq!(tool.name.as_deref(), Some("lookup_image"));
+    assert_eq!(
+        serde_json::to_value(&request).unwrap()["messages"][0],
+        body["messages"][0]
+    );
+
+    let plain: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "test",
+        "messages": [{"role": "tool", "tool_call_id": "call_1", "content": "ok"}]
+    }))
+    .unwrap();
+    let ChatCompletionRequestMessage::Tool(tool) = &plain.messages[0] else {
+        panic!("expected a tool message");
+    };
+    assert_eq!(tool.name, None);
+    assert!(
+        serde_json::to_value(&plain).unwrap()["messages"][0]
+            .get("name")
+            .is_none()
+    );
+
+    let built = ChatCompletionRequestToolMessageArgs::default()
+        .tool_call_id("call_1")
+        .content("ok")
+        .name("lookup_image")
+        .build()
+        .unwrap();
+    assert_eq!(built.name.as_deref(), Some("lookup_image"));
+}
+
+#[test]
+fn image_detail_accepts_every_sglang_level_in_user_and_tool_content() {
+    // SGLang's request model is `Optional[Literal["auto","low","medium","high"]] = "auto"`:
+    // every listed value and an explicit null must survive the typed parse unchanged.
+    for detail in ["auto", "low", "medium", "high", "original"]
+        .map(|level| json!(level))
+        .into_iter()
+        .chain([serde_json::Value::Null])
+    {
+        for role in ["user", "tool"] {
+            let mut message = json!({
+                "role": role,
+                "content": [{"type": "image_url", "image_url": {
+                    "url": "https://example.com/a.png", "detail": detail
+                }}]
+            });
+            if role == "tool" {
+                message["tool_call_id"] = json!("call_1");
+                message["name"] = json!("lookup_image");
+            }
+            let body = json!({"model": "test", "messages": [message]});
+            let request: CreateChatCompletionRequest =
+                serde_json::from_value(body.clone()).unwrap();
+            assert_eq!(
+                serde_json::to_value(&request).unwrap()["messages"][0],
+                body["messages"][0],
+                "role={role} detail={detail}"
+            );
+        }
+    }
+    let request: CreateChatCompletionRequest = serde_json::from_value(json!({
+        "model": "test", "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "https://example.com/a.png"}}
+        ]}]
+    }))
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&request).unwrap()["messages"][0]["content"][0]["image_url"]["detail"],
+        "auto"
+    );
+    assert!(
+        serde_json::from_value::<ImageUrl>(json!({
+            "url": "https://example.com/a.png", "detail": "ultra"
+        }))
+        .is_err()
+    );
+}
+
+#[test]
+fn image_detail_defaults_to_auto_only_when_omitted() {
+    let omitted: ImageUrl =
+        serde_json::from_value(json!({"url": "https://example.com/a.png"})).unwrap();
+    assert_eq!(omitted.detail, Some(ImageDetail::Auto));
+    assert_eq!(serde_json::to_value(&omitted).unwrap()["detail"], "auto");
+
+    let explicit_null: ImageUrl =
+        serde_json::from_value(json!({"url": "https://example.com/a.png", "detail": null}))
+            .unwrap();
+    assert_eq!(explicit_null.detail, None);
+    assert_eq!(
+        serde_json::to_value(&explicit_null).unwrap()["detail"],
+        serde_json::Value::Null
+    );
+
+    let medium: ImageUrl =
+        serde_json::from_value(json!({"url": "https://example.com/a.png", "detail": "medium"}))
+            .unwrap();
+    assert_eq!(medium.detail, Some(ImageDetail::Medium));
+}
+
+#[test]
+fn image_detail_converts_from_upstream() {
+    use async_openai::types::chat::ImageDetail as Upstream;
+    for (upstream, local) in [
+        (Upstream::Auto, ImageDetail::Auto),
+        (Upstream::Low, ImageDetail::Low),
+        (Upstream::High, ImageDetail::High),
+        (Upstream::Original, ImageDetail::Original),
+    ] {
+        assert_eq!(ImageDetail::from(upstream), local);
+    }
 }
