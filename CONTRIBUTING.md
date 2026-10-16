@@ -61,7 +61,21 @@ Standard GitHub fork-and-PR workflow:
 5. Add tests for new parser families, new tokenizer code paths, and any new public surface.
 6. Make sure every new source file carries the SPDX header block (see [Source Headers](#source-headers) below).
 7. Sign off your commits (see [Signing Your Work](#signing-your-work) below).
-8. Open the PR and link the approved issue when one is required above. CI must pass.
+8. Open the PR using the [required PR description format](#required-pr-description-format) and link the approved issue when one is required above. CI must pass.
+
+### Required PR Description Format
+
+Use the [PR template](.github/pull_request_template.md) and include Overview, Details, Validation, and Where should the reviewer start? sections. Link the related issue when required by the contribution workflow above.
+
+**Every bug-fix PR must include a Bug Fix Evidence section in the PR description.** Do not leave the reproduction only in an issue, test source, or commit message. Include the following numbered subsections:
+
+1. **Minimal Sample Input:** The smallest concrete input that reproduces the bug, with the affected crate/version and a runnable command or test. For parser bugs, include the raw model text, tools/schema, request initialization or mode, and chunk boundaries when they affect the failure.
+2. **Buggy Output (Before):** The actual incorrect output from the previous version for that input. Show the incorrect fields or events explicitly.
+3. **Expected/Fixed Output (After):** The expected output and the observed output from the fixed version for the same input. Show the corrected fields or events explicitly; explain any remaining difference.
+4. **Unified Regression Cases:** For parser bugs, add the reproduction and expected GOLDEN events as `UNIFIED.*` regression cases (test columns). List the exact case IDs, what each verifies, applicable model families, and intentional grammar/mode exclusions. Follow [case applicability](conformance/README.md#case-applicability) and the [parser-fix capture workflow](conformance/README.md#2-fix-a-dynamo-parser-and-refresh-its-expected-outputs). Capture the before and after versions against the same input, tools, initialization, chunk schedule, and GOLDEN so the regression column shows red before the fix and green after it.
+5. **Visual Conformance Verification:** Regenerate `conformance/CONFORMANCE_v2.html` from the final candidate worktree using `conformance/utils/render_table_v2.sh`, open the report in a browser, and inspect the affected `UNIFIED.*` columns and their input/output popups. State the versions, model families, case IDs, and observed before/after results in the PR description. Confirm that the affected current Dynamo family has zero red and zero empty cells under the [Unified parser hard gate](conformance/README.md#unified-parser-hard-gate). A passing unit test or JSON check alone does not replace this visual verification. Keep generated HTML and JSON out of the commit.
+
+For parser bug fixes, all five subsections are required before requesting review. For other bug fixes, provide the concrete input and before/after outputs, and explain why Unified cases and visual conformance verification do not apply. For changes with no bug fix, mark Bug Fix Evidence as not applicable and state why.
 
 ### Reporting Issues
 
