@@ -293,6 +293,13 @@ def kimi_input_as_dsml(input_text):
             '</｜DSML｜invoke>' + text[close + len(end):].replace(end, "</｜DSML｜invoke>"))
 
 
+def tool_segment(segment):
+    if len(segment) == 3:
+        return segment[1], segment[2]
+    _, name, key, value = segment
+    return name, {key: value}
+
+
 def render_input(fam, segs):
     """Concatenate rendered segments (grammars are self-delimiting)."""
     out = []
@@ -308,14 +315,15 @@ def render_input(fam, segs):
             if fam == "kimi_k3":
                 calls = []
                 while index < len(segs) and segs[index][0] == "tool":
-                    _, name, key, val = segs[index]
-                    calls.append(k3_call(name, tool_idx + 1, k3_argument(key, "string", val)))
+                    name, arguments = tool_segment(segs[index])
+                    calls.append(r_tool_arguments(fam, name, arguments, tool_idx)
+                                 .removeprefix(k3_open("tools")).removesuffix(k3_close("tools")))
                     tool_idx += 1
                     index += 1
                 out.append(k3_tools("".join(calls)))
                 continue
-            _, name, key, val = s
-            out.append(r_tool(fam, name, key, val, tool_idx))
+            name, arguments = tool_segment(s)
+            out.append(r_tool_arguments(fam, name, arguments, tool_idx))
             tool_idx += 1
         index += 1
     return "".join(out)
@@ -329,8 +337,8 @@ def golden_of(segs):
         elif s[0] == "text":
             ev.append({"kind": "text", "text": s[1]})
         elif s[0] == "tool":
-            _, name, key, val = s
-            ev.append({"kind": "tool_call", "name": name, "arguments": {key: val}})
+            name, arguments = tool_segment(s)
+            ev.append({"kind": "tool_call", "name": name, "arguments": arguments})
     return ev
 
 
@@ -2183,14 +2191,14 @@ def _deepseek_v41_input(segments):
             text += segment[1]
             emitted_output = True
         else:
-            _, tool, key, value = segment
+            tool, arguments = tool_segment(segment)
             if reasoning_open:
                 text += "</think>"
                 reasoning_open = False
             if not tool_block_open:
                 text += "<｜DSML｜ calls>"
                 tool_block_open = True
-            text += r_tool("deepseek_v41", tool, key, value, 0).removeprefix("<｜DSML｜ calls>").removesuffix("</｜DSML｜ calls>")
+            text += r_tool_arguments("deepseek_v41", tool, arguments, 0).removeprefix("<｜DSML｜ calls>").removesuffix("</｜DSML｜ calls>")
             emitted_output = True
     if reasoning_open:
         text += "</think>"
@@ -2569,6 +2577,37 @@ for _suffix, _marker in (("eom", "<|eom|>"), ("eot", "<|eot|>"), ("start", "<|st
 
 
 # Shared schema cases are part of the same scenario inventory as every other case.
+def _dotted_native_input(family, calls):
+    segments = [("tool", name, arguments) for name, arguments in calls]
+    text = _deepseek_v41_input(segments)[0] if family == "deepseek_v41" else render_input(family, segments)
+    # Harmony generation continues an already-open assistant turn. A second
+    # initial assistant header prevents the reasoning parser's tool handoff.
+    return text.removeprefix("<|start|>assistant") if family == "gpt_oss" else text
+
+
+for _scenario, _description, _calls in (
+    ("dotted_name_minimal", "A native call to a.b preserves the complete name and empty arguments.",
+     [("a.b", {})]),
+    ("dotted_name_mixed_punctuation", "A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).",
+     [("my-tool.v2", {"location": "Beijing"})]),
+    ("dotted_name_multiple_segments", "A native call preserves every segment of server.tools.weather.",
+     [("server.tools.weather", {"location": "Beijing"})]),
+    ("dotted_name_shared_prefix", "Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.",
+     [("server.weather", {"location": "Beijing"}), ("server.time", {"timezone": "Asia/Shanghai"})]),
+):
+    EDGE.append((
+        _scenario, _description, [],
+        [{"kind": "tool_call", "name": name, "arguments": arguments} for name, arguments in _calls],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop", "single_chunk_families": ["gpt_oss"], "finish_step": True},
+        OnlyFamilies(by_family(lambda family: _dotted_native_input(family, _calls), M, M)),
+        [{"name": name, "parameters": {
+            "type": "object", "properties": {key: {"type": "string"} for key in arguments},
+            "required": list(arguments), "additionalProperties": False,
+        }} for name, arguments in _calls],
+    ))
+
+
 _SCHEMA_CASES_BY_FAMILY = {
     family: unified_schema_cases(family, r_tool_arguments) for family in FAMILIES
 }
@@ -2771,8 +2810,10 @@ def _build_edge_cases(fam, specs):
             "init": init,
             "finish_reason": stream_config.get("finish_reason", "stop"),
         }
-        if stream_config.get("single_chunk"):
+        if stream_config.get("single_chunk") or fam in stream_config.get("single_chunk_families", []):
             case["input_chunks"] = [inp]
+        if stream_config.get("finish_step"):
+            case["finish_step"] = True
         if case_tools is not None:
             case["tools"] = case_tools[fam] if isinstance(case_tools, dict) else case_tools
         cases[cid] = case
@@ -2831,6 +2872,8 @@ def emit_yaml(fam):
         lines.append(f"    policy: {json.dumps(c['policy'])}")
         lines.append(f"    init: {json.dumps(c['init'], ensure_ascii=False)}")
         lines.append(f"    finish_reason: {json.dumps(c['finish_reason'])}")
+        if c.get("finish_step"):
+            lines.append("    finish_step: true")
         # EXPLICIT indentation indicator. A bare `|-` lets YAML infer the block's
         # indentation from its first non-empty line, so an input that legitimately
         # BEGINS with a space loses that byte on reload — the reader cannot tell

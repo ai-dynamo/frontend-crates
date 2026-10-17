@@ -264,7 +264,7 @@ def test_case_schema_extraction_omits_absent_and_shared_defaults():
     assert table._unified_case_schemas({"request": {"tools": [{"name": "search"}]}}, "[]") is None
 
 
-def test_unified_schema_defaults_are_loaded_once(monkeypatch):
+def test_unified_schema_defaults_are_loaded_once(monkeypatch, tmp_path):
     calls = []
     original = table.unified_tools
 
@@ -273,8 +273,19 @@ def test_unified_schema_defaults_are_loaded_once(monkeypatch):
         return original()
 
     monkeypatch.setattr(table, "unified_tools", tools)
-    result = table._load_unified_fixtures(_cache_root() / "unified")
+    input_dir = tmp_path / "inputs" / "deepseek_v4"
+    input_dir.mkdir(parents=True)
+    (input_dir / "cases.yaml").write_text(yaml.safe_dump({
+        "family": "deepseek_v4",
+        "mode": "unified",
+        "cases": {
+            "first": {"scenario": "first", "input": "first"},
+            "second": {"scenario": "second", "input": "second"},
+        },
+    }))
+    result = table._load_unified_fixtures(tmp_path)
     assert result is not None
+    assert len(result[0]) == 2
     assert len(calls) == 1
 
 
@@ -332,6 +343,9 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 
 # Labels and structured metadata must identify the same captured version.
 def _assert_candidate_versioned(candidate, location):
+    if candidate.get("parse_mode") == "split" and candidate.get("impl") == "dynamo":
+        assert candidate["label"] == table._full_label("dynamo_v2", candidate["version"], "split: v1 reasoning + v2 tool parser"), location
+        return
     if candidate.get("parse_mode") == "unified" and candidate.get("impl") == "dynamo":
         assert candidate["label"] == table._full_label("dynamo_v2", candidate["version"], "stream"), location
         return
@@ -554,12 +568,15 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
         all(cell["cmp"][key].get("na") == 1 for key in peer_keys)
         for cell in muse["cells"].values()
     )
-    muse_tip = next(iter(muse["cells"].values()))["tooltip"]
+    muse_tip = leaf_cells(muse)["tool_only"]["tooltip"]
     # Fresh request-bound classifications retain their release identity even
     # when both releases lack the same parser.
     for key, version in (("vllm_rust", "0.25.1"), ("vllm_rust@0.26.0", "0.26.0")):
         native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == key)
         assert native["block"]["unavailable"] == f"No vLLM Rust Unified parser is registered for muse_glimmer at {version}."
+        missing = next(candidate for candidate in leaf_cells(muse)["dotted_name_minimal"]["tooltip"]["candidates"] if candidate["key"] == key)
+        assert missing["block"]["unavailable_code"] == "missing_capture"
+        assert "events" not in missing["block"]
 
 
 def test_unified_sglang_versions_are_streamed_and_grouped_without_duplicate_backend(model_v2):
@@ -961,7 +978,7 @@ def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mod
     assert table._full_label("dynamo_v2", "0.7.9", input_mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
 
 
-def test_unified_dynamo_labels_identify_unified_parser(model_v2):
+def test_unified_dynamo_labels_identify_capture_path(model_v2):
     producer = table._dynamo_v2_producer()
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
@@ -971,15 +988,15 @@ def test_unified_dynamo_labels_identify_unified_parser(model_v2):
     assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]
 
-    tooltip_labels = [
-        candidate["label"]
-        for row in tab["rows"]
-        for cell in leaf_cells(row).values()
-        for candidate in cell.get("tooltip", {}).get("candidates", [])
-        if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
-    ]
-    assert tooltip_labels
-    assert set(tooltip_labels) == {full_label}
+    for row in tab["rows"]:
+        mode = "split: v1 reasoning + v2 tool parser" if row["family"] == "gpt_oss" else "stream"
+        tooltip_labels = {
+            candidate["label"]
+            for cell in leaf_cells(row).values()
+            for candidate in cell.get("tooltip", {}).get("candidates", [])
+            if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
+        }
+        assert tooltip_labels == {table._full_label("dynamo_v2", expected, mode)}, row["family"]
 
 
 def test_tc_source_capture_versions_survive_label_parsing():
@@ -1343,9 +1360,15 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
     for row in tab["rows"]:
         family = row["family"]
         for scenario in scenarios:
-            cmp = leaf_cells(row)[scenario]["cmp"]
+            cell = leaf_cells(row)[scenario]
+            cmp = cell["cmp"]
             if family == "gpt_oss":
-                assert cmp["dynamo"]["na"] == 1, (family, scenario, "no native unified parser")
+                assert cmp["dynamo"]["na"] == 0, (family, scenario, "split capture is measured")
+                candidate = next(candidate for candidate in cell["tooltip"]["candidates"]
+                                 if candidate["key"] == "dynamo")
+                assert candidate["parse_mode"] == "split"
+                assert candidate["block"]["events"] == []
+                assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "red"
                 continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families:
@@ -1402,14 +1425,17 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
     for family, other in rows.items():
         shared = leaf_cells(other)[scenario]
         assert shared["case_id"] == table.unified_taxonomy.numbered_id(scenario)
+        shared_blocks = {candidate["key"]: candidate["block"]
+                         for candidate in shared["tooltip"]["candidates"]}
         if family == "gpt_oss":
-            assert shared["cmp"]["dynamo"]["na"] == 1
+            assert shared["cmp"]["dynamo"]["na"] == 0
+            assert shared_blocks["golden"]["events"] == events
+            assert shared_blocks["dynamo"]["events"] == []
+            assert cell_state(shared, {"key": "dynamo", "label": "Dynamo"})[0] == "red"
             continue
         assert shared["status"] != "na"
-        candidates = {candidate["key"]: candidate["block"]
-                      for candidate in shared["tooltip"]["candidates"]}
-        assert candidates["golden"]["events"] == events
-        measured = candidates["dynamo"]
+        assert shared_blocks["golden"]["events"] == events
+        measured = shared_blocks["dynamo"]
         assert "error" not in measured and "unavailable" not in measured
         assert measured["events"], family
         expected_color = "green" if measured["events"] == events else "red"
@@ -1463,7 +1489,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
     keys = {"vllm_python_batch@" + version for version in ("0.23.0", "0.24.0", "0.25.1", "0.26.0")}
     keys.add("sglang_python_batch@0.5.14")
     cases = [cell for cell in leaf_cells(row).values() if cell["status"] != "na"]
-    assert len(cases) == 159
+    assert len(cases) == 163
     assert leaf_cells(row)["tool_only"]["case_id"] == "UNIFIED.1-tool_only"
     missing = []
     for cell in cases:
@@ -1475,7 +1501,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
             assert "no parser" not in block["unavailable"]
             assert cell["cmp"][key]["na"] == 1
             missing.append(block)
-    assert len(missing) == 795
+    assert len(missing) == 815
     unsupported = [candidate["block"] for other in tab["rows"] for cell in leaf_cells(other).values()
                    for candidate in cell.get("tooltip", {}).get("candidates", [])
                    if "_python_batch@" in candidate["key"] and candidate["block"].get("unavailable_code") == "unsupported_family"]

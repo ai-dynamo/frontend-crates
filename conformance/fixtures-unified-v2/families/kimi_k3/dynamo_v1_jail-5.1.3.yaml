@@ -8,7 +8,43 @@ provenance:
 document:
   mode: unified
 changes: {}
-metadata_changes: {}
+metadata_changes:
+  dotted_name_minimal:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 5.1.3
+      source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+      cargo_lock_sha256: b0c9717534be3f1b994ac9304348f9e5f90571599d5103a6fd6a192d88f8b410
+  dotted_name_mixed_punctuation:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 5.1.3
+      source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+      cargo_lock_sha256: b0c9717534be3f1b994ac9304348f9e5f90571599d5103a6fd6a192d88f8b410
+  dotted_name_multiple_segments:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 5.1.3
+      source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+      cargo_lock_sha256: b0c9717534be3f1b994ac9304348f9e5f90571599d5103a6fd6a192d88f8b410
+  dotted_name_shared_prefix:
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 5.1.3
+      source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19147fbb880a3f07b83abad406c34cfb3397aa287c5d5dfc922b55354c3a1df4
+      cargo_lock_sha256: b0c9717534be3f1b994ac9304348f9e5f90571599d5103a6fd6a192d88f8b410
 document_overrides:
   arg_json_null_anyof:
     capture_provenance:
@@ -169,6 +205,46 @@ document_overrides:
         source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
         adapter_sha256: c0648be12a864677efe543dde8084c7d02ce3daaa57cfe8ab3399ffb7a57f9dc
         job_sha256: f3e58efc8e1ce447792bfd3ce3e206c29a88a23a10b98967fcee0570a5155f51
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.1.3
+      capture_origin:
+        crate_version: 5.1.3
+        source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.1.3
+      capture_origin:
+        crate_version: 5.1.3
+        source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.1.3
+      capture_origin:
+        crate_version: 5.1.3
+        source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 5.1.3
+      capture_origin:
+        crate_version: 5.1.3
+        source_sha256: 6300b4ced093c937cd7aa77da464f60c5f0ba3f46196dab159dd745c225020f8
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
       inherited_from: null
   empty_args:
     capture_provenance:

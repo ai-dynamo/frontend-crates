@@ -89,9 +89,10 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.kimi_k2-1
+    display_id: UNIFIED.kimi_k2-kimi_k2_optional_prefix_name_overlap
     historical_ids:
     - UNIFIED.1-2
+    - UNIFIED.kimi_k2-1
     request:
       input: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
       init:
@@ -2262,8 +2263,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<|tool_call_begin|>functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2955,9 +2957,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3102,9 +3105,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -13327,3 +13331,175 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  dotted_name_minimal:
+    lifecycle: active
+    scenario: dotted_name_minimal
+    description: A native call to a.b preserves the complete name and empty arguments.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_minimal
+    historical_ids: []
+    request:
+      input: <|tool_calls_section_begin|><|tool_call_begin|>functions.a.b:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: a.b
+        parameters:
+          type: object
+          properties: {}
+          required: []
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.a.b:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+  dotted_name_mixed_punctuation:
+    lifecycle: active
+    scenario: dotted_name_mixed_punctuation
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    policy: []
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.my-tool.v2:0<|tool_call_argument_begin|>{"location": "Beijing"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: my-tool.v2
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.my-tool.v2:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"location": "Beijing"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+  dotted_name_multiple_segments:
+    lifecycle: active
+    scenario: dotted_name_multiple_segments
+    description: A native call preserves every segment of server.tools.weather.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.server.tools.weather:0<|tool_call_argument_begin|>{"location": "Beijing"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.tools.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.server.tools.weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"location": "Beijing"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+  dotted_name_shared_prefix:
+    lifecycle: active
+    scenario: dotted_name_shared_prefix
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    policy: []
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.server.weather:0<|tool_call_argument_begin|>{"location": "Beijing"}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.server.time:1<|tool_call_argument_begin|>{"timezone": "Asia/Shanghai"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      - name: server.time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+          required:
+          - timezone
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.server.weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"location": "Beijing"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.server.time:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"timezone": "Asia/Shanghai"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai

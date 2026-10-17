@@ -37,6 +37,8 @@ struct GoldenCase {
     init: common::Init,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     finish_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    finish_step: Option<bool>,
     /// Raw streamed model text.
     input: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

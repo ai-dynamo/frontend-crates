@@ -30,7 +30,7 @@ def test_batch_cli_emits_bound_requests_and_golden(monkeypatch, capsys):
 def test_existing_family_job_is_stable_and_preserves_request_shape():
     job = capture_unified_job.build_job(ROOT, "gemma4")
     assert job["family"] == "gemma4"
-    assert len(job["cases"]) == 233
+    assert len(job["cases"]) == 237
     assert [case["id"] for case in job["cases"]].count("UNIFIED.tool_only.gemma4") == 1
     case = next(
         case
@@ -83,3 +83,28 @@ def test_capture_registry_keeps_historical_pipeline_names_and_jail_scope():
     assert "muse_glimmer" not in impls.DYNAMO_UNIFIED_PIPELINES
     assert impls.DYNAMO_JAIL_UNIFIED_PIPELINES["muse_glimmer"] == ("muse", "muse")
     assert impls.VLLM_TOKENIZER_MARKERS.keys() == impls.VLLM_UNIFIED_PIPELINES.keys()
+
+
+@pytest.mark.parametrize("mode", ["unified", "batch"])
+def test_family_subset_cli_reuses_single_family_requests(monkeypatch, tmp_path, mode):
+    monkeypatch.setattr(sys, "argv", ["capture_unified_job.py", "--families", "gpt_oss", "qwen3",
+                                     "--mode", mode, "--output", str(tmp_path)])
+    capture_unified_job.main()
+    assert {p.name for p in tmp_path.iterdir()} == {"gpt_oss.json", "qwen3.json"}
+    for family in ("gpt_oss", "qwen3"):
+        assert json.loads((tmp_path / f"{family}.json").read_text()) == capture_unified_job.build_job(ROOT, family, mode=mode)
+
+
+def test_family_subset_rejects_duplicate_selection(monkeypatch, tmp_path):
+    monkeypatch.setattr(sys, "argv", ["capture_unified_job.py", "--families", "qwen3", "qwen3", "--output", str(tmp_path)])
+    with pytest.raises(SystemExit):
+        capture_unified_job.main()
+    assert not list(tmp_path.iterdir())
+
+
+def test_family_subset_rejects_missing_family_before_writing(monkeypatch, tmp_path):
+    output = tmp_path / "jobs"
+    monkeypatch.setattr(sys, "argv", ["capture_unified_job.py", "--families", "qwen3", "missing", "--output", str(output)])
+    with pytest.raises(FileNotFoundError):
+        capture_unified_job.main()
+    assert not output.exists()

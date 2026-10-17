@@ -1,0 +1,134 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.22
+    source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+    git_commit: 4a221009296ad06e435745552069a43c53381d26
+document:
+  mode: unified
+changes:
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: 5e3d1179397e5450e167e41b649d3f9b910667860ac2a472ce4ae6f77cf74a5f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{}'
+            complete: true
+        - expected: []
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 1c6c59687e13f5a62160ba5ce791db8832c8ac482a43bb4d053d123327dbbe48
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: ece2bfb20932e8163f5a5b84f0ced28236540b1a5ad67c883a89fdde70eda642
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: 075aa1795ac22e25e7ea371f5f6544dd78076474b8cc1b98f0e70417062c8401
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"location":"Beijing"}'
+            complete: true
+          - kind: tool_call
+            name: server.time
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
+metadata_changes:
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides: {}

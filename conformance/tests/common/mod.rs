@@ -615,6 +615,24 @@ pub fn unified_families() -> std::collections::BTreeMap<String, UnifiedFamily> {
     doc.unified
 }
 
+/// Scope a producer run without changing the shared corpus or its family registry.
+pub fn capture_families() -> Option<std::collections::BTreeSet<String>> {
+    let registered = unified_families();
+    let requested = std::env::var("CONFORMANCE_CAPTURE_FAMILIES").ok()?;
+    let selected: std::collections::BTreeSet<String> = requested
+        .split(',')
+        .map(|name| name.trim().to_string())
+        .collect();
+    assert!(!selected.is_empty(), "empty capture family selection");
+    for family in &selected {
+        assert!(
+            registered.contains_key(family),
+            "unknown capture family: {family}"
+        );
+    }
+    Some(selected)
+}
+
 /// One family, or a panic naming the manifest — a family reaching the harness without a
 /// declaration is a missing row, and saying so beats a generic "no parser mapping".
 pub fn unified_family(corpus_name: &str) -> UnifiedFamily {

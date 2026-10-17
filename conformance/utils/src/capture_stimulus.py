@@ -13,6 +13,22 @@ from fixture_disposition import canonical_unified_record_key, canonicalize_unifi
 from impls import UNIFIED_BATCH_IMPLS
 
 
+FINISH_SENTINEL = "‹finish›"
+
+
+def _normalize_capture_input(request: dict, *, terminal_finish_row: bool = False) -> dict:
+    normalized = dict(request)
+    chunks = request.get("chunks")
+    if isinstance(chunks, list):
+        chunks = [dict(chunk) for chunk in chunks]
+        if (terminal_finish_row and chunks and chunks[-1].get("delta_text") == FINISH_SENTINEL
+                and "token_ids" not in chunks[-1]
+                and "finish_reason" not in chunks[-1]
+                and "".join(chunk.get("delta_text", "") for chunk in chunks[:-1]) == request.get("input", "")):
+            chunks.pop()
+        normalized["chunks"] = chunks
+    return normalized
+
 _UNAVAILABLE_CATEGORIES = {
     **dict.fromkeys(("peer_request_unsupported", "peer_finish_unsupported", "peer_termination_unsupported",
                      "peer_chunk_schedule_unsupported", "vllm_chunk_schedule_unsupported", "vllm_tool_schema_unsupported",
@@ -67,15 +83,16 @@ def validate_family_scoped_cases(cases: list[dict]) -> None:
         raise ValueError(f"duplicate peer capture case IDs: {duplicates!r}")
 
 
-def capture_input(record: dict) -> dict:
-    return {
+def capture_input(record: dict, *, terminal_finish_row: bool = False) -> dict:
+    chunks = [{key: value for key, value in row.items() if key in {"delta_text", "token_ids", "finish_reason"}}
+              for row in record.get("chunks", [])]
+    return _normalize_capture_input({
         "input": record.get("input", ""),
         "init": record.get("init") or {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
         "finish_reason": record.get("finish_reason") or "stop",
         "tools": record.get("tools"),
-        "chunks": [{key: value for key, value in row.items() if key in {"delta_text", "token_ids", "finish_reason"}}
-                   for row in record.get("chunks", [])],
-    }
+        "chunks": chunks,
+    }, terminal_finish_row=terminal_finish_row)
 
 
 def unavailable_result(
@@ -261,11 +278,16 @@ def select_peer_observation(record: dict, current: dict, *, implementation: str,
     )}
 
 
-def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, bindings: dict) -> str | None:
+def comparison_failure(
+    record: dict, current: dict, raw: bytes, relative: str, bindings: dict,
+    *, terminal_finish_row: bool = False,
+) -> str | None:
     original = original_capture_input(record, raw, relative, bindings)
     if original is None:
         return "Capture stimulus unavailable: original input, initialization, and chunk schedule were not retained; this output cannot be compared to the displayed request."
-    expected = capture_input(current)
+    expected = capture_input(current, terminal_finish_row=terminal_finish_row)
+    if terminal_finish_row:
+        original = _normalize_capture_input(original, terminal_finish_row=True)
     if isinstance(original, dict) and ("tools" not in original or original["tools"] is None):
         return "Capture stimulus unavailable: original tool schema was not retained; this output cannot be compared to the displayed request."
     if expected["tools"] is None:
@@ -278,7 +300,7 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
     return None
 
 
-def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
+def _effective_capture_records(directory: Path, input_aliases: dict, families: set[str] | None = None) -> dict:
     captures = {}
     bindings = read_bindings(directory)
     for path in sorted(directory.glob("*/*.yaml")):
@@ -286,6 +308,8 @@ def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
         doc = yaml.safe_load(raw)
         if doc["family"] != path.parent.name:
             raise ValueError(f"capture family differs from its directory: {path}")
+        if families is not None and doc["family"] not in families:
+            continue
         for key, record in doc["cases"].items():
             ident = canonical_unified_record_key(doc["family"], key, input_aliases)
             if ident in captures and captures[ident][0] != record:
@@ -312,14 +336,18 @@ def validated_current_capture_docs(
         ident = canonical_unified_record_key(family, key, input_aliases)
         if inputs.get(ident) == record:
             input_keys[ident] = key
-    captures = _effective_capture_records(directory, input_aliases)
+    captures = _effective_capture_records(directory, input_aliases, families)
     if not inputs or inputs.keys() != captures.keys():
         raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
     for ident, current in inputs.items():
         if not isinstance(current.get("tools"), list):
             raise ValueError(f"current input has no executable tool schema: {ident}")
         record, raw, relative, bindings = captures[ident]
-        failure = comparison_failure(record, current, raw, relative, bindings)
+        terminal_finish_row = directory.name.startswith("dynamo_v2-")
+        failure = comparison_failure(
+            record, current, raw, relative, bindings,
+            terminal_finish_row=terminal_finish_row,
+        )
         if failure:
             raise ValueError(f"{ident}: {failure}")
         if "unavailable" in record:

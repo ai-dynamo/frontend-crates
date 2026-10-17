@@ -380,6 +380,108 @@ changes:
             arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
             complete: true
         - expected: []
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
   qwen_string_null:
     case_key: UNIFIED.7-5
     stimulus:
@@ -408,64 +510,24 @@ changes:
             complete: true
         - expected: []
 metadata_changes:
-  guided_quoted_reasoning_closer_named:
+  dotted_name_minimal:
     init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_quoted_reasoning_closer_required:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_response_quoted_control_braces_named:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_response_quoted_control_braces_required:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: null
-  native_quoted_control_in_reasoning:
-    init:
-      starting_state: Reasoning
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
+  dotted_name_mixed_punctuation:
     init:
-      starting_state: Reasoning
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
-  native_quoted_incomplete_header:
+  dotted_name_multiple_segments:
     init:
-      starting_state: Response
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_response:
+  dotted_name_shared_prefix:
     init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_then_call:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_unmatched_quote_then_call:
-    init:
-      starting_state: Response
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
 document_overrides: {}

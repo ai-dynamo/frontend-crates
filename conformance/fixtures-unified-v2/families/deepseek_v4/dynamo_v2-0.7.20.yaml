@@ -3329,4 +3329,28 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null

@@ -97,6 +97,31 @@ def _input(text):
             "finish_reason": "stop", "tools": [], "chunks": [{"delta_text": text}, {"delta_text": "‹finish›"}]}
 
 
+def test_dynamo_finish_display_row_is_normalized_without_erasing_peer_finish():
+    input_text = "same"
+    authored = _input(input_text)
+    replayed = authored | {"chunks": [{"delta_text": input_text}]}
+    capture = {"capture_input": capture_stimulus.capture_input(authored), "assembled": []}
+
+    assert capture_stimulus.capture_input(authored) != capture_stimulus.capture_input(replayed)
+    assert capture_stimulus.comparison_failure(
+        capture, replayed, b"", "family/case.yaml", {}, terminal_finish_row=True,
+    ) is None
+    assert "chunks" in capture_stimulus.comparison_failure(
+        capture, replayed, b"", "family/case.yaml", {},
+    )
+    changed_schedule = replayed | {"chunks": [{"delta_text": "sa"}, {"delta_text": "me"}]}
+    assert capture_stimulus.comparison_failure(
+        capture, changed_schedule, b"", "family/case.yaml", {}, terminal_finish_row=True,
+    ) == "Capture stimulus mismatch (chunks): historical output belongs to a different request and is not scored against this input."
+    finish_reason_row = authored | {"chunks": [{"delta_text": input_text},
+                                               {"delta_text": "‹finish›", "finish_reason": "length"}]}
+    assert capture_stimulus.comparison_failure(
+        {"capture_input": capture_stimulus.capture_input(finish_reason_row)},
+        replayed, b"", "family/case.yaml", {}, terminal_finish_row=True,
+    ) is not None
+
+
 def _write(base, directory, record, key="UNIFIED.7-2", family="deepseek_v41"):
     path = base / directory / f"{family}/{key}.yaml"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -154,8 +179,10 @@ def test_each_stimulus_dimension_is_bound(dimension):
                     "chunks": [{"delta_text": "sa"}, {"delta_text": "me"}], "finish_reason": "length",
                     "tools": [{"name": "f", "parameters": {"type": "object"}}]}
     current[dimension] = replacements[dimension]
+    if dimension == "input":
+        current["chunks"] = [{"delta_text": "different"}, {"delta_text": "‹finish›"}]
     reason = capture_stimulus.comparison_failure({"capture_input": original}, current, b"", "case.yaml", {})
-    assert f"({dimension})" in reason
+    assert dimension in reason
 
 
 def test_missing_stimulus_is_not_a_parser_failure():
@@ -220,16 +247,22 @@ def test_current_capture_guard_rejects_missing_executable_schema(tmp_path):
         capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
 
 
-def test_current_capture_can_validate_only_native_unified_families(tmp_path):
+@pytest.mark.parametrize("capture_split", [False, True])
+def test_current_capture_can_validate_only_native_unified_families(tmp_path, capture_split):
     native = _input("same") | {"tools": unified_tools()}
     split_only = _input("split") | {"tools": unified_tools()}
     native_record = {"capture_input": capture_stimulus.capture_input(native), "assembled": []}
     _write(tmp_path, "inputs", native, family="deepseek_v41")
     _write(tmp_path, "inputs", split_only, family="gpt_oss")
     _write(tmp_path, "dynamo_v2-0.7.22", native_record, family="deepseek_v41")
-
-    with pytest.raises(ValueError, match="current capture/input sets differ"):
-        capture_stimulus.validate_current_capture(tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"])
+    if capture_split:
+        _write(tmp_path, "dynamo_v2-0.7.22", {
+            "capture_input": capture_stimulus.capture_input(split_only), "assembled": [],
+        }, family="gpt_oss")
+        assert capture_stimulus.validate_current_capture(tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"]) == 2
+    else:
+        with pytest.raises(ValueError, match="current capture/input sets differ"):
+            capture_stimulus.validate_current_capture(tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"])
 
     expected = [{"family": "deepseek_v41", "cases": {"UNIFIED.7-2": native_record}}]
     assert capture_stimulus.validated_current_capture_docs(
@@ -242,6 +275,14 @@ def test_current_capture_can_validate_only_native_unified_families(tmp_path):
         check=True, capture_output=True, text=True,
     )
     assert json.loads(result.stdout) == expected
+    if capture_split:
+        assert capture_stimulus.validate_current_capture(
+            tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"], {"gpt_oss"},
+        ) == 1
+    with pytest.raises(ValueError, match="current capture/input sets differ"):
+        capture_stimulus.validate_current_capture(
+            tmp_path / "dynamo_v2-0.7.22", [tmp_path / "inputs"], {"not_present"},
+        )
 
 
 def test_current_version_validates_exact_version_records(tmp_path):

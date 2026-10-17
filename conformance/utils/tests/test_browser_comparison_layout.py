@@ -132,7 +132,7 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
                 assert "slot order" in legend.text
                 assert "Not applicable or unsupported" in legend.text
                 assert "Order/chunk not applicable for batch" not in legend.text
-                assert "Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser." in legend.text
+                assert "Dynamo v1 is the batch parser; Dynamo v2 details identify native UnifiedParser or split capture paths." in legend.text
                 assert not legend.find_element(By.CSS_SELECTOR, "[data-output-formats]").is_displayed()
                 assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified .legend.summary-only,#tab-unified .legend.details-only")
                 styles = d.execute_script("""
@@ -535,6 +535,7 @@ def test_narrow_picker_opens_the_normal_version_select(matrix_driver, rendered_p
 @pytest.mark.parametrize("close_over_control", [False, True])
 def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_driver, rendered_page, close_over_control):
     d = matrix_driver
+    d.set_window_size(2400, 1200)
     load(d, rendered_page)
     cell = d.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-cmp][data-ttip-id]")
     assert len(cell.find_elements(By.CSS_SELECTOR, ".matrix-status")) == 1
@@ -592,10 +593,12 @@ def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_drive
         close = popup.find_element(By.CSS_SELECTOR, ".ttip-close")
         if close_over_control:
             geometry = d.execute_script("""
-                const close = arguments[0].getBoundingClientRect(), x = close.x + close.width / 2;
+                const close = arguments[0].getBoundingClientRect();
                 const control = [...document.querySelectorAll('[data-col-toggle]')].find(node => {
-                    const r = node.getBoundingClientRect(); return r.width && r.left <= x && x <= r.right;
+                    const r = node.getBoundingClientRect();
+                    return r.width && r.height && getComputedStyle(node).visibility !== 'hidden';
                 });
+                if (!control) throw new Error('no visible column toggle to place beneath popup close button');
                 const r = control.getBoundingClientRect();
                 return {control, height: outerHeight + 2 * (r.y + r.height / 2 - close.y - close.height / 2)};
             """, close)
@@ -604,10 +607,22 @@ def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_drive
                 const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
                 return r.top < c.y + c.height / 2 && c.y + c.height / 2 < r.bottom;
             """, close, geometry["control"]))
+            d.execute_script("""
+                const close = arguments[0].getBoundingClientRect(), popup = arguments[0].closest('.ttip');
+                const control = arguments[1].getBoundingClientRect();
+                popup.style.left = (window.scrollX + control.left + control.width / 2
+                    - (close.left - popup.getBoundingClientRect().left)) + 'px';
+            """, close, geometry["control"])
+            WebDriverWait(d, 5).until(lambda browser: browser.execute_script("""
+                const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
+                return r.left < c.x + c.width / 2 && c.x + c.width / 2 < r.right;
+            """, close, geometry["control"]))
+            control_pressed = geometry["control"].get_attribute("aria-pressed")
         close.click()
         assert_popup_closed(d, popup, cell)
         assert d.execute_script("return getComputedStyle(document.body, '::after').content") == "none"
         if close_over_control:
+            assert geometry["control"].get_attribute("aria-pressed") == control_pressed
             WebDriverWait(d, 5).until(lambda browser: browser.execute_script(
                 "return arguments[0]._ttip.classList.contains('ttip-visible')", geometry["control"]))
             assert_popup_closed(d, popup, cell)

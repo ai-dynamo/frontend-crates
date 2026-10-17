@@ -85,6 +85,26 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
   empty_args:
     observation:
       unavailable:
@@ -1195,5 +1215,33 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
-metadata_changes: {}
+metadata_changes:
+  dotted_name_minimal:
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 85fef552264e748ffb03d7dcf02d92e0754fd3662e78a97f968446909a633b2f
+  dotted_name_mixed_punctuation:
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 85fef552264e748ffb03d7dcf02d92e0754fd3662e78a97f968446909a633b2f
+  dotted_name_multiple_segments:
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 85fef552264e748ffb03d7dcf02d92e0754fd3662e78a97f968446909a633b2f
+  dotted_name_shared_prefix:
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.13
+      status: source_unavailable
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 85fef552264e748ffb03d7dcf02d92e0754fd3662e78a97f968446909a633b2f
 document_overrides: {}

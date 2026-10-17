@@ -31,9 +31,9 @@ def _adapter_sha256(jail_buffer: bool) -> str:
 def _probe_job(job: dict, jail_buffer: bool = False) -> dict:
     family = job.get("family")
     pipelines = DYNAMO_JAIL_UNIFIED_PIPELINES if jail_buffer else DYNAMO_UNIFIED_PIPELINES
-    if family not in pipelines:
+    if family not in DYNAMO_UNIFIED_PIPELINES and family not in DYNAMO_JAIL_UNIFIED_PIPELINES:
         raise ValueError(f"no Dynamo v1 batch pipeline registered for family {family!r}")
-    reasoning_parser, tool_parser = pipelines[family]
+    reasoning_parser, tool_parser = pipelines.get(family, ("", ""))
     return {
         "reasoning_parser": reasoning_parser,
         "tool_parser": tool_parser,

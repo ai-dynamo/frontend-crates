@@ -8,8 +8,100 @@ provenance:
 document:
   mode: unified
 changes: {}
-metadata_changes: {}
+metadata_changes:
+  dotted_name_minimal:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="a.b"></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.5
+      source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      crate_checksum: 8bea2b4243f926014fc033d41c0c375c5bad5dd9fd0a2ccd444c8d28bda19af5
+      cargo_lock_sha256: d330b8a1052dd1bafac5ed1a70ca9b0230f0a82f954dd34488d0067ef8f61e6b
+  dotted_name_mixed_punctuation:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="my-tool.v2"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.5
+      source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      crate_checksum: 8bea2b4243f926014fc033d41c0c375c5bad5dd9fd0a2ccd444c8d28bda19af5
+      cargo_lock_sha256: d330b8a1052dd1bafac5ed1a70ca9b0230f0a82f954dd34488d0067ef8f61e6b
+  dotted_name_multiple_segments:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="server.tools.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.5
+      source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      crate_checksum: 8bea2b4243f926014fc033d41c0c375c5bad5dd9fd0a2ccd444c8d28bda19af5
+      cargo_lock_sha256: d330b8a1052dd1bafac5ed1a70ca9b0230f0a82f954dd34488d0067ef8f61e6b
+  dotted_name_shared_prefix:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="server.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="server.time"><｜DSML｜ parameter name="timezone" string="true">Asia/Shanghai</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
+    producer_receipt:
+      implementation: dynamo_v1_jail
+      version: 9.2.5
+      source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      crate_checksum: 8bea2b4243f926014fc033d41c0c375c5bad5dd9fd0a2ccd444c8d28bda19af5
+      cargo_lock_sha256: d330b8a1052dd1bafac5ed1a70ca9b0230f0a82f954dd34488d0067ef8f61e6b
 document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 9.2.5
+      capture_origin:
+        crate_version: 9.2.5
+        source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 9.2.5
+      capture_origin:
+        crate_version: 9.2.5
+        source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 9.2.5
+      capture_origin:
+        crate_version: 9.2.5
+        source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v1_jail: 9.2.5
+      capture_origin:
+        crate_version: 9.2.5
+        source_sha256: 8e4d4f9dd610d83aacbe41c0ac137d5c013508c77e927ba03157d2389bca7d0d
+        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
+        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:

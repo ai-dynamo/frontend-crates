@@ -302,6 +302,26 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   empty_args:
     case_key: UNIFIED.6.a
   guided_json_after_reasoning:
@@ -475,5 +495,33 @@ changes:
     case_key: UNIFIED.2.b
   two_reason_spans:
     case_key: UNIFIED.10.c
-metadata_changes: {}
-document_overrides: {}
+metadata_changes:
+  dotted_name_minimal: {}
+  dotted_name_mixed_punctuation: {}
+  dotted_name_multiple_segments: {}
+  dotted_name_shared_prefix: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null

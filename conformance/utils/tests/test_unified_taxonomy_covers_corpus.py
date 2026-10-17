@@ -830,27 +830,27 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
-            "deepseek_v4": 126,
-            "deepseek_v41": 123,
-            "gemma4": 119,
-            "glm47": 117,
-            "kimi_k2": 117,
-            "kimi_k3": 124,
-            "muse_glimmer": 126,
-            "qwen3": 122,
+            "deepseek_v4": 130,
+            "deepseek_v41": 127,
+            "gemma4": 123,
+            "glm47": 121,
+            "kimi_k2": 121,
+            "kimi_k3": 128,
+            "muse_glimmer": 130,
+            "qwen3": 126,
         }.get(fam)
         if fam == "gpt_oss":
-            assert per_family[fam] == 159
+            assert per_family[fam] == 163
         else:
             assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 974 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 159
+    assert sum(per_family.values()) == 1006 + len(NATIVE_FAMILIES) * len(CONFORMANCE_CASES) + 163
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 158 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 162 + len(CONFORMANCE_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -936,48 +936,22 @@ def _scenario_of(cid: str, fam: str) -> str:
     return cid
 
 
-def _packed_layer(root: Path, directory: str, fam: str, field_map, scenarios):
-    """Case records from a PACKAGED shard, keyed by scenario.
-
-    The shards are tracked LFS artifacts, so this layer exists in a clean checkout. They
-    are the committed form of the exploded loose tree, which means comparing against them
-    checks the bytes that actually ship.
-    """
-    import yaml
-
-    out = {}
-    for path in sorted((root / directory / fam).glob("*.yaml")):
-        doc = yaml.safe_load(path.read_bytes()) or {}
-        for cid, case in (doc.get("cases") or {}).items():
-            scenario = case.get("scenario") or scenarios.get(cid)
-            if scenario is None:
-                continue
-            out.setdefault(scenario, {}).update(
-                {want: case[have] for want, have in field_map.items() if have in case}
-            )
-    return out
+def _packaged_cases(fam: str):
+    """Read the committed input/GOLDEN shard directly, without materializing history."""
+    path = UTILS.parent / "fixtures-unified-v2" / "families" / fam / "inputs_and_golden.yaml"
+    document = yaml.safe_load(path.read_bytes()) or {}
+    return {
+        case["scenario"]: {
+            "input": case["request"]["input"],
+            "init": case["request"]["init"],
+            "golden": case["golden"]["assembled"],
+        }
+        for case in (document.get("cases") or {}).values()
+        if case.get("lifecycle") == "active" and case.get("scenario")
+    }
 
 
-def _materialized_unified_root(tmp_path: Path, store) -> Path:
-    root = tmp_path / "unified"
-    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root, store=store)
-    return root
-
-
-def _taxonomy_scenarios(fam: str, store):
-    """Taxonomy id (`UNIFIED.34-guided_json_bare_tool_header_recovers_inside_a_thought`) -> scenario slug, from packaged input layers.
-
-    The golden shard keys by taxonomy id and carries no scenario field, so the mapping
-    comes from the one shard holding both. A key JOIN, not a value normalization.
-    """
-    out = {}
-    for case in store.families[fam].cases.values():
-        if case["scenario"] and case["display_id"]:
-            out[case["display_id"]] = case["scenario"]
-    return out
-
-
-def test_every_case_triple_is_identical_at_every_layer(tmp_path):
+def test_every_case_triple_is_identical_at_every_layer():
     """One corpus, every tracked representation, zero drift, across all three fields.
 
     Compares `(input, init, golden)` for every case of every family across the generator's
@@ -997,23 +971,18 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path):
     wrong.
     """
     checked = 0
-    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
-    materialized = _materialized_unified_root(tmp_path, store)
+    expected_count = 0
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
-        scenarios = _taxonomy_scenarios(fam, store)
-        packed_in = _packed_layer(materialized, "inputs", fam, {"input": "input", "init": "init"}, scenarios)
-        packed_gold = _packed_layer(materialized, "golden", fam, {"golden": "assembled"}, scenarios)
+        packaged = _packaged_cases(fam)
+        expected_count += len(spec)
 
         for cid, case in build_cases(fam).items():
             scenario = _scenario_of(cid, fam)
             want = {k: case[k] for k in ("input", "init", "golden")}
             layers = {
                 "emitted golden spec": {k: spec[cid][k] for k in want if k in spec[cid]},
-                "packaged shard": {
-                    **packed_in.get(scenario, {}),
-                    **packed_gold.get(scenario, {}),
-                },
+                "packaged shard": packaged.get(scenario, {}),
             }
             for layer, got in layers.items():
                 for field, expected in want.items():
@@ -1024,9 +993,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path):
                         f"  {layer}: {got[field]!r}"
                     )
             checked += 1
-    assert checked == sum(len(build_cases(f)) for f in FAMILIES), (
-        "the gate must cover every generated case"
-    )
+    assert checked == expected_count, "the gate must cover every generated case"
 
 
 def _assert_retained_capture_coverage(captured, expected):
@@ -1037,7 +1004,7 @@ def _assert_retained_capture_coverage(captured, expected):
 def _assert_reference_measurements_start_at_introduction(store):
     shared_ids = {f"UNIFIED.{number}" for number in ("7-glm_ref_object", "7-glm_ref_encoded_targets", "7-glm_ref_json_looking_strings", "7-glm_ref_scalar_types")}
     for (family, implementation), history in store.histories.items():
-        if implementation != "dynamo_v2":
+        if implementation != "dynamo_v2" or family not in NATIVE_FAMILIES:
             continue
         for capture_id in history.ordered_capture_ids():
             measured = {

@@ -135,6 +135,42 @@ changes:
             arguments: '{"city":"Paris"}'
             complete: true
         - expected: []
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: 446323d014299bace36cebdd9e895c3540c039768549bdb33c78dc2a55527ec7
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 63bf2b6529fc53152570fbc259713a7ef79ec6df7ef21296b70f2573be8d6857
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: ac767d6120d8e565454bc8f3a5ccd9815aacd9521ad6769ac5881c11ca3fcbd9
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: f16041b82dea3c25067b172971adcabdcc184248702302674deafd37d9e903db
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   empty_args:
     case_key: UNIFIED.6-1
     stimulus:
@@ -2629,7 +2665,6 @@ changes:
           - kind: text
             text: done
 metadata_changes:
-  glm47_parameterless_call_shape_inside_argument: {}
   guided_quoted_reasoning_closer_named:
     init:
       starting_state: Reasoning
@@ -2655,27 +2690,7 @@ metadata_changes:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_incomplete_header:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
   native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
     init:
       starting_state: Response
       tool_output_mode: Native
@@ -2685,9 +2700,53 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+  native_quoted_incomplete_header:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quoted_word_control:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null

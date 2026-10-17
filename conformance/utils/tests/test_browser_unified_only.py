@@ -24,7 +24,7 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert status["comparison_defaults"]["tab-unified"] == DEFAULT_SLOTS
     batch = [capture for capture in status["captures"] if capture["mode"] == "batch"]
     applicable_pairs = sum(len(gen_unified_golden.build_cases(family)) for family in gen_unified_golden.FAMILIES)
-    assert len(batch) == 35
+    assert len(batch) == 39
     assert all(capture["considered"] == applicable_pairs for capture in batch)
     assert all(capture["attempted"] == capture["captured"] + capture["parser_exception"] for capture in batch)
     assert any(capture["mismatches"] for capture in batch)
@@ -128,5 +128,5 @@ def test_gpt_oss_v1_batch_is_scored_against_ordered_golden(rendered_page):
     captured = [cell for cell in by_case.values() if not cell["cmp"]["dynamo_v1_jail@10.0.1"]["na"]]
     mismatches = [cell for cell in captured
                   if cell["cmp"]["dynamo_v1_jail@10.0.1"]["sig"] != cell["cmp"]["golden"]["sig"]]
-    assert len(captured) == 159
+    assert len(captured) == 163
     assert mismatches, "ordered batch output differences must remain visible as mismatches"

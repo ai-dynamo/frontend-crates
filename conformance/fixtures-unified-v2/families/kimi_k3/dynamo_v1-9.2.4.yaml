@@ -10,6 +10,72 @@ document:
   mode: unified
 changes: {}
 metadata_changes:
+  dotted_name_minimal:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: a.b
+        arguments: {}
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.4
+      source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19a21327d72b20ef86a8d12b77770a3dc3de7c89f2e7fab04331c51a42f59237
+      cargo_lock_sha256: 585c12f1606ca1b42ff84c1e10b7c6afad91201c5893eb866ccafc5b533331de
+  dotted_name_mixed_punctuation:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: my-tool.v2
+        arguments:
+          location: Beijing
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.4
+      source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19a21327d72b20ef86a8d12b77770a3dc3de7c89f2e7fab04331c51a42f59237
+      cargo_lock_sha256: 585c12f1606ca1b42ff84c1e10b7c6afad91201c5893eb866ccafc5b533331de
+  dotted_name_multiple_segments:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: server.tools.weather
+        arguments:
+          location: Beijing
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.4
+      source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19a21327d72b20ef86a8d12b77770a3dc3de7c89f2e7fab04331c51a42f59237
+      cargo_lock_sha256: 585c12f1606ca1b42ff84c1e10b7c6afad91201c5893eb866ccafc5b533331de
+  dotted_name_shared_prefix:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: server.weather
+        arguments:
+          location: Beijing
+      - name: server.time
+        arguments:
+          timezone: Asia/Shanghai
+    producer_receipt:
+      implementation: dynamo_v1
+      version: 9.2.4
+      source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      crate_checksum: 19a21327d72b20ef86a8d12b77770a3dc3de7c89f2e7fab04331c51a42f59237
+      cargo_lock_sha256: 585c12f1606ca1b42ff84c1e10b7c6afad91201c5893eb866ccafc5b533331de
   native_quoted_control_in_reasoning:
     verified_recapture:
       result:
@@ -636,6 +702,46 @@ metadata_changes:
         git_commit: 8ff9a8127941a04ba5cd4a0b33678fb2f1045649
       resolution: historical_adapter_unsupported
 document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.4
+      capture_origin:
+        crate_version: 9.2.4
+        source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.4
+      capture_origin:
+        crate_version: 9.2.4
+        source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.4
+      capture_origin:
+        crate_version: 9.2.4
+        source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.4
+      capture_origin:
+        crate_version: 9.2.4
+        source_sha256: bf860417888dcdea1020fb410f17d294cde3cdcc160767dc9c23f8d99d5fe6d0
+        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
+        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
