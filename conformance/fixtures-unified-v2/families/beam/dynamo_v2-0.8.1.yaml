@@ -1,0 +1,3756 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.1
+    git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+    source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    stimulus:
+      ref: current
+      semantic_sha256: 78dce0989b30a80ae2f60b27357da67afdc898ead6b3128e6758f037be5c0787
+    case_key: UNIFIED.7-4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_json_null_anyof:
+    stimulus:
+      ref: current
+      semantic_sha256: c19ba80bf0a5a840037c5b422629fe6043f920647b7f570100f535feb2e0ee80
+    case_key: UNIFIED.7-4.anyof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_json_null_const:
+    stimulus:
+      ref: current
+      semantic_sha256: 79f4e38e4aa94c6f8a37509d6185be278842c85b2747a57ce69a2ff21b0e1d68
+    case_key: UNIFIED.7-4.const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_json_null_nullable:
+    stimulus:
+      ref: current
+      semantic_sha256: 7ad3e66dec5ee64ef01b78cc6b3b2913082a51db3b8c76c0cb0c1343bbf2f385
+    case_key: UNIFIED.7-4.nullable
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_json_null_oneof:
+    stimulus:
+      ref: current
+      semantic_sha256: 54ada936de59e137c981ca60117e7c580a7e8fa6abbe55fb03cf00b3162ad97a
+    case_key: UNIFIED.7-4.oneof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_marker_in_string:
+    stimulus:
+      ref: current
+      semantic_sha256: 276295597526f8d51e309dc914a6ac55ef38ee3983e62fbea7bec7de31df4dc0
+    case_key: UNIFIED.7-2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|call|> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'git log '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|call|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' --oneline'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null:
+    stimulus:
+      ref: current
+      semantic_sha256: 4be669749db464dd076609b0f64293a1923d10e609c3696c78ad3ad48b38d0c8
+    case_key: UNIFIED.7-5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_const:
+    stimulus:
+      ref: current
+      semantic_sha256: e3391e4ecbb3dd520967dbfa11e0b89696804331a0150cfe9572b2f3b4ff4a47
+    case_key: UNIFIED.7-5.const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_enum:
+    stimulus:
+      ref: current
+      semantic_sha256: 9f76fbf9c61679cc846ced4f440e9a443c2a11e13a17f046c3e24195efa48ffb
+    case_key: UNIFIED.7-5.enum
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_anyof:
+    stimulus:
+      ref: current
+      semantic_sha256: ef1d88a6a93d76741943cc096849a87ad7b4f1151973df0dfdcff30c1e8c330b
+    case_key: UNIFIED.7-5.sibling_anyof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_oneof:
+    stimulus:
+      ref: current
+      semantic_sha256: c5eeee316b0630e45d7bebed8a20cd193c58efdb8b6e10c44e7e0bfec8b03af9
+    case_key: UNIFIED.7-5.sibling_oneof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_union:
+    stimulus:
+      ref: current
+      semantic_sha256: 7f5e95bd02d971bc2996fd3def1aa74ccec46322a22e6910e4ba3282d3b6fc48
+    case_key: UNIFIED.7-5.union
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_string_null_untyped_branch:
+    stimulus:
+      ref: current
+      semantic_sha256: 6e633f9cffbf368664268526505aeb4c6c45deeedc56247de5bd1f94725e14a5
+    case_key: UNIFIED.7-5.untyped_branch
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_unicode:
+    stimulus:
+      ref: current
+      semantic_sha256: 3d9104d942c5174166578016c7ae4d4d4bb3a77fbfd893512baccd002dc25093
+    case_key: UNIFIED.7-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: São Paulo 東京
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  content_then_reason_then_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: dd6cc8f74f9a1f318495c66b076980b01fb72a4acb9334f2062f4af71837d3b7
+    case_key: UNIFIED.11-6
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    stimulus:
+      ref: current
+      semantic_sha256: a28c6f309387a2752b97e8ba7d7498dbdeab00e5039f731df19fdfad18935f84
+    case_key: UNIFIED.7-3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <|start|>assistant<|channel|>analysis<|message|>quoted<|end|> <|call|> <|end|> <|return|> <|start|> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|start|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: assistant
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|channel|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: analysis
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|message|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: quoted
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|end|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|call|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|end|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|return|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|start|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' &amp; \"x\"\\\n '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  glm_ref_encoded_targets:
+    stimulus:
+      ref: current
+      semantic_sha256: bd56a6ac01f9373ebece7ffa4efc72388028dbe295966da5e22c02eefbe05dec
+    case_key: UNIFIED.7-11
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space": 42'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "utf8_plus": 42'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "pointer": 42'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  glm_ref_json_looking_strings:
+    stimulus:
+      ref: current
+      semantic_sha256: 3cb028ea6a313dcefec538792809c8e22c4e4b59b632cbd44b794fae927ce05f
+    case_key: UNIFIED.7-12
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{\"x\":1}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "array_text": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '[1,2]'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "quoted_text": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: \"hello\"
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "inline_text": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{\"x\":1}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  glm_ref_object:
+    stimulus:
+      ref: current
+      semantic_sha256: a5aa3b951eca92887c82393a335bb3ef68d3df08f58b870db918fdcfe8b84f2f
+    case_key: UNIFIED.7-9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload": {"x": 1}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  glm_ref_scalar_types:
+    stimulus:
+      ref: current
+      semantic_sha256: da12f4fbca7abe120515a606af69d25d950b50b49c9e7b67b6a3618db5ee5935
+    case_key: UNIFIED.7-13
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "ratio": 3.5'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "flag": true'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "narrowed": 42'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    stimulus:
+      ref: current
+      semantic_sha256: 60547691eed8ddc739b284dcda562208afd9bcf1f8e547487f9b49323b731f4c
+    case_key: UNIFIED.34-1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I''ll use '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll use '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  interstitial_text:
+    stimulus:
+      ref: current
+      semantic_sha256: 54d30153b903348bcf3d649fda8a69f6de3e930ae5f44c21f75c7359fcd6c9af
+    case_key: UNIFIED.11-5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  local_schema_id_preserves_type:
+    stimulus:
+      ref: current
+      semantic_sha256: 71d940d659a6c1a474093b7de8c16a5ecba434ee4d071f515246401e7027cf32
+    case_key: UNIFIED.7-16
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  narrated_calls:
+    stimulus:
+      ref: current
+      semantic_sha256: d071272d4a455db8e65a19dbadb5a4aad42015b4821b3fb4bedd88e2bbee0eb4
+    case_key: UNIFIED.8-5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' then I''ll run '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  native_quoted_control_in_reasoning:
+    stimulus:
+      ref: current
+      semantic_sha256: 8ddd4c75add7f9f77d183170caf043cfc2a4bae4010e2687b434bff625941256
+    case_key: UNIFIED.40-5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_quoted_control_in_response:
+    stimulus:
+      ref: current
+      semantic_sha256: 5b584e1544f31efb11c725416a08c296f57aa452b787f5302e99d92d49ccceaf
+    case_key: UNIFIED.8-6
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_quoted_control_then_call:
+    stimulus:
+      ref: current
+      semantic_sha256: 560e7d752f4478e521fc8ef4bbf7e6a9cf6ce33dd6f36e29495c747a4b290402
+    case_key: UNIFIED.8-8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  native_quoted_incomplete_header:
+    stimulus:
+      ref: current
+      semantic_sha256: 672343531fd29fcf7564c381cd935d4354b0652a8690af477956df7437699c21
+    case_key: UNIFIED.8-10
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '` header is part of the explanation.'
+            complete: false
+        - expected: []
+  native_single_quote_contraction_reasoning:
+    stimulus:
+      ref: current
+      semantic_sha256: 5cace03c987a90f7aa69a5f40b633e2e18204780b5d533fb7b8753666966e67a
+    case_key: UNIFIED.40-6
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_response:
+    stimulus:
+      ref: current
+      semantic_sha256: 0cdafb42cf6b972f999c7711da48c980d22adec1ebfc94e7b2a67651a9f55dbe
+    case_key: UNIFIED.8-11
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''doesn''t '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quoted_word_control:
+    stimulus:
+      ref: current
+      semantic_sha256: 344d404895554073b1bbc9773f055c14228be1df3c82ae758f1e8401355c9d12
+    case_key: UNIFIED.8-7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal ''example '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  native_unmatched_quote_then_call:
+    stimulus:
+      ref: current
+      semantic_sha256: a727e358b7bfdaa821a849e584b301278d6de816e77e19788ab450e9d90ff05b
+    case_key: UNIFIED.8-9
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  nullable_reference_alias_literals:
+    stimulus:
+      ref: current
+      semantic_sha256: 12ff52088074a805aea251ba918d17325e459ec5c466c19dcf4bd5d43c414e9a
+    case_key: UNIFIED.7-15
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text": "null"'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "enum_text": "null"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    stimulus:
+      ref: current
+      semantic_sha256: 9543b456bd0a6e86a4203d78d5837d9cd2af6d9cd5b6d330ca9067ad9f4d5d78
+    case_key: UNIFIED.41-1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: London
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: 544e346cadece74e9621fc50dde3dcdaab2c5ac6831dc8db9a4bfba6d84b2698
+    case_key: UNIFIED.40-3
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  prefilled_reasoning_truncated:
+    stimulus:
+      ref: current
+      semantic_sha256: 50a6f684847daf2a587c93980a272f1f0c84307d3e096d345a954ca672f08b37
+    case_key: UNIFIED.41-2
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: analyzing data
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Par
+            complete: false
+        - expected: []
+  prefilled_reasoning_with_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: 09f7f5c4eecc047cdfec4e6c41c5336239eb2d88b4e699cb11f36e1252b766e9
+    case_key: UNIFIED.40-1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    stimulus:
+      ref: current
+      semantic_sha256: 523180aa89af25534be9a8102098f11cad69e5170e38ef60ebef37726164bbd4
+    case_key: UNIFIED.50-4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: literal then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  reason_after_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: d44be147cf407f5825a7a60a3426286b3e6e5e3152432e525efc6d3e06ad5fdd
+    case_key: UNIFIED.11-2
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: Now answer.
+        - kind: text
+          text: It's 18C.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Now answer.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: It's 18C.
+        - expected: []
+        - expected: []
+  reason_between_calls:
+    stimulus:
+      ref: current
+      semantic_sha256: e45fcd6f3597ecbfbe0f7416593c4a7ff6faf70749d0edf222d5dad5f1064424
+    case_key: UNIFIED.11-9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  reason_interleaved:
+    stimulus:
+      ref: current
+      semantic_sha256: a162953e7e398d12470d9c24c78643520ea12029f05d9dc3e3576113ad1511a6
+    case_key: UNIFIED.11-3
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  reason_markup_in_arg:
+    stimulus:
+      ref: current
+      semantic_sha256: 7d3bc91b053e0cc9c8b385fb7309b12ef2d73e434ea2c788be7cdf6cd183fbbe
+    case_key: UNIFIED.12-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|start|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: assistant
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|channel|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: analysis
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|message|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: reconsider
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|end|>
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  reason_markup_in_arg_with_text:
+    stimulus:
+      ref: current
+      semantic_sha256: 9ba01b1f726948f5c31d0f2d1f0ef289dc00a92a6183780496a1f07f1ac8cee8
+    case_key: UNIFIED.12-3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <|start|>assistant<|channel|>analysis<|message|>reconsider<|end|>
+        - kind: text
+          text: ' done.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|start|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: assistant
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|channel|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: analysis
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|message|>
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: reconsider
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|end|>
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' done.'
+        - expected: []
+        - expected: []
+  reason_then_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: caebb0c2591ec9da82fda947efd68bbde103e7f5abea0e0f6fbab6a39a9a766d
+    case_key: UNIFIED.11-1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  reason_tool_reason_tool_reason:
+    stimulus:
+      ref: current
+      semantic_sha256: 6d6b41c5ef722cdb2d718419caf70a45e53fa336ab15ea4095c0d92e3668eb92
+    case_key: UNIFIED.11-8
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        - kind: reasoning
+          text: C
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: C
+        - expected: []
+        - expected: []
+  reason_tool_text_reason_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: f460a36de40794be10481aa35fd741e867841944cfb72c65ccf675c3208e95a0
+    case_key: UNIFIED.11-4
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: working on it
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: working on it
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  text_before_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: 1f29c025c3f80a0e3b4cd213441b90a776207ce340b454a1801bf271c51ce2c3
+    case_key: UNIFIED.8-1
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  text_between_calls:
+    stimulus:
+      ref: current
+      semantic_sha256: 433dc296568ed6bf2601f1ea0ee283e54202285f1957f07bab4c8706c500e2cd
+    case_key: UNIFIED.8-4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: 5c78094a10d9349d7ad19bb3d2526b63ec8e6c47e89d9c75c6c514c0f1ad05d1
+    case_key: UNIFIED.11-10
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: reasoning
+          text: check B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  text_sandwich:
+    stimulus:
+      ref: current
+      semantic_sha256: 2bf13042883ab8086cb5495f7d884c42cb265ef09ae950a204b92400e60a5a96
+    case_key: UNIFIED.8-3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' After.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Before. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' After.'
+        - expected: []
+        - expected: []
+  tool_in_reason:
+    stimulus:
+      ref: current
+      semantic_sha256: 0f543df656ddd86b2da5edd55e2611d1580ac964e88ab9c9fd7de87e8902d03c
+    case_key: UNIFIED.12-2
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    stimulus:
+      ref: current
+      semantic_sha256: a4ba86ceb527b0c5b045fc83755ba4f8241ccaaee619e1230d36692ace914f62
+    case_key: UNIFIED.12-4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        - kind: text
+          text: ' Here you go.'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []
+        - expected: []
+  tool_no_close:
+    stimulus:
+      ref: current
+      semantic_sha256: 603027979deb183ab2c4bc3e313846f95b41407e14b2f204fca98fbb330b761e
+    case_key: UNIFIED.5-2
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+  tool_only:
+    stimulus:
+      ref: current
+      semantic_sha256: d952d5b6f30dbc76431406d43aebd57472b402978ab225a8b20902ec6a21cc50
+    case_key: UNIFIED.1-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  trailing_text_after_tool:
+    stimulus:
+      ref: current
+      semantic_sha256: 171a1a84bf5c56c26455349f7fcc44936a5716e230a31d87456515f5c46e16bd
+    case_key: UNIFIED.8-2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: The forecast shows clear skies for the rest of the week.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+        - expected: []
+        - expected: []
+  truncated_tool_eof:
+    stimulus:
+      ref: current
+      semantic_sha256: 658f50bc4601547c7b08105fb8e484d3f4c81f078505a54395cb85348b868de1
+    case_key: UNIFIED.5-1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Par
+            complete: false
+        - expected: []
+  two_calls:
+    stimulus:
+      ref: current
+      semantic_sha256: 3b739b8dbb02f8b96aad1c79f48e6d053083512fec20363e964f4b1d8e725acf
+    case_key: UNIFIED.2-1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '1'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '2'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  two_calls_same_name:
+    stimulus:
+      ref: current
+      semantic_sha256: fb9a03048298e3d730977904b17f299d538d6267166bcde7541b55102c634e3d
+    case_key: UNIFIED.2-2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Paris
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Tokyo
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  unused_reference_graph_parameter_types:
+    stimulus:
+      ref: current
+      semantic_sha256: 16427c88de7b109ba66367a9ce0d39019ec5564ff1ea5e21e952af8ebf7ec662
+    case_key: UNIFIED.7-14
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "flag": false'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "text": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  arg_json_null:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_json_null_anyof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_json_null_const:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_json_null_nullable:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_json_null_oneof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_marker_in_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_const:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_enum:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_sibling_anyof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_sibling_oneof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_union:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_string_null_untyped_branch:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  arg_unicode:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  content_then_reason_then_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  deepseek_v41_mixed_control_text_in_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  glm_ref_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  guided_json_narrated_invoke_in_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  interstitial_text:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  local_schema_id_preserves_type:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  narrated_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_quoted_control_in_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_quoted_control_in_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_quoted_control_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_quoted_incomplete_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_single_quote_contraction_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_single_quote_contraction_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_single_quoted_word_control:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  native_unmatched_quote_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  nullable_reference_alias_literals:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  prefilled_reasoning_redundant_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  prefilled_reasoning_then_text_then_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  prefilled_reasoning_truncated:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  prefilled_reasoning_with_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  prefilled_response_reasoning_markers_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_after_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_between_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_interleaved:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_markup_in_arg:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_markup_in_arg_with_text:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_then_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_tool_reason_tool_reason:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  text_before_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  text_between_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  text_reason_tool_text_reason_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  text_sandwich:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  tool_in_reason:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  tool_in_reason_with_text:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  tool_no_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  tool_only:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  trailing_text_after_tool:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  truncated_tool_eof:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  two_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  two_calls_same_name:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null
+  unused_reference_graph_parameter_types:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: 1e6c9d4d37cf5cb16f034d3026c797686ac32baf79da43e5e118afedcf1065a3
+        git_commit: 4f03dfaee78a0e15ebe37531c330f7715bb4e11d
+      inherited_from: null

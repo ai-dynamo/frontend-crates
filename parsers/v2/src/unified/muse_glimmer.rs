@@ -141,8 +141,8 @@ impl NativeUnified for MuseChannelScanner {
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
-            find_close: guided_reasoning_close,
-            find_turn_end: guided_turn_end,
+            find_close: |haystack, _, _| guided_reasoning_close(haystack),
+            find_turn_end: |haystack, _, _| guided_turn_end(haystack),
             find_stray: guided_stray_header,
             find_routing: guided_routing_header,
             find_transition: guided_content_header,
@@ -151,6 +151,7 @@ impl NativeUnified for MuseChannelScanner {
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
             response_literal_markers: &[],
+            envelope_owned: false,
         }))
     }
 

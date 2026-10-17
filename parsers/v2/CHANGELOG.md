@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.10.0] - 2026-10-13
+
+### Added
+
+- *(parsers-v2)* Beam turn grammar: a structured answer (`structured_output_schema`) is
+  framed in the final channel after the analysis (`<|channel|>final<|message|>` + JSON
+  schema), beside the tool calls under automatic choice, as the serving layer derives it.
+
+### Changed
+
+- *(parsers-v2)* `ArgumentFraming::SchemaConstrained` frames the parameters of every tool
+  the Beam serving grammar holds (`strict` or not), matching how the grammar emits them.
+
+## [0.9.0] - 2026-10-13
+
+### Added
+
+- *(parsers-v2)* Beam structural-tag builder: the per-turn grammar the model builder's
+  serving layer derives from the Beam response template (non-empty analysis, then calls
+  with arguments held to their JSON-schema types or the answer), registered for the `beam`
+  family and asserted byte-for-byte against the serving layer's own fixtures.
+- *(parsers-v2)* `StructuralTagBuilder::build_turn` / `constrains_every_turn` and
+  `PromptChannel` for grammars that frame the whole assistant turn from the prompt's open
+  channel.
+
 ## [0.7.22](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.21...dynamo-parsers-v2-v0.7.22) - Unreleased
 
 ### Bug fixes

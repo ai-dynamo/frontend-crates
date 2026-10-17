@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.1.0] - 2026-10-13
+
+### Added
+
+- `beam::builtin_tools_view`: the render-only view of a Beam request's `tools` and
+  `chat_template_args` that resolves `builtin_tools` names against the declared tools
+  (legacy declaration objects stand for their name and are rendered when undeclared), so
+  the 1.0 template declares them in its system block.
+
 ## [8.0.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.0.0...dynamo-renderer-v8.0.1) - 2026-10-09
 
 ### Bug fixes

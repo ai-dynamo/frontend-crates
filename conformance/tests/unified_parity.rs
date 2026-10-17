@@ -290,7 +290,7 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 56);
+    assert_eq!(checked, 63);
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

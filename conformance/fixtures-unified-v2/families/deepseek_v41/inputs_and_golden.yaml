@@ -2170,8 +2170,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<｜DSML｜ invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2860,9 +2861,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<think>before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">é🙂<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3006,9 +3008,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<think>before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true"><think>quoted</think></｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -5517,9 +5520,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.deepseek_v41-2
+    display_id: UNIFIED.deepseek_v41-prefilled_response_guided_pending_invoke_header
     historical_ids:
     - UNIFIED.50-1
+    - UNIFIED.deepseek_v41-2
     request:
       input: 'I mean <think>self literal</think><｜DSML｜ invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:

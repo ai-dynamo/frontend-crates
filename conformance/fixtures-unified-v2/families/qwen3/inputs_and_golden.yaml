@@ -2832,8 +2832,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<function=get_weather[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -3525,9 +3526,10 @@ cases:
     policy:
     - I3
     - P2
-    display_id: UNIFIED.qwen3-1
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning
     historical_ids:
     - UNIFIED.31-31
+    - UNIFIED.qwen3-1
     request:
       input: <think><function=éaaaaaaaaax
       init:
@@ -3592,9 +3594,10 @@ cases:
     description: Guided Qwen reasoning contains a malformed non-ASCII function header closed by its function terminator. That control span is stripped, the thought closes, and the following guided call dispatches.
     policy:
     - I3
-    display_id: UNIFIED.qwen3-2
+    display_id: UNIFIED.qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning
     historical_ids:
     - UNIFIED.31-32
+    - UNIFIED.qwen3-2
     request:
       input: '<think><function=éaaaaaaaaax</function></think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3664,9 +3667,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<think>before <function=f>
 
@@ -3762,9 +3766,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.35-6
+    display_id: UNIFIED.35-guided_json_native_parameter_object_before_payload
     historical_ids:
     - UNIFIED.31-34
+    - UNIFIED.35-6
     request:
       input: '<think>literal</think><function=f><parameter=x>{"city":"Rome"}</parameter></function>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3841,9 +3846,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.35-7
+    display_id: UNIFIED.35-guided_json_native_parameter_array_before_payload
     historical_ids:
     - UNIFIED.31-35
+    - UNIFIED.35-7
     request:
       input: '<think>literal</think><function=f><parameter=x>[{"name":"get_weather","arguments":{"city":"Rome"}}]</parameter></function>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3920,9 +3926,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.qwen3-3
+    display_id: UNIFIED.qwen3-qwen3_guided_reasoning_opener_inside_native_header
     historical_ids:
     - UNIFIED.31-36
+    - UNIFIED.qwen3-3
     request:
       input: <function=<think>x</function>[{"name":"f","arguments":{}}]
       init:
@@ -4057,9 +4064,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<think>before <function=f>
 

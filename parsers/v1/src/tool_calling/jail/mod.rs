@@ -42,6 +42,10 @@ use serde_json::value::RawValue;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
+use crate::tool_calling::beam::{
+    BeamArgumentFraming, BeamCompletion, scan_completion_with as beam_scan_completion,
+    try_tool_call_parse_beam_with,
+};
 use crate::tool_calling::config::{JsonParserConfig, ParserConfig, TerminalMarkerPolicy};
 use crate::tool_calling::gemma4::split_partial_call_prefix_gemma4;
 use crate::tool_calling::json::base_json_parser::parse_indexed_calls;
@@ -366,6 +370,8 @@ struct ChoiceJailState {
     /// grammar the payload's shape is already known, so calls can be released as
     /// they arrive instead of at the closing brace.
     guided_cursor: Option<GuidedStreamCursor>,
+    /// Fatal strict-mode failure waiting to be surfaced on `Annotated::error`.
+    error: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -530,6 +536,8 @@ struct CompletedJail {
 enum JailCompletion {
     Incomplete,
     Complete(CompletedJail),
+    /// The jailed call can never complete and the request asked for strict rejection.
+    Failed(String),
 }
 
 /// A token that would cross `prefix_chars` stays with the suffix: entries
@@ -682,6 +690,7 @@ impl ChoiceJailState {
             pending_reasoning_content: None,
             completion_progress: JailCompletionProgress::default(),
             guided_cursor: guided.map(GuidedStreamCursor::new),
+            error: None,
         }
     }
 
@@ -1084,6 +1093,10 @@ impl ChoiceJailState {
         let (jailed_part, trailing_part) = self.accumulated_content.split_at(split_pos);
         let jailed_owned = jailed_part.to_string();
         let trailing_owned = trailing_part.to_string();
+        if let Some(error) = jail_stream.strict_rejection(&jailed_owned) {
+            self.error = Some(error);
+            return;
+        }
         let jail_logprobs = self.take_accumulated_logprobs();
 
         let mut unjailed_choice = jail_stream
@@ -1171,9 +1184,18 @@ impl ChoiceJailState {
                         .await;
                     self.partial_match_buffer.clear();
 
-                    if let JailCompletion::Complete(completed) = completion {
-                        self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
+                    match completion {
+                        JailCompletion::Complete(completed) => {
+                            self.emit_completed_jail(
+                                completed,
+                                choice,
+                                jail_stream,
+                                &mut emissions,
+                            )
                             .await;
+                        }
+                        JailCompletion::Failed(error) => self.error = Some(error),
+                        JailCompletion::Incomplete => {}
                     }
                 }
 
@@ -1271,9 +1293,13 @@ impl ChoiceJailState {
                 .check_jail_completion(&self.accumulated_content, &mut self.completion_progress)
                 .await;
 
-            if let JailCompletion::Complete(completed) = completion {
-                self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
-                    .await;
+            match completion {
+                JailCompletion::Complete(completed) => {
+                    self.emit_completed_jail(completed, choice, jail_stream, &mut emissions)
+                        .await;
+                }
+                JailCompletion::Failed(error) => self.error = Some(error),
+                JailCompletion::Incomplete => {}
             }
             // If not unjailing, only the guided deltas above (if any) are emitted.
         }
@@ -1425,6 +1451,11 @@ impl ChoiceJailState {
     async fn finalize(&mut self, jail_stream: &JailedStream) -> Vec<ChoiceEmission> {
         let policy = jail_stream.terminal_marker_policy;
         let emission = if self.is_jailed && !self.accumulated_content.is_empty() {
+            if let Some(error) = jail_stream.strict_rejection(&self.accumulated_content) {
+                self.error = Some(error);
+                self.end_jail();
+                return Vec::new();
+            }
             // Create a dummy choice for the method call
             #[allow(deprecated)]
             let dummy_choice = create_choice_stream(
@@ -1588,12 +1619,35 @@ pub struct JailedStream {
     /// of this jail (one terminal delta becomes many), so the serving layer opts in
     /// per request rather than inheriting it. Mirrors `StreamBestEffort` in v2.
     guided_streaming: bool,
+    /// Surface a malformed tool call as `Annotated::error` instead of dropping it.
+    /// Honoured by the Beam parsers only; other families keep their defaults.
+    strict_tool_errors: bool,
 }
 
 impl JailedStream {
     /// Create a new builder for configuring a JailedStream
     pub fn builder() -> JailedStreamBuilder {
         JailedStreamBuilder::new()
+    }
+
+    /// The Beam argument framing when the configured parser is a Beam parser.
+    fn beam_framing(&self) -> Option<BeamArgumentFraming> {
+        let name = self.tool_call_parser.as_deref()?;
+        match &get_tool_parser_map().get(name)?.parser_config {
+            ParserConfig::Beam(beam_config) => Some(beam_config.argument_framing),
+            _ => None,
+        }
+    }
+
+    /// In strict mode, why `content` (a jailed Beam span) is not a valid call.
+    fn strict_rejection(&self, content: &str) -> Option<String> {
+        if !self.strict_tool_errors {
+            return None;
+        }
+        let framing = self.beam_framing()?;
+        try_tool_call_parse_beam_with(content, self.tool_definitions.as_deref(), framing)
+            .err()
+            .map(|error| error.to_string())
     }
 
     /// Whether the jail starts already-jailed (tool_choice=required/named path).
@@ -1665,6 +1719,7 @@ impl JailedStream {
                     last_stream_created = chat_response.created;
 
                     let mut all_emissions = Vec::new();
+                    let mut fatal: Option<String> = None;
 
                     if chat_response.choices.is_empty() {
                         // No choices processed (e.g., usage-only chunk)
@@ -1720,6 +1775,9 @@ impl JailedStream {
                                     &mut emissions,
                                     self.terminal_marker_policy,
                                 );
+                                if fatal.is_none() {
+                                    fatal = choice_state.error.take();
+                                }
                                 choice_state.normalize_terminal_emissions(
                                     choice,
                                     had_tool_calls_before,
@@ -1850,6 +1908,12 @@ impl JailedStream {
                             }
                         }
                     }
+
+                    // A strict failure ends the stream: no empty success, no stop.
+                    if let Some(error) = fatal {
+                        yield Annotated::from_error(error);
+                        return;
+                    }
                 } else {
                     // No response data, pass through as-is
                     yield response;
@@ -1858,6 +1922,7 @@ impl JailedStream {
 
             // Stream ended - finalize any remaining jailed choices
             let mut final_emissions = Vec::new();
+            let mut final_error: Option<String> = None;
             for state in choice_states.states.iter_mut() {
                 if separates_k3_reasoning
                     && let Some(reasoning_emission) = state.take_pending_reasoning_emission()
@@ -1865,6 +1930,13 @@ impl JailedStream {
                     final_emissions.push(reasoning_emission);
                 }
                 final_emissions.extend(state.finalize(&self).await);
+                if final_error.is_none() {
+                    final_error = state.error.take();
+                }
+            }
+            if let Some(error) = final_error {
+                yield Annotated::from_error(error);
+                return;
             }
 
             if !final_emissions.is_empty() {
@@ -2119,6 +2191,40 @@ impl JailedStream {
                 // Inkling parser, which requires a complete JSON value followed
                 // by the real outer fence. This also keeps a complete JSON body
                 // without its fence jailed until finalize/EOF recovery.
+                //
+                // Beam is the same shape of problem: `<|call|>` / `<|end|>` are only
+                // terminators outside a `<rfl:parameter>` value, so the lexical end
+                // marker would cut a call at a literal inside its argument. The Beam
+                // walker decides, and text after the call stays trailing text.
+                if let Some(framing) = self.beam_framing() {
+                    // Strict rejection reads the body strictly; the default reads it as
+                    // the template's tag search.
+                    return match beam_scan_completion(
+                        accumulated_content,
+                        framing,
+                        !self.strict_tool_errors,
+                    ) {
+                        BeamCompletion::Incomplete => JailCompletion::Incomplete,
+                        BeamCompletion::Invalid(error) if self.strict_tool_errors => {
+                            JailCompletion::Failed(error)
+                        }
+                        BeamCompletion::Invalid(_) => JailCompletion::Incomplete,
+                        BeamCompletion::Complete(split_pos) => {
+                            let marker_parse_result = match self
+                                .parse_marker_tool_calls(&accumulated_content[..split_pos])
+                                .await
+                            {
+                                Ok(parsed) if !parsed.0.is_empty() => Some(Ok(parsed)),
+                                _ => None,
+                            };
+                            JailCompletion::Complete(CompletedJail {
+                                split_pos,
+                                marker_parse_result,
+                            })
+                        }
+                    };
+                }
+
                 if self.tool_call_parser.as_deref() == Some("inkling") {
                     let Some(split_pos) =
                         find_tool_call_end_position(accumulated_content, Some("inkling"))
@@ -2812,6 +2918,7 @@ pub struct JailedStreamBuilder {
     emission_mode: EmissionMode,
     jail_mode: JailMode,
     guided_streaming: bool,
+    strict_tool_errors: bool,
 }
 
 impl JailedStreamBuilder {
@@ -2822,6 +2929,7 @@ impl JailedStreamBuilder {
             jail_end_sequences: Vec::new(),
             has_custom_end_sequences: false,
             guided_streaming: false,
+            strict_tool_errors: false,
             tool_call_parser: None,
             named_tool_name: None,
             tool_definitions: None,
@@ -2918,6 +3026,17 @@ impl JailedStreamBuilder {
     /// followed by argument fragments.
     pub fn guided_streaming(mut self, enabled: bool) -> Self {
         self.guided_streaming = enabled;
+        self
+    }
+
+    /// Request-scoped strict rejection of malformed tool calls (Beam parsers).
+    ///
+    /// A call that can never complete, or a stream that ends inside one, yields an
+    /// `Annotated` with `error` set and no data, and the stream stops: there is no
+    /// empty success and no `finish_reason: stop` after the failure. Off by default,
+    /// where the malformed call is dropped.
+    pub fn strict_tool_call_errors(mut self, enabled: bool) -> Self {
+        self.strict_tool_errors = enabled;
         self
     }
 
@@ -3062,6 +3181,7 @@ impl JailedStreamBuilder {
             marker_matcher,
             jail_mode: self.jail_mode,
             guided_streaming: self.guided_streaming,
+            strict_tool_errors: self.strict_tool_errors,
         }
     }
 }
@@ -3448,6 +3568,122 @@ mod tests {
         )
         .collect()
         .await
+    }
+
+    const BEAM_H: &str =
+        "<|start|>assistant to=weather<|channel|>analysis <|constrain|>xml<|message|>";
+
+    async fn run_beam(
+        parser: &str,
+        strict: bool,
+        pieces: &[&str],
+    ) -> Vec<Annotated<CreateChatCompletionStreamResponse>> {
+        let mut chunks: Vec<_> = pieces.iter().map(|p| text_chunk(p)).collect();
+        chunks.push(terminal_chunk());
+        JailedStream::builder()
+            .tool_call_parser(parser)
+            .strict_tool_call_errors(strict)
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await
+    }
+
+    fn beam_calls(
+        responses: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> Vec<(String, serde_json::Value)> {
+        collect_tool_calls(responses)
+            .into_iter()
+            .map(|(name, args)| (name, serde_json::from_str(&args).expect("json args")))
+            .collect()
+    }
+
+    #[tokio::test]
+    async fn beam_jail_keeps_terminator_literals_inside_a_parameter() {
+        let whole = format!("{BEAM_H}<rfl:parameter name=\"x\">a<|call|>b</rfl:parameter><|call|>");
+        for split in (0..=whole.len()).filter(|&i| whole.is_char_boundary(i)) {
+            let responses = run_beam("beam", false, &[&whole[..split], &whole[split..]]).await;
+            assert_eq!(
+                beam_calls(&responses),
+                vec![(
+                    "weather".to_string(),
+                    serde_json::json!({"x": "a<|call|>b"})
+                )],
+                "split {split}"
+            );
+            assert_eq!(collect_text_content(&responses), "", "split {split}");
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_jail_keeps_text_after_an_end_terminated_call() {
+        let whole =
+            format!("BEFORE {BEAM_H}<rfl:parameter name=\"x\">1</rfl:parameter><|end|> AFTER");
+        for split in (0..=whole.len()).filter(|&i| whole.is_char_boundary(i)) {
+            let responses = run_beam("beam", false, &[&whole[..split], &whole[split..]]).await;
+            assert_eq!(beam_calls(&responses).len(), 1, "split {split}");
+            assert_eq!(
+                collect_text_content(&responses),
+                "BEFORE  AFTER",
+                "split {split}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_jail_strict_mode_reports_invalid_and_truncated_calls() {
+        for body in [
+            "<rfl:parameter name=\"x\">pending".to_string(),
+            "<rfl:parameter name=\"\">x</rfl:parameter><|call|>".to_string(),
+            "<rfl:parameter name=\"a\" extra=\"b\">x</rfl:parameter><|call|>".to_string(),
+        ] {
+            let input = format!("{BEAM_H}{body}");
+            let responses = run_beam("beam", true, &[&input]).await;
+            let last = responses.last().expect("error item");
+            assert!(last.error.is_some() && last.data.is_none(), "{body}");
+            assert!(beam_calls(&responses).is_empty(), "{body}");
+            assert!(
+                responses
+                    .iter()
+                    .flat_map(|r| r.data.iter())
+                    .flat_map(|d| d.choices.iter())
+                    .all(|c| c.finish_reason.is_none()),
+                "no stop after a fatal error: {body}"
+            );
+            // Default mode keeps its contract: dropped, no error item.
+            let responses = run_beam("beam", false, &[&input]).await;
+            assert!(responses.iter().all(|r| r.error.is_none()), "{body}");
+        }
+    }
+
+    #[tokio::test]
+    async fn beam_constrained_parser_reads_json_with_a_literal_closer() {
+        let tools = vec![crate::tool_calling::ToolDefinition {
+            name: "weather".into(),
+            parameters: Some(serde_json::json!({
+                "type": "object",
+                "properties": {"o": {"type": "object"}},
+            })),
+            strict: None,
+        }];
+        let input = format!(
+            "{BEAM_H}<rfl:parameter name=\"o\">{{\"text\": \"</rfl:parameter>\"}}</rfl:parameter><|call|>"
+        );
+        let chunks = vec![text_chunk(&input), terminal_chunk()];
+        let responses: Vec<_> = JailedStream::builder()
+            .tool_call_parser("beam_constrained")
+            .tool_definitions(tools)
+            .build()
+            .apply(stream::iter(chunks))
+            .collect()
+            .await;
+        assert_eq!(
+            beam_calls(&responses),
+            vec![(
+                "weather".to_string(),
+                serde_json::json!({"o": {"text": "</rfl:parameter>"}})
+            )]
+        );
     }
 
     #[tokio::test]

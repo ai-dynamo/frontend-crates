@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 mod base_parser;
+mod beam_parser;
 mod gemma4_parser;
 mod gpt_oss_parser;
 mod granite_parser;
@@ -13,6 +14,7 @@ mod minimax_append_think_parser;
 // Re-export main types and functions for convenience
 pub(crate) use crate::tool_calling::config::MINIMAX_M3_TOOL_NAMESPACE;
 pub use base_parser::BasicReasoningParser;
+pub use beam_parser::BeamReasoningParser;
 pub use gemma4_parser::Gemma4ReasoningParser;
 pub use gpt_oss_parser::{GptOssReasoningParser, harmony_terminator_token_ids};
 pub use granite_parser::GraniteReasoningParser;
@@ -42,6 +44,7 @@ fn get_reasoning_parser_map() -> &'static HashMap<&'static str, ReasoningParserT
         map.insert("deepseek_v3_1", ReasoningParserType::DeepseekR1);
         map.insert("deepseek_v3_2", ReasoningParserType::DeepseekR1);
         map.insert("basic", ReasoningParserType::Basic);
+        map.insert("beam", ReasoningParserType::Beam);
         map.insert("gpt_oss", ReasoningParserType::GptOss);
         map.insert("qwen3", ReasoningParserType::Qwen);
         // DeepSeek-V4 uses the same `<think>` / `</think>` delimiters as Qwen
@@ -161,6 +164,11 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
     fn set_in_reasoning(&mut self, _in_reasoning: bool) {
         // Default no-op for parsers that don't support per-request overrides.
     }
+
+    /// Override the parser's initial state for an explicit response prefill: the prompt
+    /// already opened the visible reply, so the first bytes are reply content rather than
+    /// a new message header. Call before any bytes are fed. Default no-op; Beam supports it.
+    fn set_in_content(&mut self, _in_content: bool) {}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -200,6 +208,9 @@ pub enum ReasoningParserType {
     /// Inkling (thinkingmachines/Inkling-NVFP4): block-structured reasoning, tool-call
     /// blocks passed through verbatim. See [`crate::reasoning::inkling_parser`].
     Inkling,
+    /// Beam channel framing (`<|channel|>analysis<|message|>` …); tool envelopes are
+    /// forwarded verbatim in normal text. See [`crate::reasoning::beam_parser`].
+    Beam,
     /// Nemotron v3 may enter a tool call without closing its thinking block.
     NemotronV3,
 }
@@ -229,6 +240,10 @@ impl ReasoningParser for ReasoningParserWrapper {
 
     fn set_in_reasoning(&mut self, in_reasoning: bool) {
         self.parser.set_in_reasoning(in_reasoning)
+    }
+
+    fn set_in_content(&mut self, in_content: bool) {
+        self.parser.set_in_content(in_content)
     }
 }
 
@@ -371,6 +386,9 @@ impl ReasoningParserType {
             },
             ReasoningParserType::Inkling => ReasoningParserWrapper {
                 parser: Box::new(InklingReasoningParser::new()),
+            },
+            ReasoningParserType::Beam => ReasoningParserWrapper {
+                parser: Box::new(BeamReasoningParser::new()),
             },
         }
     }
@@ -635,6 +653,7 @@ mod tests {
             "gemma4",
             "gemma-4",
             "inkling",
+            "beam",
         ];
         for parser in available_parsers {
             assert!(parsers.contains(&parser));

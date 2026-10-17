@@ -48,6 +48,39 @@
 # value as a raw string and never applies the tool's JSON-Schema types; v2
 # reads the declared type and coerces correctly.
 
+beam:
+  TOOLCALLING.batch.2.c:
+    stream_vs_batch: &svb-beam-outside-channel >-
+      Beam has no implicit text field: v2 (stream) drops every byte outside a
+      channel message or a tool call, as the model builder's reference parser
+      does, so prose around calls, whitespace-only input and junk that forms no
+      call all become normal_text "". The v1 tool-only batch API returns that
+      text as normal_text (in the v1 serving pipeline the Beam reasoning parser
+      owns the channel framing before the tool parser runs). Calls identical;
+      normal_text-only divergence, intended.
+  TOOLCALLING.batch.3:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.4.c:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.4.e:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.4.f:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.5.b:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.5.g:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.8.a:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.8.b:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.8.c:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.8.d:
+    stream_vs_batch: *svb-beam-outside-channel
+  TOOLCALLING.batch.9.b:
+    stream_vs_batch: *svb-beam-outside-channel
+
 deepseek_v4:
   TOOLCALLING.batch.2.b:
     stream_vs_batch: &svb-surrounding-text >-

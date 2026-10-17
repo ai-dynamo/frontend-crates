@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-renderer"
 readme = "README.md"
-version = "8.0.1"
+version = "8.1.0"
 edition.workspace = true
 description = "Standalone OpenAI chat-template / prompt formatting (HF chat_template via minijinja)."
 authors.workspace = true
@@ -17,8 +17,8 @@ keywords = ["llm", "chat-template", "prompt", "jinja", "inference"]
 # The chat-template engine bridges OpenAI request types (dynamo-protocols) with
 # the HF chat_template jinja engine (minijinja). `dynamo-tokenizers` supplies the
 # public EncodeSegment type and is re-exported for consumers.
-dynamo-protocols = { workspace = true }
-dynamo-tokenizers = { workspace = true }
+dynamo-protocols = "8.1.0"
+dynamo-tokenizers = "3.1.0"
 
 anyhow = { workspace = true }
 chrono = { workspace = true }

@@ -2855,8 +2855,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<atem:invoke name="get_weather"[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -3550,9 +3551,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
 
@@ -3642,9 +3644,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.35-6
+    display_id: UNIFIED.35-guided_json_native_parameter_object_before_payload
     historical_ids:
     - UNIFIED.31-34
+    - UNIFIED.35-6
     request:
       input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">{"city":"Rome"}</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3722,9 +3725,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.35-7
+    display_id: UNIFIED.35-guided_json_native_parameter_array_before_payload
     historical_ids:
     - UNIFIED.31-35
+    - UNIFIED.35-7
     request:
       input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3802,9 +3806,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.muse-5
+    display_id: UNIFIED.muse-glimmer_guided_message_end_inside_native_header
     historical_ids:
     - UNIFIED.31-37
+    - UNIFIED.muse-5
     request:
       input: <atem:invoke name="x<|eom|>[{"name":"f","arguments":{}}]
       init:
@@ -3940,9 +3945,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
 
@@ -6686,9 +6692,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.muse-6
+    display_id: UNIFIED.muse-prefilled_response_guided_closer_inside_invoke_quote
     historical_ids:
     - UNIFIED.50-2
+    - UNIFIED.muse-6
     request:
       input: 'I mean to=self<|message|>literal<|eom|><atem:invoke name="</atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:

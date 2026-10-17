@@ -828,6 +828,7 @@ def test_unified_case_counts_match_the_generator():
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
         family_specific = {
+            "beam": 115,
             "deepseek_v4": 118,
             "deepseek_v41": 115,
             "gemma4": 119,
@@ -838,7 +839,7 @@ def test_unified_case_counts_match_the_generator():
             "qwen3": 122,
         }[fam]
         assert per_family[fam] == family_specific + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == 956 + len(FAMILIES) * len(CONFORMANCE_CASES)
+    assert sum(per_family.values()) == 956 + 115 + len(FAMILIES) * len(CONFORMANCE_CASES)
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
@@ -1045,7 +1046,10 @@ def _assert_reference_measurements_start_at_introduction(store):
             if family == "qwen3":
                 introduced_ids.add("UNIFIED.7-arg_string_null_ref")
             version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
-            if version < (0, 7, 18):
+            # Beam joined the corpus at 0.8.1; its 0.8.0 checkpoint (the pre-fix
+            # candidate) predates the shared reference scenarios.
+            introduced_at = (0, 8, 1) if family == "beam" else (0, 7, 18)
+            if version < introduced_at:
                 assert not measured & introduced_ids, f"retrospective measurements in {family}/{capture_id}"
             else:
                 assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
@@ -1082,6 +1086,21 @@ def test_retained_capture_coverage_rejects_one_missing_case():
 def _family_value(scenario, family):
     reason_open, reason_close, _, _ = control_tokens(family)
     marker = G._NATIVE_QUOTED_CONTROL[family]
+    if family == "beam":
+        # Beam's markers are special tokens, so a quotation never keeps one literal
+        # (UNIFIED_CASES.md P6): the prose before the quote stays and the quoted header
+        # is framing. The authored beam goldens therefore end at the opening quote.
+        beam_quoted = {
+            "native_quoted_control_in_response": 'The literal "',
+            "native_quoted_control_in_reasoning": 'The literal "',
+            "native_quoted_control_then_call": 'The literal "',
+            "native_single_quoted_word_control": "The literal 'example ",
+            "native_single_quote_contraction_response": "The literal 'doesn't ",
+            "native_single_quote_contraction_reasoning": "The literal 'doesn't ",
+            "native_quoted_incomplete_header": "The literal `",
+        }
+        if scenario in beam_quoted:
+            return beam_quoted[scenario]
     if scenario in {
         "native_quoted_control_in_response",
         "native_quoted_control_in_reasoning",
@@ -1112,6 +1131,7 @@ def _family_value(scenario, family):
         return G._MIXED_CONTROL_STRINGS[family]
     if scenario == "arg_marker_in_string":
         close = {
+            "beam": "<|call|>",
             "deepseek_v4": "</｜DSML｜invoke>",
             "deepseek_v41": "</｜DSML｜ invoke>",
             "gemma4": "}<tool_call|>",
@@ -1136,12 +1156,24 @@ def _family_value(scenario, family):
         recipient = quoted[scenario]
         return (f"I mean to={recipient}literal" if family == "muse_glimmer"
                 else f"I mean {reason_open}{recipient} literal{reason_close}")
+    if scenario == "guided_json_narrated_invoke_in_reasoning":
+        # Beam: the narrated tool header is a framed `<|start|>` that ends the open
+        # thought, so the words after it are not reasoning (class F divergence).
+        return "I'll use " if family == "beam" else "I'll use  next"
+    if scenario == "orphan_close_after_prose":
+        # Beam grammar exception (`5-orphan_close_after_prose`): `<|call|>` inside a
+        # `final` message is text.
+        return "I will check that. <|call|>" if family == "beam" else "I will check that. "
     if scenario in {
         "prefilled_response_reasoning_markers_literal",
         "guided_json_native_parameter_object_before_payload",
         "guided_json_native_parameter_array_before_payload",
     }:
         suffix = " then a call" if scenario == "prefilled_response_reasoning_markers_literal" else ""
+        if family == "beam" and scenario == "prefilled_response_reasoning_markers_literal":
+            # Beam's framing is special tokens: under Response the framed analysis
+            # message is consumed as control and its body is visible text.
+            return "literal then a call"
         return ("to=selfliteral" if family == "muse_glimmer"
                 else f"{reason_open}literal{reason_close}") + suffix
     return None
@@ -1251,6 +1283,32 @@ def _native_input_calls(family, raw):
             if outer_end < 0:
                 return calls
             cursor = outer_end + len("</tool_call>")
+
+    if family == "beam":
+        # Independent authoring-contract decoder for the Beam wire (not the parser):
+        # only a `to=NAME` header on the `analysis` channel is a tool call; its body
+        # runs to the next framed header. Values keep their literal bytes, with the
+        # one LF the renderer frames each edge with removed; no typing.
+        header = re.compile(
+            r'<\|start\|>assistant to=([A-Za-z_][A-Za-z0-9_.\-]*)<\|channel\|>analysis'
+            r'(?: <\|constrain\|>[A-Za-z0-9]+)?<\|message\|>'
+        )
+        # The reference tag rule: a value runs to the FIRST `</rfl:parameter>`, so an
+        # embedded header is value data. Parameters are read in sequence after the
+        # header; anything else (a terminator, a new header, EOF) ends the body.
+        parameter = re.compile(r'\s*<rfl:parameter name="([^"]+)">(.*?)</rfl:parameter>', re.S)
+        calls = []
+        for match in header.finditer(raw):
+            at = match.end()
+            arguments = {}
+            while True:
+                item = parameter.match(raw, at)
+                if item is None:
+                    break
+                arguments[item[1]] = item[2].removeprefix("\n").removesuffix("\n")
+                at = item.end()
+            calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
+        return calls
 
     headers = {
         "deepseek_v4": r'<｜DSML｜invoke name="([^"]+)">',
@@ -1383,6 +1441,7 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v41": '<｜DSML｜ invoke name="echo">',
         "gemma4": "<|tool_call>call:echo{",
         "muse_glimmer": "<|start|>assistant to=echo<|message|>",
+        "beam": "<|start|>assistant to=echo<|channel|>",
     }
     at = raw.index(openers[family])
     prefix, suffix = raw[:at], raw[at:]
@@ -1395,6 +1454,7 @@ def _assert_malformed_recovery(family, case):
         "deepseek_v4": "</｜DSML｜parameter></｜DSML｜invoke>",
         "deepseek_v41": "</｜DSML｜ parameter></｜DSML｜ invoke>",
         "gemma4": "}}<tool_call|>", "muse_glimmer": "</atem:invoke>",
+        "beam": "</rfl:parameter><|call|>",
     }
     assert closers[family] in prefix
     echoes = [{"kind": "tool_call", "name": "echo", "arguments": {"value": value}} for value in ("é", "Café")]
@@ -1402,7 +1462,7 @@ def _assert_malformed_recovery(family, case):
     bad = []
     if family == "kimi_k2":
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {}}]
-    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer"}:
+    elif family in {"qwen3", "glm47", "deepseek_v4", "muse_glimmer", "beam"}:
         bad = [{"kind": "tool_call", "name": "bad", "arguments": {"value": '{"x":"unfinished'}}]
     assert case["golden"] == bad + echoes
     assert case["tools"] == [
@@ -1432,12 +1492,15 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                 properties = parameters.get("properties", {})
                 for key, value in candidate["arguments"].items():
                     schema = properties.get(key, {})
-                    if family not in {"qwen3", "glm47"} or not isinstance(value, str):
+                    # Families whose wire carries untyped text values: the authoring
+                    # contract types them against the declared schema (a literal
+                    # `null` for a nullable property, JSON for a non-string one).
+                    if family not in {"qwen3", "glm47", "beam"} or not isinstance(value, str):
                         continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
                     elif (not matches_schema(value, schema, parameters)
-                          or (family == "qwen3" and scenario in {
+                          or (family in ("qwen3", "beam") and scenario in {
                               "schema_integer_const_ambiguous", "schema_object_const_union",
                               "schema_type_array_string_integer",
                           })):
@@ -1505,6 +1568,12 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             assert control_tokens(family)[1] in raw, (family, scenario, "missing reasoning closer")
 
 
+BEAM_GRAMMAR_EXCEPTIONS = {
+    "guided_json_native_parameter_body_inside_reasoning",
+    "guided_json_reasoning_markers_inside_native_parameter",
+}
+
+
 def _assert_cross_family_contract(corpus):
     by_scenario = defaultdict(dict)
     clean = {row[0]: row[3] for row in CLEAN}
@@ -1539,16 +1608,21 @@ def _assert_cross_family_contract(corpus):
                 assert case["tools"][0]["parameters"]["properties"]["city"]["type"] == expected_type
                 assert events == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}]
             if scenario == "tool_no_close":
-                # DSML's public EOF contract drops an invoke without its closer.
-                # Assert that exception independently; do not normalize [] to a call.
-                if family in {"deepseek_v4", "deepseek_v41"}:
-                    assert events == [], (family, scenario, "DSML requires invoke close")
+                # DSML's public EOF contract drops an invoke without its closer, and a
+                # Beam call dispatches only once `<|call|>`/`<|end|>` arrives. Assert
+                # those exceptions independently; do not normalize [] to a call.
+                if family in {"deepseek_v4", "deepseek_v41", "beam"}:
+                    assert events == [], (family, scenario, "grammar requires the call terminator")
                     assert _native_input_calls(family, case["input"]) == [
                         {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}},
                     ], (family, scenario, "EOF body differs")
-                    gap = " " if family == "deepseek_v41" else ""
-                    assert f'</｜DSML｜{gap}parameter>' in case["input"]
-                    assert f'</｜DSML｜{gap}invoke>' not in case["input"]
+                    if family == "beam":
+                        assert "</rfl:parameter>" in case["input"]
+                        assert "<|call|>" not in case["input"]
+                    else:
+                        gap = " " if family == "deepseek_v41" else ""
+                        assert f'</｜DSML｜{gap}parameter>' in case["input"]
+                        assert f'</｜DSML｜{gap}invoke>' not in case["input"]
                 else:
                     assert events == [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}]
                 events = None
@@ -1558,11 +1632,16 @@ def _assert_cross_family_contract(corpus):
                 # suppresses them. Goldens alone cannot detect a changed stress value.
                 suppressed = [call for call in _native_input_calls(family, case["input"]) if call["arguments"]]
                 if scenario == "guided_json_reasoning_markers_inside_native_parameter":
-                    opener, closer, _, _ = control_tokens(family)
-                    assert suppressed == [{"kind": "tool_call", "name": "f", "arguments": {"x": opener + "quoted" + closer}}], (
-                        family, scenario, "wrong suppressed marker role or payload",
-                    )
-                    suppressed[0]["arguments"]["x"] = "FAMILY_REASONING_MARKERS"
+                    if family == "beam":
+                        # Beam has no bare native invocation: without its routed header the
+                        # parameter tag is text, so nothing is suppressed (authored golden).
+                        assert suppressed == [], (family, scenario, "Beam suppresses no bare invocation")
+                    else:
+                        opener, closer, _, _ = control_tokens(family)
+                        assert suppressed == [{"kind": "tool_call", "name": "f", "arguments": {"x": opener + "quoted" + closer}}], (
+                            family, scenario, "wrong suppressed marker role or payload",
+                        )
+                        suppressed[0]["arguments"]["x"] = "FAMILY_REASONING_MARKERS"
                 if scenario in {
                     "guided_json_native_parameter_object_before_payload",
                     "guided_json_native_parameter_array_before_payload",
@@ -1574,7 +1653,13 @@ def _assert_cross_family_contract(corpus):
     assert set(by_scenario) == set(UNIFIED_TAX)
     for scenario, families in by_scenario.items():
         assert set(families) == set(G.scenario_families(scenario)), (scenario, "applicability", set(families))
-        contracts = list(families.items())
+        # Beam authors its own golden where its grammar changes the outcome (its parameter
+        # tags are plain text outside a routed header; its reasoning markers are special
+        # tokens), so it stands outside the shared contract for those scenarios only.
+        contracts = [
+            (family, contract) for family, contract in families.items()
+            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS)
+        ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
             assert contract == reference, (scenario, first_family, family, "cross-family contract", reference, contract)
