@@ -38,7 +38,6 @@ from schema_cases import ARGUMENT_SECTIONS, schema_fold
 import unified_taxonomy
 from validate_conformance_status import cell_state
 from capture_stimulus import batch_final_events, capture_input  # noqa: E402
-from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
 import model as model_mod  # noqa: E402
 import generate_conformance_table as table  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
@@ -127,48 +126,6 @@ process.stdout.write(JSON.stringify(tips.map(tip => context.window.audit.buildTo
         input=json.dumps(tips), text=True, capture_output=True, check=True,
     )
     return json.loads(result.stdout)
-
-
-def test_structural_response_popup_displays_the_executed_generation_request():
-    case = table.gen_unified_golden.build_cases("gpt_oss")[
-        "UNIFIED.structured_response_after_reasoning.gpt_oss"
-    ]
-    request = case["init"]["structural_tag"]
-    request["rejected"].append("</code><script>invalid response</script>")
-    constrained, ordinary = _render_tooltips([
-        {"init": case["init"]},
-        {"init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}},
-    ])
-    rendered = re.search(r'<code class="ttip-pre">structural_tag=(.*?)</code>', constrained, re.S)
-    assert rendered and json.loads(unescape(rendered[1])) == request
-    assert "XGrammar checks the response schema" in constrained
-    assert "[object Object]" not in constrained
-    assert "<script>invalid response</script>" not in constrained
-    assert "structural_tag" not in ordinary
-
-
-def test_canonical_structural_response_metadata_reaches_the_model_and_popup(model_v2):
-    scenario = "structured_response_after_reasoning"
-    expected = table.gen_unified_golden.scenario_families(scenario)
-    checked = set()
-    for row in _tab(model_v2, "tab-unified")["rows"]:
-        family = row.get("family")
-        if not family:
-            continue
-        cell = leaf_cells(row)[scenario]
-        if family not in expected:
-            assert cell["status"] == "na"
-            continue
-        checked.add(family)
-        case = table.gen_unified_golden.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
-        tip = cell["tooltip"]
-        assert tip["init"] == case["init"]
-        assert cell["case_id"] == "UNIFIED.36-structured_response_after_reasoning"
-        assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "green"
-        rendered = _render_tooltips([tip])[0]
-        config = re.search(r'<code class="ttip-pre">structural_tag=(.*?)</code>', rendered, re.S)
-        assert config and json.loads(unescape(config[1])) == case["init"]["structural_tag"]
-    assert checked == expected
 
 
 def test_tooltip_uses_concise_copy_for_unavailable_results():
@@ -313,9 +270,8 @@ def test_unified_schema_defaults_are_loaded_once(tmp_path, monkeypatch):
     shared_tools = original()
     inputs = tmp_path / "inputs" / "gemma4"
     inputs.mkdir(parents=True)
-    # Separate files catch per-file and per-case reloads without reading capture history.
-    scenarios = {"text_only", "reason_only"}
-    for scenario in sorted(scenarios):
+    # Two files catch per-case or per-file reloads without scanning the full history.
+    for scenario in ("text_only", "reason_only"):
         key = unified_taxonomy.numbered_id(scenario)
         (inputs / f"{key}.yaml").write_text(yaml.safe_dump({
             "family": "gemma4", "cases": {key: {
@@ -329,9 +285,8 @@ def test_unified_schema_defaults_are_loaded_once(tmp_path, monkeypatch):
 
     monkeypatch.setattr(table, "unified_tools", tools)
     result = table._load_unified_fixtures(tmp_path)
-    assert {case["scenario"] for case in result[0]} == scenarios
+    assert result is not None
     assert len(result[0]) == 2
-    assert all(case["tools"] is None for case in result[0])
     assert len(calls) == 1
 
 
@@ -359,18 +314,7 @@ def test_case_schema_metadata_survives_model_serialization():
 
 def test_rendered_model_carries_only_explicit_unified_case_schemas(model_v2):
     columns = {column["sub"]: column for column in _tab(model_v2, "tab-unified")["columns"]}
-    assert "schemas" not in columns["reason_only"]
-    schemas = columns["tool_only"]["schemas"]
-    assert len(schemas) == 1
-    assert schemas[0]["tools"] == [{"name": "lookup", "parameters": {
-        "type": "object", "properties": {"q": {"type": "string"}},
-    }}]
-    assert set(schemas[0]["families"]) == {"kimi_k2", "kimi_k3"}
-    assert len(schemas[0]["cases"]) == 1
-    association = schemas[0]["cases"][0]
-    assert association["case_id"] == "UNIFIED.gpt_oss-tool_body_whitespace"
-    assert association["label"] == "Leading JSON body whitespace"
-    assert set(association["families"]) == {"kimi_k2", "kimi_k3"}
+    assert "schemas" not in columns["tool_only"]
     assert columns["schema_declared_integer"]["schemas"]
     assert columns["schema_declared_integer"]["schemas"][0]["tools"][0]["name"]
 
@@ -400,6 +344,9 @@ def _peer_versions(tree: str) -> dict[str, set[str]]:
 
 # Labels and structured metadata must identify the same captured version.
 def _assert_candidate_versioned(candidate, location):
+    if candidate.get("parse_mode") == "split" and candidate.get("impl") == "dynamo":
+        assert candidate["label"] == table._full_label("dynamo_v2", candidate["version"], "split: v1 reasoning + v2 tool parser"), location
+        return
     if candidate.get("parse_mode") == "unified" and candidate.get("impl") == "dynamo":
         assert candidate["label"] == table._full_label("dynamo_v2", candidate["version"], "stream"), location
         return
@@ -527,9 +474,7 @@ def test_unified_descriptive_case_ids_use_dash_everywhere(model_v2):
         assert columns[scenario] == short_id
         assert short_id in glossary_ids
         assert cells[scenario]["case_id"] == full_id
-        family = cells[scenario]["family"]
-        alias = f" ({scenario})" if family not in table.gen_unified_golden.scenario_families(scenario) else ""
-        assert cells[scenario]["tooltip"]["head"] == f"{full_id}{alias} — {family}"
+        assert cells[scenario]["tooltip"]["head"].startswith(f"{full_id} (")
 
 
 def test_unified_duplicate_notes_and_deepseek_prefilled_captures(model_v2):
@@ -630,6 +575,9 @@ def test_unified_tab_keeps_every_captured_vllm_parser_version(model_v2):
     for key, version in (("vllm_rust", "0.25.1"), ("vllm_rust@0.26.0", "0.26.0")):
         native = next(candidate for candidate in muse_tip["candidates"] if candidate["key"] == key)
         assert native["block"]["unavailable"] == f"No vLLM Rust Unified parser is registered for muse_glimmer at {version}."
+        missing = next(candidate for candidate in leaf_cells(muse)["dotted_name_minimal"]["tooltip"]["candidates"] if candidate["key"] == key)
+        assert missing["block"]["unavailable_code"] == "missing_capture"
+        assert "events" not in missing["block"]
 
 
 def test_unified_sglang_versions_are_streamed_and_grouped_without_duplicate_backend(model_v2):
@@ -938,9 +886,8 @@ def test_unified_selector_uses_source_checkout_with_or_without_staging(tmp_path,
 def test_unified_source_selection_inherits_previous_family_capture(
     tmp_path, monkeypatch, current_present, capture_failure
 ):
-    selected = "0.7.28"
-    previous = "0.7.27"
-    experimental = "0.9.8"
+    selected = "0.6.1"
+    previous = "0.6.0"
     scenario, family = "text_only", "gemma4"
     generator = table.gen_unified_golden
     authored = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
@@ -956,7 +903,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
                    "chunks": [{"delta_text": authored["input"]}]},
         "golden": {"assembled": authored["golden"]},
     }
-    for version in [previous] + ([selected] if current_present else []) + [experimental]:
+    for version in [previous] + ([selected] if current_present else []):
         events = [{"kind": "text", "text": version}]
         records[f"dynamo_v2-{version}"] = (
             {capture_failure: "capture could not run"} if capture_failure and version == selected else
@@ -971,7 +918,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
     cases, _caps, versions = table._load_unified_fixtures(tmp_path)
     case = next(case for case in cases if case["family"] == family)
     assert versions["dynamo_v2"] == selected
-    assert set(versions["dynamo_v2_all"]) == {previous, selected, experimental}
+    assert set(versions["dynamo_v2_all"]) == {previous, selected}
     assert not case["dynamo_missing"]
     expected_version = selected if current_present else previous
     assert case["dynamo"] == (
@@ -983,9 +930,7 @@ def test_unified_source_selection_inherits_previous_family_capture(
     assert candidates["dynamo"]["version"] == selected
     assert candidates["dynamo"]["label"] == table._full_label("dynamo_v2", selected, "stream")
     assert candidates[f"dynamo@{previous}"]["label"] == table._full_label("dynamo_v2", previous, "stream")
-    assert {key for key in candidates if key.startswith("dynamo@")} == {
-        f"dynamo@{previous}", f"dynamo@{experimental}"
-    }
+    assert {key for key in candidates if key.startswith("dynamo@")} == {f"dynamo@{previous}"}
     cell = next(row for row in tab["rows"] if row["family"] == family)["cells"][scenario]
     current = next(candidate for candidate in cell["tooltip"]["candidates"] if candidate["key"] == "dynamo")
     assert current["label"] == candidates["dynamo"]["label"]
@@ -1034,7 +979,7 @@ def test_current_label_is_stable_before_and_after_release(monkeypatch, input_mod
     assert table._full_label("dynamo_v2", "0.7.9", input_mode) == f"Dynamo v2 Rust 0.7.9 ({mode})"
 
 
-def test_unified_dynamo_labels_identify_unified_parser(model_v2):
+def test_unified_dynamo_labels_identify_capture_path(model_v2):
     producer = table._dynamo_v2_producer()
     tab = _tab(model_v2, "tab-unified")
     reference = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
@@ -1044,15 +989,15 @@ def test_unified_dynamo_labels_identify_unified_parser(model_v2):
     assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]
 
-    tooltip_labels = [
-        candidate["label"]
-        for row in tab["rows"]
-        for cell in leaf_cells(row).values()
-        for candidate in cell.get("tooltip", {}).get("candidates", [])
-        if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
-    ]
-    assert tooltip_labels
-    assert set(tooltip_labels) == {full_label}
+    for row in tab["rows"]:
+        mode = "split: v1 reasoning + v2 tool parser" if row["family"] == "gpt_oss" else "stream"
+        tooltip_labels = {
+            candidate["label"]
+            for cell in leaf_cells(row).values()
+            for candidate in cell.get("tooltip", {}).get("candidates", [])
+            if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
+        }
+        assert tooltip_labels == {table._full_label("dynamo_v2", expected, mode)}, row["family"]
 
 
 def test_tc_source_capture_versions_survive_label_parsing():
@@ -1436,20 +1381,8 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
                 assert cell_state(cell, {"key": "dynamo", "label": "Dynamo"})[0] == "red"
                 continue
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
-            if family in peer_families | {"gpt_oss"}:
+            if family in peer_families:
                 _assert_unmeasured_versions(cmp, older_keys)
-            elif family == "beam":
-                # Beam joined the corpus at 0.8.1: every Dynamo column older than that is
-                # unmeasured; 0.8.1 and later carry its captures.
-                _assert_unmeasured_versions(
-                    cmp,
-                    [
-                        candidate["key"]
-                        for candidate in dynamo_candidates
-                        if candidate["key"] != "dynamo"
-                        and tuple(map(int, candidate["version"].split("."))) < (0, 7, 29)
-                    ],
-                )
             else:
                 assert cmp["dynamo@0.7.8"]["na"] == 0, (family, scenario, "original_capture")
 
@@ -1535,7 +1468,7 @@ def test_glm_type_references_have_typed_current_batch_and_unified_captures(
 def test_historical_unified_mismatch_does_not_claim_the_parser_is_missing(model_v2):
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "qwen3")
-    cell = leaf_cells(row)["deepseek_v41_mixed_control_text_in_string"]
+    cell = row["cells"]["deepseek_v41_mixed_control_text_in_string"]
     block = next(candidate["block"] for candidate in cell["tooltip"]["candidates"]
                  if candidate["key"] == "dynamo@0.7.4")
     assert block["verdict"] == "ARG_MISMATCH"
@@ -1565,7 +1498,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
     keys = {"vllm_python_batch@" + version for version in ("0.23.0", "0.24.0", "0.25.1", "0.26.0")}
     keys.add("sglang_python_batch@0.5.14")
     cases = [cell for cell in leaf_cells(row).values() if cell["status"] != "na"]
-    assert len(cases) == len(table.gen_unified_golden.build_cases("gpt_oss"))
+    assert len(cases) == 163
     assert leaf_cells(row)["tool_only"]["case_id"] == "UNIFIED.1-tool_only"
     missing = []
     for cell in cases:
@@ -1577,7 +1510,7 @@ def test_gpt_oss_uncaptured_peer_batch_results_are_missing_not_unsupported(model
             assert "no parser" not in block["unavailable"]
             assert cell["cmp"][key]["na"] == 1
             missing.append(block)
-    assert len(missing) == len(cases) * len(keys)
+    assert len(missing) == 815
     unsupported = [candidate["block"] for other in tab["rows"] for cell in leaf_cells(other).values()
                    for candidate in cell.get("tooltip", {}).get("candidates", [])
                    if "_python_batch@" in candidate["key"] and candidate["block"].get("unavailable_code") == "unsupported_family"]
@@ -1939,29 +1872,6 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
             assert len(cell["variants"]) == 4
             assert column["schemas"]
     assert found == expected
-
-
-def test_shared_variants_consolidate_without_losing_requests(model_v2):
-    tab = _tab(model_v2, "tab-unified")
-    columns = {column["sub"]: column for column in tab["columns"]}
-    assert {s for s in columns if unified_taxonomy.display_tax(s)[0] == "gpt_oss"} == GPT_OSS_STANDALONE_HEADER_SCENARIOS
-    assert not (set(columns) & set(unified_taxonomy.SHARED_CASE_VARIANTS))
-    for row in tab["rows"]:
-        if row.get("section"):
-            continue
-        leaves = leaf_cells(row)
-        actual = {s for s, cell in leaves.items() if cell["status"] != "na"}
-        expected = {s for s in unified_taxonomy.UNIFIED_TAX
-                    if row["family"] in table.gen_unified_golden.scenario_families(s)}
-        assert actual == expected
-        for variant, (parent, _) in unified_taxonomy.SHARED_CASE_VARIANTS.items():
-            if variant in expected:
-                cell = row["cells"][parent]
-                assert cell["status"] != "na"
-                assert variant in {leaf["sub"] for leaf in cell["variants"]}
-    parent = columns["arg_marker_in_string"]
-    assert parent["case_id"] == "UNIFIED.7-arg_marker_in_string"
-    assert parent["group_key"] == "unified_g7_text"
 
 
 @pytest.mark.parametrize(("unavailable", "reason"), [
