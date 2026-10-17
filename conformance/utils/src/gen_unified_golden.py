@@ -567,7 +567,6 @@ V_MUSE = {
 # per-family verdict published the other 22 as if an engine had produced them.
 VLLM_UNCAPTURABLE = {
     "muse_glimmer": V_MUSE,
-    "kimi_k3": D("UNSUPPORTED", "no released vLLM UnifiedParser capture for Kimi K3"),
     # The model builder's reference is the grammar's source of truth, not a peer engine,
     # and no released vLLM or SGLang parser reads this channel grammar.
     "beam": D("UNSUPPORTED", "no released vLLM or SGLang Beam parser; no peer capture exists, so no peer verdict is claimed"),
