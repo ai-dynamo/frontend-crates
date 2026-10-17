@@ -71,7 +71,9 @@ fn resolve_local_ref<'a>(reference: &str, root: &'a Value) -> Option<&'a Value> 
     if invalid_escape {
         return None;
     }
-    let pointer = percent_encoding::percent_decode_str(fragment).decode_utf8().ok()?;
+    let pointer = percent_encoding::percent_decode_str(fragment)
+        .decode_utf8()
+        .ok()?;
     let path = pointer.strip_prefix('/')?;
     let mut value = root;
     for part in path.split('/') {

@@ -1121,7 +1121,7 @@ dependencies = [
  "anyhow",
  "dynamo-parsers",
  "dynamo-parsers-v2",
- "dynamo-protocols 8.1.0",
+ "dynamo-protocols",
  "futures",
  "serde",
  "serde_json",
@@ -1138,9 +1138,9 @@ dependencies = [
  "axum",
  "clap",
  "dynamo-parsers",
- "dynamo-protocols 8.1.0",
+ "dynamo-protocols",
  "dynamo-renderer",
- "dynamo-tokenizers 3.1.0",
+ "dynamo-tokenizers",
  "futures",
  "hf-hub 1.0.0",
  "serde",
@@ -1178,7 +1178,7 @@ dependencies = [
  "aho-corasick",
  "anyhow",
  "async-stream",
- "dynamo-protocols 8.1.0",
+ "dynamo-protocols",
  "futures",
  "num-traits",
  "openai-harmony",
@@ -1238,30 +1238,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "dynamo-protocols"
-version = "8.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aca812fe988abff693c44c158147bae058f3051c0585570c2d59cf61d1253e5b"
-dependencies = [
- "async-openai",
- "derive_builder",
- "futures",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tracing",
- "url",
- "uuid",
-]
-
-[[package]]
 name = "dynamo-renderer"
 version = "8.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "dynamo-protocols 8.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "dynamo-tokenizers 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dynamo-protocols",
+ "dynamo-tokenizers",
  "either",
  "minijinja",
  "minijinja-contrib",
@@ -1288,29 +1271,6 @@ dependencies = [
  "serde_json",
  "strum",
  "tempfile",
- "tiktoken-rs",
- "tokenizers",
- "tracing",
-]
-
-[[package]]
-name = "dynamo-tokenizers"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2bee9c4bcbcb9c498d03199d4ec6738cc0a9f861463074369fc3f7352539e44"
-dependencies = [
- "aho-corasick",
- "anyhow",
- "base64 0.22.1",
- "basetenkenizer",
- "blake3",
- "fastokens",
- "moka",
- "rayon",
- "rustc-hash 1.1.0",
- "serde",
- "serde_json",
- "strum",
  "tiktoken-rs",
  "tokenizers",
  "tracing",
