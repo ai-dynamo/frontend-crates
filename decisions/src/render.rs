@@ -4,6 +4,8 @@
 use crate::{CanonicalQuestion, ChoiceValue, DecisionError, Dialect, QuestionKind};
 use serde_json::Value;
 
+mod python_json;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct RenderedQuestion {
     pub content: String,
@@ -18,10 +20,16 @@ pub fn render_question_prompt(
     question: &CanonicalQuestion,
 ) -> Result<RenderedQuestion, DecisionError> {
     let count = question.candidates.len();
-    if count == 0 || count > 255 || (question.kind == QuestionKind::Score && count > 10) {
+    if count == 0 {
         return Err(DecisionError::unsupported(
             Dialect::OpenAi,
             "question exceeds prompt label capacity",
+        ));
+    }
+    if count > 255 || (question.kind == QuestionKind::Score && count > 10) {
+        return Err(DecisionError::unsupported(
+            Dialect::OpenAi,
+            "options per choice exceed prompt label capacity",
         ));
     }
     let instruction = question
@@ -85,10 +93,9 @@ pub fn render_question_prompt(
                     .unwrap_or_else(|| "Is the following true?".into()),
             ];
             for (label, c) in ["yes", "no"].into_iter().zip(&question.candidates) {
-                if let Some(description) =
-                    c.description.as_ref().filter(|v| !crate::text::is_blank(v))
-                {
-                    lines.push(format!("{label}: {}", render_text(description)));
+                let description = c.description.as_ref().map(render_text).unwrap_or_default();
+                if !description.is_empty() {
+                    lines.push(format!("{label}: {description}"));
                 }
             }
             lines.push("Answer with yes or no only.".into());
@@ -124,6 +131,6 @@ fn render_text(value: &Value) -> String {
     match value {
         Value::Null => String::new(),
         Value::String(s) => s.clone(),
-        v => v.to_string(),
+        v => python_json::to_string(v),
     }
 }

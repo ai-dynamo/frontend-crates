@@ -93,16 +93,23 @@ pub struct Capabilities {
 impl CanonicalRequest {
     /// Call after model resolution, before rendering or dispatching GPU work.
     pub fn validate_capabilities(&self, capabilities: &Capabilities) -> Result<(), DecisionError> {
+        if self
+            .questions
+            .iter()
+            .any(|question| question.candidates.len() > capabilities.max_candidates)
+        {
+            return Err(DecisionError::unsupported(
+                self.dialect,
+                "options per choice exceed the selected decision profile's capacity",
+            ));
+        }
         let unsupported = self.questions.len() > capabilities.max_questions
             || self.prompt_format_version != capabilities.prompt_format_version
             || (self.dialect == Dialect::OpenAi && !capabilities.measured_cache_reads)
-            || self.questions.iter().any(|question| {
-                question.candidates.len() > capabilities.max_candidates
-                    || !match question.kind {
-                        QuestionKind::Predicate => capabilities.supports_predicate,
-                        QuestionKind::Choice => capabilities.supports_choice,
-                        QuestionKind::Score => capabilities.supports_score,
-                    }
+            || self.questions.iter().any(|question| !match question.kind {
+                QuestionKind::Predicate => capabilities.supports_predicate,
+                QuestionKind::Choice => capabilities.supports_choice,
+                QuestionKind::Score => capabilities.supports_score,
             });
         if unsupported {
             return Err(DecisionError::unsupported(
