@@ -52,7 +52,7 @@ pub fn parse_request_with_options(
     }
     let request = match dialect {
         Dialect::OpenAi => from_openai(decode(body, dialect)?)?,
-        Dialect::Jev => from_jev(decode(body, dialect)?)?,
+        Dialect::Jev => decode_jev(body)?,
     };
     if request.model.trim().is_empty() {
         return Err(DecisionError::validation(
@@ -77,6 +77,40 @@ fn decode<T: DeserializeOwned>(body: Value, dialect: Dialect) -> Result<T, Decis
             "request does not match the selected decision schema",
         )
     })
+}
+
+fn decode_jev(body: Value) -> Result<CanonicalRequest, DecisionError> {
+    let Value::Object(object) = body else {
+        return Err(DecisionError::validation(
+            Dialect::Jev,
+            "body must be a JSON object",
+        ));
+    };
+    if [
+        "temperature",
+        "prompt_format_version",
+        "return_prompt_token_ids",
+    ]
+    .iter()
+    .any(|field| object.contains_key(*field))
+    {
+        return Err(DecisionError::validation(
+            Dialect::Jev,
+            "unsupported control is not part of the System One schema",
+        ));
+    }
+    let body = Value::Object(
+        object
+            .into_iter()
+            .filter(|(field, _)| {
+                matches!(
+                    field.as_str(),
+                    "model" | "state" | "questions" | "images" | "chat_template_kwargs"
+                )
+            })
+            .collect(),
+    );
+    from_jev(decode(body, Dialect::Jev)?)
 }
 
 fn base(
