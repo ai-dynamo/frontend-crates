@@ -205,6 +205,28 @@ jobs:
             --edit-last --create-if-none \
             --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
+  minimax-structural-tags:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Install Rust
+        run: rustup toolchain install
+      - name: Install CPU XGrammar
+        run: |
+          python3 -m venv /tmp/minimax-xgrammar
+          /tmp/minimax-xgrammar/bin/pip install --extra-index-url https://download.pytorch.org/whl/cpu 'torch==2.14.1+cpu' 'xgrammar==0.2.8'
+          /tmp/minimax-xgrammar/bin/pip check
+      - name: Check MiniMax structural tags and parser round trips
+        env:
+          MINIMAX_GRAMMAR_CASES: /tmp/minimax-grammar-cases.json
+        run: |
+          cargo test --locked -p dynamo-parsers-v2 --test minimax_structural_tag
+          /tmp/minimax-xgrammar/bin/python parsers/v2/tests/check_minimax_xgrammar.py "$MINIMAX_GRAMMAR_CASES"
+
   conformance-utils:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}

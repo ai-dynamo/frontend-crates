@@ -85,6 +85,7 @@ pub(crate) struct SequenceFormat {
 pub(crate) enum JsonSchemaStyle {
     Json,
     QwenXml,
+    MinimaxXml,
     DeepseekXml,
     GlmXml,
 }

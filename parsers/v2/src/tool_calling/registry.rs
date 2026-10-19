@@ -54,7 +54,7 @@ family_registry! {
         Some(&crate::structural_tag::builders::QWEN3_CODER)
     ),
     "muse_glimmer" => (MuseGlimmerToolStreamParser::create, None),
-    "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
+    "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, Some(&crate::structural_tag::builders::MINIMAX_M2)),
     "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
     "glm47"        => (
@@ -117,6 +117,7 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        assert!(structural_tag_builder_for_family("minimax_m2").is_some());
         assert!(structural_tag_builder_for_family("gemma4").is_none());
         assert!(structural_tag_builder_for_family("unknown").is_none());
     }
