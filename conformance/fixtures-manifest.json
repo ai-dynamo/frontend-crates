@@ -1,9 +1,9 @@
 {
-  "snapshot": "20261015_232035",
-  "created_pt": "2026-10-15 23:20:35 America/Los_Angeles",
+  "snapshot": "20261016_160750",
+  "created_pt": "2026-10-16 16:07:50 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "10.0.6",
-    "dynamo-parsers-v2": "0.7.24"
+    "dynamo-parsers": "10.0.7",
+    "dynamo-parsers-v2": "0.7.27"
   },
   "peers": {
     "vllm": "0.26.0",
@@ -378,8 +378,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "53479ca6e41cb13e0a2ed9aa21a83788447a49667811a171091d846f8b6acf47",
-      "size": 46334759
+      "sha256": "a1dc1d2d7ed829eceee4808e88bc11b245f05d50c4e6a56ec7f10ca712465a86",
+      "size": 51668648
     }
   ],
   "inactive_shards": []

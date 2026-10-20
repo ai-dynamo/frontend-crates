@@ -499,7 +499,7 @@
   // so "not set" and "set to the default" stay distinguishable when reading a popup.
   //
   // ONLY real request-scoped parser inputs belong here, i.e. the arguments of
-  // `UnifiedParser::initialize_with_output_mode`. `finish_reason` is deliberately
+  // `UnifiedParser::initialize_request`. `finish_reason` is deliberately
   // NOT one: `finish()` takes no argument, so the parser cannot see it (the same is
   // true of vLLM's parsers) — it is a stream property, not a knob. Listing it here
   // would claim the parser behaves differently per value, which it does not.
@@ -508,7 +508,7 @@
   // says so, because "None" otherwise reads as null/unset.
   var CONFIG_GLOSS = {
     starting_state: {
-      'None': 'prompt opened no channel; the model emits its own markers (enum default)',
+      'None': 'use the family default initial channel (enum default)',
       'Reasoning': 'prompt opened reasoning, so the stream begins INSIDE a thought',
       'Response': 'prompt opened the visible response channel'
     },
