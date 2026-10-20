@@ -36,6 +36,7 @@ from schema_cases import CONFORMANCE_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
 import unified_taxonomy as taxonomy  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
+from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
     OnlyFamilies,
@@ -958,10 +959,10 @@ def _packed_layer(root: Path, directory: str, fam: str, field_map, scenarios):
     return out
 
 
-def _materialized_unified_root(tmp_path: Path, store) -> Path:
-    root = tmp_path / "unified"
-    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root, store=store)
-    return root
+@pytest.fixture(scope="module")
+def committed_unified_store():
+    # These corpus guards only read the same validated history.
+    return unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
 
 
 def _taxonomy_scenarios(fam: str, store):
@@ -977,7 +978,7 @@ def _taxonomy_scenarios(fam: str, store):
     return out
 
 
-def test_every_case_triple_is_identical_at_every_layer(tmp_path):
+def test_every_case_triple_is_identical_at_every_layer(committed_unified_store):
     """One corpus, every tracked representation, zero drift, across all three fields.
 
     Compares `(input, init, golden)` for every case of every family across the generator's
@@ -997,8 +998,9 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path):
     wrong.
     """
     checked = 0
-    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
-    materialized = _materialized_unified_root(tmp_path, store)
+    store = committed_unified_store
+    # CI already extracted and verified this manifest's immutable snapshot.
+    materialized = fixture_snapshot_root() / "unified"
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
         scenarios = _taxonomy_scenarios(fam, store)
@@ -1056,12 +1058,11 @@ def _assert_reference_measurements_start_at_introduction(store):
                 assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
 
 
-def test_shared_reference_cases_start_at_their_introduction():
-    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
-    _assert_reference_measurements_start_at_introduction(store)
+def test_shared_reference_cases_start_at_their_introduction(committed_unified_store):
+    _assert_reference_measurements_start_at_introduction(committed_unified_store)
 
-def test_retained_unified_captures_cover_the_current_corpus():
-    store = unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+def test_retained_unified_captures_cover_the_current_corpus(committed_unified_store):
+    store = committed_unified_store
     captured = set()
     for (family, implementation), history in store.histories.items():
         if implementation != "dynamo_v2":

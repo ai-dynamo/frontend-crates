@@ -104,3 +104,7 @@ opt-level = 3
 # Level 2 avoids sharing unoptimized generic code from other crates.
 [profile.test.package.dynamo-parsers-v2]
 opt-level = 2
+
+# Harmony repeatedly builds the allowed-special-token set during parser setup.
+[profile.test.package.openai-harmony]
+opt-level = 2
