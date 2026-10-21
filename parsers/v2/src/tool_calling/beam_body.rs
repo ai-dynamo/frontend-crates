@@ -90,48 +90,96 @@ enum JsonSpan {
     Invalid,
 }
 
-/// Escape-aware walk over one JSON string, object or array starting at byte zero.
-fn json_span(text: &str) -> JsonSpan {
-    let mut chars = text.char_indices();
-    let Some((_, first)) = chars.next() else {
-        return JsonSpan::Open;
-    };
-    let mut quoted = JsonStringState::default();
-    let mut stack: Vec<char> = match first {
-        '"' => {
-            quoted.advance('"');
-            Vec::new()
+/// Where the walk over one parameter value has got, so a value that arrives in many
+/// pushes is scanned once rather than from its first byte on every push (a 64 KiB
+/// string argument in 8-byte chunks otherwise costs seconds of CPU: the walk doubled
+/// its cost with every doubling of the value). The caller keeps one cursor per open
+/// parameter and hands it the same value prefix, extended, on each push.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ValueCursor {
+    /// Bytes of the (lead-trimmed) JSON value already walked.
+    json_scanned: usize,
+    json_started: bool,
+    json_quoted: JsonStringState,
+    json_stack: Vec<char>,
+    /// `Some(Ok(end))` once the value completed, `Some(Err(()))` once it can never.
+    json_done: Option<Result<usize, ()>>,
+    /// Bytes of the remainder after the JSON value already searched for a closer.
+    closer_searched: usize,
+}
+
+impl ValueCursor {
+    /// Continue the JSON walk over `text`, which extends the text of the previous call.
+    fn json_span(&mut self, text: &str) -> JsonSpan {
+        if let Some(done) = self.json_done {
+            return match done {
+                Ok(end) => JsonSpan::Complete(end),
+                Err(()) => JsonSpan::Invalid,
+            };
         }
-        '{' => vec!['}'],
-        '[' => vec![']'],
-        _ => return JsonSpan::Invalid,
-    };
-    for (idx, c) in chars {
-        if quoted.advance(c) {
-            if stack.is_empty() && c == '"' {
-                // The closing quote of a bare string value.
-                let mut probe = quoted;
-                if !probe.advance('x') {
-                    return JsonSpan::Complete(idx + c.len_utf8());
+        if text.len() < self.json_scanned {
+            // Not an extension of what was walked: start over.
+            *self = Self::default();
+        }
+        let base = self.json_scanned;
+        let mut chars = text[base..].char_indices().map(|(i, c)| (base + i, c));
+        if !self.json_started {
+            let Some((_, first)) = chars.next() else {
+                return JsonSpan::Open;
+            };
+            match first {
+                '"' => {
+                    self.json_quoted.advance('"');
                 }
-            }
-            continue;
-        }
-        match c {
-            '{' => stack.push('}'),
-            '[' => stack.push(']'),
-            '}' | ']' => {
-                if stack.pop() != Some(c) {
+                '{' => self.json_stack.push('}'),
+                '[' => self.json_stack.push(']'),
+                _ => {
+                    self.json_done = Some(Err(()));
                     return JsonSpan::Invalid;
                 }
-                if stack.is_empty() {
-                    return JsonSpan::Complete(idx + c.len_utf8());
-                }
             }
-            _ => {}
+            self.json_started = true;
+            self.json_scanned = first.len_utf8();
         }
+        for (idx, c) in chars {
+            self.json_scanned = idx + c.len_utf8();
+            if self.json_quoted.advance(c) {
+                if self.json_stack.is_empty() && c == '"' {
+                    // The closing quote of a bare string value.
+                    let mut probe = self.json_quoted;
+                    if !probe.advance('x') {
+                        self.json_done = Some(Ok(self.json_scanned));
+                        return JsonSpan::Complete(self.json_scanned);
+                    }
+                }
+                continue;
+            }
+            match c {
+                '{' => self.json_stack.push('}'),
+                '[' => self.json_stack.push(']'),
+                '}' | ']' => {
+                    if self.json_stack.pop() != Some(c) {
+                        self.json_done = Some(Err(()));
+                        return JsonSpan::Invalid;
+                    }
+                    if self.json_stack.is_empty() {
+                        self.json_done = Some(Ok(self.json_scanned));
+                        return JsonSpan::Complete(self.json_scanned);
+                    }
+                }
+                _ => {}
+            }
+        }
+        JsonSpan::Open
     }
-    JsonSpan::Open
+
+    /// Earliest `needle` in `rest`, searching only the bytes no earlier call has seen
+    /// (less one needle length, for a needle split across pushes).
+    fn find_closer(&self, rest: &str, needle: &str) -> Option<usize> {
+        let from = self.closer_searched.saturating_sub(needle.len() - 1);
+        let from = (from..=rest.len()).find(|&i| rest.is_char_boundary(i))?;
+        rest[from..].find(needle).map(|c| from + c)
+    }
 }
 
 /// The parameter keys of ONE held tool (one the serving grammar types, see
@@ -291,11 +339,21 @@ pub(crate) fn param_value_span(
     after_key: &str,
     framing: ArgumentFraming,
 ) -> Option<(usize, usize)> {
+    param_value_span_with(after_key, framing, &mut ValueCursor::default())
+}
+
+/// [`param_value_span`] resuming from `cursor`, which must have seen a prefix of
+/// `after_key` (the same parameter value, extended by the bytes that arrived since).
+pub(crate) fn param_value_span_with(
+    after_key: &str,
+    framing: ArgumentFraming,
+    cursor: &mut ValueCursor,
+) -> Option<(usize, usize)> {
     let mut from = 0;
     if framing == ArgumentFraming::ConstrainedJson {
         let lead = after_key.len() - after_key.trim_start_matches(['\n', ' ', '\t', '\r']).len();
         if after_key[lead..].starts_with(['"', '{', '[']) {
-            match json_span(&after_key[lead..]) {
+            match cursor.json_span(&after_key[lead..]) {
                 JsonSpan::Complete(json_end) => from = lead + json_end,
                 JsonSpan::Open => return None,
                 JsonSpan::Invalid => {}
@@ -303,16 +361,20 @@ pub(crate) fn param_value_span(
         }
     }
     let rest = &after_key[from..];
-    let close = rest
-        .find(PARAM_CLOSE)
+    let close = cursor
+        .find_closer(rest, PARAM_CLOSE)
         .map(|c| (from + c, from + c + PARAM_CLOSE.len()));
-    let follow = rest
-        .find(PARAM_FOLLOW)
+    let follow = cursor
+        .find_closer(rest, PARAM_FOLLOW)
         .map(|f| (from + f + 1, from + f + 1));
-    match (close, follow) {
+    let span = match (close, follow) {
         (Some(close), Some(follow)) if follow.0 <= close.0 => Some(follow),
         (close, follow) => close.or(follow),
+    };
+    if span.is_none() {
+        cursor.closer_searched = rest.len();
     }
+    span
 }
 
 /// The reference template's `\n?VALUE\n?`: exactly one framing newline on each side.
@@ -956,7 +1018,7 @@ mod tests {
     use super::recipient_len;
     use super::{
         ArgumentFraming, BeamBodyError, PARAM_CLOSE, PARAM_OPEN, PyDict, PyValue, Tool,
-        is_valid_recipient, unframe,
+        ValueCursor, is_valid_recipient, param_value_span, param_value_span_with, unframe,
     };
     use serde_json::json;
 
@@ -1507,5 +1569,45 @@ mod tests {
             arguments_json(&body, "fn", &tools).unwrap(),
             r#"{"u": "3 ", "v": "3"}"#
         );
+    }
+
+    /// A value delivered in many pushes is walked once: the cursor resumes at the byte
+    /// the previous push ended on, and reads the same span as a fresh walk of the whole.
+    #[test]
+    fn a_value_cursor_resumes_where_the_previous_push_ended() {
+        let json = format!("{{\"s\": \"{}\"}}", "x".repeat(50_000));
+        let raw = "y".repeat(50_000);
+        for (value, framing) in [
+            (json.clone(), ArgumentFraming::ConstrainedJson),
+            (raw.clone(), ArgumentFraming::Lenient),
+            (json.clone(), ArgumentFraming::Lenient),
+        ] {
+            let after_key = format!("\n{value}\n</rfl:parameter><|call|>");
+            let mut cursor = ValueCursor::default();
+            let mut json_walked = 0;
+            let mut searched = 0;
+            for end in (1..after_key.len()).step_by(7).chain([after_key.len()]) {
+                let got = param_value_span_with(&after_key[..end], framing, &mut cursor);
+                assert_eq!(
+                    got,
+                    param_value_span(&after_key[..end], framing),
+                    "{framing:?} at {end}"
+                );
+                assert!(cursor.json_scanned >= json_walked && cursor.closer_searched >= searched);
+                json_walked = cursor.json_scanned;
+                searched = cursor.closer_searched;
+            }
+            if framing == ArgumentFraming::ConstrainedJson {
+                // The JSON value was walked exactly once; only the short remainder
+                // after it was searched for the closer.
+                assert_eq!(json_walked, json.len(), "{framing:?}");
+            } else {
+                // Raw text: the closer search advanced over the value once.
+                assert!(
+                    searched + PARAM_CLOSE.len() >= value.len(),
+                    "the closer search never restarted"
+                );
+            }
+        }
     }
 }

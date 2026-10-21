@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   where the next one opens, tool names follow one builder/parser contract
   (`[A-Za-z0-9_.-]+`), a delimited call completes at EOS, and a bare header completes as
   `{}` when the declared schema requires nothing.
+- Beam: the final answer closes at `<|call|>` as the serving grammar admits; `reset` clears the JSON-body string state; a parameter value arriving in many pushes is walked once (`ValueCursor`); a text choice holding the bare `</rfl:parameter>` is not held as a constant.
 
 ## [0.7.23](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.22...dynamo-parsers-v2-v0.7.23) - 2026-10-15
 

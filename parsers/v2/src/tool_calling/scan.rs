@@ -94,6 +94,11 @@ pub(crate) struct ChannelEnvelope {
     /// channel is stripped there, while inside a body only that channel's own
     /// `terminators` are structural and the rest stay literal.
     pub orphan_controls: &'static [&'static str],
+    /// Terminators that end the whole TURN for the guided reader (the answer's
+    /// `return`): once one is seen, no guided payload can follow. A visible-channel
+    /// terminator left out of this list only closes its message, so a tool-call
+    /// handoff (`call`) standing alone before the payload is debris, not the end.
+    pub turn_end: &'static [&'static str],
 }
 
 pub(crate) struct EnvelopeChannel {
@@ -655,8 +660,8 @@ pub(crate) fn envelope_guided_close(
     )
 }
 
-/// Guided reader: earliest TURN-END marker — a visible-channel terminator that no
-/// reasoning channel shares — outside every native tool body.
+/// Guided reader: earliest TURN-END marker ([`ChannelEnvelope::turn_end`]) outside
+/// every native tool body.
 pub(crate) fn envelope_guided_turn_end(
     env: &ChannelEnvelope,
     factory: Option<InvokeBoundaryFactory>,
@@ -664,22 +669,8 @@ pub(crate) fn envelope_guided_turn_end(
     flush: bool,
     state: GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    let reasoning: Vec<&str> = env
-        .channels
-        .iter()
-        .filter(|c| c.reasoning)
-        .flat_map(|c| c.terminators.iter().copied())
-        .collect();
     let resolved = envelope_resolve(env, factory, haystack, flush, envelope_bare(state));
-    envelope_free_marker(
-        haystack,
-        &resolved,
-        env.channels
-            .iter()
-            .filter(|c| !c.reasoning)
-            .flat_map(|c| c.terminators.iter().copied())
-            .filter(|m| !reasoning.contains(m)),
-    )
+    envelope_free_marker(haystack, &resolved, env.turn_end.iter().copied())
 }
 
 /// What an unfinished header lead at a `start` marker turns out to be.
@@ -2288,6 +2279,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.env_mode = self.env_initial;
         self.header_slot = true;
         self.env_recipient.clear();
+        // The JSON-body string state belongs to the stream too: left over from a
+        // reply that ended inside a string, it made the next reply's terminator
+        // read as string data (or a quoted marker read as the terminator).
+        self.env_json.reset();
         pending
     }
 

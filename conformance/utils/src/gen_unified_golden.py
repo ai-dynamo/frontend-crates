@@ -3025,8 +3025,8 @@ def _beam_edge_entries():
         "orphan_close_after_prose": (
             r_text("beam", "I will check that. <|call|>"),
             unavailable,
-            note("Beam has no orphan stripping: `<|call|>` inside a `final` message is ordinary text, so it stays visible (grammar contract)"),
-            [{"kind": "text", "text": "I will check that. <|call|>"}],
+            note("`<|call|>` is one of the final answer's closers in the serving grammar, so it ends the message; the trailing `<|return|>` is debris between messages"),
+            [{"kind": "text", "text": "I will check that. "}],
         ),
         "empty_args": (
             _beam_header() + "<|call|>",

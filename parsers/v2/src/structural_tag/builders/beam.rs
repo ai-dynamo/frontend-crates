@@ -68,6 +68,8 @@ const NAME_NEGATED_CLASS: &str = r"\s<";
 const PARAM_BEGIN: &str = "<rfl:parameter name=\"";
 const PARAM_MIDDLE: &str = "\">\n";
 const PARAM_END: &str = "\n</rfl:parameter>";
+/// The parser closes a value at the bare tag (the reference regex), newline or not.
+const PARAM_CLOSE_BARE: &str = "</rfl:parameter>";
 /// A value may also end where the next parameter opens.
 const PARAM_FOLLOW: &str = "\n<rfl:parameter name=\"";
 const KEY_PATTERN: &str = "[^\"]+";
@@ -584,7 +586,10 @@ fn any_parameters() -> Value {
 }
 
 /// Raw text has no escaping for a call closer, nor, where a value may end before the next
-/// opener, for any value end.
+/// opener, for any value end. The exclusions are the serving layer's (the fixtures pin
+/// them byte for byte): it excludes the framed `\n</rfl:parameter>` while its own parser
+/// closes at the bare tag, so free text holding a bare tag is read back truncated by the
+/// reference and by this crate alike.
 fn value_text() -> Value {
     any_text(&[CALL_CLOSERS[0], CALL_CLOSERS[1], PARAM_FOLLOW, PARAM_END])
 }
@@ -618,10 +623,11 @@ fn parameter(key: &str, value: &ValueFormat, last: bool) -> Result<Option<Value>
         ValueFormat::Json(schema) => json_schema_format(schema),
         ValueFormat::Choices(choices) => {
             // Optional framing whitespace must not change a text choice, and a choice must
-            // not end the value or the call early.
+            // not end the value or the call early. The parser closes at the BARE tag, so
+            // a choice holding one would be read back truncated: it is not held.
             let framed = choices.iter().all(|choice| {
                 !CALL_CLOSERS.iter().any(|closer| choice.contains(closer))
-                    && !choice.contains(PARAM_END)
+                    && !choice.contains(PARAM_CLOSE_BARE)
                     && !choice.contains(PARAM_FOLLOW)
             });
             if !framed {
@@ -1742,5 +1748,30 @@ mod tests {
                 .strip_suffix(&format!("){CALL_OPEN_AFTER}"))
                 .unwrap()
         );
+    }
+
+    /// A text choice holding the bare `</rfl:parameter>` would be read back truncated
+    /// (the parser closes at the bare tag), so it is not held as a constant.
+    #[test]
+    fn a_choice_holding_the_bare_closer_is_not_held() {
+        let choices = |choice: &str| ValueFormat::Choices(vec![choice.to_string()]);
+        for last in [false, true] {
+            assert!(matches!(
+                parameter("a", &choices("A</rfl:parameter>B"), last),
+                Ok(None)
+            ));
+            assert!(matches!(
+                parameter(
+                    "a",
+                    &choices(
+                        "A
+</rfl:parameter>B"
+                    ),
+                    last
+                ),
+                Ok(None)
+            ));
+            assert!(matches!(parameter("a", &choices("A"), last), Ok(Some(_))));
+        }
     }
 }

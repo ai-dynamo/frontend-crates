@@ -1278,9 +1278,7 @@ def _family_value(scenario, family):
         # thought, so the words after it are not reasoning (class F divergence).
         return "I'll use " if family == "beam" else "I'll use  next"
     if scenario == "orphan_close_after_prose":
-        # Beam grammar exception (`5-orphan_close_after_prose`): `<|call|>` inside a
-        # `final` message is text.
-        return "I will check that. <|call|>" if family == "beam" else "I will check that. "
+        return "I will check that. "
     if scenario in {
         "prefilled_response_reasoning_markers_literal",
         "guided_json_native_parameter_object_before_payload",

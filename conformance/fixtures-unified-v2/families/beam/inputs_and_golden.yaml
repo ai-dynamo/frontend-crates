@@ -5152,7 +5152,7 @@ cases:
     golden:
       assembled:
       - kind: text
-        text: I will check that. <|call|>
+        text: 'I will check that. '
   prefilled_reasoning_redundant_opener:
     lifecycle: active
     scenario: prefilled_reasoning_redundant_opener

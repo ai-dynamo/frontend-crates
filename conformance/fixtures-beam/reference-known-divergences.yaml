@@ -35,6 +35,11 @@
 #        `2fa_check`) but the reference's `[a-zA-Z_][a-zA-Z0-9_.-]*` recipient rule does
 #        not: the reference reads no call, V2 serves the call the grammar held the model
 #        to (the builder and parser share one name contract, `[A-Za-z0-9_.-]+`).
+#   A  — `<|call|>` inside a `final` body. The serving grammar closes the final answer
+#        with `<|return|>`, `<|end|>` or `<|call|>` (its stop tokens), so V2 ends the
+#        answer there and what follows is debris between messages; the reference keeps
+#        `<|call|>` as content. A stop token never reaches a parser mid-answer in a real
+#        stream, so only fuzzed input shows the difference.
 known_divergences:
   - id: gen-11
     reason: "F: `<|start|>` inside an unterminated `final` body ends it in V2; the reference keeps the call markup as content. The recovered call also carries C (`<|call|>` inside a value) and is dropped by V2."
@@ -144,3 +149,11 @@ known_divergences:
     reason: "N: the declared tool `2fa_check` (leading digit) is called; the reference drops the call, V2 serves it as the grammar admits it."
   - id: gen-288
     reason: "N: the declared tool `2fa_check` (leading digit) is called with no parameters and the stream ends after the header; the reference drops the call, V2 serves `{}` as the grammar admits it (nothing required, closer optional)."
+  - id: gen-126
+    reason: "A: `<|call|>` inside a `final` body ends the answer in V2 (`<|start|{xtrue{é`); the reference keeps it as content."
+  - id: gen-259
+    reason: "A: `<|call|>` inside a `final` body ends the answer in V2; the reference keeps it as content."
+  - id: gen-306
+    reason: "A: `<|call|>` inside a `final` body ends the answer in V2 (`<|xml`), and the bytes before `<|return|>` are debris; the reference keeps `<|call|>` and the newlines as content."
+  - id: gen-473
+    reason: "A: `<|call|>` inside a prefilled `final` body ends the answer in V2 (`json] to=assistanté`); the reference keeps it as content."

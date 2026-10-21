@@ -49,9 +49,9 @@
 //! `JsonKeys`), because it recovers how the bytes were framed, not what they mean.
 
 use crate::tool_calling::beam_body::{
-    JsonKeys, PARAM_FOLLOW, held_json_keys, param_value_span, recipient_admits_empty_arguments,
-    recipient_len, recipient_properties, typed_arguments, typed_value, unframe, value_framing,
-    verbatim_string,
+    JsonKeys, PARAM_FOLLOW, ValueCursor, held_json_keys, param_value_span_with,
+    recipient_admits_empty_arguments, recipient_len, recipient_properties, typed_arguments,
+    typed_value, unframe, value_framing, verbatim_string,
 };
 use crate::tool_calling::beam_py::{PyValue, dump_str, dump_str_fragment};
 use crate::tool_calling::scan::{
@@ -88,7 +88,10 @@ static CHANNELS: [EnvelopeChannel; 2] = [
     EnvelopeChannel {
         name: "final",
         reasoning: false,
-        terminators: &[END, RETURN],
+        // The serving grammar closes the final answer with `<|return|>`, `<|end|>` or
+        // `<|call|>` (all three are the model's stop tokens), so a `<|call|>` ends the
+        // answer here too rather than reaching the user as text.
+        terminators: &[END, RETURN, CALL],
         // A `response_format` JSON answer may quote a marker inside a string.
         json_body: true,
     },
@@ -117,6 +120,9 @@ static ENVELOPE: ChannelEnvelope = ChannelEnvelope {
     // Terminators AND the inner header markers: a `<|constrain|>` or `<|message|>` with no
     // header around it is framing debris, never visible text (goal 3/4).
     orphan_controls: &[CALL, END, RETURN, CONSTRAIN, MESSAGE],
+    // Only `<|return|>` ends the turn for the guided reader: `<|call|>` closes a tool
+    // call (or the final answer) but a guided payload may still follow it.
+    turn_end: &[RETURN],
 };
 
 /// Every fixed marker of the grammar: terminator competition and split-marker holdback
@@ -182,6 +188,9 @@ struct BeamBoundary {
     scanned: usize,
     /// Complete parameters read in this body.
     complete: usize,
+    /// The walk over the parameter open at `open_from`, resumed across pushes.
+    open_from: usize,
+    open_value: ValueCursor,
     /// The recipient's schema admits an empty argument body (declared, nothing
     /// required), so the grammar lets the stream end right after the header.
     empty_body_ok: bool,
@@ -200,6 +209,8 @@ impl InvokeBoundary for BeamBoundary {
     fn reset(&mut self) {
         self.scanned = 0;
         self.complete = 0;
+        self.open_from = 0;
+        self.open_value = ValueCursor::default();
     }
 
     fn channel_body(&mut self, body: &str, flush: bool) -> BodyScan {
@@ -254,7 +265,11 @@ impl InvokeBoundary for BeamBoundary {
                 };
                 let value_from = at + PARAM_OPEN.len() + key_end + 2;
                 let framing = value_framing(self.framing, &self.json_keys, &after[..key_end]);
-                match param_value_span(&body[value_from..], framing) {
+                if self.open_from != value_from {
+                    self.open_from = value_from;
+                    self.open_value = ValueCursor::default();
+                }
+                match param_value_span_with(&body[value_from..], framing, &mut self.open_value) {
                     Some((_, next)) => {
                         self.scanned = value_from + next;
                         self.complete += 1;
@@ -433,6 +448,8 @@ struct OpenValue {
     /// The JSON string text streamed so far (incremental values only), opening quote
     /// included.
     json_text: String,
+    /// The walk over this value, resumed across pushes.
+    cursor: ValueCursor,
 }
 
 impl OpenValue {
@@ -531,6 +548,8 @@ impl InvokeEmitter for BeamEmitter {
             json_keys: self.json_keys(recipient),
             scanned: 0,
             complete: 0,
+            open_from: 0,
+            open_value: ValueCursor::default(),
             empty_body_ok: recipient_admits_empty_arguments(&self.tools, recipient) == Some(true),
         }))
     }
@@ -644,7 +663,11 @@ impl InvokeEmitter for BeamEmitter {
                 if value.incremental {
                     // Raw text: the value ends at its closer or where the next parameter
                     // opens (the serving grammar's implicit boundary), whichever is first.
-                    let span = param_value_span(after_key, ArgumentFraming::Lenient);
+                    let span = param_value_span_with(
+                        after_key,
+                        ArgumentFraming::Lenient,
+                        &mut value.cursor,
+                    );
                     let safe_end = match span {
                         Some((end, _)) => value.start + end,
                         None => {
@@ -666,7 +689,9 @@ impl InvokeEmitter for BeamEmitter {
                     open.members.push((value.key, value.json_text));
                     continue;
                 }
-                let Some((end, next)) = param_value_span(after_key, value.framing) else {
+                let Some((end, next)) =
+                    param_value_span_with(after_key, value.framing, &mut value.cursor)
+                else {
                     break;
                 };
                 let schema = open.properties.as_ref().and_then(|p| p.get(&value.key));
@@ -734,6 +759,7 @@ impl InvokeEmitter for BeamEmitter {
                 } else {
                     String::new()
                 },
+                cursor: ValueCursor::default(),
             });
         }
         if arguments.is_empty() {
@@ -1342,10 +1368,62 @@ mod tests {
             "<|channel|>analysis<|message|>a<|call|>b<|return|>c<|end|>",
             vec![reasoning("a<|call|>b<|return|>c")],
         );
+        // The final answer closes at any of the grammar's three closers; what follows
+        // the closed message is debris between messages.
         expect(
             "<|channel|>final<|message|>b<|call|>c<|return|>",
-            vec![text("b<|call|>c")],
+            vec![text("b")],
         );
+    }
+
+    /// The serving grammar admits `<|call|>` as the final answer's closer (it is a stop
+    /// token like `<|return|>`), so the parser reads it as one: a `<|call|>` delivered
+    /// after the answer ends it instead of reaching the user as text.
+    #[test]
+    fn a_call_marker_closes_the_final_answer_as_the_grammar_admits() {
+        expect(
+            "<|channel|>analysis<|message|>think<|end|><|start|>assistant<|channel|>final<|message|>answer<|call|>",
+            vec![reasoning("think"), text("answer")],
+        );
+        expect(
+            "<|channel|>final<|message|>answer<|return|>",
+            vec![text("answer")],
+        );
+    }
+
+    /// `reset` clears the JSON-body string state with the rest of the stream: a reply
+    /// that ended inside a string must not make the next reply's terminator string
+    /// data, nor a quoted marker in the next reply its terminator.
+    #[test]
+    fn reset_clears_the_json_body_state_of_a_prefilled_response() {
+        for (previous, next, want) in [
+            (
+                "plain",
+                "{\"new\":\"<|return|>\"}<|return|>",
+                "{\"new\":\"<|return|>\"}",
+            ),
+            ("{\"old\":\"", "fresh<|return|>", "fresh"),
+        ] {
+            for at in (0..=next.len()).filter(|&at| next.is_char_boundary(at)) {
+                let mut parser = beam_unified(&tools());
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        starting_state: UnifiedParserStartingState::Response,
+                        ..UnifiedParserInit::default()
+                    })
+                    .expect("init");
+                let _ = parser.push(previous).expect("push");
+                let _ = parser.reset();
+                let mut deltas = parser.push(&next[..at]).expect("push");
+                deltas.extend(parser.push(&next[at..]).expect("push"));
+                deltas.extend(parser.finish().expect("finish"));
+                assert_eq!(
+                    assemble(&deltas),
+                    vec![text(want)],
+                    "{previous:?} then {next:?} split {at}"
+                );
+            }
+        }
     }
 
     /// The markers are special tokens, so a quotation never keeps one literal: the
@@ -1604,12 +1682,12 @@ mod tests {
     }
 
     #[test]
-    fn idle_call_marker_is_orphan_but_literal_inside_final() {
+    fn idle_call_marker_is_orphan_and_closes_the_final_answer() {
         expect("<|call|>", vec![]);
         expect("before<|call|>after", vec![]);
         expect(
             "<|channel|>final<|message|>say <|call|> now<|return|><|call|>",
-            vec![text("say <|call|> now")],
+            vec![text("say ")],
         );
         expect(
             &format!("{HDR}{LONDON}<|call|><|call|><|end|>"),
@@ -2008,8 +2086,10 @@ mod tests {
     }
 
     /// Body terminators follow the channel grammar in every request mode: analysis
-    /// ends only at `<|end|>`, final at `<|end|>`/`<|return|>`, `<|call|>` is text in
-    /// both, and nothing unframed is a header inside an open body.
+    /// ends only at `<|end|>` (`<|call|>` and `<|return|>` are text there), and nothing
+    /// unframed is a header inside an open body. Under guided decoding the answer body
+    /// ends only at the turn end (`<|return|>`); the native drain also closes it at
+    /// `<|call|>`, the grammar's third closer.
     #[test]
     fn guided_body_terminators_follow_the_channel_grammar() {
         use UnifiedParserStartingState::{None as N, Reasoning as R};
