@@ -1371,6 +1371,8 @@ mod tests {
         )];
         for (path, expected) in [
             ("x.py", "x.py"),
+            ("x</rfl:parameter>y", "x</rfl:parameter>y"),
+            ("</rfl:parameter>", "</rfl:parameter>"),
             ("x.py\n", "x.py\n"),
             (
                 "x<rfl:parameter name=\"literal\">y",
@@ -2429,11 +2431,9 @@ mod tests {
 
     const OBJECT_WITH_CLOSER: &str = r#"{"text":"a</rfl:parameter>b"}"#;
 
-    /// The call a raw-text `value` slot yields for [`OBJECT_WITH_CLOSER`]: the embedded
-    /// closer ends the value and the leftover `b"}` plus stray closer is junk the
-    /// template's tag search skips (the serving reference reads it the same way).
-    fn truncated_text_call(name: &str, key: &str) -> Vec<UnifiedEvent> {
-        vec![call(name, json!({key: "{\"text\":\"a"}))]
+    /// A newline-framed raw slot preserves an inline closer as text.
+    fn raw_text_call(name: &str, key: &str) -> Vec<UnifiedEvent> {
+        vec![call(name, json!({key: OBJECT_WITH_CLOSER}))]
     }
 
     fn no_calls(results: Vec<anyhow::Result<Vec<UnifiedEvent>>>, input: &str) {
@@ -2476,9 +2476,7 @@ mod tests {
                 vec![call("echo", json!({"value": want}))],
             );
         }
-        // Why the global modes are wrong for this grammar, unchanged: `ConstrainedJson`
-        // waits forever on a raw string that opens with a quote or brace, and `Lenient`
-        // closes the typed object at the embedded closer (the leftover is skipped junk).
+        // `ConstrainedJson` still waits on a raw string opening with a quote or brace.
         for value in ["\"unfinished", "{\"x\":\"unfinished", "{"] {
             let tools = [echo(string.clone(), Some(true))];
             let input = echo_call("echo", &[("value", value)]);
@@ -2490,7 +2488,10 @@ mod tests {
             &tools,
             &input,
             ToolCallPolicy::default(),
-            truncated_text_call("echo", "value"),
+            vec![call(
+                "echo",
+                json!({"value": {"text": "a</rfl:parameter>b"}}),
+            )],
         );
         // Under `ConstrainedJson` the object case still decodes (that mode is unchanged).
         expect_with(
@@ -2534,8 +2535,7 @@ mod tests {
     }
 
     /// Key ownership is per recipient: the strict tool's `value` owns JSON, the
-    /// unknown tools' `value` slots are raw text (so their embedded closer ends the
-    /// value and the leftover is skipped junk), a held tool's are JSON whatever its
+    /// unknown tools' `value` slots are raw text, a held tool's are JSON whatever its
     /// `strict` flag, and a later call does not lose, nor an earlier one leak, its key
     /// set.
     #[test]
@@ -2564,7 +2564,7 @@ mod tests {
                 plain_object(),
                 object_call.clone(),
                 call("plain", json!({"value": {"t": 1}})),
-                truncated_text_call("mystery", "value").remove(0),
+                raw_text_call("mystery", "value").remove(0),
                 object_call,
                 plain_object(),
             ],
@@ -2588,7 +2588,7 @@ mod tests {
             schema_constrained(),
             object_call.clone(),
         );
-        let raw_text = truncated_text_call("echo", "value");
+        let raw_text = raw_text_call("echo", "value");
         for strict in [Some(false), None] {
             let tools = [echo(object.clone(), strict)];
             expect_with(&tools, &input, schema_constrained(), object_call.clone());
@@ -2601,11 +2601,11 @@ mod tests {
             &tools,
             &other,
             schema_constrained(),
-            truncated_text_call("echo", "other"),
+            raw_text_call("echo", "other"),
         );
         let union = json!({"anyOf": [{"type": "string"}, {"type": "object"}]});
         let tools = [echo(union, Some(true))];
-        expect_with(&tools, &input, schema_constrained(), raw_text.clone());
+        expect_with(&tools, &input, schema_constrained(), object_call.clone());
         // A normalized local ref to an object schema owns JSON.
         let tools = [Tool {
             name: "echo".into(),
@@ -2631,13 +2631,12 @@ mod tests {
             echo(json!({"type": "string"}), Some(false)),
         ];
         let input = echo_call("echo", &[("value", OBJECT_WITH_CLOSER)]);
-        // The last declaration types `value` as a string, so the grammar framed it as
-        // raw text: the embedded closer ends the value.
+        // The last declaration types `value` as a string; retain the complete text.
         expect_with(
             &tools,
             &input,
             schema_constrained(),
-            truncated_text_call("echo", "value"),
+            raw_text_call("echo", "value"),
         );
         // Reversed: the last declaration is the object, framed and typed as JSON.
         let tools = [
@@ -2800,13 +2799,20 @@ mod tests {
                     vec![call("echo", json!({"value": raw}))],
                 );
             }
-            // The grammar emitted the slot raw, so an embedded closer ends it.
+            // Newline framing preserves the inline closer; schema typing still applies.
             let input = echo_call("echo", &[("value", OBJECT_WITH_CLOSER)]);
             expect_with(
                 std::slice::from_ref(&tool),
                 &input,
                 schema_constrained(),
-                truncated_text_call("echo", "value"),
+                vec![call(
+                    "echo",
+                    json!({"value": if tool.parameters["properties"]["value"]["type"] == "integer" {
+                        json!(OBJECT_WITH_CLOSER)
+                    } else {
+                        json!({"text": "a</rfl:parameter>b"})
+                    }}),
+                )],
             );
         }
         // An untyped union branch contributes no type: the slot stays JSON, and so does

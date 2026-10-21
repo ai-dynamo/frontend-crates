@@ -157,3 +157,19 @@ known_divergences:
     reason: "A: `<|call|>` inside a `final` body ends the answer in V2 (`<|xml`), and the bytes before `<|return|>` are debris; the reference keeps `<|call|>` and the newlines as content."
   - id: gen-473
     reason: "A: `<|call|>` inside a prefilled `final` body ends the answer in V2 (`json] to=assistanté`); the reference keeps it as content."
+  - id: gen-93
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-99
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-161
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-237
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-311
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-351
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-404
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
+  - id: gen-538
+    reason: "V: The frozen reference ends a newline-framed value at an inline closer; the current template requires a newline before the closer, preserving that text."
