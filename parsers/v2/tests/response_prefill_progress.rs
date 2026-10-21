@@ -241,6 +241,10 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                 UnifiedParserStartingState::Response,
                 UnifiedParserStartingState::Reasoning,
             ] {
+                let starts_in_reasoning = state == UnifiedParserStartingState::Reasoning
+                    || (state == UnifiedParserStartingState::None
+                        && dynamo_parsers_v2::canonical_unified_family(family)
+                            == Some("nemotron_v3"));
                 for (args_head, args_tail) in ["", " ", "x"].into_iter().flat_map(|preceding| {
                     let path = serde_json::to_string(preceding).unwrap();
                     [
@@ -267,7 +271,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                             ..Default::default()
                         })
                         .unwrap();
-                    let mut head = if state == UnifiedParserStartingState::Reasoning {
+                    let mut head = if starts_in_reasoning {
                         format!("plan{closer}")
                     } else {
                         String::new()
@@ -290,7 +294,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
                     events.extend(parser.push(&tail).unwrap());
                     events.extend(parser.finish().unwrap().events);
                     let mut expected = Vec::new();
-                    if state == UnifiedParserStartingState::Reasoning {
+                    if starts_in_reasoning {
                         expected.push(UnifiedEvent::Reasoning {
                             text: "plan".into(),
                         });

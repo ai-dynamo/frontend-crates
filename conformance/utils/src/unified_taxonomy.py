@@ -26,6 +26,8 @@ from null_cases import NULL_VARIANTS
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_group
 
 UNIFIED_TAX = {
+    "default_reasoning_without_opener": (10, "6"),
+    "default_reasoning_tool_without_closer": (12, "5"),
     # Group 1 — Single call
     "tool_only": (1, "1"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.

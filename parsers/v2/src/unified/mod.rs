@@ -134,7 +134,7 @@ pub enum UnifiedEvent {
 /// Assistant-channel state established by the rendered generation prompt.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum UnifiedParserStartingState {
-    /// Generated output includes any channel-opening marker itself.
+    /// Use the family default, including implicit reasoning where configured.
     #[default]
     None,
     /// The prompt opened reasoning, so generated output begins inside it.
@@ -971,6 +971,14 @@ impl<N: NativeUnified> GuidedRouted<N> {
             },
         };
 
+        let starting_state = match (starting_state, reasoning) {
+            (UnifiedParserStartingState::None, Some(GuidedReasoning::Pair(spec)))
+                if spec.forced_start =>
+            {
+                UnifiedParserStartingState::Reasoning
+            }
+            _ => starting_state,
+        };
         self.starting_state = starting_state;
         self.native.apply_native_init(starting_state);
         self.guided = match (tool_output_mode, guided_reasoning) {
@@ -5727,6 +5735,7 @@ unified_registry! {
     "gemma4" => gemma4::gemma4_unified,
     "glm47" => glm47::glm47_unified,
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
+    "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
     "muse_spark" | "muse_spark_open" => muse_spark::muse_spark_unified,
     "kimi_k2"               => kimi_k2::kimi_k2_unified,

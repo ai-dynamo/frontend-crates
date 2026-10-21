@@ -89,9 +89,10 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.kimi_k2-1
+    display_id: UNIFIED.kimi_k2-kimi_k2_optional_prefix_name_overlap
     historical_ids:
     - UNIFIED.1-2
+    - UNIFIED.kimi_k2-1
     request:
       input: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
       init:
@@ -2262,8 +2263,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<|tool_call_begin|>functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2955,9 +2957,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3102,9 +3105,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:

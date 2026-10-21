@@ -131,6 +131,10 @@ pub fn spec_from_hf_configs(config_json: &str, preprocessor_config_json: &str)
 pub fn spec_from_model_dir(dir: &Path) -> Result<ProcessorSpec>;
 ```
 
+`spec_from_model_dir` reads `preprocessor_config.json`, or the nested
+transformers v5 `processor_config.json` when a checkpoint ships only that
+file (GLM-5.3-Flash).
+
 ### 2.1 A router (e.g. dynamo) — accounting and routing, no pixel work
 
 | when | API | in → out |
@@ -288,6 +292,7 @@ Each item reproduces a specific Python behavior, most of them **bit-exactly**:
 | `token_layout::apply_layout` + `layout_by_placeholder` | HF `Qwen2VLProcessor`'s own `<|image_pad|>` expansion / SGLang `_expand_input_ids` + `get_mm_items_offset` | exact ids/offsets, plus full-coverage validation |
 | `models::qwen_vl::QwenVlProcessor::process_item` | HF `Qwen2VLImageProcessor(Fast)` / `Qwen2VLImageProcessorPil` `__call__` → `pixel_values`, `image_grid_thw` | **bitwise** |
 | `models::qwen_vl::smart_resize` | HF/SGLang `smart_resize` (incl. Python banker's rounding) | exact, including thin-image clamping |
+| `models::glm5_next::plan_image_grid` | `Glm5NextImageProcessor` `smart_resize` + `_preprocess` grid (transformers v5.19.0) | exact canvas, patch grid, and merged token count from dimensions alone |
 | `models::qwen_vl::mrope_image_only` | `get_rope_index` (in transformers' Qwen model code; image-only branch, identical across Qwen generations) | exact, optional model-input preparation beyond strict `AutoProcessor` parity |
 
 For workers that transpose EXIF, pair `dimensions_exif_transposed` for token
@@ -375,7 +380,62 @@ python3 multimodal/tests/fixtures/deepseek_v41/generate.py --check
 The stdlib-only generator executes the pinned source's pure geometry
 functions. Fixture settings are mathematical test inputs, not model defaults.
 
-## 6. Roadmap
+## 6. GLM-5.3-Flash image planning
+
+`models::glm5_next::plan_image_grid(width, height, &spec)` returns the padded
+canvas, the `patch_size` grid (`image_grid_thw = [1, grid_h, grid_w]`), and the
+merged token count `grid_h * grid_w / merge_size²`, which is how many
+`<|image|>` copies the HF processor writes into the prompt. The canvas comes
+from the model's own `smart_resize`: bounds are vision-token counts
+(`min_image_tokens` / `max_image_tokens`), converted at
+`temporal_patch_size * factor²` pixels per token with
+`factor = patch_size * merge_size * patch_expand_factor`; sides align up,
+small images upscale to the minimum, and oversize images are cut by the
+processor's binary search over the content height. vLLM, SGLang, and
+TensorRT-LLM all take `image_grid_thw` from that HF image processor, so
+routers and workers share one geometry contract.
+
+The pixel-free planner mirrors the pinned
+[transformers v5.19.0 source](https://github.com/huggingface/transformers/blob/c4c4605f961877852b89b97478536bb3a26b6fd1/src/transformers/models/glm5_next/image_processing_glm5_next.py)
+(unchanged since v5.16.1). Python's `int / int` divisions are reproduced with
+integer arithmetic, which is exact while the numerator stays below 2⁵³;
+larger products return `LimitExceeded` rather than risk a one-patch drift.
+
+The registry exposes **metadata-only** planning: `ProcessorSpec::Glm5Next` /
+`{"family": "glm5_next", ...}` take `image_token_id`, an optional
+`video_token_id`, and the six geometry knobs above; there are no serving
+defaults. `spec_from_hf_configs` selects this family for `glm5_next` and
+accepts either the flat image-processor object or the nested
+`processor_config.json` (`image_processor` / `video_processor` /
+`processor_class`). Knobs that only shape pixel values are ignored; `do_resize`
+must stay on, crop/pad must stay off, unknown knobs are refused, and processor
+`patch_size` / `merge_size` / `temporal_patch_size` must agree with
+`vision_config`.
+
+The chat template renders each image as
+`<|begin_of_image|><|image|><|end_of_image|>`; `layout_from_metadata` expands
+only `<|image|>` (`layout_by_placeholder`), so the delimiters stay text and
+`feature_ranges` covers exactly the repeated image ids. GLM expands **video**
+frames with the same image token, which this planner does not reproduce:
+video metadata is `Unsupported`, and a prompt containing the declared
+`video_token_id` is refused rather than mis-attributed. `process_item` and
+processed-item `layout` also return `Unsupported`.
+
+Regenerate/check the Python-derived fixtures with:
+
+```sh
+python3 multimodal/tests/fixtures/glm5_next/generate.py
+python3 multimodal/tests/fixtures/glm5_next/generate.py --check
+python3 multimodal/tests/fixtures/glm5_next/generate.py --verify-hf  # needs transformers + torch
+```
+
+The stdlib-only generator executes the pinned source's pure `smart_resize`
+and repeats the geometry lines of `resize` / `_preprocess`; `--verify-hf`
+cross-checks the planned grid against the installed HF processor's
+`image_grid_thw`. Fixture settings beyond the first group are mathematical
+test inputs, not model defaults.
+
+## 7. Roadmap
 
 The crate implements and golden-tests the image pipeline end to end
 for `models::qwen_vl`. For video it decodes to frames and has the request
@@ -402,7 +462,8 @@ What remains:
    `MmError::Unsupported`.
 2. **Video families** — temporal patchify, timestamp layouts and video
    M-RoPE on decoded frames (`models::qwen_vl` first).
-3. **Family coverage** — GLM and Kimi are the validated candidates after
+3. **Family coverage** — GLM-5.3-Flash has metadata-only image planning
+   (§6); its pixel path and video expansion, then Kimi, are next after
    `models::qwen_vl`.
 
 ### Video and audio: planned layout

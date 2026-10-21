@@ -59,6 +59,10 @@ Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), 
 
 The `deepseek_v4` tool-only selector also accepts V4.1's spaced DSML tags (`<｜DSML｜ calls>`, `<｜DSML｜ invoke ...>`). Both dialects use one scanner with their existing boundary parsers and decoders; there is no separate tool-only selector. Reasoning behavior and V4.1 JSON-body support remain separate changes (#253 and #250).
 
+## Nemotron 3 Ultra
+
+Nemotron 3 Ultra 550B-A55B uses Unified family `nemotron_v3` (alias `nemotron3`), combining `nemotron_v3` reasoning with `qwen3_coder` XML tool calls. It shares the Qwen scanner, emitter, guided-prefix handling, and guided router. With no explicit starting state, output begins in reasoning; `Reasoning` preserves that channel and `Response` disables reasoning-marker interpretation. Reset retains the request configuration. Complete native calls are extracted even when `</think>` is omitted, and reasoning resumes after the call. Reasoning-looking markers inside argument values remain literal data. Older Deci/Ultra 253B formats use their existing separate families. This adds parser-library support only; serving integration is separate.
+
 ## Why It Mimics vLLM Rust
 
 The important DIS-2218 comparison is vLLM Rust vs Dynamo Rust. vLLM Python is still useful coverage and behavioral evidence, but it is not the API target.
