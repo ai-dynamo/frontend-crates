@@ -38,7 +38,8 @@ jobs:
               - '.github/workflows/ci.yml'
 
   rust:
-    runs-on: ubuntu-24.04
+    runs-on:
+      group: Fastchecker
     timeout-minutes: 40
     env:
       CARGO_DENY_VERSION: "0.19.4"
