@@ -1321,6 +1321,18 @@ mod tests {
     }
 
     #[test]
+    fn template_names_survive_split_headers() {
+        for name in ["9lookup", "-lookup", "a:b", "café", "goto=foo"] {
+            for lead in ["<|start|>assistant to=", " to="] {
+                let input = format!(
+                    "{lead}{name}<|channel|>analysis <|constrain|>xml<|message|>{LONDON}<|call|>"
+                );
+                expect_streamed(&[], &input, vec![call(name, json!({"location": "London"}))]);
+            }
+        }
+    }
+
+    #[test]
     fn parallel_calls_in_order_with_interleaved_reasoning() {
         let input = format!(
             "{HDR}<rfl:parameter name=\"location\">a</rfl:parameter><|end|><|start|>assistant<|channel|>analysis<|message|>mid<|end|>{HDR}<rfl:parameter name=\"location\">b</rfl:parameter><|call|>"

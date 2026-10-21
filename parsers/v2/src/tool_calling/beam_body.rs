@@ -62,21 +62,17 @@ impl std::fmt::Display for BeamBodyError {
 
 impl std::error::Error for BeamBodyError {}
 
-/// A recipient (tool name) in a call header: `[A-Za-z0-9_.-]+`, the one name contract
-/// the structural-tag builder holds declared tools to (`name_encodable`), so a call the
-/// grammar admits for a declared tool (`2fa_check`, `-tool`) is never dropped here.
+/// Beam's template name class, with ASCII whitespace explicit for XGrammar.
+pub(crate) const NAME_PATTERN: &str = r"[^ \t\n\r\f\v<]+";
+pub(crate) const NAME_NEGATED_CLASS: &str = r" \t\n\r\f\v<";
+
 pub fn is_valid_recipient(name: &str) -> bool {
     !name.is_empty() && recipient_len(name) == name.len()
 }
 
-/// Whether `c` may appear anywhere in a recipient.
-pub(crate) fn is_recipient_char(c: char) -> bool {
-    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')
-}
-
-/// Length of the longest valid recipient prefix of `text` (0 when none).
+/// Length in bytes of the longest prefix without ASCII whitespace or `<`.
 pub fn recipient_len(text: &str) -> usize {
-    text.find(|c: char| !is_recipient_char(c))
+    text.find([' ', '\t', '\n', '\r', '\x0c', '\x0b', '<'])
         .unwrap_or(text.len())
 }
 
@@ -1438,19 +1434,22 @@ mod tests {
 
     #[test]
     fn recipient_grammar() {
-        // The builder's name contract: digit-, hyphen- and dot-leading names included.
         for ok in [
             "weather",
             "_x",
             "a.b-c9",
             "functions.get_weather",
-            "2fa_check",
-            "-tool",
+            "9a",
+            "-a",
             ".a",
+            "é",
+            "a:b",
+            "a/b",
+            "a\u{a0}b",
         ] {
             assert!(is_valid_recipient(ok), "{ok}");
         }
-        for bad in ["", "a b", "a\tb", "a<b", "a<|channel|>", "é", "[{\"name\""] {
+        for bad in ["", "a b", "a<b", "a\t", "a\n", "a\r", "a\x0b", "a\x0c"] {
             assert!(!is_valid_recipient(bad), "{bad}");
         }
         assert_eq!(recipient_len("get_weather<|channel|>"), 11);

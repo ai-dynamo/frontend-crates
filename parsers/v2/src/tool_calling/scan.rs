@@ -198,7 +198,7 @@ fn envelope_parse_prefix(env: &ChannelEnvelope, prefix: &str) -> HeaderLead {
     // The recipient is whatever `recipient_key NAME` ends the lead; bytes glued in front
     // of it (`assistant\tto=NAME`, `assistantto=NAME`) are header debris, never prose:
     // the header is identified by its tail, as the builder's template regex does.
-    let Some(k) = t.rfind(env.recipient_key) else {
+    let Some(k) = t.find(env.recipient_key) else {
         return HeaderLead::NotHeader;
     };
     let r = &t[k + env.recipient_key.len()..];
@@ -359,13 +359,16 @@ fn envelope_bare(state: GuidedChannelState) -> EnvelopeBare {
 /// in front of the thought. Separator spaces are absorbed only together with a lead
 /// word, never alone: `Sure. <|channel|>` keeps its trailing space as prose.
 fn envelope_bare_lead(env: &ChannelEnvelope, before: &str) -> Option<(usize, Option<String>)> {
-    let (mut p, recipient) = match before
-        .rfind(env.recipient_key)
-        .map(|k| (k, envelope_parse_prefix(env, &before[k..])))
-    {
-        Some((k, HeaderLead::Lead(Some(r)))) => (k, Some(r)),
-        _ => (before.len(), None),
-    };
+    let (mut p, recipient) =
+        match before.match_indices(env.recipient_key).find_map(
+            |(k, _)| match envelope_parse_prefix(env, &before[k..]) {
+                HeaderLead::Lead(Some(r)) => Some((k, r)),
+                _ => None,
+            },
+        ) {
+            Some((k, r)) => (k, Some(r)),
+            _ => (before.len(), None),
+        };
     while p > 0 && before.as_bytes()[p - 1] == b' ' {
         p -= 1;
     }
@@ -733,6 +736,9 @@ fn envelope_lead_verdict(
     if lead_len + hold == rest.len() && !settled {
         return LeadVerdict::Pending;
     }
+    // Once the lead cannot grow into a header, preserve a guided JSON payload
+    // even though its opening bracket was also a possible recipient character.
+    let lead_len = rest[..lead_len].find(['{', '[']).unwrap_or(lead_len);
     let lead = &rest[..lead_len];
     let next = &rest[lead_len..];
     let decided = next.is_empty()

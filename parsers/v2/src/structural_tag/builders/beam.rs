@@ -22,6 +22,8 @@
 //! - only the string `format`s the serving layer spells out are held;
 //! - a JSON value is held only when its schema uses keywords XGrammar compiles, where the
 //!   serving layer compiles the schema to find out.
+//! Under automatic choice, held names must be ASCII: XGrammar cannot exclude a
+//! non-ASCII name from the loose fallback without weakening its argument schema.
 //!
 //! The grammar covers the whole message, so the caller says where the rendered prompt
 //! leaves the assistant message ([`PromptChannel`]): at its bare `<|start|>assistant`
@@ -32,6 +34,7 @@ use serde_json::{Map, Value, json};
 use super::{StructuralTagBuilder, TurnGrammar};
 use crate::Tool;
 use crate::structural_tag::{PromptChannel, StructuralTagContext, StructuralTagToolChoice};
+use crate::tool_calling::beam_body::{NAME_NEGATED_CLASS, NAME_PATTERN, is_valid_recipient};
 
 /// The Beam family's builder: a turn grammar, see [`beam_turn_structural_tag`].
 pub(crate) static BEAM: StructuralTagBuilder = StructuralTagBuilder::turn(&BeamTurnGrammar);
@@ -62,9 +65,6 @@ const ANSWER_CLOSERS: [&str; 3] = ["<|return|>", "<|end|>", "<|call|>"];
 const CALL_CLOSERS: [&str; 2] = ["<|end|><|start|>assistant", "<|call|>"];
 const CALL_OPEN_BEFORE: &str = " to=";
 const CALL_OPEN_AFTER: &str = r"<\|channel\|>analysis <\|constrain\|>xml<\|message\|>";
-/// The tool name is any run without whitespace or `<`: `[^\s<]+`.
-const NAME_PATTERN: &str = r"[^\s<]+";
-const NAME_NEGATED_CLASS: &str = r"\s<";
 const PARAM_BEGIN: &str = "<rfl:parameter name=\"";
 const PARAM_MIDDLE: &str = "\">\n";
 const PARAM_END: &str = "\n</rfl:parameter>";
@@ -158,7 +158,7 @@ const XGRAMMAR_JSON_KEYWORDS: &[&str] = &[
     "nullable",
 ];
 
-/// The structural tag for one Beam turn, or `None` where the serving layer derives none: a
+/// The structural tag for one Beam turn, or `None` when it cannot be enforced: a
 /// strict tool whose schema the XML arguments cannot hold, a tool name the template cannot
 /// spell, a forced choice without tools, or a forced choice once the final channel is open.
 pub(crate) fn beam_turn_structural_tag(
@@ -240,7 +240,7 @@ fn turn_rest(
         }
         // A strict tool the arguments cannot hold leaves the turn unheld.
         let arguments = arguments?;
-        if !name_encodable(name) {
+        if !is_valid_recipient(name) {
             return None;
         }
         calls.push((escape_regex(name), arguments, held));
@@ -253,6 +253,11 @@ fn turn_rest(
             .filter(|(_, (_, _, held))| *held)
             .map(|(tool, _)| tool.name.as_str())
             .collect();
+        // XGrammar drops non-ASCII exclusions from negated classes. Such a held
+        // name could then use the untyped fallback and bypass its schema.
+        if held_names.iter().any(|name| !name.is_ascii()) {
+            return None;
+        }
         let others = format!("(?:{})", other_names(&held_names));
         calls.retain(|(_, _, held)| *held);
         calls.push((others, any_parameters(), false));
@@ -327,14 +332,7 @@ fn answer_text() -> Vec<Value> {
     ]
 }
 
-/// Whether a declared tool's name can be held and read back: the parser's recipient
-/// contract (`[A-Za-z0-9_.-]+`, see `beam_body::is_valid_recipient`). A name outside it
-/// derives no grammar rather than a branch whose calls the parser would drop.
-fn name_encodable(name: &str) -> bool {
-    crate::tool_calling::beam_body::is_valid_recipient(name)
-}
-
-/// A regex for the names `[^\s<]+` matches besides `names`.
+/// The template name class with held names excluded.
 fn other_names(names: &[&str]) -> String {
     if names.is_empty() {
         return NAME_PATTERN.to_string();
@@ -1517,6 +1515,13 @@ mod tests {
 
     #[test]
     fn unencodable_names_and_unholdable_strict_tools_derive_no_grammar() {
+        let unicode = tool(
+            "café",
+            Some(object(json!({"q": {"type": "string"}}), Some(vec!["q"]))),
+            true,
+        );
+        assert!(turn(&[unicode.clone()], Auto, true).is_none());
+        assert!(turn(&[unicode], Named("café"), true).is_some());
         let spaced = tool(
             "bad name",
             Some(object(json!({"q": {"type": "string"}}), Some(vec!["q"]))),
@@ -1726,7 +1731,7 @@ mod tests {
         let pattern = other_names(&["ab", "a"]);
         assert_eq!(
             pattern,
-            r"(?:[^\s<a][^\s<]*|a(?:[^\s<b][^\s<]*|b(?:[^\s<][^\s<]*)))"
+            r"(?:[^ \t\n\r\f\v<a][^ \t\n\r\f\v<]*|a(?:[^ \t\n\r\f\v<b][^ \t\n\r\f\v<]*|b(?:[^ \t\n\r\f\v<][^ \t\n\r\f\v<]*)))"
         );
         let re = regex::Regex::new(&format!("^{pattern}$")).unwrap();
         for other in ["b", "abc", "aa", "ba", "x"] {
