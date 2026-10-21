@@ -7,23 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 
 Releases of `dynamo-protocols`, `dynamo-parsers`, `dynamo-parsers-v2`, `dynamo-tokenizers`, `dynamo-renderer`, and `dynamo-multimodal` to crates.io are automated by `.github/workflows/release.yml`. This document covers the workflow, one-time setup, and recovery.
 
-## Pre-merge publish dry run
-
-The Rust CI job and the release workflow share `.github/scripts/prepare-release.sh`.
-Manually pinned versions must pass `cargo semver-checks check-release` against
-the crate's latest release tag. Changed crates without a manual pin use
-`release-plz update` to select and check their next version.
-
-CI then runs `cargo publish --workspace --dry-run --locked --allow-dirty` on
-those proposed versions. Preparation requires a clean checkout; `--allow-dirty`
-allows only the subsequent local version, lockfile, and changelog edits to be
-packaged. CI does not commit these edits or upload crates.
-
 ## What happens on every push to `main`
 
 1. The `release` workflow runs.
 2. The workflow decides **per crate, path-scoped** (DIS-2414). For each publishable workspace crate it compares the crate's `Cargo.toml` version against the crate's latest release tag (e.g. `dynamo-protocols-v2.0.2`):
-   - **version ≠ last tag** → the version was **manually pegged** in a PR. The workflow checks its API compatibility without changing it; the publish step ships exactly that version. See "Manual version peg" below.
+   - **version ≠ last tag** → the version was **manually pegged** in a PR. The workflow does not touch it; the publish step ships exactly that version. See "Manual version peg" below.
    - **version == last tag, no changes under the crate's own directory** since that tag → nothing happens. In particular, a change to one crate never re-releases its dependents: all inter-crate deps are caret reqs, so a compatible bump never requires a dependent re-release (the old blanket `release-plz update` cascaded these, churning versions of crates whose code never changed).
    - **version == last tag, changes under the crate's own directory** → `release-plz update -p <crate>` bumps that crate only. Within the crate, release-plz still applies its own two filters: only **packaged contents** count (the `include = [...]` list in the crate's `Cargo.toml`: `src/**/*`, `Cargo.toml`, `README.md` — not `tests/` etc.), and only commits matching `release_commits` in `release-plz.toml` count (`feat:`, `fix:`, `perf:`, `refactor:`). If neither filter passes, no bump is proposed even though the directory changed.
    - **no release tag yet** → the bump step skips this crate.

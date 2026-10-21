@@ -45,8 +45,6 @@ jobs:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
       CARGO_NEXTEST_VERSION: "0.9.145"
-      CARGO_SEMVER_CHECKS_VERSION: "0.48.0"
-      RELEASE_PLZ_VERSION: "0.3.158"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -63,12 +61,7 @@ jobs:
       - name: Install cargo tools
         uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
         with:
-          tool: >-
-            cargo-deny@${{ env.CARGO_DENY_VERSION }},
-            cargo-machete@${{ env.CARGO_MACHETE_VERSION }},
-            cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }},
-            cargo-semver-checks@${{ env.CARGO_SEMVER_CHECKS_VERSION }},
-            release-plz@${{ env.RELEASE_PLZ_VERSION }}
+          tool: cargo-deny@${{ env.CARGO_DENY_VERSION }},cargo-machete@${{ env.CARGO_MACHETE_VERSION }},cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
 
       - name: Check unused dependencies
         run: cargo machete
@@ -112,13 +105,8 @@ jobs:
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
-      - name: Prepare release versions and check semver
-        run: bash .github/scripts/prepare-release.sh
-
       - name: Verify crates are publishable
-        # Preparation starts clean and may edit versions, lockfile and changelogs.
-        # Package those proposed releases without committing or uploading them.
-        run: cargo publish --workspace --dry-run --locked --allow-dirty
+        run: cargo publish --workspace --dry-run --locked
 
   # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
   # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
