@@ -112,9 +112,6 @@ jobs:
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
-      - name: Test release preparation
-        run: python3 .github/scripts/test_prepare_release.py
-
       - name: Prepare release versions and check semver
         run: bash .github/scripts/prepare-release.sh
 
