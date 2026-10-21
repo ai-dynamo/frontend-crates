@@ -60,7 +60,11 @@ impl TurnGrammar for BeamTurnGrammar {
 
 // The Beam response template, as the serving layer's `beam.py` declares it.
 const THINK_OPEN: &str = "<|channel|>analysis<|message|>";
-const THINK_CLOSE: &str = "<|end|><|start|>assistant";
+const THINK_CLOSERS: [&str; 3] = [
+    "<|end|><|start|>assistant",
+    "<|constrain|><|start|>assistant",
+    "<|start|>assistant",
+];
 const ANSWER_OPEN: &str = "<|channel|>final<|message|>";
 const ANSWER_CLOSERS: [&str; 3] = ["<|return|>", "<|end|>", "<|call|>"];
 const CALL_CLOSERS: [&str; 2] = ["<|end|><|start|>assistant", "<|call|>"];
@@ -195,7 +199,7 @@ pub(crate) fn beam_turn_structural_tag(
             sequence(elements)
         }
         PromptChannel::OpenReasoning => {
-            let mut elements = vec![any_text(&[THINK_CLOSE]), const_string(THINK_CLOSE)];
+            let mut elements = vec![any_text(&THINK_CLOSERS), const_strings(&THINK_CLOSERS)];
             elements.extend(rest);
             sequence(elements)
         }
@@ -296,7 +300,7 @@ fn turn_rest(
 fn thinking_format() -> Value {
     // A first character that starts none of the closers.
     let nonempty = sequence(vec![regex("[^<]"), json!({"type": "any_text"})]);
-    tag(THINK_OPEN, nonempty, &[THINK_CLOSE])
+    tag(THINK_OPEN, nonempty, &THINK_CLOSERS)
 }
 
 /// The final channel: free text, or a JSON document of `schema` (a structured answer),
@@ -1575,8 +1579,12 @@ mod tests {
         assert_eq!(
             reasoning["format"],
             json!({"type": "sequence", "elements": [
-                {"type": "any_text", "excludes": ["<|end|><|start|>assistant"]},
-                {"type": "const_string", "value": "<|end|><|start|>assistant"},
+                {"type": "any_text", "excludes": ["<|end|><|start|>assistant", "<|constrain|><|start|>assistant", "<|start|>assistant"]},
+                {"type": "or", "elements": [
+                    {"type": "const_string", "value": "<|end|><|start|>assistant"},
+                    {"type": "const_string", "value": "<|constrain|><|start|>assistant"},
+                    {"type": "const_string", "value": "<|start|>assistant"}
+                ]},
                 rest
             ]})
         );
