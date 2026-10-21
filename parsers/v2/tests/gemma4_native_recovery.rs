@@ -211,17 +211,17 @@ fn unified_5_4_uses_unchanged_corpus_schemas_through_available_public_adapters()
         let tools: Vec<Tool> =
             serde_yaml::from_value(request["tools"].clone()).expect("authored schemas");
         let input = request["input"].as_str().expect("authored input");
+        let mut expected_calls = Vec::new();
+        if family == "deepseek_v41" {
+            // A closed DSML parameter now preserves invalid JSON as a string.
+            expected_calls.push(("bad", serde_json::json!({"value": "{\"x\":\"unfinished"})));
+        }
+        expected_calls.extend([
+            ("echo", serde_json::json!({"value": "é"})),
+            ("echo", serde_json::json!({"value": "Café"})),
+        ]);
         for chunks in chunkings(input) {
-            assert_adapters(
-                family,
-                &tools,
-                &chunks,
-                "",
-                &[
-                    ("echo", serde_json::json!({"value": "é"})),
-                    ("echo", serde_json::json!({"value": "Café"})),
-                ],
-            );
+            assert_adapters(family, &tools, &chunks, "", &expected_calls);
         }
     }
 }

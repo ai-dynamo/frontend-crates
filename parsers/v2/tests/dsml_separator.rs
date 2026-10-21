@@ -304,8 +304,8 @@ fn incomplete_calls_drop_framing_but_keep_content_at_eof() {
 #[test]
 fn emitter_errors_leave_separator_and_call_recoverable() {
     for wrapped in [true, false] {
-        let call = native_call("deepseek_v41", wrapped, "invalid")
-            .replace("string=\"true\"", "string=\"false\"");
+        let call =
+            native_call("deepseek_v41", wrapped, "invalid").replace("name=\"run\"", "name=\"\"");
         let input = format!("Check.\n\n{call}");
         for split in [0, input.find("invalid").unwrap(), input.len()] {
             let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
@@ -333,13 +333,11 @@ fn emitter_errors_leave_separator_and_call_recoverable() {
 
 #[test]
 fn reset_keeps_deferred_block_after_bare_recovery() {
-    let malformed = |wrapped: bool, name: &str, value: &str| {
-        native_call("deepseek_v41", wrapped, value)
-            .replace("string=\"true\"", "string=\"false\"")
-            .replace("name=\"run\"", &format!("name=\"{name}\""))
-    };
-    let first = malformed(true, "first", r#"{"a":"#);
-    let second = malformed(false, "second", r#"{"b":"#);
+    let first = concat!(
+        "<｜DSML｜ calls>",
+        "<｜DSML｜ invoke name=\"first\">{\"a\":</｜DSML｜ invoke></｜DSML｜ calls>"
+    );
+    let second = native_call("deepseek_v41", false, "second").replace("name=\"run\"", "name=\"\"");
     for gap in ["\n\n", "x"] {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
         parser
@@ -355,7 +353,7 @@ fn reset_keeps_deferred_block_after_bare_recovery() {
         assert!(parsed.is_err(), "gap={gap:?}");
         let pending = parser.reset();
         assert!(
-            pending.contains(&first) && pending.contains(&second),
+            pending.contains(first) && pending.contains(&second),
             "gap={gap:?} pending={pending:?}"
         );
     }
