@@ -48,6 +48,7 @@
 //! adopted without a translation layer. Where it diverges from the peer shape, the
 //! divergence is stated at the item.
 
+pub mod beam;
 pub mod deepseek_v4;
 pub mod deepseek_v41;
 pub mod gemma4;
@@ -226,6 +227,63 @@ impl UnifiedParserInit {
     }
 }
 
+/// What a native parser does with a tool call whose envelope or body is malformed
+/// (missing terminator, header only, unclosed parameter). Not a guided-JSON policy;
+/// see [`InvalidGuidedPayloadPolicy`] for that.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum MalformedToolCallPolicy {
+    /// Best effort: discard only the bad region and keep parsing (conformance default).
+    #[default]
+    Drop,
+    /// Fail the push/finish with a [`MalformedToolCall`] (or the family's typed body
+    /// error); committed output stays readable and `reset` returns every uncommitted byte.
+    Reject,
+}
+
+/// How a native tool body frames argument values.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum ArgumentFraming {
+    /// A value runs to the first closing tag, as the reference regex does.
+    #[default]
+    Lenient,
+    /// Values that are JSON objects/arrays own their strings, so a closing tag inside
+    /// a JSON string is data. Matches serving with strict, grammar-constrained output.
+    ConstrainedJson,
+    /// Per-parameter framing from the request's tool schemas, as the native serving
+    /// grammar frames them: a parameter of a tool the grammar holds (every tool whose
+    /// schema it can type, `strict` or not) whose admitted types are known and exclude
+    /// `string` is JSON and owns its strings; every other slot (string-typed, unions
+    /// containing string, unknown keys, unknown or unheld tools) is raw text that ends at the first closing tag, so an unmatched quote or a
+    /// bare `{` in a string value is never an error and literal quotes are kept. The
+    /// admitted types are read the way the serving grammar read them (a schema's own
+    /// `type` UNIONED with its `anyOf`/`oneOf` branches), which is a framing decision
+    /// and deliberately not the conjunctive rule ordinary argument typing applies.
+    SchemaConstrained,
+}
+
+/// Request-scoped native tool-call policy. Apply with
+/// [`UnifiedParser::set_tool_call_policy`] before the first push.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct ToolCallPolicy {
+    pub malformed: MalformedToolCallPolicy,
+    pub argument_framing: ArgumentFraming,
+}
+
+/// Typed native failure for a tool call that can never complete. Raw bytes are
+/// excluded; recover them through [`UnifiedParser::reset`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MalformedToolCall {
+    pub reason: &'static str,
+}
+
+impl std::fmt::Display for MalformedToolCall {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "malformed tool call: {}", self.reason)
+    }
+}
+
+impl std::error::Error for MalformedToolCall {}
+
 /// Coarse payload classification carried by [`InvalidGuidedPayload`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InvalidGuidedPayloadKind {
@@ -301,6 +359,15 @@ pub trait UnifiedParser: Send {
         }
         if init.tool_output_mode != UnifiedToolOutputMode::Native {
             anyhow::bail!("this unified parser does not support guided tool output");
+        }
+        Ok(())
+    }
+
+    /// Apply the request-scoped native tool-call policy before parsing starts.
+    /// Families without a policy-aware grammar accept only the default.
+    fn set_tool_call_policy(&mut self, policy: ToolCallPolicy) -> Result<()> {
+        if policy != ToolCallPolicy::default() {
+            anyhow::bail!("this unified parser does not support a tool-call policy");
         }
         Ok(())
     }
@@ -806,15 +873,19 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
         self.scanner.tool_call_id(tool_index)
     }
 
-    /// Every family on this scanner declares its reasoning channel as a marker
-    /// PAIR, which is the shape `ReasoningSpec` holds.
+    /// A marker-pair family declares its reasoning channel as a `ReasoningSpec`; a
+    /// channel-envelope family (Beam) hands over the header hooks derived from its
+    /// envelope table, so the guided reader resolves headers by the native rules.
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
-        self.scanner.reasoning_spec().map(GuidedReasoning::Pair)
+        self.scanner
+            .guided_channel()
+            .map(GuidedReasoning::Channel)
+            .or_else(|| self.scanner.reasoning_spec().map(GuidedReasoning::Pair))
     }
 
     fn guided_grammar(&self) -> GuidedGrammar {
         GuidedGrammar {
-            control_markers: self.scanner.control_markers().to_vec(),
+            control_markers: self.scanner.guided_control_markers(),
             invoke_start: self.scanner.invoke_start().to_string(),
             invoke_start_alternates: Vec::new(),
             invoke_end: self.scanner.invoke_end().to_string(),
@@ -826,6 +897,11 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
             guided_prefix_policy: self.guided_prefix_policy,
             guided_prefix_factory: self.guided_prefix_factory,
         }
+    }
+
+    fn set_tool_policy(&mut self, policy: ToolCallPolicy) -> bool {
+        self.scanner.set_tool_policy(policy);
+        self.scanner.has_envelope()
     }
 
     fn apply_native_init(&mut self, init: &UnifiedParserInit) -> Result<()> {
@@ -951,6 +1027,11 @@ pub(crate) trait NativeUnified {
 
     /// The tool-grammar markers the guided reader strips as stray markup.
     fn guided_grammar(&self) -> GuidedGrammar;
+
+    /// Whether the native grammar honours a request-scoped [`ToolCallPolicy`].
+    fn set_tool_policy(&mut self, _policy: ToolCallPolicy) -> bool {
+        false
+    }
 
     /// Apply the non-guided half of `init`. Called only after EVERY prerequisite
     /// has been checked, so a rejected initialize stays a no-op.
@@ -1158,6 +1239,16 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
 
     fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
         self.apply_init(init)
+    }
+
+    fn set_tool_call_policy(&mut self, policy: ToolCallPolicy) -> Result<()> {
+        if self.started || self.finished {
+            anyhow::bail!("cannot set the tool-call policy after parsing has started");
+        }
+        if !self.native.set_tool_policy(policy) && policy != ToolCallPolicy::default() {
+            anyhow::bail!("this unified parser does not support a tool-call policy");
+        }
+        Ok(())
     }
 
     fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
@@ -1409,11 +1500,15 @@ pub(crate) struct GuidedChannel {
     /// grow and must be resolved rather than held.
     pub(crate) find_open:
         fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
-    /// Earliest reasoning CLOSER: `(offset, bytes to consume)`.
-    pub(crate) find_close: fn(haystack: &str) -> Option<(usize, usize)>,
+    /// Earliest reasoning CLOSER: `(offset, bytes to consume)`. Takes the same
+    /// `flush`/state as the header hooks so an envelope family can skip a closer that
+    /// sits inside a native tool body (where it is argument data).
+    pub(crate) find_close:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
     /// Earliest TURN-END marker, as distinct from a message closer. `None` for a family
     /// whose grammar does not separate the two.
-    pub(crate) find_turn_end: fn(haystack: &str) -> Option<(usize, usize)>,
+    pub(crate) find_turn_end:
+        fn(haystack: &str, flush: bool, state: GuidedChannelState) -> Option<(usize, usize)>,
     /// Earliest header that routes to VISIBLE CONTENT, which ENDS an open thought.
     ///
     /// `None` for a marker-pair family: its thought ends only at its own closer.
@@ -1459,6 +1554,20 @@ pub(crate) struct GuidedChannel {
     /// Whether the current suffix is an incomplete multi-token channel header
     /// that must stay intact before generic marker stripping runs.
     pub(crate) header_pending: Option<fn(haystack: &str, flush: bool) -> bool>,
+    /// Whether this channel's framing is a positional-token ENVELOPE.
+    ///
+    /// Two consequences, both mirroring the native envelope drain. A header owns
+    /// every byte from its first one until it resolves: the run `holdback` names is
+    /// unresolved, and no fixed marker inside it may be consumed first (the
+    /// terminator of a header that will never complete, a closer inside a tool body).
+    /// And a message body is cut only by its own terminators and a framed `start`, so
+    /// inside an open thought only `close_markers` are structural while every other
+    /// competitor is the thought's text.
+    ///
+    /// `false` for the header-routed families whose narrated tool markup inside a
+    /// thought IS stripped, and whose `holdback` marks a marker-aligned safe prefix
+    /// (the run it names begins AT a complete marker that must still be consumed).
+    pub(crate) envelope_owned: bool,
 }
 
 impl GuidedReasoning {
@@ -1521,10 +1630,15 @@ impl GuidedReasoning {
     }
 
     /// Earliest reasoning closer: `(offset, bytes to consume)`.
-    fn find_close(&self, haystack: &str) -> Option<(usize, usize)> {
+    fn find_close(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
         match self {
             Self::Pair(spec) => haystack.find(spec.end).map(|at| (at, spec.end.len())),
-            Self::Channel(channel) => (channel.find_close)(haystack),
+            Self::Channel(channel) => (channel.find_close)(haystack, flush, state),
         }
     }
 
@@ -1542,10 +1656,15 @@ impl GuidedReasoning {
     }
 
     /// Earliest TURN-END marker, distinct from a message closer.
-    fn find_turn_end(&self, haystack: &str) -> Option<(usize, usize)> {
+    fn find_turn_end(
+        &self,
+        haystack: &str,
+        flush: bool,
+        state: GuidedChannelState,
+    ) -> Option<(usize, usize)> {
         match self {
             Self::Pair(_) => None,
-            Self::Channel(channel) => (channel.find_turn_end)(haystack),
+            Self::Channel(channel) => (channel.find_turn_end)(haystack, flush, state),
         }
     }
 
@@ -1632,6 +1751,12 @@ impl GuidedReasoning {
         }
     }
 
+    /// Whether this channel's framing is a positional-token envelope
+    /// ([`GuidedChannel::envelope_owned`]).
+    fn is_envelope(&self) -> bool {
+        matches!(self, Self::Channel(channel) if channel.envelope_owned)
+    }
+
     fn preserves_response_markers(&self) -> bool {
         matches!(self, Self::Channel(channel) if !channel.response_literal_markers.is_empty())
     }
@@ -1640,6 +1765,34 @@ impl GuidedReasoning {
         match self {
             Self::Pair(_) => &[],
             Self::Channel(channel) => channel.response_literal_markers,
+        }
+    }
+
+    /// Control markers that are literal inside an open thought: for a positional-token
+    /// envelope every competitor but the thought's own closers (see
+    /// [`GuidedChannel::envelope_owned`]); nothing for the other families.
+    fn thought_literal_markers(&self) -> Vec<&'static str> {
+        match self {
+            Self::Channel(channel) if channel.envelope_owned => channel
+                .competitors
+                .iter()
+                .copied()
+                .filter(|m| !channel.close_markers.contains(m))
+                .collect(),
+            _ => Vec::new(),
+        }
+    }
+
+    /// Where the envelope's unresolved ownership of the tail begins: everything from
+    /// here on is a header (or a tool body) still arriving, and no fixed marker in it
+    /// may be consumed before the header resolves. At EOF, and for a channel that is
+    /// not an envelope, nothing is pending.
+    fn pending_from(&self, haystack: &str, flush: bool, state: GuidedChannelState) -> usize {
+        match self {
+            Self::Channel(channel) if channel.envelope_owned && !flush => {
+                haystack.len() - self.holdback(haystack, state)
+            }
+            _ => haystack.len(),
         }
     }
 
@@ -3081,7 +3234,13 @@ fn guided_payload_syntax_boundary(
             )
             .is_some_and(|(found, _)| found == 0)
             || reasoning
-                .find_close(&input[at..])
+                .find_close(
+                    &input[at..],
+                    true,
+                    GuidedChannelState {
+                        scope: GuidedTurnScope::Unrouted,
+                    },
+                )
                 .is_some_and(|(found, _)| found == 0)
             || input[at..].starts_with(invoke_end)
             || control_markers.iter().any(|marker| {
@@ -3469,9 +3628,19 @@ impl GuidedState {
         Ok(std::mem::take(&mut output))
     }
 
+    /// A redundant echo of the opener the prompt already consumed. It is judged in
+    /// the turn's OPENING header slot, not inside the thought it re-opens: the echo is
+    /// that slot re-emitted, so the bare form the prompt consumed must resolve here
+    /// even for a family whose thought body otherwise admits no unframed header.
+    fn redundant_opener_state(&self) -> GuidedChannelState {
+        GuidedChannelState {
+            scope: GuidedTurnScope::Unrouted,
+        }
+    }
+
     fn opener_len_at(&self, at: usize, flush: bool) -> Option<usize> {
         self.reasoning
-            .open_len_at(&self.input, at, flush, self.channel_state())
+            .open_len_at(&self.input, at, flush, self.redundant_opener_state())
     }
 
     fn start_label(&self) -> Option<(&str, &str)> {
@@ -3547,7 +3716,7 @@ impl GuidedState {
             self.content_routed = true;
         } else if self
             .reasoning
-            .find_turn_end(&self.input)
+            .find_turn_end(&self.input, true, state)
             .is_some_and(|hit| hit == (at, len))
         {
             // TURN END, not a message close. There is no later message to route, so the
@@ -3556,7 +3725,7 @@ impl GuidedState {
             self.content_routed = true;
         } else if self
             .reasoning
-            .find_close(&self.input)
+            .find_close(&self.input, true, state)
             .is_some_and(|hit| hit == (at, len))
         {
             self.content_routed = false;
@@ -3881,6 +4050,14 @@ impl GuidedState {
         if let Some(boundary) = self.invoke_boundary.as_ref() {
             controls.retain(|marker| !boundary.is_guided_invoke_marker(marker));
         }
+        if self.mode == GuidedMode::Reasoning {
+            // Inside a thought only the body's own terminators are structural for a
+            // positional-token envelope; its other tokens are the thought's text.
+            let literal = self.reasoning.thought_literal_markers();
+            if !literal.is_empty() {
+                controls.retain(|marker| !literal.contains(&marker.as_str()));
+            }
+        }
         let prefix_competitors = self.reasoning.competitors();
         let regular = control_marker_at(
             haystack,
@@ -4011,7 +4188,10 @@ impl GuidedState {
                         self.native_header.native = native_header;
                     }
                 } else if !flush
-                    && self.reasoning.find_close(body).is_none()
+                    && self
+                        .reasoning
+                        .find_close(body, flush, self.channel_state())
+                        .is_none()
                     && self
                         .reasoning
                         .find_transition(body, flush, self.channel_state())
@@ -4062,7 +4242,10 @@ impl GuidedState {
                 self.reasoning
                     .find_open(suffix, flush, self.channel_state())
                     .into_iter()
-                    .chain(self.reasoning.find_close(suffix))
+                    .chain(
+                        self.reasoning
+                            .find_close(suffix, flush, self.channel_state()),
+                    )
                     .chain(
                         self.reasoning
                             .find_transition(suffix, flush, self.channel_state()),
@@ -4568,6 +4751,43 @@ impl GuidedState {
                                 }
                             }
                         }
+                        // A positional-token envelope keeps its markers literal in a
+                        // prefilled response, so the marker scan above never owns a
+                        // tool-routed header here, and the generic header scan cannot:
+                        // its header ends at a channel token, not at `>`, and its body
+                        // is native markup. Only the envelope's own resolver knows where
+                        // that message ends, so it strips the native call WHOLE before
+                        // the probe may read an argument value as the payload.
+                        if self.reasoning.is_envelope() && (!flush || self.json.is_empty()) {
+                            if !self.json.is_empty() {
+                                let mut input = std::mem::take(&mut self.json);
+                                input.push_str(&self.input);
+                                self.input = input;
+                            }
+                            let state = self.channel_state();
+                            let payload = self.input.find(['{', '[']);
+                            if let Some((at, len)) = self
+                                .reasoning
+                                .find_stray(&self.input, flush, state)
+                                .filter(|(at, _)| payload.is_none_or(|payload| *at < payload))
+                            {
+                                if !self.consume_response_control(at, len, flush, &mut output) {
+                                    break;
+                                }
+                                continue;
+                            }
+                            // A header or native body still arriving owns the tail,
+                            // including any payload-shaped bytes inside it: wait.
+                            if !flush {
+                                let held = self.reasoning.holdback(&self.input, state);
+                                if held > 0
+                                    && payload
+                                        .is_none_or(|payload| self.input.len() - held <= payload)
+                                {
+                                    break;
+                                }
+                            }
+                        }
                         if self.reasoning.preserves_response_markers()
                             && self.invalid_payload != InvalidGuidedPayloadPolicy::Reject
                         {
@@ -4932,12 +5152,26 @@ impl GuidedState {
                     // holdback below, so the two cannot drift apart again.
                     let scan_reasoning = self.reasoning_enabled
                         && (!self.content_routed || !self.reasoning.preserves_response_markers());
+                    // ENVELOPE OWNERSHIP FIRST. A header still arriving (or a complete
+                    // tool header whose native body is) owns every byte from its first
+                    // one, and nothing inside that run — a fixed marker, a header-shaped
+                    // run quoted in a parameter value — is yet anything. Consuming one
+                    // here released the lead in front of it as text and left the rest of
+                    // the header to leak piecemeal; the holdback below retains the same
+                    // run, so the two must agree. The envelope's own hooks resolve
+                    // ownership over the same bytes (`envelope_resolve`); this filter is
+                    // the shared owner's guarantee that EVERY candidate kind honours it.
+                    let envelope_pending_at =
+                        self.reasoning
+                            .pending_from(&self.input, flush, self.channel_state());
+                    let unowned = |at: usize| at < envelope_pending_at;
                     let open = scan_reasoning
                         .then(|| {
                             self.reasoning
                                 .find_open(&self.input, flush, self.channel_state())
                         })
-                        .flatten();
+                        .flatten()
+                        .filter(|(at, _)| unowned(*at));
                     // Position only: an opener still waiting on its label or its
                     // recipient is not YET an opener, but it already proves the
                     // bytes ahead of it are visible text rather than payload.
@@ -4947,7 +5181,8 @@ impl GuidedState {
                                 .find_open(&self.input, true, self.channel_state())
                         })
                         .flatten()
-                        .map(|(at, _)| at);
+                        .map(|(at, _)| at)
+                        .filter(|at| unowned(*at));
                     let payload_start = self.input.find(['{', '[']);
                     let input = std::mem::take(&mut self.input);
                     let marker = self.control_marker_at(
@@ -4981,21 +5216,46 @@ impl GuidedState {
                     let open = open.filter(|(at, _)| !owns(*at));
                     let open_at = open_at.filter(|at| !owns(*at));
                     let stray_close = marker
+                        .filter(|(at, _)| unowned(*at))
                         .into_iter()
                         .chain(
                             self.reasoning_enabled
-                                .then(|| self.reasoning.find_close(&self.input))
-                                .flatten(),
+                                .then(|| {
+                                    self.reasoning.find_close(
+                                        &self.input,
+                                        flush,
+                                        self.channel_state(),
+                                    )
+                                })
+                                .flatten()
+                                .filter(|(at, _)| unowned(*at)),
+                        )
+                        // A TURN-END marker closes the visible message it ends, the
+                        // same way the closer above ends a thought. Only the closer was
+                        // consulted, so a `final` body's own terminator reached the
+                        // user as text while its sibling `end` was stripped.
+                        .chain(
+                            self.reasoning_enabled
+                                .then(|| {
+                                    self.reasoning.find_turn_end(
+                                        &self.input,
+                                        flush,
+                                        self.channel_state(),
+                                    )
+                                })
+                                .flatten()
+                                .filter(|(at, _)| unowned(*at)),
                         )
                         .chain(
                             self.reasoning
-                                .find_stray(&self.input, flush, self.channel_state()),
+                                .find_stray(&self.input, flush, self.channel_state())
+                                .filter(|(at, _)| unowned(*at)),
                         )
-                        .chain(self.reasoning.find_transition(
-                            &self.input,
-                            flush,
-                            self.channel_state(),
-                        ))
+                        .chain(
+                            self.reasoning
+                                .find_transition(&self.input, flush, self.channel_state())
+                                .filter(|(at, _)| unowned(*at)),
+                        )
                         // The invoke CLOSER, once the payload is out. It is deliberately
                         // not a standalone control marker — listing it there makes it
                         // bound the opener's own terminator search, which cut a native
@@ -5225,7 +5485,7 @@ impl GuidedState {
                         if !flush
                             && self
                                 .reasoning
-                                .open_pending(non_whitespace, self.channel_state())
+                                .open_pending(non_whitespace, self.redundant_opener_state())
                         {
                             push_run(&mut output, Kind::Reasoning, &self.input[..leading]);
                             self.consume_input_prefix(leading);
@@ -5262,15 +5522,25 @@ impl GuidedState {
                     // a `to=user` header is a channel transition, and treating it as
                     // removable markup folded the model's visible answer into its
                     // private thinking.
+                    // Same envelope-ownership precedence as the OutsideReasoning arm: a
+                    // fixed marker inside a header still arriving (a framed tool header
+                    // narrated mid-thought, say) is owned by that header until it
+                    // resolves, and must neither close this thought nor be stripped
+                    // out of it. The holdback below retains the same run.
+                    let envelope_pending_at =
+                        self.reasoning
+                            .pending_from(&self.input, flush, self.channel_state());
+                    let unowned = |at: usize| at < envelope_pending_at;
                     let ends = self
                         .reasoning
-                        .find_close(&self.input)
+                        .find_close(&self.input, flush, self.channel_state())
+                        .filter(|(at, _)| unowned(*at))
                         .into_iter()
-                        .chain(self.reasoning.find_transition(
-                            &self.input,
-                            flush,
-                            self.channel_state(),
-                        ))
+                        .chain(
+                            self.reasoning
+                                .find_transition(&self.input, flush, self.channel_state())
+                                .filter(|(at, _)| unowned(*at)),
+                        )
                         .min_by_key(|(at, _)| *at);
 
                     // Everything else that interrupts the run. Under guided decoding the
@@ -5284,17 +5554,20 @@ impl GuidedState {
                     // one thought open across it.
                     let reopen = self
                         .reasoning
-                        .find_open(&self.input, flush, self.channel_state());
+                        .find_open(&self.input, flush, self.channel_state())
+                        .filter(|(at, _)| unowned(*at));
                     let input = std::mem::take(&mut self.input);
-                    let marker = self.control_marker_at(
-                        &input,
-                        self.input_previous,
-                        // A narrated invoke lives INSIDE this thought, so its
-                        // terminator cannot be past the span's closer.
-                        ends.map(|(at, _)| at),
-                        &close_markers,
-                        flush,
-                    );
+                    let marker = self
+                        .control_marker_at(
+                            &input,
+                            self.input_previous,
+                            // A narrated invoke lives INSIDE this thought, so its
+                            // terminator cannot be past the span's closer.
+                            ends.map(|(at, _)| at),
+                            &close_markers,
+                            flush,
+                        )
+                        .filter(|(at, _)| unowned(*at));
                     self.input = input;
                     // A native envelope that is still waiting for its own end owns
                     // any repeated reasoning opener inside it. Treating that opener
@@ -5326,7 +5599,7 @@ impl GuidedState {
                         .chain(
                             self.reasoning
                                 .find_stray(&self.input, flush, self.channel_state())
-                                .filter(|(at, _)| !marker_owns(*at)),
+                                .filter(|(at, _)| !marker_owns(*at) && unowned(*at)),
                         )
                         .min_by_key(|(at, _)| *at);
 
@@ -6288,7 +6561,8 @@ unified_registry! {
     "qwen3" | "qwen3_coder" => qwen3::qwen3_unified,
     "nemotron_v3" | "nemotron3" => qwen3::nemotron_v3_unified,
     "muse_glimmer" => muse_glimmer::muse_glimmer_unified,
-    "kimi_k2"               => kimi_k2::kimi_k2_unified,
+    "beam" => beam::beam_unified,
+    "kimi_k2"              => kimi_k2::kimi_k2_unified,
     "kimi_k3" | "kimi-k3"   => kimi_k3::kimi_k3_unified,
     "gpt_oss" | "harmony"   => harmony::gpt_oss_unified,
 }
@@ -6340,6 +6614,10 @@ impl DebugUnifiedParser {
 impl UnifiedParser for DebugUnifiedParser {
     fn input_capabilities(&self) -> UnifiedParserInputCapabilities {
         self.inner.input_capabilities()
+    }
+
+    fn set_tool_call_policy(&mut self, policy: ToolCallPolicy) -> Result<()> {
+        self.inner.set_tool_call_policy(policy)
     }
 
     fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {

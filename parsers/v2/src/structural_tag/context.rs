@@ -54,6 +54,21 @@ pub struct StructuralTagOptions {
 }
 
 /// Request-scoped inputs for building a model-family structural tag.
+/// Where the rendered prompt leaves the assistant message, for grammars that frame the
+/// whole turn ([`crate::structural_tag::StructuralTagBuilder::build_turn`]).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PromptChannel {
+    /// The prompt ends at the model's bare message header: the grammar covers the whole
+    /// message, starting with its reasoning.
+    #[default]
+    MessageStart,
+    /// A reasoning channel is open (assistant prefill): the grammar finishes it first.
+    OpenReasoning,
+    /// The final (visible) channel is open (assistant prefill): only the rest of the answer
+    /// is held, and no tool call can be forced.
+    OpenAnswer,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct StructuralTagContext<'a> {
     pub tool_choice: StructuralTagToolChoice<'a>,

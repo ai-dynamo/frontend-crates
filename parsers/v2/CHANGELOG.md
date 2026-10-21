@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.7.29] - 2026-10-20
+
+### Added
+
+- *(parsers-v2)* Beam unified parser family (`beam`): channel-framed reasoning, tool calls
+  (`<rfl:parameter>` bodies on the Harmony-shaped wire) and final answers; streamed
+  raw-text arguments; schema-typed arguments under `ArgumentFraming::SchemaConstrained`.
+- *(parsers-v2)* Beam structural-tag builder: the per-turn grammar the model builder's
+  serving layer derives from the Beam response template, asserted byte-for-byte against
+  the serving layer's own fixtures; `StructuralTagBuilder::build_turn` /
+  `constrains_every_turn` and `PromptChannel` for grammars that frame the whole turn.
+- *(parsers-v2)* Beam reads every call its serving grammar admits: a parameter may end
+  where the next one opens, tool names follow one builder/parser contract
+  (`[A-Za-z0-9_.-]+`), a delimited call completes at EOS, and a bare header completes as
+  `{}` when the declared schema requires nothing.
+
 ## [0.7.23](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v2-v0.7.22...dynamo-parsers-v2-v0.7.23) - 2026-10-15
 
 ### Bug fixes

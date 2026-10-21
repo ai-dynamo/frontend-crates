@@ -85,13 +85,16 @@ pub fn create_tool_parser_for_family(
     Ok(parser)
 }
 
-/// Return the structural-tag builder for a model family, accepting Unified aliases.
+/// Return the structural-tag builder for a model family, accepting Unified aliases: from
+/// the tool-calling registry, or for a family served only by a unified parser (no
+/// tool-call-only parser to carry it), from the structural-tag builders.
 pub fn structural_tag_builder_for_family(family: &str) -> Option<&'static StructuralTagBuilder> {
     let canonical = canonical_unified_family(family).unwrap_or(family);
     FAMILY_SPECS
         .iter()
         .find(|spec| canonical_unified_family(spec.name).unwrap_or(spec.name) == canonical)
         .and_then(|spec| spec.structural_tag_builder)
+        .or_else(|| crate::structural_tag::builders::unified_only_builder(canonical))
 }
 
 #[cfg(test)]
@@ -117,6 +120,9 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        // Unified-only family: no tool-calling entry, grammar still resolves.
+        assert!(structural_tag_builder_for_family("beam").is_some());
+        assert!(create_tool_parser_for_family("beam", &[]).is_err());
         assert!(structural_tag_builder_for_family("gemma4").is_none());
         assert!(structural_tag_builder_for_family("unknown").is_none());
     }

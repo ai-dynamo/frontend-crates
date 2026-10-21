@@ -91,6 +91,8 @@ UNIFIED_TAX = {
     "guided_response_quoted_control_braces_named": (35, "3"),
     "guided_response_quoted_control_braces_required": (35, "4"),
     "guided_response_rejected_header_quote_ownership": (35, "5"),
+    # Beam-specific: only Beam's grammar admits a bare tool header at EOS as a call.
+    "empty_args_no_close": ("beam", "1"), "optional_args_no_close": ("beam", "2"),
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
     "muse_quoted_reserved_eot_argument": ("muse", "3"),
     "muse_quoted_reserved_start_argument": ("muse", "4"),
