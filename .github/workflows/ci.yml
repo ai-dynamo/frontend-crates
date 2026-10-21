@@ -44,7 +44,7 @@ jobs:
     env:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
-      CARGO_NEXTEST_VERSION: "0.9.146"
+      CARGO_NEXTEST_VERSION: "0.9.145"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -74,7 +74,7 @@ jobs:
           cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
 
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
         with:
           tool: cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
 
