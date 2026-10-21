@@ -1449,6 +1449,8 @@ pub(crate) enum GuidedReasoning {
 #[derive(Clone, Copy)]
 pub(crate) struct GuidedChannelState {
     pub(crate) scope: GuidedTurnScope,
+    /// A visible-content header has routed the current message.
+    pub(crate) content_routed: bool,
 }
 
 /// Where the turn stands, for families whose header resolution depends on it.
@@ -3230,6 +3232,7 @@ fn guided_payload_syntax_boundary(
                 // marker that ends the payload.
                 GuidedChannelState {
                     scope: GuidedTurnScope::Unrouted,
+                    content_routed: false,
                 },
             )
             .is_some_and(|(found, _)| found == 0)
@@ -3239,6 +3242,7 @@ fn guided_payload_syntax_boundary(
                     true,
                     GuidedChannelState {
                         scope: GuidedTurnScope::Unrouted,
+                        content_routed: false,
                     },
                 )
                 .is_some_and(|(found, _)| found == 0)
@@ -3635,6 +3639,7 @@ impl GuidedState {
     fn redundant_opener_state(&self) -> GuidedChannelState {
         GuidedChannelState {
             scope: GuidedTurnScope::Unrouted,
+            content_routed: false,
         }
     }
 
@@ -3653,6 +3658,7 @@ impl GuidedState {
     /// bare header inside one is the recovery boundary rather than a quote.
     fn channel_state(&self) -> GuidedChannelState {
         GuidedChannelState {
+            content_routed: self.content_routed,
             scope: if self.mode == GuidedMode::Reasoning {
                 GuidedTurnScope::InReasoning
             } else if !self.reasoning_enabled && !self.payload_emitted {
