@@ -49,6 +49,10 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
 
 fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {
     let (name, rest) = text.strip_prefix(PARAMETER_START)?.split_once('"')?;
+    // Treat an omitted string attribute as string="true".
+    if let Some(value) = rest.strip_prefix('>') {
+        return Some((name, true, value));
+    }
     let (string, value) = rest.strip_prefix(" string=\"")?.split_once("\">")?;
     let string = match string {
         "true" => true,
@@ -717,6 +721,71 @@ mod tests {
                 ],
             );
         }
+    }
+
+    #[test]
+    fn missing_string_attribute_defaults_to_raw_string() {
+        for raw in [
+            "42",
+            "false",
+            "null",
+            "[1,2]",
+            r#"{"key":"value"}"#,
+            "",
+            "  café\n",
+            " \t\n",
+            "literal </｜DSML｜ invoke> and </｜DSML｜ calls>",
+        ] {
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}run\">\
+                 {PARAMETER_START}value\" string=\"false\">7{PARAMETER_END}\
+                 {PARAMETER_START}value\">{raw}{PARAMETER_END}\
+                 {PARAMETER_START}enabled\" string=\"false\">false{PARAMETER_END}\
+                 {INVOKE_END}\
+                 {INVOKE_START}echo\">\
+                 {PARAMETER_START}value\">next{PARAMETER_END}\
+                 {INVOKE_END}{BLOCK_END}"
+            );
+            assert_every_split(
+                &input,
+                UnifiedParserStartingState::Response,
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "run".into(),
+                        arguments: serde_json::json!({"value": raw, "enabled": false}),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value": "next"}),
+                    },
+                ],
+            );
+        }
+    }
+
+    #[test]
+    fn missing_string_attribute_in_bash_call_preserves_other_parameters() {
+        let input = concat!(
+            "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"Bash\">\n",
+            "<｜DSML｜ parameter name=\"command\" string=\"true\">pwd && ls -a</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"description\" string=\"true\">Show cwd listing</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"command_ine\">x</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"dangerouslyDisableSandbox\" string=\"false\">false</｜DSML｜ parameter>\n",
+            "</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+        );
+        assert_every_split(
+            input,
+            UnifiedParserStartingState::Response,
+            vec![UnifiedEvent::ToolCall {
+                name: "Bash".into(),
+                arguments: serde_json::json!({
+                    "command": "pwd && ls -a",
+                    "description": "Show cwd listing",
+                    "command_ine": "x",
+                    "dangerouslyDisableSandbox": false,
+                }),
+            }],
+        );
     }
 
     #[test]
