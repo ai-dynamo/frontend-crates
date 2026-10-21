@@ -58,25 +58,10 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install
 
-      - name: Cache cargo tools
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: |
-            ~/.cargo/bin/cargo-deny
-            ~/.cargo/bin/cargo-machete
-          key: ${{ runner.os }}-cargo-tools-deny-${{ env.CARGO_DENY_VERSION }}-machete-${{ env.CARGO_MACHETE_VERSION }}-${{ hashFiles('rust-toolchain.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-tools-
-
       - name: Install cargo tools
-        run: |
-          cargo-deny --version 2>/dev/null | grep -qF "${CARGO_DENY_VERSION}" || cargo install "cargo-deny@${CARGO_DENY_VERSION}" --locked
-          cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
-
-      - name: Install cargo-nextest
         uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
         with:
-          tool: cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
+          tool: cargo-deny@${{ env.CARGO_DENY_VERSION }},cargo-machete@${{ env.CARGO_MACHETE_VERSION }},cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
 
       - name: Check unused dependencies
         run: cargo machete
