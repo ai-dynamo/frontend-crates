@@ -1187,6 +1187,13 @@ mod tests {
         events.extend(parser.finish().unwrap());
         assert_eq!(argument_text(&events), "{\"b\": true, \"n\": 7}");
         assert_eq!(assemble(&events), want);
+
+        let integer = declare("limit", json!({"count": {"type": "integer"}}), Some(false));
+        expect_streamed(
+            &[integer],
+            &echo_call("limit", &[("count", "3.0")]),
+            vec![call("limit", json!({"count": 3}))],
+        );
     }
 
     #[test]

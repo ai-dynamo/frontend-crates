@@ -841,6 +841,20 @@ fn json_type_names(value: &PyValue) -> &'static [&'static str] {
     }
 }
 
+/// Beam can emit an integer with a zero decimal fraction. Keep its digits exact;
+/// this deliberately extends the frozen reference's Python `int()` conversion.
+fn integral_decimal(raw: &str) -> Option<beam_py::PyInt> {
+    let (whole, fraction) = beam_py::strip(raw).split_once('.')?;
+    let digits = whole.strip_prefix(['-', '+']).unwrap_or(whole);
+    if digits.is_empty()
+        || !digits.bytes().all(|b| b.is_ascii_digit())
+        || !fraction.bytes().all(|b| b == b'0')
+    {
+        return None;
+    }
+    beam_py::parse_int(whole)
+}
+
 /// `raw` typed by the first of `types` it can be read as, else `raw` unchanged.
 pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
     let mut filtered: Vec<&str> = types.iter().map(String::as_str).collect();
@@ -858,7 +872,7 @@ pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
     for type_name in filtered {
         match type_name {
             "integer" => {
-                if let Some(i) = beam_py::parse_int(raw) {
+                if let Some(i) = beam_py::parse_int(raw).or_else(|| integral_decimal(raw)) {
                     return PyValue::Int(i);
                 }
             }
@@ -1537,6 +1551,36 @@ mod tests {
             PyValue::Dict(args).dumps(),
             r#"{"a": "&amp; <|call|><|end|><|start|>"}"#
         );
+    }
+
+    #[test]
+    fn integral_decimals_are_exact_for_integer_parameters() {
+        let integer = json!({"type": "integer"});
+        for (raw, expected) in [
+            ("3.0", "3"),
+            (" -12.00\n", "-12"),
+            ("7.", "7"),
+            ("-0.00", "0"),
+            ("123456789012345678901.0", "123456789012345678901"),
+            ("3.5", r#""3.5""#),
+            ("7e0", r#""7e0""#),
+            (".0", r#"".0""#),
+            ("1_0.0", r#""1_0.0""#),
+            ("3.0000000000000001", r#""3.0000000000000001""#),
+        ] {
+            assert_eq!(
+                super::typed_value(Some(&integer), raw).dumps(),
+                expected,
+                "{raw}"
+            );
+        }
+        for (schema, expected) in [
+            (json!({"type": "string"}), r#""3.0""#),
+            (json!({"type": ["string", "integer"]}), r#""3.0""#),
+            (json!({"type": "number"}), "3.0"),
+        ] {
+            assert_eq!(super::typed_value(Some(&schema), "3.0").dumps(), expected);
+        }
     }
 
     #[test]
