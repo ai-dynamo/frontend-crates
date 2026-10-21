@@ -194,6 +194,7 @@ struct BeamBoundary {
     /// The recipient's schema admits an empty argument body (declared, nothing
     /// required), so the grammar lets the stream end right after the header.
     empty_body_ok: bool,
+    at_eos: bool,
 }
 
 fn malformed(discard: usize, reason: &'static str) -> BodyScan {
@@ -213,6 +214,13 @@ impl InvokeBoundary for BeamBoundary {
         self.open_value = ValueCursor::default();
     }
 
+    fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
+        self.at_eos = true;
+        let result = self.channel_body(body, true);
+        self.at_eos = false;
+        result
+    }
+
     fn channel_body(&mut self, body: &str, flush: bool) -> BodyScan {
         let lenient = self.malformed != MalformedToolCallPolicy::Reject;
         loop {
@@ -221,15 +229,13 @@ impl InvokeBoundary for BeamBoundary {
             let at = self.scanned + (rest.len() - t.len());
             self.scanned = at;
             if t.is_empty() {
-                // The serving grammar lets EOS end a call right after its last
-                // parameter, without the closer: a body of complete parameters is a
-                // call at the end of the stream. A header alone still is not.
-                return match (flush, self.complete) {
-                    (false, _) => BodyScan::Wait,
-                    (true, 0) if !self.empty_body_ok => {
+                return match (flush, self.at_eos, self.complete) {
+                    (false, _, _) => BodyScan::Wait,
+                    (true, false, _) => malformed(body.len(), "missing call terminator"),
+                    (true, true, 0) if !self.empty_body_ok => {
                         malformed(body.len(), "missing call terminator")
                     }
-                    (true, _) => BodyScan::Complete {
+                    (true, true, _) => BodyScan::Complete {
                         body_end: at,
                         consume: at,
                     },
@@ -551,6 +557,7 @@ impl InvokeEmitter for BeamEmitter {
             open_from: 0,
             open_value: ValueCursor::default(),
             empty_body_ok: recipient_admits_empty_arguments(&self.tools, recipient) == Some(true),
+            at_eos: false,
         }))
     }
 
@@ -1552,6 +1559,46 @@ mod tests {
                         .iter()
                         .any(|e| matches!(e, UnifiedEvent::ToolCall { .. })),
                     "{tail}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn confirmed_eos_closes_complete_arguments_only() {
+        for (body, valid) in [
+            (LONDON, true),
+            ("", true),
+            ("<rfl:parameter name=\"location\">\nLondon\n", false),
+        ] {
+            let input = format!("{HDR}{body}");
+            for at in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
+                let mut parser = beam_unified(&tools());
+                parser.set_tool_call_policy(constrained()).unwrap();
+                let mut events = parser.push(&input[..at]).unwrap();
+                events.extend(parser.push(&input[at..]).unwrap());
+                let finished = parser.finish_at_eos();
+                assert_eq!(finished.is_ok(), valid, "{input}, split {at}");
+                if let Ok(finished) = finished {
+                    events.extend(finished);
+                    assert_eq!(
+                        assemble(&events),
+                        vec![call(
+                            "weather",
+                            if body.is_empty() {
+                                json!({})
+                            } else {
+                                json!({"location": "London"})
+                            }
+                        )]
+                    );
+                    assert!(parser.finish_at_eos().is_err(), "finish remains single-use");
+                }
+                parser.reset();
+                parser.push(&input).unwrap();
+                assert!(
+                    parser.finish().is_err(),
+                    "reset must not retain EOS permission"
                 );
             }
         }

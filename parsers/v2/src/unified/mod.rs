@@ -411,6 +411,13 @@ pub trait UnifiedParser: Send {
     /// inheriting for symmetry's sake.
     fn finish(&mut self) -> Result<UnifiedParserOutput>;
 
+    /// Finish at a confirmed, grammar-valid end of generation. A native grammar
+    /// may accept an omitted final tool-call marker here. The caller must not use
+    /// this for token limits, cancellation, transport EOF, or arbitrary user stops.
+    fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
+        self.finish()
+    }
+
     /// Return the parser to a FRESH-STREAM state and hand back any unconsumed text.
     ///
     /// This is not a mid-turn continuation hook. Everything restarts, including the
@@ -932,6 +939,10 @@ impl<E: InvokeEmitter + Send> NativeUnified for ScannerUnified<E> {
         self.scanner.finish_ordered_into(output)
     }
 
+    fn allow_implicit_tool_terminator(&mut self) {
+        self.scanner.allow_implicit_tool_terminator();
+    }
+
     fn reset_native(&mut self) -> String {
         self.scanner.reset()
     }
@@ -1042,6 +1053,8 @@ pub(crate) trait NativeUnified {
 
     fn push_native(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()>;
     fn finish_native(&mut self, output: &mut UnifiedParserOutput) -> Result<()>;
+
+    fn allow_implicit_tool_terminator(&mut self) {}
 
     /// Clear per-stream state, returning bytes the caller may replay.
     fn reset_native(&mut self) -> String;
@@ -1324,6 +1337,13 @@ impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
             }
         }
         Ok(out)
+    }
+
+    fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
+        if self.guided.is_none() && !self.finished {
+            self.native.allow_implicit_tool_terminator();
+        }
+        self.finish()
     }
 
     fn reset(&mut self) -> String {
@@ -6668,6 +6688,12 @@ impl UnifiedParser for DebugUnifiedParser {
 
     fn finish(&mut self) -> Result<UnifiedParserOutput> {
         let out = self.inner.finish()?;
+        self.log("finish", &out.events);
+        Ok(out)
+    }
+
+    fn finish_at_eos(&mut self) -> Result<UnifiedParserOutput> {
+        let out = self.inner.finish_at_eos()?;
         self.log("finish", &out.events);
         Ok(out)
     }

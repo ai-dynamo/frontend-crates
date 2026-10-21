@@ -1353,6 +1353,10 @@ pub(crate) trait InvokeBoundary: Send {
     fn channel_body(&mut self, _body: &str, _flush: bool) -> BodyScan {
         BodyScan::Wait
     }
+
+    fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
+        self.channel_body(body, true)
+    }
 }
 
 struct StatelessInvokeBoundary {
@@ -2000,6 +2004,7 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// so a prompt-consumed `role NAME` lead must be held, not emitted.
     header_slot: bool,
     policy: ToolCallPolicy,
+    finish_at_eos: bool,
 }
 
 struct DeferredParseError {
@@ -2041,6 +2046,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             env_json: JsonBodyState::default(),
             header_slot: true,
             policy: ToolCallPolicy::default(),
+            finish_at_eos: false,
         }
     }
 
@@ -2114,6 +2120,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             prefixed_openers,
         });
         self
+    }
+
+    pub(crate) fn allow_implicit_tool_terminator(&mut self) {
+        self.finish_at_eos = true;
     }
 
     /// Also own the reasoning channel, making this scanner unified.
@@ -2261,6 +2271,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
+        self.finish_at_eos = false;
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
         self.buffer_previous = None;
@@ -3135,6 +3146,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         out: &mut S,
     ) -> anyhow::Result<bool> {
         let verdict = match self.invoke_boundary.as_mut() {
+            Some(boundary) if flush && self.finish_at_eos => {
+                boundary.channel_body_at_eos(&self.buffer)
+            }
             Some(boundary) => boundary.channel_body(&self.buffer, flush),
             None => anyhow::bail!("channel envelope needs an invoke boundary"),
         };
