@@ -45,6 +45,172 @@ changes:
     case_key: UNIFIED.34-5
   guided_json_native_markup_only:
     case_key: UNIFIED.32-5
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '}[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Rome"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: '}'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.34-3
   guided_json_orphan_tool_close_before_payload:
@@ -87,6 +253,32 @@ changes:
     case_key: UNIFIED.34-6
   guided_json_wrapped_in_tool_markup:
     case_key: UNIFIED.32-3
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   interstitial_text:
     case_key: UNIFIED.11-5
   narrated_calls:
@@ -272,4 +464,13 @@ metadata_changes:
   retired__31_33: {}
   retired__31_39: {}
   retired__31_40: {}
-document_overrides: {}
+document_overrides:
+  gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.1
+      capture_origin:
+        crate_version: 0.6.1
+        source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+        git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+      inherited_from: null

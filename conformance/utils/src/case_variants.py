@@ -7,7 +7,6 @@ import hashlib
 import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
-from schema_cases import schema_fold
 import unified_taxonomy
 
 
@@ -176,29 +175,31 @@ def refresh_variant_stats(tab, hidden_count):
                          missing=sum(cell.get("kind") == "missing" for cell in cells))
 
 
-def group_schema_variants(tab):
+def group_unified_variants(tab):
     if tab["id"] != "tab-unified":
         return
     groups = {}
     for column in tab["columns"]:
-        fold = schema_fold(column["sub"])
+        fold = unified_taxonomy.case_fold(column["sub"])
         if fold:
             parent, label = fold
             column["variant_label"] = label
             groups.setdefault(parent, []).append(column)
     hidden = set()
     for parent, members in groups.items():
-        members.sort(key=lambda column: {
+        members.sort(key=lambda column: (column["sub"] != parent, {
             "Direct": 0, "Explicit string type": 1, "allOf": 2, "Reference": 3,
             "String / Forward": 0, "Typed value / Forward": 1,
             "String / Reversed": 2, "Typed value / Reversed": 3,
-        }[column["variant_label"]])
+        }.get(column["variant_label"], 4), column["sub"]))
         # Partial corpora keep the identity of an available fixture.
         root = next((column for column in members if column["sub"] == parent), members[0])
         labels = {column["sub"]: column["variant_label"] for column in members}
-        description = ("String constant: Direct, Explicit string type, allOf, and Reference."
-                       if "const_" in parent else
-                       "Union alternatives: String / Typed value x Forward / Reversed branch order.")
+        description = root["desc"]
+        if parent.startswith("schema_const_"):
+            description = "String constant: Direct, Explicit string type, allOf, and Reference."
+        elif parent.startswith("schema_union_"):
+            description = "Union alternatives: String / Typed value x Forward / Reversed branch order."
         root["desc"] = description
         root["schemas"] = folded_schemas(members)
         for row in tab["rows"]:

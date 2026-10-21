@@ -3640,7 +3640,7 @@ cases:
   retired__31_34:
     lifecycle: active
     scenario: guided_json_native_parameter_object_before_payload
-    description: Qwen and Muse Response-prefilled guided output quotes a reasoning marker, then contains a valid JSON object inside a native parameter, followed by the actual guided call. Response keeps the quoted reasoning content visible; starting_state=None would route it to reasoning. The Response payload search must skip braces and brackets owned by the native invocation. Only the following Paris call dispatches; selecting the native Rome value is incorrect, and no native body reaches visible text.
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON object argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
     policy:
     - I3
     - I7
@@ -3721,7 +3721,7 @@ cases:
   retired__31_35:
     lifecycle: active
     scenario: guided_json_native_parameter_array_before_payload
-    description: Qwen and Muse Response-prefilled guided output quotes a reasoning marker, then contains a valid JSON array inside a native parameter, followed by the actual guided call. Response keeps the quoted reasoning content visible; starting_state=None would route it to reasoning. The Response payload search must skip braces and brackets owned by the native invocation. Only the following Paris call dispatches; selecting the native Rome value is incorrect, and no native body reaches visible text.
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON array argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
     policy:
     - I3
     - I7
@@ -18707,3 +18707,352 @@ cases:
       - kind: tool_call
         name: f
         arguments: {}
+  guided_json_native_parameter_string_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_string_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON string argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    historical_ids: []
+    request:
+      input: 'to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: to=self
+      - delta_text: <|message|>
+      - delta_text: literal
+      - delta_text: <|eom|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: '"[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"'
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: to=selfliteral
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_noncall_before_native_array_before_payload:
+    lifecycle: active
+    scenario: guided_json_noncall_before_native_array_before_payload
+    description: Response-prefilled required guided output begins with a complete non-call JSON object, then literal prose, a native invocation containing a call-shaped array, and the real guided call. The non-call value remains visible; it cannot disable native ownership of the later array. Only the final Paris call dispatches across every chunk boundary.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    historical_ids: []
+    request:
+      input: '{}to=self<|message|>literal<|eom|><atem:invoke name="f"><atem:parameter name="x">[{"name":"get_weather","arguments":{"city":"Rome"}}]</atem:parameter></atem:invoke>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{}to=self'
+      - delta_text: <|message|>
+      - delta_text: literal
+      - delta_text: <|eom|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{}to=selfliteral'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_native_wrapper_whitespace_before_prose:
+    lifecycle: active
+    scenario: guided_response_native_wrapper_whitespace_before_prose
+    description: Response-prefilled guided output contains a native invocation wrapper, then whitespace and visible prose before the real guided call. Muse uses its inner ATEM invocation, without a new recipient-routed message envelope. Whitespace after the suppressed native wrapper is structural across every chunk boundary; the following prose remains visible. The native Rome argument tests lexical ownership rather than validation against the offered schema; only the guided Paris call dispatches.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    historical_ids: []
+    request:
+      input: "<atem:invoke name=\"f\">\n<atem:parameter name=\"x\">{\"city\": \"Rome\"}</atem:parameter>\n</atem:invoke> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <atem:invoke name="f">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="x">
+      - delta_text: '{"city": "Rome"}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: " \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'ok then '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gpt_oss_quoted_message_header_literal:
+    lifecycle: active
+    scenario: gpt_oss_quoted_message_header_literal
+    description: A native argument value contains a call or message closer followed by a complete visible-response header. Argument ownership keeps that adjacent header literal instead of routing its body as visible text.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-quoted_message_header_literal
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q"><|eom|><|start|>assistant to=user<|message|>literal<|eom|></atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=lookup
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="lookup">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="q">
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: literal
+      - delta_text: <|eom|>
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: <|eom|><|start|>assistant to=user<|message|>literal<|eom|>
+  gpt_oss_quoted_truncated_tool_then_final:
+    lifecycle: active
+    scenario: gpt_oss_quoted_truncated_tool_then_final
+    description: A malformed native argument body precedes a complete visible-response message. At EOF discard the malformed call and recover the response without leaking its argument body.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=lookup<|message|><atem:invoke name="lookup"><atem:parameter name="q">abc<|eom|><|start|>assistant to=user<|message|>Answer<|eom|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=lookup
+      - delta_text: <|message|>
+      - delta_text: <atem:invoke name="lookup">
+      - delta_text: <atem:parameter name="q">
+      - delta_text: abc
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: Answer
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: Answer

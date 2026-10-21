@@ -328,6 +328,16 @@ changes:
     case_key: UNIFIED.31-22
   guided_json_native_markup_only:
     case_key: UNIFIED.31-23
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.10 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.10 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d. No release tag or newer parser was substituted.'
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.31-10
   guided_json_orphan_tool_close_before_payload:
@@ -370,6 +380,11 @@ changes:
     case_key: UNIFIED.31-24
   guided_json_wrapped_in_tool_markup:
     case_key: UNIFIED.31-7
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d. The parser was not executed, and no newer output was substituted.
   interstitial_text:
     case_key: UNIFIED.11.e
   narrated_calls:
@@ -441,6 +456,11 @@ changes:
     case_key: UNIFIED.11.d
   reason_unterminated:
     case_key: UNIFIED.10.d
+  structured_response_after_reasoning:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d. The parser was not executed, and no newer output was substituted.
   text_before_tool:
     case_key: UNIFIED.8.a
   text_between_calls:
@@ -475,5 +495,33 @@ changes:
     case_key: UNIFIED.2.b
   two_reason_spans:
     case_key: UNIFIED.10.c
-metadata_changes: {}
-document_overrides: {}
+metadata_changes:
+  guided_json_native_parameter_string_before_payload: {}
+  guided_json_noncall_before_native_array_before_payload: {}
+  guided_response_native_wrapper_whitespace_before_prose: {}
+  structured_response_after_reasoning: {}
+document_overrides:
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null

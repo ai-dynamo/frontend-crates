@@ -265,6 +265,42 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
+  guided_json_native_parameter_array_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: cbf33087df8acdd7ed8c159954d030d5acc48633b7e31a1d086ac0ccf64be101
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_json_native_parameter_object_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: ac9106e9c0a1a4b863692d5b13719608d5201d0b0b01ce69a8b3a14ed9b236ce
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: aa229061edb756d6654d7e85a967fee7c71fdc3aef869f188a1fa0c71ceb279a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 626ca596ce85b335514489bb1bc0ed76646505cabf757ce9e9b99effe153f1c0
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.31-10
     stimulus:
@@ -455,6 +491,15 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 92392160ba79eda5d0af431fb0e298efd09a29d658d31af6a5f36c24632f5129
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 227af3cd1cc66fa4ead0d037a84884a0420352ef8193c0f3352ef1e6c6480af6
     observation:
       unavailable:
         code: legacy_unclassified
@@ -1515,6 +1560,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: split capture cannot apply the requested initialization
+  structured_response_after_reasoning:
+    case_key: UNIFIED.36-structured_response_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
   text_before_tool:
     case_key: UNIFIED.8.a
     stimulus:
@@ -2162,6 +2216,26 @@ metadata_changes:
       starting_state: None
       tool_output_mode: GuidedJson
       named_tool: null
+  guided_json_native_parameter_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_object_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_string_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_noncall_before_native_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
   guided_json_orphan_reason_close_before_payload:
     init:
       starting_state: None
@@ -2280,6 +2354,11 @@ metadata_changes:
   guided_quoted_reasoning_closer_required:
     init:
       starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    init:
+      starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
   guided_response_quoted_control_braces_named:
@@ -2467,6 +2546,35 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
+  structured_response_after_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
+        - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
   text_before_tool:
     init:
       starting_state: None
@@ -2553,6 +2661,51 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
 document_overrides:
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
   retired__50_a:
     parser_path: split
   retired__50_b:
@@ -2563,3 +2716,12 @@ document_overrides:
     parser_path: split
   retired__51_b:
     parser_path: split
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null

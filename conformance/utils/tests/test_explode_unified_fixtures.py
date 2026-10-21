@@ -192,3 +192,57 @@ def test_regeneration_removes_all_materialized_capture_directories(tmp_path, mon
     assert not (tmp_path / "inputs").exists()
     assert not (tmp_path / "golden").exists()
     assert not (tmp_path / "vllm_python-0.25.1").exists()
+
+
+def test_rust_yaml_boolean_words_preserve_string_deltas_without_changing_python_yaml():
+    import yaml
+
+    words = ["on", "off", "yes", "no", "ON", "OFF", "Yes", "No"]
+    raw = "".join(f"- arguments: {word}\n  complete: false\n" for word in words)
+    rows = explode._load_rust_capture(raw)
+    assert [row["arguments"] for row in rows] == words
+    assert all(row["complete"] is False for row in rows)
+    assert yaml.safe_load("complete: true")["complete"] is True
+    assert yaml.safe_load("flag: on")["flag"] is True
+
+
+def test_request_stimulus_does_not_persist_the_finish_call_as_an_input_chunk() -> None:
+    record = {
+        "input": "first<|message|>second",
+        "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [
+            {"delta_text": "first"},
+            {"delta_text": "<|message|>second"},
+            {"delta_text": "‹finish›"},
+        ],
+    }
+
+    assert explode._request_stimulus(record, keep_finish_chunk=False) == {
+        "input": record["input"],
+        "init": record["init"],
+        "finish_reason": "stop",
+        "tools": [],
+        "chunks": [{"delta_text": "first"}, {"delta_text": "<|message|>second"}],
+    }
+
+    assert explode._request_stimulus(record, keep_finish_chunk=True)["chunks"][-1] == {
+        "delta_text": "‹finish›"
+    }
+
+
+def test_historical_finish_chunk_ignores_retired_cases_without_request(tmp_path, monkeypatch) -> None:
+    historical = tmp_path / "fixtures-unified-v2" / "families" / "gpt_oss"
+    historical.mkdir(parents=True)
+    (historical / "inputs_and_golden.yaml").write_text(
+        "cases:\n  retired_case:\n    scenario: retired_case\n    request: null\n"
+    )
+    monkeypatch.setattr(explode, "CONF", tmp_path)
+    explode._historical_finish_chunks.cache_clear()
+
+    try:
+        assert explode._historical_finish_chunk("gpt_oss", "retired_case") is False
+        assert explode._historical_finish_chunk("gpt_oss", "new_case") is True
+    finally:
+        explode._historical_finish_chunks.cache_clear()

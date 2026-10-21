@@ -305,8 +305,8 @@ unified:
     capture_pipelines:
       dynamo_v1: ["gpt_oss", "harmony"]
     registry: harmony
-    native: false
-    guided_tool_output: false
+    native: true
+    guided_tool_output: true
     reasoning_parser: gpt_oss
     tool_parser: harmony
     golden_spec: gpt_oss.yaml
@@ -316,13 +316,27 @@ unified:
       vllm_python: ["qwen3", "qwen3_coder"]
       sglang_python: ["qwen3", "qwen3_coder"]
       dynamo_v1: ["qwen3", "qwen3_coder"]
-    vllm_tokenizer_markers: ["<think>", "</think>", "<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+    vllm_tokenizer_markers: &qwen_unified_tokens ["<think>", "</think>", "<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
     registry: qwen3_coder
     native: true
     reasoning_parser: qwen3
     tool_parser: qwen3_coder
     golden_spec: qwen3.yaml
-    leak_markers: ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+    leak_markers: &qwen_unified_leaks ["<tool_call>", "</tool_call>", "<function=", "</function>", "<parameter=", "</parameter>"]
+  nemotron_v3:
+    grammar: qwen3
+    default_reasoning: true
+    capture_pipelines:
+      vllm_python: ["nemotron_v3", "qwen3_coder"]
+      sglang_python: ["nemotron_3", "qwen3_coder"]
+      dynamo_v1: ["nemotron_v3", "qwen3_coder"]
+    vllm_tokenizer_markers: *qwen_unified_tokens
+    registry: qwen3_coder
+    native: true
+    reasoning_parser: nemotron_v3
+    tool_parser: qwen3_coder
+    golden_spec: nemotron_v3.yaml
+    leak_markers: *qwen_unified_leaks
 
 # Report identities for recorded peer pipelines. `impl` groups the comparison slots.
 unified_peer_sources:
@@ -379,6 +393,7 @@ unified_display:
     33: Guided Decoding — invalid payload plus tool markup
     34: Guided Decoding — reasoning boundaries
     35: Guided Decoding — markers in visible answers
+    36: Guided Decoding — response schemas after reasoning
     40: Prefilled Reasoning
     41: Prefilled Reasoning — malformed
     50: Prefilled Response
@@ -389,9 +404,10 @@ unified_display:
     deepseek: 'Single Family Test: DeepSeek V4.1 DSML invocation bodies'
     deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
     kimi_k2: 'Single Family Test: Kimi K2-specific tests'
-    qwen3: 'Single Family Test: Qwen3-specific tests'
+    qwen3: 'XML function-header boundaries: Qwen3 and Nemotron 3'
     kimi: 'Single Family Test: Kimi K3 XTML'
     muse: 'Single Family Test: Muse-specific'
+    gpt_oss: 'Single Family Test: GPT-OSS Harmony'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
     guided_response_rejected_header_quote_ownership: deepseek_v4

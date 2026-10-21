@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.24"
+version = "0.7.28"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
@@ -1254,7 +1254,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-renderer"
-version = "8.0.3"
+version = "8.0.4"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1281,7 +1281,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-tokenizers"
-version = "3.1.1"
+version = "3.1.2"
 dependencies = [
  "aho-corasick",
  "anyhow",

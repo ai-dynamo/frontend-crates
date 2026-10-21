@@ -47,6 +47,24 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
+  gpt_oss_quoted_message_header_literal:
+    case_key: UNIFIED.gpt_oss-quoted_message_header_literal
+    stimulus:
+      ref: current
+      semantic_sha256: a695672e0f73e26890ed299f73ca143524104bc63d9bec3dd06df30a4245d250
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
   guided_json_after_reasoning:
     case_key: UNIFIED.30.f
     stimulus:
@@ -163,6 +181,24 @@ changes:
     case_key: UNIFIED.31-23
     stimulus:
       ref: current
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 315fa7e8a2d51710ddd61a2bd8a9294a0e6737acc9ac59b5ee9bf1fd803cce34
     observation:
       unavailable:
         code: legacy_unclassified
@@ -365,6 +401,15 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: ecb3e5a854cb5070157463717ace718f8c2ab1651dc54c2cf017813a28945b47
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: split capture cannot apply the requested initialization
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: d4673d100ae7b8b49b04962224de9681b683822b1df8e03d927ad3e88ee5d947
     observation:
       unavailable:
         code: legacy_unclassified
@@ -1307,6 +1352,16 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_quoted_message_header_literal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   guided_json_after_reasoning:
     init:
       starting_state: None
@@ -1380,6 +1435,16 @@ metadata_changes:
   guided_json_native_markup_only:
     init:
       starting_state: None
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_string_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_noncall_before_native_array_before_payload:
+    init:
+      starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
   guided_json_orphan_reason_close_before_payload:
@@ -1505,6 +1570,11 @@ metadata_changes:
   guided_quoted_reasoning_closer_required:
     init:
       starting_state: Reasoning
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    init:
+      starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
   guided_response_quoted_control_braces_named:

@@ -32,6 +32,7 @@
 //! Non-default requests are then recorded as unavailable, never as default-mode data.
 //! Builds predating UnifiedParser instead use `--cfg conformance_split_only`.
 //! Builds without ToolCallDelta::complete also require `--cfg conformance_legacy_terminal`.
+//! Builds without the reasoning-aware structural-tag API use `--cfg conformance_no_structural_tag`.
 //!
 //! No-op unless `XVER_INPUTS` is set, so it costs nothing in a normal test run.
 
@@ -88,6 +89,7 @@ fn requires_request_init(init: &common::Init) -> bool {
     !matches!(init.starting_state.as_str(), "" | "None")
         || !matches!(init.tool_output_mode.as_str(), "" | "Native")
         || init.named_tool.is_some()
+        || init.structural_tag.is_some()
 }
 
 fn unavailable_init(init: &common::Init, native: bool) -> bool {
@@ -123,6 +125,7 @@ fn capture_request_init_availability() {
             starting_state: "None".into(),
             tool_output_mode: "Native".into(),
             named_tool: None,
+            structural_tag: None,
         },
     ] {
         assert!(!unavailable_init(&init, false));
@@ -657,11 +660,21 @@ fn capture_case_with_chunks(
     #[cfg(not(conformance_split_only))]
     let native_error = match create_unified_parser_for_family(family, tool_schemas) {
         Ok(mut parser) => {
+            if cfg!(conformance_no_structural_tag) && init.structural_tag.is_some() {
+                return Err(CaptureFailure::Unavailable(
+                    "this build has no reasoning-aware structural-tag request API".into(),
+                ));
+            }
             if unavailable_init(init, true) {
                 return Err(CaptureFailure::Unavailable(
                     "this build has no request initialization API".into(),
                 ));
             }
+            #[cfg(not(conformance_legacy_init))]
+            capture_step(
+                init.validate_capture(family, tool_schemas, chunks),
+                "structural tag",
+            )?;
             return native_capture(&mut parser, chunks, init);
         }
         Err(error) => format!("{error:#}"),
@@ -859,11 +872,7 @@ fn capture_this_build_against_the_current_corpus() {
                     .collect();
                 let stimulus = serde_json::json!({
                     "input":input,
-                    "init": {
-                        "starting_state": if init.starting_state.is_empty() { "None" } else { &init.starting_state },
-                        "tool_output_mode": if init.tool_output_mode.is_empty() { "Native" } else { &init.tool_output_mode },
-                        "named_tool":init.named_tool,
-                    },
+                    "init": init.applied(),
                     "finish_reason":finish_reason, "tools":tool_schema_json, "chunks":chunks,
                 });
                 record.as_mapping_mut().unwrap().insert(

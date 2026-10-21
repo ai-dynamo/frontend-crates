@@ -80,4 +80,40 @@ changes:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.4.0
+      capture_origin:
+        crate_version: 0.4.0
+        source_sha256: ee3b2f188eb638caad437e1ad26c5f769ef3b8cb2edde292c787b8cc394033f0
+        git_commit: 1a2fe837b531e78fe7698a89f6e5dd10bf8f0ab5
+      inherited_from: null

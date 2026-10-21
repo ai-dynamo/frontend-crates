@@ -144,7 +144,12 @@ pub struct VideoDecodeLimits {
     /// and the demuxer's index tables (read from at most 1 MiB of the file)
     /// come on top.
     /// MP4 is not bound by it (it keeps its sample tables and reads packets
-    /// as they are decoded); `probe` applies the default.
+    /// as they are decoded); `probe` applies the default. Its peak memory
+    /// grows with the sample count, not the file size: measured at about 70
+    /// bytes per sample while probing and 85 during a CPU decode (NVDEC not
+    /// measured), so a file of one-byte samples takes about 70 times its
+    /// size; at the cap of 2^23 samples, about 590 MB to probe and 710 MB to
+    /// decode on the CPU. This is outside `max_output_bytes`.
     pub max_input_bytes: usize,
 }
 
@@ -412,12 +417,23 @@ type Backend = fn(&Track<'_>, &mut Sampler<'_>) -> Result<()>;
 /// [`MmError::Unsupported`] moves to the CPU.
 #[cfg(target_os = "linux")]
 fn decode_track(track: &Track<'_>, sampler: &mut Sampler<'_>) -> Result<()> {
-    match nvdec::decode(track, sampler) {
+    gpu_then_cpu(track, sampler, nvdec::decode, vpx::decode)
+}
+
+/// `gpu`, and `cpu` for VP8 and VP9 only when `gpu` returns `Unsupported`.
+#[cfg(target_os = "linux")]
+fn gpu_then_cpu(
+    track: &Track<'_>,
+    sampler: &mut Sampler<'_>,
+    gpu: Backend,
+    cpu: Backend,
+) -> Result<()> {
+    match gpu(track, sampler) {
         Err(MmError::Unsupported { message, .. })
             if matches!(track.codec, VideoCodec::Vp8 | VideoCodec::Vp9) =>
         {
             sampler.restart();
-            vpx::decode(track, sampler).map_err(|e| match e {
+            cpu(track, sampler).map_err(|e| match e {
                 MmError::Unsupported { message: cpu, .. } => {
                     MmError::unsupported(format!("{message}; {cpu}"))
                 }
@@ -2410,6 +2426,102 @@ mod tests {
     #[ignore = "needs an NVIDIA GPU and driver (NVDEC)"]
     fn alt_ref_superframes_keep_frames_and_timestamps_together() {
         assert_alt_refs_in_step(auto);
+    }
+
+    // -- the move to the CPU: stub backends, no GPU or libvpx needed ---------
+
+    #[cfg(target_os = "linux")]
+    mod fallback {
+        use super::*;
+        use std::cell::Cell;
+
+        thread_local! {
+            /// Runs of the stub GPU and CPU backends on this test's thread.
+            static RUNS: Cell<(u32, u32)> = const { Cell::new((0, 0)) };
+        }
+
+        fn gpu_ran() {
+            RUNS.with(|r| r.set((r.get().0 + 1, r.get().1)));
+        }
+        fn decoded(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            gpu_ran();
+            Ok(())
+        }
+        fn no_gpu(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            gpu_ran();
+            Err(MmError::unsupported("no NVDEC"))
+        }
+        fn broken(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            gpu_ran();
+            Err(MmError::invalid_input("broken bitstream"))
+        }
+        fn failed(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            gpu_ran();
+            Err(MmError::internal("cuvidCreateDecoder failed"))
+        }
+        fn too_big(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            gpu_ran();
+            Err(MmError::limit_exceeded("frame too large"))
+        }
+        fn cpu(_: &Track<'_>, _: &mut Sampler<'_>) -> Result<()> {
+            RUNS.with(|r| r.set((r.get().0, r.get().1 + 1)));
+            Err(MmError::internal("the CPU ran"))
+        }
+        fn on_decoded(t: &Track<'_>, s: &mut Sampler<'_>) -> Result<()> {
+            gpu_then_cpu(t, s, decoded, cpu)
+        }
+        fn on_no_gpu(t: &Track<'_>, s: &mut Sampler<'_>) -> Result<()> {
+            gpu_then_cpu(t, s, no_gpu, cpu)
+        }
+        fn on_broken(t: &Track<'_>, s: &mut Sampler<'_>) -> Result<()> {
+            gpu_then_cpu(t, s, broken, cpu)
+        }
+        fn on_failed(t: &Track<'_>, s: &mut Sampler<'_>) -> Result<()> {
+            gpu_then_cpu(t, s, failed, cpu)
+        }
+        fn on_too_big(t: &Track<'_>, s: &mut Sampler<'_>) -> Result<()> {
+            gpu_then_cpu(t, s, too_big, cpu)
+        }
+
+        /// Decode frame 0 of `name` through `backend`: the GPU and CPU runs,
+        /// and the error's text.
+        fn decode(backend: Backend, name: &str) -> (u32, u32, String) {
+            RUNS.with(|r| r.set((0, 0)));
+            let bytes = fixture(name);
+            let limits = VideoDecodeLimits::default();
+            let r = decode_frames_with(&bytes.as_slice(), &[0], None, &limits, backend);
+            let (gpu, cpu) = RUNS.with(Cell::get);
+            (gpu, cpu, r.err().map(|e| e.to_string()).unwrap_or_default())
+        }
+
+        #[test]
+        fn only_unsupported_vp8_and_vp9_move_to_the_cpu() {
+            for name in ["vp8.webm", "vp9.webm", "vp9.mp4"] {
+                let (gpu, cpu, err) = decode(on_no_gpu, name);
+                assert_eq!((gpu, cpu), (1, 1), "{name}");
+                assert!(err.contains("the CPU ran"), "{name}: {err}");
+                for (backend, text) in [
+                    (on_broken as Backend, "broken bitstream"),
+                    (on_failed, "cuvidCreateDecoder failed"),
+                    (on_too_big, "frame too large"),
+                ] {
+                    let (gpu, cpu, err) = decode(backend, name);
+                    assert_eq!((gpu, cpu), (1, 0), "{name}");
+                    assert!(err.contains(text), "{name}: {err}");
+                }
+            }
+            for name in ["vp9.webm", "h264.mp4"] {
+                // The stub keeps no frame, so the decode still fails, but
+                // never on the CPU.
+                let (gpu, cpu, err) = decode(on_decoded, name);
+                assert_eq!((gpu, cpu), (1, 0), "{name}: {err}");
+            }
+            for name in ["h264.mp4", "hevc.mp4", "av1.mp4"] {
+                let (gpu, cpu, err) = decode(on_no_gpu, name);
+                assert_eq!((gpu, cpu), (1, 0), "{name}");
+                assert!(err.contains("no NVDEC"), "{name}: {err}");
+            }
+        }
     }
 
     // -- libvpx: needs libvpx installed (libvpx9 or the like) ----------------

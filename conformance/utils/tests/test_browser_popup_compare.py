@@ -772,6 +772,10 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
             """)
             assert cells
             for cell in cells:
+                if version == "dynamo@0.7.13" and cell["family"] == "gpt_oss":
+                    assert "cmp-na" in cell["classes"], cell
+                    assert cell["marker"] == "n/a", cell
+                    continue
                 red = version == "dynamo@0.7.13" and cell["family"] in {
                     "gemma4", "deepseek_v41", "kimi_k3"}
                 assert ("cmp-leak" if red else "cmp-eq") in cell["classes"], cell

@@ -6,6 +6,12 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
+kimi_k3:
+  UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3:
+    golden:
+      note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
+      actual: ''
+
 muse_glimmer:
   UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
     golden:

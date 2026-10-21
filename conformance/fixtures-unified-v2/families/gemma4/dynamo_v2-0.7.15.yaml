@@ -7,10 +7,221 @@ provenance:
 document:
   mode: unified
 changes:
+  gemma4_guided_response_extra_body_opener:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'é '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'é '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '}[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Rome"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: '}'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}I mean <|channel>thought
+
+            self literal<channel|>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}I mean '
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<|channel>thought
+
+              self literal'
+        - expected:
+          - kind: text
+            text: <channel|>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_quoted_reasoning_closer_named:
     absent: true
   guided_quoted_reasoning_closer_required:
     absent: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_response_quoted_control_braces_named:
     absent: true
   guided_response_quoted_control_braces_required:
@@ -31,5 +242,35 @@ changes:
     absent: true
   native_unmatched_quote_then_call:
     absent: true
-metadata_changes: {}
+metadata_changes:
+  gemma4_guided_response_extra_body_opener:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_object_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_string_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_noncall_before_native_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
 document_overrides: {}

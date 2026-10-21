@@ -24,7 +24,8 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert status["comparison_defaults"]["tab-unified"] == DEFAULT_SLOTS
     batch = [capture for capture in status["captures"] if capture["mode"] == "batch"]
     applicable_pairs = sum(len(gen_unified_golden.build_cases(family)) for family in gen_unified_golden.FAMILIES)
-    assert len(batch) == 35
+    assert len(batch) == 37
+    assert {"dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"} <= {capture["capture"] for capture in batch}
     assert all(capture["considered"] == applicable_pairs for capture in batch)
     assert all(capture["attempted"] == capture["captured"] + capture["parser_exception"] for capture in batch)
     assert any(capture["mismatches"] for capture in batch)
@@ -130,3 +131,23 @@ def test_gpt_oss_v1_batch_is_scored_against_ordered_golden(rendered_page):
                   if cell["cmp"]["dynamo_v1_jail@10.0.1"]["sig"] != cell["cmp"]["golden"]["sig"]]
     assert len(captured) == 159
     assert mismatches, "ordered batch output differences must remain visible as mismatches"
+
+
+def test_nemotron_default_reasoning_popup_describes_family_default(matrix_driver, rendered_page):
+    d = matrix_driver
+    load(d, rendered_page)
+    cell = next(
+        cell for cell in d.find_elements(By.CSS_SELECTOR, '#tab-unified td.cell[data-family="nemotron_v3"][data-ttip-key]')
+        if 'default_reasoning_tool_without_closer' in cell.get_attribute('data-ttip-key') and cell.is_displayed()
+    )
+    d.execute_script('arguments[0].scrollIntoView({block:"center",inline:"center"})', cell)
+    cell.click()
+    popup = WebDriverWait(d, 10).until(lambda driver: driver.find_element(By.CSS_SELECTOR, 'body > .ttip-pinned'))
+    try:
+        assert popup.is_displayed()
+        assert 'use the family default' in popup.text
+        assert 'Check.' in popup.text and 'Then.' in popup.text
+        assert 'log' in popup.text and '雪' in popup.text
+        assert 'prompt opened no channel' not in popup.text
+    finally:
+        popup.find_element(By.CSS_SELECTOR, '.ttip-close').click()

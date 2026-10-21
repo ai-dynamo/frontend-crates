@@ -9,7 +9,7 @@ FFmpeg's default for untagged video (BT.601, limited range).
 
 Clips:
 * h264.mp4, hevc.mp4, vp9.webm, vp9.mp4 and av1.mp4 decode through NVDEC;
-  vp8.webm exists to show that VP8 is refused;
+  vp8.webm decodes only on the CPU, through libvpx (VP8 is not sent to NVDEC);
 * vp9_sar.mp4 is vp9.mp4 with 2:1 pixels: its track header says 512x256 (the
   display size) while the sample entry and bitstream are 256x256;
 * vp9_texture.webm is ten frames of a texture that moves one pixel per frame,

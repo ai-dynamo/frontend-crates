@@ -163,6 +163,69 @@ impl JsonStringState {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct JsonValueBoundary {
+    quoted: JsonStringState,
+    closers: Vec<char>,
+    started: bool,
+    root_string: bool,
+    complete: bool,
+    invalid: bool,
+}
+
+impl JsonValueBoundary {
+    pub(crate) fn inside_string(&self) -> bool {
+        self.quoted.inside
+    }
+
+    /// True only on the character completing the first root value. JSON syntax
+    /// validation remains with serde; matching bracket types cannot be repaired
+    /// by a later suffix, and quoted delimiters never settle a structural boundary.
+    pub(crate) fn advance(&mut self, character: char) -> bool {
+        if self.complete || self.invalid {
+            self.quoted.advance(character);
+            return false;
+        }
+        if !self.started {
+            if character.is_whitespace() {
+                return false;
+            }
+            self.started = true;
+            match character {
+                '{' => self.closers.push('}'),
+                '[' => self.closers.push(']'),
+                '"' => {
+                    self.root_string = true;
+                    self.quoted.advance(character);
+                }
+                _ => self.invalid = true,
+            }
+            return false;
+        }
+        if self.quoted.advance(character) {
+            if self.root_string && !self.quoted.inside {
+                self.complete = true;
+                return true;
+            }
+            return false;
+        }
+        match character {
+            '{' => self.closers.push('}'),
+            '[' => self.closers.push(']'),
+            '}' | ']' => {
+                if self.closers.pop() != Some(character) {
+                    self.invalid = true;
+                } else if self.closers.is_empty() {
+                    self.complete = true;
+                    return true;
+                }
+            }
+            _ => {}
+        }
+        false
+    }
+}
+
 /// Byte offset just past the first complete top-level JSON value (object or
 /// array) in `text`, skipping leading whitespace before it — or `None` if the
 /// value is absent, not object/array-shaped, or still open (unterminated
@@ -175,44 +238,22 @@ impl JsonStringState {
 /// copy of that marker embedded in a string argument cannot be mistaken for
 /// the real one (`WrappedBlockSpec::invoke_scan`).
 pub(crate) fn json_value_end(text: &str) -> Option<usize> {
-    let mut chars = text.char_indices();
-    let (_, first) = chars.find(|(_, c)| !c.is_whitespace())?;
-    if first != '{' && first != '[' {
+    json_container_end(text.char_indices())
+}
+
+fn json_container_end(mut chars: impl Iterator<Item = (usize, char)>) -> Option<usize> {
+    let (_, first) = chars.find(|(_, ch)| !ch.is_whitespace())?;
+    if !matches!(first, '{' | '[') {
         return None;
     }
-    // A stack of the closer each opener actually requires -- not a numeric
-    // depth counter. A numeric counter treats `}` and `]` as interchangeable,
-    // so a mismatched-type input like `{]` or `[}` reads as balanced at
-    // depth 0 instead of being rejected. That's not just cosmetic: this
-    // function's whole purpose (see the doc comment above) is to find the
-    // structural end of the value so a literal closer search past it can't
-    // be fooled by a copy of that closer embedded in an still-open string
-    // (`I7`) -- a false "balanced" reading here can hand back a boundary
-    // BEFORE a string that legitimately belongs to the same value, reopening
-    // exactly that corruption.
-    let mut stack = vec![if first == '{' { '}' } else { ']' }];
-    let mut quoted = JsonStringState::default();
-    for (idx, c) in chars {
-        if quoted.advance(c) {
-            continue;
+    let mut boundary = JsonValueBoundary::default();
+    boundary.advance(first);
+    for (at, character) in chars {
+        if boundary.advance(character) {
+            return Some(at + character.len_utf8());
         }
-        match c {
-            '{' => stack.push('}'),
-            '[' => stack.push(']'),
-            '}' | ']' => {
-                // A closer that doesn't match the innermost opener's type
-                // can never be part of a well-formed JSON value from here --
-                // there is no future input that fixes a type mismatch, so
-                // this reading can never become balanced (unlike a plain
-                // depth shortfall, which just needs more input).
-                if stack.pop() != Some(c) {
-                    return None;
-                }
-                if stack.is_empty() {
-                    return Some(idx + c.len_utf8());
-                }
-            }
-            _ => {}
+        if boundary.invalid {
+            return None;
         }
     }
     None
@@ -384,6 +425,11 @@ pub(crate) trait InvokeBoundary: Send {
 
     fn owns_guided_prefix(&self) -> bool {
         false
+    }
+
+    /// Locate a lexical native body whose nested JSON is data in guided mode.
+    fn guided_native_body_start(&self, _text: &str, _at: usize) -> Option<usize> {
+        None
     }
 
     /// Find a family-owned guided invoke opener, including accepted spelling variants.
@@ -2319,5 +2365,44 @@ mod tests {
             scanner.in_reasoning,
             "reset must preserve the effective default"
         );
+    }
+
+    #[test]
+    fn resumable_json_boundary_settles_once_after_many_sibling_fields() {
+        for count in [1, 100, 800] {
+            let fields = (0..count)
+                .map(|i| format!("\"k{i}\":\"é[]{{}}\\\\\\\"\""))
+                .collect::<Vec<_>>()
+                .join(",");
+            let value = format!(" \t{{\"marker\":\"<|call|>\",{fields}}}");
+            assert!(serde_json::from_str::<serde_json::Value>(&value).is_ok());
+            let mut boundary = super::JsonValueBoundary::default();
+            let completions = value
+                .char_indices()
+                .filter_map(|(at, ch)| boundary.advance(ch).then_some(at + ch.len_utf8()))
+                .collect::<Vec<_>>();
+            assert_eq!(completions, vec![value.len()]);
+            assert_eq!(super::json_value_end(&value), Some(value.len()));
+            assert!(
+                " trailing {\"more\":[]}"
+                    .chars()
+                    .all(|ch| !boundary.advance(ch))
+            );
+        }
+    }
+
+    #[test]
+    fn mismatched_json_boundary_never_scans_a_growing_suffix() {
+        for suffix in [0, 100, 8192] {
+            for prefix in ["{]", "[}"] {
+                let input = format!("{prefix}{}", "é{}[]".repeat(suffix));
+                let seen = std::cell::Cell::new(0usize);
+                let result = super::json_container_end(
+                    input.char_indices().inspect(|_| seen.set(seen.get() + 1)),
+                );
+                assert_eq!(result, None);
+                assert_eq!(seen.get(), 2, "suffix={suffix}");
+            }
+        }
     }
 }

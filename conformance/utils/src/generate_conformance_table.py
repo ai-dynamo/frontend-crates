@@ -129,7 +129,7 @@ from impls import (  # noqa: E402
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
 from null_cases import null_group
-from case_variants import group_null_variants, group_schema_variants
+from case_variants import group_null_variants, group_unified_variants
 
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
 import gen_unified_golden  # noqa: E402  (authored Unified scenario scope)
@@ -2317,6 +2317,19 @@ def _unified_capture_failure(record: dict | None) -> dict:
     return failure
 
 
+def _unified_chunk_rows(input_chunks, capture_chunks):
+    """Show the terminal observation when a published stimulus uses implicit EOF."""
+    delivery = list(input_chunks)
+    if (len(capture_chunks) == len(delivery) + 1
+            and (not delivery or delivery[-1].get("delta_text") != "‹finish›")):
+        delivery.append({"delta_text": "‹finish›"})
+    return [
+        {"delta_text": chunk.get("delta_text", ""),
+         "dynamo": (capture_chunks[index].get("expected") if index < len(capture_chunks) else []) or []}
+        for index, chunk in enumerate(delivery)
+    ]
+
+
 def _load_unified_fixtures(base: Path):
     """Read the exploded per-case / per-family / per-version unified fixtures (same
     layout as toolcalling/fixtures-stream-v1: inputs/ + golden/ + <impl>-<version>/)
@@ -2478,6 +2491,7 @@ def _load_unified_fixtures(base: Path):
             "tools": _unified_case_schemas(inp, shared_schema_signature),
             "policy": inp.get("policy") or [], "policy_tags": inp.get("policy") or [],
             "init": {
+                **raw_init,
                 "starting_state": raw_init.get("starting_state") or "None",
                 "tool_output_mode": raw_init.get("tool_output_mode") or "Native",
                 "named_tool": raw_init.get("named_tool"),
@@ -2514,11 +2528,7 @@ def _load_unified_fixtures(base: Path):
                 }
                 for impl in _UNIFIED_PEER_SOURCES
             },
-            "chunks": [
-                {"delta_text": ic.get("delta_text", ""),
-                 "dynamo": (dyn_chunks[i].get("expected") if i < len(dyn_chunks) else []) or []}
-                for i, ic in enumerate(in_chunks)
-            ],
+            "chunks": _unified_chunk_rows(in_chunks, dyn_chunks),
         })
         for impl in _UNIFIED_PEER_SOURCES:
             edoc = engine_cases.get(impl, {}).get((fam, key))
@@ -3155,7 +3165,7 @@ def build_combined_model(output_path: Path | None = None,
                                       "version": None,
                                       "parse_mode": "batch" if tab["mode"] == "batch" else "stream"})
         group_null_variants(tab)
-        group_schema_variants(tab)
+        group_unified_variants(tab)
         if tab["id"] == "tab-unified":
             # Rank the visible columns after variants have been folded into parents.
             labels = unified_taxonomy.display_case_labels(column["sub"] for column in tab["columns"])

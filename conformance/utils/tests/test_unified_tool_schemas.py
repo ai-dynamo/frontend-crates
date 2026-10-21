@@ -88,12 +88,32 @@ def _assert_golden_schemas(cases, tools):
         assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
+                if not offered_tools:
+                    # Published Harmony calls can exercise lexical parsing without schemas.
+                    assert case_id.endswith(".gpt_oss")
+                    continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
-                    family = case_id.rsplit(".", 1)[1]
+                    family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
                     assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "gpt_oss"}
                     assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
                     continue
                 _assert_value(event["arguments"], schemas[event["name"]])
+
+
+@pytest.mark.parametrize("family", ["qwen3", "gpt_oss"])
+def test_schema_free_text_does_not_imply_a_schema_free_tool_call(family):
+    case = {"tools": [], "golden": [
+        {"kind": "reasoning", "text": "analysis"},
+        {"kind": "text", "text": "response"},
+    ]}
+    cases = {f"UNIFIED.no_tools.{family}": case}
+    _assert_golden_schemas(cases, unified_tools())
+    case["golden"].append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+    if family == "gpt_oss":
+        _assert_golden_schemas(cases, unified_tools())
+    else:
+        with pytest.raises(AssertionError):
+            _assert_golden_schemas(cases, unified_tools())
 
 
 @pytest.mark.parametrize("family", G.FAMILIES)
@@ -105,8 +125,18 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
     tools = unified_tools()
     next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
+    cases = G.build_cases(family)
+    for case in cases.values():
+        if not case.get("tools") and any(
+            event["kind"] == "tool_call" and event["name"] == "sum_values"
+            for event in case["golden"]
+        ):
+            case["tools"] = copy.deepcopy(tools)
+        for tool in case.get("tools", []):
+            if tool["name"] == "sum_values":
+                tool["parameters"]["properties"]["values"] = {"type": "string"}
     with pytest.raises(AssertionError):
-        _assert_golden_schemas(G.build_cases(family), tools)
+        _assert_golden_schemas(cases, tools)
 
 
 def test_schema_guard_rejects_old_numeric_string_successor():

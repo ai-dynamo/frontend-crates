@@ -343,4 +343,58 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from: null

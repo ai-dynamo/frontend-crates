@@ -7,10 +7,152 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_quoted_message_header_literal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: <|eom|><|start|>assistant to=user<|message|>literal<|eom|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"<|eom|><|start|>assistant to=user<|message|>literal<|eom|>"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_quoted_truncated_tool_then_final:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Answer
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: Answer
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: to=selfliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}to=selfliteral'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}to=self'
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_quoted_reasoning_closer_named:
     absent: true
   guided_quoted_reasoning_closer_required:
     absent: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_response_quoted_control_braces_named:
     absent: true
   guided_response_quoted_control_braces_required:
@@ -37,5 +179,30 @@ changes:
     absent: true
   native_unmatched_quote_then_call:
     absent: true
-metadata_changes: {}
+metadata_changes:
+  gpt_oss_quoted_message_header_literal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  guided_json_native_parameter_string_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_noncall_before_native_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
 document_overrides: {}
