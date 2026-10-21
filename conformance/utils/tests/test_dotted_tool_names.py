@@ -24,7 +24,7 @@ DOTTED_CASES = [
 ]
 
 
-@pytest.mark.parametrize("family", generator.FAMILIES)
+@pytest.mark.parametrize("family", sorted(generator.DOTTED_NAME_FAMILIES))
 @pytest.mark.parametrize("scenario,calls,group", DOTTED_CASES)
 def test_dotted_names_share_exact_oracle_and_tools(family, scenario, calls, group):
     case = generator.build_cases(family)[f"UNIFIED.{scenario}.{family}"]
@@ -39,7 +39,7 @@ def test_dotted_names_share_exact_oracle_and_tools(family, scenario, calls, grou
             "required": list(arguments), "additionalProperties": False,
         }
     assert tax(scenario)[0] == group
-    assert generator.scenario_families(scenario) == frozenset(generator.FAMILIES)
+    assert generator.scenario_families(scenario) == generator.DOTTED_NAME_FAMILIES
     assert case["init"] == {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
 
 
@@ -51,6 +51,19 @@ def test_report_classifier_rejects_truncated_names_and_missing_results():
     assert table._unified_capture_failure(None) == {"unavailable": "No captured result", "unavailable_code": "missing_capture"}
     assert table._unified_capture_failure({"assembled": []}) == {}
     assert table._unified_classify("gpt_oss", golden, []) != "MATCH"
+
+
+def test_dotted_name_scope_is_the_nine_families_from_unified_v2():
+    expected = frozenset({
+        "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
+        "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3",
+    })
+    assert generator.DOTTED_NAME_FAMILIES == expected
+    assert generator.scenario_families("dotted_name_minimal") == expected
+    assert not any(
+        case_id.split(".")[1] in generator.DOTTED_NAME_SCENARIOS
+        for case_id in generator.build_cases("nemotron_v3")
+    )
 
 
 @pytest.mark.parametrize("family,opener", [
@@ -68,7 +81,8 @@ def test_dotted_shared_prefix_reuses_the_baseline_multi_call_envelope(family, op
 def test_rendered_report_shows_published_harmony_name_boundary(rendered_page):
     model = load_model(rendered_page)
     tab = next(tab for tab in model["tabs"] if tab["id"] == "tab-unified")
-    for family_row in tab["rows"]:
+    for family in sorted(generator.DOTTED_NAME_FAMILIES):
+        family_row = next(row for row in tab["rows"] if row["family"] == family)
         cells = leaf_cells(family_row)
         for scenario, calls, _ in DOTTED_CASES:
             candidate = next(candidate for candidate in cells[scenario]["tooltip"]["candidates"] if candidate["key"] == "dynamo")

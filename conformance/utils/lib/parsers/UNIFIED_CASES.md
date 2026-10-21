@@ -69,6 +69,10 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 The ten native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
 
+The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, and Qwen3. GPT-OSS also retains the historical comparison between v1 reasoning + batch capture and the v2 Harmony tool parser, labeled split.
+
+The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, and Qwen3. GPT-OSS also retains the historical comparison between v1 reasoning + batch capture and the v2 Harmony tool parser, labeled split.
+
 ## Nemotron 3 Ultra applicability
 
 The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
