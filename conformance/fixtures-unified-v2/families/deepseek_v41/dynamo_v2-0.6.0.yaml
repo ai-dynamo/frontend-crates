@@ -2039,4 +2039,49 @@ metadata_changes:
   two_calls: {}
   two_calls_same_name: {}
   two_reason_spans: {}
-document_overrides: {}
+document_overrides:
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null

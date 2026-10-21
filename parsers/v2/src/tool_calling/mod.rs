@@ -6,8 +6,6 @@ pub mod dsml;
 pub mod gemma4;
 pub mod glm47;
 pub mod harmony;
-mod harmony_grammar;
-mod harmony_recovery;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m2;

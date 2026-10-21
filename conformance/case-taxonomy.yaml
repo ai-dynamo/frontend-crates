@@ -657,6 +657,9 @@ suites:
 # Suites a family is exempt from entirely, with the reason (renders as n/a, not a
 # gap). Toolcalling suites are otherwise expected for every parser_families.yaml row.
 suite_exemptions:
+  muse_spark:
+    toolcalling.batch: Muse Spark has no v1 batch parser; its complete corpus is captured by UnifiedParser.
+    toolcalling.stream: Muse Spark incremental coverage is owned by the Unified corpus; the legacy stream archive retains compatibility smoke probes only.
   harmony_text:
     toolcalling.batch: harmony_text is the text-driven conformance variant of harmony; the v1 batch corpus is captured under the harmony family.
   muse_glimmer:

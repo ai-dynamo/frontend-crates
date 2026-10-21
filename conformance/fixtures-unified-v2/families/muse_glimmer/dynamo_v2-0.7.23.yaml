@@ -7,6 +7,31 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_quoted_message_header_literal:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68. The parser was not executed, and no newer output was substituted.
+  gpt_oss_quoted_truncated_tool_then_final:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68. The parser was not executed, and no newer output was substituted.
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.23 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.23 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68. No release tag or newer parser was substituted.'
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68. The parser was not executed, and no newer output was substituted.
   muse_unterminated_parameter_then_call:
     case_key: UNIFIED.muse-unterminated_parameter_then_call
     stimulus:
@@ -64,21 +89,33 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
-  muse_unterminated_parameter_then_call:
+  gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.23
-      capture_origin:
-        crate_version: 0.7.23
-        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
-        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
+      capture_origin: null
       inherited_from: null
-  muse_unterminated_parameter_then_empty_call:
+  gpt_oss_quoted_truncated_tool_then_final:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.23
-      capture_origin:
-        crate_version: 0.7.23
-        source_sha256: a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68
-        git_commit: f1d968982766ecd5d1e07bd0896fb622c6af7ba0
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
       inherited_from: null

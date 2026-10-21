@@ -44,7 +44,8 @@ use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
     GuidedChannel, GuidedGrammar, GuidedPrefix, GuidedPrefixContext, GuidedPrefixFactory,
     GuidedPrefixScanner, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
-    UnifiedParserEvent, UnifiedParserOutput, UnifiedParserStartingState, count_guided_prefix_bytes,
+    UnifiedParserEvent, UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState,
+    count_guided_prefix_bytes,
 };
 
 // Share the exact ATEM opener with Spark's guided grammar to avoid format drift.
@@ -161,6 +162,7 @@ impl NativeUnified for MuseChannelScanner {
                 competitors: &GUIDED_COMPETITORS,
                 close_markers: &GUIDED_CLOSE_MARKERS,
                 response_literal_markers: &[],
+                header_pending: None,
             }));
         }
         Some(GuidedReasoning::Channel(GuidedChannel {
@@ -176,6 +178,7 @@ impl NativeUnified for MuseChannelScanner {
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
             response_literal_markers: &[],
+            header_pending: None,
         }))
     }
 
@@ -186,7 +189,9 @@ impl NativeUnified for MuseChannelScanner {
                 .map(|m| m.to_string())
                 .collect(),
             invoke_start: INVOKE_START.to_string(),
+            invoke_start_alternates: Vec::new(),
             invoke_end: INVOKE_END.to_string(),
+            native_body_start: None,
             // The marker-only rules are enough here: an ATEM invoke is delimited by a
             // literal opener and closer, with no grammar-aware location rule of the
             // kind gemma4's value wrapping needs.
@@ -196,9 +201,10 @@ impl NativeUnified for MuseChannelScanner {
         }
     }
 
-    fn apply_native_init(&mut self, starting_state: UnifiedParserStartingState) {
+    fn apply_native_init(&mut self, init: &UnifiedParserInit) -> Result<()> {
         self.reset_stream();
-        self.apply_starting_state(starting_state);
+        self.apply_starting_state(init.starting_state);
+        Ok(())
     }
 
     fn restore_native_state(&mut self, starting_state: UnifiedParserStartingState) {

@@ -172,7 +172,7 @@ impl TemplatedToolCallFormat {
         }
     }
 
-    fn tool_tags(
+    pub(super) fn tool_tags(
         &self,
         policy: &ResolvedToolCallingPolicy<'_>,
         tool_arguments_any_order: bool,

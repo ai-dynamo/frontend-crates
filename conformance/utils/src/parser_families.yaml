@@ -313,13 +313,15 @@ unified:
     capture_pipelines:
       dynamo_v1: ["gpt_oss", "harmony"]
     registry: harmony
-    native: false
-    guided_tool_output: false
+    native: true
+    guided_tool_output: true
     reasoning_parser: gpt_oss
     tool_parser: harmony
     golden_spec: gpt_oss.yaml
     leak_markers: []
   muse_spark:
+    capture_pipelines:
+      sglang_python: ["muse", "muse"]
     native: true
     guided_tool_output: true
     # The legacy split names are retained only for old cross-version harnesses;
@@ -410,6 +412,7 @@ unified_display:
     33: Guided Decoding — invalid payload plus tool markup
     34: Guided Decoding — reasoning boundaries
     35: Guided Decoding — markers in visible answers
+    36: Guided Decoding — response schemas after reasoning
     40: Prefilled Reasoning
     41: Prefilled Reasoning — malformed
     50: Prefilled Response
@@ -424,6 +427,7 @@ unified_display:
     kimi: 'Single Family Test: Kimi K3 XTML'
     muse: 'Single Family Test: Muse-specific'
     muse_spark: 'Single Family Test: Muse Spark message phases'
+    gpt_oss: 'Single Family Test: GPT-OSS Harmony'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
     guided_response_rejected_header_quote_ownership: deepseek_v4

@@ -100,6 +100,27 @@ changes:
             arguments: '{}'
             complete: true
         - expected: []
+  gpt_oss_tool_body_whitespace:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: x
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"x"}'
+            complete: true
+        - expected: []
+        - expected: []
   guided_json_after_reasoning:
     observation:
       value:
@@ -299,6 +320,174 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <think>self literal</think><|tool_call_begin|>functions.f:0{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: text
+            text: functions.f:0
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <think>self literal</think><|tool_call_begin|>functions.f:0{"x": {"city": "Rome"}}'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: text
+            text: functions.f:0
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"x": {"city": "Rome"}}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <think>self literal</think><|tool_call_begin|>functions.f:0{"x": "[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"}'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: text
+            text: functions.f:0
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"x": "[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}I mean <think>self literal</think><|tool_call_begin|>functions.f:0{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: text
+            text: functions.f:0
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_json_orphan_reason_close_before_payload:
     observation:
       value:
@@ -589,6 +778,38 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_call_begin|>functions.f:0{"x": {"city": "Rome"}}ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: text
+            text: functions.f:0
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"x": {"city": "Rome"}}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   guided_response_quoted_control_braces_named:
     observation:
       value:

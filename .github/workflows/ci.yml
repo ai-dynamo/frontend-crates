@@ -80,8 +80,17 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      - name: Install CPU structural-tag verifier
+        run: |
+          python3 -m venv /tmp/structural-tag-venv
+          /tmp/structural-tag-venv/bin/pip install --no-deps -r conformance/utils/structural-tag-requirements.in
+          echo "CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python" >> "$GITHUB_ENV"
+
       - name: Run tests
         run: cargo test --workspace --all-targets --locked
+
+      - name: Verify grammar checks under optimized Python
+        run: PYTHONOPTIMIZE=1 cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity structural_response_case_checks_the_schema_before_parsing
 
       # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
       # decode with it (runners have no GPU, so NVDEC's tests are ignored).
@@ -227,7 +236,7 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1

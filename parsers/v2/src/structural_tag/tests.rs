@@ -3,9 +3,9 @@
 
 use serde_json::{Value, json};
 
-use crate::Tool;
+use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, GLM47, QWEN3_CODER};
+use super::builders::{DEEPSEEK_DSML, GLM47, HARMONY, QWEN3_CODER};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
@@ -169,6 +169,197 @@ fn build_with_structured_output(
             starts_in_reasoning,
         },
     )
+}
+
+// Response-format requests have no tools in dynamo#16787; parser-output
+// fixtures cannot exercise the grammar that constrains generation beforehand.
+#[test]
+fn harmony_response_format_constrains_final_without_constraining_analysis() {
+    let schemas = [
+        json!({"type": "object"}),
+        json!({
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "enum": ["London", "New York"]},
+                "temperature": {"type": "number"},
+                "conditions": {"type": "string"}
+            },
+            "required": ["location", "temperature", "conditions"]
+        }),
+    ];
+    let offered_tools = tools();
+    for schema in schemas {
+        for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
+            for tools in [&[][..], &offered_tools[..]] {
+                for starts_in_reasoning in [false, true] {
+                    let actual = build_with_structured_output(
+                        &HARMONY,
+                        choice,
+                        tools,
+                        None,
+                        starts_in_reasoning,
+                        &schema,
+                    );
+                    let format = if starts_in_reasoning {
+                        post_reasoning_format(
+                            &actual["format"],
+                            "harmony",
+                            Some("<|start|>assistant"),
+                        )
+                    } else {
+                        &actual["format"]
+                    };
+                    assert_eq!(format["type"], "triggered_tags");
+                    assert_eq!(format["at_least_one"], false);
+                    assert!(
+                        format["triggers"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .any(|trigger| trigger == "<|channel|>final")
+                    );
+                    let tags = format["tags"].as_array().unwrap();
+                    let final_tag = tags
+                        .iter()
+                        .find(|tag| tag["begin"] == "<|channel|>final<|message|>")
+                        .unwrap();
+                    assert_eq!(final_tag["end"], "<|return|>");
+                    assert_eq!(
+                        final_tag["content"],
+                        json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                    );
+                    assert_eq!(
+                        tags.len(),
+                        if choice == StructuralTagToolChoice::Auto {
+                            tools.len() + 1
+                        } else {
+                            1
+                        }
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn harmony_structured_output_preserves_tool_policy_and_external_boundary() {
+    let tools = tools();
+    let schema = json!({"type": "object"});
+    for parallel in [None, Some(false), Some(true)] {
+        for choice in [
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("get_weather"),
+        ] {
+            for starts_in_reasoning in [false, true] {
+                assert_eq!(
+                    build_with_structured_output(
+                        &HARMONY,
+                        choice,
+                        &tools,
+                        parallel,
+                        starts_in_reasoning,
+                        &schema
+                    ),
+                    build(
+                        &HARMONY,
+                        choice,
+                        &tools,
+                        parallel,
+                        StructuralTagSchemaMode::Auto,
+                        starts_in_reasoning
+                    ),
+                );
+            }
+        }
+        let context = StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Auto,
+            tools: &tools,
+            parallel_tool_calls: parallel,
+            schema_mode: StructuralTagSchemaMode::Strict,
+            structured_output_schema: Some(&schema),
+            starts_in_reasoning: true,
+        };
+        let tag = HARMONY
+            .build_with_options(
+                &context,
+                &StructuralTagOptions {
+                    reasoning_boundary: ReasoningBoundary::External,
+                    tool_arguments_any_order: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(tag["format"]["type"], "triggered_tags");
+        assert_eq!(tag["format"]["stop_after_first"], parallel == Some(false));
+        for tool_tag in tag["format"]["tags"].as_array().unwrap().iter().skip(1) {
+            assert_eq!(tool_tag["content"]["any_order"], true);
+        }
+        assert!(
+            tag["format"]["tags"][0]["content"]
+                .get("any_order")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn schema_only_requests_keep_other_family_response_formats() {
+    let schema = json!({"type":"object"});
+    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &GLM47] {
+        for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
+            let actual = build_with_structured_output(builder, choice, &[], None, false, &schema);
+            assert_eq!(
+                actual["format"],
+                json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+            );
+        }
+    }
+}
+
+#[test]
+fn harmony_response_schema_envelope_round_trips_without_marker_leakage() {
+    let schema = json!({"type": "object"});
+    let tag = build_with_structured_output(
+        &HARMONY,
+        StructuralTagToolChoice::None,
+        &[],
+        None,
+        false,
+        &schema,
+    );
+    let final_tag = &tag["format"]["tags"][0];
+    let body = r#"{"location":"London","temperature":12,"conditions":"cloudy"}"#;
+    // The generation grammar and output parser must agree on the turn delimiter;
+    // a grammar-only acceptance test cannot detect a delimiter leaking as text.
+    let input = format!(
+        "{}checking météo🙂<|end|><|start|>assistant{}{}{}",
+        concat!("<|channel|>", "ana", "lysis<|message|>"),
+        final_tag["begin"].as_str().unwrap(),
+        body,
+        final_tag["end"].as_str().unwrap(),
+    );
+    let expected = vec![
+        UnifiedEvent::Reasoning {
+            text: "checking météo🙂".to_string(),
+        },
+        UnifiedEvent::Text {
+            text: body.to_string(),
+        },
+    ];
+    for split in input
+        .char_indices()
+        .map(|(index, _)| index)
+        .chain(std::iter::once(input.len()))
+    {
+        let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+        parser.initialize(&[]).unwrap();
+        let mut actual = parser.push(&input[..split]).unwrap();
+        actual.extend(parser.push(&input[split..]).unwrap());
+        actual.extend(parser.finish().unwrap().events);
+        assert_eq!(assemble(&actual), expected, "split at {split}");
+    }
 }
 
 fn call_sequence(format: &Value) -> &Value {

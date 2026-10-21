@@ -68,6 +68,7 @@ _SCHEMA_SECTION = {
 
 
 def argument_section(scenario: str) -> str:
+    scenario = scenario.removesuffix("_pr424")
     if scenario.startswith("schema_"):
         return _SCHEMA_SECTION[schema_group(scenario.removeprefix("schema_"))]
     if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string"}:
@@ -178,7 +179,7 @@ def legacy_schema_wire(family: str, case: dict[str, Any], renderer: Callable[...
         marker = "]<]minimax[>["
         return f'{marker}<tool_call>{marker}<invoke name="schema_probe">{marker}<value>{raw}{marker}</value>{marker}</invoke>{marker}</tool_call>'
     # These grammars have an existing independently authored Unified renderer.
-    if family in ("glm47", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer"):
+    if family in ("glm47", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark"):
         return renderer(family, "schema_probe", {"value": value}, 0, {"value": raw})
     raise ValueError(f"no schema grammar renderer for registered family {family}")
 

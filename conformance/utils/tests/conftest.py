@@ -15,6 +15,14 @@ UTILS = Path(__file__).resolve().parents[1]
 REPO = UTILS.parents[1]
 sys.path.insert(0, str(UTILS / "src"))
 
+import unified_history  # noqa: E402
+
+
+@pytest.fixture(scope="session")
+def committed_unified_store():
+    # Read-only corpus guards share parsing; resolve() returns independent records.
+    return unified_history.load_store(UTILS.parent / "fixtures-unified-v2")
+
 
 @pytest.fixture(scope="session")
 def rendered_page(tmp_path_factory) -> Path:

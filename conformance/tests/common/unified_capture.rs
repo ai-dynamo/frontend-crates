@@ -76,10 +76,13 @@ pub fn replay_chunks(input: &str, recorded: Option<&[InputChunk]>) -> Vec<String
             let (finish, rows) = rows
                 .split_last()
                 .expect("recorded schedule requires finish");
-            assert_eq!(
-                finish.delta_text, "‹finish›",
-                "recorded schedule requires finish"
-            );
+            // Split-era GPT-OSS inputs store only generated chunks; native
+            // captures also store an explicit terminal observation.
+            let rows = if finish.delta_text == "‹finish›" {
+                rows
+            } else {
+                recorded.expect("recorded schedule")
+            };
             let chunks: Vec<_> = rows.iter().map(|row| row.delta_text.clone()).collect();
             input_chunks(input, Some(&chunks))
         }
@@ -119,7 +122,11 @@ fn authored_and_recorded_schedules_preserve_utf8_and_empty_chunks() {
         delta_text: "‹finish›".into(),
     });
     assert_eq!(replay_chunks(input, Some(&rows)), authored);
+    assert_eq!(
+        replay_chunks(input, Some(&rows[..rows.len() - 1])),
+        authored
+    );
     assert_eq!(input_chunks(input, None), chunk_input(input));
     assert!(std::panic::catch_unwind(|| input_chunks(input, Some(&["wrong".into()]))).is_err());
-    assert!(std::panic::catch_unwind(|| replay_chunks(input, Some(&rows[..1]))).is_err());
+    assert!(std::panic::catch_unwind(|| replay_chunks(input, Some(&rows[1..]))).is_err());
 }

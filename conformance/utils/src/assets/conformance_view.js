@@ -167,13 +167,13 @@
   var _summaryLegendHtml = null;
 
   const tooltipIds = new WeakMap();
-  function registerTooltip(td, model, fixtureHref, stateKey) {
+  function registerTooltip(td, model, fixtureHref, stateKey, cellModel) {
     if (fixtureHref) td.dataset.ttipFixture = fixtureHref;
     if (stateKey) td.dataset.ttipKey = stateKey;
     const id = tooltipIds.get(model) || String(++_ttipSeq);
     tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
-    _ttipModels[id] = model;
+    _ttipModels[id] = {tooltip: model, cell: cellModel};
   }
 
   function buildTooltipInto(td) {
@@ -182,7 +182,8 @@
     if (!ttip || ttip.classList.contains('ttip-built')) { return; }
     // A clone of an ALREADY-built tooltip carries the built content + this class, so
     // it's skipped above. A fresh (unbuilt) cell/clone builds from the keyed model.
-    var m = _ttipModels[td.getAttribute('data-ttip-id')];
+    var entry = _ttipModels[td.getAttribute('data-ttip-id')];
+    var m = entry && entry.tooltip;
     ttip.classList.add('ttip-built');
     if (!m) { return; }
     // Append (don't overwrite): conformance.js may already have inserted its
@@ -195,7 +196,8 @@
   }
   // Expose so conformance.js (or tests) can force-build a specific cell if needed.
   window.__buildTooltip = buildTooltipInto;
-  window.__conformanceTooltipModel = cell => _ttipModels[cell.getAttribute("data-ttip-id")];
+  window.__conformanceTooltipModel = cell => (_ttipModels[cell.getAttribute("data-ttip-id")] || {}).tooltip;
+  window.__conformanceCellModel = cell => (_ttipModels[cell.getAttribute("data-ttip-id")] || {}).cell;
   window.__registerConformanceTooltip = registerTooltip;
   window.__conformanceCaseTooltip = columnGrammarModel;
 
@@ -498,8 +500,8 @@
   // case did not set still shows, as `<not specified>` plus the default that applied,
   // so "not set" and "set to the default" stay distinguishable when reading a popup.
   //
-  // ONLY real request-scoped parser inputs belong here, i.e. the arguments of
-  // `UnifiedParser::initialize_request`. `finish_reason` is deliberately
+  // Request initialization includes parser modes and generation constraints.
+  // `finish_reason` is deliberately
   // NOT one: `finish()` takes no argument, so the parser cannot see it (the same is
   // true of vLLM's parsers) — it is a stream property, not a knob. Listing it here
   // would claim the parser behaves differently per value, which it does not.
@@ -533,6 +535,12 @@
           ? 'required choice: payload is one call object, or an array of them'
           : 'named choice: payload is this tool\'s arguments alone';
       }
+    },
+    {
+      key: 'structural_tag', optional: true,
+      gloss: function () {
+        return 'XGrammar checks the response schema and rejected streams before native parsing';
+      }
     }
   ];
 
@@ -541,9 +549,12 @@
     var items = CONFIG_KEYS.map(function (spec) {
       var v = init[spec.key];
       var unset = (v === undefined || v === '');
+      if (spec.optional && (unset || v === null)) { return ''; }
+      const objectValue = v !== null && typeof v === 'object';
       // Distinguish "the case did not set this" from "the case set it to the
       // variant that happens to be named None".
-      var shown = unset ? '<unset>' : (v === null ? 'null' : String(v));
+      var shown = unset ? '<unset>' : (v === null ? 'null'
+        : (objectValue ? JSON.stringify(v, null, 2) : String(v)));
       var why = spec.gloss
         ? spec.gloss(unset ? null : v, init)
         : (CONFIG_GLOSS[spec.key] || {})[shown];
@@ -557,7 +568,8 @@
       var vals = (spec.values || [])
         .map(function (x) { return '<code>' + escapeHtml(x) + '</code>'; })
         .join(', ');
-      return '<li><code>' + escapeHtml(spec.key + '=' + shown) + '</code>'
+      return '<li><code' + (objectValue ? ' class="ttip-pre"' : '') + '>'
+        + escapeHtml(spec.key + '=' + shown) + '</code>'
         + (why ? '<span class="ttip-config-why"> — ' + escapeHtml(why) + '</span>' : '')
         + (vals ? '<span class="ttip-config-vals"> (possible: ' + vals + ')</span>' : '')
         + '</li>';
@@ -1065,7 +1077,7 @@
       // Empty .ttip now (so conformance.js's attachTooltip finds it); content built
       // lazily on first interaction from the keyed model (survives transpose clones).
       registerTooltip(td, cell.tooltip, cell.fixture_href,
-        JSON.stringify(['cell', tab.id, cell.case_id || col.sub, cell.family || '']));
+        JSON.stringify(['cell', tab.id, cell.case_id || col.sub, cell.family || '']), cell);
     }
     return td;
   }

@@ -3,6 +3,7 @@
 """Coverage for canonical Unified capture checkpoints."""
 
 import copy
+from dataclasses import replace
 import hashlib
 import json
 import sys
@@ -230,6 +231,27 @@ def _write_capture(
     return path
 
 
+def test_first_capture_creates_a_new_implementation_history(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "0.5.14", {"text_only": _change()}, implementation="sglang_python")
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.26.0/gemma4/UNIFIED.1-1.yaml"
+    path.parent.mkdir(parents=True)
+    events = [{"kind": "text", "text": "hello"}]
+    path.write_text(unified_history.dump_yaml({
+        "family": "gemma4", "mode": "unified",
+        "captured_with": {"dynamo_v2": "0.26.0"},
+        "cases": {"UNIFIED.1-1": {
+            "capture_input": _request(), "assembled": events,
+            "chunks": [{"expected": events}],
+        }},
+    }))
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert history.resolve("dynamo_v2-0.26.0")["text_only"]["observation"]["value"]["assembled"] == events
+
+
 @pytest.mark.parametrize("later_changes", [False, True])
 def test_correcting_older_placeholder_preserves_later_observation(tmp_path, later_changes):
     store = tmp_path / "store"
@@ -290,6 +312,30 @@ def test_materialization_reuses_supplied_store_without_mutating_it(tmp_path, mon
     } == {
         path.relative_to(supplied): path.read_bytes() for path in supplied.rglob("*.yaml")
     }
+    assert store == before
+
+
+def test_input_only_materialization_preserves_default_input_and_golden_bytes(tmp_path):
+    root = _store(tmp_path / "store")
+    store = unified_history.load_store(root)
+    before = copy.deepcopy(store)
+    default = tmp_path / "default"
+    inputs_only = tmp_path / "inputs-only"
+    unified_history.materialize_store(root, default, store=store)
+    unified_history.materialize_store(root, inputs_only, store=replace(store, histories={}))
+    expected = {
+        path.relative_to(default): path.read_bytes()
+        for directory in ("inputs", "golden")
+        for path in (default / directory).rglob("*.yaml")
+    }
+    assert expected
+    assert expected == {
+        path.relative_to(inputs_only): path.read_bytes()
+        for path in inputs_only.rglob("*.yaml")
+    }
+    for capture_id in store.histories[("gemma4", "dynamo_v2")].captures:
+        assert list((default / capture_id).rglob("*.yaml"))
+        assert not (inputs_only / capture_id).exists()
     assert store == before
 
 
@@ -1291,9 +1337,8 @@ def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_pat
     ("qwen3", ("be1520f44605ed60b906aa03f7847a9210631d43cec8c967f55ac99186d496bd",
                "697ee3feadda33be06413278e6f213f8361a060793518381713cc19a771c2f4d")),
 ])
-def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family, original_digests):
-    store_root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
-    store = unified_history.load_store(store_root)
+def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family, original_digests, committed_unified_store):
+    store = committed_unified_store
     history = store.histories[(family, "vllm_rust")]
     historical = history.resolve("vllm_rust-0.25.1")
     recaptured = history.resolve("vllm_rust-0.26.0")

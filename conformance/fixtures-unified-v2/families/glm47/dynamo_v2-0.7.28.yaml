@@ -1,0 +1,78 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.28
+    git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+    source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+document:
+  mode: unified
+changes:
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  structured_response_after_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check London météo🙂 before answering; this is prose, not JSON.
+        - kind: text
+          text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'Check London météo🙂 before answering; this is prose, not '
+        - expected:
+          - kind: reasoning
+            text: JSON.
+        - expected:
+          - kind: text
+            text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
+        - expected: []
+metadata_changes:
+  guided_response_native_wrapper_whitespace_before_prose: {}
+  structured_response_after_reasoning: {}
+document_overrides:
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null

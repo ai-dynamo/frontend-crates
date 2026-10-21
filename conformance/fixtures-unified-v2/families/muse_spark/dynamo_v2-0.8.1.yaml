@@ -1,0 +1,218 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.1
+    git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+    source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+document:
+  mode: unified
+changes:
+  gpt_oss_quoted_message_header_literal:
+    case_key: UNIFIED.gpt_oss-quoted_message_header_literal
+    stimulus:
+      ref: current
+      semantic_sha256: a695672e0f73e26890ed299f73ca143524104bc63d9bec3dd06df30a4245d250
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: <|eom|><|start|>assistant to=user<|message|>literal<|eom|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"<|eom|><|start|>assistant to=user<|message|>literal<|eom|>"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_quoted_truncated_tool_then_final:
+    case_key: UNIFIED.gpt_oss-quoted_truncated_tool_then_final
+    stimulus:
+      ref: current
+      semantic_sha256: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Answer
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: Answer
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 988a38133540e9538a0ce2898e71e219de590d596ebc468a9484ed8beddda086
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: to=selfliteral
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: to=self
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 315fa7e8a2d51710ddd61a2bd8a9294a0e6737acc9ac59b5ee9bf1fd803cce34
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}to=selfliteral'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}to=self'
+        - expected: []
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: d4673d100ae7b8b49b04962224de9681b683822b1df8e03d927ad3e88ee5d947
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  gpt_oss_quoted_message_header_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+        git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+      inherited_from: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+        git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+        git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+        git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.1
+      capture_origin:
+        crate_version: 0.8.1
+        source_sha256: ed975badd59debf9c787a247521939683b1c1ae052a944aeec9c3aca11fe8350
+        git_commit: 8fd8eefdde93518ea26e91a22c8232b4c4972e62
+      inherited_from: null

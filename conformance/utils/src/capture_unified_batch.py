@@ -23,6 +23,9 @@ def capture_cases(job, pipeline, registrations, execute, *, supports_reasoning_i
     results = {}
     for case in job["cases"]:
         request = case["request"]
+        if request["init"].get("structural_tag") is not None:
+            results[case["id"]] = unavailable_result("unsupported_request_mode", "Parser-only batch capture does not execute structural-tag generation constraints.", capture=request, observation=True)
+            continue
         names = pipeline.get(case["family"])
         if names is None or not registrations(names):
             result = unavailable_result("unsupported_family", "No registered reasoning + batch tool parser for this family", capture=request, observation=True)

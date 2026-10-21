@@ -7,6 +7,46 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_quoted_message_header_literal:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
+  gpt_oss_quoted_truncated_tool_then_final:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
+  gpt_oss_tool_body_whitespace:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.13 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.13 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.13 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.13 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. No release tag or newer parser was substituted.'
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
   malformed_json_then_two_valid_calls:
     case_key: UNIFIED.5-4
     stimulus:
@@ -26,5 +66,61 @@ changes:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
-metadata_changes: {}
-document_overrides: {}
+metadata_changes:
+  gpt_oss_quoted_message_header_literal: {}
+  gpt_oss_quoted_truncated_tool_then_final: {}
+  gpt_oss_tool_body_whitespace: {}
+  guided_json_native_parameter_array_before_payload: {}
+  guided_json_native_parameter_object_before_payload: {}
+  guided_json_native_parameter_string_before_payload: {}
+  guided_json_noncall_before_native_array_before_payload: {}
+  guided_response_native_wrapper_whitespace_before_prose: {}
+document_overrides:
+  gpt_oss_quoted_message_header_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null

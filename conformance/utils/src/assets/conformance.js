@@ -186,6 +186,18 @@
   function captureIssue(cell, key) {
     if (!cell || cell.kind === 'blank' || cell.kind === 'missing') return 'missing';
     const entry = (cell.cmp || {})[key];
+    if (cell.variants && cell.variants.length) {
+      // An inapplicable parent is only a heading; its children own the results.
+      const applicable = cell.variants.filter(variant => variant.status !== 'na');
+      if (!applicable.length) return 'unsupported';
+      const issues = applicable.map(variant => captureIssue(variant, key));
+      if (entry && entry.err === 1) return issues.includes('error') ? 'error' : 'expected';
+      if (entry && entry.leak === 1) return 'leak';
+      if (!entry || entry.na === 1) {
+        return ['missing', 'blocked', 'unsupported', 'expected'].find(issue => issues.includes(issue)) || 'missing';
+      }
+      return issues.includes('expected') ? 'expected' : null;
+    }
     const candidateTip = tooltipCandidate(cell, key);
     const block = candidateTip && candidateTip.block;
     if (!entry || entry.na === 1) {
@@ -229,7 +241,8 @@
   function renderSegments(cell, keys) {
     const model = window.__conformanceTooltipModel && window.__conformanceTooltipModel(cell);
     const cmp = JSON.parse(cell.dataset.cmp || '{}');
-    const data = { kind: 'cell', cmp, tooltip: model };
+    const data = (window.__conformanceCellModel && window.__conformanceCellModel(cell))
+      || { kind: 'cell', cmp, tooltip: model };
     let segments = cell.querySelector('.matrix-segments');
     if (!segments) {
       segments = document.createElement('span');

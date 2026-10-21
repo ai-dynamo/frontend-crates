@@ -257,6 +257,20 @@ impl InvokeBoundary for Gemma4InvokeBoundary {
         opens_bare_call(text, at, &self.opener_header)
     }
 
+    fn guided_native_body_start(&self, text: &str, at: usize) -> Option<usize> {
+        if !self.opens(text, at) {
+            return None;
+        }
+        let body = at
+            + text[at..]
+                .find('{')
+                .expect("recognized Gemma call has a body");
+        // An extra body opener before guided JSON is a recoverable wrapper;
+        // only a native parameter key transfers ownership of nested values.
+        native_key_end(text[body + 1..].trim_ascii_start().as_bytes(), 0)?;
+        Some(body)
+    }
+
     fn accepts_buffer_start(&self, previous: Option<char>) -> bool {
         previous.is_none_or(|ch| !is_call_name_char(ch))
     }
@@ -976,14 +990,8 @@ fn source_key_order(block: &str) -> Vec<String> {
                 while i < bytes.len() && is_key_byte(bytes[i]) {
                     i += 1;
                 }
-                let name = body[start..i].to_string();
-                // Only treat it as a key if a `:` follows (after optional spaces).
-                let mut j = i;
-                while j < bytes.len() && bytes[j].is_ascii_whitespace() {
-                    j += 1;
-                }
-                if j < bytes.len() && bytes[j] == b':' {
-                    names.push(name);
+                if let Some(end) = native_key_end(bytes, start) {
+                    names.push(body[start..end].to_string());
                 }
                 expect_key = false;
             }
@@ -999,6 +1007,20 @@ fn source_key_order(block: &str) -> Vec<String> {
 
 fn is_key_byte(b: u8) -> bool {
     is_call_name_char(char::from(b))
+}
+
+fn native_key_end(bytes: &[u8], start: usize) -> Option<usize> {
+    let end = start
+        + bytes[start..]
+            .iter()
+            .take_while(|b| is_key_byte(**b))
+            .count();
+    let colon = end
+        + bytes[end..]
+            .iter()
+            .take_while(|b| b.is_ascii_whitespace())
+            .count();
+    (end > start && bytes.get(colon) == Some(&b':')).then_some(end)
 }
 
 /// Byte width of a UTF-8 code point from its leading byte.

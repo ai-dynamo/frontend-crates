@@ -14144,3 +14144,404 @@ cases:
         name: get_weather
         arguments:
           location: NYC
+  guided_json_native_parameter_array_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_array_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON array argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="false">[{"name": "get_weather", "arguments": {"city": "Rome"}}]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="f">
+      - delta_text: <｜DSML｜ parameter name="x" string="false">
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Rome"}}]'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_native_parameter_object_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_object_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON object argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="false">{"city": "Rome"}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="f">
+      - delta_text: <｜DSML｜ parameter name="x" string="false">
+      - delta_text: '{"city": "Rome"}'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_native_parameter_string_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_string_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON string argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">[{"name":"get_weather","arguments":{"city":"Rome"}}]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="f">
+      - delta_text: <｜DSML｜ parameter name="x" string="true">
+      - delta_text: '[{"name":"get_weather","arguments":{"city":"Rome"}}]'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_noncall_before_native_array_before_payload:
+    lifecycle: active
+    scenario: guided_json_noncall_before_native_array_before_payload
+    description: Response-prefilled required guided output begins with a complete non-call JSON object, then literal prose, a native invocation containing a call-shaped array, and the real guided call. The non-call value remains visible; it cannot disable native ownership of the later array. Only the final Paris call dispatches across every chunk boundary.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    historical_ids: []
+    request:
+      input: '{}I mean <think>self literal</think><｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="false">[{"name": "get_weather", "arguments": {"city": "Rome"}}]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{}I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="f">
+      - delta_text: <｜DSML｜ parameter name="x" string="false">
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Rome"}}]'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{}I mean <think>self literal</think>'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_native_wrapper_whitespace_before_prose:
+    lifecycle: active
+    scenario: guided_response_native_wrapper_whitespace_before_prose
+    description: Response-prefilled guided output contains a native invocation wrapper, then whitespace and visible prose before the real guided call. Muse uses its inner ATEM invocation, without a new recipient-routed message envelope. Whitespace after the suppressed native wrapper is structural across every chunk boundary; the following prose remains visible. The native Rome argument tests lexical ownership rather than validation against the offered schema; only the guided Paris call dispatches.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    historical_ids: []
+    request:
+      input: "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"false\">{\"city\": \"Rome\"}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="f">
+      - delta_text: <｜DSML｜ parameter name="x" string="false">
+      - delta_text: '{"city": "Rome"}'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: " \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'ok then '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
