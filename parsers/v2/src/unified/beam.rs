@@ -1574,7 +1574,12 @@ mod tests {
             let input = format!("{HDR}{body}");
             for at in (0..=input.len()).filter(|&at| input.is_char_boundary(at)) {
                 let mut parser = beam_unified(&tools());
-                parser.set_tool_call_policy(constrained()).unwrap();
+                parser
+                    .set_tool_call_policy(ToolCallPolicy {
+                        malformed: MalformedToolCallPolicy::Reject,
+                        ..constrained()
+                    })
+                    .unwrap();
                 let mut events = parser.push(&input[..at]).unwrap();
                 events.extend(parser.push(&input[at..]).unwrap());
                 let finished = parser.finish_at_eos();
