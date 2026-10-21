@@ -93,14 +93,6 @@ jobs:
           /tmp/structural-tag-venv/bin/pip install --no-deps -r conformance/utils/structural-tag-requirements.in
           echo "CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python" >> "$GITHUB_ENV"
 
-      # The extractor's cache hit checks only shard hashes, so the key covers
-      # every materialization input and partial restores are not allowed.
-      - name: Cache extracted conformance fixtures
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: ~/.cache/dynamo/conformance-fixtures
-          key: ${{ runner.os }}-conformance-fixtures-${{ hashFiles('conformance/fixtures-manifest.json', 'conformance/fixtures/**', 'conformance/fixtures-unified-v2/**', 'conformance/utils/src/**', 'conformance/unified-known-divergences.yaml', 'parsers/v2/Cargo.toml') }}
-
       # nextest runs test binaries concurrently; doctests run separately below.
       - name: Run tests
         run: cargo nextest run --workspace --all-targets --locked
