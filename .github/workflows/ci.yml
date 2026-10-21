@@ -44,6 +44,7 @@ jobs:
     env:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
+      CARGO_NEXTEST_VERSION: "0.9.146"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -72,6 +73,11 @@ jobs:
           cargo-deny --version 2>/dev/null | grep -qF "${CARGO_DENY_VERSION}" || cargo install "cargo-deny@${CARGO_DENY_VERSION}" --locked
           cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
 
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
+
       - name: Check unused dependencies
         run: cargo machete
 
@@ -87,8 +93,9 @@ jobs:
           /tmp/structural-tag-venv/bin/pip install --no-deps -r conformance/utils/structural-tag-requirements.in
           echo "CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python" >> "$GITHUB_ENV"
 
+      # nextest runs test binaries concurrently; doctests run separately below.
       - name: Run tests
-        run: cargo test --workspace --all-targets --locked
+        run: cargo nextest run --workspace --all-targets --locked
 
       - name: Verify grammar checks under optimized Python
         run: PYTHONOPTIMIZE=1 cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity structural_response_case_checks_the_schema_before_parsing
