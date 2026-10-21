@@ -98,7 +98,7 @@ jobs:
         run: cargo nextest run --workspace --all-targets --locked
 
       - name: Verify grammar checks under optimized Python
-        run: PYTHONOPTIMIZE=1 cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity structural_response_case_checks_the_schema_before_parsing
+        run: PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
 
       # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
       # decode with it (runners have no GPU, so NVDEC's tests are ignored).
