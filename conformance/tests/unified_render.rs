@@ -75,6 +75,10 @@ struct Expect {
 #[derive(Deserialize, serde::Serialize, Clone, PartialEq, Debug)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 enum Ev {
+    MessageStart {
+        phase: String,
+    },
+    MessageEnd,
     Reasoning {
         text: String,
     },
@@ -91,6 +95,8 @@ enum Ev {
 impl Ev {
     fn render(&self) -> String {
         match self {
+            Ev::MessageStart { phase } => format!("message_start({phase})"),
+            Ev::MessageEnd => "message_end".into(),
             Ev::Reasoning { text } => format!("reasoning({text:?})"),
             Ev::Text { text } => format!("text({text:?})"),
             Ev::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
@@ -146,6 +152,14 @@ fn feed(
 impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
     fn from(e: dynamo_parsers_v2::UnifiedEvent) -> Self {
         match e {
+            dynamo_parsers_v2::UnifiedEvent::MessageStart { phase } => Ev::MessageStart {
+                phase: serde_json::to_value(phase)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned(),
+            },
+            dynamo_parsers_v2::UnifiedEvent::MessageEnd => Ev::MessageEnd,
             dynamo_parsers_v2::UnifiedEvent::Reasoning { text } => Ev::Reasoning { text },
             dynamo_parsers_v2::UnifiedEvent::Text { text } => Ev::Text { text },
             dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => {
@@ -157,6 +171,10 @@ impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
 
 fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
     match d {
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            json!({"kind":"message_start","phase":phase})
+        }
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => json!({"kind":"message_end"}),
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             json!({"kind": "reasoning", "text": text})
         }
@@ -373,7 +391,7 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
             .copied()
             .chain(family_leak.iter().map(String::as_str))
             .any(|m| text.contains(m)),
-        Ev::ToolCall { .. } => false,
+        Ev::ToolCall { .. } | Ev::MessageStart { .. } | Ev::MessageEnd => false,
     });
     if leaks {
         return "LEAK";

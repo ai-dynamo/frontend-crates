@@ -3,11 +3,13 @@
 
 mod deepseek_dsml;
 mod glm47;
+mod muse_spark;
 mod qwen3_coder;
 mod templated_tool_calls;
 
 pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
 pub(crate) use glm47::GLM47;
+pub(crate) use muse_spark::MUSE_SPARK;
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
 use serde_json::Value;
@@ -42,9 +44,13 @@ impl StructuralTagBuilder {
         context: &StructuralTagContext<'_>,
         options: &StructuralTagOptions,
     ) -> anyhow::Result<Option<Value>> {
+        // Family restrictions also apply when tool choice disables calls.
+        self.grammar.validate_options(options)?;
         let policy = match resolve_tool_calling(context)? {
             ResolvedToolCalling::Disabled => {
-                return build_text_exclusion(self.grammar.tool_call_excludes())
+                return self
+                    .grammar
+                    .build_without_tools()
                     .map(|format| serialize(StructuralTag { format }))
                     .transpose();
             }
@@ -94,6 +100,16 @@ impl StructuralTagBuilder {
 }
 
 pub(super) trait ToolCallGrammar: Send + Sync {
+    /// Native formats may reject options that only work with JSON-style calls.
+    fn validate_options(&self, _options: &StructuralTagOptions) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    /// Spark still needs its visible-message envelope when tool calls are disabled.
+    fn build_without_tools(&self) -> Option<Format> {
+        build_text_exclusion(self.tool_call_excludes())
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str>;
 
     fn reasoning_end(&self) -> Option<&'static str>;

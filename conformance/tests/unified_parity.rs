@@ -100,6 +100,8 @@ fn render(result: &Result<Vec<UnifiedEvent>, String>) -> String {
     events
         .iter()
         .map(|e| match e {
+            UnifiedEvent::MessageStart { phase } => format!("message_start({phase:?})"),
+            UnifiedEvent::MessageEnd => "message_end".into(),
             UnifiedEvent::Reasoning { text } => format!("reasoning({text:?})"),
             UnifiedEvent::Text { text } => format!("text({text:?})"),
             UnifiedEvent::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
@@ -284,7 +286,14 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 56);
+    assert_eq!(
+        common::unified_families().len(),
+        10,
+        "a registered family lost reference-case coverage"
+    );
+    // GPT-OSS uses the split pipeline; the nine native families each cover
+    // all seven reference-argument scenarios above.
+    assert_eq!(checked, 63);
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

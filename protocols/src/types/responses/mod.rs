@@ -37,6 +37,45 @@ use serde::{Deserialize, Serialize, de};
 // shadow their upstream counterparts where no dual-side conflict exists.
 pub use async_openai::types::responses::*;
 
+/// Request tool choice extends the pinned SDK with explicit client search selection.
+/// Other variants retain the upstream representation.
+/// Owning the request type preserves fields the pinned SDK cannot round-trip.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum RequestToolChoiceParam {
+    ToolSearch,
+    AllowedTools(ToolChoiceAllowed),
+    Function(ToolChoiceFunction),
+    Mcp(ToolChoiceMCP),
+    Custom(ToolChoiceCustom),
+    ProgrammaticToolCalling,
+    ApplyPatch,
+    Shell,
+    #[serde(untagged)]
+    BuiltIn(ToolChoiceTypes),
+    #[serde(untagged)]
+    Option(ToolChoiceOptions),
+}
+
+impl RequestToolChoiceParam {
+    /// SDK response structs cannot represent search selection. Dynamo's public
+    /// serializers echo the original choice; this value is only their typed base.
+    pub fn sdk_response_choice(&self) -> async_openai::types::responses::ToolChoiceParam {
+        match self {
+            Self::ToolSearch => {
+                async_openai::types::responses::ToolChoiceParam::Option(ToolChoiceOptions::Required)
+            }
+            _ => {
+                serde_json::from_value(serde_json::to_value(self).expect("tool choice serializes"))
+                    .expect("upstream tool choice shape")
+            }
+        }
+    }
+}
+
+mod template_tools;
+pub use template_tools::RequestTool;
+
 // Re-export from parent module for backward compat.
 pub use crate::types::ImageDetail;
 pub use crate::types::ReasoningEffort;
@@ -130,9 +169,11 @@ where
 /// there is no per-call parallel-tool-use toggle to honor.
 ///
 /// Any value that is not a mode-typed object falls through to standard
-/// `ToolChoiceParam` deserialization, so bare strings and specific-tool /
+/// `RequestToolChoiceParam` deserialization, so bare strings and specific-tool /
 /// hosted-tool objects keep working unchanged.
-fn deserialize_tool_choice<'de, D>(deserializer: D) -> Result<Option<ToolChoiceParam>, D::Error>
+fn deserialize_tool_choice<'de, D>(
+    deserializer: D,
+) -> Result<Option<RequestToolChoiceParam>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -147,10 +188,10 @@ where
             _ => None,
         };
         if let Some(mode) = mode {
-            return Ok(Some(ToolChoiceParam::Option(mode)));
+            return Ok(Some(RequestToolChoiceParam::Option(mode)));
         }
     }
-    ToolChoiceParam::deserialize(value)
+    RequestToolChoiceParam::deserialize(value)
         .map(Some)
         .map_err(serde::de::Error::custom)
 }
@@ -403,8 +444,22 @@ enum CodexAgentMessageInputContent {
     EncryptedContent { encrypted_content: String },
 }
 
-/// Structured input/output item, discriminated by `type`. Mirrors upstream
-/// variant-for-variant; only `Message` and `Reasoning` use owned types.
+/// Client search results retain the same namespace and deferral metadata as request tools.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Default)]
+pub struct ToolSearchOutputItemParam {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub call_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution: Option<ToolSearchExecutionType>,
+    // Loaded tools must retain the same namespace/deferred metadata as initial tools.
+    pub tools: Vec<RequestTool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<OutputStatus>,
+}
+
+/// Structured input/output item; request-only wrappers retain relaxed replay fields.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Item {
@@ -588,9 +643,10 @@ pub struct CreateResponse {
         deserialize_with = "deserialize_tool_choice",
         skip_serializing_if = "Option::is_none"
     )]
-    pub tool_choice: Option<ToolChoiceParam>,
+    pub tool_choice: Option<RequestToolChoiceParam>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub tools: Option<Vec<Tool>>,
+    // Preserve namespace deferral, member overrides and custom-tool metadata for rendering.
+    pub tools: Option<Vec<RequestTool>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_logprobs: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1010,9 +1066,31 @@ fn function_tool_len(
 mod tests {
     use super::*;
 
+    #[test]
+    fn request_choices_preserve_upstream_output_choices() {
+        for value in [
+            serde_json::json!("auto"),
+            serde_json::json!("none"),
+            serde_json::json!("required"),
+            serde_json::json!({"type":"function","name":"weather"}),
+            serde_json::json!({"type":"custom","name":"patch"}),
+            serde_json::json!({"type":"programmatic_tool_calling"}),
+            serde_json::json!({"type":"apply_patch"}),
+            serde_json::json!({"type":"shell"}),
+        ] {
+            let choice: RequestToolChoiceParam = serde_json::from_value(value.clone()).unwrap();
+            let upstream: ToolChoiceParam = choice.sdk_response_choice();
+            assert_eq!(serde_json::to_value(upstream).unwrap(), value);
+        }
+        assert_eq!(
+            serde_json::to_value(RequestToolChoiceParam::ToolSearch.sdk_response_choice()).unwrap(),
+            "required"
+        );
+    }
+
     // ---- tool_choice object form (ai-dynamo/dynamo#10963 CASE 1) ----
 
-    fn tool_choice_of(json: serde_json::Value) -> Option<ToolChoiceParam> {
+    fn tool_choice_of(json: serde_json::Value) -> Option<RequestToolChoiceParam> {
         let req: CreateResponse = serde_json::from_value(serde_json::json!({
             "input": "hi",
             "tool_choice": json,
@@ -1027,15 +1105,15 @@ mod tests {
         // extra keys. Must coerce to the corresponding `Option`, ignoring extras.
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "auto", "disable_parallel_tool_use": true})),
-            Some(ToolChoiceParam::Option(ToolChoiceOptions::Auto)),
+            Some(RequestToolChoiceParam::Option(ToolChoiceOptions::Auto)),
         );
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "none"})),
-            Some(ToolChoiceParam::Option(ToolChoiceOptions::None)),
+            Some(RequestToolChoiceParam::Option(ToolChoiceOptions::None)),
         );
         assert_eq!(
             tool_choice_of(serde_json::json!({"type": "required"})),
-            Some(ToolChoiceParam::Option(ToolChoiceOptions::Required)),
+            Some(RequestToolChoiceParam::Option(ToolChoiceOptions::Required)),
         );
     }
 
@@ -1043,7 +1121,7 @@ mod tests {
     fn tool_choice_bare_string_still_works() {
         assert_eq!(
             tool_choice_of(serde_json::json!("auto")),
-            Some(ToolChoiceParam::Option(ToolChoiceOptions::Auto)),
+            Some(RequestToolChoiceParam::Option(ToolChoiceOptions::Auto)),
         );
     }
 
@@ -1052,7 +1130,7 @@ mod tests {
         // The object form naming a specific tool must NOT be swallowed by the
         // mode coercion — `type: "function"` is not a mode.
         match tool_choice_of(serde_json::json!({"type": "function", "name": "get_weather"})) {
-            Some(ToolChoiceParam::Function(f)) => assert_eq!(f.name, "get_weather"),
+            Some(RequestToolChoiceParam::Function(f)) => assert_eq!(f.name, "get_weather"),
             other => panic!("expected Function tool choice, got {other:?}"),
         }
     }

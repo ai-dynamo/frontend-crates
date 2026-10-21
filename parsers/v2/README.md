@@ -42,7 +42,7 @@ Tool-call families:
 | **Harmony** | OpenAI Harmony token stream with `<\|channel\|>`, `<\|message\|>`, `<\|call\|>` | `harmony/harmony_parser.rs` (wraps external `openai_harmony` crate) | gpt-oss-20B / 120B |
 | **Pythonic** | `[func_name(arg=value, ...)]` Python function-call syntax | `pythonic/pythonic_parser.rs` | some Llama variants |
 | **Gemma 4** | Custom: `<\|tool_call>call:name{key:<\|"\|>val<\|"\|>}<tool_call\|>`, bare keys, custom string delimiter | `gemma4/parser.rs` (recursive-descent into `serde_json::Value`) | Google Gemma 4 thinking models |
-| **ATEM** | Recipient-routed channels `<\|start\|>assistant to=<rcpt><\|message\|>...<\|eom\|>` whose tool bodies hold `<atem:invoke name="NAME"><atem:parameter name="KEY">VALUE</atem:parameter></atem:invoke>` | `atem/muse_glimmer_parser.rs` | Muse-Glimmer-30B |
+| **ATEM** | Recipient-routed channels `<\|start\|>assistant to=<rcpt><\|message\|>...<\|eom\|>` whose tool bodies hold `<atem:invoke name="NAME"><atem:parameter name="KEY">VALUE</atem:parameter></atem:invoke>` | `tool_calling/muse_glimmer.rs`, `tool_calling/muse_spark.rs` | Muse Glimmer, Muse Spark |
 
 Reasoning families:
 
@@ -53,9 +53,9 @@ Reasoning families:
 | **Harmony channel** | Hidden `analysis` channel | `gpt_oss_parser.rs` (wraps external `openai_harmony`) | gpt-oss-20B / 120B |
 | **Granite** | Custom start/end tokens | `granite_parser.rs` | IBM Granite |
 | **Gemma 4 channel** | `<\|channel>thought\n...<channel\|>` with role-label prefix stripped | `gemma4_parser.rs` | Google Gemma 4 thinking models |
-| **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair | `muse_glimmer_parser.rs` | Muse-Glimmer-30B |
+| **ATEM channel** | `<\|start\|>assistant to=self<\|message\|>...<\|eom\|>` — the recipient picks the channel, so there is no delimiter pair; Muse Spark additionally reserves `commentary` as visible text | `unified/muse_glimmer.rs`, `unified/muse_spark.rs` | Muse Glimmer, Muse Spark |
 
-Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, and `muse_glimmer` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
+Streaming (v2) implementations exist today for `harmony`, `deepseek_v4` (DSML), `qwen3_coder`, `gemma4`, `muse_glimmer`, and `muse_spark` (ATEM); the remaining families run on the v1 batch parser until their streaming port lands.
 
 The `deepseek_v4` tool-only selector also accepts V4.1's spaced DSML tags (`<｜DSML｜ calls>`, `<｜DSML｜ invoke ...>`). Both dialects use one scanner with their existing boundary parsers and decoders; there is no separate tool-only selector. Reasoning behavior and V4.1 JSON-body support remain separate changes (#253 and #250).
 
@@ -331,3 +331,32 @@ expected:
 ```
 
 Do not keep inferred Python exception markers after reasoning moves to v2. The YAML should say exactly which parser failed and with what message.
+
+### Muse Spark Open structural tags
+
+The `muse_spark_open` / `muse_spark` structural-tag builder constrains native
+ATEM calls, including qualified tool names, raw scalar parameters, JSON-valued
+containers, required/named choice, and single-call policy. It preserves the
+model's reasoning header and allows one pre-tool commentary message. Auto choice can also constrain the
+final answer inside its native `to=user` envelope.
+
+The grammar must run from the first generated token. An external reasoning gate
+that activates only after a tool channel opens cannot enforce forced choice and
+is rejected. The grammar completes before the checkpoint's end-of-turn stop
+token, allowing the engine to terminate rather than masking EOS. Dynamo configures this ownership for its SGLang and vLLM workers.
+
+Constrained arguments support closed objects with declared properties and
+optional/required fields in schema order; `tool_arguments_any_order` is rejected
+rather than allowing duplicate or missing fields. Strings use native unquoted ATEM text; the Spark
+parser retains their declared string type even for values such as `42` and
+`true`. Enum and constant strings are constrained directly. Other scalar and
+container parameters use JSON Schema validation inside the ATEM envelope.
+Freeform custom input retains its raw, verbatim representation. Non-strict
+tools retain unconstrained parameter values.
+
+Unsupported XML-envelope constraints (for example open top-level argument
+properties, escaped or empty parameter names, and unrestricted text constraints
+on raw string input) return build errors rather than weaker grammars.
+Literal ATEM parameter-closing delimiters inside argument strings are outside
+this native format's qualification. Reserved tool names such as `commentary`
+use the generic `to=tool` channel while retaining their exact function name.

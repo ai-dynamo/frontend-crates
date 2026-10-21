@@ -637,6 +637,8 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
 /// parsed as `Native` because its input did not happen to start with `[`.
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Init {
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub preserve_message_phases: bool,
     #[serde(default)]
     pub starting_state: String,
     #[serde(default)]
@@ -681,6 +683,7 @@ impl Init {
         parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
     ) -> anyhow::Result<()> {
         use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        parser.preserve_message_phases(self.preserve_message_phases);
         parser.initialize_request(UnifiedParserInit {
             starting_state: self.starting_state(),
             tool_output_mode: self.output_mode(),
@@ -694,13 +697,17 @@ impl Init {
     /// parser ran under are the same object by construction.
     pub fn applied(&self) -> serde_json::Value {
         use dynamo_parsers_v2::UnifiedToolOutputMode as O;
-        serde_json::json!({
-            "starting_state": format!("{:?}", self.starting_state()),
-            "tool_output_mode": match self.output_mode() {
-                O::Native => "Native",
-                O::GuidedJson { .. } => "GuidedJson",
-            },
-            "named_tool": self.named_tool,
-        })
+        let mut applied = serde_json::json!({
+           "starting_state": format!("{:?}", self.starting_state()),
+           "tool_output_mode": match self.output_mode() {
+               O::Native => "Native",
+               O::GuidedJson { .. } => "GuidedJson",
+           },
+           "named_tool": self.named_tool,
+        });
+        if self.preserve_message_phases {
+            applied["preserve_message_phases"] = serde_json::json!(true);
+        }
+        applied
     }
 }

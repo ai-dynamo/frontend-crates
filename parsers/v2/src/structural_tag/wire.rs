@@ -32,6 +32,9 @@ pub(crate) enum Format {
     JsonSchema(JsonSchemaFormat),
     AnyText(AnyTextFormat),
     Or(OrFormat),
+    // Native ATEM needs unquoted scalar constraints and repeated call messages.
+    Regex(RegexFormat),
+    Repeat(RepeatFormat),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -109,4 +112,18 @@ pub(crate) struct AnyTextFormat {
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct OrFormat {
     pub elements: Vec<Format>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct RegexFormat {
+    pub pattern: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct RepeatFormat {
+    pub content: Box<Format>,
+    // Bound repetition to enforce required calls and single-call choices.
+    pub min: usize,
+    /// XGrammar uses -1 for an unbounded upper limit.
+    pub max: i64,
 }

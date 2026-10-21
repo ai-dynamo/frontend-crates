@@ -1091,6 +1091,7 @@ impl ChoiceJailState {
             }
             let first = delta.name.is_some();
             chunks.push(ChatCompletionMessageToolCallChunk {
+                custom: None,
                 index,
                 id: first.then(|| format!("call-{}", uuid::Uuid::new_v4())),
                 r#type: first.then_some(FunctionType::Function),
@@ -2495,6 +2496,7 @@ impl JailedStream {
                             .into_iter()
                             .enumerate()
                             .map(|(idx, tool_call)| ChatCompletionMessageToolCallChunk {
+                                custom: None,
                                 index: (tool_call_offset + idx) as u32,
                                 id: Some(tool_call.id),
                                 r#type: Some(FunctionType::Function),
@@ -2663,6 +2665,7 @@ impl JailedStream {
                 {
                     tool_call_chunks.extend(parsed.into_iter().enumerate().map(|(idx, tc)| {
                         ChatCompletionMessageToolCallChunk {
+                            custom: None,
                             index: idx as u32,
                             id: Some(tc.id),
                             r#type: Some(FunctionType::Function),
@@ -2695,6 +2698,7 @@ impl JailedStream {
                 {
                     tool_call_chunks.extend(tool_calls.into_iter().enumerate().map(|(idx, tc)| {
                         ChatCompletionMessageToolCallChunk {
+                            custom: None,
                             index: idx as u32,
                             id: Some(tc.id),
                             r#type: Some(FunctionType::Function),
@@ -2782,6 +2786,7 @@ impl JailedStream {
         arguments: String,
     ) -> ChatCompletionMessageToolCallChunk {
         ChatCompletionMessageToolCallChunk {
+            custom: None,
             index,
             id: Some(format!("call-{}", Uuid::new_v4())),
             r#type: Some(FunctionType::Function),
@@ -4366,6 +4371,7 @@ mod tests {
             None,
             "",
             Some(vec![ChatCompletionMessageToolCallChunk {
+                custom: None,
                 index: 1,
                 id: Some("call-2".to_string()),
                 r#type: Some(FunctionType::Function),
@@ -5122,6 +5128,7 @@ mod tests {
                         role: Some(Role::Assistant),
                         content: None,
                         tool_calls: Some(vec![ChatCompletionMessageToolCallChunk {
+                            custom: None,
                             index: 0,
                             id: Some(format!("call-{index}")),
                             r#type: Some(FunctionType::Function),
@@ -5315,6 +5322,7 @@ mod tests {
         args: &str,
     ) -> ChatCompletionMessageToolCallChunk {
         ChatCompletionMessageToolCallChunk {
+            custom: None,
             index,
             id: name.map(|_| "call-1".to_string()),
             r#type: name.map(|_| FunctionType::Function),

@@ -133,6 +133,9 @@ fn v2(case: &Case) -> (usize, Vec<String>, String, String) {
     let mut content = String::new();
     for event in events {
         match event {
+            UnifiedParserEvent::MessageStart(_) | UnifiedParserEvent::MessageEnd => {
+                unreachable!("message phases are opt-in")
+            }
             UnifiedParserEvent::ToolCall(call) => {
                 carrying += 1;
                 if let Some(name) = call.name {

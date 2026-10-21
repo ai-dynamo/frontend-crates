@@ -16,6 +16,7 @@ use super::kimi_k3::KimiK3ToolStreamParser;
 use super::minimax_m2::MiniMaxM2ToolStreamParser;
 use super::minimax_m3::MiniMaxM3ToolStreamParser;
 use super::muse_glimmer::MuseGlimmerToolStreamParser;
+use super::muse_spark::MuseSparkToolStreamParser;
 use super::qwen3_coder::Qwen3CoderToolStreamParser;
 use super::traits::{Tool, ToolParser};
 
@@ -54,6 +55,11 @@ family_registry! {
         Some(&crate::structural_tag::builders::QWEN3_CODER)
     ),
     "muse_glimmer" => (MuseGlimmerToolStreamParser::create, None),
+    // Forced Spark calls need native ATEM guidance rather than a JSON envelope.
+    "muse_spark" => (
+        MuseSparkToolStreamParser::create,
+        Some(&crate::structural_tag::builders::MUSE_SPARK)
+    ),
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
     "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
@@ -66,6 +72,12 @@ family_registry! {
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {
+    // Public and compatibility names must select the same parser and grammar.
+    let family = if family == "muse_spark_open" {
+        "muse_spark"
+    } else {
+        family
+    };
     FAMILY_SPECS.iter().find(|spec| spec.name == family)
 }
 

@@ -355,7 +355,7 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 
     fn messages(&self) -> Value {
-        let messages_json = serde_json::to_value(&self.messages).unwrap();
+        let messages_json = self.function_template_messages();
         Value::from_serialize(&messages_json)
     }
 
@@ -364,21 +364,22 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 
     fn tools(&self) -> Option<Value> {
-        if self.tools.is_none() {
-            None
-        } else {
-            Some(may_be_fix_tool_schema(
-                serde_json::to_value(&self.tools).unwrap(),
-            )?)
-        }
+        let tools = self.tools.as_ref()?;
+        may_be_fix_tool_schema(
+            serde_json::to_value(
+                tools
+                    .iter()
+                    .map(|tool| tool.function_template_tool())
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap(),
+        )
     }
 
     fn tool_choice(&self) -> Option<Value> {
-        if self.tool_choice.is_none() {
-            None
-        } else {
-            Some(Value::from_serialize(&self.tool_choice))
-        }
+        self.tool_choice
+            .as_ref()
+            .map(|choice| Value::from_serialize(choice.function_template_choice()))
     }
 
     fn response_format(&self) -> Option<Value> {
@@ -515,22 +516,41 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
         self.supports_add_generation_prompt
     }
 
+    fn supports_native_tools(&self, request: &dyn OAIChatLikeRequest) -> bool {
+        // Match render's tool exclusion and variant choice before declaring support.
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && request.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let has_tools = !exclude
+            && request
+                .tools()
+                .as_ref()
+                .and_then(|tools| tools.len())
+                .is_some_and(|len| len > 0);
+        if has_tools {
+            self.tool_use_template_handles_native_tools
+        } else {
+            self.default_template_handles_native_tools
+        }
+    }
+
     fn render(&self, req: &dyn OAIChatLikeRequest) -> Result<String> {
         let mixins = Value::from_dyn_object(self.mixins.clone());
 
-        let tools = req.tools();
-        // Strip tools when tool_choice is "none" and the flag is enabled, so the model
-        // doesn't see tool definitions and generate raw XML tool calls in its response.
-        let tools = if self.exclude_tools_when_tool_choice_none {
-            match req.tool_choice() {
-                Some(ref tc) if tc.as_str() == Some("none") => None,
-                _ => tools,
-            }
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && req.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let flat_tools = if exclude { None } else { req.tools() };
+        // Base variant selection on flat tools so changing representations cannot change it.
+        let has_tools = flat_tools
+            .as_ref()
+            .and_then(|tools| tools.len())
+            .is_some_and(|len| len > 0);
+        // Gate the native Responses view on template support. Flat Chat tools
+        // already preserve their explicit defer flags, as vLLM and SGLang do.
+        let tools = if !exclude && self.supports_native_tools(req) {
+            req.template_tools().or(flat_tools)
         } else {
-            tools
+            flat_tools
         };
-        // has_tools should be true if tools is a non-empty array
-        let has_tools = tools.as_ref().and_then(|v| v.len()).is_some_and(|l| l > 0);
         let add_generation_prompt = req.should_add_generation_prompt();
 
         tracing::trace!(

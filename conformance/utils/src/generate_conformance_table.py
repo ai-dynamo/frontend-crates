@@ -2199,6 +2199,12 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
                     events[-1]["text"] += dl.get("text") or ""
                 else:
                     events.append({"kind": k, "text": dl.get("text") or ""})
+            elif k in ("message_start", "message_end"):
+                cur_tool = None
+                event = {"kind": k}
+                if k == "message_start":
+                    event["phase"] = dl["phase"]
+                events.append(event)
             elif k == "tool_call":
                 name, args = dl.get("name"), dl.get("arguments")
                 if name:  # a name delta opens a new call
@@ -2686,7 +2692,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     }
     duplicate_cases.update({
         (family, "guided_json_quoted_bare_tool_header_in_answer"): "UNIFIED.35-1"
-        for family in families if family != "muse_glimmer"
+        for family in families if family not in gen_unified_golden.MUSE_FAMILIES
     })
     no_native_unified_note = (
         "No native Dynamo Unified parser is registered for this family; recorded legacy "

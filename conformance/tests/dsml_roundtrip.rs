@@ -108,6 +108,9 @@ fn v2_render_parse_render_preserves_dsml_bytes() {
                                 calls.push(call(&name, arguments))
                             }
                             UnifiedEvent::Reasoning { .. } => panic!("unexpected reasoning"),
+                            UnifiedEvent::MessageStart { .. } | UnifiedEvent::MessageEnd => {
+                                panic!("unexpected message boundary in DSML output")
+                            }
                         }
                     }
                     assert_eq!(parsed_content, content, "{family}, characters={characters}");

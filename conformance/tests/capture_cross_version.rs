@@ -123,6 +123,7 @@ fn capture_request_init_availability() {
             starting_state: "None".into(),
             tool_output_mode: "Native".into(),
             named_tool: None,
+            ..Default::default()
         },
     ] {
         assert!(!unavailable_init(&init, false));
@@ -717,6 +718,12 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
 #[cfg(not(conformance_split_only))]
 fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            serde_json::json!({"kind":"message_start","phase":phase})
+        }
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => {
+            serde_json::json!({"kind":"message_end"})
+        }
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             serde_json::json!({"kind": "reasoning", "text": text})
         }

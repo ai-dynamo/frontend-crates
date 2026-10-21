@@ -232,7 +232,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
         let closer = match dynamo_parsers_v2::canonical_unified_family(family).unwrap() {
             "gemma4" => "<channel|>",
             "kimi_k3" => "<|close|>think<|sep|>",
-            "muse_glimmer" => "<|eom|>",
+            "muse_glimmer" | "muse_spark" => "<|eom|>",
             _ => "</think>",
         };
         for named in [false, true] {

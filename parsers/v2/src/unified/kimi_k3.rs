@@ -1699,6 +1699,8 @@ impl NativeUnified for KimiK3Native {
             find_routing: guided_find_routing,
             holdback: guided_holdback,
             strip_text: guided_strip_text,
+            // Kimi does not need Spark's cleanup of narrated ATEM syntax.
+            reasoning_filter: None,
             competitors: GUIDED_COMPETITORS,
             close_markers: GUIDED_CLOSE_MARKERS,
             response_literal_markers: RESPONSE_LITERAL_MARKERS,
