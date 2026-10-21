@@ -3,12 +3,14 @@
 
 mod deepseek_dsml;
 mod glm47;
+mod harmony;
 mod minimax;
 mod qwen3_coder;
 mod templated_tool_calls;
 
 pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
 pub(crate) use glm47::GLM47;
+pub(crate) use harmony::HARMONY;
 pub(crate) use minimax::MINIMAX_M2;
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
@@ -44,42 +46,51 @@ impl StructuralTagBuilder {
         context: &StructuralTagContext<'_>,
         options: &StructuralTagOptions,
     ) -> anyhow::Result<Option<Value>> {
-        let policy = match resolve_tool_calling(context)? {
-            ResolvedToolCalling::Disabled => {
-                return build_text_exclusion(self.grammar.tool_call_excludes())
-                    .map(|format| serialize(StructuralTag { format }))
-                    .transpose();
-            }
-            ResolvedToolCalling::Enabled(policy) => policy,
-        };
-        if policy.tools.is_empty() {
-            return Ok(None);
-        }
+        let policy = resolve_tool_calling(context)?;
         let exclude_special_tokens = options
             .exclude_special_tokens
             .unwrap_or_else(|| self.grammar.default_exclude_special_tokens());
 
-        let format = match (policy.mode, context.structured_output_schema) {
-            (ToolCallingMode::Auto, Some(schema)) => {
-                self.grammar.build_auto_with_structured_output(
-                    &policy,
-                    schema,
-                    options.tool_arguments_any_order,
-                )?
+        let format = match policy {
+            ResolvedToolCalling::Disabled => {
+                if let Some(schema) = context.structured_output_schema {
+                    self.grammar.build_structured_output(schema)
+                } else {
+                    return build_text_exclusion(self.grammar.tool_call_excludes())
+                        .map(|format| serialize(StructuralTag { format }))
+                        .transpose();
+                }
             }
-            (ToolCallingMode::Auto, None) => self.grammar.build_triggered_calls(
-                &policy,
-                exclude_special_tokens,
-                options.tool_arguments_any_order,
-            )?,
-            (ToolCallingMode::Required, _) => self.grammar.build_triggered_calls(
-                &policy,
-                exclude_special_tokens,
-                options.tool_arguments_any_order,
-            )?,
-            (ToolCallingMode::Named, _) => self
-                .grammar
-                .build_tool_calls_only(&policy, options.tool_arguments_any_order)?,
+            ResolvedToolCalling::Enabled(policy) if policy.tools.is_empty() => {
+                let Some(schema) = context.structured_output_schema else {
+                    return Ok(None);
+                };
+                self.grammar.build_structured_output(schema)
+            }
+            ResolvedToolCalling::Enabled(policy) => {
+                match (policy.mode, context.structured_output_schema) {
+                    (ToolCallingMode::Auto, Some(schema)) => {
+                        self.grammar.build_auto_with_structured_output(
+                            &policy,
+                            schema,
+                            options.tool_arguments_any_order,
+                        )?
+                    }
+                    (ToolCallingMode::Auto, None) => self.grammar.build_triggered_calls(
+                        &policy,
+                        exclude_special_tokens,
+                        options.tool_arguments_any_order,
+                    )?,
+                    (ToolCallingMode::Required, _) => self.grammar.build_triggered_calls(
+                        &policy,
+                        exclude_special_tokens,
+                        options.tool_arguments_any_order,
+                    )?,
+                    (ToolCallingMode::Named, _) => self
+                        .grammar
+                        .build_tool_calls_only(&policy, options.tool_arguments_any_order)?,
+                }
+            }
         };
         let format = if options.reasoning_boundary == ReasoningBoundary::StructuralTag {
             wrap_reasoning_if_needed(
@@ -110,6 +121,14 @@ pub(super) trait ToolCallGrammar: Send + Sync {
         true
     }
 
+    fn build_structured_output(&self, schema: &Value) -> Format {
+        Format::JsonSchema(JsonSchemaFormat {
+            json_schema: schema.clone(),
+            style: JsonSchemaStyle::Json,
+            any_order: false,
+        })
+    }
+
     /// Builds trigger-dispatched tool calls for `auto` or `required` tool choice.
     /// Required policy does not allow free text before the first tool call.
     fn build_triggered_calls(
@@ -131,11 +150,7 @@ pub(super) trait ToolCallGrammar: Send + Sync {
         Ok(Format::Or(OrFormat {
             elements: vec![
                 self.build_tool_calls_only(policy, tool_arguments_any_order)?,
-                Format::JsonSchema(JsonSchemaFormat {
-                    json_schema: schema.clone(),
-                    style: JsonSchemaStyle::Json,
-                    any_order: false,
-                }),
+                self.build_structured_output(schema),
             ],
         }))
     }

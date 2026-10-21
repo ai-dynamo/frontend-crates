@@ -500,6 +500,42 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  guided_json_native_parameter_array_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 205038e8e59969fbcffdadde0ff5b6fa38a4963fd8f0530d859ec2e4c2cf6d76
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.0 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_object_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 21047325e002df0fa4c76ab5d91788a4b9b585fce8fedcd2cc004b8088b0ea89
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.0 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: de9175d4c218fac146315e8e841066cb84f9dd8a108432816021aed21143a6f5
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.0 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 779b96fd9cd9cacacf0219b5043227e0535912b09f7246ac9fc2a3136e60c7b9
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.0 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. No release tag or newer parser was substituted.'
   guided_json_orphan_reason_close_before_payload:
     case_key: UNIFIED.34-3
     stimulus:
@@ -1000,6 +1036,15 @@ changes:
             name: get_weather
             arguments: '{"city": "Paris"}'
             complete: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 53754698352a5e0d695e4196263c886c4a9e7062bf9a5b1cdd21ad9d81a7526f
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.0 source could not be recovered with its recorded identity e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. The parser was not executed, and no newer output was substituted.
   guided_response_quoted_control_braces_named:
     case_key: UNIFIED.35-3
     stimulus:
@@ -2032,6 +2077,15 @@ changes:
         - expected:
           - kind: reasoning
             text: ends
+  structured_response_after_reasoning:
+    case_key: UNIFIED.36-structured_response_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 4a40fcc642ed050079f0a85b4da55975a2137e494e371b80d7631eb711ec582c
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.0 source could not be recovered with its recorded identity e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d. The parser was not executed, and no newer output was substituted.
   text_before_tool:
     case_key: UNIFIED.8-1
     stimulus:
@@ -2629,7 +2683,6 @@ changes:
           - kind: text
             text: done
 metadata_changes:
-  glm47_parameterless_call_shape_inside_argument: {}
   guided_quoted_reasoning_closer_named:
     init:
       starting_state: Reasoning
@@ -2655,27 +2708,7 @@ metadata_changes:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_incomplete_header:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
   native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
     init:
       starting_state: Response
       tool_output_mode: Native
@@ -2685,9 +2718,65 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+  native_quoted_incomplete_header:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_reasoning:
+    init:
+      starting_state: Reasoning
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quote_contraction_response:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  native_single_quoted_word_control:
+    init:
+      starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-document_overrides: {}
+document_overrides:
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null

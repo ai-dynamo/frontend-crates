@@ -95,3 +95,15 @@ def test_recorded_fallback_requires_matching_call_sequence():
         assert module._assemble_stream(rows, recorded_assembly=mismatch) == raw
     batch_order = [native[1], native[0], native[2]]
     assert module._assemble_stream(rows, recorded_assembly=batch_order) == native
+
+
+def test_implicit_eof_retains_finish_output_in_table_replay():
+    module = _load_table_module()
+    stimulus = [{"delta_text": "{truncated"}]
+    events = [{"kind": "text", "text": "{truncated"}]
+    observation = [{"expected": []}, {"expected": events}]
+    rows = module._unified_chunk_rows(stimulus, observation)
+    assert [row["delta_text"] for row in rows] == ["{truncated", "‹finish›"]
+    assert module._assemble_stream([row["dynamo"] for row in rows]) == events
+    assert stimulus == [{"delta_text": "{truncated"}]
+    assert module._unified_chunk_rows(stimulus + [{"delta_text": "‹finish›"}], observation) == rows

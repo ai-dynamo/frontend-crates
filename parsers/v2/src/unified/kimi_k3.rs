@@ -20,7 +20,7 @@ use crate::tool_calling::scan::{
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified,
-    UnifiedParser, UnifiedParserOutput, UnifiedParserStartingState,
+    UnifiedParser, UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState,
 };
 
 const OPEN: &str = "<|open|>";
@@ -1702,6 +1702,7 @@ impl NativeUnified for KimiK3Native {
             competitors: GUIDED_COMPETITORS,
             close_markers: GUIDED_CLOSE_MARKERS,
             response_literal_markers: RESPONSE_LITERAL_MARKERS,
+            header_pending: None,
         }))
     }
 
@@ -1713,17 +1714,20 @@ impl NativeUnified for KimiK3Native {
                 .map(str::to_string)
                 .collect(),
             invoke_start: CALL_OPEN.canonical.to_string(),
+            invoke_start_alternates: Vec::new(),
             invoke_end: CALL_CLOSE.canonical.to_string(),
+            native_body_start: None,
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(kimi_k3_call_boundary)),
             guided_prefix_policy: None,
             guided_prefix_factory: None,
         }
     }
 
-    fn apply_native_init(&mut self, starting_state: UnifiedParserStartingState) {
+    fn apply_native_init(&mut self, init: &UnifiedParserInit) -> anyhow::Result<()> {
         self.buffer.clear();
         self.reset_state();
-        self.restore_native_state(starting_state);
+        self.restore_native_state(init.starting_state);
+        Ok(())
     }
 
     fn restore_native_state(&mut self, starting_state: UnifiedParserStartingState) {

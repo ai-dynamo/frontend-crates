@@ -27,6 +27,8 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+from gen_unified_golden import UNIFIED_FAMILIES
+
 CONSTRUCTED: list[dict] = []
 
 
@@ -121,10 +123,10 @@ def test_glm_uses_the_registered_reasoning_detector_name():
 
 def test_all_authored_families_have_explicit_detector_pairs():
     module = _load(_Released)
-    assert set(module.FAMILY_PARSERS) == {
-        "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "kimi_k2",
-        "kimi_k3", "muse_glimmer", "qwen3",
-    }
+    # GPT-OSS uses Harmony framing; this split-detector adapter has no registered pair.
+    assert "gpt_oss" not in module.FAMILY_PARSERS
+    assert set(module.FAMILY_PARSERS) | {"gpt_oss"} == UNIFIED_FAMILIES
+    assert module.FAMILY_PARSERS["nemotron_v3"] == ("nemotron_3", "qwen3_coder")
     with mock.patch.object(module, "version", return_value="0.5.16"):
         assert module._registration_unavailable({"family": "deepseek_v4"}) is None
         code, detail = module._registration_unavailable({"family": "deepseek_v41"})

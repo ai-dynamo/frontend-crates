@@ -1,0 +1,145 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.28
+    git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+    source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+document:
+  mode: unified
+changes:
+  guided_json_native_parameter_string_before_payload:
+    case_key: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: 0734389166889daabe2b52b3f00148d23578f7c33b6a62c183e897c8e744953d
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal</think>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    case_key: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    stimulus:
+      ref: current
+      semantic_sha256: b6f85dc03bafa898c8b81b5a40df292079e73f47e1a99a20da0e7235d02d2711
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}<think>literal</think>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}'
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_native_wrapper_whitespace_before_prose:
+    case_key: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 58f84e8629beaf383ead69ce41ecb0a778344c881b83531eeeb99c44fff79963
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
+      inherited_from: null

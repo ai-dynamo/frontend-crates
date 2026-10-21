@@ -89,9 +89,10 @@ cases:
     policy:
     - I5
     - I7
-    display_id: UNIFIED.kimi_k2-1
+    display_id: UNIFIED.kimi_k2-kimi_k2_optional_prefix_name_overlap
     historical_ids:
     - UNIFIED.1-2
+    - UNIFIED.kimi_k2-1
     request:
       input: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
       init:
@@ -2262,8 +2263,9 @@ cases:
     description: Guided JSON, payload is gt_in_argument, surrounded by an invoke HEADER containing a tool name but no terminator before the payload. Markers around a recoverable payload must not cost the call (`I3`).
     policy:
     - I3
-    display_id: UNIFIED.30-14
-    historical_ids: []
+    display_id: UNIFIED.30-guided_json_gt_in_argument_named_bare_opener
+    historical_ids:
+    - UNIFIED.30-14
     request:
       input: '<|tool_call_begin|>functions.get_weather:0[{"name": "get_weather", "arguments": {"city": "a > b"}}]'
       init:
@@ -2955,9 +2957,10 @@ cases:
     policy:
     - I3
     - I5
-    display_id: UNIFIED.34-10
+    display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids:
     - UNIFIED.31-33
+    - UNIFIED.34-10
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -3102,9 +3105,10 @@ cases:
     policy:
     - I3
     - I7
-    display_id: UNIFIED.34-11
+    display_id: UNIFIED.34-guided_json_reasoning_markers_inside_native_parameter
     historical_ids:
     - UNIFIED.31-40
+    - UNIFIED.34-11
     request:
       input: '<think>before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted</think>"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
@@ -13327,3 +13331,443 @@ cases:
         name: schema_probe
         arguments:
           value: '{"x":1}'
+  guided_json_native_parameter_array_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_array_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON array argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_array_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}<|tool_call_end|><|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_native_parameter_object_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_object_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON object argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_object_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": {"city": "Rome"}}<|tool_call_end|><|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": {"city": "Rome"}}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_native_parameter_string_before_payload:
+    lifecycle: active
+    scenario: guided_json_native_parameter_string_before_payload
+    description: Response-prefilled guided output contains literal reasoning markup, then a native invocation with a JSON string argument and the real guided call. The native body remains owned by its invocation across every chunk boundary. This tests lexical ownership; the native argument need not satisfy the offered schema. Only the following Paris call dispatches; the native Rome value cannot become a guided payload or visible text.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_native_parameter_string_before_payload
+    historical_ids: []
+    request:
+      input: 'I mean <think>self literal</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"}<|tool_call_end|><|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: 'I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": "[{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Rome\"}}]"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: I mean <think>self literal</think>
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_json_noncall_before_native_array_before_payload:
+    lifecycle: active
+    scenario: guided_json_noncall_before_native_array_before_payload
+    description: Response-prefilled required guided output begins with a complete non-call JSON object, then literal prose, a native invocation containing a call-shaped array, and the real guided call. The non-call value remains visible; it cannot disable native ownership of the later array. Only the final Paris call dispatches across every chunk boundary.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_json_noncall_before_native_array_before_payload
+    historical_ids: []
+    request:
+      input: '{}I mean <think>self literal</think><|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}<|tool_call_end|><|tool_calls_section_end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '{}I mean '
+      - delta_text: <think>
+      - delta_text: self literal
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": [{"name": "get_weather", "arguments": {"city": "Rome"}}]}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '{}I mean <think>self literal</think>'
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  guided_response_native_wrapper_whitespace_before_prose:
+    lifecycle: active
+    scenario: guided_response_native_wrapper_whitespace_before_prose
+    description: Response-prefilled guided output contains a native invocation wrapper, then whitespace and visible prose before the real guided call. Muse uses its inner ATEM invocation, without a new recipient-routed message envelope. Whitespace after the suppressed native wrapper is structural across every chunk boundary; the following prose remains visible. The native Rome argument tests lexical ownership rather than validation against the offered schema; only the guided Paris call dispatches.
+    policy:
+    - I3
+    - I7
+    display_id: UNIFIED.35-guided_response_native_wrapper_whitespace_before_prose
+    historical_ids: []
+    request:
+      input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"x\": {\"city\": \"Rome\"}}<|tool_call_end|><|tool_calls_section_end|> \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      init:
+        starting_state: Response
+        tool_output_mode: GuidedJson
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.f:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": {"city": "Rome"}}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: " \n\t ok then [{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'ok then '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gpt_oss_tool_body_whitespace:
+    lifecycle: active
+    scenario: gpt_oss_tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-tool_body_whitespace
+    historical_ids: []
+    request:
+      input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|> \n\t{\"q\": \"x\"}<|tool_call_end|><|tool_calls_section_end|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.lookup:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: " \n\t{\"q\": \"x\"}"
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: x

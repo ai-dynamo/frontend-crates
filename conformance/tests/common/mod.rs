@@ -643,10 +643,133 @@ pub struct Init {
     pub tool_output_mode: String,
     #[serde(default)]
     pub named_tool: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structural_tag: Option<StructuralTagRequest>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct StructuralTagRequest {
+    pub schema: serde_json::Value,
+    pub rejected: Vec<String>,
+}
+
+impl Init {
+    /// Report defaults as applied, retaining generation constraints in captures
+    /// and popups rather than silently presenting a parser-only request.
+    pub fn applied(&self) -> serde_json::Value {
+        let mut value = serde_json::json!({
+            "starting_state": if self.starting_state.is_empty() { "None" } else { &self.starting_state },
+            "tool_output_mode": if self.tool_output_mode.is_empty() { "Native" } else { &self.tool_output_mode },
+            "named_tool": self.named_tool,
+        });
+        if let Some(request) = &self.structural_tag {
+            value["structural_tag"] =
+                serde_json::to_value(request).expect("structural-tag request");
+        }
+        value
+    }
 }
 
 #[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
 impl Init {
+    #[cfg(conformance_no_structural_tag)]
+    pub fn validate_capture(
+        &self,
+        _family: &str,
+        _tools: &[dynamo_parsers_v2::Tool],
+        _chunks: &[String],
+    ) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.structural_tag.is_none(),
+            "structural-tag API unavailable"
+        );
+        Ok(())
+    }
+
+    #[cfg(not(conformance_no_structural_tag))]
+    pub fn validate_capture(
+        &self,
+        family: &str,
+        tools: &[dynamo_parsers_v2::Tool],
+        chunks: &[String],
+    ) -> anyhow::Result<()> {
+        use dynamo_parsers_v2::structural_tag::{
+            StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
+        };
+        use std::io::Write;
+        let Some(request) = &self.structural_tag else {
+            return Ok(());
+        };
+        anyhow::ensure!(
+            !request.rejected.is_empty(),
+            "structural-tag request needs rejection probes"
+        );
+        let builder = dynamo_parsers_v2::structural_tag_builder_for_family(family)
+            .ok_or_else(|| anyhow::anyhow!("no structural-tag builder for {family}"))?;
+        let tag = builder
+            .build(&StructuralTagContext {
+                tool_choice: StructuralTagToolChoice::None,
+                tools,
+                parallel_tool_calls: None,
+                schema_mode: StructuralTagSchemaMode::Auto,
+                structured_output_schema: Some(&request.schema),
+                starts_in_reasoning: self.starting_state()
+                    == dynamo_parsers_v2::UnifiedParserStartingState::Reasoning,
+            })?
+            .ok_or_else(|| anyhow::anyhow!("response schema produced no structural tag"))?;
+        let script = std::env::var_os("CONFORMANCE_STRUCTURAL_TAG_CHECKER")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/check_structural_tag.py")
+            });
+        let python =
+            std::env::var_os("CONFORMANCE_GRAMMAR_PYTHON").unwrap_or_else(|| "python3".into());
+        let mut child = std::process::Command::new(python)
+            .env_clear()
+            .envs(
+                [
+                    "PATH",
+                    "LD_LIBRARY_PATH",
+                    "DYLD_LIBRARY_PATH",
+                    "SystemRoot",
+                    "PYTHONOPTIMIZE",
+                    "TMPDIR",
+                    "TMP",
+                    "TEMP",
+                ]
+                .into_iter()
+                .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
+            .arg(script)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()?;
+        child
+            .stdin
+            .take()
+            .expect("piped verifier input")
+            .write_all(&serde_json::to_vec(&serde_json::json!({
+                "structural_tag": tag, "chunks": chunks, "rejected": request.rejected,
+            }))?)?;
+        let output = child.wait_with_output()?;
+        anyhow::ensure!(
+            output.status.success(),
+            "structural-tag verifier: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let receipt: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+        anyhow::ensure!(
+            receipt["engine"] == "xgrammar"
+                && receipt["version"]
+                    .as_str()
+                    .is_some_and(|version| !version.is_empty())
+                && receipt["checks"].as_u64().is_some_and(|n| n > 1),
+            "invalid structural-tag verifier receipt"
+        );
+        Ok(())
+    }
     /// An unknown value is a spec bug, not something to paper over with a default:
     /// silently falling back to `None`/`Native` is exactly the failure this replaced.
     pub fn starting_state(&self) -> dynamo_parsers_v2::UnifiedParserStartingState {
@@ -686,21 +809,6 @@ impl Init {
             tool_output_mode: self.output_mode(),
             invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
             ..UnifiedParserInit::default()
-        })
-    }
-
-    /// The config as APPLIED, not as written — an omitted field is reported as the
-    /// value the parser actually received, so what the popup shows and what the
-    /// parser ran under are the same object by construction.
-    pub fn applied(&self) -> serde_json::Value {
-        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
-        serde_json::json!({
-            "starting_state": format!("{:?}", self.starting_state()),
-            "tool_output_mode": match self.output_mode() {
-                O::Native => "Native",
-                O::GuidedJson { .. } => "GuidedJson",
-            },
-            "named_tool": self.named_tool,
         })
     }
 }

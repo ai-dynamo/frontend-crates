@@ -43,8 +43,8 @@ macro_rules! family_registry {
 }
 
 family_registry! {
-    "harmony"      => (HarmonyToolStreamParser::create, None),
-    "harmony_text" => (HarmonyToolStreamParser::create, None),
+    "harmony"      => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
+    "harmony_text" => (HarmonyToolStreamParser::create, Some(&crate::structural_tag::builders::HARMONY)),
     "deepseek_v4"  => (
         DeepSeekV4ToolStreamParser::create,
         Some(&crate::structural_tag::builders::DEEPSEEK_DSML)

@@ -380,6 +380,204 @@ changes:
             arguments: '{"x":" <think>quoted</think> <tool_call> </tool_call> &amp; \"x\"\\\n "}'
             complete: true
         - expected: []
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <think>self literal</think>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '</arg_value>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Rome"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: </arg_value>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <think>self literal</think>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I mean <think>self literal</think>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '</arg_value>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Rome"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: </arg_value>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}I mean <think>self literal</think>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Rome
+        - kind: text
+          text: '</arg_value>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Rome"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: </arg_value>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
   qwen_string_null:
     case_key: UNIFIED.7-5
     stimulus:
@@ -407,65 +605,64 @@ changes:
             arguments: '{"city":"null"}'
             complete: true
         - expected: []
+  structured_response_after_reasoning:
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: "structural tag: structural-tag verifier: Traceback (most recent call last):\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 61, in <module>\n    print(json.dumps(verify(json.load(sys.stdin))))\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/keivenc/dev/frontend-crates/frontend-crates__434-gpt-oss__DIS-3151/conformance/utils/src/check_structural_tag.py\", line 56, in verify\n    raise ValueError(f\"grammar accepted rejection probe {index}\")\nValueError: grammar accepted rejection probe 0\n"
 metadata_changes:
-  guided_quoted_reasoning_closer_named:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_quoted_reasoning_closer_required:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: GuidedJson
-      named_tool: null
-  guided_response_quoted_control_braces_named:
-    init:
-      starting_state: Response
-      tool_output_mode: GuidedJson
-      named_tool: get_weather
-  guided_response_quoted_control_braces_required:
+  guided_json_native_parameter_array_before_payload:
     init:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
-  native_quoted_control_in_reasoning:
+  guided_json_native_parameter_object_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_native_parameter_string_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_json_noncall_before_native_array_before_payload:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    init:
+      starting_state: Response
+      tool_output_mode: GuidedJson
+      named_tool: null
+  structured_response_after_reasoning:
     init:
       starting_state: Reasoning
       tool_output_mode: Native
       named_tool: null
-  native_single_quote_contraction_reasoning:
-    init:
-      starting_state: Reasoning
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_incomplete_header:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quote_contraction_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_in_response:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_single_quoted_word_control:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_quoted_control_then_call:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  native_unmatched_quote_then_call:
-    init:
-      starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>[]
+        - 'Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":'
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
+        - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
 document_overrides: {}

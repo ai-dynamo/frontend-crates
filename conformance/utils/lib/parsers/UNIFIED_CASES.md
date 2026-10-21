@@ -31,6 +31,8 @@ golden:
 
 Comparison is ORDER-SENSITIVE on the ASSEMBLED list. Streaming delta granularity may differ across engines; the assembled event list is the invariant (same principle as the tool-call chunk sweep).
 
+Raw streaming tool deltas with `complete: false` are provisional. A malformed or truncated call can leave those bytes on the wire without ever completing; consumers must wait for `complete: true` before treating a call as executable. Dropping an incomplete call during assembly does not retract its earlier fragments.
+
 ## Invariants (every correct implementation must satisfy)
 
 - **I1 Faithful segmentation** — every model byte is exactly one of reasoning / visible text / tool-call structure / control marker. Markers are consumed; nothing else dropped or duplicated.
@@ -64,7 +66,14 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The eight native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, and `muse_glimmer`. The corpus also includes GPT-OSS inputs and GOLDEN for historical Dynamo v1 reasoning + batch tool captures. GPT-OSS has no native `UnifiedParser` capture here; its cells name the selected batch pipeline and label rows “Order/chunk not applicable for batch.”
+The ten native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
+
+## Nemotron 3 Ultra applicability
+
+The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
+
+- `10-default_reasoning_without_opener`: with default initialization, `Check Montréal.</think>雪` emits reasoning followed by visible Unicode content. The same input under Response stays literal text.
+- `12-default_reasoning_tool_without_closer`: default reasoning contains a native XML call with literal think markers in its argument, then resumes reasoning at EOF. Both think boundaries are omitted. Other registered families require explicit Reasoning initialization for this contract; their shared prefilled and nesting scenarios cover that state.
 
 ## Quick reference — descriptive taxonomy (`UNIFIED.<group>-<description>`)
 
@@ -81,14 +90,14 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
 ### Group 4 — TC Malformed envelope
-- **`4-tool_block_never_closed_then_text`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope.
+- **`4-tool_block_never_closed_then_text`** (`tool_block_never_closed_then_text`) The calls opener arrives without its closing marker and prose follows. The prose remains inside the unterminated tool envelope and is discarded at EOF; it is not visible answer text. This is applicable to DSv4.1 because its native grammar has an explicit calls envelope. The retained GPT-OSS request instead starts with an orphan handoff and never opens a tool message: its following prose remains visible. Genuine Harmony truncation is covered by shared `tool_no_close` and its next-message recovery variant.
 - **`4-tool_markup_only_emits_nothing`** (`tool_markup_only_emits_nothing`) A calls envelope contains no invocation. Both markers are control syntax and the parser emits no event.
 
 ### Group 5 — TC Truncation / recovery (TOOLCALLING.streamv1.5)
 - **`5-truncated_tool_eof`** (`truncated_tool_eof`) EOF mid-call. Golden drops the partial, keeps preceding output (P2); vLLM Rust hard-errors (`ParsingFailed`). Class ERROR.
 - **`5-tool_no_close`** (`tool_no_close`) Complete call body but the close marker never arrives. Most grammars recover the complete call at finish; DeepSeek V4 and V4.1 require the invoke closer and drop this malformed call. This is also covered in: TOOLCALLING.streamv1.5.a.
 - **`5-orphan_close_after_prose`** (`orphan_close_after_prose`) Orphan close marker after prose. Golden strips it; engines may leak. Class LEAK.
-- **`5-malformed_json_then_two_valid_calls`** (`malformed_json_then_two_valid_calls`) Across all eight native Unified families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
+- **`5-malformed_json_then_two_valid_calls`** (`malformed_json_then_two_valid_calls`) Across all native Unified families, an unfinished native JSON/string body with explicit call closers precedes `echo(value="é")` and `echo(value="Café")`. The authored `input_chunks: [input]` delivers one `push()`, then `finish()`. Marker-aligned delivery masks the Kimi K3 defect: published `dynamo-parsers-v2` versions `0.7.13` and `0.7.14` lose the first echo; `0.7.15`, now published, preserves both. During capture qualification, the candidate moved to `0.7.15` after `0.7.14` was published; its earlier unpublished checkpoint was retired rather than relabeled as released output. K2 retains the malformed call as `{}`; Qwen3, GLM47, DeepSeek V4, and Muse retain its malformed object value as a literal string. Those five families preserve both echoes in both versions. Gemma4 returns no calls and DeepSeek V4.1 raises a JSON parse error in both versions; their goldens still require both echoes, and both remain red. Parser fixes for these two failures are outside this change.
 
 ### Group 6 — TC Empty body (TOOLCALLING.streamv1.6)
 - **`6-empty_args`** (`empty_args`) Call with `{}` arguments. Must emit the call with an empty object, not drop it. This is also covered in: TOOLCALLING.streamv1.6.a.
@@ -96,7 +105,7 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 ### Group 7 — TC Argument fidelity (TOOLCALLING.streamv1.7)
 - **`7-arg_unicode`** (`arg_unicode`) Non-ASCII argument value round-trips byte-exact (I7). This is also covered in: TOOLCALLING.streamv1.7.b.
 - **`7-arg_marker_in_string`** (`arg_marker_in_string`) A close-marker substring INSIDE a string arg is data, preserved exactly (I7). vLLM Rust truncates. Class ARG_MISMATCH.
-- **`7-deepseek_v41_mixed_control_text_in_string`** (`deepseek_v41_mixed_control_text_in_string`) All eight native Unified families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-arg_marker_in_string` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
+- **`7-deepseek_v41_mixed_control_text_in_string`** (`deepseek_v41_mixed_control_text_in_string`) All native Unified families use their native string encoding to carry mixed reasoning and tool delimiters, entity text, quotes, a backslash, a newline, and surrounding spaces. The decoded string must survive exactly. This extends `7-arg_marker_in_string` beyond a single closer; the internal scenario name and original DeepSeek V4.1 input remain unchanged for capture history.
 - **`7-arg_json_null`** (`arg_json_null`) The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
 - **`7-arg_string_null`** (`arg_string_null`) The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. Each schema variant has a distinct fixture ID; the popup lists every applicable result. The two categories reference the same mixed-field captures.
 - **`7-arg_json_null_ref`** (`arg_json_null_ref`) GLM-only regression for PR #268: an unresolved local `$ref` points to a nullable string definition on the tool parameters root. Split-chunk XML input with bare `null` must produce JSON null.
@@ -148,10 +157,10 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 237 of the 272 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 242 of the 335 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 35 omitted cases are `35-guided_json_native_parameter_array_before_payload`, `35-guided_json_native_parameter_object_before_payload`, `35-guided_response_rejected_header_quote_ownership`, `40-prefilled_reasoning_then_text`, `40-prefilled_reasoning_then_text_then_tool`, `40-prefilled_reasoning_with_tool`, `7-arg_json_null_ref`, `7-arg_null_mixed_labels`, `7-arg_string_null_ref`, `deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body`, `gemma-guided_json_malformed_call_prefix_before_reasoning`, `gemma-guided_json_visible_call_prose_before_reasoning`, `gemma-guided_reasoning_opener_after_call_prefix`, `glm5-parameterless_call_shape_inside_argument`, `glm5-reference_type_intersection`, `kimi-elided_think_close_to_response`, `kimi-guided_native_wrapper`, `kimi-malformed_call_then_valid`, `kimi-message_end_after_response`, `kimi-raw_json_arguments`, `kimi-raw_json_eof`, `kimi-spaced_xtml_markers`, `kimi-typed_argument_values`, `kimi_k2-kimi_k2_optional_prefix_name_overlap`, `muse-glimmer_guided_message_end_inside_native_header`, `muse-guided_json_quoted_bare_tool_header_in_answer`, `muse-prefilled_response_guided_closer_inside_invoke_quote`, `muse-quoted_reserved_eom_argument`, `muse-quoted_reserved_eot_argument`, `muse-quoted_reserved_start_argument`, `muse-unterminated_parameter_then_empty_call`, `muse-unterminated_parameter_then_call`, `qwen3-qwen3_guided_non_ascii_header_in_closed_reasoning`, `qwen3-qwen3_guided_non_ascii_header_in_truncated_reasoning`, and `qwen3-qwen3_guided_reasoning_opener_inside_native_header`.
-- The Kimi, Gemma, GLM, Muse, and Qwen3 rows require family-specific grammar or schema behavior. `deepseek_v4-deepseek_v4_guided_reasoning_opener_inside_native_body` and `35-guided_response_rejected_header_quote_ownership` are scoped to other grammar owners; the two `35-guided_json_native_parameter_*` cases are scoped to Muse and Qwen3. The three omitted 40-series rows are excluded as redundant with `reason_then_tool`, `interstitial_text`, and `reason_then_content`. `50-prefilled_response_reasoning_markers_literal` proves that Response treats reasoning markers as visible text. The `muse-guided_json_quoted_bare_tool_header_in_answer` duplicate does not imply that quoted or malformed model output cannot occur.
+- The 93 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
 <!-- TODO: Verify the historical aliases for the 14 cases deferred from PR #232 after the taxonomy merge: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
@@ -331,7 +340,15 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 
 `31-guided_json_invalid_call` through `31-guided_json_list_with_broken_element` are malformed PAYLOADS. `32-guided_json_tool_open_before_payload` through `32-guided_json_orphan_tool_close_before_payload` are well-formed payloads in malformed SURROUNDINGS: they recover the markers, the payload then parses, and the call dispatches — so neither the all-or-nothing rule nor that warning applies to them.
 
-**Peer-engine value here is intentionally limited.** The base vLLM captures do not exercise the serialized guided request configuration. Historical Dynamo captures use the tagged parser and apply `init` when its API supports it; older APIs and split-only paths record unsupported initialization as unavailable instead of capturing the default mode under a guided label. Backfill overlays add results or explicit limitations for current cases without rewriting the original release shard.
+**Peer-engine value here is intentionally limited.** The base vLLM captures do not exercise the serialized guided request configuration. Historical backfills use tagged release sources when no producer fingerprint was retained, or sources that match a retained producer fingerprint, including verified source reconstructions. They apply `init` when the API supports it; missing sources and unsupported initialization remain explicitly unavailable. Backfills append observations without rewriting recorded results.
+
+The shared `35-guided_json_native_parameter_object_before_payload`, `35-guided_json_native_parameter_array_before_payload`, `35-guided_json_native_parameter_string_before_payload`, and `35-guided_json_noncall_before_native_array_before_payload` cases place native argument data before the real guided call. Only the final Paris call dispatches. These cases test lexical ownership, including arguments that do not satisfy the offered native schema. A preceding non-call JSON value remains visible without releasing later native arguments to the guided scanner.
+
+- **`35-guided_response_native_wrapper_whitespace_before_prose`** tests all nine families in Response-prefilled guided mode: suppress a native invocation wrapper and its structural whitespace, preserve the following prose, then dispatch only the guided call. Muse uses the inner ATEM invocation; full routed-message recovery is a separate contract. The native argument tests lexical ownership rather than offered-schema validation.
+
+### Group 36 — Guided Decoding: response schemas after reasoning
+
+- **`36-structured_response_after_reasoning`** (`structured_response_after_reasoning`) No-tools response schema with non-JSON Unicode reasoning followed by a constrained weather object. The request carries `init.structural_tag.schema` and complete rejected streams. Capture, parity, and rendering build the actual family structural tag, check the accepted stream and every character split with XGrammar, reject malformed JSON, arrays, missing/extra keys and invalid enum values, then parse the accepted stream into separate reasoning and response events. GPT-OSS generates its analysis/final headers after the consumed assistant role; Qwen3, GLM and DeepSeek V4 begin in prompt-prefilled reasoning. DeepSeek V4.1, Gemma, Kimi and Muse are excluded because they have no registered structural-tag builder. Parser-only peer adapters report this generation contract as unsupported. Refs [Dynamo #16787](https://github.com/ai-dynamo/dynamo/issues/16787).
 
 ### Group 40 — Prefilled reasoning, happy
 - **`40-prefilled_reasoning_with_tool`** (`prefilled_reasoning_with_tool`) Stream begins inside a thought, closes it, calls a tool.
@@ -349,6 +366,17 @@ Groups 1–12 vary the model OUTPUT. Groups 30–39 vary Guided Decoding request
 - **`50-prefilled_response_reasoning_markers_literal`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
 
 The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. Group 50 retains reasoning-marker stimuli that distinguish Response from default initialization; the ordinary native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
+
+### GPT-OSS-specific
+
+These cases exercise Harmony message framing, which the other eight grammars do not use. Shared post-wrapper whitespace coverage stays in group 35.
+
+- **`gpt_oss-tool_body_whitespace`** preserves the native argument object when whitespace follows the Harmony message marker.
+- **`gpt_oss-constrained_final_header`** retains visible JSON under a final header whose only metadata is its constrained content type.
+- **`gpt_oss-implicit_recipient_first_header`** holds the generated recipient-first header until its message body opens, without prompt token IDs or leaked recipient text.
+- **`gpt_oss-quoted_truncated_tool_then_final`** recovers the later final answer after an unterminated native argument string; the ambiguous suffix stays buffered until EOF establishes that the original JSON cannot complete.
+- **`gpt_oss-quoted_message_header_literal`** is the valid counterfactual: a complete header inside a valid JSON string remains argument data.
+- **`gpt_oss-complete_alternate_message_ends`** recovers complete JSON calls closed by Harmony message-end or turn-end. The legacy tool adapter continues to require handoff, and malformed provisional calls never receive completion.
 
 ### DeepSeek V4-specific
 
@@ -440,7 +468,7 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 ## Shared schema conformance probes
 
-Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 139 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 142 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
 
 | Behavior section | Visible entries |
 |---|---:|
@@ -470,3 +498,30 @@ Historical schema-subgroup aliases below retain their original meaning. Active I
 All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
+
+
+### GPT-OSS Harmony headers and retained request variants
+
+The six standalone GPT-OSS entries test recipient/channel ordering, the template JSON format label, a constrained final header without a tool recipient, an implicit recipient-first header, and complete tool messages ending with a message/turn terminator instead of handoff. Incomplete Harmony headers, interrupted reasoning, quoted controls, malformed bodies, and historical `_pr424` requests are variants beneath their shared semantic parents. `unified_taxonomy.case_fold()` owns these relationships, and `case_variants.group_unified_variants()` folds them through the same path as schema variants. Each popup retains the original case ID, request, initialization, chunk schedule, expected events, and independent observations; a failing or missing applicable child cannot become a passing parent.
+
+The retained `gpt_oss_tool_body_whitespace`, `gpt_oss_quoted_truncated_tool_then_final`, and `gpt_oss_quoted_message_header_literal` names preserve published GPT-OSS identities while covering shared behavior. They fold under `tool_only`, `tool_no_close`, and `arg_marker_in_string`, respectively. JSON-body whitespace adds Kimi K2 and Kimi K3 requests; DeepSeek V4.1 already exercises leading whitespace in `deepseek_v41_json_invocation_body`, and Qwen/Muse already format native call bodies with structural newlines. GLM uses named `arg_key`/`arg_value` pairs rather than a whole-object JSON invocation body; whitespace inside a typed value belongs to argument typing. The malformed-body-to-response variant adds Muse's unterminated ATEM parameter followed by a user message and Kimi K3's unterminated raw JSON string followed by a framed response. The literal-header variant adds native Muse and Kimi K3 values containing a closer immediately followed by a complete user/response header. Families without separate response headers retain the existing delimiter-in-argument coverage instead of receiving artificial message syntax. Kimi K3's malformed raw JSON followed by a response currently loses that response. Its expected visible answer remains the authored oracle, and the missing answer stays a measured divergence rather than an applicability exclusion.
+
+The 30 active `_pr424` variants preserve #424's published requests. Eighteen differ from the existing parent only in delivery: a single push versus marker-aligned pushes. The other twelve preserve distinct header or payload bytes. They share headings rather than creating separate GPT-only behavior categories. A shared heading may be covered by a family-native child even when the original parent specimen does not apply to that family.
+
+The redundant `gpt_oss_truncated_tool_at_eof_is_dropped` execution is retired because shared `tool_no_close` already tests a complete Harmony JSON body without its handoff. Its original request, expected events, aliases, and capture checkpoints remain in history. Next-message recovery remains a separate input variant under the same shared heading. Empty raw bodies, malformed JSON, quoted controls, and elided reasoning closers retain their distinct stimuli; grouping does not assert identical native recovery policies across families.
+
+- `harmony_guided_json_gt_in_argument_bare_opener`: a JSON argument containing `>` settles a partial header.
+- `harmony_guided_json_gt_in_argument_named_bare_opener`: the same boundary after a recipient name.
+- `harmony_guided_json_narrated_prefix_inside_reasoning`: strip a narrated incomplete header without losing reasoning.
+- `harmony_guided_json_schema_error_nameless_element_bare_opener`: preserve recovery text for a nameless call element.
+- `harmony_guided_json_schema_error_not_a_call_bare_opener`: preserve recovery text for a non-call JSON object.
+- `harmony_guided_json_stray_prefix_before_reasoning`: a partial header cannot claim the following reasoning body.
+- `harmony_guided_json_syntax_error_bare_opener`: preserve incomplete JSON without leaking the header.
+- `harmony_guided_json_tool_open_before_payload`: recover a valid call after a partial directed header.
+
+GPT-OSS also authors the existing shared `arg_marker_in_string` and
+`deepseek_v41_mixed_control_text_in_string` cases with Harmony control spellings.
+Literal spellings supplied as ordinary tokens, rather than actual control-token
+IDs, have independent native Rust streaming coverage.
+
+GPT-OSS cases also cover channel-first and template tool headers, unknown and empty tools, control spellings inside argument strings, interrupted reasoning, invalid tool bodies followed by another call, and truncated messages at EOF or before resynchronization. Native arguments still stream before handoff; the legacy tool projection and the Unified parser share the runtime.

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     # Scope OIDC + secrets to a protected environment. crates.io trusted
     # publishing entries should reference this environment so the OIDC

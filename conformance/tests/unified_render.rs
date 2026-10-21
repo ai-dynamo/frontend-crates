@@ -239,6 +239,10 @@ fn capture_native_case(
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
+    capture::capture_step(
+        init.validate_capture(family, tool_schemas, chunks),
+        "structural tag",
+    )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
     let assembled = assemble(&deltas).into_iter().map(Ev::from).collect();

@@ -222,16 +222,20 @@ impl GuidedPrefixScanner for QwenGuidedPrefix {
     }
 }
 
-/// Build the Qwen3 unified parser for one stream.
 pub(crate) fn qwen3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    xml_unified(tools, false)
+}
+
+pub(crate) fn nemotron_v3_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    xml_unified(tools, true)
+}
+
+fn xml_unified(tools: &[Tool], forced_start: bool) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(
         ScannerUnified::new(qwen3_scanner(tools).with_reasoning(ReasoningSpec {
             start: REASONING_START,
             end: REASONING_END,
-            // Qwen3 emits its own `<think>`; the template does not pre-fill one,
-            // so the stream starts in visible content (policy P5).
-            forced_start: false,
-            // `<think>` is not a special token for this family; the OR comes from the grammar.
+            forced_start,
             preserve_special_tokens: false,
             ..Default::default()
         }))
@@ -268,6 +272,55 @@ mod tests {
         }
         deltas.extend(parser.finish().expect("finish").events);
         assemble(&deltas)
+    }
+
+    #[test]
+    fn nemotron_debug_wrapper_preserves_deltas_and_reuse() {
+        for mode in [
+            UnifiedToolOutputMode::Native,
+            UnifiedToolOutputMode::GuidedJson { named_tool: None },
+            UnifiedToolOutputMode::GuidedJson {
+                named_tool: Some("get_weather".into()),
+            },
+        ] {
+            let payload = match &mode {
+                UnifiedToolOutputMode::Native => {
+                    "<tool_call><function=get_weather><parameter=city>雪</parameter></function></tool_call>"
+                }
+                UnifiedToolOutputMode::GuidedJson { named_tool: None } => {
+                    r#"[{"name":"get_weather","arguments":{"city":"雪"}}]"#
+                }
+                UnifiedToolOutputMode::GuidedJson { .. } => r#"{"city":"雪"}"#,
+            };
+            let input = format!("Montréal</think>{payload}");
+            for at in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                let mut plain = nemotron_v3_unified(&weather_tools());
+                let mut debug = crate::unified::DebugUnifiedParser::wrap(
+                    "nemotron_v3",
+                    nemotron_v3_unified(&weather_tools()),
+                );
+                let init = UnifiedParserInit {
+                    tool_output_mode: mode.clone(),
+                    ..Default::default()
+                };
+                plain.initialize_request(init.clone()).unwrap();
+                debug.initialize_request(init).unwrap();
+                assert_eq!(
+                    plain.preserve_special_tokens(),
+                    debug.preserve_special_tokens()
+                );
+                for _ in 0..2 {
+                    for chunk in [&input[..at], &input[at..]] {
+                        assert_eq!(plain.push(chunk).unwrap(), debug.push(chunk).unwrap());
+                    }
+                    assert_eq!(
+                        plain.finish().unwrap().events,
+                        debug.finish().unwrap().events
+                    );
+                    assert_eq!(plain.reset(), debug.reset());
+                }
+            }
+        }
     }
 
     #[test]

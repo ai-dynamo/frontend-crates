@@ -43,6 +43,7 @@ FAMILY_PARSERS = {
     "deepseek_v41": ("combined", "DeepSeekV4ReasoningParser", "DeepSeekV4ToolParser"),
     "glm47": ("combined", "Glm45ReasoningParser", "Glm47MoeToolParser"),
     "qwen3": ("combined", "Qwen3ReasoningParser", "Qwen3CoderToolParser"),
+    "nemotron_v3": ("combined", "NemotronV3ReasoningParser", "Qwen3CoderToolParser"),
     "kimi_k2": ("combined", "KimiReasoningParser", "KimiK2ToolParser"),
 }
 
@@ -145,7 +146,7 @@ fn make_parser(family: &str, tools: &[Tool]) -> (Box<dyn UnifiedParser>, String)
     let reasoning = Qwen3ReasoningParser::create(Arc::new(tokenizer))
         .expect("standard think reasoning parser");
     let tool = match family {
-        "qwen3" => Qwen3CoderToolParser::create(tools),
+        "qwen3" | "nemotron_v3" => Qwen3CoderToolParser::create(tools),
         "kimi_k2" => KimiK2ToolParser::create(tools),
         "deepseek_v4" | "deepseek_v41" => DeepSeekV4ToolParser::create(tools),
         "glm47" => Glm47MoeToolParser::create(tools),
@@ -166,7 +167,7 @@ fn prompt_token_ids(case: &Case) -> Vec<u32> {
         // parser only needs the open-reasoning marker to detect the prompt's
         // initial state; generated text still supplies the closing marker.
         "gemma4" => vec![256],
-        "qwen3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
+        "qwen3" | "nemotron_v3" | "kimi_k2" | "deepseek_v4" | "deepseek_v41" | "glm47" => vec![256],
         other => panic!("no prompt marker profile for family `{other}`"),
     }
 }

@@ -7,6 +7,7 @@
 //! spec (`{"family": ..., resolved processor params}`).
 
 use crate::models::deepseek_v41::{DeepseekV41GeometrySpec, DeepseekV41Processor, DeepseekV41Spec};
+use crate::models::glm5_next::{Glm5NextGeometrySpec, Glm5NextProcessor, Glm5NextSpec};
 use crate::models::qwen_vl::{QwenVlSpec, Resampler};
 use crate::{MmError, Result};
 use serde_json::Value;
@@ -21,6 +22,9 @@ pub enum ProcessorSpec {
     QwenVl(QwenVlSpec),
     /// Metadata-only image accounting and layout; pixel processing is unsupported.
     DeepseekV41(DeepseekV41Spec),
+    /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
+    /// processing and video are unsupported.
+    Glm5Next(Glm5NextSpec),
 }
 
 /// Build a family processor from a typed spec. `Err` when the family
@@ -33,6 +37,7 @@ pub fn build_processor(
             spec,
         )?)),
         ProcessorSpec::DeepseekV41(spec) => Ok(Box::new(DeepseekV41Processor::new(spec)?)),
+        ProcessorSpec::Glm5Next(spec) => Ok(Box::new(Glm5NextProcessor::new(spec)?)),
     }
 }
 
@@ -48,7 +53,9 @@ pub fn processor_from_spec(json: &str) -> Result<Box<dyn crate::processor::MmFam
 /// Resolve a [`ProcessorSpec`] from the HF config files — the
 /// `AutoProcessor.from_pretrained` equivalent, resolved once per model at
 /// boot. `config.json` selects the family (`model_type`) and carries the
-/// token ids; `preprocessor_config.json` carries the processor knobs.
+/// token ids; `preprocessor_config.json` carries the processor knobs. For
+/// `glm5_next` the second argument may instead be the nested transformers v5
+/// `processor_config.json`, the only processor file GLM-5.3-Flash ships.
 ///
 /// Deliberately conservative: an unknown `model_type`, an unrecognized knob,
 /// or one the Rust pipeline cannot honor bit-exactly (e.g. `do_normalize:
@@ -70,6 +77,7 @@ pub fn spec_from_hf_configs(
         Some("deepseek_v4" | "deepseek_v41") => Ok(ProcessorSpec::DeepseekV41(
             resolve_deepseek_v41(&config, &pre)?,
         )),
+        Some("glm5_next") => Ok(ProcessorSpec::Glm5Next(resolve_glm5_next(&config, &pre)?)),
         Some(other) => Err(MmError::unsupported(format!(
             "no native processor for model_type {other:?}"
         ))),
@@ -121,16 +129,183 @@ fn resolve_deepseek_v41(config: &Value, pre: &Value) -> Result<DeepseekV41Spec> 
     })
 }
 
-/// [`spec_from_hf_configs`] over a local model directory (reads `config.json`
-/// and `preprocessor_config.json`). Downloading from a hub stays the
-/// consumer's concern — hand this the resolved local dir.
+/// Geometry knobs [`resolve_glm5_next`] consumes (`Glm5NextImageProcessorKwargs`).
+const GLM5_NEXT_GEOMETRY: &[&str] = &[
+    "patch_size",
+    "merge_size",
+    "temporal_patch_size",
+    "patch_expand_factor",
+    "min_image_tokens",
+    "max_image_tokens",
+];
+
+/// Knobs whose value must hold for the planned canvas to match HF's: resizing
+/// stays on, the crop/pad stages this processor never runs stay off, and the
+/// processor is one of the two GLM-5.3-Flash image processors, which share
+/// `smart_resize`.
+const GLM5_NEXT_PINNED: &[(&str, Predicate)] = &[
+    ("do_resize", |v| v.as_bool() == Some(true)),
+    ("do_center_crop", |v| {
+        v.is_null() || v.as_bool() == Some(false)
+    }),
+    ("do_pad", |v| v.is_null() || v.as_bool() == Some(false)),
+    ("image_processor_type", |v| {
+        matches!(
+            v.as_str(),
+            Some("Glm5NextImageProcessor" | "Glm5NextImageProcessorPil")
+        )
+    }),
+];
+
+/// Knobs that only shape pixel values or output packaging, never the canvas,
+/// so a metadata-only planner can ignore them. `size` is declared by the HF
+/// class but ignored by its `_preprocess`; the token bounds replace it.
+const GLM5_NEXT_INERT: &[&str] = &[
+    "do_rescale",
+    "rescale_factor",
+    "do_normalize",
+    "image_mean",
+    "image_std",
+    "do_convert_rgb",
+    "resample",
+    "size",
+    "default_to_square",
+    "data_format",
+    "input_data_format",
+    "device",
+    "disable_grouping",
+    "return_tensors",
+    "crop_size",
+    "processor_class",
+];
+
+fn resolve_glm5_next(config: &Value, pre: &Value) -> Result<Glm5NextSpec> {
+    let top = pre
+        .as_object()
+        .ok_or_else(|| MmError::invalid_input("processor config is not an object"))?;
+    // Transformers v5 checkpoints ship `processor_config.json`, which nests
+    // the image knobs under `image_processor` beside the video processor; a
+    // `preprocessor_config.json` dump is the flat image-processor object.
+    let knobs = match top.get("image_processor") {
+        Some(nested) => {
+            if let Some((name, _)) = top.iter().find(|(name, value)| {
+                !matches!(
+                    name.as_str(),
+                    "image_processor" | "video_processor" | "processor_class"
+                ) && !value.is_null()
+            }) {
+                return Err(MmError::unsupported(format!(
+                    "unrecognized processor_config key {name}"
+                )));
+            }
+            nested.as_object().ok_or_else(|| {
+                MmError::invalid_input("processor_config image_processor is not an object")
+            })?
+        }
+        None => top,
+    };
+    for (knob, value) in knobs {
+        let knob = knob.as_str();
+        if GLM5_NEXT_GEOMETRY.contains(&knob) || GLM5_NEXT_INERT.contains(&knob) {
+            continue;
+        }
+        match GLM5_NEXT_PINNED.iter().find(|(name, _)| *name == knob) {
+            Some((_, honored)) if honored(value) => {}
+            Some(_) => {
+                return Err(MmError::unsupported(format!(
+                    "glm5_next preprocessor knob {knob} = {value} cannot be honored"
+                )));
+            }
+            None if value.is_null() => {}
+            None => {
+                return Err(MmError::unsupported(format!(
+                    "unrecognized glm5_next preprocessor knob {knob}"
+                )));
+            }
+        }
+    }
+    // Every geometry knob must be present and non-null: no serving defaults.
+    let geometry: Glm5NextGeometrySpec = serde_json::from_value(Value::Object(knobs.clone()))
+        .map_err(|error| {
+            MmError::invalid_input_with_source("invalid glm5_next image processor geometry", error)
+        })?;
+    geometry.validate()?;
+    // The vision tower must agree with the processor; a drifted checkpoint is
+    // refused rather than planned approximately.
+    if let Some(vision) = config
+        .get("vision_config")
+        .filter(|value| value.is_object())
+    {
+        for (knob, field, value) in [
+            ("patch_size", "patch_size", geometry.patch_size),
+            ("merge_size", "spatial_merge_size", geometry.merge_size),
+            (
+                "temporal_patch_size",
+                "temporal_patch_size",
+                geometry.temporal_patch_size,
+            ),
+        ] {
+            if let Some(declared) = vision.get(field).and_then(Value::as_u64)
+                && declared != u64::from(value)
+            {
+                return Err(MmError::invalid_input(format!(
+                    "glm5_next: processor {knob} = {value} disagrees with vision_config.{field} = {declared}"
+                )));
+            }
+        }
+    }
+    let token_id = |field: &str| -> Result<Option<i32>> {
+        match config.get(field) {
+            None | Some(Value::Null) => Ok(None),
+            Some(value) => value
+                .as_i64()
+                .and_then(|id| i32::try_from(id).ok())
+                .filter(|id| *id >= 0)
+                .map(Some)
+                .ok_or_else(|| {
+                    MmError::invalid_input(format!("config.json {field} must be a nonnegative i32"))
+                }),
+        }
+    };
+    let image_token_id = token_id("image_token_id")?
+        .ok_or_else(|| MmError::invalid_input("config.json is missing image_token_id"))?;
+    Ok(Glm5NextSpec {
+        image_token_id,
+        video_token_id: token_id("video_token_id")?,
+        geometry,
+    })
+}
+
+/// [`spec_from_hf_configs`] over a local model directory: reads `config.json`
+/// and `preprocessor_config.json`, or `processor_config.json` when the
+/// checkpoint ships only the nested transformers v5 file (GLM-5.3-Flash).
+/// Downloading from a hub stays the consumer's concern — hand this the
+/// resolved local dir.
 pub fn spec_from_model_dir(dir: &std::path::Path) -> Result<ProcessorSpec> {
     let read = |name: &str| {
         std::fs::read_to_string(dir.join(name)).map_err(|error| {
             MmError::invalid_input_with_source(format!("cannot read {name}"), error)
         })
     };
-    spec_from_hf_configs(&read("config.json")?, &read("preprocessor_config.json")?)
+    let config = read("config.json")?;
+    let pre = match std::fs::read_to_string(dir.join("preprocessor_config.json")) {
+        Ok(json) => json,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            std::fs::read_to_string(dir.join("processor_config.json")).map_err(|error| {
+                MmError::invalid_input_with_source(
+                    "cannot read preprocessor_config.json or processor_config.json",
+                    error,
+                )
+            })?
+        }
+        Err(error) => {
+            return Err(MmError::invalid_input_with_source(
+                "cannot read preprocessor_config.json",
+                error,
+            ));
+        }
+    };
+    spec_from_hf_configs(&config, &pre)
 }
 
 const CONSUMED: &[&str] = &[

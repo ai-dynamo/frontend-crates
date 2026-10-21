@@ -3,13 +3,14 @@
 """Display folds retain the authored fixtures and their independent observations."""
 import copy
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from case_variants import aggregate_cells, folded_schemas, group_schema_variants, leaf_cells
+from case_variants import aggregate_cells, folded_schemas, group_unified_variants, leaf_cells
 from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, argument_section, schema_fold, schema_tools
 import model
 import unified_taxonomy as taxonomy
@@ -53,10 +54,20 @@ def test_exact_fold_dimensions_and_section_order():
                     else {"String / Forward", "String / Reversed", "Typed value / Forward", "Typed value / Reversed"})
         assert {label for _, label in children} == expected
         assert parent in {scenario for scenario, _ in children}
-    ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.tax(scenario)[0] == 7),
+    ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.display_tax(scenario)[0] == 7),
                      key=taxonomy.display_sort_key)
-    assert len(ordered) == 139
-    assert list(dict.fromkeys(argument_section(s) for s in ordered)) == list(ARGUMENT_SECTIONS)
+    assert len(ordered) == 143
+    assert taxonomy.case_fold("gpt_oss_quoted_message_header_literal")[0] == "arg_marker_in_string"
+    assert "gpt_oss_quoted_message_header_literal" in ordered
+    assert list(dict.fromkeys(argument_section((taxonomy.case_fold(s) or (s, ""))[0]) for s in ordered)) == list(ARGUMENT_SECTIONS)
+
+
+def test_request_variants_keep_the_parent_argument_section():
+    variants = [scenario for scenario in taxonomy.UNIFIED_TAX
+                if scenario.endswith("_pr424") and taxonomy.tax(scenario)[0] == 7]
+    assert variants
+    for scenario in variants:
+        assert argument_section(scenario) == argument_section(scenario.removesuffix("_pr424"))
 
 
 def test_folded_serialization_preserves_leaves_and_schema_associations():
@@ -69,7 +80,7 @@ def test_folded_serialization_preserves_leaves_and_schema_associations():
     tab = {"id": "tab-unified", "kind": "unified", "label": "Unified", "columns": columns,
            "column_groups": [{"key": "union", "span": 4}], "rows": [{"family": "alpha", "cells": cells}],
            "stats": {}, "candidates": [], "glossary": []}
-    group_schema_variants(tab)
+    group_unified_variants(tab)
     assert len(tab["columns"]) == 1
     schemas = tab["columns"][0]["schemas"]
     assert len(schemas) == 2  # Each branch order is shared by both value types.
@@ -116,7 +127,7 @@ def test_schema_fold_without_direct_variant_preserves_available_fixture(prefix, 
     tab = {"id": "tab-unified", "columns": columns, "rows": [{"family": "alpha", "cells": cells}],
            "column_groups": [{"key": "schema", "span": len(columns)}], "stats": {},
            "glossary": [{"rows": [(column["label"], "probe") for column in columns]}]}
-    group_schema_variants(tab)
+    group_unified_variants(tab)
     assert len(tab["columns"]) == len(cells) == 1
     root = tab["columns"][0]
     result = cells[root["sub"]]
@@ -127,3 +138,62 @@ def test_schema_fold_without_direct_variant_preserves_available_fixture(prefix, 
     assert originals == before
     assert all(variant["tooltip"]["head"].startswith(schema_fold(variant["sub"])[1] + " — ")
                for variant in result["variants"])
+
+
+@pytest.mark.parametrize("parent,variant", [
+    ("arg_marker_in_string", "arg_marker_in_string_pr424"),
+    ("tool_in_reason", "gpt_oss_interrupted_reasoning_then_tool"),
+    ("tool_no_close", "gpt_oss_truncated_tool_resynchronizes_at_next_message"),
+])
+@pytest.mark.parametrize("missing_parent", [False, True])
+def test_shared_case_variants_preserve_each_fixture_once(parent, variant, missing_parent):
+    columns = [{"sub": s, "label": taxonomy.case_label(s), "desc": "shared behavior",
+                "group_key": taxonomy.display_section(s)[0]} for s in (parent, variant)]
+    cells = {s: child(s, inapplicable=(s == parent and missing_parent)) for s in (parent, variant)}
+    original = copy.deepcopy(cells)
+    tab = {"id": "tab-unified", "columns": columns, "rows": [{"family": "alpha", "cells": cells}],
+           "column_groups": [{"key": taxonomy.display_section(parent)[0], "span": 2}],
+           "stats": {}, "glossary": []}
+    group_unified_variants(tab)
+    assert [c["sub"] for c in tab["columns"]] == [parent]
+    assert cells[parent]["status"] == "ok"
+    assert set(leaf_cells(tab["rows"][0])) == {parent, variant}
+    for scenario, leaf in leaf_cells(tab["rows"][0]).items():
+        assert leaf["cmp"] == original[scenario]["cmp"]
+        assert leaf["tooltip"]["input"] == original[scenario]["tooltip"]["input"]
+    assert tab["stats"]["fixture_cases"] == 2 - int(missing_parent)
+
+
+@pytest.mark.parametrize("parent_na,child_codes,child_sig,expected", [
+    (True, ["missing_capture"], 1, "missing"),
+    (True, ["source_unavailable"], 1, "blocked"),
+    (True, ["unsupported_request_mode"], 1, "unsupported"),
+    (False, ["missing_capture"], 1, "missing"),
+    (False, ["missing_capture"], 2, "diverge"),
+    (True, [None], 1, "pass"),
+])
+def test_folded_browser_status_uses_applicable_child_results(parent_na, child_codes, child_sig, expected):
+    parent = child("parent", sig=child_sig, inapplicable=parent_na)
+    parent["tooltip"]["candidates"][0]["block"] = (
+        {"unavailable_code": "scenario_not_applicable"} if parent_na else {})
+    children = [parent]
+    for index, code in enumerate(child_codes):
+        probe = child("variant" + str(index), missing=code is not None)
+        probe["tooltip"]["candidates"][0]["block"] = {"unavailable_code": code} if code else {}
+        children.append(probe)
+    result = aggregate_cells(children, "parent", "parent")
+    script = r"""
+const fs = require('node:fs');
+const vm = require('node:vm');
+const source = fs.readFileSync(process.argv[1], 'utf8');
+const context = {window:{}};
+vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('  function tooltipCandidate('),
+  source.indexOf('  function ', source.indexOf('  function outputStatus(') + 10)), context);
+const cell = JSON.parse(fs.readFileSync(0, 'utf8'));
+process.stdout.write(context.outputStatus({id:'tab-unified'}, cell, {key:'engine'}, 'golden'));
+"""
+    process = subprocess.run(["node", "-e", script,
+        str(Path(__file__).resolve().parents[1] / "src/assets/conformance.js")],
+        input=json.dumps(result), text=True, capture_output=True, check=True)
+    assert process.stdout == expected

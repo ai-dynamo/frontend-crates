@@ -71,6 +71,36 @@ fn load_native_golden() -> Vec<GoldenFile> {
     files
 }
 
+#[test]
+fn structural_response_case_checks_the_schema_before_parsing() {
+    let mut families = Vec::new();
+    for file in load_native_golden() {
+        for (id, mut case) in file.cases {
+            if !id.contains("structured_response_after_reasoning") {
+                continue;
+            }
+            families.push(file.family.clone());
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+            assert_eq!(
+                events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                case.golden,
+                "{id}"
+            );
+            // Parsing the same stream still succeeds with a contradictory schema.
+            // Only a real grammar check can reject this request before parsing.
+            case.init.structural_tag.as_mut().unwrap().schema =
+                serde_json::json!({"const": "impossible response"});
+            assert!(
+                events(&file.family, &chunks, &case.init, &tools).is_err(),
+                "{id}: ignored the response schema"
+            );
+        }
+    }
+    families.sort();
+    assert_eq!(families, ["deepseek_v4", "glm47", "gpt_oss", "qwen3"]);
+}
+
 fn has_unified_parser(family: &str) -> bool {
     create_unified_parser_for_family(family, &[]).is_ok()
 }
@@ -84,6 +114,8 @@ fn events(
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create unified parser for `{family}`: {e}"));
     init.apply(&mut parser, family);
+    init.validate_capture(family, tool_schemas, chunks)
+        .map_err(|error| format!("{error:#}"))?;
 
     let rows = capture::native_capture(&mut parser, chunks).map_err(|failure| match failure {
         capture::CaptureFailure::Error(error) => error,
@@ -246,20 +278,23 @@ fn unified_parser_is_chunk_invariant() {
 
 #[test]
 fn reference_argument_cases_preserve_results_at_every_split() {
+    let scenarios = [
+        "glm_ref_object",
+        "glm_ref_encoded_targets",
+        "glm_ref_json_looking_strings",
+        "glm_ref_scalar_types",
+        "unused_reference_graph_parameter_types",
+        "nullable_reference_alias_literals",
+        "local_schema_id_preserves_type",
+    ];
     let mut checked = 0;
-    for file in load_native_golden() {
+    let files = load_native_golden();
+    let family_count = files.len();
+    for file in files {
         for (id, case) in &file.cases {
-            if ![
-                "glm_ref_object",
-                "glm_ref_encoded_targets",
-                "glm_ref_json_looking_strings",
-                "glm_ref_scalar_types",
-                "unused_reference_graph_parameter_types",
-                "nullable_reference_alias_literals",
-                "local_schema_id_preserves_type",
-            ]
-            .iter()
-            .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
+            if !scenarios
+                .iter()
+                .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
             {
                 continue;
             }
@@ -284,7 +319,7 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, 56);
+    assert_eq!(checked, family_count * scenarios.len());
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

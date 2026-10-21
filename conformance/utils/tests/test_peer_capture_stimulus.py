@@ -40,12 +40,12 @@ def producer(request, monkeypatch, tmp_path):
             super().__init__(**kwargs)
 
     class Parser:
-        DetectorMap = {"gemma4": object}
+        DetectorMap = {"gemma4": object, "nemotron_3": object}
 
         def __init__(self, *args, **kwargs):
             calls.append(("parser_init", kwargs))
 
-        def parse(self, text, *args):
+        def parse(self, text, request, enable_auto_tools=False):
             calls.append(("batch", text))
             return None, text, []
 
@@ -62,7 +62,7 @@ def producer(request, monkeypatch, tmp_path):
             return "", ""
 
     class ToolParser(Parser):
-        ToolCallParserEnum = {"gemma4": object}
+        ToolCallParserEnum = {"gemma4": object, "qwen3_coder": object}
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -132,6 +132,14 @@ def _case(text="hi", **extra):
         "tools": unified_tools(),
         **extra,
     }
+
+
+def test_nemotron_peer_registration_reaches_producer(producer):
+    engine, run, calls = producer
+    result = run(_case(id="nemotron", family="nemotron_v3"))
+    assert "unavailable" not in result
+    assert "error" not in result
+    assert any(call[0] == ("rust_job" if engine == "vllm_rust" else "parser_init") for call in calls)
 
 
 def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, tmp_path, monkeypatch):

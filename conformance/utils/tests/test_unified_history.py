@@ -3,6 +3,7 @@
 """Coverage for canonical Unified capture checkpoints."""
 
 import copy
+from dataclasses import replace
 import hashlib
 import json
 import sys
@@ -158,6 +159,31 @@ def test_current_corpus_adds_a_registered_family(tmp_path):
     assert documents[family.path] == family.document
 
 
+def test_first_capture_for_existing_family_is_published_and_idempotent(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    prior_path = _write_capture(root, "0.26.0", {"text_only": _change()}, implementation="vllm_python")
+    prior_bytes = prior_path.read_bytes()
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.7.27/gemma4/case.yaml"
+    path.parent.mkdir(parents=True)
+    path.write_text(unified_history.dump_yaml({
+        "family": "gemma4", "mode": "unified",
+        "captured_with": {"dynamo_v2": "0.7.27"},
+        "cases": {"UNIFIED.1-1": {"assembled": [{"kind": "text", "text": "hello"}]}},
+    }))
+    changed = unified_history.update_from_loose(root, loose)
+    capture_path = root / "families/gemma4/dynamo_v2-0.7.27.yaml"
+    assert changed == [capture_path]
+    store = unified_history.load_store(root)
+    record = store.histories[("gemma4", "dynamo_v2")].resolve("dynamo_v2-0.7.27")["text_only"]
+    assert record["observation"]["value"]["assembled"] == [{"kind": "text", "text": "hello"}]
+    original = capture_path.read_bytes()
+    assert unified_history.update_from_loose(root, loose) == []
+    assert capture_path.read_bytes() == original
+    assert prior_path.read_bytes() == prior_bytes
+
+
 def test_descriptive_migration_preserves_capture_bytes_and_is_idempotent(tmp_path):
     _write_family(tmp_path)
     family_path = tmp_path / "families/gemma4/inputs_and_golden.yaml"
@@ -203,6 +229,27 @@ def _write_capture(
         encoding="utf-8",
     )
     return path
+
+
+def test_first_capture_creates_a_new_implementation_history(tmp_path):
+    root = tmp_path / "store"
+    _write_family(root)
+    _write_capture(root, "0.5.14", {"text_only": _change()}, implementation="sglang_python")
+    loose = tmp_path / "loose"
+    path = loose / "dynamo_v2-0.26.0/gemma4/UNIFIED.1-1.yaml"
+    path.parent.mkdir(parents=True)
+    events = [{"kind": "text", "text": "hello"}]
+    path.write_text(unified_history.dump_yaml({
+        "family": "gemma4", "mode": "unified",
+        "captured_with": {"dynamo_v2": "0.26.0"},
+        "cases": {"UNIFIED.1-1": {
+            "capture_input": _request(), "assembled": events,
+            "chunks": [{"expected": events}],
+        }},
+    }))
+    unified_history.update_store_from_loose(root, loose, complete_snapshot=False)
+    history = unified_history.load_store(root).histories[("gemma4", "dynamo_v2")]
+    assert history.resolve("dynamo_v2-0.26.0")["text_only"]["observation"]["value"]["assembled"] == events
 
 
 @pytest.mark.parametrize("later_changes", [False, True])
@@ -265,6 +312,30 @@ def test_materialization_reuses_supplied_store_without_mutating_it(tmp_path, mon
     } == {
         path.relative_to(supplied): path.read_bytes() for path in supplied.rglob("*.yaml")
     }
+    assert store == before
+
+
+def test_input_only_materialization_preserves_default_input_and_golden_bytes(tmp_path):
+    root = _store(tmp_path / "store")
+    store = unified_history.load_store(root)
+    before = copy.deepcopy(store)
+    default = tmp_path / "default"
+    inputs_only = tmp_path / "inputs-only"
+    unified_history.materialize_store(root, default, store=store)
+    unified_history.materialize_store(root, inputs_only, store=replace(store, histories={}))
+    expected = {
+        path.relative_to(default): path.read_bytes()
+        for directory in ("inputs", "golden")
+        for path in (default / directory).rglob("*.yaml")
+    }
+    assert expected
+    assert expected == {
+        path.relative_to(inputs_only): path.read_bytes()
+        for path in inputs_only.rglob("*.yaml")
+    }
+    for capture_id in store.histories[("gemma4", "dynamo_v2")].captures:
+        assert list((default / capture_id).rglob("*.yaml"))
+        assert not (inputs_only / capture_id).exists()
     assert store == before
 
 
@@ -1266,9 +1337,8 @@ def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_pat
     ("qwen3", ("be1520f44605ed60b906aa03f7847a9210631d43cec8c967f55ac99186d496bd",
                "697ee3feadda33be06413278e6f213f8361a060793518381713cc19a771c2f4d")),
 ])
-def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family, original_digests):
-    store_root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
-    store = unified_history.load_store(store_root)
+def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(family, original_digests, committed_unified_store):
+    store = committed_unified_store
     history = store.histories[(family, "vllm_rust")]
     historical = history.resolve("vllm_rust-0.25.1")
     recaptured = history.resolve("vllm_rust-0.26.0")
@@ -1327,6 +1397,20 @@ def test_sparse_checkpoint_does_not_inherit_version_scoped_recapture(tmp_path, i
                    metadata_changes={"text_only": {"verified_recapture": supplement, "audit_note": "preserve me"}})
     history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]
     prior = history.resolve(f"{implementation}-0.25.1")
+    derived = tmp_path.parent / f"{tmp_path.name}-derived"
+    unified_history.materialize_store(
+        tmp_path, derived, derived_release_versions={implementation: "0.26.0"},
+    )
+    derived_paths = list((derived / f"{implementation}-0.26.0/gemma4").glob("*.yaml"))
+    assert len(derived_paths) == 1
+    derived_document = unified_history.load_yaml(derived_paths[0])
+    derived_record = next(iter(derived_document["cases"].values()))
+    assert "verified_recapture" not in derived_record
+    assert derived_record["audit_note"] == "preserve me"
+    selected = select_peer_observation(
+        derived_record, _request(), implementation=implementation, version="0.26.0",
+    )
+    assert selected["assembled"] == [{"kind": "text", "text": "old output"}]
     _write_capture(tmp_path, "0.26.0", {}, implementation=implementation)
     _write_capture(tmp_path, "0.27.0", {}, implementation=implementation)
     history = unified_history.load_store(tmp_path).histories[("gemma4", implementation)]

@@ -325,7 +325,10 @@ pub(super) unsafe fn symbol<F: Copy>(
 /// Load the driver libraries in `cuda` and `nvcuvid` and initialise CUDA.
 fn load(cuda: &[&CStr], nvcuvid: &[&CStr]) -> std::result::Result<Api, String> {
     let cuda = open(cuda).ok_or("libcuda.so.1 (the NVIDIA driver) could not be loaded")?;
-    let nvcuvid = open(nvcuvid).ok_or("libnvcuvid.so.1 (NVDEC) could not be loaded")?;
+    let nvcuvid = open(nvcuvid).ok_or(
+        "libnvcuvid.so.1 (NVDEC) could not be loaded (in a container, \
+         NVIDIA_DRIVER_CAPABILITIES must include `video`)",
+    )?;
     // SAFETY: each type below matches the C declaration in nv-codec-headers.
     unsafe {
         let cu_init: unsafe extern "C" fn(c_uint) -> CuResult = symbol(cuda, c"cuInit")?;
@@ -348,8 +351,12 @@ fn load(cuda: &[&CStr], nvcuvid: &[&CStr]) -> std::result::Result<Api, String> {
             parse: symbol(nvcuvid, c"cuvidParseVideoData")?,
             destroy_parser: symbol(nvcuvid, c"cuvidDestroyVideoParser")?,
         };
-        if cu_init(0) != CUDA_SUCCESS {
-            return Err("cuInit failed: no usable NVIDIA GPU".into());
+        let code = cu_init(0);
+        if code != CUDA_SUCCESS {
+            return Err(format!(
+                "cuInit failed (CUDA error {code}): often no usable NVIDIA GPU, or a \
+                 libcuda that does not match the kernel driver"
+            ));
         }
         let (mut device, mut context): (CuDevice, CuContext) = (0, std::ptr::null_mut());
         if cu_device_get(&mut device, 0) != CUDA_SUCCESS
@@ -422,7 +429,7 @@ fn codec_type(codec: VideoCodec) -> Result<c_uint> {
         VideoCodec::Vp9 => Ok(CODEC_VP9),
         VideoCodec::Av1 => Ok(CODEC_AV1),
         other => Err(MmError::unsupported(format!(
-            "{} is not decoded by this crate",
+            "{} is not decoded by NVDEC here",
             other.name()
         ))),
     }
@@ -1061,6 +1068,16 @@ mod tests {
         .err()
         .unwrap();
         assert!(err.contains("could not be loaded"), "{err}");
+        // A driver without NVDEC (glibc's `libc.so.6` stands in for
+        // `libcuda`): the error names the container setting that usually
+        // causes it.
+        #[cfg(target_env = "gnu")]
+        {
+            let err = load(&[c"libc.so.6"], &[c"libdynamo-no-such-nvcuvid.so"])
+                .err()
+                .unwrap();
+            assert!(err.contains("NVIDIA_DRIVER_CAPABILITIES"), "{err}");
+        }
     }
 
     #[test]

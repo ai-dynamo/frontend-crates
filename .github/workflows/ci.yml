@@ -16,7 +16,7 @@ permissions:
 jobs:
   # Parser and conformance changes activate the render, utility and browser jobs.
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -38,11 +38,13 @@ jobs:
               - '.github/workflows/ci.yml'
 
   rust:
-    runs-on: ubuntu-latest
+    runs-on:
+      group: Fastchecker
     timeout-minutes: 40
     env:
       CARGO_DENY_VERSION: "0.19.4"
       CARGO_MACHETE_VERSION: "0.9.2"
+      CARGO_NEXTEST_VERSION: "0.9.145"
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -56,20 +58,10 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install
 
-      - name: Cache cargo tools
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
-        with:
-          path: |
-            ~/.cargo/bin/cargo-deny
-            ~/.cargo/bin/cargo-machete
-          key: ${{ runner.os }}-cargo-tools-deny-${{ env.CARGO_DENY_VERSION }}-machete-${{ env.CARGO_MACHETE_VERSION }}-${{ hashFiles('rust-toolchain.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-tools-
-
       - name: Install cargo tools
-        run: |
-          cargo-deny --version 2>/dev/null | grep -qF "${CARGO_DENY_VERSION}" || cargo install "cargo-deny@${CARGO_DENY_VERSION}" --locked
-          cargo-machete --version 2>/dev/null | grep -qF "${CARGO_MACHETE_VERSION}" || cargo install "cargo-machete@${CARGO_MACHETE_VERSION}" --locked
+        uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
+        with:
+          tool: cargo-deny@${{ env.CARGO_DENY_VERSION }},cargo-machete@${{ env.CARGO_MACHETE_VERSION }},cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
 
       - name: Check unused dependencies
         run: cargo machete
@@ -80,8 +72,18 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      - name: Install CPU structural-tag verifier
+        run: |
+          python3 -m venv /tmp/structural-tag-venv
+          /tmp/structural-tag-venv/bin/pip install --no-deps -r conformance/utils/structural-tag-requirements.in
+          echo "CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python" >> "$GITHUB_ENV"
+
+      # nextest runs test binaries concurrently; doctests run separately below.
       - name: Run tests
-        run: cargo test --workspace --all-targets --locked
+        run: cargo nextest run --workspace --all-targets --locked
+
+      - name: Verify grammar checks under optimized Python
+        run: PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
 
       # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
       # decode with it (runners have no GPU, so NVDEC's tests are ignored).
@@ -112,7 +114,7 @@ jobs:
   conformance-table:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Render cost scales with the number of peer version dirs: every <impl>-<version>
     # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
     # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
@@ -230,7 +232,7 @@ jobs:
   conformance-utils:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - name: Checkout
@@ -248,8 +250,8 @@ jobs:
   conformance-browser:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -271,7 +273,7 @@ jobs:
     name: Deploy conformance matrix to GitHub Pages
     needs: [conformance-table, conformance-utils]
     if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
       group: github-pages

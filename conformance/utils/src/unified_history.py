@@ -296,9 +296,10 @@ class History:
             ),
         )
 
-    def resolve(self, capture_id: str) -> dict:
+    def resolve(self, capture_id: str, *, view_capture_id: str | None = None) -> dict:
         if capture_id not in self.captures:
             raise ValueError(f"unknown capture in {self.directory}: {capture_id}")
+        view_capture_id = view_capture_id or capture_id
         state = {}
         for current in self.ordered_capture_ids():
             capture = self.captures[current]
@@ -359,15 +360,15 @@ class History:
             record = copy.deepcopy(change)
             record_metadata = record.pop("_record_metadata", None)
             metadata_capture_id = record.pop("_record_metadata_capture_id", None)
-            if record_metadata and metadata_capture_id != capture_id:
+            if record_metadata and metadata_capture_id != view_capture_id:
                 # Peer import and report readers must not treat an earlier recapture
-                # as a verified execution of a later sparse checkpoint.
+                # as a verified execution of a later checkpoint or derived view.
                 record_metadata.pop("verified_recapture", None)
             overrides = record.pop("_document_overrides", {})
             origin_capture_id = record.pop("_origin_capture_id")
             origin_capture = self.captures[origin_capture_id]
             case_document = _capture_document_metadata(origin_capture, self.implementation)
-            if origin_capture_id != capture_id:
+            if origin_capture_id != view_capture_id:
                 case_document["inherited_from"] = origin_capture["runtime_version"]
             provenance_override = overrides.pop("capture_provenance", None)
             if provenance_override is not None:
@@ -397,6 +398,13 @@ class Store:
     root: Path
     families: dict[str, Family]
     histories: dict[tuple[str, str], History]
+
+    def history_for_capture(self, family_name: str, implementation: str) -> History:
+        key = (family_name, implementation)
+        if key not in self.histories:
+            family = self.families[family_name]
+            self.histories[key] = History(family, implementation, {}, family.path.parent, {})
+        return self.histories[key]
 
 
 class PublicationCommitIndeterminate(OSError):
@@ -1373,7 +1381,7 @@ def materialize_store(
                         history.captures[capture_id]["runtime_version"]
                     ),
                 )
-                state = history.resolve(source_id)
+                state = history.resolve(source_id, view_capture_id=target_id)
                 if target_id == current_capture_id:
                     state = {
                         case_id: change
@@ -1867,9 +1875,9 @@ def _update_from_loose(
                 )
         for family_name in families:
             key = (family_name, implementation)
-            history = store.histories.get(key)
-            if history is None:
-                raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
+            if family_name not in store.families:
+                raise ValueError(f"no canonical family owns {capture_dir.name}/{family_name}")
+            history = store.history_for_capture(family_name, implementation)
             case_by_external = {}
             for case_id, case in history.family.cases.items():
                 for external_id in [case["display_id"], *case["historical_ids"]]:
@@ -2095,6 +2103,8 @@ def _update_from_loose(
                 "document_overrides": document_overrides,
             }
             captures[capture_dir.name] = capture
+            if not ordered_ids:
+                _set_capture_snapshot(history, capture_dir.name, history.resolve(capture_dir.name), {})
             capture_path = history.family.path.parent / f"{capture_dir.name}.yaml"
             history.capture_paths[capture_dir.name] = capture_path
             documents[capture_path] = capture

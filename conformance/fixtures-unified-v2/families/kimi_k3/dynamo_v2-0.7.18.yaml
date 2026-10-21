@@ -220,6 +220,46 @@ changes:
             arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
             complete: true
         - expected: []
+  gpt_oss_quoted_message_header_literal:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. The parser was not executed, and no newer output was substituted.
+  gpt_oss_quoted_truncated_tool_then_final:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. The parser was not executed, and no newer output was substituted.
+  gpt_oss_tool_body_whitespace:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. The parser was not executed, and no newer output was substituted.
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.18 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.18 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.18 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.18 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. No release tag or newer parser was substituted.'
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. The parser was not executed, and no newer output was substituted.
   local_schema_id_preserves_type:
     case_key: UNIFIED.7-16
     stimulus:
@@ -355,5 +395,61 @@ changes:
             arguments: '{"count":42,"flag":false,"text":"null"}'
             complete: true
         - expected: []
-metadata_changes: {}
-document_overrides: {}
+metadata_changes:
+  gpt_oss_quoted_message_header_literal: {}
+  gpt_oss_quoted_truncated_tool_then_final: {}
+  gpt_oss_tool_body_whitespace: {}
+  guided_json_native_parameter_array_before_payload: {}
+  guided_json_native_parameter_object_before_payload: {}
+  guided_json_native_parameter_string_before_payload: {}
+  guided_json_noncall_before_native_array_before_payload: {}
+  guided_response_native_wrapper_whitespace_before_prose: {}
+document_overrides:
+  gpt_oss_quoted_message_header_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null

@@ -156,8 +156,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
         if target == existing:
             return
         if history is None:
-            history = unified_history.History(fam, implementation, {}, fam.path.parent, {})
-            store.histories[(family, implementation)] = history
+            history = store.history_for_capture(family, implementation)
         if capture_id not in history.captures:
             history.captures[capture_id] = {
                 "provenance": {"status": "legacy", "captured_with": {implementation: version}},

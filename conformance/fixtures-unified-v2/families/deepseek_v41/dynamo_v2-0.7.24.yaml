@@ -288,83 +288,71 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  guided_json_native_parameter_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_object_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: 'Historical parser 0.7.24 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. No release tag or newer parser was substituted.'
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731. The parser was not executed, and no newer output was substituted.
   prefilled_reasoning_then_text:
     absent: true
   prefilled_reasoning_then_text_then_tool:
     absent: true
   prefilled_reasoning_with_tool:
     absent: true
-metadata_changes: {}
+metadata_changes:
+  guided_json_native_parameter_array_before_payload: {}
+  guided_json_native_parameter_object_before_payload: {}
+  guided_json_native_parameter_string_before_payload: {}
+  guided_json_noncall_before_native_array_before_payload: {}
+  guided_response_native_wrapper_whitespace_before_prose: {}
 document_overrides:
-  dsml_bare_invoke_four_lf:
+  guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
+      capture_origin: null
       inherited_from: null
-  dsml_bare_invoke_two_lf:
+  guided_json_native_parameter_object_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
+      capture_origin: null
       inherited_from: null
-  dsml_empty_content_separator:
+  guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
+      capture_origin: null
       inherited_from: null
-  dsml_no_separator:
+  guided_json_noncall_before_native_array_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
+      capture_origin: null
       inherited_from: null
-  dsml_reasoning_then_separator:
+  guided_response_native_wrapper_whitespace_before_prose:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
-      inherited_from: null
-  dsml_separator_four_lf:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
-      inherited_from: null
-  dsml_separator_two_lf:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
-      inherited_from: null
-  dsml_whitespace_content_separator:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.24
-      capture_origin:
-        crate_version: 0.7.24
-        source_sha256: 9559d07658177baf319de33b89bd3f1d4414dda1d85728e70daf0c90cbeca731
-        git_commit: c43d2c6684ce1397ba9c51172487a70c30dc693d
+      capture_origin: null
       inherited_from: null
