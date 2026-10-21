@@ -295,6 +295,10 @@ fn native_outputs_parse_and_export_grammar_cases() {
             };
             if choice == StructuralTagToolChoice::Auto {
                 accepted.push(text.into());
+                if family == "kimi_k3" {
+                    // Reserve the whole call prefix, even without a trailing space.
+                    rejected.push("hello<|open|>call".into());
+                }
             } else {
                 rejected.push(text.into());
             }
@@ -355,7 +359,7 @@ fn k3_optional_exclusions_do_not_disable_tool_dispatch() {
     let text = nodes(&tag, "any_text");
     assert_eq!(
         text[0]["excludes"],
-        json!(["<|open|>tools<|sep|>", "<|open|>call "])
+        json!(["<|open|>tools<|sep|>", "<|open|>call"])
     );
 }
 

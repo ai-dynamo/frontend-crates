@@ -93,13 +93,13 @@ impl ToolCallGrammar for KimiK2 {
 
 impl ToolCallGrammar for KimiK3 {
     fn reasoning_begin(&self) -> Option<&'static str> {
-        Some("<|open|>think<|sep|>")
+        Some(kimi_k3::THINK_OPEN)
     }
     fn reasoning_end(&self) -> Option<&'static str> {
-        Some("<|close|>think<|sep|>")
+        Some(kimi_k3::THINK_CLOSE)
     }
     fn tool_call_excludes(&self) -> &'static [&'static str] {
-        &[kimi_k3::TOOLS_OPEN, "<|open|>call "]
+        &[kimi_k3::TOOLS_OPEN, kimi_k3::CALL_OPEN]
     }
 
     fn build_triggered_calls(

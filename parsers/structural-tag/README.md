@@ -12,6 +12,12 @@ K3 shares the upstream grammar for typed arguments, required-property order, sch
 
 The workspace release configuration includes this publishable crate through its defaults. Both consumers declare a path and a registry version, so the shared crate must be published before either consumer release.
 
+## Backend compatibility
+
+K3 structural tags require XGrammar 0.2 or newer because they use the `optional` format node. XGrammar 0.1.32 rejects these grammars with `Format type not recognized: optional`. K2 grammars compile on 0.1.32, but that version accepts the JSON Schema `any_order` field without allowing reordered keys.
+
+Check the XGrammar version bundled with the inference backend, including TensorRT-LLM. Upgrade backends that bundle 0.1.32 before enabling K3 structural tags. The parser crate builds the grammar but does not select or upgrade the backend's XGrammar dependency. The acceptance and rejection corpus has been validated with XGrammar 0.2.7 and 0.2.8.
+
 ## Validate changes
 
 Run the parser and shared-format tests from the repository root:
