@@ -1,16 +1,20 @@
 reference-goldens.jsonl
 =======================
 
-288 serving-level golden cases for the `beam` template, extracted unchanged (fields reduced to
-id / source / prefix / chunks / tools / serving / serving_batch) from the model builder's frozen
-differential corpus `lib/response-template/tests/data/{generated,tags}.jsonl` on their Dynamo
-reference branch (commit cb95d1dfd5e05f2217f1ca9c956fbca766006f22). Only cases whose
-`template` is absent or byte-identical to the built-in Beam `response_template` were kept.
+248 existing serving-level cases refreshed from the model builder's current golden corpus,
+lib/response-template/tests/data/{generated,tags}.jsonl at commit
+1e879cf56b5aaf0bf609a65738cf6b44599ce4f0. Inputs and expected results are copied unchanged,
+retaining the original id / source / prefix / chunks / tools / serving / serving_batch fields.
+The source now records complete prompt histories. No new case IDs were added. Forty former
+cases now use explicit legacy template variants and are excluded by the original rule:
+keep only cases whose template is absent or equal to the current built-in Beam template.
 
-The expectations were recorded from the builder's Python reference implementation, not from any
-Dynamo parser. They are an ORACLE for argument typing and split-invariance; where this crate's
-parser goals intentionally differ (for example, never leaking tool markup into content), the
-divergence is listed with a reason in `reference-known-divergences.yaml`.
+The results were independently re-recorded with SGLang f7473673d in the released image
+nvcr.io/nvidia/ai-dynamo/sglang-runtime@sha256:aec648ae2e18cef309920f9fe8afe52ee02c856a5ffb469ca90c9f0628c571d8,
+with the Beam tool-name class spelled [^ \t\n\r\f\v<]+ as in the current template,
+and XGrammar 0.2.7. They are reference results, not output captured from a Dynamo parser.
+Remaining differences are documented in reference-known-divergences.yaml and checked
+in both directions by beam_reference_goldens.rs.
 
 Upstream data copyright (c) 2026 the model builder, Apache-2.0; see the SPDX header of the
 source crate. Keep this notice with the file.
