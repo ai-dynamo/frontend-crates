@@ -308,8 +308,8 @@ pub(crate) fn value_framing(
     }
 }
 
-/// Where the value of a parameter ends: the offset of its `</rfl:parameter>`, or
-/// `None` while the value is still open.
+/// The value end and the offset to resume parsing: consume a closing tag, but
+/// leave a following parameter opener for the next iteration.
 ///
 /// `Lenient` is the reference regex (first closer). `ConstrainedJson` applies only
 /// where the request constrained the output to JSON: a value that opens as a JSON
@@ -1418,7 +1418,7 @@ mod tests {
         for value in open {
             assert_eq!(param_value_end(value, constrained), None, "{value}");
             assert_eq!(
-                param_value_end(value, ArgumentFraming::Lenient),
+                param_value_end(value, ArgumentFraming::Lenient).map(|(end, _)| end),
                 value.find("</rfl:parameter>"),
                 "{value}"
             );
@@ -1430,10 +1430,17 @@ mod tests {
             ("London</rfl:parameter>", 6),
             ("\n{\"a\": 1}\n</rfl:parameter>", 10),
         ] {
-            assert_eq!(param_value_end(value, constrained), Some(end), "{value}");
+            assert_eq!(
+                param_value_end(value, constrained).map(|(end, _)| end),
+                Some(end),
+                "{value}"
+            );
         }
         // A value that opens as JSON but can never balance keeps the reference rule.
-        assert_eq!(param_value_end("{]</rfl:parameter>", constrained), Some(2));
+        assert_eq!(
+            param_value_end("{]</rfl:parameter>", constrained).map(|(end, _)| end),
+            Some(2)
+        );
     }
 
     #[test]

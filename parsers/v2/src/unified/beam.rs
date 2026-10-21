@@ -1363,6 +1363,44 @@ mod tests {
     }
 
     #[test]
+    fn next_parameter_ends_a_value_without_its_closing_tag() {
+        let tools = [declare(
+            "edit",
+            json!({"path": {"type": "string"}, "edits": {"type": "array", "items": {"type": "object"}}}),
+            Some(false),
+        )];
+        for (path, expected) in [
+            ("x.py", "x.py"),
+            ("x.py\n", "x.py\n"),
+            (
+                "x<rfl:parameter name=\"literal\">y",
+                "x<rfl:parameter name=\"literal\">y",
+            ),
+            (
+                "x\n<rfl:parameter names=\"literal\">y",
+                "x\n<rfl:parameter names=\"literal\">y",
+            ),
+        ] {
+            for (first, second) in [("path", "edits"), ("edits", "path")] {
+                for closer in ["", "</rfl:parameter>\n"] {
+                    let value = |key| if key == "path" { path } else { "[{\"a\":1}]" };
+                    let input = format!(
+                        "{}<rfl:parameter name=\"{first}\">\n{}\n{closer}<rfl:parameter name=\"{second}\">\n{}\n</rfl:parameter><|call|>",
+                        HDR.replace("weather", "edit"),
+                        value(first),
+                        value(second)
+                    );
+                    expect_streamed(
+                        &tools,
+                        &input,
+                        vec![call("edit", json!({"path": expected, "edits": [{"a": 1}]}))],
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn channel_specific_terminators() {
         expect(
             "<|channel|>analysis<|message|>a<|call|>b<|return|>c<|end|>",
