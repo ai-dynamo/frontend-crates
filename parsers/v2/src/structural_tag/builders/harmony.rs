@@ -9,7 +9,6 @@ use crate::structural_tag::policy::ResolvedToolCallingPolicy;
 use crate::structural_tag::wire::{
     Format, JsonSchemaFormat, JsonSchemaStyle, TagFormat, TriggeredTagsFormat,
 };
-use crate::unified::harmony::TURN_END;
 
 pub(crate) static HARMONY: StructuralTagBuilder = StructuralTagBuilder::new(&HarmonyGrammar);
 
@@ -33,7 +32,8 @@ impl HarmonyGrammar {
                 style: JsonSchemaStyle::Json,
                 any_order: false,
             })),
-            end: TURN_END.to_string(),
+            // The engine consumes the turn stop after the JSON grammar completes.
+            end: String::new(),
         }];
         if let Some(policy) = policy {
             triggers.push(FORMAT.tool_call_trigger.to_string());
@@ -59,6 +59,10 @@ impl HarmonyGrammar {
 }
 
 impl ToolCallGrammar for HarmonyGrammar {
+    fn optional_reasoning(&self) -> bool {
+        true
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str> {
         FORMAT.reasoning_begin()
     }
@@ -111,7 +115,8 @@ impl ToolCallGrammar for HarmonyGrammar {
 static FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     tool_call_begin_prefix: "<|channel|>commentary to=functions.",
     tool_call_begin_suffix: "<|constrain|>json<|message|>",
-    tool_call_end: "<|call|>",
+    // XGrammar must finish before the engine accepts the Harmony handoff stop.
+    tool_call_end: "",
     tool_call_trigger: "<|channel|>commentary to=functions.",
     first_tool_call_prefix: "",
     tool_call_separator: "<|start|>assistant",
