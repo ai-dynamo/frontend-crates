@@ -98,7 +98,10 @@ fn structural_response_case_checks_the_schema_before_parsing() {
         }
     }
     families.sort();
-    assert_eq!(families, ["deepseek_v4", "glm47", "gpt_oss", "qwen3"]);
+    assert_eq!(
+        families,
+        ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
+    );
 }
 
 fn has_unified_parser(family: &str) -> bool {

@@ -512,6 +512,14 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
 }
 
 impl HfTokenizerConfigJsonFormatter {
+    fn template_handles_native_tools(&self, has_tools: bool) -> bool {
+        if has_tools {
+            self.tool_use_template_handles_native_tools
+        } else {
+            self.default_template_handles_native_tools
+        }
+    }
+
     fn render_with_token_policy(
         &self,
         req: &dyn OAIChatLikeRequest,
@@ -529,7 +537,8 @@ impl HfTokenizerConfigJsonFormatter {
             .is_some_and(|len| len > 0);
         // Gate the native Responses view on template support. Flat Chat tools
         // already preserve their explicit defer flags, as vLLM and SGLang do.
-        let tools = if !exclude && self.supports_native_tools(req) {
+        // Reuse the catalog already converted above when selecting capabilities.
+        let tools = if !exclude && self.template_handles_native_tools(has_tools) {
             req.template_tools().or(flat_tools)
         } else {
             flat_tools
@@ -730,11 +739,7 @@ impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
                 .as_ref()
                 .and_then(|tools| tools.len())
                 .is_some_and(|len| len > 0);
-        if has_tools {
-            self.tool_use_template_handles_native_tools
-        } else {
-            self.default_template_handles_native_tools
-        }
+        self.template_handles_native_tools(has_tools)
     }
 
     fn supports_add_generation_prompt(&self) -> bool {

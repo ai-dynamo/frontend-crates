@@ -1264,92 +1264,15 @@ impl MuseChannelScanner {
     /// Bounds of the first COMPLETE `<atem:invoke ...>...</atem:invoke>` block
     /// inside `buffer[..limit]`. An invoke without its close is not complete: both
     /// engines require the literal close, so it waits for more input.
-    fn next_invoke(&self, limit: usize, flush: bool) -> Option<(usize, usize)> {
+    fn next_invoke(&self, limit: usize) -> Option<(usize, usize)> {
         let body = &self.buffer[..limit];
         let open = invoke_open_re().find(body)?;
         let suffix = &body[open.end()..];
         let close = outside_parameter(suffix, INVOKE_CLOSE, false);
-        // An open parameter cannot be recovered until the channel boundary. Avoid
-        // collecting candidate headers on every token while waiting for it.
-        if close.is_none() && !flush && limit == self.buffer.len() {
-            return None;
-        }
-        if let Some(first_close) = suffix.find(INVOKE_CLOSE)
-            && close != Some(first_close)
-        {
-            // At the boundary an unclosed parameter may have borrowed a later
-            // invocation's parameter closer. Recover only a self-contained,
-            // declared call. Undeclared or nested invocation-shaped values stay
-            // owned by the outer parameter. Declared self-contained syntax is
-            // the explicit tie-breaker for this otherwise ambiguous malformed form.
-            let offset = first_close + INVOKE_CLOSE.len();
-            let recovery_end = close.unwrap_or(suffix.len());
-            let candidates: Vec<_> = invoke_open_re()
-                .captures_iter(&suffix[offset..recovery_end])
-                .map(|capture| {
-                    let whole = capture.get(0).expect("matched invocation");
-                    (
-                        offset + whole.start(),
-                        offset + whole.end(),
-                        capture.name("name").expect("name group").as_str(),
-                    )
-                })
-                .collect();
-            // The outer close can also close the recovered candidate; headers
-            // beyond it cannot belong to this malformed invocation.
-            let closes: Vec<_> = suffix[..close.map_or(suffix.len(), |at| at + INVOKE_CLOSE.len())]
-                .match_indices(INVOKE_CLOSE)
-                .map(|(at, _)| at)
-                .collect();
-            for (index, &(start, end, emitted)) in candidates.iter().enumerate() {
-                if !self.emitter.tools.iter().any(|tool| {
-                    emitted == tool.name
-                        || emitted
-                            .split_once('.')
-                            .is_some_and(|(head, tail)| head == tail && head == tool.name)
-                }) {
-                    continue;
-                }
-                let Some(&candidate_close) = closes.get(closes.partition_point(|at| *at < end))
-                else {
-                    continue;
-                };
-                if candidates
-                    .get(index + 1)
-                    .is_some_and(|next| next.0 < candidate_close)
-                {
-                    continue;
-                }
-                let value = &suffix[end..candidate_close];
-                let mut cursor = 0;
-                let mut parameters = 0;
-                let mut complete = true;
-                while let Some(parameter) = parameter_open_re().find_at(value, cursor) {
-                    let Some(last) = value[parameter.end()..].find(PARAMETER_CLOSE) else {
-                        complete = false;
-                        break;
-                    };
-                    parameters += 1;
-                    cursor = parameter.end() + last + PARAMETER_CLOSE.len();
-                }
-                if complete
-                    && (close.is_none() || parameters > 0)
-                    && close.is_none_or(|outer| start < outer)
-                {
-                    if !flush && limit == self.buffer.len() {
-                        return None;
-                    }
-                    tracing::warn!(
-                        recovered_tool = emitted,
-                        "dropping malformed outer ATEM invocation during declared-tool recovery"
-                    );
-                    return Some((
-                        open.end() + start,
-                        open.end() + candidate_close + INVOKE_CLOSE.len(),
-                    ));
-                }
-            }
-        }
+        // Parameter values own invocation-shaped text, including declared tool
+        // names. A later parameter closer cannot distinguish that literal text
+        // from a malformed call followed by another call, so never guess a new
+        // executable invocation inside the outer parameter.
         close.map(|close| (open.start(), open.end() + close + INVOKE_CLOSE.len()))
     }
 
@@ -1438,7 +1361,7 @@ impl MuseChannelScanner {
             // A complete invoke inside the OPEN tool body emits as soon as its
             // close has streamed, before the channel terminator arrives.
             if self.state == State::InToolChannel
-                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush), flush)
+                && let Some((start, end)) = self.next_invoke(self.tool_body_limit(flush))
             {
                 let invoke = self.buffer[start..end].to_string();
                 self.buffer.drain(..end);
@@ -1774,7 +1697,7 @@ mod tests {
     }
 
     #[test]
-    fn malformed_stream_waits_for_boundary_before_recovery() {
+    fn nested_invocations_preserve_outer_parameter_in_short_chunks() {
         for malformed in ["f", "get_weather"] {
             let input = format!(
                 "<|start|>assistant to=tools<|message|>{}<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris</atem:parameter></atem:invoke>",
@@ -1784,16 +1707,19 @@ mod tests {
             let mut output = ToolParseResult::default();
             for chunk in input.as_bytes().chunks(16) {
                 output.append(parser.push(std::str::from_utf8(chunk).unwrap()).unwrap());
-                assert!(
-                    output.calls.is_empty(),
-                    "recovery must wait for the channel boundary"
-                );
             }
             output.append(parser.push(EOT).unwrap());
             output.append(parser.finish().unwrap());
             assert_eq!(output.calls.len(), 1);
-            assert_eq!(name(&output, 0), "get_weather");
-            assert_eq!(args(&output, 0), serde_json::json!({"city":"Paris"}));
+            assert_eq!(name(&output, 0), malformed);
+            let value = input
+                .split_once("<atem:parameter name=\"city\">")
+                .unwrap()
+                .1
+                .split_once(PARAMETER_CLOSE)
+                .unwrap()
+                .0;
+            assert_eq!(args(&output, 0), serde_json::json!({"city":value}));
         }
     }
 

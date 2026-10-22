@@ -18551,7 +18551,7 @@ cases:
   muse_unterminated_parameter_then_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_call
-    description: 'Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call''s name and arguments.'
+    description: 'Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.'
     policy:
     - P2
     - I7
@@ -18627,13 +18627,13 @@ cases:
     golden:
       assembled:
       - kind: tool_call
-        name: get_weather
+        name: f
         arguments:
-          city: Paris
+          x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_empty_call
-    description: 'Muse: an unterminated parameter in the first invoke precedes a complete parameterless invoke in the same tool channel. At EOF, drop only the malformed invoke and emit the later call.'
+    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
     policy:
     - P2
     display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
@@ -18703,10 +18703,7 @@ cases:
       - delta_text: <|eot|>
       - delta_text: ‹finish›
     golden:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: {}
+      assembled: []
   guided_json_native_parameter_string_before_payload:
     lifecycle: active
     scenario: guided_json_native_parameter_string_before_payload
@@ -19139,9 +19136,10 @@ cases:
   muse_recovery_second_parameter:
     lifecycle: active
     scenario: muse_recovery_second_parameter
-    description: Muse malformed-parameter recovery uses the same declared-call tie-breaker for a later parameter as for the first parameter. The following complete weather invocation is recovered at the channel boundary.
+    description: A later Muse parameter owns its bytes through its closer. Declared invocation-shaped content inside it must not be promoted to an executable call.
     policy:
     - I5
+    - I7
     display_id: UNIFIED.muse-recovery_second_parameter
     historical_ids: []
     request:
@@ -19215,9 +19213,10 @@ cases:
     golden:
       assembled:
       - kind: tool_call
-        name: get_weather
+        name: f
         arguments:
-          city: Paris
+          x: done
+          y: broken</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_reasoning_guided:
     lifecycle: active
     scenario: muse_unterminated_reasoning_guided
@@ -19368,3 +19367,83 @@ cases:
         text: Maybe <atem:invoke name="x and more thought
       - kind: text
         text: Done.
+  muse_opaque_declared_invoke:
+    lifecycle: active
+    scenario: muse_opaque_declared_invoke
+    description: Muse arguments own invocation-shaped text even when the embedded tool is declared. The complete outer argument remains data instead of dispatching the embedded call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.muse-opaque_declared_invoke
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke><|eot|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=f
+      - delta_text: <|message|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: 'doc: '
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: 'doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'

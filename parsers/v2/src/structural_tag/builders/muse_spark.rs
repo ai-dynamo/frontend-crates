@@ -402,6 +402,14 @@ impl MuseSparkGrammar {
         sequence(vec![constant(" to=user<|message|>"), content])
     }
 
+    fn structured_answer(&self, schema: &Value) -> Format {
+        self.final_answer(Format::JsonSchema(JsonSchemaFormat {
+            json_schema: schema.clone(),
+            style: JsonSchemaStyle::Json,
+            any_order: false,
+        }))
+    }
+
     fn with_progress(&self, output: Format) -> Format {
         let progress = |recipient| {
             sequence(vec![
@@ -439,6 +447,11 @@ impl ToolCallGrammar for MuseSparkGrammar {
 
     fn build_without_tools(&self) -> Option<Format> {
         Some(self.with_progress(self.final_answer(raw_text(&["<|"]))))
+    }
+
+    fn build_structured_output(&self, schema: &Value) -> Format {
+        // Schema-only answers use the same native envelope as answers with tools.
+        self.with_progress(self.structured_answer(schema))
     }
 
     fn reasoning_begin(&self) -> Option<&'static str> {
@@ -487,11 +500,7 @@ impl ToolCallGrammar for MuseSparkGrammar {
     ) -> anyhow::Result<Format> {
         Ok(self.with_progress(alternatives(vec![
             self.calls(policy, any_order)?,
-            self.final_answer(Format::JsonSchema(JsonSchemaFormat {
-                json_schema: schema.clone(),
-                style: JsonSchemaStyle::Json,
-                any_order: false,
-            })),
+            self.structured_answer(schema),
         ])))
     }
 }

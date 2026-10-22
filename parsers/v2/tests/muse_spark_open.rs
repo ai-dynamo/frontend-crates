@@ -114,23 +114,23 @@ fn muse_spark_open_tool_parser_keeps_commentary_out_of_tool_calls() {
 }
 
 #[test]
-fn muse_unclosed_parameter_does_not_consume_a_later_complete_invoke() {
+fn muse_parameters_do_not_promote_ambiguous_nested_invocations() {
     for family in ["muse_glimmer", "muse_spark_open"] {
         for (broken, following, expected) in [
             (
                 "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">bad</atem:invoke>",
                 "<atem:invoke name=\"f\"></atem:invoke>",
-                serde_json::json!({"name":"f", "arguments":{}}),
+                serde_json::json!([]),
             ),
             (
                 "<atem:invoke name=\"f\"><atem:parameter name=\"path\">a.md</atem:parameter><atem:parameter name=\"x\">bad</atem:invoke>",
                 "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris</atem:parameter></atem:invoke>",
-                serde_json::json!({"name":"get_weather", "arguments":{"city":"Paris"}}),
+                serde_json::json!([{"kind":"tool_call","name":"f", "arguments":{"path":"a.md","x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"}}]),
             ),
             (
                 "<atem:invoke name=\"f\"><atem:parameter name=\"x\">bad</atem:invoke>",
                 "<atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris</atem:parameter></atem:invoke>",
-                serde_json::json!({"name":"get_weather", "arguments":{"city":"Paris"}}),
+                serde_json::json!([{"kind":"tool_call","name":"f", "arguments":{"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"}}]),
             ),
         ] {
             let input = format!(
@@ -148,11 +148,7 @@ fn muse_unclosed_parameter_does_not_consume_a_later_complete_invoke() {
                 }
                 deltas.extend(parser.finish().unwrap());
                 let value = serde_json::to_value(assemble(&deltas)).unwrap();
-                assert_eq!(
-                    value,
-                    serde_json::json!([{"kind":"tool_call", "name":expected["name"], "arguments":expected["arguments"]}]),
-                    "{family}, char_chunks={char_chunks}"
-                );
+                assert_eq!(value, expected, "{family}, char_chunks={char_chunks}");
             }
         }
     }

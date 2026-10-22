@@ -99,6 +99,7 @@ UNIFIED_TAX = {
     "muse_unterminated_reasoning_native": ("muse", "unterminated_reasoning_native"),
     "muse_unterminated_reasoning_guided": ("muse", "unterminated_reasoning_guided"),
     "muse_opaque_undeclared_invoke": ("muse", "opaque_undeclared_invoke"),
+    "muse_opaque_declared_invoke": ("muse", "opaque_declared_invoke"),
     "muse_recovery_second_parameter": ("muse", "recovery_second_parameter"),
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
     "muse_quoted_reserved_eot_argument": ("muse", "3"),

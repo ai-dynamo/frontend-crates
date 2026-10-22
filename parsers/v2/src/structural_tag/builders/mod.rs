@@ -58,11 +58,11 @@ impl StructuralTagBuilder {
                 if let Some(schema) = context.structured_output_schema {
                     self.grammar.build_structured_output(schema)
                 } else {
-                    return self
-                        .grammar
-                        .build_without_tools()
-                        .map(|format| serialize(StructuralTag { format }))
-                        .transpose();
+                    let Some(format) = self.grammar.build_without_tools() else {
+                        return Ok(None);
+                    };
+                    // Native text envelopes must also close prompt-opened reasoning.
+                    format
                 }
             }
             ResolvedToolCalling::Enabled(policy) if policy.tools.is_empty() => {
