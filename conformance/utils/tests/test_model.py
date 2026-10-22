@@ -1429,6 +1429,18 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families | {"gpt_oss"}:
                 _assert_unmeasured_versions(cmp, older_keys)
+            elif family == "beam":
+                # Beam joined the corpus at 0.8.1: every Dynamo column older than that is
+                # unmeasured; 0.8.1 and later carry its captures.
+                _assert_unmeasured_versions(
+                    cmp,
+                    [
+                        candidate["key"]
+                        for candidate in dynamo_candidates
+                        if candidate["key"] != "dynamo"
+                        and tuple(map(int, candidate["version"].split("."))) < (0, 7, 29)
+                    ],
+                )
             else:
                 assert cmp["dynamo@0.7.8"]["na"] == 0, (family, scenario, "original_capture")
 

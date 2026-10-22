@@ -128,9 +128,12 @@ def schema_arguments(family: str, case: dict[str, Any]) -> dict[str, Any]:
     # explicitly typed and JSON grammars carry the authored type on the wire.
     family = unified_grammar_family(family)
     qwen = family in ("qwen3", "qwen3_coder", "nemotron_nano")
+    # Beam's typing follows the model builder's reference: a union's branch types are
+    # admitted together, so text that parses as the typed branch is that type.
+    beam = family == "beam"
     json_union = case["name"] in {"integer_const_ambiguous", "object_const_union"}
-    if ((qwen or family in ("minimax_m2", "minimax_m3")) and json_union
-            or qwen and case["name"] == "type_array_string_integer"):
+    if ((qwen or beam or family in ("minimax_m2", "minimax_m3")) and json_union
+            or (qwen or beam) and case["name"] == "type_array_string_integer"):
         return {"value": json.loads(case["raw"])}
     return {"value": copy.deepcopy(case["value"])}
 

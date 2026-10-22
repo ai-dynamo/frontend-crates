@@ -4,6 +4,7 @@
 //! Unified GPT-OSS parser over the incremental Harmony message reader.
 
 use std::collections::HashMap;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use openai_harmony::chat::Role;
 use openai_harmony::{
@@ -15,7 +16,7 @@ use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
     UnifiedParserInit, UnifiedParserInputCapabilities, UnifiedParserOutput,
-    UnifiedParserStartingState,
+    UnifiedParserStartingState, UnifiedToolOutputMode,
 };
 
 const START: &str = "<|start|>";
@@ -904,8 +905,8 @@ impl NativeUnified for HarmonyNative {
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
-            find_close: guided_reasoning_close,
-            find_turn_end: guided_turn_end,
+            find_close: |haystack, _, _| guided_reasoning_close(haystack),
+            find_turn_end: |haystack, _, _| guided_turn_end(haystack),
             find_stray: guided_stray_header,
             find_routing: guided_routing_header,
             find_transition: guided_content_header,
@@ -915,6 +916,7 @@ impl NativeUnified for HarmonyNative {
             close_markers: &[MESSAGE_END, TURN_END],
             response_literal_markers: CONTROL_MARKERS,
             header_pending: Some(guided_header_pending),
+            envelope_owned: false,
         }))
     }
 
@@ -1030,8 +1032,78 @@ pub(crate) fn gpt_oss_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(HarmonyNative::new(true, false)))
 }
 
-pub(crate) fn gpt_oss_legacy_tool_adapter() -> Box<dyn UnifiedParser> {
-    Box::new(GuidedRouted::new(HarmonyNative::new(true, true)))
+// Native-only lifecycle keeps unrelated guided state out of the legacy auto-trait contract.
+struct LegacyHarmonyUnified {
+    native: HarmonyNative,
+    started: bool,
+    finished: bool,
+}
+
+impl UnifiedParser for LegacyHarmonyUnified {
+    fn input_capabilities(&self) -> UnifiedParserInputCapabilities {
+        self.native.input_capabilities()
+    }
+
+    fn preserve_special_tokens(&self) -> bool {
+        self.native.preserve_special_tokens()
+    }
+
+    fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
+        if self.started || self.finished {
+            anyhow::bail!("cannot initialize a unified parser after parsing has started");
+        }
+        if init.tool_output_mode != UnifiedToolOutputMode::Native {
+            anyhow::bail!("legacy Harmony tool parsing does not support guided tool output");
+        }
+        self.native.apply_native_init(&init)
+    }
+
+    fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+        if self.finished {
+            anyhow::bail!("cannot push to a finished unified parser");
+        }
+        self.started = true;
+        self.native.push_native(delta, output)
+    }
+
+    fn parse_token_ids_into(
+        &mut self,
+        token_ids: &[u32],
+        output: &mut UnifiedParserOutput,
+    ) -> Result<()> {
+        if self.finished {
+            anyhow::bail!("cannot push to a finished unified parser");
+        }
+        self.started = true;
+        self.native.push_token_ids_native(token_ids, output)
+    }
+
+    fn finish(&mut self) -> Result<UnifiedParserOutput> {
+        if self.finished {
+            anyhow::bail!("cannot finish a unified parser twice");
+        }
+        self.started = true;
+        self.finished = true;
+        let mut output = UnifiedParserOutput::default();
+        self.native.finish_native(&mut output)?;
+        Ok(output)
+    }
+
+    fn reset(&mut self) -> String {
+        let recovered = self.native.reset_native();
+        self.started = false;
+        self.finished = false;
+        recovered
+    }
+}
+
+pub(crate) fn gpt_oss_legacy_tool_adapter()
+-> Box<dyn UnifiedParser + Sync + UnwindSafe + RefUnwindSafe> {
+    Box::new(LegacyHarmonyUnified {
+        native: HarmonyNative::new(true, true),
+        started: false,
+        finished: false,
+    })
 }
 
 fn find_header(haystack: &str) -> Option<(usize, usize, Option<String>)> {
@@ -1223,6 +1295,45 @@ mod tests {
     use super::*;
     use crate::unified::{UnifiedEvent, UnifiedParserEvent, UnifiedParserExt};
 
+    #[test]
+    fn legacy_adapter_matches_routed_native_lifecycle() {
+        let input = concat!(
+            "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>",
+            r#"{"q":"x"}<|call|>"#
+        );
+        let ids = encode_harmony(input).unwrap();
+        for tokens in [false, true] {
+            let mut legacy = gpt_oss_legacy_tool_adapter();
+            let mut routed = GuidedRouted::new(HarmonyNative::new(true, true));
+            for _ in 0..2 {
+                legacy.initialize(&[]).unwrap();
+                routed.initialize(&[]).unwrap();
+                let (actual, expected) = if tokens {
+                    (
+                        legacy.push_tokens(&ids).unwrap(),
+                        routed.push_tokens(&ids).unwrap(),
+                    )
+                } else {
+                    (legacy.push(input).unwrap(), routed.push(input).unwrap())
+                };
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    legacy.initialize(&[]).unwrap_err().to_string(),
+                    routed.initialize(&[]).unwrap_err().to_string()
+                );
+                assert_eq!(legacy.finish().unwrap(), routed.finish().unwrap());
+                assert_eq!(
+                    legacy.finish().unwrap_err().to_string(),
+                    routed.finish().unwrap_err().to_string()
+                );
+                assert_eq!(
+                    legacy.push("").unwrap_err().to_string(),
+                    routed.push("").unwrap_err().to_string()
+                );
+                assert_eq!(legacy.reset(), routed.reset());
+            }
+        }
+    }
     fn parse_text(
         input: &str,
         starting_state: UnifiedParserStartingState,
