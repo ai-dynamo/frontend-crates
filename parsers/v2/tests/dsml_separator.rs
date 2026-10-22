@@ -302,7 +302,7 @@ fn incomplete_calls_drop_framing_but_keep_content_at_eof() {
 }
 
 #[test]
-fn emitter_errors_leave_separator_and_call_recoverable() {
+fn discarded_invokes_preserve_leading_prose() {
     for wrapped in [true, false] {
         let call =
             native_call("deepseek_v41", wrapped, "invalid").replace("name=\"run\"", "name=\"\"");
@@ -319,42 +319,31 @@ fn emitter_errors_leave_separator_and_call_recoverable() {
             let result = parser
                 .parse_into(&input[..split], &mut output)
                 .and_then(|()| parser.parse_into(&input[split..], &mut output));
-            assert!(result.is_err());
+            result.unwrap();
+            output.append(&mut parser.finish().unwrap());
             assert_eq!(
                 assemble(&output.events),
                 vec![UnifiedEvent::Text {
                     text: "Check.".into(),
                 }]
             );
-            assert_eq!(parser.reset(), format!("\n\n{call}"));
+            assert!(parser.reset().is_empty());
         }
     }
 }
 
 #[test]
-fn reset_keeps_deferred_block_after_bare_recovery() {
-    let first = concat!(
-        "<｜DSML｜ calls>",
-        "<｜DSML｜ invoke name=\"first\">{\"a\":</｜DSML｜ invoke></｜DSML｜ calls>"
-    );
+fn discarded_wrapped_and_bare_calls_do_not_block_a_later_call() {
+    let first = "<｜DSML｜ calls><｜DSML｜ invoke name=\"first\">{\"a\":</｜DSML｜ invoke></｜DSML｜ calls>";
     let second = native_call("deepseek_v41", false, "second").replace("name=\"run\"", "name=\"\"");
-    for gap in ["\n\n", "x"] {
-        let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
-        parser
-            .initialize_request(UnifiedParserInit {
-                starting_state: UnifiedParserStartingState::Response,
-                ..Default::default()
-            })
-            .unwrap();
-        let mut output = UnifiedParserOutput::default();
-        let parsed = parser
-            .parse_into(&format!("{first}{gap}{second}"), &mut output)
-            .and_then(|()| parser.finish().map(|_| ()));
-        assert!(parsed.is_err(), "gap={gap:?}");
-        let pending = parser.reset();
-        assert!(
-            pending.contains(first) && pending.contains(&second),
-            "gap={gap:?} pending={pending:?}"
+    let good = native_call("deepseek_v41", true, "good");
+    for gap in ["\n\n", ""] {
+        let input = format!("{first}{gap}{second}{good}");
+        assert_every_split(
+            "deepseek_v41",
+            &input,
+            UnifiedParserStartingState::Response,
+            &text_and_call("", "good"),
         );
     }
 }

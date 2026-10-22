@@ -80,7 +80,7 @@ fn wrapped(invoke: &str) -> String {
 }
 
 #[test]
-fn push_failure_logs_warning_and_preserves_recovery_bytes() {
+fn discarded_call_logs_warning_before_consuming_its_bytes() {
     let capture = Capture::default();
     capture.run(|| {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
@@ -88,9 +88,16 @@ fn push_failure_logs_warning_and_preserves_recovery_bytes() {
             .initialize_request(UnifiedParserInit::default())
             .unwrap();
         let input = wrapped(&invoke("", ""));
-        assert!(parser.push(&input).is_err());
-        assert_eq!(parser.reset(), input);
-        capture.assert_failure("raw_output", &input);
+        assert!(parser.push(&input).unwrap().is_empty());
+        assert!(parser.reset().is_empty());
+        capture.assert_failure(
+            "raw_output",
+            input
+                .strip_prefix("<｜DSML｜ calls>")
+                .unwrap()
+                .strip_suffix("</｜DSML｜ calls>")
+                .unwrap(),
+        );
     });
     capture.assert_failure("error", "empty DeepSeek V4.1 tool name");
     assert_eq!(
@@ -102,12 +109,12 @@ fn push_failure_logs_warning_and_preserves_recovery_bytes() {
             .find(|e| e.level == Level::WARN)
             .unwrap()
             .fields["stage"],
-        "push"
+        "invoke"
     );
 }
 
 #[test]
-fn invalid_flag_logs_only_when_finalized() {
+fn invalid_flag_logs_only_when_the_invoke_closes() {
     let capture = Capture::default();
     capture.run(|| {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
@@ -115,10 +122,19 @@ fn invalid_flag_logs_only_when_finalized() {
             "run",
             "<｜DSML｜ parameter name=\"x\" string=\"maybe\">x</｜DSML｜ parameter>",
         ));
-        parser.push(&input).unwrap();
+        let end = input.rfind("</｜DSML｜ invoke>").unwrap();
+        parser.push(&input[..end]).unwrap();
         capture.assert_no_warnings();
-        assert!(parser.finish().is_err());
-        capture.assert_failure("raw_output", &input);
+        parser.push(&input[end..]).unwrap();
+        assert!(parser.finish().unwrap().events.is_empty());
+        capture.assert_failure(
+            "raw_output",
+            input
+                .strip_prefix("<｜DSML｜ calls>")
+                .unwrap()
+                .strip_suffix("</｜DSML｜ calls>")
+                .unwrap(),
+        );
     });
     capture.assert_failure("error", "invalid DeepSeek V4.1 parameter header");
     assert_eq!(
@@ -130,26 +146,35 @@ fn invalid_flag_logs_only_when_finalized() {
             .find(|e| e.level == Level::WARN)
             .unwrap()
             .fields["stage"],
-        "finish"
+        "invoke"
     );
 }
 
 #[test]
-fn deferred_json_failure_logs_cause_at_finish() {
+fn discarded_json_failure_logs_cause() {
     let capture = Capture::default();
     capture.run(|| {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
         let input = wrapped(&invoke("run", "{\"a\":"));
-        parser.push(&input).unwrap();
+        let end = input.rfind("</｜DSML｜ invoke>").unwrap();
+        parser.push(&input[..end]).unwrap();
         capture.assert_no_warnings();
-        assert!(parser.finish().is_err());
-        capture.assert_failure("raw_output", &input);
+        parser.push(&input[end..]).unwrap();
+        assert!(parser.finish().unwrap().events.is_empty());
+        capture.assert_failure(
+            "raw_output",
+            input
+                .strip_prefix("<｜DSML｜ calls>")
+                .unwrap()
+                .strip_suffix("</｜DSML｜ calls>")
+                .unwrap(),
+        );
     });
     capture.assert_failure("error", "invalid DeepSeek V4.1 JSON arguments");
     let events = capture.0.lock().unwrap();
     let error = events.iter().find(|e| e.level == Level::WARN).unwrap();
     assert!(error.fields["error"].contains("EOF"));
-    assert_eq!(error.fields["stage"], "finish");
+    assert_eq!(error.fields["stage"], "invoke");
 }
 
 #[test]
@@ -242,14 +267,20 @@ fn warning_preserves_long_unicode_input_across_chunks_without_truncation() {
         parser.push(&input[..split]).unwrap();
         capture.assert_no_warnings();
         parser.push(&input[split..]).unwrap();
-        capture.assert_no_warnings();
-        assert!(parser.finish().is_err());
-        assert_eq!(parser.reset(), input);
+        assert!(parser.finish().unwrap().events.is_empty());
+        assert!(parser.reset().is_empty());
     });
     capture.assert_failure("error", "invalid DeepSeek V4.1 parameter header");
     let events = capture.0.lock().unwrap();
     let warning = events.iter().find(|e| e.level == Level::WARN).unwrap();
-    assert_eq!(warning.fields["raw_output"], input);
+    assert_eq!(
+        warning.fields["raw_output"],
+        input
+            .strip_prefix("<｜DSML｜ calls>")
+            .unwrap()
+            .strip_suffix("</｜DSML｜ calls>")
+            .unwrap()
+    );
 }
 
 #[test]
@@ -259,7 +290,7 @@ fn warning_after_a_valid_call_preserves_failed_content_and_index() {
     capture.run(|| {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
         parser.push(&wrapped(&invoke("good", "{}"))).unwrap();
-        assert!(parser.push(&failed).is_err());
+        assert!(parser.push(&failed).unwrap().is_empty());
     });
     let events = capture.0.lock().unwrap();
     assert!(events.iter().all(|e| e.level != Level::ERROR));
@@ -276,10 +307,10 @@ fn legacy_entry_point_also_logs_failed_input_at_warn() {
     capture.run(|| {
         let mut parser =
             dynamo_parsers_v2::create_tool_parser_for_family("deepseek_v4", &[]).unwrap();
-        assert!(parser.push(&input).is_err());
+        assert!(parser.push(&input).unwrap().calls.is_empty());
     });
-    capture.assert_family_failure("deepseek_v4", "error", "empty DeepSeek V4.1 tool name");
-    capture.assert_family_failure("deepseek_v4", "raw_output", &input);
+    capture.assert_family_failure("deepseek_v41", "error", "empty DeepSeek V4.1 tool name");
+    capture.assert_failure("raw_output", &invoke("", "{}"));
 }
 
 #[test]
@@ -301,7 +332,7 @@ fn file_subscriber_persists_failed_content_at_warn() {
     tracing::subscriber::with_default(Registry::default().with(layer), || {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
         parser.push(&input).unwrap();
-        assert!(parser.finish().is_err());
+        assert!(parser.finish().unwrap().events.is_empty());
     });
     let persisted = std::fs::read_to_string(&path).unwrap();
     std::fs::remove_file(path).unwrap();
