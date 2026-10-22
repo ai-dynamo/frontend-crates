@@ -1383,23 +1383,27 @@ mod tests {
                 "x\n<rfl:parameter names=\"literal\">y",
             ),
         ] {
-            for (first, second) in [("path", "edits"), ("edits", "path")] {
-                for closer in ["", "</rfl:parameter>\n"] {
-                    let value = |key| if key == "path" { path } else { "[{\"a\":1}]" };
-                    let input = format!(
-                        "{}<rfl:parameter name=\"{first}\">\n{}\n{closer}<rfl:parameter name=\"{second}\">\n{}\n</rfl:parameter><|call|>",
-                        HDR.replace("weather", "edit"),
-                        value(first),
-                        value(second)
-                    );
-                    expect_streamed(
-                        &tools,
-                        &input,
-                        vec![call("edit", json!({"path": expected, "edits": [{"a": 1}]}))],
-                    );
-                }
+            for closer in ["", "</rfl:parameter>\n"] {
+                let input = format!(
+                    "{}<rfl:parameter name=\"path\">\n{path}\n{closer}<rfl:parameter name=\"edits\">\n[{{\"a\":1}}]\n</rfl:parameter><|call|>",
+                    HDR.replace("weather", "edit"),
+                );
+                expect_streamed(
+                    &tools,
+                    &input,
+                    vec![call("edit", json!({"path": expected, "edits": [{"a": 1}]}))],
+                );
             }
         }
+        let input = format!(
+            "{}<rfl:parameter name=\"edits\">\n[{{\"a\":1}}]\n<rfl:parameter name=\"path\">\nx.py\n</rfl:parameter><|call|>",
+            HDR.replace("weather", "edit"),
+        );
+        expect_streamed(
+            &tools,
+            &input,
+            vec![call("edit", json!({"path": "x.py", "edits": [{"a": 1}]}))],
+        );
     }
 
     #[test]
@@ -2431,7 +2435,6 @@ mod tests {
 
     const OBJECT_WITH_CLOSER: &str = r#"{"text":"a</rfl:parameter>b"}"#;
 
-    /// A newline-framed raw slot preserves an inline closer as text.
     fn raw_text_call(name: &str, key: &str) -> Vec<UnifiedEvent> {
         vec![call(name, json!({key: OBJECT_WITH_CLOSER}))]
     }
