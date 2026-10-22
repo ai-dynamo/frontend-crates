@@ -1528,13 +1528,12 @@ mod tests {
             false,
         );
         assert!(turn(&[spaced], Auto, true).is_none());
-        // Outside the parser's recipient contract: no branch the parser would drop.
         let colon = tool(
             "a:b",
             Some(object(json!({"q": {"type": "string"}}), Some(vec!["q"]))),
             false,
         );
-        assert!(turn(&[colon], Auto, true).is_none());
+        assert!(turn(&[colon], Auto, true).is_some());
         // Inside it: digit- and hyphen-leading names are held like any other.
         for name in ["2fa_check", "-tool"] {
             let held = tool(name, Some(object(json!({}), None)), false);
