@@ -49,6 +49,10 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
 
 fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {
     let (name, rest) = text.strip_prefix(PARAMETER_START)?.split_once('"')?;
+    // Treat an omitted string attribute as string="true".
+    if let Some(value) = rest.strip_prefix('>') {
+        return Some((name, true, value));
+    }
     let (string, value) = rest.strip_prefix(" string=\"")?.split_once("\">")?;
     let string = match string {
         "true" => true,
@@ -121,11 +125,8 @@ struct DeepSeekV41InvocationBoundary {
 }
 
 impl DeepSeekV41InvocationBoundary {
-    fn malformed_end(text: &str, start: usize, flush: bool) -> Option<usize> {
-        flush
-            .then(|| find_from(text, start, INVOKE_END))
-            .flatten()
-            .map(|at| at + INVOKE_END.len())
+    fn malformed_end(text: &str, start: usize, _flush: bool) -> Option<usize> {
+        find_from(text, start, INVOKE_END).map(|at| at + INVOKE_END.len())
     }
 }
 
@@ -318,8 +319,8 @@ pub(crate) fn invocation_boundary() -> Box<dyn InvokeBoundary> {
 
 pub(crate) struct DeepSeekV41;
 
-impl InvokeEmitter for DeepSeekV41 {
-    fn parse_invoke(
+impl DeepSeekV41 {
+    fn parse_invocation(
         &mut self,
         invoke: &str,
         tool_index: usize,
@@ -341,20 +342,27 @@ impl InvokeEmitter for DeepSeekV41 {
             Map::new()
         };
         while !body.trim().is_empty() {
-            let (name, string, value) = parameter_header(body.trim_start())
-                .context("invalid DeepSeek V4.1 parameter header")?;
+            body = body.trim_start();
+            // A model may repeat a parameter closer between arguments. Only
+            // tolerate it here, after a value has ended, never inside a value.
+            if let Some(remainder) = body.strip_prefix(PARAMETER_END) {
+                body = remainder;
+                continue;
+            }
+            let (name, string, value) =
+                parameter_header(body).context("invalid DeepSeek V4.1 parameter header")?;
             let (raw, remainder) = value
                 .split_once(PARAMETER_END)
                 .context("incomplete DeepSeek V4.1 parameter")?;
             let value = if string {
                 Value::String(raw.to_string())
             } else {
-                serde_json::from_str(raw)?
+                // Models can mislabel string values as JSON. Preserve the payload
+                // rather than failing this invocation and every call after it.
+                serde_json::from_str(raw).unwrap_or_else(|_| Value::String(raw.to_string()))
             };
-            anyhow::ensure!(
-                arguments.insert(name.to_string(), value).is_none(),
-                "duplicate DeepSeek V4.1 parameter {name:?}"
-            );
+            // Match JSON object decoding: the last occurrence of a key wins.
+            arguments.insert(name.to_string(), value);
             body = remainder;
         }
         Ok(Some(ToolCallDelta {
@@ -364,11 +372,28 @@ impl InvokeEmitter for DeepSeekV41 {
             complete: true,
         }))
     }
+}
 
-    fn defer_parse_error(&self, _invoke: &str, error: &anyhow::Error) -> bool {
-        error
-            .downcast_ref::<serde_json::Error>()
-            .is_some_and(serde_json::Error::is_eof)
+impl InvokeEmitter for DeepSeekV41 {
+    fn parse_invoke(
+        &mut self,
+        invoke: &str,
+        tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        match self.parse_invocation(invoke, tool_index) {
+            Ok(call) => Ok(call),
+            Err(error) => {
+                tracing::warn!(
+                    family = "deepseek_v41",
+                    stage = "invoke",
+                    tool_index,
+                    error = %format_args!("{error:#}"),
+                    raw_output = invoke,
+                    "Dropped malformed DeepSeek V4.1 invoke; continuing with later calls"
+                );
+                Ok(None)
+            }
+        }
     }
 }
 
@@ -670,101 +695,218 @@ mod tests {
     }
 
     #[test]
-    fn malformed_invocation_is_an_error_without_tool_deltas() {
-        for input in [
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"x\" string=\"true\">first</｜DSML｜ parameter><｜DSML｜ parameter name=\"x\" string=\"true\">second</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">invalid</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+    fn non_string_parameters_fall_back_without_losing_following_calls() {
+        for raw in [
+            "invalid",
+            "/tmp/probe",
+            r#"{"a":}"#,
+            r#"{"a":"#,
+            "[1,",
+            "",
+            " NaN ",
+            "  café\n",
+            " \t\n",
         ] {
-            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
-                let mut parser = deepseek_v41_unified(&[]);
-                let mut output = UnifiedParserOutput::default();
-                let result = parser
-                    .parse_into(&input[..split], &mut output)
-                    .and_then(|()| parser.parse_into(&input[split..], &mut output));
-                assert!(result.is_err(), "split {split}");
-                assert!(output.events.is_empty(), "split {split}");
-            }
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}run\">\
+                 {PARAMETER_START}value\" string=\"false\">{raw}{PARAMETER_END}\
+                 {PARAMETER_START}count\" string=\"false\">7{PARAMETER_END}\
+                 {PARAMETER_START}enabled\" string=\"false\">true{PARAMETER_END}\
+                 {PARAMETER_START}optional\" string=\"false\">null{PARAMETER_END}\
+                 {PARAMETER_START}items\" string=\"false\">[1,\"é\"]{PARAMETER_END}\
+                 {PARAMETER_START}config\" string=\"false\">{{\"key\":\"café\"}}{PARAMETER_END}\
+                 {INVOKE_END}\
+                 {INVOKE_START}echo\">\
+                 {PARAMETER_START}value\" string=\"true\">Café{PARAMETER_END}\
+                 {INVOKE_END}{BLOCK_END}"
+            );
+            assert_every_split(
+                &input,
+                UnifiedParserStartingState::Response,
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "run".into(),
+                        arguments: serde_json::json!({
+                            "value": raw,
+                            "count": 7,
+                            "enabled": true,
+                            "optional": null,
+                            "items": [1, "é"],
+                            "config": {"key": "café"},
+                        }),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value": "Café"}),
+                    },
+                ],
+            );
         }
     }
 
     #[test]
-    fn closed_malformed_parameter_is_an_error_at_eof() {
-        for input in [
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{\"value\":é}</｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{} trailing junk</｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">1</｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
-            "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+    fn missing_string_attribute_defaults_to_raw_string() {
+        for raw in [
+            "42",
+            "false",
+            "null",
+            "[1,2]",
+            r#"{"key":"value"}"#,
+            "",
+            "  café\n",
+            " \t\n",
+            "literal </｜DSML｜ invoke> and </｜DSML｜ calls>",
         ] {
-            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
-                let mut parser = deepseek_v41_unified(&[]);
-                let mut output = UnifiedParserOutput::default();
-                let result = parser
-                    .parse_into(&input[..split], &mut output)
-                    .and_then(|()| parser.parse_into(&input[split..], &mut output))
-                    .and_then(|()| parser.finish().map(|_| ()));
-                assert!(result.is_err(), "split {split}");
-                assert!(output.events.is_empty(), "split {split}");
-            }
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}run\">\
+                 {PARAMETER_START}value\" string=\"false\">7{PARAMETER_END}\
+                 {PARAMETER_START}value\">{raw}{PARAMETER_END}\
+                 {PARAMETER_START}enabled\" string=\"false\">false{PARAMETER_END}\
+                 {INVOKE_END}\
+                 {INVOKE_START}echo\">\
+                 {PARAMETER_START}value\">next{PARAMETER_END}\
+                 {INVOKE_END}{BLOCK_END}"
+            );
+            assert_every_split(
+                &input,
+                UnifiedParserStartingState::Response,
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "run".into(),
+                        arguments: serde_json::json!({"value": raw, "enabled": false}),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value": "next"}),
+                    },
+                ],
+            );
         }
     }
 
-    /// Reset returns parser-owned bytes, a lifecycle result the Unified corpus cannot assert.
     #[test]
-    fn reset_preserves_deferred_malformed_input() {
-        let input = "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>";
+    fn missing_string_attribute_in_bash_call_preserves_other_parameters() {
+        let input = concat!(
+            "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"Bash\">\n",
+            "<｜DSML｜ parameter name=\"command\" string=\"true\">pwd && ls -a</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"description\" string=\"true\">Show cwd listing</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"command_ine\">x</｜DSML｜ parameter>\n",
+            "<｜DSML｜ parameter name=\"dangerouslyDisableSandbox\" string=\"false\">false</｜DSML｜ parameter>\n",
+            "</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+        );
+        assert_every_split(
+            input,
+            UnifiedParserStartingState::Response,
+            vec![UnifiedEvent::ToolCall {
+                name: "Bash".into(),
+                arguments: serde_json::json!({
+                    "command": "pwd && ls -a",
+                    "description": "Show cwd listing",
+                    "command_ine": "x",
+                    "dangerouslyDisableSandbox": false,
+                }),
+            }],
+        );
+    }
+
+    #[test]
+    fn duplicate_parameters_use_latest_value_within_each_call() {
+        for (string, raw, expected) in [
+            (true, "  café\n", serde_json::json!("  café\n")),
+            (false, "42", serde_json::json!(42)),
+            (false, "false", serde_json::json!(false)),
+            (false, "null", serde_json::Value::Null),
+            (false, "[1,2]", serde_json::json!([1, 2])),
+            (false, r#"{"key":"new"}"#, serde_json::json!({"key": "new"})),
+            (false, "invalid", serde_json::json!("invalid")),
+        ] {
+            let input = format!(
+                "{BLOCK_START}{INVOKE_START}run\">\
+                 {PARAMETER_START}value\" string=\"true\">first{PARAMETER_END}\
+                 {PARAMETER_START}keep\" string=\"false\">1{PARAMETER_END}\
+                 {PARAMETER_START}value\" string=\"false\">{{\"old\":true}}{PARAMETER_END}\
+                 {PARAMETER_START}value\" string=\"{string}\">{raw}{PARAMETER_END}\
+                 {INVOKE_END}\
+                 {INVOKE_START}run\">\
+                 {PARAMETER_START}value\" string=\"true\">separate{PARAMETER_END}\
+                 {INVOKE_END}{BLOCK_END}"
+            );
+            assert_every_split(
+                &input,
+                UnifiedParserStartingState::Response,
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "run".into(),
+                        arguments: serde_json::json!({"value": expected, "keep": 1}),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "run".into(),
+                        arguments: serde_json::json!({"value": "separate"}),
+                    },
+                ],
+            );
+        }
+    }
+
+    #[test]
+    fn closed_malformed_invocations_are_dropped() {
+        for body in [
+            "{\"value\":é}",
+            "{} trailing junk",
+            "<｜DSML｜ parameter name=\"value\" string=\"maybe\">1</｜DSML｜ parameter>",
+            "<｜DSML｜ parameter name=\"value\" string=\"false\">1",
+        ] {
+            let input = format!(
+                "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{body}</｜DSML｜ invoke></｜DSML｜ calls>"
+            );
+            assert_every_split(&input, UnifiedParserStartingState::Response, vec![]);
+        }
+    }
+
+    #[test]
+    fn reset_reuses_parser_after_discarded_malformed_input() {
+        let input = "<｜DSML｜ calls><｜DSML｜ invoke name=\"run\">{\"a\":</｜DSML｜ invoke></｜DSML｜ calls>";
         for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
             let mut parser = deepseek_v41_unified(&[]);
             let mut output = UnifiedParserOutput::default();
             parser.parse_into(&input[..split], &mut output).unwrap();
             parser.parse_into(&input[split..], &mut output).unwrap();
-            assert!(parser.finish().is_err(), "split {split}");
-            assert!(output.events.is_empty(), "split {split}");
-            assert_eq!(parser.reset(), input, "reset split {split}");
+            output.append(&mut parser.finish().unwrap());
+            assert!(output.events.is_empty());
+            assert!(parser.reset().is_empty());
+            let mut events = parser.push("<｜DSML｜ calls><｜DSML｜ invoke name=\"good\">{}</｜DSML｜ invoke></｜DSML｜ calls>").unwrap();
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                crate::assemble(&events),
+                vec![UnifiedEvent::ToolCall {
+                    name: "good".into(),
+                    arguments: serde_json::json!({})
+                }]
+            );
         }
     }
 
     #[test]
-    fn reset_preserves_multiple_malformed_invokes() {
-        let first = concat!(
+    fn multiple_malformed_invokes_do_not_block_following_call() {
+        let input = concat!(
             "<｜DSML｜ calls>",
-            "<｜DSML｜ invoke name=\"first\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke>"
-        );
-        let second = concat!(
-            "<｜DSML｜ invoke name=\"second\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":}</｜DSML｜ parameter></｜DSML｜ invoke>",
+            "<｜DSML｜ invoke name=\"first\">{\"a\":</｜DSML｜ invoke>",
+            "<｜DSML｜ invoke name=\"second\">{\"a\":}</｜DSML｜ invoke>",
+            "<｜DSML｜ invoke name=\"good\">{}</｜DSML｜ invoke>",
             "</｜DSML｜ calls>"
         );
-        for separator in ["", "\n", " \té"] {
-            let input = format!("{first}{separator}{second}");
-            for split in (0..=input.len()).filter(|&i| input.is_char_boundary(i)) {
-                let mut parser = deepseek_v41_unified(&[]);
-                let mut output = UnifiedParserOutput::default();
-                let mut received = &input[..split];
-                let mut result = parser.parse_into(received, &mut output);
-                if result.is_ok() {
-                    received = &input;
-                    result = parser.parse_into(&input[split..], &mut output);
-                }
-                if result.is_ok() {
-                    result = parser.finish().map(|_| ());
-                }
-                assert!(result.is_err(), "separator {separator:?}, split {split}");
-                assert!(
-                    output.events.is_empty(),
-                    "separator {separator:?}, split {split}"
-                );
-                assert_eq!(
-                    parser.reset(),
-                    received,
-                    "separator {separator:?}, split {split}"
-                );
-            }
-        }
+        assert_every_split(
+            input,
+            UnifiedParserStartingState::Response,
+            vec![UnifiedEvent::ToolCall {
+                name: "good".into(),
+                arguments: serde_json::json!({}),
+            }],
+        );
     }
 
     #[test]
-    fn truncated_json_parameter_drops_bad_call_and_recovers_the_next_call() {
+    fn truncated_json_parameter_falls_back_and_preserves_the_next_call() {
         let input = concat!(
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"bad\"><｜DSML｜ parameter name=\"value\" string=\"false\">{\"a\":</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
             "<｜DSML｜ calls><｜DSML｜ invoke name=\"echo\"><｜DSML｜ parameter name=\"value\" string=\"true\">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
@@ -777,10 +919,16 @@ mod tests {
             output.append(&mut parser.finish().unwrap());
             assert_eq!(
                 output.assembled(),
-                vec![UnifiedEvent::ToolCall {
-                    name: "echo".into(),
-                    arguments: serde_json::json!({"value": "Café"}),
-                }],
+                vec![
+                    UnifiedEvent::ToolCall {
+                        name: "bad".into(),
+                        arguments: serde_json::json!({"value": "{\"a\":"}),
+                    },
+                    UnifiedEvent::ToolCall {
+                        name: "echo".into(),
+                        arguments: serde_json::json!({"value": "Café"}),
+                    },
+                ],
                 "split {split}"
             );
         }
