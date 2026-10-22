@@ -209,6 +209,16 @@ fn harmony_response_format_constrains_final_without_constraining_analysis() {
                     } else {
                         &actual["format"]["elements"][1]
                     };
+                    if choice == StructuralTagToolChoice::None || tools.is_empty() {
+                        assert_eq!(format["type"], "tag");
+                        assert_eq!(format["begin"], "<|channel|>final<|message|>");
+                        assert_eq!(format["end"], "");
+                        assert_eq!(
+                            format["content"],
+                            json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                        );
+                        continue;
+                    }
                     assert_eq!(format["type"], "triggered_tags");
                     assert_eq!(format["at_least_one"], false);
                     assert!(
@@ -329,7 +339,7 @@ fn harmony_response_schema_envelope_round_trips_without_marker_leakage() {
         false,
         &schema,
     );
-    let final_tag = &tag["format"]["elements"][1]["tags"][0];
+    let final_tag = &tag["format"]["elements"][1];
     let body = r#"{"location":"London","temperature":12,"conditions":"cloudy"}"#;
     // The engine supplies the stop marker after the grammar has completed.
     let input = format!(

@@ -15,6 +15,19 @@ pub(crate) static HARMONY: StructuralTagBuilder = StructuralTagBuilder::new(&Har
 struct HarmonyGrammar;
 
 impl HarmonyGrammar {
+    fn final_tag(schema: &Value) -> TagFormat {
+        TagFormat {
+            begin: "<|channel|>final<|message|>".to_string(),
+            content: Box::new(Format::JsonSchema(JsonSchemaFormat {
+                json_schema: schema.clone(),
+                style: JsonSchemaStyle::Json,
+                any_order: false,
+            })),
+            // The engine consumes the turn stop after the JSON grammar completes.
+            end: String::new(),
+        }
+    }
+
     fn structured_output(
         &self,
         schema: &Value,
@@ -23,18 +36,8 @@ impl HarmonyGrammar {
     ) -> Format {
         // vLLM considers Harmony reasoning already finished. The final-header
         // trigger must own activation; a bare JSON schema constrains analysis.
-        let final_begin = "<|channel|>final<|message|>";
         let mut triggers = vec!["<|channel|>final".to_string()];
-        let mut tags = vec![TagFormat {
-            begin: final_begin.to_string(),
-            content: Box::new(Format::JsonSchema(JsonSchemaFormat {
-                json_schema: schema.clone(),
-                style: JsonSchemaStyle::Json,
-                any_order: false,
-            })),
-            // The engine consumes the turn stop after the JSON grammar completes.
-            end: String::new(),
-        }];
+        let mut tags = vec![Self::final_tag(schema)];
         if let Some(policy) = policy {
             triggers.push(FORMAT.tool_call_trigger.to_string());
             tags.extend(FORMAT.tool_tags(policy, tool_arguments_any_order));
@@ -80,7 +83,8 @@ impl ToolCallGrammar for HarmonyGrammar {
     }
 
     fn build_structured_output(&self, schema: &Value) -> Format {
-        self.structured_output(schema, None, false)
+        // With tools disabled, require the final payload after optional reasoning.
+        Format::Tag(Self::final_tag(schema))
     }
 
     fn build_auto_with_structured_output(
