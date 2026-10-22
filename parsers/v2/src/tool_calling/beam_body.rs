@@ -308,8 +308,7 @@ pub(crate) fn value_framing(
     }
 }
 
-/// The value end and the offset to resume parsing: consume a closing tag, but
-/// leave a following parameter opener for the next iteration.
+/// Where the value of a parameter ends, or `None` while it is still open.
 ///
 /// `Lenient` follows the template newline framing when present. Compact legacy
 /// values retain their first-closer rule. `ConstrainedJson` applies only
@@ -364,7 +363,14 @@ pub(crate) fn param_value_span_with(
     }
     let rest = &after_key[from..];
     let close = cursor
-        .find_closer(rest, if framed { "\n</rfl:parameter>" } else { PARAM_CLOSE })
+        .find_closer(
+            rest,
+            if framed {
+                "\n</rfl:parameter>"
+            } else {
+                PARAM_CLOSE
+            },
+        )
         .map(|c| {
             let end = from + c + usize::from(framed);
             (end, end + PARAM_CLOSE.len())
@@ -1423,7 +1429,7 @@ mod tests {
         for value in open {
             assert_eq!(param_value_end(value, constrained), None, "{value}");
             assert_eq!(
-                param_value_end(value, ArgumentFraming::Lenient).map(|(end, _)| end),
+                param_value_end(value, ArgumentFraming::Lenient),
                 value.find("</rfl:parameter>"),
                 "{value}"
             );
@@ -1435,17 +1441,10 @@ mod tests {
             ("London</rfl:parameter>", 6),
             ("\n{\"a\": 1}\n</rfl:parameter>", 10),
         ] {
-            assert_eq!(
-                param_value_end(value, constrained).map(|(end, _)| end),
-                Some(end),
-                "{value}"
-            );
+            assert_eq!(param_value_end(value, constrained), Some(end), "{value}");
         }
         // A value that opens as JSON but can never balance keeps the reference rule.
-        assert_eq!(
-            param_value_end("{]</rfl:parameter>", constrained).map(|(end, _)| end),
-            Some(2)
-        );
+        assert_eq!(param_value_end("{]</rfl:parameter>", constrained), Some(2));
     }
 
     #[test]
