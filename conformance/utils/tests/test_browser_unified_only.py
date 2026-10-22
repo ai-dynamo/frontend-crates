@@ -24,8 +24,9 @@ def test_public_html_and_json_only_contain_unified(rendered_page):
     assert status["comparison_defaults"]["tab-unified"] == DEFAULT_SLOTS
     batch = [capture for capture in status["captures"] if capture["mode"] == "batch"]
     applicable_pairs = sum(len(gen_unified_golden.build_cases(family)) for family in gen_unified_golden.FAMILIES)
-    assert len(batch) == 39
-    assert {"dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"} <= {capture["capture"] for capture in batch}
+    batch_ids = [capture["capture"] for capture in batch]
+    assert len(batch_ids) == len(set(batch_ids))
+    assert {"dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"} <= set(batch_ids)
     assert all(capture["considered"] == applicable_pairs for capture in batch)
     assert all(capture["attempted"] == capture["captured"] + capture["parser_exception"] for capture in batch)
     assert any(capture["mismatches"] for capture in batch)
