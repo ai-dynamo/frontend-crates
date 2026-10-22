@@ -5,7 +5,8 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use dynamo_parsers_v2::{
-    UnifiedEvent, UnifiedParserExt, UnifiedParserInit, assemble, create_unified_parser_for_family,
+    Tool, UnifiedEvent, UnifiedParserExt, UnifiedParserInit, assemble,
+    create_unified_parser_for_family,
 };
 use tracing::{Event, Level, Subscriber, field::Visit};
 use tracing_subscriber::{Layer, Registry, layer::Context, prelude::*};
@@ -77,6 +78,37 @@ fn invoke(name: &str, body: &str) -> String {
 
 fn wrapped(invoke: &str) -> String {
     format!("<｜DSML｜ calls>{invoke}</｜DSML｜ calls>")
+}
+
+#[test]
+fn recovered_declared_tool_header_logs_warning_with_original_bytes() {
+    let capture = Capture::default();
+    let input = "<｜DSML｜ parameter  name=\"Bash\"><｜DSML｜ parameter name=\"command\">pwd</｜DSML｜ parameter>";
+    capture.run(|| {
+        let tools = [Tool {
+            name: "Bash".into(),
+            description: None,
+            strict: None,
+            parameters: serde_json::json!({}),
+        }];
+        let mut parser = create_unified_parser_for_family("deepseek_v41", &tools).unwrap();
+        parser.push(input).unwrap();
+        capture.assert_no_warnings();
+        assert_eq!(parser.finish().unwrap().assembled().len(), 1);
+    });
+    let events = capture.0.lock().unwrap();
+    assert!(events.iter().all(|event| event.level != Level::ERROR));
+    let recovered: Vec<_> = events
+        .iter()
+        .filter(|event| {
+            event.fields.get("stage").map(String::as_str) == Some("invoke_header_recovery")
+        })
+        .collect();
+    assert_eq!(recovered.len(), 1);
+    assert_eq!(recovered[0].level, Level::WARN);
+    assert_eq!(recovered[0].fields["tool_name"], "Bash");
+    assert_eq!(recovered[0].fields["missing_invoke_end"], "true");
+    assert_eq!(recovered[0].fields["raw_output"], input);
 }
 
 #[test]

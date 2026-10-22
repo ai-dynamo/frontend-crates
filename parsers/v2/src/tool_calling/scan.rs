@@ -47,7 +47,7 @@
 
 use std::collections::HashSet;
 
-use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
+use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult};
 use crate::unified::{Kind, UnifiedParserEvent};
 
 /// Longest non-empty proper prefix of any `marker` that `text` ends with, so a
@@ -395,6 +395,8 @@ impl InvokeBoundaryFactory {
 /// Family-owned request-local invoke-boundary contract.
 ///
 pub(crate) trait InvokeBoundary: Send {
+    fn set_tools(&mut self, _tools: &[Tool]) {}
+
     /// Restore request/channel context after a retained candidate is rebased.
     fn set_guided_context(&mut self, _context: GuidedInvokePrefixContext) {}
 
@@ -1105,6 +1107,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
     }
 
+    pub(crate) fn with_tools(mut self, tools: &[Tool]) -> Self {
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.set_tools(tools);
+        }
+        self
+    }
+
     /// Consume one template separator before native tool openers, retaining it
     /// across chunk boundaries until the opener is distinguished from text.
     pub(crate) fn with_tool_separator(
@@ -1405,11 +1414,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             if (at > 0 || boundary.accepts_buffer_start(self.buffer_previous))
                 && boundary.opens(text, at)
             {
-                return Some(at);
+                if at == 0 {
+                    return Some(0);
+                }
+                return Some(boundary.bare_invoke_start(&text[..at]).unwrap_or(at));
             }
             cursor = at + invoke_start.len();
         }
-        None
+        boundary
+            .bare_invoke_start(text)
+            .filter(|&at| at > 0 || boundary.accepts_buffer_start(self.buffer_previous))
     }
 
     fn active_invoke_start(&self) -> Option<usize> {

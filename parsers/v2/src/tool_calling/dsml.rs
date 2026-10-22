@@ -406,7 +406,7 @@ impl InvokeEmitter for DsmlEmitter {
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
         if invoke.starts_with(deepseek_v41::INVOKE_START) {
-            return deepseek_v41::DeepSeekV41.parse_invoke(invoke, tool_index);
+            return deepseek_v41::DeepSeekV41::default().parse_invoke(invoke, tool_index);
         }
         let Some((name, header_len)) = parse_invoke_header(invoke) else {
             return Ok(None);
@@ -425,7 +425,7 @@ impl InvokeEmitter for DsmlEmitter {
 
     fn defer_parse_error(&self, invoke: &str, error: &anyhow::Error) -> bool {
         invoke.starts_with(deepseek_v41::INVOKE_START)
-            && deepseek_v41::DeepSeekV41.defer_parse_error(invoke, error)
+            && deepseek_v41::DeepSeekV41::default().defer_parse_error(invoke, error)
     }
 
     fn parse_invoke_deltas(

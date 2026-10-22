@@ -7,7 +7,7 @@ use serde_json::{Map, Value};
 use crate::tool_calling::dsml::BLOCK_SEPARATOR;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
-    WrappedBlockScanner, WrappedBlockSpec,
+    WrappedBlockScanner, WrappedBlockSpec, marker_prefix_suffix_len,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
 use crate::unified::{
@@ -21,9 +21,11 @@ pub(crate) const INVOKE_START: &str = "<｜DSML｜ invoke name=\"";
 pub(crate) const INVOKE_END: &str = "</｜DSML｜ invoke>";
 pub(crate) const PARAMETER_START: &str = "<｜DSML｜ parameter name=\"";
 pub(crate) const PARAMETER_END: &str = "</｜DSML｜ parameter>";
+const RECOVERY_START: &str = "<｜DSML｜ parameter";
 
-pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
-    let spec = WrappedBlockSpec {
+pub(crate) fn deepseek_v41_unified(tools: &[Tool]) -> Box<dyn UnifiedParser> {
+    let tool_names: Vec<String> = tools.iter().map(|tool| tool.name.clone()).collect();
+    let mut spec = WrappedBlockSpec {
         family: "deepseek_v41",
         block_starts: vec![BLOCK_START.into()],
         block_ends: vec![BLOCK_END.into()],
@@ -36,8 +38,17 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
         preserve_special_tokens: true,
         ..Default::default()
     };
-    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41)
-        .with_tool_separator(BLOCK_SEPARATOR, &[INVOKE_START])
+    if !tool_names.is_empty() {
+        spec.holdback_markers.push(RECOVERY_START.into());
+    }
+    let invoke_prefixes: &[&str] = if tools.is_empty() {
+        &[INVOKE_START]
+    } else {
+        &[INVOKE_START, RECOVERY_START]
+    };
+    let scanner = WrappedBlockScanner::new(spec, DeepSeekV41 { tool_names })
+        .with_tools(tools)
+        .with_tool_separator(BLOCK_SEPARATOR, invoke_prefixes)
         .with_reasoning(ReasoningSpec {
             start: "<think>",
             end: "</think>",
@@ -45,6 +56,36 @@ pub(crate) fn deepseek_v41_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
             ..Default::default()
         });
     Box::new(GuidedRouted::new(ScannerUnified::new(scanner)))
+}
+
+fn recovery_header(text: &str) -> Option<(&str, &str)> {
+    let rest = text.strip_prefix(RECOVERY_START)?;
+    let trimmed = rest.trim_start();
+    if rest.len() == trimmed.len() {
+        return None;
+    }
+    let (name, rest) = trimmed.strip_prefix("name=\"")?.split_once('"')?;
+    Some((name, rest.trim_start().strip_prefix('>')?))
+}
+
+fn pending_recovery_header(text: &str, tool_names: &[String]) -> bool {
+    let Some(rest) = text.strip_prefix(RECOVERY_START) else {
+        return RECOVERY_START.starts_with(text);
+    };
+    if rest.is_empty() {
+        return true;
+    }
+    let trimmed = rest.trim_start();
+    if rest.len() == trimmed.len() {
+        return false;
+    }
+    let Some(rest) = trimmed.strip_prefix("name=\"") else {
+        return "name=\"".starts_with(trimmed);
+    };
+    let Some((name, rest)) = rest.split_once('"') else {
+        return tool_names.iter().any(|name| name.starts_with(rest));
+    };
+    tool_names.iter().any(|tool| tool == name) && rest.trim_start().is_empty()
 }
 
 fn parameter_header(text: &str) -> Option<(&str, bool, &str)> {
@@ -116,6 +157,9 @@ enum InvocationPosition {
 
 #[derive(Default)]
 struct DeepSeekV41InvocationBoundary {
+    tool_names: Vec<String>,
+    recovered_header: bool,
+    parameters: usize,
     position: InvocationPosition,
     scan_from: usize,
     json: JsonPrefixState,
@@ -131,6 +175,46 @@ impl DeepSeekV41InvocationBoundary {
 }
 
 impl InvokeBoundary for DeepSeekV41InvocationBoundary {
+    fn set_tools(&mut self, tools: &[Tool]) {
+        self.tool_names = tools.iter().map(|tool| tool.name.clone()).collect();
+    }
+
+    fn bare_invoke_start(&self, text: &str) -> Option<usize> {
+        // A parameter tag alone cannot identify a call. Request tool names
+        // disambiguate this repair without filtering ordinary invoke headers.
+        if self.tool_names.is_empty() {
+            return None;
+        }
+        text.match_indices(RECOVERY_START).find_map(|(at, _)| {
+            let (name, _) = recovery_header(&text[at..])?;
+            self.tool_names
+                .iter()
+                .any(|tool| tool == name)
+                .then_some(at)
+        })
+    }
+
+    fn bare_invoke_holdback(&self, text: &str) -> usize {
+        if self.tool_names.is_empty() {
+            return 0;
+        }
+        let partial = marker_prefix_suffix_len(text, [RECOVERY_START]);
+        let header = text
+            .rfind(RECOVERY_START)
+            .filter(|&at| pending_recovery_header(&text[at..], &self.tool_names))
+            .map_or(0, |at| text.len() - at);
+        let keep = partial.max(header);
+        if keep > 0 && text[..text.len() - keep].ends_with(BLOCK_SEPARATOR) {
+            keep + BLOCK_SEPARATOR.len()
+        } else {
+            keep
+        }
+    }
+
+    fn bare_invoke_uses_eof_boundary(&self) -> bool {
+        true
+    }
+
     fn owns_guided_prefix(&self) -> bool {
         true
     }
@@ -187,11 +271,20 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
         loop {
             match self.position {
                 InvocationPosition::Header => {
-                    let Some(end) = find_from(candidate, self.scan_from, "\">") else {
+                    let header_end = if let Some((name, body)) = recovery_header(candidate) {
+                        if !self.tool_names.iter().any(|tool| tool == name) {
+                            return None;
+                        }
+                        self.recovered_header = true;
+                        Some(candidate.len() - body.len())
+                    } else {
+                        find_from(candidate, self.scan_from, "\">").map(|end| end + 2)
+                    };
+                    let Some(end) = header_end else {
                         self.scan_from = next_scan_start(candidate, 2);
                         return None;
                     };
-                    self.scan_from = end + 2;
+                    self.scan_from = end;
                     self.position = InvocationPosition::Body;
                 }
                 InvocationPosition::Body => {
@@ -228,6 +321,15 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                     }
                 }
                 InvocationPosition::BetweenParameters => {
+                    if self.recovered_header && self.parameters > 0 {
+                        let tail = candidate[self.scan_from..].trim_start();
+                        if tail.starts_with(BLOCK_END) || tail.starts_with(INVOKE_START) {
+                            return Some(candidate.len() - tail.len());
+                        }
+                        if flush && tail.is_empty() {
+                            return Some(candidate.len());
+                        }
+                    }
                     let close = find_from(candidate, self.scan_from, INVOKE_END);
                     let parameter = find_from(candidate, self.scan_from, PARAMETER_START);
                     match (close, parameter) {
@@ -248,7 +350,8 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                             self.scan_from = next_scan_start(
                                 candidate,
                                 INVOKE_END.len().max(PARAMETER_START.len()),
-                            );
+                            )
+                            .max(self.scan_from);
                             return None;
                         }
                     }
@@ -287,6 +390,7 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                         return None;
                     };
                     self.scan_from = value_end + PARAMETER_END.len();
+                    self.parameters += 1;
                     self.position = InvocationPosition::BetweenParameters;
                 }
                 InvocationPosition::InvalidParameter { start } => {
@@ -309,7 +413,11 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
     }
 
     fn reset(&mut self) {
-        *self = Self::default();
+        let tool_names = std::mem::take(&mut self.tool_names);
+        *self = Self {
+            tool_names,
+            ..Default::default()
+        };
     }
 }
 
@@ -317,7 +425,10 @@ pub(crate) fn invocation_boundary() -> Box<dyn InvokeBoundary> {
     Box::new(DeepSeekV41InvocationBoundary::default())
 }
 
-pub(crate) struct DeepSeekV41;
+#[derive(Default)]
+pub(crate) struct DeepSeekV41 {
+    tool_names: Vec<String>,
+}
 
 impl DeepSeekV41 {
     fn parse_invocation(
@@ -325,14 +436,28 @@ impl DeepSeekV41 {
         invoke: &str,
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>> {
-        let (name, body) = invoke
-            .strip_prefix(INVOKE_START)
-            .and_then(|text| text.split_once("\">"))
+        let recovered = recovery_header(invoke)
+            .filter(|(name, _)| self.tool_names.iter().any(|tool| tool == name));
+        let (name, body) = recovered
+            .or_else(|| {
+                invoke
+                    .strip_prefix(INVOKE_START)
+                    .and_then(|text| text.split_once("\">"))
+            })
             .context("invalid DeepSeek V4.1 invocation header")?;
         anyhow::ensure!(!name.is_empty(), "empty DeepSeek V4.1 tool name");
-        let mut body = body
-            .strip_suffix(INVOKE_END)
-            .context("incomplete DeepSeek V4.1 invocation")?;
+        let missing_end = !body.ends_with(INVOKE_END);
+        let mut body = if recovered.is_some() {
+            let body = body.strip_suffix(INVOKE_END).unwrap_or(body);
+            anyhow::ensure!(
+                body.trim_start().starts_with(PARAMETER_START),
+                "recovered DeepSeek V4.1 invocation requires parameters"
+            );
+            body
+        } else {
+            body.strip_suffix(INVOKE_END)
+                .context("incomplete DeepSeek V4.1 invocation")?
+        };
         let mut arguments = if body.trim_start().starts_with('{') {
             let arguments = serde_json::from_str::<Map<String, Value>>(body)
                 .context("invalid DeepSeek V4.1 JSON arguments")?;
@@ -364,6 +489,17 @@ impl DeepSeekV41 {
             // Match JSON object decoding: the last occurrence of a key wins.
             arguments.insert(name.to_string(), value);
             body = remainder;
+        }
+        if recovered.is_some() {
+            tracing::warn!(
+                family = "deepseek_v41",
+                stage = "invoke_header_recovery",
+                tool_index,
+                tool_name = name,
+                missing_invoke_end = missing_end,
+                raw_output = invoke,
+                "Recovered DeepSeek V4.1 parameter tag as a declared tool invocation"
+            );
         }
         Ok(Some(ToolCallDelta {
             tool_index,
