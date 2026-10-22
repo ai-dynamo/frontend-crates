@@ -120,9 +120,7 @@ static ENVELOPE: ChannelEnvelope = ChannelEnvelope {
     // Terminators AND the inner header markers: a `<|constrain|>` or `<|message|>` with no
     // header around it is framing debris, never visible text (goal 3/4).
     orphan_controls: &[CALL, END, RETURN, CONSTRAIN, MESSAGE],
-    // Only `<|return|>` ends the turn for the guided reader: `<|call|>` closes a tool
-    // call (or the final answer) but a guided payload may still follow it.
-    turn_end: &[RETURN],
+    turn_end: &[RETURN, CALL],
 };
 
 /// Every fixed marker of the grammar: terminator competition and split-marker holdback
@@ -2102,6 +2100,13 @@ mod tests {
     #[test]
     fn guided_body_terminators_follow_the_channel_grammar() {
         use UnifiedParserStartingState::{None as N, Reasoning as R};
+        let body = r#"{"value":"<|call|>"}"#;
+        guided_every_split(
+            N,
+            None,
+            &format!("<|start|>assistant<|channel|>final<|message|>{body}<|call|>"),
+            vec![text(body)],
+        );
         guided_every_split(
             N,
             None,
