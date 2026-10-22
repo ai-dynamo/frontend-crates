@@ -1449,7 +1449,6 @@ pub(crate) enum GuidedReasoning {
 #[derive(Clone, Copy)]
 pub(crate) struct GuidedChannelState {
     pub(crate) scope: GuidedTurnScope,
-    /// A visible-content header has routed the current message.
     pub(crate) content_routed: bool,
 }
 
