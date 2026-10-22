@@ -1598,15 +1598,26 @@ mod tests {
                             }
                         )]
                     );
-                    assert!(parser.finish_at_eos().is_err(), "finish remains single-use");
                 }
-                parser.reset();
-                parser.push(&input).unwrap();
-                assert!(
-                    parser.finish().is_err(),
-                    "reset must not retain EOS permission"
-                );
             }
+        }
+        for (body, valid) in [
+            (LONDON, true),
+            ("<rfl:parameter name=\"location\">\nLondon\n", false),
+        ] {
+            let mut parser = beam_unified(&tools());
+            parser
+                .set_tool_call_policy(ToolCallPolicy {
+                    malformed: MalformedToolCallPolicy::Reject,
+                    ..constrained()
+                })
+                .unwrap();
+            parser.push(&format!("{HDR}{body}")).unwrap();
+            assert_eq!(parser.finish_at_eos().is_ok(), valid);
+            assert!(parser.finish_at_eos().is_err(), "finish remains single-use");
+            parser.reset();
+            parser.push(&format!("{HDR}{LONDON}")).unwrap();
+            assert!(parser.finish().is_err(), "reset must clear EOS permission");
         }
     }
 
@@ -1694,14 +1705,8 @@ mod tests {
     fn strict_rejects_header_truncated_inside_channel_marker_and_reset_keeps_start() {
         // A complete header for `fn` (nothing required) is the call `{}` at EOS.
         let complete = "<|start|>assistant to=fn<|channel|>analysis <|constrain|>xml<|message|>";
-        for policy in [strict(), ToolCallPolicy::default()] {
-            for got in splits(complete, policy) {
-                if policy.malformed == MalformedToolCallPolicy::Reject {
-                    assert!(got.is_err(), "unconfirmed EOF");
-                } else {
-                    assert_eq!(got.unwrap(), vec![call("fn", json!({}))]);
-                }
-            }
+        for got in splits(complete, ToolCallPolicy::default()) {
+            assert_eq!(got.unwrap(), vec![call("fn", json!({}))]);
         }
         for input in [
             "<|start|>assistant to=fn<|chan",
