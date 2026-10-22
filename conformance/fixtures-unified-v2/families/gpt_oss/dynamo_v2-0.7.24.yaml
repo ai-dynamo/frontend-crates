@@ -320,7 +320,7 @@ changes:
                 type: string
                 enum:
                 - 'null'
-                - 
+                -
         chunks:
         - delta_text: '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "null"}<|call|>'
         - delta_text: ‹finish›
