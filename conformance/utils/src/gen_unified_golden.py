@@ -754,9 +754,9 @@ _MIXED_CONTROL_STRINGS = {
 }
 
 EDGE = [
-    # Muse EOF recovery must skip an unterminated parameter without losing later
-    # invokes in the same ATEM channel. Scope is Muse-specific because the failure
-    # depends on its parameter-opaque invoke scanner (PR #316 review).
+    # Muse recovers later invokes only when no parameter closer exists. A complete
+    # parameter owns embedded invoke markers, including at EOF. These cases keep
+    # their historical IDs and exercise the ATEM scanner's ownership rule.
     ("muse_unterminated_parameter_then_empty_call",
      "Muse: an unterminated parameter in the first invoke precedes a complete parameterless invoke in the same tool channel. At EOF, drop only the malformed invoke and emit the later call.",
      ["P2"],
@@ -770,9 +770,11 @@ EDGE = [
      )})),
 
     ("muse_unterminated_parameter_then_call",
-     "Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call's name and arguments.",
+     "Muse: a complete outer parameter contains an invoke closer, another invoke opener, and a parameter opener before its first parameter closer. Preserve the entire value as data and emit only the outer call. The historical scenario ID is retained; a later closer makes the outer parameter complete, so EOF recovery must not dispatch the embedded call.",
      ["P2", "I7"],
-     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     [{"kind": "tool_call", "name": "f", "arguments": {
+         "x": 'bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris',
+     }}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      OnlyFamilies({"muse_glimmer": (
          '<|start|>assistant to=tools<|message|><atem:function_calls>'

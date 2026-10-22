@@ -18551,7 +18551,7 @@ cases:
   muse_unterminated_parameter_then_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_call
-    description: 'Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call''s name and arguments.'
+    description: 'Muse: a complete outer parameter contains an invoke closer, another invoke opener, and a parameter opener before its first parameter closer. Preserve the entire value as data and emit only the outer call. The historical scenario ID is retained; a later closer makes the outer parameter complete, so EOF recovery must not dispatch the embedded call.'
     policy:
     - P2
     - I7
@@ -18627,9 +18627,9 @@ cases:
     golden:
       assembled:
       - kind: tool_call
-        name: get_weather
+        name: f
         arguments:
-          city: Paris
+          x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_empty_call

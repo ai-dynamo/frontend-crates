@@ -1,0 +1,45 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.30
+    git_commit: 99b5eed1c1dd008a40026030ff6065dd74e4a4e0
+    source_sha256: e2822302cefe183fcd3bd1065d5dc184ed8651317d8f302b6d61695e4248199f
+document:
+  mode: unified
+changes:
+  muse_unterminated_parameter_then_empty_call:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{}'
+            complete: true
+metadata_changes: {}
+document_overrides:
+  muse_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: e2822302cefe183fcd3bd1065d5dc184ed8651317d8f302b6d61695e4248199f
+        git_commit: 99b5eed1c1dd008a40026030ff6065dd74e4a4e0
+      inherited_from: null
