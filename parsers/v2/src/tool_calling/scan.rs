@@ -628,13 +628,17 @@ fn envelope_free_marker<'a>(
     haystack: &str,
     resolved: &EnvelopeOwnership,
     markers: impl Iterator<Item = &'a str>,
+    json: Option<JsonBodyState>,
 ) -> Option<(usize, usize)> {
     markers
         .filter_map(|m| {
             haystack
                 .match_indices(m)
                 .map(|(at, _)| at)
-                .find(|&at| resolved.free(at))
+                .find(|&at| {
+                    resolved.free(at)
+                        && json.is_none_or(|state| !state.inside_string_at(haystack, at))
+                })
                 .map(|at| (at, m.len()))
         })
         .min_by_key(|(at, _)| *at)
@@ -657,6 +661,7 @@ pub(crate) fn envelope_guided_close(
             .iter()
             .filter(|c| c.reasoning)
             .flat_map(|c| c.terminators.iter().copied()),
+        state.content_routed.then_some(state.content_json),
     )
 }
 
@@ -670,7 +675,12 @@ pub(crate) fn envelope_guided_turn_end(
     state: GuidedChannelState,
 ) -> Option<(usize, usize)> {
     let resolved = envelope_resolve(env, factory, haystack, flush, envelope_bare(state));
-    envelope_free_marker(haystack, &resolved, env.turn_end.iter().copied())
+    envelope_free_marker(
+        haystack,
+        &resolved,
+        env.turn_end.iter().copied(),
+        state.content_routed.then_some(state.content_json),
+    )
 }
 
 /// What an unfinished header lead at a `start` marker turns out to be.

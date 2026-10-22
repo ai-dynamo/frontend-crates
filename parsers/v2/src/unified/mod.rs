@@ -71,7 +71,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
-    InvokeEmitter, ProseControl, ProseControlState, ProseGrammarSpan, ReasoningSpec,
+    InvokeEmitter, JsonBodyState, ProseControl, ProseControlState, ProseGrammarSpan, ReasoningSpec,
     WrappedBlockScanner, marker_prefix_suffix_len, prose_invoke_span as scan_prose_invoke_span,
     push_run, reasoning_opener_len,
 };
@@ -1450,6 +1450,7 @@ pub(crate) enum GuidedReasoning {
 pub(crate) struct GuidedChannelState {
     pub(crate) scope: GuidedTurnScope,
     pub(crate) content_routed: bool,
+    pub(crate) content_json: JsonBodyState,
 }
 
 /// Where the turn stands, for families whose header resolution depends on it.
@@ -1958,6 +1959,7 @@ struct GuidedState {
     /// a transition ROUTES the turn, and routing to content is one-way for the rest of
     /// the turn — through push, finish and reset alike.
     content_routed: bool,
+    content_json: JsonBodyState,
     /// Whether anything has ROUTED this turn yet — a header consumed, visible text
     /// emitted, or a payload dispatched. Half of [`GuidedTurnScope`]; the other half
     /// is the open channel, which `mode` already carries.
@@ -3232,6 +3234,7 @@ fn guided_payload_syntax_boundary(
                 GuidedChannelState {
                     scope: GuidedTurnScope::Unrouted,
                     content_routed: false,
+                    content_json: JsonBodyState::default(),
                 },
             )
             .is_some_and(|(found, _)| found == 0)
@@ -3242,6 +3245,7 @@ fn guided_payload_syntax_boundary(
                     GuidedChannelState {
                         scope: GuidedTurnScope::Unrouted,
                         content_routed: false,
+                        content_json: JsonBodyState::default(),
                     },
                 )
                 .is_some_and(|(found, _)| found == 0)
@@ -3312,6 +3316,7 @@ impl GuidedState {
             // — so only a content transition the model itself emits closes the payload
             // off. Seeding it here turned every prefilled-response call into text.
             content_routed: false,
+            content_json: JsonBodyState::default(),
             mode: Self::mode_for(starting_state),
             accept_redundant_reasoning_start: starting_state
                 == UnifiedParserStartingState::Reasoning,
@@ -3398,7 +3403,10 @@ impl GuidedState {
         Ok(())
     }
 
-    fn push_visible_text(&self, output: &mut Vec<UnifiedParserEvent>, text: &str) {
+    fn push_visible_text(&mut self, output: &mut Vec<UnifiedParserEvent>, text: &str) {
+        if self.content_routed {
+            self.content_json.advance(text);
+        }
         push_run(output, Kind::Text, &self.reasoning.strip_text(text));
     }
 
@@ -3530,6 +3538,7 @@ impl GuidedState {
         self.reasoning_enabled = starting_state != UnifiedParserStartingState::Response;
         self.turn_routed = starting_state == UnifiedParserStartingState::Response;
         self.content_routed = false;
+        self.content_json.reset();
         self.accept_redundant_reasoning_start =
             starting_state == UnifiedParserStartingState::Reasoning;
         self.stripped_markup = false;
@@ -3639,6 +3648,7 @@ impl GuidedState {
         GuidedChannelState {
             scope: GuidedTurnScope::Unrouted,
             content_routed: false,
+            content_json: JsonBodyState::default(),
         }
     }
 
@@ -3658,6 +3668,7 @@ impl GuidedState {
     fn channel_state(&self) -> GuidedChannelState {
         GuidedChannelState {
             content_routed: self.content_routed,
+            content_json: self.content_json,
             scope: if self.mode == GuidedMode::Reasoning {
                 GuidedTurnScope::InReasoning
             } else if !self.reasoning_enabled && !self.payload_emitted {
@@ -3719,6 +3730,7 @@ impl GuidedState {
             .is_some_and(|hit| hit == (at, len))
         {
             self.content_routed = true;
+            self.content_json.reset();
         } else if self
             .reasoning
             .find_turn_end(&self.input, true, state)
@@ -4578,7 +4590,7 @@ impl GuidedState {
                         continue;
                     }
 
-                    if !self.payload_emitted
+                    if !self.answer_only()
                         && (self.invalid_payload != InvalidGuidedPayloadPolicy::Reject
                             || !self.input.is_empty())
                         && !json_payload_started(&self.json)
@@ -5437,7 +5449,8 @@ impl GuidedState {
                                 }));
                             }
                         } else if self.answer_only() {
-                            self.push_visible_text(&mut output, &self.input[..visible_len]);
+                            let visible = self.input[..visible_len].to_string();
+                            self.push_visible_text(&mut output, &visible);
                             self.post_payload_text_started = true;
                         } else if !self.reasoning_enabled && self.json.trim().is_empty() {
                             let mut visible = std::mem::take(&mut self.json);
@@ -5465,7 +5478,8 @@ impl GuidedState {
                     }
                     if flush && !self.input.is_empty() {
                         if self.answer_only() {
-                            self.push_visible_text(&mut output, &self.input);
+                            let visible = std::mem::take(&mut self.input);
+                            self.push_visible_text(&mut output, &visible);
                             self.post_payload_text_started = true;
                         } else {
                             self.json.push_str(&self.input);
