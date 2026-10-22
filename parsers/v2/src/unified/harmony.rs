@@ -1149,15 +1149,34 @@ fn is_tool_header(haystack: &str, start: usize, end: usize) -> bool {
     tool_recipient(haystack, start, end).is_some()
 }
 
+fn guided_header(
+    haystack: &str,
+    state: super::GuidedChannelState,
+) -> Option<(usize, usize, Option<String>)> {
+    let offset = if state.scope.allows_bare_header() {
+        0
+    } else if state.scope == super::GuidedTurnScope::ResponsePrefill {
+        return None;
+    } else {
+        // Closing reasoning spends the bare-header scope, not later framed messages.
+        haystack.find(START)?
+    };
+    let (start, end, channel) = find_header(&haystack[offset..])?;
+    if matches!(
+        partial_invoke_prefix(&haystack[offset + start..]),
+        super::GuidedPrefix::Match | super::GuidedPrefix::Strip(_)
+    ) {
+        return None;
+    }
+    Some((start + offset, end + offset, channel))
+}
+
 fn guided_reasoning_open(
     haystack: &str,
     _flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
-        return None;
-    }
-    find_header(haystack).and_then(|(start, end, channel)| {
+    guided_header(haystack, state).and_then(|(start, end, channel)| {
         (channel.as_deref() == Some("analysis")).then_some((start, end - start))
     })
 }
@@ -1167,12 +1186,11 @@ fn guided_content_header(
     _flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
-        return None;
-    }
-    let (start, end, channel) = find_header(haystack)?;
-    (channel.as_deref() != Some("analysis") && !is_tool_header(haystack, start, end))
-        .then_some((start, end - start))
+    let (start, end, channel) = guided_header(haystack, state)?;
+    // Guided tool JSON can be the final message body, rather than visible prose.
+    (!matches!(channel.as_deref(), Some("analysis" | "final"))
+        && !is_tool_header(haystack, start, end))
+    .then_some((start, end - start))
 }
 
 fn guided_routing_header(
@@ -1189,10 +1207,10 @@ fn guided_stray_header(
     flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
+    if state.scope == super::GuidedTurnScope::ResponsePrefill {
         return None;
     }
-    let Some(header) = find_header(haystack) else {
+    let Some(header) = guided_header(haystack, state) else {
         return flush
             .then(|| haystack.find(START).map(|at| (at, START.len())))
             .flatten();
@@ -2091,6 +2109,75 @@ mod tests {
                     && call.name.as_deref() == Some("get_weather")
                     && call.arguments == r#"{"city":"Paris"}"#
         ));
+    }
+
+    #[test]
+    fn guided_final_header_wraps_json_after_optional_reasoning() {
+        let arguments = serde_json::json!({"literal_text":"assistantfinal"});
+        for reasoning in ["", "<|channel|>analysis<|message|>checking<|end|>"] {
+            for named in [false, true] {
+                let payload = if named {
+                    arguments.clone()
+                } else {
+                    serde_json::json!([{"name":"record_literal","parameters":arguments}])
+                };
+                let input = format!(
+                    "{reasoning}<|start|>assistant<|channel|>final<|message|>{payload}<|return|>"
+                );
+                let mut expected = Vec::new();
+                if !reasoning.is_empty() {
+                    expected.push(UnifiedEvent::Reasoning {
+                        text: "checking".into(),
+                    });
+                }
+                expected.push(UnifiedEvent::ToolCall {
+                    name: "record_literal".into(),
+                    arguments: arguments.clone(),
+                });
+                let ids = encode_harmony(&input).unwrap();
+                for tokens in [false, true] {
+                    let splits: Vec<_> = if tokens {
+                        (0..=ids.len()).collect()
+                    } else {
+                        input
+                            .char_indices()
+                            .map(|(at, _)| at)
+                            .chain([input.len()])
+                            .collect()
+                    };
+                    let end = if tokens { ids.len() } else { input.len() };
+                    let mut schedules: Vec<_> = splits.iter().map(|at| vec![0, *at, end]).collect();
+                    schedules.push(splits);
+                    for boundaries in schedules {
+                        let mut parser = gpt_oss_unified(&[]);
+                        parser
+                            .initialize_request(UnifiedParserInit {
+                                tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                    named_tool: named.then(|| "record_literal".into()),
+                                },
+                                invalid_guided_payload:
+                                    crate::unified::InvalidGuidedPayloadPolicy::StreamBestEffort,
+                                ..Default::default()
+                            })
+                            .unwrap();
+                        let mut events = Vec::new();
+                        for pair in boundaries.windows(2) {
+                            events.extend(if tokens {
+                                parser.push_tokens(&ids[pair[0]..pair[1]]).unwrap()
+                            } else {
+                                parser.push(&input[pair[0]..pair[1]]).unwrap()
+                            });
+                        }
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(
+                            crate::unified::assemble(&events),
+                            expected,
+                            "tokens={tokens}, boundaries={boundaries:?}, named={named}, reasoning={reasoning:?}"
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]
