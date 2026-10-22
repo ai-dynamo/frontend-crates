@@ -341,6 +341,26 @@ pub struct ImageUrl {
     pub uuid: Option<Uuid>,
 }
 
+/// Experimental modality envelope. The fields object is plugin-owned JSON;
+/// consumers must explicitly document whether they pass the whole map or a payload.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CustomModalityPart))]
+pub struct CustomModalityPart {
+    #[serde(deserialize_with = "deserialize_custom_kind")]
+    pub kind: String,
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}
+
+fn deserialize_custom_kind<'de, D: serde::Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    let kind = String::deserialize(d)?;
+    if kind.trim().is_empty() {
+        return Err(serde::de::Error::custom("custom kind must be non-empty"));
+    }
+    Ok(kind)
+}
+
 /// Tool message content part with media observation support.
 ///
 /// OpenAI's schema currently limits tool content parts to text, but
@@ -357,6 +377,7 @@ pub enum ChatCompletionRequestToolMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    Custom(CustomModalityPart),
 }
 
 /// Tool message content, extended to preserve media observations.
@@ -816,6 +837,7 @@ pub enum ChatCompletionRequestUserMessageContentPart {
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    Custom(CustomModalityPart),
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartAudio))]
     InputAudio(ChatCompletionRequestMessageContentPartAudio),
 }
