@@ -229,13 +229,16 @@ impl InvokeBoundary for BeamBoundary {
             let at = self.scanned + (rest.len() - t.len());
             self.scanned = at;
             if t.is_empty() {
+                // Preserve permissive EOF recovery; rejecting policies require confirmed EOS.
                 return match (flush, self.at_eos, self.complete) {
                     (false, _, _) => BodyScan::Wait,
-                    (true, false, _) => malformed(body.len(), "missing call terminator"),
-                    (true, true, 0) if !self.empty_body_ok => {
+                    (true, false, _) if !lenient => {
                         malformed(body.len(), "missing call terminator")
                     }
-                    (true, true, _) => BodyScan::Complete {
+                    (true, _, 0) if !self.empty_body_ok => {
+                        malformed(body.len(), "missing call terminator")
+                    }
+                    (true, _, _) => BodyScan::Complete {
                         body_end: at,
                         consume: at,
                     },
@@ -1067,6 +1070,13 @@ mod tests {
             for name in ["noop", "maybe"] {
                 for input in [header(name), format!("{}<|call|>", header(name))] {
                     for got in splits_with(&empty_body_tools(), &input, policy) {
+                        if malformed == MalformedToolCallPolicy::Reject && !input.ends_with(CALL) {
+                            assert!(
+                                got.is_err(),
+                                "unconfirmed EOF must not complete a held call"
+                            );
+                            continue;
+                        }
                         assert_eq!(
                             got.unwrap(),
                             vec![call(name, json!({}))],
@@ -1523,19 +1533,9 @@ mod tests {
 
     #[test]
     fn strict_rejects_unterminated_header_only_and_malformed() {
-        // A delimited call that the stream ends after is a call (the serving grammar
-        // lets EOS stand for the closer), under the strict policy too.
-        for got in splits(&format!("{HDR}{LONDON}"), strict()) {
-            assert_eq!(
-                got.unwrap(),
-                vec![call("weather", json!({"location": "London"}))]
-            );
-        }
-        // `weather` requires nothing, so its header alone is the call `{}` as well.
-        for got in splits(HDR, strict()) {
-            assert_eq!(got.unwrap(), vec![call("weather", json!({}))]);
-        }
         for tail in [
+            format!("{HDR}{LONDON}"),
+            HDR.to_string(),
             format!("{HDR}<rfl:parameter name=\"location\">\nLondon\n"),
             format!("{HDR}<rfl:parameter name=\"location\">\nLondon\n</wrong><|call|>"),
             format!("{HDR}{LONDON}<|start|>assistant<|channel|>final<|message|>x<|return|>"),
@@ -1550,9 +1550,9 @@ mod tests {
                     "{error}"
                 );
             }
-            // `Drop` never dispatches a partial call either: an unterminated call and a
-            // call with an unclosed parameter are both gone (the builder's parser
-            // contract: `truncated_parameter`, `malformed_parameter`).
+            if tail == HDR || tail == format!("{HDR}{LONDON}") {
+                continue;
+            }
             for got in splits(&tail, ToolCallPolicy::default()) {
                 assert!(
                     !got.unwrap()
@@ -1695,7 +1695,11 @@ mod tests {
         let complete = "<|start|>assistant to=fn<|channel|>analysis <|constrain|>xml<|message|>";
         for policy in [strict(), ToolCallPolicy::default()] {
             for got in splits(complete, policy) {
-                assert_eq!(got.unwrap(), vec![call("fn", json!({}))]);
+                if policy.malformed == MalformedToolCallPolicy::Reject {
+                    assert!(got.is_err(), "unconfirmed EOF");
+                } else {
+                    assert_eq!(got.unwrap(), vec![call("fn", json!({}))]);
+                }
             }
         }
         for input in [
