@@ -228,7 +228,7 @@ impl InvokeBoundary for BeamBoundary {
             let t = rest.trim_start_matches([' ', '\t', '\n', '\r']);
             let at = self.scanned + (rest.len() - t.len());
             self.scanned = at;
-            if t.is_empty() {
+            if t.is_empty() || (self.at_eos && t == RETURN) {
                 // Preserve permissive EOF recovery; rejecting policies require confirmed EOS.
                 return match (flush, self.at_eos, self.complete) {
                     (false, _, _) => BodyScan::Wait,
@@ -240,7 +240,7 @@ impl InvokeBoundary for BeamBoundary {
                     }
                     (true, _, _) => BodyScan::Complete {
                         body_end: at,
-                        consume: at,
+                        consume: body.len(),
                     },
                 };
             }
@@ -1568,6 +1568,7 @@ mod tests {
     fn confirmed_eos_closes_complete_arguments_only() {
         for (body, valid) in [
             (LONDON, true),
+            (&format!("{LONDON}{RETURN}"), true),
             ("", true),
             ("<rfl:parameter name=\"location\">\nLondon\n", false),
         ] {
