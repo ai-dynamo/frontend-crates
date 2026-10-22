@@ -253,6 +253,17 @@ The engine scatters the ViT's 12 output embeddings into positions `2..14`
 Qwen3-VL / Cosmos3 rule under a request `VideoPixelBudget`, and a consumer
 implements `Fit` for any other model.
 
+Decoding runs on CUDA device 0: the first device `CUDA_VISIBLE_DEVICES`
+leaves, in CUDA's order (fastest first unless `CUDA_DEVICE_ORDER=PCI_BUS_ID`,
+so not always `nvidia-smi`'s GPU 0). `cuvidGetDecoderCaps` on that GPU decides
+which codecs and frame sizes NVDEC takes. VP8 always decodes on the CPU
+through libvpx, and VP9 does when NVDEC reports it unsupported (no driver
+library, no GPU, or a codec or size the GPU lacks); other NVDEC errors fail
+the decode. NVDEC needs the driver's `libnvcuvid.so.1`: in a container,
+`NVIDIA_DRIVER_CAPABILITIES` must include `video` (the NVIDIA Container
+Toolkit's default, for an image that does not set it, is `compute,utility`),
+e.g. `-e NVIDIA_DRIVER_CAPABILITIES=compute,utility,video`.
+
 ```rust
 use dynamo_multimodal::models::qwen_vl::{Qwen3VlVideo, Qwen3VlVideoFit};
 use dynamo_multimodal::video::resolve_num_frames;
