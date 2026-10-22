@@ -36,8 +36,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else if !["None", "Reasoning"].iter().any(|state| {
             request["init"]
                 == json!({"starting_state":state, "tool_output_mode":"Native", "named_tool":null})
-        }) || !matches!(request["finish_reason"].as_str(), Some("stop" | "length"))
-            || unsupported_schedule
+        }) || !matches!(
+            request["finish_reason"].as_str(),
+            Some("stop" | "length" | "tool_calls")
+        ) || unsupported_schedule
         {
             unavailable(
                 "unsupported_request_mode",

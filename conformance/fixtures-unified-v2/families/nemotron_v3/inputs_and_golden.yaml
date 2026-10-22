@@ -18725,3 +18725,236 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  adjacent_calls_partial_header:
+    lifecycle: active
+    scenario: adjacent_calls_partial_header
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=f>
+
+        <parameter=a>
+
+        1
+
+        </parameter>
+
+        </function>
+
+        </tool_call><tool_call>
+
+        <function=g>
+
+        <parameter=b>
+
+        2
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            a:
+              type: string
+          required:
+          - a
+      - name: g
+        parameters:
+          type: object
+          properties:
+            b:
+              type: string
+          required:
+          - b
+      chunks:
+      - delta_text: '</think><tool_call>
+
+          <function=f>
+
+          <parameter=a>
+
+          1
+
+          </parameter>
+
+          </function>
+
+          </tool_call><tool_call>
+
+          <fun'
+      - delta_text: 'ction=g>
+
+          <parameter=b>
+
+          2
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          a: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          b: '2'
+  three_calls_partial_header:
+    lifecycle: active
+    scenario: three_calls_partial_header
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-three_calls_partial_header
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=f>
+
+        <parameter=x>
+
+        1
+
+        </parameter>
+
+        </function>
+
+        </tool_call><tool_call>
+
+        <function=g>
+
+        <parameter=x>
+
+        2
+
+        </parameter>
+
+        </function>
+
+        </tool_call><tool_call>
+
+        <function=h>
+
+        <parameter=x>
+
+        3
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: g
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: h
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      chunks:
+      - delta_text: </think>
+      - delta_text: '<tool_call>
+
+          <function=f>
+
+          <parameter=x>
+
+          1
+
+          </parameter>
+
+          </function>
+
+          </tool_call><tool_call>
+
+          <fun'
+      - delta_text: 'ction=g>
+
+          <parameter=x>
+
+          2
+
+          </parameter>
+
+          </function>
+
+          </tool_call><tool_call>
+
+          <function=h>
+
+          <parameter=x>
+
+          3
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          x: '2'
+      - kind: tool_call
+        name: h
+        arguments:
+          x: '3'

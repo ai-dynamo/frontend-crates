@@ -608,6 +608,16 @@ metadata_changes:
         arguments:
           city: Paris
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.0
+      capture_origin:
+        crate_version: 9.2.0
+        source_sha256: 70cc8fc71277394103ba6dc2c5b8cc5da8fef133ec1c2530365ea3c4ffb5a2a5
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 8e1848267c627dfe432f33f84103a40715427cbbf8755b871c1ed1f0590d0c29
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -1278,4 +1288,14 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 9dfaa6978ec7d9faedd18c2c5445af4c5c504fb13b0304a9e7a651d2d6be2aaa
         git_commit: 8619e28bbeb9242da00f4212ec0c0f49cb787cf4
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.0
+      capture_origin:
+        crate_version: 9.2.0
+        source_sha256: 70cc8fc71277394103ba6dc2c5b8cc5da8fef133ec1c2530365ea3c4ffb5a2a5
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 8e1848267c627dfe432f33f84103a40715427cbbf8755b871c1ed1f0590d0c29
       inherited_from: null

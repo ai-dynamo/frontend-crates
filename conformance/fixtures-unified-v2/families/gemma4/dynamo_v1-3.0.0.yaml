@@ -9,6 +9,22 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e8fe4ed9023650824ebeb2ed7f689bf77a45edce740dcd9d9295d940451436f7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     stimulus:
@@ -2552,6 +2568,26 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 9acdce06340c53443e64548f7a8c440da0afc5813f92e2d67955958f2bddb4c6
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     stimulus:
@@ -2709,6 +2745,17 @@ changes:
             flag: false
             text: 'null'
 metadata_changes:
+  adjacent_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          a: '1'
+      - name: g
+        arguments:
+          b: '2'
   arg_json_null_anyof:
     batch_final:
       reasoning_text: ''
@@ -4567,6 +4614,20 @@ metadata_changes:
       - name: get_weather
         arguments:
           city: Paris
+  three_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          x: '2'
+      - name: h
+        arguments:
+          x: '3'
   tool_block_never_closed_then_text:
     batch_final:
       reasoning_text: ''
@@ -4661,6 +4722,16 @@ metadata_changes:
           flag: false
           text: 'null'
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 3.0.0
+      capture_origin:
+        crate_version: 3.0.0
+        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 4447d7d5da415ff1d8091fb238dc862c186ba0f5222bf1f5c1f6de66a8dced83
+      inherited_from: null
   gemma4_guided_json_malformed_call_prefix_before_reasoning:
     capture_provenance:
       captured_with:
@@ -5265,4 +5336,14 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 701617e9e1705d94cc7658ce7a47df0f91164aee1382cb3639c20472af14e368
         git_commit: 5ad6b70904db1c4a07a0adf45f80fb41b0aca1ee
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 3.0.0
+      capture_origin:
+        crate_version: 3.0.0
+        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 4447d7d5da415ff1d8091fb238dc862c186ba0f5222bf1f5c1f6de66a8dced83
       inherited_from: null

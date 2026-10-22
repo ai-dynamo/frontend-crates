@@ -30,7 +30,7 @@ from impls import unified_grammar_family
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
-from stream_regression_cases import PARALLEL_BOUNDARY_CASES
+from stream_regression_cases import parallel_boundary_source, UNIFIED_PARALLEL_BOUNDARY_FAMILIES
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2603,13 +2603,12 @@ def _deepseek_v41_input(segments):
 def _parallel_boundary_specs():
     specs = []
     for suffix, scenario, description in (
-        ("b", "adjacent_calls_partial_header", "Adjacent calls: a delta closes one call and ends inside the next call header"),
-        ("c", "three_calls_partial_header", "Three adjacent calls: retain the middle call after a partial next header"),
+        ("d", "adjacent_calls_partial_header", "Adjacent calls: a delta closes one call and ends inside the next call header"),
+        ("e", "three_calls_partial_header", "Three adjacent calls: retain the middle call after a partial next header"),
     ):
-        authored = PARALLEL_BOUNDARY_CASES[f"TOOLCALLING.streamv1.50.{suffix}"]
         per_family, schedules, schemas = {}, {}, {}
-        for family in FAMILIES:
-            source = authored[{"qwen3": "qwen3_coder", "deepseek_v41": "deepseek_v4"}.get(family, family)]
+        for family in sorted(UNIFIED_PARALLEL_BOUNDARY_FAMILIES):
+            source = parallel_boundary_source(f"TOOLCALLING.streamv1.50.{suffix}", family)
             golden = [{"kind": "tool_call", **call} for call in source["golden"]["calls"]]
             chunks = [chunk["delta_text"] for chunk in source["chunks"]]
             if family == "deepseek_v41":
@@ -2620,7 +2619,7 @@ def _parallel_boundary_specs():
                 # V4.1 has one calls container; split inside its second invoke,
                 # after the complete first invoke, rather than adding a container.
                 cut = text.index('<｜DSML｜ invoke name="g"') + len('<｜DSML｜ invoke na')
-                chunks = ([""] if suffix == "c" else []) + [text[:cut], text[cut:], ""]
+                chunks = ([""] if suffix == "e" else []) + [text[:cut], text[cut:], ""]
             text = "".join(chunks)
             per_family[family] = (text, VLLM_UNCAPTURABLE.get(family, M), M, golden)
             schedules[family] = chunks

@@ -40,6 +40,10 @@ import unified_taxonomy as taxonomy  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
+from stream_regression_cases import (  # noqa: E402
+    PARALLEL_BOUNDARY_CASES,
+    UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
+)
 from gen_unified_golden import (  # noqa: E402
     CLEAN,
     OnlyFamilies,
@@ -931,15 +935,20 @@ def test_unified_case_counts_match_the_generator():
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == sum(family_specific.values()) + len(FAMILIES) * len(CONFORMANCE_CASES)
+        boundary_cases = len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0
+        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + boundary_cases, f"{fam} diverged from the expected case count"
+    assert sum(per_family.values()) == (
+        sum(family_specific.values())
+        + len(FAMILIES) * len(CONFORMANCE_CASES)
+        + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
+    )
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 223 + len(CONFORMANCE_CASES)
+    assert len(UNIFIED_TAX) == 223 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }

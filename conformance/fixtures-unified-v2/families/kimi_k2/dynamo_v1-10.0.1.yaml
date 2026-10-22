@@ -9,6 +9,18 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
   arg_json_null_anyof:
     observation:
       value:
@@ -1664,6 +1676,22 @@ changes:
           name: get_weather
           arguments:
             city: Paris
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
   tool_block_never_closed_then_text:
     observation:
       value:
@@ -1775,6 +1803,17 @@ changes:
             flag: false
             text: 'null'
 metadata_changes:
+  adjacent_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          a: '1'
+      - name: g
+        arguments:
+          b: '2'
   arg_json_null_anyof:
     batch_final:
       reasoning_text: ''
@@ -3638,6 +3677,20 @@ metadata_changes:
       - name: get_weather
         arguments:
           city: Paris
+  three_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          x: '2'
+      - name: h
+        arguments:
+          x: '3'
   tool_block_never_closed_then_text:
     batch_final:
       reasoning_text: ''
@@ -3735,6 +3788,16 @@ metadata_changes:
           flag: false
           text: 'null'
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: de64aa93f8730f3b79510909f5b9be6b31ed1510477c0c3a2f8fcdb975f134a2
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 60ef6c4f096bf345daddbd0d3228cd6c0891de7fb8dc0e89c3d2e76fac830b95
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -4306,4 +4369,14 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 10.0.1
+      capture_origin:
+        crate_version: 10.0.1
+        source_sha256: de64aa93f8730f3b79510909f5b9be6b31ed1510477c0c3a2f8fcdb975f134a2
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 60ef6c4f096bf345daddbd0d3228cd6c0891de7fb8dc0e89c3d2e76fac830b95
       inherited_from: null

@@ -30,6 +30,8 @@ def capture_failure_detail(payload: dict) -> object:
 def capture_failure_text(payload: dict) -> str:
     detail = capture_failure_detail(payload)
     text = detail if isinstance(detail, str) else payload.get("code")
+    if not isinstance(text, str) and payload and all(isinstance(value, str) for value in payload.values()):
+        text = "; ".join(f"{key}: {value}" for key, value in payload.items())
     if not isinstance(text, str):
         raise ValueError("capture failure needs string detail, message, or code")
     return text

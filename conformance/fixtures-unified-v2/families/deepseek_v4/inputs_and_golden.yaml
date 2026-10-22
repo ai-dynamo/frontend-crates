@@ -14617,8 +14617,7 @@ cases:
   adjacent_calls_partial_header:
     lifecycle: active
     scenario: adjacent_calls_partial_header
-    description: 'Adjacent calls: a delta closes one call and ends inside the next
-      call header'
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
     policy:
     - I2
     - I3
@@ -14627,8 +14626,7 @@ cases:
     display_id: UNIFIED.2-adjacent_calls_partial_header
     historical_ids: []
     request:
-      input: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="a" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke
-        name="g"><｜DSML｜parameter name="b" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      input: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="a" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name="g"><｜DSML｜parameter name="b" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       init:
         starting_state: None
         tool_output_mode: Native
@@ -14652,8 +14650,7 @@ cases:
           required:
           - b
       chunks:
-      - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="a"
-          string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na
+      - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="a" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na
       - delta_text: me="g"><｜DSML｜parameter name="b" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       - delta_text: ''
       - delta_text: ‹finish›
@@ -14670,8 +14667,7 @@ cases:
   three_calls_partial_header:
     lifecycle: active
     scenario: three_calls_partial_header
-    description: 'Three adjacent calls: retain the middle call after a partial next
-      header'
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
     policy:
     - I2
     - I3
@@ -14680,9 +14676,7 @@ cases:
     display_id: UNIFIED.2-three_calls_partial_header
     historical_ids: []
     request:
-      input: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke
-        name="g"><｜DSML｜parameter name="x" string="true">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke
-        name="h"><｜DSML｜parameter name="x" string="true">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      input: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name="g"><｜DSML｜parameter name="x" string="true">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name="h"><｜DSML｜parameter name="x" string="true">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       init:
         starting_state: None
         tool_output_mode: Native
@@ -14715,10 +14709,8 @@ cases:
           - x
       chunks:
       - delta_text: ''
-      - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x"
-          string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na
-      - delta_text: me="g"><｜DSML｜parameter name="x" string="true">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke
-          name="h"><｜DSML｜parameter name="x" string="true">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na
+      - delta_text: me="g"><｜DSML｜parameter name="x" string="true">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name="h"><｜DSML｜parameter name="x" string="true">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
       - delta_text: ''
       - delta_text: ‹finish›
     golden:

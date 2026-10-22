@@ -1,0 +1,327 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 10.0.4
+    source_sha256: 64bbc43808e90f9d5df3134d5436b833eb7d7dc2bb88b557dbdbe8ea508f9ec6
+    adapter_sha256: b86a808517c6ad8de59f997faf91df4da81fe64ade566067575756f2713145cb
+    job_sha256: a92483d003f472c3f4364ec30d71916712af9fb733dd8fb7b6dc68d302066f2e
+document:
+  mode: unified
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_then_content:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  two_calls_same_name:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+metadata_changes:
+  content_then_reason:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Hello there. '
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Sure, one sec. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  interstitial_text:
+    batch_final:
+      reasoning_text: a
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  malformed_json_then_two_valid_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: echo
+        arguments:
+          value: é
+      - name: echo
+        arguments:
+          value: Café
+  narrated_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_after_tool:
+    batch_final:
+      reasoning_text: Look it up.
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  reason_interleaved:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_then_content:
+    batch_final:
+      reasoning_text: let me think
+      normal_text: ''
+      calls: []
+  reason_tool_reason_tool_reason:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Sure. '
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_sandwich:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Before. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  two_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  two_calls_same_name:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Tokyo
+  two_reason_spans:
+    batch_final:
+      reasoning_text: first thought
+      normal_text: ''
+      calls: []
+document_overrides: {}

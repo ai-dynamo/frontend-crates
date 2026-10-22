@@ -289,7 +289,7 @@ metadata_changes:
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
-document_overrides: 
+document_overrides:
   adjacent_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -308,4 +308,3 @@ document_overrides:
         git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
         source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
       inherited_from: null
-

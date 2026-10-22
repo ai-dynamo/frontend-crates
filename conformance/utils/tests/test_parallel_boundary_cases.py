@@ -11,7 +11,11 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from append_stream_regression_cases import _append  # noqa: E402
-from stream_regression_cases import PARALLEL_BOUNDARY_CASES  # noqa: E402
+from stream_regression_cases import (
+    PARALLEL_BOUNDARY_CASES,
+    UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
+    parallel_boundary_source,
+)  # noqa: E402
 import gen_unified_golden as unified  # noqa: E402
 
 
@@ -57,13 +61,12 @@ def test_pythonic_parallel_calls_share_one_list():
 
 
 def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
-    for family in unified.FAMILIES:
+    for family in UNIFIED_PARALLEL_BOUNDARY_FAMILIES:
         cases = unified.build_cases(family)
-        for suffix, scenario in (("b", "adjacent_calls_partial_header"), ("c", "three_calls_partial_header")):
-            assert family in unified.scenario_families(scenario)
+        for suffix, scenario in (("d", "adjacent_calls_partial_header"), ("e", "three_calls_partial_header")):
+            assert unified.scenario_families(scenario) == UNIFIED_PARALLEL_BOUNDARY_FAMILIES
             case = cases[f"UNIFIED.{scenario}.{family}"]
-            source_family = {"qwen3": "qwen3_coder", "deepseek_v41": "deepseek_v4"}.get(family, family)
-            source = PARALLEL_BOUNDARY_CASES[f"TOOLCALLING.streamv1.50.{suffix}"][source_family]
+            source = parallel_boundary_source(f"TOOLCALLING.streamv1.50.{suffix}", family)
             assert case["golden"] == [{"kind": "tool_call", **call} for call in source["golden"]["calls"]]
             assert case["tools"] == source["tools"]
             assert "".join(case["input_chunks"]) == case["input"]
@@ -71,7 +74,10 @@ def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
                 assert case["input"].count("<｜DSML｜ calls>") == 1
                 assert any(chunk.endswith('<｜DSML｜ invoke na') for chunk in case["input_chunks"])
             else:
-                assert case["input_chunks"] == [chunk["delta_text"] for chunk in source["chunks"]]
+                expected_chunks = [chunk["delta_text"] for chunk in source["chunks"]]
+                if family == "nemotron_v3":
+                    expected_chunks[0] = "</think>" + expected_chunks[0]
+                assert case["input_chunks"] == expected_chunks
 
 
 def test_staged_unified_generator_preserves_parallel_boundaries(tmp_path):

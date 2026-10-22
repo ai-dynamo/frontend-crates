@@ -9,6 +9,16 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 25896d88b06aa6a31434057cf10ff1d7f7b46c1792f7dd97084fafd9412c6688
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="a" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="b" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     stimulus:
@@ -2127,6 +2137,16 @@ changes:
         assembled:
         - kind: text
           text: Before. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> After.
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 630595481794654f95a6b2825be9d407940ce952851a90b8286077d454475484
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="x" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="h"><｜DSML｜ parameter name="x" string="true">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     stimulus:
@@ -2265,6 +2285,11 @@ changes:
         - kind: text
           text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">false</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
 metadata_changes:
+  adjacent_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="a" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="b" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
   arg_json_null_anyof:
     batch_final:
       reasoning_text: ''
@@ -4074,6 +4099,11 @@ metadata_changes:
       reasoning_text: ''
       normal_text: Before. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> After.
       calls: []
+  three_calls_partial_header:
+    batch_final:
+      reasoning_text: ''
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="x" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="h"><｜DSML｜ parameter name="x" string="true">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      calls: []
   tool_block_never_closed_then_text:
     batch_final:
       reasoning_text: ''
@@ -4216,6 +4246,16 @@ metadata_changes:
       normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">false</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       calls: []
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 3.0.0
+      capture_origin:
+        crate_version: 3.0.0
+        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: ada126b51a064f54d71f550f267da3722a01d7368d050ed7a4ea24947f497ce2
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -4798,4 +4838,14 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 67431ec6a5898fb3d3b763c9b26a34671a79896b176183741ca29aaf3221acb6
         git_commit: 5ad6b70904db1c4a07a0adf45f80fb41b0aca1ee
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 3.0.0
+      capture_origin:
+        crate_version: 3.0.0
+        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: ada126b51a064f54d71f550f267da3722a01d7368d050ed7a4ea24947f497ce2
       inherited_from: null

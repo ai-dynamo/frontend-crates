@@ -668,6 +668,16 @@ metadata_changes:
         git_commit: c1471419407893490711154f710372b3a1edfe4a
       resolution: historical_adapter_unsupported
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 5.1.2
+      capture_origin:
+        crate_version: 5.1.2
+        source_sha256: 0abf4bf2b2302173c2f858a6482fe38fed999718edbce384c567a395977969e9
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 8bcd6fe3f7632bb7945388f93b92aaa20929104fb536f3bd0b8688cb75559073
+      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:
@@ -1371,4 +1381,14 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 0ad76c1a53c93a8ad55804ff9067d11ee8d5c49728c494f9aaad712b419f386f
         git_commit: c1471419407893490711154f710372b3a1edfe4a
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 5.1.2
+      capture_origin:
+        crate_version: 5.1.2
+        source_sha256: 0abf4bf2b2302173c2f858a6482fe38fed999718edbce384c567a395977969e9
+        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
+        job_sha256: 8bcd6fe3f7632bb7945388f93b92aaa20929104fb536f3bd0b8688cb75559073
       inherited_from: null

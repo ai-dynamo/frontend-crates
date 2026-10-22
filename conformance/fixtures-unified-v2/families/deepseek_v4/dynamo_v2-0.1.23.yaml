@@ -2115,6 +2115,24 @@ changes:
         - expected:
           - kind: text
             text: done
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 710387f679573565fd334d4b7410847e5d59b89b777183ceb3ff75bd47c82aed
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: cd91b9ffc1849569a7ef8371845abde4348bdcad5ef7d3c6494f20b8fe4f132a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
 metadata_changes:
   arg_marker_in_string:
     init:
@@ -2656,6 +2674,16 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   two_reason_spans:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native

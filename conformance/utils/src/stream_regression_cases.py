@@ -293,7 +293,28 @@ REASONING_CASES = {
 
 
 _PARALLEL_BOUNDARY_DATA = json.loads(Path(__file__).with_name("parallel_boundary_cases.json").read_text())
+PARALLEL_BOUNDARY_SOURCE_FAMILIES = {
+    "deepseek_v41": "deepseek_v4",
+    "gpt_oss": "harmony_text",
+    "nemotron_v3": "qwen3_coder",
+    "qwen3": "qwen3_coder",
+}
 PARALLEL_BOUNDARY_CASES = {
     case_id: {family: cases[case_id] for family, cases in _PARALLEL_BOUNDARY_DATA["cases"].items()}
     for case_id in ("TOOLCALLING.streamv1.50.d", "TOOLCALLING.streamv1.50.e")
 }
+UNIFIED_PARALLEL_BOUNDARY_SOURCES = _PARALLEL_BOUNDARY_DATA.get("unified_sources", {})
+UNIFIED_PARALLEL_BOUNDARY_FAMILIES = frozenset({
+    "deepseek_v4", "deepseek_v41", "gemma4", "glm47",
+    "kimi_k2", "kimi_k3", "muse_glimmer", "nemotron_v3", "qwen3",
+})
+
+
+def parallel_boundary_source(case_id: str, family: str) -> dict:
+    source_family = PARALLEL_BOUNDARY_SOURCE_FAMILIES.get(family, family)
+    source = PARALLEL_BOUNDARY_CASES[case_id].get(source_family)
+    if source is None:
+        source = UNIFIED_PARALLEL_BOUNDARY_SOURCES.get(case_id, {}).get(family)
+    if source is None:
+        raise KeyError(f"no authored parallel-boundary source for {case_id} / {family}")
+    return source

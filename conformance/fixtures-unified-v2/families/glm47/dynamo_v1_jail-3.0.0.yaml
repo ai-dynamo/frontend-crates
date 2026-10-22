@@ -5,6 +5,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
   arg_json_null:
     case_key: arg_json_null
     stimulus:
@@ -1963,6 +1972,15 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: f9474a08f4547180b996d4a3707b3d2993d7b83b5fd33c692ded3900762795d9
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
+  three_calls_partial_header:
+    case_key: three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
     observation:
       unavailable:
         code: source_unavailable

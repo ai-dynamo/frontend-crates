@@ -11,6 +11,12 @@ document:
 changes: {}
 metadata_changes: {}
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.0
+      capture_origin: null
+      inherited_from: null
   arg_json_null_anyof:
     capture_provenance:
       captured_with:
@@ -2485,6 +2491,12 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: d985771aa6b5607bfcbb05e419b9ec50f623597990c621661ea6b5e1df67594a
         git_commit: 8619e28bbeb9242da00f4212ec0c0f49cb787cf4
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v1: 9.2.0
+      capture_origin: null
       inherited_from: null
   tool_block_never_closed_then_text:
     capture_provenance:

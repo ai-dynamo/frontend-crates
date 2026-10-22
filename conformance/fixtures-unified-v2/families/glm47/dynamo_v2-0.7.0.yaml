@@ -2682,6 +2682,73 @@ changes:
         - expected:
           - kind: text
             text: done
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes:
   guided_quoted_reasoning_closer_named:
     init:
@@ -2741,6 +2808,16 @@ metadata_changes:
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
+      tool_output_mode: Native
+      named_tool: null
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
+    init:
+      starting_state: None
       tool_output_mode: Native
       named_tool: null
 document_overrides:

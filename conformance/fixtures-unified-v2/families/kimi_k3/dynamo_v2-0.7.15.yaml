@@ -482,6 +482,40 @@ changes:
             name: echo
             arguments: '{"value":"Café"}'
             complete: true
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes:
   gpt_oss_quoted_message_header_literal:
     init:

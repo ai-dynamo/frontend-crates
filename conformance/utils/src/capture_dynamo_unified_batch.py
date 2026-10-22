@@ -62,7 +62,6 @@ def source_unavailable(version: str, job_path: Path, output_path: Path, jail_buf
         raise ValueError(f"no explicit source blocker is registered for {implementation} {version}")
     job_bytes = job_path.read_bytes()
     job = json.loads(job_bytes)
-    _probe_job(job, jail_buffer)
     results = {
         case["id"]: unavailable_result("source_unavailable", detail, capture=case["request"], observation=True)
         for case in job["cases"]
