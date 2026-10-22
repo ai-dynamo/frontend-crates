@@ -71,8 +71,6 @@ The ten native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen
 
 The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, and Qwen3. GPT-OSS also retains the historical comparison between v1 reasoning + batch capture and the v2 Harmony tool parser, labeled split.
 
-The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, and Qwen3. GPT-OSS also retains the historical comparison between v1 reasoning + batch capture and the v2 Harmony tool parser, labeled split.
-
 ## Nemotron 3 Ultra applicability
 
 The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
@@ -164,7 +162,7 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 246 of the 343 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 250 of the 347 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
 - The 97 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 

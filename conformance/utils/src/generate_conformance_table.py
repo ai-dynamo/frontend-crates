@@ -2705,7 +2705,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     )
 
     def _dynamo_path(family: str, version: str) -> dict:
-        native = family in gen_unified_golden.UNIFIED_FAMILIES
+        native = family in gen_unified_golden.UNIFIED_FAMILIES and family != "gpt_oss"
         mode = "stream" if native else "split: v1 reasoning + v2 tool parser"
         return {"label": _full_label(BASELINE_STREAM_IMPL, version, mode),
                 "parse_mode": "unified" if native else "split"}
@@ -2746,7 +2746,7 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
                      "impl": candidate["impl"], "version": candidate["version"],
                      "parse_mode": candidate["parse_mode"], "leak": False,
                      **(_dynamo_path(family, candidate["version"])
-                        if candidate["impl"] == "dynamo" and candidate["parse_mode"] == "unified" else {}),
+                        if candidate["impl"] == "dynamo" else {}),
                      "block": unavailable}
                     for candidate in candidates
                 ],

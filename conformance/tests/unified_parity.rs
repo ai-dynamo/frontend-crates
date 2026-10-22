@@ -356,6 +356,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "deepseek_v41",
         "gemma4",
         "glm47",
+        "gpt_oss",
         "kimi_k2",
         "kimi_k3",
         "muse_glimmer",
@@ -363,7 +364,6 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
     ];
     let mut checked = 0;
     let files = load_native_golden();
-    let family_count = files.len();
     for file in files {
         for (id, case) in &file.cases {
             if !reference_scenarios
