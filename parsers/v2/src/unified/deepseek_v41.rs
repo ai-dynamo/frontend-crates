@@ -159,7 +159,6 @@ enum InvocationPosition {
 struct DeepSeekV41InvocationBoundary {
     tool_names: Vec<String>,
     recovered_header: bool,
-    parameters: usize,
     position: InvocationPosition,
     scan_from: usize,
     json: JsonPrefixState,
@@ -180,8 +179,8 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
     }
 
     fn bare_invoke_start(&self, text: &str) -> Option<usize> {
-        // A parameter tag alone cannot identify a call. Request tool names
-        // disambiguate this repair without filtering ordinary invoke headers.
+        // Declared names narrow repair candidates; an explicit invoke closer
+        // and a complete parameter body are still required before emitting.
         if self.tool_names.is_empty() {
             return None;
         }
@@ -209,10 +208,6 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
         } else {
             keep
         }
-    }
-
-    fn bare_invoke_uses_eof_boundary(&self) -> bool {
-        true
     }
 
     fn owns_guided_prefix(&self) -> bool {
@@ -321,13 +316,12 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                     }
                 }
                 InvocationPosition::BetweenParameters => {
-                    if self.recovered_header && self.parameters > 0 {
+                    if self.recovered_header {
                         let tail = candidate[self.scan_from..].trim_start();
                         if tail.starts_with(BLOCK_END) || tail.starts_with(INVOKE_START) {
+                            // Return the incomplete candidate for rejection without
+                            // consuming the next real call or the outer closer.
                             return Some(candidate.len() - tail.len());
-                        }
-                        if flush && tail.is_empty() {
-                            return Some(candidate.len());
                         }
                     }
                     let close = find_from(candidate, self.scan_from, INVOKE_END);
@@ -390,7 +384,6 @@ impl InvokeBoundary for DeepSeekV41InvocationBoundary {
                         return None;
                     };
                     self.scan_from = value_end + PARAMETER_END.len();
-                    self.parameters += 1;
                     self.position = InvocationPosition::BetweenParameters;
                 }
                 InvocationPosition::InvalidParameter { start } => {
@@ -446,18 +439,15 @@ impl DeepSeekV41 {
             })
             .context("invalid DeepSeek V4.1 invocation header")?;
         anyhow::ensure!(!name.is_empty(), "empty DeepSeek V4.1 tool name");
-        let missing_end = !body.ends_with(INVOKE_END);
-        let mut body = if recovered.is_some() {
-            let body = body.strip_suffix(INVOKE_END).unwrap_or(body);
+        let mut body = body
+            .strip_suffix(INVOKE_END)
+            .context("incomplete DeepSeek V4.1 invocation")?;
+        if recovered.is_some() {
             anyhow::ensure!(
                 body.trim_start().starts_with(PARAMETER_START),
                 "recovered DeepSeek V4.1 invocation requires parameters"
             );
-            body
-        } else {
-            body.strip_suffix(INVOKE_END)
-                .context("incomplete DeepSeek V4.1 invocation")?
-        };
+        }
         let mut arguments = if body.trim_start().starts_with('{') {
             let arguments = serde_json::from_str::<Map<String, Value>>(body)
                 .context("invalid DeepSeek V4.1 JSON arguments")?;
@@ -471,6 +461,12 @@ impl DeepSeekV41 {
             // A model may repeat a parameter closer between arguments. Only
             // tolerate it here, after a value has ended, never inside a value.
             if let Some(remainder) = body.strip_prefix(PARAMETER_END) {
+                // With a mistyped opener this may close a real parameter whose
+                // name happens to match a tool, so it cannot be ignored safely.
+                anyhow::ensure!(
+                    recovered.is_none(),
+                    "ambiguous DeepSeek V4.1 recovery: unmatched parameter closer"
+                );
                 body = remainder;
                 continue;
             }
@@ -496,7 +492,7 @@ impl DeepSeekV41 {
                 stage = "invoke_header_recovery",
                 tool_index,
                 tool_name = name,
-                missing_invoke_end = missing_end,
+                missing_invoke_end = false,
                 raw_output = invoke,
                 "Recovered DeepSeek V4.1 parameter tag as a declared tool invocation"
             );

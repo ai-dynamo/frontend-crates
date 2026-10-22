@@ -94,7 +94,11 @@ fn recovered_declared_tool_header_logs_warning_with_original_bytes() {
         let mut parser = create_unified_parser_for_family("deepseek_v41", &tools).unwrap();
         parser.push(input).unwrap();
         capture.assert_no_warnings();
-        assert_eq!(parser.finish().unwrap().assembled().len(), 1);
+        assert_eq!(
+            assemble(&parser.push("</｜DSML｜ invoke>").unwrap()).len(),
+            1
+        );
+        assert!(parser.finish().unwrap().events.is_empty());
     });
     let events = capture.0.lock().unwrap();
     assert!(events.iter().all(|event| event.level != Level::ERROR));
@@ -107,8 +111,30 @@ fn recovered_declared_tool_header_logs_warning_with_original_bytes() {
     assert_eq!(recovered.len(), 1);
     assert_eq!(recovered[0].level, Level::WARN);
     assert_eq!(recovered[0].fields["tool_name"], "Bash");
-    assert_eq!(recovered[0].fields["missing_invoke_end"], "true");
-    assert_eq!(recovered[0].fields["raw_output"], input);
+    assert_eq!(recovered[0].fields["missing_invoke_end"], "false");
+    assert_eq!(
+        recovered[0].fields["raw_output"],
+        format!("{input}</｜DSML｜ invoke>")
+    );
+}
+
+#[test]
+fn ambiguous_same_named_parameter_is_logged_without_emitting_a_call() {
+    let capture = Capture::default();
+    let input = "<｜DSML｜ parameter name=\"Bash\"><｜DSML｜ parameter name=\"command\">payload</｜DSML｜ parameter></｜DSML｜ parameter></｜DSML｜ invoke>";
+    capture.run(|| {
+        let tools = [Tool {
+            name: "Bash".into(),
+            description: None,
+            strict: None,
+            parameters: serde_json::json!({}),
+        }];
+        let mut parser = create_unified_parser_for_family("deepseek_v41", &tools).unwrap();
+        assert!(parser.push(input).unwrap().is_empty());
+        assert!(parser.finish().unwrap().events.is_empty());
+    });
+    capture.assert_failure("error", "ambiguous DeepSeek V4.1 recovery");
+    capture.assert_failure("raw_output", input);
 }
 
 #[test]

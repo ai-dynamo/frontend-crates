@@ -70,7 +70,7 @@ fn check(input: &str, tools: &[Tool], expected: &[UnifiedEvent]) {
 }
 
 #[test]
-fn declared_tool_header_recovers_with_or_without_wrappers_and_closer() {
+fn declared_tool_header_requires_an_explicit_invoke_closer() {
     for wrapped in [false, true] {
         for closer in ["", "</｜DSML｜ invoke>"] {
             let input = if wrapped {
@@ -79,10 +79,15 @@ fn declared_tool_header_recovers_with_or_without_wrappers_and_closer() {
             } else {
                 format!("{SAMPLE}{closer}")
             };
-            check(&input, &tools(), &[call()]);
-            check(&format!("\n\n{input}"), &tools(), &[call()]);
+            let expected = if closer.is_empty() {
+                vec![]
+            } else {
+                vec![call()]
+            };
+            check(&input, &tools(), &expected);
+            check(&format!("\n\n{input}"), &tools(), &expected);
             if wrapped {
-                check(&format!("{input}</｜DSML｜ calls>"), &tools(), &[call()]);
+                check(&format!("{input}</｜DSML｜ calls>"), &tools(), &expected);
             }
         }
     }
@@ -91,14 +96,16 @@ fn declared_tool_header_recovers_with_or_without_wrappers_and_closer() {
 #[test]
 fn recovered_headers_preserve_later_calls_and_surrounding_text() {
     let next = "<｜DSML｜ invoke name=\"Bash\"><｜DSML｜ parameter name=\"command\" string=\"true\">next</｜DSML｜ parameter></｜DSML｜ invoke>";
-    let expected = [
-        call(),
-        UnifiedEvent::ToolCall {
-            name: "Bash".into(),
-            arguments: json!({"command":"next"}),
-        },
-    ];
+    let next_call = UnifiedEvent::ToolCall {
+        name: "Bash".into(),
+        arguments: json!({"command":"next"}),
+    };
     for closer in ["", "</｜DSML｜ invoke>"] {
+        let expected = if closer.is_empty() {
+            vec![next_call.clone()]
+        } else {
+            vec![call(), next_call.clone()]
+        };
         check(&format!("{SAMPLE}{closer}{next}"), &tools(), &expected);
     }
     check(
@@ -138,18 +145,20 @@ fn tool_names_are_exact_and_regular_parameters_and_quoted_examples_are_preserved
             text: parameter.into(),
         }],
     );
-    for input in [
-        format!("```xml\n{SAMPLE}\n```"),
-        format!("`{SAMPLE}`"),
-        format!("\"{SAMPLE}\""),
-    ] {
-        check(
-            &input,
-            &tools(),
-            &[UnifiedEvent::Text {
-                text: input.clone(),
-            }],
-        );
+    for closer in ["", "</｜DSML｜ invoke>"] {
+        for input in [
+            format!("```xml\n{SAMPLE}{closer}\n```"),
+            format!("`{SAMPLE}{closer}`"),
+            format!("\"{SAMPLE}{closer}\""),
+        ] {
+            check(
+                &input,
+                &tools(),
+                &[UnifiedEvent::Text {
+                    text: input.clone(),
+                }],
+            );
+        }
     }
     let nested = "<｜DSML｜ parameter  name=\"Bash\">";
     let input = format!(
@@ -184,17 +193,21 @@ fn tool_names_are_exact_and_regular_parameters_and_quoted_examples_are_preserved
 }
 
 #[test]
-fn eof_recovery_waits_for_complete_parameters_and_reset_keeps_tool_definitions() {
+fn recovery_waits_for_explicit_closure_and_reset_keeps_tool_definitions() {
     let mut parser = create_unified_parser_for_family("deepseek_v41", &tools()).unwrap();
     assert!(parser.push(SAMPLE).unwrap().is_empty());
-    assert_eq!(parser.finish().unwrap().assembled(), vec![call()]);
+    assert!(parser.finish().unwrap().assembled().is_empty());
     parser.reset();
     let partial = SAMPLE.strip_suffix("</｜DSML｜ parameter>").unwrap();
     assert!(parser.push(partial).unwrap().is_empty());
     assert!(parser.finish().unwrap().assembled().is_empty());
     parser.reset();
     assert!(parser.push(SAMPLE).unwrap().is_empty());
-    assert_eq!(parser.finish().unwrap().assembled(), vec![call()]);
+    assert_eq!(
+        assemble(&parser.push("</｜DSML｜ invoke>").unwrap()),
+        vec![call()]
+    );
+    assert!(parser.finish().unwrap().events.is_empty());
     for body in [
         "",
         "plain text",
@@ -203,4 +216,48 @@ fn eof_recovery_waits_for_complete_parameters_and_reset_keeps_tool_definitions()
         let input = format!("<｜DSML｜ parameter name=\"Bash\">{body}</｜DSML｜ invoke>");
         check(&input, &tools(), &[]);
     }
+}
+
+#[test]
+fn same_named_real_parameter_does_not_become_an_invocation() {
+    let value = "<｜DSML｜ parameter name=\"command\">payload</｜DSML｜ parameter>";
+    let real_parameter = format!("<｜DSML｜ parameter name=\"Bash\">{value}</｜DSML｜ parameter>");
+    check(&real_parameter, &tools(), &[]);
+    // A surviving invoke closer still cannot turn the outer parameter into a call.
+    check(
+        &format!("{real_parameter}</｜DSML｜ invoke>"),
+        &tools(),
+        &[],
+    );
+    let next = "<｜DSML｜ invoke name=\"Bash\">{\"command\":\"next\"}</｜DSML｜ invoke>";
+    check(
+        &format!("{real_parameter}</｜DSML｜ invoke>{next}"),
+        &tools(),
+        &[UnifiedEvent::ToolCall {
+            name: "Bash".into(),
+            arguments: json!({"command":"next"}),
+        }],
+    );
+    for extra in [
+        "</｜DSML｜ parameter>",
+        "</｜DSML｜ parameter></｜DSML｜ parameter>",
+    ] {
+        check(&format!("{SAMPLE}{extra}</｜DSML｜ invoke>"), &tools(), &[]);
+    }
+    let mut declared = tools();
+    declared.push(Tool {
+        name: "SomeTool".into(),
+        description: None,
+        strict: None,
+        parameters: json!({"type":"object","properties":{"Bash":{"type":"string"}}}),
+    });
+    let input = "<｜DSML｜ invoke name=\"SomeTool\"><｜DSML｜ parameter name=\"Bash\">value</｜DSML｜ parameter></｜DSML｜ invoke>";
+    check(
+        input,
+        &declared,
+        &[UnifiedEvent::ToolCall {
+            name: "SomeTool".into(),
+            arguments: json!({"Bash":"value"}),
+        }],
+    );
 }
