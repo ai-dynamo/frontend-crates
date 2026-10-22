@@ -1255,17 +1255,30 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     ) -> anyhow::Result<()> {
         self.buffer.push_str(chunk);
         self.drain(false, out)
+            .inspect_err(|error| self.log_parse_error("push", self.next_index, error))
     }
 
     pub(crate) fn finish_ordered_into<S: EventSink + ?Sized>(
         &mut self,
         out: &mut S,
     ) -> anyhow::Result<()> {
-        self.drain(true, out)?;
+        self.drain(true, out)
+            .inspect_err(|error| self.log_parse_error("finish", self.next_index, error))?;
         if let Some(deferred) = self.pending_parse_error.take() {
+            self.log_parse_error("finish", deferred.tool_index, &deferred.error);
             return Err(deferred.error);
         }
         Ok(())
+    }
+
+    fn log_parse_error(&self, stage: &'static str, tool_index: usize, error: &anyhow::Error) {
+        tracing::error!(
+            family = self.spec.family,
+            stage,
+            tool_index,
+            error = %format_args!("{error:#}"),
+            "tool call parsing failed"
+        );
     }
 
     /// Clear one stream's scan state and return bytes not yet emitted.
@@ -1321,8 +1334,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         match self.emitter.parse_invoke_deltas(invoke, tool_index) {
             Ok(Some(deltas)) if !deltas.is_empty() => {
                 if let Some(deferred) = self.pending_parse_error.take() {
-                    tracing::warn!(
+                    tracing::error!(
                         why = %format!("{}_incomplete_invoke_recovered", self.spec.family),
+                        family = self.spec.family,
+                        error = %format_args!("{:#}", deferred.error),
                         tool_index = deferred.tool_index,
                         dropped_bytes = deferred.bytes,
                         "Dropped an incomplete invoke after a later call parsed successfully"
@@ -1745,8 +1760,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
                 let Some(start) = invoke_start else {
                     if flush {
-                        tracing::warn!(
+                        tracing::error!(
                             why = %format!("{}_block_without_complete_invoke", self.spec.family),
+                            family = self.spec.family,
+                            tool_index = self.next_index,
                             "stream dropped incomplete block at EOF"
                         );
                         self.consume_buffer_prefix(self.buffer.len());
@@ -1772,8 +1789,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         continue;
                     }
                     if let Some(next_block) = self.resync_block_start(flush) {
-                        tracing::warn!(
+                        tracing::error!(
                             why = %format!("{}_resynchronized_after_incomplete_invoke", self.spec.family),
+                            family = self.spec.family,
+                            tool_index = self.next_index,
                             skipped_bytes = next_block,
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
@@ -1811,8 +1830,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 self.spec.block_ends.iter().map(String::as_str),
                             )
                         {
-                            tracing::warn!(
+                            tracing::error!(
                                 why = %format!("{}_incomplete_invoke", self.spec.family),
+                                family = self.spec.family,
+                                tool_index = self.next_index,
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
                             self.consume_buffer_prefix(be_pos + be_len);
@@ -1823,8 +1844,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             self.in_reasoning = std::mem::take(&mut self.resume_reasoning);
                             continue;
                         }
-                        tracing::warn!(
+                        tracing::error!(
                             why = %format!("{}_incomplete_invoke", self.spec.family),
+                            family = self.spec.family,
+                            tool_index = self.next_index,
                             "stream dropped incomplete invoke at EOF"
                         );
                         self.consume_buffer_prefix(self.buffer.len());
@@ -1859,8 +1882,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     )
                     && be_pos < end
                 {
-                    tracing::warn!(
+                    tracing::error!(
                         why = %format!("{}_incomplete_invoke", self.spec.family),
+                        family = self.spec.family,
+                        tool_index = self.next_index,
                         "stream dropped invoke missing its close before the block end"
                     );
                     self.consume_buffer_prefix(be_pos + be_len);
@@ -2011,8 +2036,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             continue;
                         }
                         if flush {
-                            tracing::warn!(
+                            tracing::error!(
                                 why = %format!("{}_incomplete_bare_invoke", self.spec.family),
+                                family = self.spec.family,
+                                tool_index = self.next_index,
                                 "stream dropped incomplete bare invoke at EOF"
                             );
                             self.consume_buffer_prefix(self.buffer.len());
