@@ -104,7 +104,8 @@ pub(crate) struct ChannelEnvelope {
 pub(crate) struct EnvelopeChannel {
     pub name: &'static str,
     pub reasoning: bool,
-    /// Markers closing this channel's body. `start` always cuts without being consumed.
+    /// Markers closing this channel's body. A trailing `start` is lookahead for the
+    /// next header and is never consumed, including when it is the whole marker.
     pub terminators: &'static [&'static str],
     /// Whether a body that opens with `{` or `[` is read as a JSON answer: a terminator
     /// inside one of its open strings is data, not the end of the body. The reference
@@ -671,6 +672,12 @@ pub(crate) fn envelope_guided_close(
             .flat_map(|c| c.terminators.iter().copied()),
         state.content_routed.then_some(state.content_json),
     )
+    .map(|(at, len)| (at, envelope_close_len(env, &haystack[at..at + len])))
+}
+
+/// A closer can include the next header's start marker as lookahead.
+fn envelope_close_len(env: &ChannelEnvelope, marker: &str) -> usize {
+    marker.strip_suffix(env.start).unwrap_or(marker).len()
 }
 
 /// Guided reader: earliest TURN-END marker ([`ChannelEnvelope::turn_end`]) outside
@@ -2780,11 +2787,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         if let Some((at, marker)) = found {
             push_run(out, kind, &self.buffer[..at]);
             self.env_json.reset();
-            let consumed = if marker == env.start {
-                at
-            } else {
-                at + marker.len()
-            };
+            let consumed = at + envelope_close_len(env, marker);
             self.buffer.drain(..consumed);
             self.prose.clear();
             self.env_mode = EnvMode::Idle;

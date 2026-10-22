@@ -15,7 +15,8 @@
 //! envelope mode; this file is only the grammar table ([`ENVELOPE`]), the tool-body walk
 //! ([`BeamBoundary`]) and the argument emitter ([`BeamEmitter`]).
 //!
-//! Analysis closes only on `<|end|>`; the final channel closes on `<|end|>`,
+//! Analysis closes on `<|end|>` or the template's `<|constrain|><|start|>` boundary;
+//! the next header retains its `<|start|>`. The final channel closes on `<|end|>`,
 //! `<|return|>` or `<|call|>`. A tool call completes only
 //! once its terminator (`<|call|>` / `<|end|>`) arrives, but its arguments stream ahead
 //! of it ([`OpenCall`]): a raw-text string parameter as its bytes arrive, any other
@@ -75,6 +76,8 @@ const END: &str = "<|end|>";
 const RETURN: &str = "<|return|>";
 const CALL: &str = "<|call|>";
 const CONSTRAIN: &str = "<|constrain|>";
+const CONSTRAIN_START: &str = "<|constrain|><|start|>";
+const ANALYSIS_TERMINATORS: [&str; 2] = [END, CONSTRAIN_START];
 const PARAM_OPEN: &str = "<rfl:parameter name=\"";
 const PARAM_CLOSE: &str = "</rfl:parameter>";
 
@@ -82,7 +85,7 @@ static CHANNELS: [EnvelopeChannel; 2] = [
     EnvelopeChannel {
         name: "analysis",
         reasoning: true,
-        terminators: &[END],
+        terminators: &ANALYSIS_TERMINATORS,
         json_body: false,
     },
     EnvelopeChannel {
@@ -125,10 +128,8 @@ static ENVELOPE: ChannelEnvelope = ChannelEnvelope {
 
 /// Every fixed marker of the grammar: terminator competition and split-marker holdback
 /// for the guided reader. The recipient inside a header is data and cannot compete.
-static GUIDED_COMPETITORS: [&str; 6] = [START, CHANNEL, MESSAGE, END, RETURN, CALL];
-
-/// Only `<|end|>` closes an analysis body (`<|call|>` and `<|return|>` are literal there).
-static GUIDED_CLOSE_MARKERS: [&str; 1] = [END];
+static GUIDED_COMPETITORS: [&str; 7] =
+    [START, CHANNEL, MESSAGE, END, RETURN, CALL, CONSTRAIN_START];
 
 const BOUNDARY: InvokeBoundaryFactory =
     InvokeBoundaryFactory::NativeOnly(|| Box::new(BeamBoundary::default()));
@@ -161,10 +162,10 @@ static GUIDED_CHANNEL: GuidedChannel = GuidedChannel {
     // that quotes them under a Response prefill keeps them literal.
     strip_text: str::to_string,
     competitors: &GUIDED_COMPETITORS,
-    close_markers: &GUIDED_CLOSE_MARKERS,
+    close_markers: &ANALYSIS_TERMINATORS,
     response_literal_markers: &GUIDED_COMPETITORS,
     // A header owns its bytes from `<|start|>` (or its bare lead) until it resolves,
-    // and inside an analysis body only `<|end|>` is structural.
+    // and inside an analysis body only its own terminators are structural.
     envelope_owned: true,
     header_pending: None,
 };
@@ -1292,6 +1293,23 @@ mod tests {
     }
 
     #[test]
+    fn template_reasoning_closers_preserve_the_next_header() {
+        for closer in ["<|end|>", "<|constrain|>", ""] {
+            let body =
+                format!("think{closer}<|start|>assistant<|channel|>final<|message|>ok<|return|>");
+            let framed = format!("<|channel|>analysis<|message|>{body}");
+            let want = vec![reasoning("think"), text("ok")];
+            expect(&framed, want.clone());
+            for (state, input) in [
+                (UnifiedParserStartingState::None, framed.as_str()),
+                (UnifiedParserStartingState::Reasoning, body.as_str()),
+            ] {
+                guided_every_split(state, None, input, want.clone());
+            }
+        }
+    }
+
+    #[test]
     fn continuation_header_and_empty_analysis() {
         expect(
             "<|channel|>analysis<|message|>Check.<|end|><|start|>assistant<|channel|>final<|message|>391<|return|>",
@@ -1356,8 +1374,7 @@ mod tests {
 
     #[test]
     fn framing_literals_in_arguments_are_data() {
-        let value =
-            " <|call|><|end|><|start|>assistant<|channel|>final<|message|> &amp; </rfl:paramet ";
+        let value = " <|call|><|end|><|constrain|><|start|>assistant<|channel|>final<|message|> &amp; </rfl:paramet ";
         let input =
             format!("{HDR}<rfl:parameter name=\"location\">{value}</rfl:parameter><|call|>");
         expect(&input, vec![call("weather", json!({"location": value}))]);
@@ -1384,8 +1401,8 @@ mod tests {
     #[test]
     fn channel_specific_terminators() {
         expect(
-            "<|channel|>analysis<|message|>a<|call|>b<|return|>c<|end|>",
-            vec![reasoning("a<|call|>b<|return|>c")],
+            "<|channel|>analysis<|message|>a<|call|>b<|return|>c<|constrain|>d<|end|>",
+            vec![reasoning("a<|call|>b<|return|>c<|constrain|>d")],
         );
         // The final answer closes at any of the grammar's three closers; what follows
         // the closed message is debris between messages.
