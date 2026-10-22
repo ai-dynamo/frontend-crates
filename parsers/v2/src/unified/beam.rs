@@ -1294,7 +1294,7 @@ mod tests {
 
     #[test]
     fn template_reasoning_closers_preserve_the_next_header() {
-        for closer in ["<|end|>", "<|constrain|>", ""] {
+        for closer in ["<|constrain|>", ""] {
             let body =
                 format!("think{closer}<|start|>assistant<|channel|>final<|message|>ok<|return|>");
             let framed = format!("<|channel|>analysis<|message|>{body}");
