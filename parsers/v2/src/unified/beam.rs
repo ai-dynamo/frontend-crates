@@ -2479,7 +2479,6 @@ mod tests {
                 vec![call("echo", json!({"value": want}))],
             );
         }
-        // `ConstrainedJson` still waits on a raw string opening with a quote or brace.
         for value in ["\"unfinished", "{\"x\":\"unfinished", "{"] {
             let tools = [echo(string.clone(), Some(true))];
             let input = echo_call("echo", &[("value", value)]);
@@ -2634,7 +2633,6 @@ mod tests {
             echo(json!({"type": "string"}), Some(false)),
         ];
         let input = echo_call("echo", &[("value", OBJECT_WITH_CLOSER)]);
-        // The last declaration types `value` as a string; retain the complete text.
         expect_with(
             &tools,
             &input,
