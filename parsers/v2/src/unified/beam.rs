@@ -2867,6 +2867,7 @@ mod tests {
             "assistant\tto=weather",
             "assistantto=weather",
             "assistant\nto=weather",
+            "assistantto=junk to=weather",
         ] {
             expect(
                 &format!(

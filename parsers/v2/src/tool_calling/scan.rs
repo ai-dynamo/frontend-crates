@@ -198,15 +198,13 @@ fn envelope_parse_prefix(env: &ChannelEnvelope, prefix: &str) -> HeaderLead {
     // The recipient is whatever `recipient_key NAME` ends the lead; bytes glued in front
     // of it (`assistant\tto=NAME`, `assistantto=NAME`) are header debris, never prose:
     // the header is identified by its tail, as the builder's template regex does.
-    let Some(k) = t.find(env.recipient_key) else {
-        return HeaderLead::NotHeader;
-    };
-    let r = &t[k + env.recipient_key.len()..];
-    if !r.is_empty() && (env.recipient_len)(r) == r.len() {
-        HeaderLead::Lead(Some(r.to_string()))
-    } else {
-        HeaderLead::NotHeader
+    for (k, _) in t.match_indices(env.recipient_key) {
+        let r = &t[k + env.recipient_key.len()..];
+        if !r.is_empty() && (env.recipient_len)(r) == r.len() {
+            return HeaderLead::Lead(Some(r.to_string()));
+        }
     }
+    HeaderLead::NotHeader
 }
 
 /// Whether `text` could still grow into a valid header lead.
