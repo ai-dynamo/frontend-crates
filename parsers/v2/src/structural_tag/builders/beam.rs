@@ -22,6 +22,7 @@
 //! - only the string `format`s the serving layer spells out are held;
 //! - a JSON value is held only when its schema uses keywords XGrammar compiles, where the
 //!   serving layer compiles the schema to find out.
+//!
 //! Under automatic choice, held names must be ASCII: XGrammar cannot exclude a
 //! non-ASCII name from the loose fallback without weakening its argument schema.
 //!
@@ -1520,7 +1521,7 @@ mod tests {
             Some(object(json!({"q": {"type": "string"}}), Some(vec!["q"]))),
             true,
         );
-        assert!(turn(&[unicode.clone()], Auto, true).is_none());
+        assert!(turn(std::slice::from_ref(&unicode), Auto, true).is_none());
         assert!(turn(&[unicode], Named("café"), true).is_some());
         let spaced = tool(
             "bad name",

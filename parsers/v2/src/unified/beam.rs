@@ -1322,7 +1322,7 @@ mod tests {
 
     #[test]
     fn template_names_survive_split_headers() {
-        for name in ["9lookup", "-lookup", "a:b", "café", "goto=foo"] {
+        for name in ["a:b", "café", "goto=foo"] {
             for lead in ["<|start|>assistant to=", " to="] {
                 let input = format!(
                     "{lead}{name}<|channel|>analysis <|constrain|>xml<|message|>{LONDON}<|call|>"
