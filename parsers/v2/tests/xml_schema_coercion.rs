@@ -148,6 +148,8 @@ fn unsupported_reference_scope_preserves_local_constraints() {
     }
 }
 
+// The shared schema corpus rejects unknown JSON Schema types. Exercise this
+// legacy compatibility fallback through both public XML parser adapters here.
 #[test]
 fn custom_direct_type_preserves_literal_eval_fallback() {
     for type_name in ["custom", "vendor-object"] {
