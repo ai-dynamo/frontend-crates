@@ -141,22 +141,34 @@ pub(crate) fn compact_json_object(value: &str) -> Option<ParsedValue> {
 }
 
 pub(crate) fn sorted_json_literal(value: &str) -> Option<ParsedValue> {
+    // RawValue skips serde_json's nesting limit; retain that limit before building
+    // recursive nodes so sorting, serialization, and drop remain stack bounded.
+    sorted_json_literal_with_budget(value, 128)
+}
+
+fn sorted_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedValue> {
     let value = value.trim();
     match value.as_bytes().first()? {
         b'{' => {
+            let budget = budget.checked_sub(1).filter(|budget| *budget > 0)?;
             let fields = serde_json::from_str::<BTreeMap<String, Box<RawValue>>>(value).ok()?;
             fields
                 .into_iter()
-                .map(|(key, raw)| sorted_json_literal(raw.get()).map(|value| (key, value)))
+                .map(|(key, raw)| {
+                    sorted_json_literal_with_budget(raw.get(), budget).map(|value| (key, value))
+                })
                 .collect::<Option<BTreeMap<_, _>>>()
                 .map(ParsedValue::Object)
         }
-        b'[' => serde_json::from_str::<Vec<Box<RawValue>>>(value)
-            .ok()?
-            .into_iter()
-            .map(|raw| sorted_json_literal(raw.get()))
-            .collect::<Option<Vec<_>>>()
-            .map(ParsedValue::Array),
+        b'[' => {
+            let budget = budget.checked_sub(1).filter(|budget| *budget > 0)?;
+            serde_json::from_str::<Vec<Box<RawValue>>>(value)
+                .ok()?
+                .into_iter()
+                .map(|raw| sorted_json_literal_with_budget(raw.get(), budget))
+                .collect::<Option<Vec<_>>>()
+                .map(ParsedValue::Array)
+        }
         b'"' | b't' | b'f' | b'n' => serde_json::from_str(value).ok().map(ParsedValue::Json),
         _ => raw_number_literal(value),
     }
@@ -362,6 +374,27 @@ mod tests {
         assert_eq!(
             compact.json_text().unwrap(),
             r#"{"city":"München","amount":9007199254740992.5,"tiny":1e-400}"#
+        );
+    }
+
+    #[test]
+    fn sorted_json_retains_serde_nesting_limit() {
+        for depth in 0..=130 {
+            for (open, close) in [("[", "]"), ("{\"item\":", "}"), ("[{\"item\":", "}]")] {
+                let input = format!("{}0{}", open.repeat(depth), close.repeat(depth));
+                assert_eq!(
+                    sorted_json_literal(&input).is_some(),
+                    serde_json::from_str::<serde_json::Value>(&input).is_ok(),
+                    "depth={depth}, open={open}"
+                );
+            }
+        }
+        let input = format!("{}0{}", "[".repeat(3000), "]".repeat(3000));
+        assert!(sorted_json_literal(&input).is_none());
+        let quoted = serde_json::to_string(&input).unwrap();
+        assert_eq!(
+            sorted_json_literal(&quoted).unwrap().json_text().unwrap(),
+            quoted
         );
     }
 
