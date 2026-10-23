@@ -86,7 +86,7 @@ batch analog live in a separate band (e.g. partial-token chunking is
 
 Stream fixtures may include `delta_token_ids` on each chunk. Text-only chunks are enough for most parser families, but token-ID-dependent streaming parsers (currently vLLM's Harmony / `openai` parser) must record `delta_token_ids`; capture should mark those cases unavailable rather than inventing IDs.
 
-Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `8.f` through `8.l`, `50.b` through `50.e`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
+Legacy Tool Calling sub-cases follow the existing dot-letter convention (`7.g` through `7.n`, `8.f` through `8.l`, `50.b` and `50.c`, `51.a` and `51.b`). Archived numeric IDs are read through the shared alias loader; recorded inputs and outputs retain their original identities. Null probes `7-4` and `7-5` remain archived but appear only in the Unified matrix.
 
 ## `TOOLCALLING.streamv1.50` — Partial-token chunking
 
@@ -96,15 +96,6 @@ boundary). Partial matches must return "keep buffering" rather than flushing as
 plain text and completing on a later chunk.
 
 - Applies to every tool-call parser.
-
-### Adjacent native calls across partial headers
-
-- **`TOOLCALLING.streamv1.50.d`** All 24 registered families exercise two adjacent native calls across a partial next-call header, with independently authored call/content goldens. Gemma4 retains the exact seven text deltas from frontend-crates #408: one delta closes `f(a="1")` and ends with `<|tool_call>ca`; later deltas complete `g(b="2")`. Both calls must survive with empty visible text.
-- **`TOOLCALLING.streamv1.50.e`** All 24 registered families exercise three adjacent native calls, with an empty initial delta and a boundary inside the second call header. Gemma4 retains `f(x="1")`, `g(x="2")`, and `h(x="3")`, delivered as an empty delta, the first 58 bytes, and the remaining bytes. All three calls must survive with empty visible text.
-
-Each family uses its own native invocation syntax. Shared list and section containers enclose the complete response once; Pythonic uses one enclosing list. Harmony special tokens remain atomic, and its token-path chunks carry actual encoded token IDs. The Gemma4 schedules specifically exercise its compound `<|tool_call>call:` opener; other families exercise the equivalent handoff between adjacent calls. Existing stored case `50` remains unchanged and displays as `50.a`.
-
-Captures record actual output, including dropped calls and leaked text, independently of the authored goldens. The v1 recorder feeds all text deltas and then appends a `Stop` finish; it does not interpret the fixture's `finish_reason`, so this comparison covers call/content preservation rather than terminal-reason handling. Missing historical APIs or parser registrations are explicit unavailable observations. The producer-unidentified `dynamo_v2-0.1.11.patch1` and `dynamo_v2-0.3.4+current` archives remain unchanged. Their new rows fold observations from the measured `0.1.11` release and `0.3.1` predecessor, respectively; these are inherited observations, not direct measurements of either unknown producer.
 
 ## Shared schema conformance probes
 

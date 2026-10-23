@@ -40,11 +40,9 @@ import unified_taxonomy as taxonomy  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
 from fixture_disposition import historical_unified_case_key  # noqa: E402
-from stream_regression_cases import (  # noqa: E402
+from gen_unified_golden import (  # noqa: E402
     PARALLEL_BOUNDARY_CASES,
     UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
-)
-from gen_unified_golden import (  # noqa: E402
     CLEAN,
     OnlyFamilies,
     EDGE,

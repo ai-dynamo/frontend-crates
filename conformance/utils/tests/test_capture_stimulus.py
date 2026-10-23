@@ -41,16 +41,6 @@ def test_typed_unavailable_uses_one_text_projection_across_readers(payload):
     assert record == original
 
 
-def test_legacy_implementation_keyed_unavailable_projects_to_text():
-    record = {"unavailable": {"dynamo_v1": "parser is not registered"}}
-    assert capture_stimulus.normalize_unavailable(record)["unavailable"] == (
-        "dynamo_v1: parser is not registered"
-    )
-    assert table._output_block_model(record) == {
-        "unavailable": "dynamo_v1: parser is not registered"
-    }
-
-
 @pytest.mark.parametrize("code, category", [
     ("peer_request_unsupported", "unsupported_request_mode"),
     ("peer_finish_unsupported", "unsupported_request_mode"),

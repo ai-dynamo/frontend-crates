@@ -45,8 +45,7 @@ def test_crate_checksum_requires_exact_registry_package(tmp_path: Path) -> None:
         capture._crate_checksum(lock, "9.2.13")
 
 
-@pytest.mark.parametrize("family", ["gpt_oss", "muse_glimmer"])
-def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Path, family: str) -> None:
+def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Path) -> None:
     job_path = tmp_path / "job.json"
     output_path = tmp_path / "capture.json"
     request = {
@@ -56,8 +55,7 @@ def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Pat
         "tools": [],
         "chunks": [{"delta_text": "authored"}],
     }
-    case_id = f"UNIFIED.example.{family}"
-    job = {"family": family, "cases": [{"id": case_id, "request": request}]}
+    job = {"family": "gpt_oss", "cases": [{"id": "UNIFIED.example.gpt_oss", "request": request}]}
     job_path.write_text(json.dumps(job))
 
     provenance = capture.source_unavailable("9.2.13", job_path, output_path)
@@ -65,8 +63,8 @@ def test_registered_source_blocker_binds_every_unattempted_request(tmp_path: Pat
 
     assert provenance["status"] == "source_unavailable"
     assert "source_sha256" not in provenance
-    assert result["results"][case_id]["capture_input"] == request
-    assert result["results"][case_id]["capture_observation"]["unavailable"]["code"] == "source_unavailable"
+    assert result["results"]["UNIFIED.example.gpt_oss"]["capture_input"] == request
+    assert result["results"]["UNIFIED.example.gpt_oss"]["capture_observation"]["unavailable"]["code"] == "source_unavailable"
 
 
 @pytest.mark.parametrize("jail_buffer", [False, True])

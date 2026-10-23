@@ -9,15 +9,6 @@ provenance:
 document:
   mode: unified
 changes:
-  adjacent_calls_partial_header:
-    case_key: adjacent_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: The shared pure-batch capture owner has no registered Dynamo v1 pipeline for muse_glimmer; no parser execution is claimed.
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     stimulus:
@@ -2043,15 +2034,6 @@ changes:
       unavailable:
         code: unsupported_family
         detail: No registered reasoning + batch tool parser for this family
-  three_calls_partial_header:
-    case_key: three_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: The shared pure-batch capture owner has no registered Dynamo v1 pipeline for muse_glimmer; no parser execution is claimed.
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     stimulus:
@@ -2171,12 +2153,6 @@ changes:
         detail: No registered reasoning + batch tool parser for this family
 metadata_changes: {}
 document_overrides:
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 3.0.0
-      capture_origin: null
-      inherited_from: null
   arg_json_null_anyof:
     capture_provenance:
       captured_with:
@@ -4651,12 +4627,6 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: d985771aa6b5607bfcbb05e419b9ec50f623597990c621661ea6b5e1df67594a
         git_commit: 5ad6b70904db1c4a07a0adf45f80fb41b0aca1ee
-      inherited_from: null
-  three_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 3.0.0
-      capture_origin: null
       inherited_from: null
   tool_block_never_closed_then_text:
     capture_provenance:

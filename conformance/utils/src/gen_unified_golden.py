@@ -30,7 +30,6 @@ from impls import unified_grammar_family
 from schema_cases import CONFORMANCE_CASES, unified_schema_cases
 from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
-from stream_regression_cases import parallel_boundary_source, UNIFIED_PARALLEL_BOUNDARY_FAMILIES
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2600,31 +2599,28 @@ def _deepseek_v41_input(segments):
     return text, starting_state
 
 
+PARALLEL_BOUNDARY_CASES = json.loads(
+    Path(__file__).with_name("unified_parallel_boundary_cases.json").read_text()
+)
+UNIFIED_PARALLEL_BOUNDARY_FAMILIES = frozenset(
+    family for cases in PARALLEL_BOUNDARY_CASES.values() for family in cases
+)
+
+
 def _parallel_boundary_specs():
     specs = []
-    for suffix, scenario, description in (
-        ("d", "adjacent_calls_partial_header", "Adjacent calls: a delta closes one call and ends inside the next call header"),
-        ("e", "three_calls_partial_header", "Three adjacent calls: retain the middle call after a partial next header"),
-    ):
+    descriptions = {
+        "adjacent_calls_partial_header": "Adjacent calls: a delta closes one call and ends inside the next call header",
+        "three_calls_partial_header": "Three adjacent calls: retain the middle call after a partial next header",
+    }
+    for scenario, families in PARALLEL_BOUNDARY_CASES.items():
         per_family, schedules, schemas = {}, {}, {}
-        for family in sorted(UNIFIED_PARALLEL_BOUNDARY_FAMILIES):
-            source = parallel_boundary_source(f"TOOLCALLING.streamv1.50.{suffix}", family)
-            golden = [{"kind": "tool_call", **call} for call in source["golden"]["calls"]]
-            chunks = [chunk["delta_text"] for chunk in source["chunks"]]
-            if family == "deepseek_v41":
-                segments = [("tool", call["name"], key, value)
-                            for call in source["golden"]["calls"]
-                            for key, value in call["arguments"].items()]
-                text, _state = _deepseek_v41_input(segments)
-                # V4.1 has one calls container; split inside its second invoke,
-                # after the complete first invoke, rather than adding a container.
-                cut = text.index('<｜DSML｜ invoke name="g"') + len('<｜DSML｜ invoke na')
-                chunks = ([""] if suffix == "e" else []) + [text[:cut], text[cut:], ""]
-            text = "".join(chunks)
-            per_family[family] = (text, VLLM_UNCAPTURABLE.get(family, M), M, golden)
+        for family, source in families.items():
+            chunks = source["input_chunks"]
+            per_family[family] = ("".join(chunks), VLLM_UNCAPTURABLE.get(family, M), M, source["golden"])
             schedules[family] = chunks
             schemas[family] = source["tools"]
-        specs.append((scenario, description, ["I2", "I3", "I5", "I7"], [],
+        specs.append((scenario, descriptions[scenario], ["I2", "I3", "I5", "I7"], [],
                       {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
                       {"finish_reason": "tool_calls", "input_chunks": schedules},
                       OnlyFamilies(per_family), schemas))

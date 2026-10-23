@@ -5,11 +5,6 @@ provenance:
 document:
   mode: unified
 changes:
-  adjacent_calls_partial_header:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
   arg_json_null:
     observation:
       unavailable:
@@ -1100,11 +1095,6 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
-  three_calls_partial_header:
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
   tool_block_never_closed_then_text:
     observation:
       unavailable:
@@ -1171,7 +1161,6 @@ changes:
         code: source_unavailable
         detail: 'Producer source unavailable: no release tag or crate publication for Dynamo 9.2.13; crates.io returned 404.'
 metadata_changes:
-  adjacent_calls_partial_header: {}
   arg_json_null: {}
   arg_json_null_anyof: {}
   arg_json_null_const: {}
@@ -1342,7 +1331,6 @@ metadata_changes:
   text_only: {}
   text_reason_tool_text_reason_tool: {}
   text_sandwich: {}
-  three_calls_partial_header: {}
   tool_block_never_closed_then_text: {}
   tool_in_reason: {}
   tool_in_reason_with_text: {}

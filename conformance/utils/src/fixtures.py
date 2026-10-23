@@ -343,7 +343,7 @@ SPLIT_PARENT_SUBCASES = {
 # tab. Only sub-cases that actually exist in fixtures become columns; the rest
 # fill in over time. Streaming-only cases with no batch analog use the >=50 band.
 STREAM_SUB_CASE_GROUPS = BATCH_SUB_CASE_GROUPS + [
-    ("Partial-token", ("50", "50.b", "50.c", "50.d", "50.e")),
+    ("Partial-token", ("50", "50.b", "50.c")),
     ("Reasoning projection", ("51.a", "51.b")),
 ]
 

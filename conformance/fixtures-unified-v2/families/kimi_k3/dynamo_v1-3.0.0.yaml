@@ -9,15 +9,6 @@ provenance:
 document:
   mode: unified
 changes:
-  adjacent_calls_partial_header:
-    case_key: adjacent_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: 3614508e8b66afeb0f7804ce8825cd8362f72bf02d1347320ccdaff95fab8e64
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
   arg_json_null_anyof:
     case_key: arg_json_null_anyof
     stimulus:
@@ -2043,15 +2034,6 @@ changes:
       unavailable:
         code: unsupported_family
         detail: No registered reasoning + batch tool parser for this family
-  three_calls_partial_header:
-    case_key: three_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: 5754e1844f45fcd463d11d12ca231370e610c119e5faa9b5ef551804da1e0188
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
   tool_block_never_closed_then_text:
     case_key: tool_block_never_closed_then_text
     stimulus:
@@ -2171,16 +2153,6 @@ changes:
         detail: No registered reasoning + batch tool parser for this family
 metadata_changes: {}
 document_overrides:
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 3.0.0
-      capture_origin:
-        crate_version: 3.0.0
-        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
-        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
-        job_sha256: fcc682c0bc7312f81c9f586b8efdb4d24a52de2142657c46c955273ac1db8b4a
-      inherited_from: null
   arg_json_null_anyof:
     capture_provenance:
       captured_with:
@@ -4655,16 +4627,6 @@ document_overrides:
         adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
         job_sha256: 68751eabb57784e65a03e3e7e7b63052f685c9ac9bf5b13fbff54c6db5e4636a
         git_commit: 5ad6b70904db1c4a07a0adf45f80fb41b0aca1ee
-      inherited_from: null
-  three_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 3.0.0
-      capture_origin:
-        crate_version: 3.0.0
-        source_sha256: 1a0c4af9c4c859948dc62102fa43a7afa74549b7e64edabc045a702f33a10f8d
-        adapter_sha256: c579ae90a58dae90bfdf8aaa773c21bfebeacf5e2bce2bca2acc89c37c166826
-        job_sha256: fcc682c0bc7312f81c9f586b8efdb4d24a52de2142657c46c955273ac1db8b4a
       inherited_from: null
   tool_block_never_closed_then_text:
     capture_provenance:

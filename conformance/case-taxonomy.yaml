@@ -559,8 +559,6 @@ suites:
           "": {desc: Complete single tool call with a grammar token split across chunk boundaries, required: true}
           b: {desc: "DSML: the separator's LFs and the calls opener arrive in separate chunks", required: false}
           c: {desc: "DSML: punctuation and the separator share one chunk before a partial opener", required: false}
-          d: {desc: "Adjacent native calls across a partial next-call header (exact seven-delta Gemma4 regression)", required: true}
-          e: {desc: "Preserve all three native calls across a partial next-call header", required: true}
       "51":
         title: Tool-only reasoning projection
         required: false

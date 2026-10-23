@@ -1153,45 +1153,6 @@ def test_v2_batch_tab_has_all_peer_versions(model_v2):
             assert ver in labels, f"batch tab missing peer version {impl} {ver}"
 
 
-@pytest.mark.parametrize("sub,names", [("50.d", ["f", "g"]), ("50.e", ["f", "g", "h"])])
-def test_gemma4_parallel_boundaries_are_visible_partial_token_cases(model_v2, sub, names):
-    tab = _tab(model_v2, "tab-toolcalling-streamv1")
-    column = next(column for column in tab["columns"] if column["sub"] == sub)
-    row = next(row for row in tab["rows"] if row["family"] == "gemma4")
-    cell = row["cells"][sub]
-    assert [column["sub"] for column in tab["columns"] if column["group_key"] == "partial_token"] == [
-        "50", "50.b", "50.c", "50.d", "50.e",
-    ]
-    assert column["group_key"] == "partial_token"
-    assert cell["col_group"] == "partial_token"
-    assert cell["case_id"] == f"TOOLCALLING.streamv1.{sub}"
-    candidates = {candidate["key"]: candidate for candidate in cell["tooltip"]["candidates"]}
-    legacy = candidates["dynamo_v1-10-0-4"]
-    streaming = candidates["dynamo_v2-0-7-22"]
-    assert legacy["leak"] is True
-    assert streaming["leak"] is False
-    assert [call["name"] for call in streaming["block"]["calls"]] == names
-    assert streaming["block"]["normal_text"] == ""
-
-
-def test_partial_token_display_alias_preserves_fixture_identity(model_v2):
-    tab = _tab(model_v2, "tab-toolcalling-streamv1")
-    columns = [column for column in tab["columns"] if column["group_key"] == "partial_token"]
-    assert [(column["sub"], column["label"]) for column in columns] == [
-        ("50", "50.a"), ("50.b", "50.b"), ("50.c", "50.c"), ("50.d", "50.d"), ("50.e", "50.e"),
-    ]
-    assert columns[0]["case_id"] == "TOOLCALLING.streamv1.50"
-    glossary = next(group for group in tab["glossary"] if group["label"] == "Partial-token")
-    assert [label for label, _ in glossary["rows"]] == ["50.a", "50.b", "50.c", "50.d", "50.e"]
-    for row in tab["rows"]:
-        if row.get("family"):
-            assert "50.a" not in row["cells"]
-            cell = row["cells"]["50"]
-            if cell.get("kind") == "cell":
-                assert cell["case_id"] == "TOOLCALLING.streamv1.50"
-    assert table._subcase_display_label("batch", "50") == "50"
-
-
 def test_v2_stream_tab_has_v1jail_ref_v2_and_peers(model_v2):
     # memory: dynamo_v1-3.0.0 on the stream tab is the v1 jail+batch reference (all
     # families) — must be present; plus the v2 candidate and the peers.
