@@ -26,7 +26,7 @@ use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
     assemble, create_tool_parser_for_family, create_unified_parser_for_family,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Value, json};
 
 mod common;
@@ -72,7 +72,7 @@ struct Expect {
 }
 
 /// A unified event. PartialEq drives the golden comparison.
-#[derive(Deserialize, serde::Serialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 enum Ev {
     Reasoning {
@@ -83,9 +83,159 @@ enum Ev {
     },
     ToolCall {
         name: String,
-        #[serde(default)]
-        arguments: Value,
+        #[serde(default = "default_raw_arguments")]
+        arguments: ArgumentJson,
     },
+}
+
+impl PartialEq for Ev {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Reasoning { text: left }, Self::Reasoning { text: right })
+            | (Self::Text { text: left }, Self::Text { text: right }) => left == right,
+            (
+                Self::ToolCall {
+                    name: left_name,
+                    arguments: left_arguments,
+                },
+                Self::ToolCall {
+                    name: right_name,
+                    arguments: right_arguments,
+                },
+            ) => left_name == right_name && left_arguments == right_arguments,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct ArgumentJson(String);
+
+impl PartialEq for ArgumentJson {
+    fn eq(&self, other: &Self) -> bool {
+        canonical_argument_json(&self.0) == canonical_argument_json(&other.0)
+    }
+}
+
+fn canonical_argument_json(raw: &str) -> String {
+    match raw.as_bytes().first() {
+        Some(b'{') => {
+            let fields: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated object arguments");
+            let fields = fields
+                .into_iter()
+                .map(|(key, value)| {
+                    format!(
+                        "{}={}",
+                        serde_json::to_string(&key).expect("serialize object key"),
+                        canonical_argument_json(value.get()),
+                    )
+                })
+                .collect::<Vec<_>>();
+            format!("object:[{}]", fields.join(","))
+        }
+        Some(b'[') => {
+            let items: Vec<Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated array arguments");
+            let items = items
+                .iter()
+                .map(|item| canonical_argument_json(item.get()))
+                .collect::<Vec<_>>();
+            format!("array:[{}]", items.join(","))
+        }
+        Some(b'"') => {
+            let value: String = serde_json::from_str(raw).expect("validated string argument");
+            format!(
+                "string:{}",
+                serde_json::to_string(&value).expect("serialize string")
+            )
+        }
+        Some(b't') => "boolean:true".to_string(),
+        Some(b'f') => "boolean:false".to_string(),
+        Some(b'n') => "null".to_string(),
+        Some(b'-' | b'0'..=b'9') => canonical_argument_number(raw),
+        _ => unreachable!("RawValue only accepts JSON"),
+    }
+}
+
+fn canonical_argument_number(raw: &str) -> String {
+    let (negative, unsigned) = match raw.strip_prefix('-') {
+        Some(unsigned) => (true, unsigned),
+        None => (false, raw),
+    };
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => match exponent.parse::<i64>() {
+            Ok(exponent) => (mantissa, exponent),
+            Err(_) => return format!("number-token:{raw}"),
+        },
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let digits = format!("{whole}{fraction}");
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return "number:0".to_string();
+    }
+    let trailing_zeroes = digits.len() - digits.trim_end_matches('0').len();
+    let significant = digits.trim_end_matches('0');
+    let adjustment = match i64::try_from(trailing_zeroes)
+        .ok()
+        .zip(i64::try_from(fraction.len()).ok())
+        .and_then(|(trailing, fractional)| trailing.checked_sub(fractional))
+    {
+        Some(adjustment) => adjustment,
+        None => return format!("number-token:{raw}"),
+    };
+    let Some(exponent) = exponent.checked_add(adjustment) else {
+        return format!("number-token:{raw}");
+    };
+    format!(
+        "number:{}:{}:{exponent}",
+        if negative { "-" } else { "+" },
+        significant
+    )
+}
+
+impl Serialize for ArgumentJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let raw = serde_json::value::RawValue::from_string(self.0.clone())
+            .map_err(serde::ser::Error::custom)?;
+        raw.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for ArgumentJson {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_yaml::Value::deserialize(deserializer)?;
+        let raw = match value {
+            serde_yaml::Value::String(encoded) => {
+                if serde_json::value::RawValue::from_string(encoded.clone()).is_ok() {
+                    encoded
+                } else {
+                    serde_json::to_string(&encoded).map_err(serde::de::Error::custom)?
+                }
+            }
+            value => serde_json::to_string(&value).map_err(serde::de::Error::custom)?,
+        };
+        serde_json::value::RawValue::from_string(raw.clone()).map_err(serde::de::Error::custom)?;
+        Ok(Self(raw))
+    }
+}
+
+fn default_raw_arguments() -> ArgumentJson {
+    ArgumentJson("{}".to_string())
+}
+
+fn raw_arguments(raw: &str) -> ArgumentJson {
+    serde_json::value::RawValue::from_string(raw.to_string())
+        .unwrap_or_else(|error| panic!("tool arguments must be valid JSON ({raw:?}): {error}"));
+    ArgumentJson(raw.to_string())
 }
 
 impl Ev {
@@ -93,7 +243,9 @@ impl Ev {
         match self {
             Ev::Reasoning { text } => format!("reasoning({text:?})"),
             Ev::Text { text } => format!("text({text:?})"),
-            Ev::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
+            Ev::ToolCall { name, arguments } => {
+                format!("tool_call({name}, {})", arguments.0)
+            }
         }
     }
 }
@@ -126,7 +278,7 @@ fn feed(
         let pos = *slots.entry(d.tool_index).or_insert_with(|| {
             out.push(Ev::ToolCall {
                 name: d.name.clone().unwrap_or_default(),
-                arguments: Value::Null,
+                arguments: raw_arguments("null"),
             });
             out.len() - 1
         });
@@ -148,9 +300,12 @@ impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
         match e {
             dynamo_parsers_v2::UnifiedEvent::Reasoning { text } => Ev::Reasoning { text },
             dynamo_parsers_v2::UnifiedEvent::Text { text } => Ev::Text { text },
-            dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => {
-                Ev::ToolCall { name, arguments }
-            }
+            dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => Ev::ToolCall {
+                name,
+                arguments: raw_arguments(
+                    &serde_json::to_string(&arguments).expect("serialize projected arguments"),
+                ),
+            },
         }
     }
 }
@@ -233,13 +388,8 @@ fn tool_events_with_chunks<'a>(
 
     for (ti, pos) in &slots {
         let raw = raw_args.get(ti).map(String::as_str).unwrap_or("");
-        let val = if raw.trim().is_empty() {
-            json!({})
-        } else {
-            serde_json::from_str(raw).unwrap_or_else(|_| Value::String(raw.to_string()))
-        };
         if let Ev::ToolCall { arguments, .. } = &mut out[*pos] {
-            *arguments = val;
+            *arguments = raw_arguments(if raw.trim().is_empty() { "{}" } else { raw });
         }
     }
     out
@@ -296,12 +446,14 @@ fn dotted_harmony_split_matches_golden_at_every_boundary() {
     assert_eq!(checked, 4);
 }
 
+type NativeCapture = (Vec<Ev>, Vec<ChunkRow>, BTreeMap<usize, String>);
+
 fn capture_native_case(
     family: &str,
     chunks: &[String],
     init: &Init,
     tool_schemas: &[dynamo_parsers_v2::Tool],
-) -> Result<(Vec<Ev>, Vec<ChunkRow>), capture::CaptureFailure> {
+) -> Result<NativeCapture, capture::CaptureFailure> {
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
@@ -311,7 +463,8 @@ fn capture_native_case(
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
-    let assembled = assemble(&deltas).into_iter().map(Ev::from).collect();
+    let raw_args = dynamo_parsers_v2::tool_arguments_raw(&deltas);
+    let assembled: Vec<Ev> = assemble(&deltas).into_iter().map(Ev::from).collect();
     let rows = chunks
         .iter()
         .cloned()
@@ -322,7 +475,73 @@ fn capture_native_case(
             deltas: deltas.iter().map(unified_delta_json).collect(),
         })
         .collect();
-    Ok((assembled, rows))
+    Ok((assembled, rows, raw_args))
+}
+
+#[test]
+fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
+    let dir = common::ensure_unified_golden();
+    let mut checked = 0usize;
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("yaml") {
+            continue;
+        }
+        let file: GoldenFile = serde_yaml::from_str(&std::fs::read_to_string(&path).unwrap())
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        for (id, case) in file.cases {
+            if !id
+                .strip_prefix("UNIFIED.")
+                .is_some_and(|scenario| scenario.starts_with("arg_numeric_"))
+            {
+                continue;
+            }
+            let schemas = common::unified_tools_for_schemas(case.tools.as_ref());
+            let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+            let (_assembled, _rows, raw) =
+                capture_native_case(&file.family, &chunks, &case.init, &schemas)
+                    .unwrap_or_else(|error| panic!("{id}: {error:?}"));
+            let expected = if file.family == "beam"
+                && case.tools.as_ref().is_some_and(|tools| {
+                    tools
+                        .as_array()
+                        .and_then(|tools| tools.first())
+                        .and_then(|tool| tool.pointer("/parameters/properties/value/type"))
+                        .and_then(Value::as_array)
+                        .is_some_and(|types| {
+                            types.iter().any(|kind| kind.as_str() == Some("string"))
+                        })
+                }) {
+                // Beam chooses the schema-permitted string branch for this union; compare its
+                // exact spelling instead of the historical v1 numeric projection.
+                let raw = case
+                    .input
+                    .split_once(r#"<rfl:parameter name="value">"#)
+                    .and_then(|(_, value)| value.split_once("</rfl:parameter>"))
+                    .map(|(value, _)| value.trim())
+                    .unwrap_or_else(|| panic!("{id}: cannot recover authored numeric token"));
+                format!(r#"{{"value":{}}}"#, serde_json::to_string(raw).unwrap())
+            } else {
+                case.golden
+                    .iter()
+                    .find_map(|event| match event {
+                        Ev::ToolCall { arguments, .. } => Some(arguments.0.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| panic!("{id}: numeric case has no golden tool call"))
+            };
+            let actual = raw
+                .get(&0)
+                .unwrap_or_else(|| panic!("{id}: no raw tool arguments"));
+            assert_eq!(
+                canonical_argument_json(actual),
+                canonical_argument_json(&expected),
+                "{id}"
+            );
+            checked += 1;
+        }
+    }
+    assert!(checked > 0, "no authored numeric cases were checked");
 }
 
 /// One streaming chunk: the delta text fed, and the RAW per-chunk deltas Dynamo
@@ -415,6 +634,39 @@ fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
     );
 }
 
+#[test]
+fn nested_numeric_arguments_are_compared_without_binary64_rounding() {
+    let raw = r#"{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}"#;
+    let expected = vec![Ev::ToolCall {
+        name: "inspect".into(),
+        arguments: raw_arguments(raw),
+    }];
+    let yaml = format!("kind: tool_call\nname: inspect\narguments: '{raw}'\n");
+    let decoded: Ev = serde_yaml::from_str(&yaml).expect("decode raw numeric arguments");
+    let exact = vec![decoded];
+    let rounded = vec![Ev::ToolCall {
+        name: "inspect".into(),
+        arguments: raw_arguments(
+            r#"{"nested":{"fraction":9007199254740992.0,"tiny":0.0},"values":[9007199254740992,-9007199254740992]}"#,
+        ),
+    }];
+
+    assert_eq!(classify("qwen3", &expected, &exact), "MATCH");
+    assert_eq!(classify("qwen3", &expected, &rounded), "ARG_MISMATCH");
+    let serialized = serde_json::to_string(&exact).expect("serialize exact argument token");
+    assert!(serialized.contains("9007199254740992.5"));
+    assert!(serialized.contains("1e-400"));
+    assert!(serialized.contains("9007199254740993"));
+    assert_eq!(
+        raw_arguments(r#"{"number":4.2e1,"text":"42"}"#),
+        raw_arguments(r#"{ "text":"42", "number":42.0 }"#)
+    );
+    assert_ne!(
+        raw_arguments(r#"{"number":42}"#),
+        raw_arguments(r#"{"number":"42"}"#)
+    );
+}
+
 /// Classify a Dynamo divergence from the golden.
 fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
     if golden == got {
@@ -458,10 +710,10 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
     }
     // Tool calls line up by name but an argument value differs (e.g. a string arg
     // truncated at a marker-looking substring) -> ARG_MISMATCH.
-    let calls = |evs: &[Ev]| -> Vec<(String, Value)> {
+    let calls = |evs: &[Ev]| -> Vec<(String, String)> {
         evs.iter()
             .filter_map(|e| match e {
-                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.clone())),
+                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.0.clone())),
                 _ => None,
             })
             .collect()
@@ -555,6 +807,7 @@ fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
     let known = divergences::load();
     let mut observed_dynamo = std::collections::BTreeSet::new();
+    let mut observed_projection = std::collections::BTreeSet::new();
     let mut parity_failures = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
@@ -641,7 +894,7 @@ fn render_unified_conformance_html() {
             let schedule = capture::input_chunks(&case.input, case.input_chunks.as_deref());
             let (got, captured_rows, error) =
                 match capture_native_case(&file.family, &schedule, &case.init, &case_tools) {
-                    Ok((got, rows)) => (got, rows, None),
+                    Ok((got, rows, _raw)) => (got, rows, None),
                     Err(capture::CaptureFailure::Error(error)) => {
                         (Vec::new(), Vec::new(), Some(error))
                     }
@@ -652,13 +905,28 @@ fn render_unified_conformance_html() {
             } else {
                 classify(&file.family, &case.golden, &got)
             };
+            let actual = error
+                .as_ref()
+                .map(|e| format!("ERROR: {e}"))
+                .unwrap_or_else(|| got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  "));
+            // These entries pin the public Value projection separately from raw
+            // argument bytes, which are checked by the numeric parser tests.
+            let projection_matches =
+                match divergences::expected(&known, &file.family, id, Check::Projection) {
+                    Some(Expected::Projection(expected)) if actual == expected.actual => {
+                        observed_projection.insert((file.family.clone(), id.clone()));
+                        true
+                    }
+                    Some(Expected::Projection(expected)) => {
+                        parity_failures.push(format!(
+                    "{id}: known projection divergence changed\n expected: {}\n      got: {}",
+                    expected.actual, actual
+                    ));
+                        false
+                    }
+                    _ => false,
+                };
             if dclass != "MATCH" {
-                let actual = error
-                    .as_ref()
-                    .map(|e| format!("ERROR: {e}"))
-                    .unwrap_or_else(|| {
-                        got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
-                    });
                 match divergences::expected(&known, &file.family, id, Check::Golden) {
                     Some(Expected::Golden(expected)) if actual == expected.actual => {
                         observed_dynamo.insert((file.family.clone(), id.clone()));
@@ -667,6 +935,7 @@ fn render_unified_conformance_html() {
                         "{id}: known golden divergence changed\n expected: {}\n      got: {}",
                         expected.actual, actual
                     )),
+                    _ if projection_matches => {}
                     _ => parity_failures.push(format!(
                         "{id}: unexpected golden divergence\n   golden: {}\n   actual: {}",
                         case.golden
@@ -854,10 +1123,15 @@ fn render_unified_conformance_html() {
         Check::Golden,
         &observed_dynamo,
     ));
+    parity_failures.extend(divergences::reconcile(
+        &known,
+        Check::Projection,
+        &observed_projection,
+    ));
     assert_eq!(
         dynamo_red,
-        observed_dynamo.len(),
-        "every red report cell must match one exact allowlisted golden divergence"
+        observed_dynamo.len() + observed_projection.len(),
+        "every red report cell must match one exact allowlisted golden or projection divergence"
     );
     assert!(
         parity_failures.is_empty(),
@@ -1037,7 +1311,7 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 
             let case_tools = common::unified_tools_for_schemas(tool_schemas.as_ref());
             let schedule = capture::replay_chunks(input, chunks.as_deref());
-            let (live_assembled, live_rows) =
+            let (live_assembled, live_rows, _raw) =
                 match capture_native_case(&doc.family, &schedule, init, &case_tools) {
                     Ok(value) => {
                         if committed.error.is_some() {
@@ -1383,7 +1657,7 @@ print(g.emit_yaml("glm47"))
     let custom = common::unified_tools_for_schemas(case.tools.as_ref());
     let expected = vec![Ev::ToolCall {
         name: "f".into(),
-        arguments: json!({"x":42}),
+        arguments: raw_arguments(r#"{"x":42}"#),
     }];
     assert_eq!(
         dynamo_events_with_tools("glm47", input, &case.init, &custom),

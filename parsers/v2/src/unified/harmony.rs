@@ -10,8 +10,8 @@ use openai_harmony::chat::Role;
 use openai_harmony::{
     HarmonyEncoding, HarmonyEncodingName, StreamableParser, load_harmony_encoding,
 };
-use serde_json::Value;
 
+use crate::tool_calling::arguments::{parsed_json_literal, raw_json_literal};
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
@@ -599,7 +599,7 @@ impl HarmonyRuntime {
         tail.content.push_str(&text);
         if complete {
             let candidate = format!("{}{}", self.call_content, tail.content);
-            if serde_json::from_str::<Value>(&candidate).is_ok() {
+            if raw_json_literal(&candidate).is_some() {
                 let tail = self.quoted_control_tail.take().expect("quoted tail exists");
                 for token in tail.tokens {
                     if let Some(marker) = self.marker_ids.get(&token) {
@@ -664,14 +664,20 @@ impl HarmonyRuntime {
         let arguments = if self.call_content.trim().is_empty() {
             "{}".to_string()
         } else {
-            match serde_json::from_str::<Value>(&self.call_content) {
-                Ok(value) if self.legacy_tool_compatibility => {
-                    serde_json::to_string(&value).unwrap_or_else(|_| self.call_content.clone())
+            match raw_json_literal(&self.call_content) {
+                Some(_) if self.legacy_tool_compatibility => {
+                    parsed_json_literal(&self.call_content)
+                        .and_then(|value| value.json_text().ok())
+                        .unwrap_or_else(|| self.call_content.trim().to_string())
                 }
-                Ok(_) => self.call_content.clone(),
-                Err(_) if self.legacy_tool_compatibility => self.call_content.trim().to_string(),
-                Err(error) => {
-                    tracing::warn!(why = "invalid_harmony_tool_arguments", skipped_bytes = self.call_content.len(), error = %error, "discarded malformed Harmony tool arguments");
+                Some(_) => self.call_content.clone(),
+                None if self.legacy_tool_compatibility => self.call_content.trim().to_string(),
+                None => {
+                    tracing::warn!(
+                        why = "invalid_harmony_tool_arguments",
+                        skipped_bytes = self.call_content.len(),
+                        "discarded malformed Harmony tool arguments"
+                    );
                     return;
                 }
             }
@@ -1332,6 +1338,40 @@ mod tests {
                 );
                 assert_eq!(legacy.reset(), routed.reset());
             }
+        }
+    }
+
+    #[test]
+    fn legacy_adapter_preserves_exact_nested_number_tokens() {
+        let body = r#"{"z":{"b":1e-400,"a":9007199254740992.5},"a":[4.2e1]}"#;
+        let input = format!(
+            "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{body}<|call|>"
+        );
+        let expected = serde_json::to_string(
+            &serde_json::from_str::<serde_json::Value>(
+                r#"{"z":{"b":"TINY","a":"FRACTION"},"a":["EXP"]}"#,
+            )
+            .unwrap(),
+        )
+        .unwrap()
+        .replace("\"TINY\"", "1e-400")
+        .replace("\"FRACTION\"", "9007199254740992.5")
+        .replace("\"EXP\"", "4.2e1");
+        let token_ids = encode_harmony(&input).unwrap();
+
+        for use_tokens in [false, true] {
+            let mut parser = gpt_oss_legacy_tool_adapter();
+            parser.initialize(&[]).unwrap();
+            let mut events = if use_tokens {
+                parser.push_tokens(&token_ids).unwrap()
+            } else {
+                parser.push(&input).unwrap()
+            };
+            events.extend(parser.finish().unwrap().events);
+            assert!(matches!(
+                events.as_slice(),
+                [UnifiedParserEvent::ToolCall(call)] if call.arguments == expected
+            ));
         }
     }
     fn parse_text(

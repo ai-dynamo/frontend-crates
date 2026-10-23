@@ -8,14 +8,27 @@ import json
 
 from null_cases import MIXED_CASE_FAMILIES, NULL_DESCRIPTIONS, null_group
 import unified_taxonomy
+from numeric_cases import (
+    NUMERIC_DESCRIPTIONS,
+    NUMERIC_DISPLAY_LABELS,
+    applicable as numeric_applicable,
+    numeric_group,
+)
+
+VARIANT_DESCRIPTIONS = {**NULL_DESCRIPTIONS, **NUMERIC_DESCRIPTIONS}
 
 
-def aggregate_cells(cells, parent, description):
+def variant_group(label):
+    return null_group(label) or numeric_group(label)
+
+
+def aggregate_cells(cells, parent, description, *, display_label=None):
     result = copy.deepcopy(next((cell for cell in cells if cell.get("case_id")), cells[0]))
     result["sub"] = cells[0]["sub"]
     case_id = result.get("case_id") or ""
-    result["case_id"] = ("UNIFIED." if case_id.startswith("UNIFIED.")
-                         else case_id.split(parent, 1)[0]) + parent
+    parent_key = parent.split(".", 1)[0]
+    prefix = "UNIFIED." if case_id.startswith("UNIFIED.") else case_id.split(parent_key, 1)[0]
+    result["case_id"] = prefix + (display_label or parent)
     result["kind"] = "cell"
     result["status"] = "ok"
     result["red_on_diff"] = True
@@ -93,8 +106,14 @@ def group_null_variants(tab: dict) -> None:
         return null_group(unified_taxonomy.legacy_case_label(scenario) if scenario else label)
 
     display_labels: dict[str, str] = {}
-    for parent, description in NULL_DESCRIPTIONS.items():
-        members = [column for column in columns if null_group(metadata_label(column)) == parent]
+    display_descriptions: dict[str, str] = {}
+    sections = [(parent, description, group_key)
+                for parent, description in VARIANT_DESCRIPTIONS.items()
+                for group_key in dict.fromkeys(column["group_key"] for column in columns
+                                               if variant_group(metadata_label(column)) == parent)]
+    for parent, description, group_key in sections:
+        members = [column for column in columns
+                   if variant_group(metadata_label(column)) == parent and column["group_key"] == group_key]
         if unified:
             # Display sorting must not change the parent oracle or variant order.
             members.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
@@ -102,10 +121,16 @@ def group_null_variants(tab: dict) -> None:
             continue
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
-        display_labels[root["label"]] = display_label(parent)
+        display_group = (NUMERIC_DISPLAY_LABELS[parent] if parent in NUMERIC_DESCRIPTIONS
+                         else root["label"] if len(members) == 1 else display_label(parent))
+        display_labels[root["label"]] = display_group
+        if unified:
+            root["_grouped_display_label"] = display_group
+        display_descriptions[display_group] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
-        mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")]
+        mixed = [column for column in columns if metadata_label(column).startswith("7-4.mixed_")
+                 and column["group_key"] == group_key]
         if unified:
             mixed.sort(key=lambda column: unified_taxonomy.taxonomy_sort_key(column["sub"]))
         referenced = members + (mixed if parent == "7-5" else [])
@@ -116,6 +141,32 @@ def group_null_variants(tab: dict) -> None:
         for row in tab["rows"]:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
+            inapplicable = []
+            if parent in NUMERIC_DESCRIPTIONS and not numeric_applicable(row["family"], metadata_label(root)):
+                prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
+                for column in members:
+                    cell = row["cells"].get(column["sub"])
+                    if cell is None:
+                        continue
+                    case_id = f"{prefix}.{column['label']}"
+                    cell.update(
+                        kind="cell",
+                        case_id=case_id,
+                        status="na",
+                        red_on_diff=False,
+                        cmp={
+                            candidate["key"]: {"sig": 0, "na": 1, "err": 0, "leak": 0}
+                            for candidate in tab["candidates"]
+                        },
+                    )
+                    tooltip = copy.deepcopy(cell.get("tooltip") or {})
+                    tooltip.update(
+                        head=f"{case_id} — {row['family']}",
+                        description=description,
+                        na_note="This grammar does not coerce untyped fractional text through an integer/string schema.",
+                    )
+                    cell["tooltip"] = tooltip
+                    inapplicable.append(cell)
             children = [row["cells"][column["sub"]] for column in referenced
                         if (metadata_label(column) not in MIXED_CASE_FAMILIES
                             or row["family"] in MIXED_CASE_FAMILIES[metadata_label(column)])
@@ -123,7 +174,29 @@ def group_null_variants(tab: dict) -> None:
                         and row["cells"][column["sub"]].get("kind") in {"cell", "missing"}
                         and row["cells"][column["sub"]].get("status") != "na"]
             if len(children) > 1:
-                row["cells"][root["sub"]] = aggregate_cells(children, display_label(parent), description)
+                row["cells"][root["sub"]] = aggregate_cells(
+                    children, parent, description, display_label=display_group
+                )
+            elif inapplicable:
+                grouped = copy.deepcopy(inapplicable[0])
+                grouped.update(
+                    sub=root["sub"],
+                    case_id=f"{prefix}.{display_group}",
+                    kind="cell",
+                    status="na",
+                    red_on_diff=False,
+                    variants=copy.deepcopy(inapplicable),
+                )
+                grouped["tooltip"] = {
+                    "head": f"{grouped['case_id']} — {row['family']}",
+                    "description": description,
+                    "input": {"kind": None},
+                    "init": None,
+                    "candidates": [],
+                    "variants": [cell["tooltip"] for cell in inapplicable],
+                    "na_note": "This grammar does not coerce untyped fractional text through an integer/string schema.",
+                }
+                row["cells"][root["sub"]] = grouped
         for column in members:
             if column is not root:
                 column["variant_parent"] = parent
@@ -131,6 +204,16 @@ def group_null_variants(tab: dict) -> None:
     tab["columns"] = [column for column in columns if column["sub"] not in hidden]
     for column in tab["columns"]:
         column["label"] = display_labels.get(column["label"], column["label"])
+    numeric_labels = set(NUMERIC_DISPLAY_LABELS.values())
+    numeric_positions = [index for index, column in enumerate(tab["columns"])
+                         if column["label"] in numeric_labels]
+    numeric_order = {label: index for index, label in enumerate(NUMERIC_DISPLAY_LABELS.values())}
+    ordered_numeric_columns = sorted(
+        (tab["columns"][index] for index in numeric_positions),
+        key=lambda column: numeric_order[column["label"]],
+    )
+    for index, column in zip(numeric_positions, ordered_numeric_columns):
+        tab["columns"][index] = column
     for row in tab["rows"]:
         for sub in hidden:
             row["cells"].pop(sub, None)
@@ -222,5 +305,6 @@ def group_unified_variants(tab):
     descriptions = {column["label"]: column["desc"] for column in tab["columns"]}
     for group in tab.get("glossary", []):
         group["rows"] = [(label, descriptions.get(label, desc))
-                         for label, desc in group["rows"] if label not in hidden_labels]
+                         for label, desc in group["rows"]
+                         if label not in hidden_labels and (variant_group(label) is None or label in descriptions)]
     refresh_variant_stats(tab, len(hidden))

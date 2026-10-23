@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use serde_json::{Map, Value};
 
+use serde_json::Value;
+
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, parsed_json_literal, parsed_json_object,
+};
 use crate::tool_calling::dsml::BLOCK_SEPARATOR;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
@@ -332,14 +336,18 @@ impl InvokeEmitter for DeepSeekV41 {
         let mut body = body
             .strip_suffix(INVOKE_END)
             .context("incomplete DeepSeek V4.1 invocation")?;
-        let mut arguments = if body.trim_start().starts_with('{') {
-            let arguments = serde_json::from_str::<Map<String, Value>>(body)
-                .context("invalid DeepSeek V4.1 JSON arguments")?;
-            body = "";
-            arguments
-        } else {
-            Map::new()
-        };
+        if body.trim_start().starts_with('{') {
+            let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(body)?;
+            let arguments =
+                parsed_json_object(raw.get()).context("invalid DeepSeek V4.1 JSON arguments")?;
+            return Ok(Some(ToolCallDelta {
+                tool_index,
+                name: Some(name.to_string()),
+                arguments: arguments.json_text()?,
+                complete: true,
+            }));
+        }
+        let mut arguments = ParsedObject::new();
         while !body.trim().is_empty() {
             let (name, string, value) = parameter_header(body.trim_start())
                 .context("invalid DeepSeek V4.1 parameter header")?;
@@ -347,9 +355,10 @@ impl InvokeEmitter for DeepSeekV41 {
                 .split_once(PARAMETER_END)
                 .context("incomplete DeepSeek V4.1 parameter")?;
             let value = if string {
-                Value::String(raw.to_string())
+                ParsedValue::from(Value::String(raw.to_string()))
             } else {
-                serde_json::from_str(raw)?
+                let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(raw)?;
+                parsed_json_literal(raw.get()).context("invalid DeepSeek V4.1 parameter JSON")?
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),
@@ -360,7 +369,7 @@ impl InvokeEmitter for DeepSeekV41 {
         Ok(Some(ToolCallDelta {
             tool_index,
             name: Some(name.to_string()),
-            arguments: serde_json::to_string(&arguments)?,
+            arguments: ParsedValue::Object(arguments).json_text()?,
             complete: true,
         }))
     }

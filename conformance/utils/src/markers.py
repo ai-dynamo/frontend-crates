@@ -19,6 +19,8 @@ from typing import Any
 
 import yaml
 
+from numeric_cases import canonical_arguments
+
 from impls import (
     parser_families_path,
     BASELINE_IMPLS,
@@ -353,12 +355,21 @@ def _parser_marker(case: dict | None, impl: str) -> str:
 
 
 def _norm_calls(calls: list) -> list[tuple]:
-    """Normalize a calls list to [(name, canonical-json-args)] for equality."""
+    """Normalize calls while preserving whether the arguments field was present."""
     out = []
     for c in calls or []:
-        out.append(
-            (c.get("name", ""), json.dumps(c.get("arguments", {}), sort_keys=True, ensure_ascii=False))
-        )
+        if "arguments" in c:
+            arguments = (
+                True,
+                json.dumps(
+                    canonical_arguments(c["arguments"]),
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ),
+            )
+        else:
+            arguments = (False, None)
+        out.append((c.get("name", ""), *arguments))
     return out
 
 
@@ -490,13 +501,9 @@ def _canon_call_for_sig(call: object) -> object:
     `2`) still differ."""
     if not isinstance(call, dict):
         return call
-    args = call.get("arguments")
-    if isinstance(args, str):
-        try:
-            return {**call, "arguments": json.loads(args)}
-        except (json.JSONDecodeError, ValueError):
-            return call
-    return call
+    if "arguments" not in call:
+        return call
+    return {**call, "arguments": canonical_arguments(call["arguments"])}
 
 
 def candidate_sig(block: object) -> str:

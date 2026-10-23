@@ -16236,6 +16236,923 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  arg_numeric_14_const_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_const_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_const_decimal
+    historical_ids:
+    - UNIFIED.7-14.const_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        42.0
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          42.0
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_const_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_const_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_const_exponent
+    historical_ids:
+    - UNIFIED.7-14.const_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        4.2e1
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          4.2e1
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_enum_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_enum_decimal
+    historical_ids:
+    - UNIFIED.7-14.enum_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        42.0
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          42.0
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_enum_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_enum_exponent
+    historical_ids:
+    - UNIFIED.7-14.enum_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        4.2e1
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          4.2e1
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42}'
+  arg_numeric_14_large_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_large_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_large_decimal
+    historical_ids:
+    - UNIFIED.7-14.large_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9007199254740993.0
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9007199254740993.0
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"9007199254740993.0"}'
+  arg_numeric_14_large_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_large_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_large_exponent
+    historical_ids:
+    - UNIFIED.7-14.large_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9.007199254740993e15
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9.007199254740993e15
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"9.007199254740993e15"}'
+  arg_numeric_14_negative:
+    lifecycle: active
+    scenario: arg_numeric_14_negative
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_negative
+    historical_ids:
+    - UNIFIED.7-14.negative
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        -4.2E+1
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          -4.2E+1
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"-4.2E+1"}'
+  arg_numeric_14_negative_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_negative_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_negative_exponent
+    historical_ids:
+    - UNIFIED.7-14.negative_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        4200e-2
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          4200e-2
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"4200e-2"}'
+  arg_numeric_14_zero_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_zero_underflow
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_zero_underflow
+    historical_ids:
+    - UNIFIED.7-14.zero_underflow
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        0.0e-400
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          0.0e-400
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"0.0e-400"}'
+  arg_numeric_15_exponent:
+    lifecycle: active
+    scenario: arg_numeric_15_exponent
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_exponent
+    historical_ids:
+    - UNIFIED.7-15.exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9.0071992547409925e15
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9.0071992547409925e15
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.0071992547409925e15}'
+  arg_numeric_15_negative:
+    lifecycle: active
+    scenario: arg_numeric_15_negative
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_negative
+    historical_ids:
+    - UNIFIED.7-15.negative
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        -9007199254740992.5
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          -9007199254740992.5
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-9007199254740992.5}'
+  arg_numeric_15_ordinary:
+    lifecycle: active
+    scenario: arg_numeric_15_ordinary
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_ordinary
+    historical_ids:
+    - UNIFIED.7-15.ordinary
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        42.5
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          42.5
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.5}'
+  arg_numeric_15_quarter:
+    lifecycle: active
+    scenario: arg_numeric_15_quarter
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_quarter
+    historical_ids:
+    - UNIFIED.7-15.quarter
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9007199254740993.25
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9007199254740993.25
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.25}'
+  arg_numeric_15_round_down:
+    lifecycle: active
+    scenario: arg_numeric_15_round_down
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_round_down
+    historical_ids:
+    - UNIFIED.7-15.round_down
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9007199254740992.5
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9007199254740992.5
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740992.5}'
+  arg_numeric_15_round_up:
+    lifecycle: active
+    scenario: arg_numeric_15_round_up
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_round_up
+    historical_ids:
+    - UNIFIED.7-15.round_up
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        9007199254740993.1
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          9007199254740993.1
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.1}'
+  arg_numeric_15_small:
+    lifecycle: active
+    scenario: arg_numeric_15_small
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_small
+    historical_ids:
+    - UNIFIED.7-15.small
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        0.10000000000000000001
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          0.10000000000000000001
+
+          </rfl:parameter><|call|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.10000000000000000001}'
+  arg_numeric_14_fraction_near_integer:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_near_integer
+    description: 'Schema-directed fractional string fallback: Qwen3, Qwen3-Coder, MiniMax M2, GLM-4.7, MiniMax M3, Beam, and Nemotron v3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 42.0000000000000001; expected "42.0000000000000001".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_fraction_near_integer
+    historical_ids:
+    - UNIFIED.7-14.fraction_near_integer
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        42.0000000000000001
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          42.0000000000000001
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"42.0000000000000001"}'
+  arg_numeric_14_fraction_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_underflow
+    description: 'Schema-directed fractional string fallback: Qwen3, Qwen3-Coder, MiniMax M2, GLM-4.7, MiniMax M3, Beam, and Nemotron v3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 1e-400; expected "1e-400".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_fraction_underflow
+    historical_ids:
+    - UNIFIED.7-14.fraction_underflow
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        1e-400
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          1e-400
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"1e-400"}'
+  arg_numeric_14_fraction_fallback:
+    lifecycle: active
+    scenario: arg_numeric_14_fraction_fallback
+    description: 'Schema-directed fractional string fallback: Qwen3, Qwen3-Coder, MiniMax M2, GLM-4.7, MiniMax M3, Beam, and Nemotron v3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md. Input 42.5; expected "42.5".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_fraction_fallback
+    historical_ids:
+    - UNIFIED.7-14.fraction_fallback
+    request:
+      input: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        42.5
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: '<|start|>assistant to=get_weather<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+          42.5
+
+          </rfl:parameter><|call|>'
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":"42.5"}'
+  arg_null_mixed_labels:
+    lifecycle: active
+    scenario: arg_null_mixed_labels
+    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_null_mixed_labels
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=set_labels<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="label">
+
+        null
+
+        </rfl:parameter><rfl:parameter name="note">
+
+        null
+
+        </rfl:parameter><rfl:parameter name="literal">
+
+        null
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: set_labels
+        parameters:
+          type: object
+          properties:
+            label:
+              anyOf:
+              - type: string
+              - type: 'null'
+            note:
+              type:
+              - string
+              - 'null'
+            literal:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=set_labels
+      - delta_text: <|channel|>
+      - delta_text: 'analysis '
+      - delta_text: <|constrain|>
+      - delta_text: xml
+      - delta_text: <|message|>
+      - delta_text: <rfl:parameter name="label">
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <rfl:parameter name="note">
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <rfl:parameter name="literal">
+      - delta_text: '
+
+          null
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: set_labels
+        arguments:
+          label: null
+          note: null
+          literal: 'null'
+  arg_numeric_nested_exact:
+    lifecycle: active
+    scenario: arg_numeric_nested_exact
+    description: Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_nested_exact
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=inspect<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="nested">
+
+        {"fraction":9007199254740992.5,"tiny":1e-400}
+
+        </rfl:parameter><rfl:parameter name="values">
+
+        [9007199254740993,-9007199254740993]
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: inspect
+        parameters:
+          type: object
+          properties:
+            nested:
+              type: object
+              properties:
+                fraction:
+                  type: number
+                tiny:
+                  type: number
+            values:
+              type: array
+              items:
+                type: integer
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=inspect
+      - delta_text: <|channel|>
+      - delta_text: 'analysis '
+      - delta_text: <|constrain|>
+      - delta_text: xml
+      - delta_text: <|message|>
+      - delta_text: <rfl:parameter name="nested">
+      - delta_text: '
+
+          {"fraction":9007199254740992.5,"tiny":1e-400}
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <rfl:parameter name="values">
+      - delta_text: '
+
+          [9007199254740993,-9007199254740993]
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
   dotted_name_minimal:
     lifecycle: active
     scenario: dotted_name_minimal

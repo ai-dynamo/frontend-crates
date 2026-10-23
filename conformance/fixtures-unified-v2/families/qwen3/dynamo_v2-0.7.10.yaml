@@ -525,6 +525,15 @@ metadata_changes:
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin:
+        crate_version: 0.7.10
+        git_commit: 1a8eea8f79929cd508088df0c505b1d6bf01c391
+        source_sha256: 1e0ec261e03e33995a1f284e24f78080baa207bf59c895683b41bf4e3ff358d8
+      inherited_from: null
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
@@ -548,15 +557,6 @@ document_overrides:
       captured_with:
         dynamo_v2: 0.7.10
       capture_origin: null
-      inherited_from: null
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.10
-      capture_origin:
-        crate_version: 0.7.10
-        git_commit: 1a8eea8f79929cd508088df0c505b1d6bf01c391
-        source_sha256: 1e0ec261e03e33995a1f284e24f78080baa207bf59c895683b41bf4e3ff358d8
       inherited_from: null
   three_calls_partial_header:
     capture_provenance:

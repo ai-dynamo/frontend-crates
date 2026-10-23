@@ -6,18 +6,394 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
+beam:
+  UNIFIED.arg_numeric_15_exponent.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":-9007199254740992.0})"
+  UNIFIED.arg_numeric_15_quarter.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_round_down.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_round_up.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_small.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":0.1})"
+  UNIFIED.arg_numeric_nested_exact.beam:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+gpt_oss:
+  UNIFIED.arg_numeric_14_large_decimal.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_14_large_exponent.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_exponent.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":-9007199254740992.0})"
+  UNIFIED.arg_numeric_15_quarter.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_round_down.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_round_up.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_small.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":0.1})"
+  UNIFIED.arg_numeric_nested_exact.gpt_oss:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
 kimi_k3:
+  UNIFIED.arg_numeric_14_large_decimal.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_14_large_exponent.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_exponent.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":-9007199254740992.0})"
+  UNIFIED.arg_numeric_15_quarter.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_round_down.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_round_up.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_small.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":0.1})"
+  UNIFIED.arg_numeric_nested_exact.kimi_k3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
   UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3:
     golden:
       note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
       actual: ''
 
 muse_glimmer:
-  UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
-    golden:
-      note: 'PR #316 follow-up: EOF drops the entire tool channel when the first invoke has an unclosed parameter, losing the later complete parameterless call.'
-      actual: ''
+  UNIFIED.arg_numeric_14_large_decimal.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_14_large_exponent.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_exponent.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_negative.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.muse_glimmer:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.muse_glimmer:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
   UNIFIED.muse_unterminated_parameter_then_call.muse_glimmer:
     golden:
-      note: 'PR #316 follow-up: the later parameter closer completes the earlier malformed parameter, dispatching f with embedded invoke markup instead of get_weather.'
-      actual: tool_call(f, {"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"})
+      note: 'PR #316 follow-up: the later parameter closer completes the earlier malformed
+        parameter, dispatching f with embedded invoke markup instead of get_weather.'
+      actual: tool_call(f, {"x":"bad</atem:invoke><atem:invoke 
+        name=\"get_weather\"><atem:parameter name=\"city\">Paris"})
+  UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
+    golden:
+      note: 'PR #316 follow-up: EOF drops the entire tool channel when the first invoke
+        has an unclosed parameter, losing the later complete parameterless call.'
+      actual: ''
+gemma4:
+  UNIFIED.arg_numeric_15_exponent.gemma4:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_14_large_decimal.gemma4:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_14_large_exponent.gemma4:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.gemma4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.gemma4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.gemma4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.gemma4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.gemma4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.gemma4:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+deepseek_v41:
+  UNIFIED.arg_numeric_14_large_decimal.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_14_large_exponent.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_exponent.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_negative.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.deepseek_v41:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.deepseek_v41:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+glm47:
+  UNIFIED.arg_numeric_15_exponent.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_negative.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.glm47:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.glm47:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+deepseek_v4:
+  UNIFIED.arg_numeric_14_large_decimal.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_14_large_exponent.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_exponent.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_negative.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.deepseek_v4:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.deepseek_v4:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+kimi_k2:
+  UNIFIED.arg_numeric_14_large_decimal.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_14_large_exponent.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_exponent.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_negative.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":-9007199254740992.0})'
+  UNIFIED.arg_numeric_15_quarter.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_round_down.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740992.0})'
+  UNIFIED.arg_numeric_15_round_up.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":9007199254740994.0})'
+  UNIFIED.arg_numeric_15_small.kimi_k2:
+    projection:
+      note: 'The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible.'
+      actual: 'tool_call(get_weather, {"value":0.1})'
+  UNIFIED.arg_numeric_nested_exact.kimi_k2:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+nemotron_v3:
+  UNIFIED.arg_numeric_15_exponent.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":-9007199254740992.0})"
+  UNIFIED.arg_numeric_15_quarter.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_round_down.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_round_up.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_small.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":0.1})"
+  UNIFIED.arg_numeric_nested_exact.nemotron_v3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"
+qwen3:
+  UNIFIED.arg_numeric_15_exponent.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_negative.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":-9007199254740992.0})"
+  UNIFIED.arg_numeric_15_quarter.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_round_down.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740992.0})"
+  UNIFIED.arg_numeric_15_round_up.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":9007199254740994.0})"
+  UNIFIED.arg_numeric_15_small.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(get_weather, {\"value\":0.1})"
+  UNIFIED.arg_numeric_nested_exact.qwen3:
+    projection:
+      note: "The current Unified projection rounds exact numeric arguments in serde_json::Value; exact raw arguments are tested separately. Keep this projection result visible."
+      actual: "tool_call(inspect, {\"nested\":{\"fraction\":9007199254740992.0,\"tiny\":0.0},\"values\":[9007199254740993,-9007199254740993]})"

@@ -18,6 +18,7 @@ from __future__ import annotations
 import ast
 from collections import defaultdict
 from dataclasses import replace
+from decimal import Decimal
 import json
 import re
 import sys
@@ -44,6 +45,8 @@ from fixture_disposition import historical_unified_case_key  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     PARALLEL_BOUNDARY_CASES,
     UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
+    PARALLEL_BOUNDARY_CASES,
+    UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
     CLEAN,
     OnlyFamilies,
     EDGE,
@@ -52,6 +55,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
+from numeric_cases import NUMERIC_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -669,7 +673,8 @@ def test_scenario_families_matches_declared_scope():
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
-        "arg_json_null_ref": {"glm47"},
+        "arg_json_null_ref": {"glm47", "qwen3", "nemotron_v3"},
+        "arg_null_mixed_labels": set(FAMILIES),
         "arg_string_null_ref": {"glm47", "qwen3", "nemotron_v3"},
         "glm_ref_object": set(FAMILIES),
         "glm_ref_encoded_targets": set(FAMILIES),
@@ -910,6 +915,8 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 
 # --- counts live where they can be checked, not in registry prose ---------------
 
+NESTED_NUMERIC_CASES = 1
+
 def test_unified_case_counts_match_the_generator():
     """Name exactly what is counted, and count it from the generator.
 
@@ -919,17 +926,17 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     family_specific = {
-        "beam": 124,
-        "deepseek_v4": 134,
-        "deepseek_v41": 130,
-        "gemma4": 127,
+        "beam": 125,
+        "deepseek_v4": 135,
+        "deepseek_v41": 131,
+        "gemma4": 128,
         "glm47": 125,
-        "gpt_oss": 166,
-        "kimi_k2": 125,
-        "kimi_k3": 134,
-        "muse_glimmer": 133,
-        "qwen3": 130,
-        "nemotron_v3": 131,
+        "gpt_oss": 167,
+        "kimi_k2": 126,
+        "kimi_k3": 135,
+        "muse_glimmer": 134,
+        "qwen3": 132,
+        "nemotron_v3": 133,
     }
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
@@ -938,12 +945,16 @@ def test_unified_case_counts_match_the_generator():
             fam in G.scenario_families(scenario)
             for scenario in G.DOTTED_NAME_SCENARIOS
         )
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
+        boundary_cases = len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0
+        numeric_count = sum(numeric_applicable(fam, label) for _, label, *_ in NUMERIC_VARIANTS)
+        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + boundary_cases + numeric_count + NESTED_NUMERIC_CASES, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == (
         sum(family_specific.values())
         + len(FAMILIES) * len(CONFORMANCE_CASES)
         + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
         + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
+        + sum(numeric_applicable(fam, label) for fam in FAMILIES for _, label, *_ in NUMERIC_VARIANTS)
+        + len(FAMILIES) * NESTED_NUMERIC_CASES
     )
 
 
@@ -951,7 +962,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES) + len(NUMERIC_VARIANTS) + NESTED_NUMERIC_CASES
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1333,8 +1344,8 @@ def _logical_events(scenario, family, events):
     return out
 
 
-def _json_values(raw):
-    decoder = json.JSONDecoder()
+def _json_values(raw, *, exact_numbers=False):
+    decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
     values = []
     for at, char in enumerate(raw):
         if char not in "[{":
@@ -1347,7 +1358,7 @@ def _json_values(raw):
     return values
 
 
-def _parse_gemma_value(raw, index=0):
+def _parse_gemma_value(raw, index=0, *, exact_numbers=False):
     while index < len(raw) and raw[index].isspace():
         index += 1
     if raw.startswith('<|"|>', index):
@@ -1370,17 +1381,17 @@ def _parse_gemma_value(raw, index=0):
                 assert key is not None, ("invalid Gemma object key", raw[index:])
                 index += key.end()
                 assert index < len(raw) and raw[index] == ":", ("missing Gemma key separator", raw)
-                value, index = _parse_gemma_value(raw, index + 1)
+                value, index = _parse_gemma_value(raw, index + 1, exact_numbers=exact_numbers)
                 values[key[0]] = value
             else:
-                value, index = _parse_gemma_value(raw, index)
+                value, index = _parse_gemma_value(raw, index, exact_numbers=exact_numbers)
                 values.append(value)
     token = re.match(r"(?:true|false|null|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)", raw[index:])
     assert token is not None, ("unsupported Gemma value", raw[index:])
-    return json.loads(token[0]), index + token.end()
+    return json.loads(token[0], parse_float=Decimal if exact_numbers else float), index + token.end()
 
 
-def _native_input_calls(family, raw):
+def _native_input_calls(family, raw, *, exact_numbers=False):
     """Read authored complete argument fields, not runtime recovery decisions.
 
     This fixture-only projection ignores invoke EOF policy: a syntactically present
@@ -1449,7 +1460,7 @@ def _native_input_calls(family, raw):
     family = G.unified_grammar_family(family)
     if family == "gpt_oss":
         calls = []
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
         endings = ("<|call|>", "<|end|>", "<|return|>")
         owned_until = 0
         headers = re.finditer(
@@ -1495,7 +1506,7 @@ def _native_input_calls(family, raw):
             rf'<｜DSML｜{gap}parameter name="([^"]+)" string="(true|false)">(.*?)</｜DSML｜{gap}parameter>',
             re.S,
         )
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
         calls = []
         cursor = 0
         while match := re.search(headers[family], raw[cursor:]):
@@ -1521,7 +1532,9 @@ def _native_input_calls(family, raw):
                 parameter = parameter_pattern.search(raw, body_cursor)
                 if parameter and (body_end < 0 or parameter.start() < body_end):
                     key, is_string, value = parameter.groups()
-                    arguments[key] = value if is_string == "true" else json.loads(value)
+                    arguments[key] = value if is_string == "true" else json.loads(
+                        value, parse_float=Decimal if exact_numbers else float
+                    )
                     body_cursor = parameter.end()
                     continue
                 cursor = len(raw) if body_end < 0 else body_end + len(invocation_end)
@@ -1541,20 +1554,25 @@ def _native_input_calls(family, raw):
         elif family == "muse_glimmer":
             for key, value in re.findall(r'<atem:parameter name="([^"]+)">(.*?)</atem:parameter>', body, re.S):
                 try:
-                    arguments[key] = json.loads(value)
+                    arguments[key] = json.loads(
+                        value, parse_float=Decimal if exact_numbers else float
+                    )
                 except json.JSONDecodeError:
                     arguments[key] = value
         elif family == "gemma4":
-            arguments, _ = _parse_gemma_value("{" + body)
+            arguments, _ = _parse_gemma_value("{" + body, exact_numbers=exact_numbers)
         elif family == "kimi_k2":
             start = len(body) - len(body.lstrip(" \t\r\n"))
-            arguments, _ = json.JSONDecoder().raw_decode(body, start)
+            decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
+            arguments, _ = decoder.raw_decode(body, start)
         else:
             pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
             for key, kind, value in re.findall(pattern, body, re.S):
-                arguments[key] = value if kind == "string" else json.loads(value)
+                arguments[key] = value if kind == "string" else json.loads(
+                    value, parse_float=Decimal if exact_numbers else float
+                )
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
-                values = _json_values(body)
+                values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
                     arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
@@ -1700,7 +1718,7 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
         if case["init"]["tool_output_mode"] == "Native":
-            candidates = _native_input_calls(family, raw)
+            candidates = _native_input_calls(family, raw, exact_numbers=True)
             for candidate in candidates:
                 tool_schema = next(
                     (tool for tool in case.get("tools", []) if tool["name"] == candidate["name"]),
@@ -1727,16 +1745,18 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                           or (G.unified_grammar_family(family) in ("qwen3", "beam") and scenario in {
                               "schema_integer_const_ambiguous", "schema_object_const_union",
                               "schema_type_array_string_integer",
-                          })):
+                          }) or family == "qwen3"):
                         try:
-                            decoded = json.loads(value)
+                            decoded = json.loads(value, parse_float=Decimal)
                         except json.JSONDecodeError:
                             continue
-                        if matches_schema(decoded, schema, parameters):
+                        if matches_schema(decoded, schema, parameters) and (
+                            family != "qwen3" or not isinstance(decoded, str)
+                        ):
                             candidate["arguments"][key] = decoded
         else:
             candidates = []
-            for value in _json_values(raw):
+            for value in _json_values(raw, exact_numbers=True):
                 if case["init"]["named_tool"] is not None:
                     candidates.append({"kind": "tool_call", "name": case["init"]["named_tool"], "arguments": value})
                 else:
@@ -1745,8 +1765,16 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                             candidates.append({"kind": "tool_call", **call})
         cursor = 0
         for event in tools:
-            assert event in candidates[cursor:], (family, scenario, "input call differs from golden", event, candidates)
-            cursor = candidates.index(event, cursor) + 1
+            expected = event
+            if isinstance(event.get("arguments"), str):
+                expected = {
+                    **event,
+                    "arguments": json.loads(event["arguments"], parse_float=Decimal),
+                }
+            assert expected in candidates[cursor:], (
+                family, scenario, "input call differs from golden", event, candidates,
+            )
+            cursor = candidates.index(expected, cursor) + 1
     for event in case["golden"]:
         if event["kind"] in {"reasoning", "text"}:
             text = event["text"]
@@ -1768,6 +1796,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
             continue
         assert event["kind"] == "tool_call"
         name, arguments = event["name"], event["arguments"]
+        if isinstance(arguments, str):
+            arguments = json.loads(arguments, parse_float=Decimal)
         assert name in raw or case["init"]["named_tool"] == name, (family, scenario, "input tool name", name)
         assert isinstance(arguments, dict), (family, scenario, "argument object")
         for key, value in arguments.items():
@@ -1801,6 +1831,11 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
 BEAM_GRAMMAR_EXCEPTIONS = {
     "guided_json_native_parameter_body_inside_reasoning",
     "guided_json_reasoning_markers_inside_native_parameter",
+}
+BEAM_NUMERIC_STRING_SCENARIOS = {
+    scenario for scenario, label, _schema, raw, expected in NUMERIC_VARIANTS
+    if unified_numeric_expected("beam", label, raw, expected)
+    != numeric_expected("beam", label, raw, expected)
 }
 
 
@@ -1870,6 +1905,9 @@ def _assert_cross_family_contract(corpus):
                 # These native spellings are ambiguous. Validate each family's
                 # established interpretation, then compare the shared scenario.
                 events = [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": probe["value"]}}]
+
+            if scenario.startswith("arg_numeric_"):
+                events = canonical_events(events)
             if scenario in {"arg_json_null", "arg_string_null"}:
                 value = None if scenario == "arg_json_null" else "null"
                 expected_type = "string" if value is not None else ["string", "null"]
@@ -1951,7 +1989,7 @@ def _assert_cross_family_contract(corpus):
         # tokens), so it stands outside the shared contract for those scenarios only.
         contracts = [
             (family, contract) for family, contract in families.items()
-            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS)
+            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS | BEAM_NUMERIC_STRING_SCENARIOS)
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
@@ -1960,6 +1998,13 @@ def _assert_cross_family_contract(corpus):
 
 def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
     _assert_cross_family_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
+    scenario = "arg_numeric_14_large_decimal"
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    calls = _native_input_calls("gpt_oss", case["input"], exact_numbers=True)
+    assert calls[0]["arguments"]["value"] == Decimal("9007199254740993.0")
 
 
 @pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family != "muse_glimmer"])
