@@ -136,13 +136,14 @@ AudioUrl variants (and user InputAudio). Both enums add `Custom(CustomModalityPa
 {
   "role": "user",
   "content": [
-    {"type": "text", "text": "Does this structure <chemistry> match the reaction diagram?"},
+    {"type": "text", "text": "Does this structure "},
     {"type": "custom", "kind": "chemistry", "fields": {
       "projected_soft_tokens": {
         "dtype": "float32", "shape": [2, 4096], "data_base64": "..."
       },
       "revision": 1
     }},
+    {"type": "text", "text": " match the reaction diagram?"},
     {"type": "image_url", "image_url": {"url": "https://example.org/reaction-diagram.png"}}
   ]
 }
@@ -164,3 +165,11 @@ protocols **9.0.0**, renderer **9.0.0**, and parsers **11.0.0**; the latter two
 expose protocol types and require coordinated publication. These remain major
 bumps relative to current upstream releases. Tokenizers stays at upstream
 **3.1.2**. These versions are not release qualification or publication.
+
+When rendering chat templates, Custom parts retain their content-array positions
+as `{"type":"custom","kind":"chemistry"}` with `fields` omitted. The consumer's
+model-specific template renders its own marker; clients do not duplicate that
+marker in text. The renderer preserves Custom arrays even for templates with
+string and array branches, and removes payload fields from typed template inputs.
+HTTP parsing still requires `fields`; the payload-free view is internal template
+input, not an alternate HTTP content schema.

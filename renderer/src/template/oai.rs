@@ -93,14 +93,17 @@ const DEFAULT_MEDIA_TYPE_CONVERSIONS: &[(&str, &str)] = &[
     ("audio_url", "audio"),
 ];
 
-/// Convert media URL content parts to empty placeholder types.
+/// Project Custom payloads out of template input and normalize native media tags.
 fn convert_media_url_to_placeholder(
     content_array: &mut [serde_json::Value],
     conversions: &[(&str, &str)],
 ) {
     for part in content_array {
         let part_type = part.get("type").and_then(|t| t.as_str()).unwrap_or("");
-        if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type) {
+        if part_type == "custom" {
+            *part = serde_json::json!({"type": "custom", "kind": part.get("kind")});
+        } else if let Some((_, target_type)) = conversions.iter().find(|(src, _)| *src == part_type)
+        {
             *part = serde_json::json!({"type": target_type});
         }
     }
@@ -144,6 +147,9 @@ fn may_be_fix_msg_content(
                         .join("\n");
                     *content = serde_json::Value::String(text);
                 } else if !preserve_arrays
+                    // Custom markers belong to the model's array branch. Never
+                    // flatten them through a built-in image-placeholder rule.
+                    && !parts.iter().any(|part| part.get("type").and_then(|v| v.as_str()) == Some("custom"))
                     && !parts.is_empty()
                     && let Some(template) = image_placeholder_template
                 {
