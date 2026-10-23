@@ -16,6 +16,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: legacy split capture cannot replay this authored schedule
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 365b87d921de51e5670fe35a0bec8a89b7fe47d06a654fb6d5ed392460c06afe
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -24,6 +33,24 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for deepseek_v41
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: a2a30a9cc55643c454be6458492299edb8fd13200d49e03f03ce1467fa061b07
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ff0675bbcfc65fbbb117459cca000599783882a3a5f5399da68b4e33bd9f39be
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   arg_unicode:
     case_key: UNIFIED.7.a
     stimulus:
@@ -1222,7 +1249,22 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
     init:
       starting_state: None
       tool_output_mode: Native

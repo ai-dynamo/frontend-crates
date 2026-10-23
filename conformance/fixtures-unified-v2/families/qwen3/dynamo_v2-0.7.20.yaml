@@ -7,6 +7,16 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_string_before_payload:
     observation:
       unavailable:
@@ -3447,30 +3457,6 @@ changes:
         detail: Historical producer checkout was blocked by the local commit-signature policy. The parser was not executed, and no newer output was substituted.
 metadata_changes: {}
 document_overrides:
-  guided_json_native_parameter_string_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  guided_json_noncall_before_native_array_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  guided_response_native_wrapper_whitespace_before_prose:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  structured_response_after_reasoning:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
   adjacent_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -3480,14 +3466,17 @@ document_overrides:
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
         source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
       inherited_from: null
-  three_calls_partial_header:
+  arg_json_null_ref:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
-      capture_origin:
-        crate_version: 0.7.20
-        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
-        source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
       inherited_from: null
   dotted_name_minimal:
     capture_provenance:
@@ -3512,4 +3501,37 @@ document_overrides:
       captured_with:
         dynamo_v2: 0.7.20
       capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+        source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
       inherited_from: null

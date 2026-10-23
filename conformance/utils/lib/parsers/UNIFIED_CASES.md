@@ -8,6 +8,8 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 Always evaluate single-family tests against every registered family when adding, changing, or reviewing them, following the [case applicability policy](../../../README.md#case-applicability). If another family can express the behavior, add family-native inputs and authored expected outputs for every applicable family and use a shared section. Otherwise, explain the grammar or request-mode limitation and place the case in a named family-specific test section. Preserve published IDs, capture history, and older unmeasured results when changing section placement.
 
+The corpus guard checks every generic semantic case, independent of which family exposed the regression. A generic case must have native inputs in more than one registered family. Family-native request and delivery variants may share a generic heading when the combined behavior has coverage across families; they retain their individual inputs, expectations, and captures. A standalone case with one family must gain applicable native inputs or move to a named family section. The rendered-model guard checks the resulting columns as well as the authored corpus.
+
 ## The oracle: GOLDEN is authored, not captured
 
 ## Capture version policy
@@ -74,6 +76,8 @@ The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and share
 ## Nemotron 3 Ultra applicability
 
 The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
+
+These two cases display under the Nemotron v3 default-reasoning section. Their published numeric IDs and capture history remain unchanged. Only Nemotron currently enables implicit reasoning under default initialization; explicitly initializing another family to Reasoning exercises a different request contract.
 
 - `10-default_reasoning_without_opener`: with default initialization, `Check Montréal.</think>雪` emits reasoning followed by visible Unicode content. The same input under Response stays literal text.
 - `12-default_reasoning_tool_without_closer`: default reasoning contains a native XML call with literal think markers in its argument, then resumes reasoning at EOF. Both think boundaries are omitted. Other registered families require explicit Reasoning initialization for this contract; their shared prefilled and nesting scenarios cover that state.
@@ -162,9 +166,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 250 of the 347 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 253 of the 347 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 97 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 94 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
@@ -510,6 +514,8 @@ All registered families are inspected and use native grammar. v1 batch excludes 
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
 
+
+The local nullable-reference, string-reference, and mixed null/string field probes apply to every registered Unified family. The reference probes retain unresolved references; all three probes use family-native value encoding. Existing published requests remain byte-identical; newly applicable family/case pairs have separate authored requests and recorded results.
 
 ### XML custom-type compatibility
 

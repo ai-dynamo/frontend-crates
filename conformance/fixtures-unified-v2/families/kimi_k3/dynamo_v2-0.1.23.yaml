@@ -16,6 +16,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: legacy split capture cannot replay this authored schedule
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 274a25c14ad63a45c95806874ce4a6517b26dee2795266a1fa39db9bb492d6d5
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -24,6 +33,24 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: abc10d92399449907b75536e57b210c1aed5b44d0486d0c205519b4e9e69393c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 98eaef7157c4c2195bdb5ab0869e4e51e0b9d48384c0dec3c84800558b5df163
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   arg_unicode:
     case_key: UNIFIED.7.a
     stimulus:
@@ -1205,7 +1232,22 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
     init:
       starting_state: None
       tool_output_mode: Native

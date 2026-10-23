@@ -6,10 +6,6 @@ document:
   mode: unified
 changes:
   arg_json_null:
-    case_key: arg_json_null
-    stimulus:
-      ref: current
-      semantic_sha256: e0bd137d2ba081c157c71cdabb937e66ecb427219323267b53233a1645e8582e
     observation:
       value:
         assembled:
@@ -44,10 +40,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_json_null_anyof:
-    case_key: arg_json_null_anyof
-    stimulus:
-      ref: current
-      semantic_sha256: eccac08560e92e7f65b30f294c5bc3322d014adf96b982adef66664f35a2efff
     observation:
       value:
         assembled:
@@ -82,10 +74,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_json_null_const:
-    case_key: arg_json_null_const
-    stimulus:
-      ref: current
-      semantic_sha256: c404aa59a3efee0e018e00744443b4dfba4eeca1ac5667d9c798082326918aac
     observation:
       value:
         assembled:
@@ -120,10 +108,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_json_null_oneof:
-    case_key: arg_json_null_oneof
-    stimulus:
-      ref: current
-      semantic_sha256: 73c36b22ca48a1be302a7e657b1cf97ea8d29d3111fd26946788132d0287b6b3
     observation:
       value:
         assembled:
@@ -158,10 +142,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_json_null_ref:
-    case_key: arg_json_null_ref
-    stimulus:
-      ref: current
-      semantic_sha256: 21ea667d0468b4d5b7f456cf930d3255458b813b30eb04f53df076a052410784
     observation:
       value:
         assembled:
@@ -196,10 +176,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_null_mixed_labels:
-    case_key: arg_null_mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
     observation:
       value:
         assembled:
@@ -269,10 +245,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_string_null_const:
-    case_key: arg_string_null_const
-    stimulus:
-      ref: current
-      semantic_sha256: 087e084d93e73641ba5b63626ad44fecdff14f62e6386e5a36c30be1944b3100
     observation:
       value:
         assembled:
@@ -307,10 +279,6 @@ changes:
             arguments: '}'
         - expected: []
   arg_string_null_union:
-    case_key: arg_string_null_union
-    stimulus:
-      ref: current
-      semantic_sha256: 375f9f26196e9061a84edffdc1d5c5370c3224d893d91ba291fef2da0f8bdda3
     observation:
       value:
         assembled:
@@ -345,10 +313,6 @@ changes:
             arguments: '}'
         - expected: []
   glm47_reference_type_intersection:
-    case_key: glm47_reference_type_intersection
-    stimulus:
-      ref: current
-      semantic_sha256: 9d436633af0c5f9e00fdb31d0abf3fc111ac6b9dca10f164ce44a383faa41c2d
     observation:
       value:
         assembled:
@@ -402,10 +366,6 @@ changes:
             arguments: '}'
         - expected: []
   glm_ref_encoded_targets:
-    case_key: glm_ref_encoded_targets
-    stimulus:
-      ref: current
-      semantic_sha256: ec3445099edcd3f0648f1122a0f1f244c9f3f147c7de9b1bbb6369e4aa3169aa
     observation:
       value:
         assembled:
@@ -472,10 +432,6 @@ changes:
             arguments: '}'
         - expected: []
   glm_ref_object:
-    case_key: glm_ref_object
-    stimulus:
-      ref: current
-      semantic_sha256: b8981d8092c463af8103e83285738c8d71e29fa6a447761aae30c250f7c976cd
     observation:
       value:
         assembled:
@@ -511,10 +467,6 @@ changes:
             arguments: '}'
         - expected: []
   glm_ref_scalar_types:
-    case_key: glm_ref_scalar_types
-    stimulus:
-      ref: current
-      semantic_sha256: c89a584061612f71e4edd7a6ac04db5cfa4228be4503b864ae6d7e28f6ec1c98
     observation:
       value:
         assembled:
@@ -597,10 +549,6 @@ changes:
             arguments: '}'
         - expected: []
   local_schema_id_preserves_type:
-    case_key: local_schema_id_preserves_type
-    stimulus:
-      ref: current
-      semantic_sha256: b4e087dba6ccaa0a29b4c2b2e68f5b3a7847b396b0e9bb62b9a21c4051ea9922
     observation:
       value:
         assembled:
@@ -635,10 +583,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_declared_integer:
-    case_key: schema_declared_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 0a08d1c6a6d7577fe8b4d585245d291487e07df2247c80f669fbc28406f5ca47
     observation:
       value:
         assembled:
@@ -673,10 +617,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_declared_number:
-    case_key: schema_declared_number
-    stimulus:
-      ref: current
-      semantic_sha256: e39ea50a687e70c2ce007753f850aa6286d16e7d28cd5049e1aaaf6e71842625
     observation:
       value:
         assembled:
@@ -711,10 +651,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_declared_object:
-    case_key: schema_declared_object
-    stimulus:
-      ref: current
-      semantic_sha256: dce98137fe4d5e6275e09cf664ede2a5c47a54b8b8191a9ca89b7d5649aa5899
     observation:
       value:
         assembled:
@@ -750,10 +686,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_enum_integer:
-    case_key: schema_enum_integer
-    stimulus:
-      ref: current
-      semantic_sha256: ed7a46836cd66621b1deec6273116102c666697c1a0ca2ed6d9c2b70656977bf
     observation:
       value:
         assembled:
@@ -788,10 +720,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_id_direct_integer:
-    case_key: schema_id_direct_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 2d3b161fef1312d34f193c904ce65d4775e3bf89569a43698ac1d256fc5d5574
     observation:
       value:
         assembled:
@@ -826,10 +754,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_integer_const_ambiguous:
-    case_key: schema_integer_const_ambiguous
-    stimulus:
-      ref: current
-      semantic_sha256: 157c3c8630ebbd1ea49930eafc603fdce678579943defb4aa3cf0f98d4ffee5d
     observation:
       value:
         assembled:
@@ -864,10 +788,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_intersection_anyof:
-    case_key: schema_intersection_anyof
-    stimulus:
-      ref: current
-      semantic_sha256: 6cbabed1a20f29adc16aa527602ef430849d4c4863ed770bdf35ffed505e91f2
     observation:
       value:
         assembled:
@@ -902,10 +822,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_intersection_oneof:
-    case_key: schema_intersection_oneof
-    stimulus:
-      ref: current
-      semantic_sha256: 6ce4058a27a9b049c5c62684ab0f20d1957a4a544f209c039c1fbf452d7ab7c5
     observation:
       value:
         assembled:
@@ -940,10 +856,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_null_union_ambiguous:
-    case_key: schema_null_union_ambiguous
-    stimulus:
-      ref: current
-      semantic_sha256: 3018a058fc844fac217310e99bf1326e608898c48b9898a228e4504cc2b4d2d9
     observation:
       value:
         assembled:
@@ -978,10 +890,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_object_const_union:
-    case_key: schema_object_const_union
-    stimulus:
-      ref: current
-      semantic_sha256: 1e181479e986b52797ab36185973c951eb644595a67e186aeb42ebb28b3933de
     observation:
       value:
         assembled:
@@ -1017,10 +925,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_percent_ref_const:
-    case_key: schema_percent_ref_const
-    stimulus:
-      ref: current
-      semantic_sha256: af8000b643730559c55504495e894549b9a8a74b5289025bb3b745f0ceb76595
     observation:
       value:
         assembled:
@@ -1055,10 +959,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_ref_sibling_integer:
-    case_key: schema_ref_sibling_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 48e62c72fdc3c9278ee78294bd188c6b076c9bb587d502a2408546d29e22c9a8
     observation:
       value:
         assembled:
@@ -1093,10 +993,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_ref_union_anyof_integer:
-    case_key: schema_ref_union_anyof_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 5c347fe46a9959ce8c726c4b20d2fb42de73d4d0c2d0bbf2677acfc40061e460
     observation:
       value:
         assembled:
@@ -1131,10 +1027,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_ref_union_anyof_string:
-    case_key: schema_ref_union_anyof_string
-    stimulus:
-      ref: current
-      semantic_sha256: f6786ed50446ed2c2950afc8bfb2c13588d4cf9b43f97774419073bf2fb9021e
     observation:
       value:
         assembled:
@@ -1169,10 +1061,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_ref_union_oneof_integer:
-    case_key: schema_ref_union_oneof_integer
-    stimulus:
-      ref: current
-      semantic_sha256: 12b252b199e24d7a375651b144148adcb85c7f79a84c10079312618fe008a9ac
     observation:
       value:
         assembled:
@@ -1207,10 +1095,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_ref_union_oneof_string:
-    case_key: schema_ref_union_oneof_string
-    stimulus:
-      ref: current
-      semantic_sha256: d8b32bcf68025cc49d87f8d28c77ff3250356abbdcfb972c84af871206f4a9b8
     observation:
       value:
         assembled:
@@ -1245,10 +1129,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_type_array_integer_null:
-    case_key: schema_type_array_integer_null
-    stimulus:
-      ref: current
-      semantic_sha256: 7928fafeae92977a5f5e09f349ded8cd6c3624cb05a7f150302a05652c74e9ba
     observation:
       value:
         assembled:
@@ -1283,10 +1163,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_type_array_integer_null_null:
-    case_key: schema_type_array_integer_null_null
-    stimulus:
-      ref: current
-      semantic_sha256: 46b9cfde7fd7374062d58f95fe3d2cfa7f074cb64eccd0c7580679ba3fbb4ac7
     observation:
       value:
         assembled:
@@ -1321,10 +1197,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_type_array_string_integer:
-    case_key: schema_type_array_string_integer
-    stimulus:
-      ref: current
-      semantic_sha256: f8fc23cfd58e95156aa348491a997547fde53cfa439cbff099c69f1ddaffbe05
     observation:
       value:
         assembled:
@@ -1359,10 +1231,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_array_reverse_string:
-    case_key: schema_union_anyof_array_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 4727fade931f241cbdb46fc4814ada1db22e3b3011a712f782dcbc67cd5a0d80
     observation:
       value:
         assembled:
@@ -1397,10 +1265,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_array_reverse_typed:
-    case_key: schema_union_anyof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: a6813b77d514e2fe020302dfa86f82238a114b75e784e37603ec814a00a427d5
     observation:
       value:
         assembled:
@@ -1437,10 +1301,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_array_string:
-    case_key: schema_union_anyof_array_string
-    stimulus:
-      ref: current
-      semantic_sha256: d204d73cc11e6c19653ffc0cdd376c24897f5b76c89792329fa406b9935bd095
     observation:
       value:
         assembled:
@@ -1475,10 +1335,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_array_typed:
-    case_key: schema_union_anyof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: bee27c25a94c3f15faf9ff7140678ba6f1cec418a0f3c5bcd4d3f3e7fca460e5
     observation:
       value:
         assembled:
@@ -1515,10 +1371,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_boolean_reverse_string:
-    case_key: schema_union_anyof_boolean_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 643157b81f60ead07a4fceaf89753709180af8b99b1862dbbc742fd3d75c60d4
     observation:
       value:
         assembled:
@@ -1553,10 +1405,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_boolean_reverse_typed:
-    case_key: schema_union_anyof_boolean_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: b8d05d6c94a71a35d149c885418d124b6a396b6355ee7a9ff5d8df29fdca14ed
     observation:
       value:
         assembled:
@@ -1591,10 +1439,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_boolean_string:
-    case_key: schema_union_anyof_boolean_string
-    stimulus:
-      ref: current
-      semantic_sha256: 4e0b0c8adae5782f4c74bffc27e8e53c73d804187e018f5d902a765482c4a62d
     observation:
       value:
         assembled:
@@ -1629,10 +1473,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_boolean_typed:
-    case_key: schema_union_anyof_boolean_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 12b2d5a264084fd8bc663ee911fe5cd1b06a4815d1582e55905a2a825d96e28a
     observation:
       value:
         assembled:
@@ -1667,10 +1507,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_integer_reverse_string:
-    case_key: schema_union_anyof_integer_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 6609938045a6f3e6a9230ea844c6db011a388a6389288a93f2271a63f3252207
     observation:
       value:
         assembled:
@@ -1705,10 +1541,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_integer_reverse_typed:
-    case_key: schema_union_anyof_integer_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 8595f61f569ff7c30524cdbbce51f8467f58033b7aa05f4811ae24e343af6229
     observation:
       value:
         assembled:
@@ -1743,10 +1575,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_integer_string:
-    case_key: schema_union_anyof_integer_string
-    stimulus:
-      ref: current
-      semantic_sha256: 29d2ef2a1e175b2d2ffb82f0e96444d4506ee39984ced59864bbdf1f0789f6ed
     observation:
       value:
         assembled:
@@ -1781,10 +1609,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_integer_typed:
-    case_key: schema_union_anyof_integer_typed
-    stimulus:
-      ref: current
-      semantic_sha256: c50b1f16d3d22bad1c352560cb9e21024ad94174ae9834e14d352cdc9e0cd229
     observation:
       value:
         assembled:
@@ -1819,10 +1643,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_null_reverse_string:
-    case_key: schema_union_anyof_null_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 0468d19f5adf1f083784f5cdb194b93654b7683dd8e8b71acabdb8b76df151c0
     observation:
       value:
         assembled:
@@ -1857,10 +1677,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_null_reverse_typed:
-    case_key: schema_union_anyof_null_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 50928c77f6b5f9bf415b6ac9938848bb81d4f518be08fbd40a7120c9c796e1ce
     observation:
       value:
         assembled:
@@ -1895,10 +1711,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_null_string:
-    case_key: schema_union_anyof_null_string
-    stimulus:
-      ref: current
-      semantic_sha256: 9dbf17f6ce788204e2c1272e09dc4f563a8af171f9cf9f06d54348af86df2e8c
     observation:
       value:
         assembled:
@@ -1933,10 +1745,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_null_typed:
-    case_key: schema_union_anyof_null_typed
-    stimulus:
-      ref: current
-      semantic_sha256: ccd9f7494770cef21effaf30d0b3338aa69852f12e93f18c4d3324372607e76c
     observation:
       value:
         assembled:
@@ -1971,10 +1779,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_number_reverse_string:
-    case_key: schema_union_anyof_number_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: bc69545bd691cf9b8f5fac76f11639d12272a04623e348c7bb43a99b7f6ac991
     observation:
       value:
         assembled:
@@ -2009,10 +1813,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_number_reverse_typed:
-    case_key: schema_union_anyof_number_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 0ce5397bbd6760c85fb66dd7f016ecce7d57ea5c235c5556acb50e7e31a4c251
     observation:
       value:
         assembled:
@@ -2047,10 +1847,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_number_string:
-    case_key: schema_union_anyof_number_string
-    stimulus:
-      ref: current
-      semantic_sha256: 4adf086a084e87fc6910b3e58650a1a23fe4ea4fb048a49ef58a7b4d25999bc2
     observation:
       value:
         assembled:
@@ -2085,10 +1881,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_number_typed:
-    case_key: schema_union_anyof_number_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 3a4714fbf3d469b01f62869aec93260b48e2f2e004771fc2fee70fe7dff2cf75
     observation:
       value:
         assembled:
@@ -2123,10 +1915,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_object_reverse_string:
-    case_key: schema_union_anyof_object_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: dccdbe0ea3bb72335f08b59e0ccdda4f055f5abef4022a5663e92dd1ecc04f78
     observation:
       value:
         assembled:
@@ -2161,10 +1949,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_object_reverse_typed:
-    case_key: schema_union_anyof_object_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 0d3e3af5b4075480474b77c491ee1b0d172737f1a183a976a55bdc76643514d5
     observation:
       value:
         assembled:
@@ -2200,10 +1984,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_object_string:
-    case_key: schema_union_anyof_object_string
-    stimulus:
-      ref: current
-      semantic_sha256: 9b6baee3b4d4eb5e3ec7f89a890014bf030cae1a69bae555aa88c3b7372748bc
     observation:
       value:
         assembled:
@@ -2238,10 +2018,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_anyof_object_typed:
-    case_key: schema_union_anyof_object_typed
-    stimulus:
-      ref: current
-      semantic_sha256: adf1ca0234f2fd4886bc9597dc3cb58907d1356b485c2998dd4473b6b5a608e8
     observation:
       value:
         assembled:
@@ -2277,10 +2053,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_array_reverse_string:
-    case_key: schema_union_oneof_array_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 404b91d7cedeb323e0b9e1e764d48cf120a2f635b965a9f653646258930f238b
     observation:
       value:
         assembled:
@@ -2315,10 +2087,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_array_reverse_typed:
-    case_key: schema_union_oneof_array_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 5fac716db8566354737b918f4bdec46c0042db98a728623b419f6bb79f824947
     observation:
       value:
         assembled:
@@ -2355,10 +2123,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_array_string:
-    case_key: schema_union_oneof_array_string
-    stimulus:
-      ref: current
-      semantic_sha256: a52f5596237ddee65b2e2bfd2922623669d24e63009cb52d6cc93d2519df3d79
     observation:
       value:
         assembled:
@@ -2393,10 +2157,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_array_typed:
-    case_key: schema_union_oneof_array_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 38569df6e28db0e9d6839b416cc749e6f301235be7b91f1e5580d0aba37e0d4b
     observation:
       value:
         assembled:
@@ -2433,10 +2193,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_boolean_reverse_string:
-    case_key: schema_union_oneof_boolean_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: c8a4dcc74720091f8df5171a6d4d464fea344e5ea82f9c3edc70f67552ef00ad
     observation:
       value:
         assembled:
@@ -2471,10 +2227,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_boolean_reverse_typed:
-    case_key: schema_union_oneof_boolean_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 82bbd4e5be6831b41733bbdab36234006a4068a26ae6948aa20415fab3b84890
     observation:
       value:
         assembled:
@@ -2509,10 +2261,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_boolean_string:
-    case_key: schema_union_oneof_boolean_string
-    stimulus:
-      ref: current
-      semantic_sha256: 7469ca5414e5920f14ce6fa236543dbf24da34bffe8652a39b8ca0e1d5bc076c
     observation:
       value:
         assembled:
@@ -2547,10 +2295,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_boolean_typed:
-    case_key: schema_union_oneof_boolean_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 8995b922fcfd6c2f33fd48acb8b7b255cb113a23d302f25c01c3104f94035fb5
     observation:
       value:
         assembled:
@@ -2585,10 +2329,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_integer_reverse_string:
-    case_key: schema_union_oneof_integer_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 210e8cd8fdf7b9ad5d053947a564af2ac9091410f97a20077e237a08edc090f7
     observation:
       value:
         assembled:
@@ -2623,10 +2363,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_integer_reverse_typed:
-    case_key: schema_union_oneof_integer_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 2241424b6da19928fed6eb1717afa0118b259b1a96398e7c0f0bfeca9205aa9d
     observation:
       value:
         assembled:
@@ -2661,10 +2397,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_integer_string:
-    case_key: schema_union_oneof_integer_string
-    stimulus:
-      ref: current
-      semantic_sha256: bef1844ffd7982c5f3c055edea67af2da900688a246781aeab5fbb7c4d915fca
     observation:
       value:
         assembled:
@@ -2699,10 +2431,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_integer_typed:
-    case_key: schema_union_oneof_integer_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 9021b6e81c8df29e3a4e0087cdd6037125ddfc5d453edc1f2d2a7367d10df745
     observation:
       value:
         assembled:
@@ -2737,10 +2465,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_null_reverse_string:
-    case_key: schema_union_oneof_null_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 4cca32b235c102662da40386ad34342b955dfee4948162539c1f4df9a2dda3f7
     observation:
       value:
         assembled:
@@ -2775,10 +2499,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_null_reverse_typed:
-    case_key: schema_union_oneof_null_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 16281c9f4db8d2f1ad1f6205494b66e7792bbebbcb473d2a7415c71eb7914963
     observation:
       value:
         assembled:
@@ -2813,10 +2533,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_null_string:
-    case_key: schema_union_oneof_null_string
-    stimulus:
-      ref: current
-      semantic_sha256: 3f6fce42adffc1d95389b1a329d01b101cd06069e6101acf67f1a46b461e220c
     observation:
       value:
         assembled:
@@ -2851,10 +2567,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_null_typed:
-    case_key: schema_union_oneof_null_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 6c62aa599997233bb978c40ef33e6f9312cf0bb322c84b5b7b3d1d7584e22d8f
     observation:
       value:
         assembled:
@@ -2889,10 +2601,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_number_reverse_string:
-    case_key: schema_union_oneof_number_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: 9e8be53b751ec36276cce8a55c1681679e57a6c3b00b2fec83dd4339d6ab7e1d
     observation:
       value:
         assembled:
@@ -2927,10 +2635,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_number_reverse_typed:
-    case_key: schema_union_oneof_number_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 89a487edac7678d5835123c8fbdd5caacfbb00f6e690efe51530577dddf0462d
     observation:
       value:
         assembled:
@@ -2965,10 +2669,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_number_string:
-    case_key: schema_union_oneof_number_string
-    stimulus:
-      ref: current
-      semantic_sha256: 98628fbadc05a164fdebb53d3a62bfe566c9747e2a916efe0e1c6fac44fa5a07
     observation:
       value:
         assembled:
@@ -3003,10 +2703,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_number_typed:
-    case_key: schema_union_oneof_number_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 53fa1e744474999a0a070bd90c36417ca1ea60642d125e568aa071451341a901
     observation:
       value:
         assembled:
@@ -3041,10 +2737,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_object_reverse_string:
-    case_key: schema_union_oneof_object_reverse_string
-    stimulus:
-      ref: current
-      semantic_sha256: e8a9e6cb0f4eb316d0cd013a64b0aaadc4fd8e7f424d55c519b845226952312d
     observation:
       value:
         assembled:
@@ -3079,10 +2771,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_object_reverse_typed:
-    case_key: schema_union_oneof_object_reverse_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 7e44e5989fc800d8fddb207788ebc9ba0c04e9e001e9577b9c8c047f7b5f5f80
     observation:
       value:
         assembled:
@@ -3118,10 +2806,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_object_string:
-    case_key: schema_union_oneof_object_string
-    stimulus:
-      ref: current
-      semantic_sha256: c54bd39d213c9e842f53b26542b8c75874d905d61e9860faf3b9f6ab3ab5a042
     observation:
       value:
         assembled:
@@ -3156,10 +2840,6 @@ changes:
             arguments: '}'
         - expected: []
   schema_union_oneof_object_typed:
-    case_key: schema_union_oneof_object_typed
-    stimulus:
-      ref: current
-      semantic_sha256: 937d5743d5cc236bafc41821e9a7fa6de24ba9ef08387df7d2865c875d9bd435
     observation:
       value:
         assembled:
@@ -3195,10 +2875,6 @@ changes:
             arguments: '}'
         - expected: []
   unused_reference_graph_parameter_types:
-    case_key: unused_reference_graph_parameter_types
-    stimulus:
-      ref: current
-      semantic_sha256: 7b19f48bf8b83b9966340f577164be88d92488a65f4bb028862bccec99bc909a
     observation:
       value:
         assembled:
@@ -5810,55 +5486,13 @@ metadata_changes:
       version: 0.5.21
       wheel_sha256: ac300998eb6b1afcb2971b31317b66ef12891003bdf9d1a5c7e34f9d4e3dcf0d
 document_overrides:
-  arg_json_null:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_anyof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_const:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   arg_json_null_nullable:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  arg_json_null_oneof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_ref:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   arg_marker_in_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_null_mixed_labels:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_const:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -5883,12 +5517,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   arg_string_null_sibling_oneof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_union:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -5936,31 +5564,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  glm47_reference_type_intersection:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  glm_ref_encoded_targets:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   glm_ref_json_looking_strings:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  glm_ref_object:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  glm_ref_scalar_types:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6207,12 +5811,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   interstitial_text:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  local_schema_id_preserves_type:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6656,37 +6254,13 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_declared_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_declared_null:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_declared_number:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_declared_object:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_declared_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_enum_integer:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -6704,385 +6278,7 @@ document_overrides:
         sglang_python: 0.5.21
       capture_origin: null
       inherited_from: null
-  schema_id_direct_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_integer_const_ambiguous:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_intersection_anyof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_intersection_oneof:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_null_union_ambiguous:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
   schema_nullable_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_object_const_union:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_percent_ref_const:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_ref_sibling_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_ref_union_anyof_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_ref_union_anyof_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_ref_union_oneof_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_ref_union_oneof_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_type_array_integer_null:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_type_array_integer_null_null:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_type_array_string_integer:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_array_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_boolean_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_integer_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_integer_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_integer_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_integer_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_null_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_null_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_null_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_null_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_number_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_number_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_number_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_number_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_object_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_object_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_object_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_anyof_object_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_array_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_boolean_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_integer_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_integer_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_integer_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_integer_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_null_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_null_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_null_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_null_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_number_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_number_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_number_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_number_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_object_reverse_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_object_reverse_typed:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_object_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  schema_union_oneof_object_typed:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21
@@ -7185,12 +6381,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   two_reason_spans:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.21
-      capture_origin: null
-      inherited_from: null
-  unused_reference_graph_parameter_types:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.21

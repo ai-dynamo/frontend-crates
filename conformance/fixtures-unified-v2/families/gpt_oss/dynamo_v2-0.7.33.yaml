@@ -7,6 +7,209 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: city
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: label
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ','
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: note
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ','
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: literal
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: city
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
   xml_string_type_double_quoted_object:
     case_key: UNIFIED.7-xml_string_type_double_quoted_object
     stimulus:
@@ -145,23 +348,47 @@ changes:
             arguments: ''
             complete: true
         - expected: []
-metadata_changes: {}
+metadata_changes:
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
 document_overrides:
-  xml_string_type_double_quoted_object:
+  arg_json_null_ref:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.33
       capture_origin:
         crate_version: 0.7.33
         source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
-        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+        git_commit: 423c1de97486365fb004dd6fe7dfb96914155ca5
       inherited_from: null
-  xml_string_type_single_quoted_object:
+  arg_null_mixed_labels:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.33
       capture_origin:
         crate_version: 0.7.33
         source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
-        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+        git_commit: 423c1de97486365fb004dd6fe7dfb96914155ca5
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 423c1de97486365fb004dd6fe7dfb96914155ca5
       inherited_from: null

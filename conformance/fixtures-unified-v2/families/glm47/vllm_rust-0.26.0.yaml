@@ -7,180 +7,120 @@ document:
 changes:
   arg_json_null:
     case_key: UNIFIED.7-4
-    stimulus:
-      ref: current
-      semantic_sha256: e0bd137d2ba081c157c71cdabb937e66ecb427219323267b53233a1645e8582e
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_json_null_anyof:
     case_key: UNIFIED.7-4.anyof
-    stimulus:
-      ref: current
-      semantic_sha256: eccac08560e92e7f65b30f294c5bc3322d014adf96b982adef66664f35a2efff
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_json_null_const:
     case_key: UNIFIED.7-4.const
-    stimulus:
-      ref: current
-      semantic_sha256: c404aa59a3efee0e018e00744443b4dfba4eeca1ac5667d9c798082326918aac
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_json_null_nullable:
     case_key: UNIFIED.7-4.nullable
-    stimulus:
-      ref: current
-      semantic_sha256: 379e97a02c3f2db0b30e5b36bce0c2d7ac5fecd903bc49e8feb786147da856b6
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_json_null_oneof:
     case_key: UNIFIED.7-4.oneof
-    stimulus:
-      ref: current
-      semantic_sha256: 73c36b22ca48a1be302a7e657b1cf97ea8d29d3111fd26946788132d0287b6b3
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_json_null_ref:
     case_key: UNIFIED.7-4.ref
-    stimulus:
-      ref: current
-      semantic_sha256: 21ea667d0468b4d5b7f456cf930d3255458b813b30eb04f53df076a052410784
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_null_mixed_labels:
     case_key: UNIFIED.7-4.mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: a9c760c3bfed231c7bf08087f895570312124ec13e8e529466ea4eb756fac762
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_const:
     case_key: UNIFIED.7-5.const
-    stimulus:
-      ref: current
-      semantic_sha256: 087e084d93e73641ba5b63626ad44fecdff14f62e6386e5a36c30be1944b3100
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_enum:
     case_key: UNIFIED.7-5.enum
-    stimulus:
-      ref: current
-      semantic_sha256: 69403ed3712c3a2c3a67244c9bb756b215751a2e1ef39d3da97dd695d55d9d00
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_ref:
     case_key: UNIFIED.7-5.ref
-    stimulus:
-      ref: current
-      semantic_sha256: 9a96c2d0f8a9fddaada0b350c2c3d757529d281c043c06b7882ee3e33f2b83b4
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-5.sibling_anyof
-    stimulus:
-      ref: current
-      semantic_sha256: c324965efd6de5f7790f7d0d0873c90b92dc496e23a4de36b951e1a5366d0c4d
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_sibling_oneof:
     case_key: UNIFIED.7-5.sibling_oneof
-    stimulus:
-      ref: current
-      semantic_sha256: 2a105efcb90e09ed1e0559be637d218a1e99910607b2a2438edeeb65aea4dba4
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_union:
     case_key: UNIFIED.7-5.union
-    stimulus:
-      ref: current
-      semantic_sha256: 375f9f26196e9061a84edffdc1d5c5370c3224d893d91ba291fef2da0f8bdda3
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   arg_string_null_untyped_branch:
     case_key: UNIFIED.7-5.untyped_branch
-    stimulus:
-      ref: current
-      semantic_sha256: 47220d3fa4b68152be80a9d5c6bbc570d62d61bbb2e14ce239e34f2b641c49eb
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   deepseek_v41_mixed_control_text_in_string:
     case_key: UNIFIED.7-3
-    stimulus:
-      ref: current
-      semantic_sha256: 8b077779c614b08816fb79a6ee04a5e19e49f6f94cb6d43e149bd6846850e23f
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-11
-    stimulus:
-      ref: current
-      semantic_sha256: ec3445099edcd3f0648f1122a0f1f244c9f3f147c7de9b1bbb6369e4aa3169aa
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   glm_ref_json_looking_strings:
     case_key: UNIFIED.7-12
-    stimulus:
-      ref: current
-      semantic_sha256: 74689ecbf6c8c2fb64f1cb86007007a8085b856ba22e9daafdb0d1c55f864f20
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   glm_ref_object:
     case_key: UNIFIED.7-9
-    stimulus:
-      ref: current
-      semantic_sha256: b8981d8092c463af8103e83285738c8d71e29fa6a447761aae30c250f7c976cd
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   glm_ref_scalar_types:
     case_key: UNIFIED.7-13
-    stimulus:
-      ref: current
-      semantic_sha256: c89a584061612f71e4edd7a6ac04db5cfa4228be4503b864ae6d7e28f6ec1c98
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
         detail: No vLLM Rust Unified parser is registered for glm47 at 0.26.0.
   qwen_string_null:
     case_key: UNIFIED.7-5
-    stimulus:
-      ref: current
-      semantic_sha256: 007daaca42a3b0592281ac94df4f79f9f3742ec5577b7bc81c69cbfb2e992218
     observation:
       unavailable:
         code: vllm_rust_parser_not_registered
@@ -9335,378 +9275,12 @@ metadata_changes:
       adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
       job_sha256: 32e57cf0a337d5191de7de03ebdbd5e01160cb9a6e183e9fc7c05578fa0ed3a3
 document_overrides:
-  arg_json_null:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_anyof:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_const:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_nullable:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_oneof:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_json_null_ref:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_marker_in_string:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  arg_null_mixed_labels:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_const:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_enum:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_ref:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_sibling_anyof:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_sibling_oneof:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_union:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_string_null_untyped_branch:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  arg_unicode:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  content_then_reason:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  content_then_reason_then_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  deepseek_v41_mixed_control_text_in_string:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  empty_args:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  glm47_parameterless_call_shape_inside_argument:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   glm47_reference_type_intersection:
     capture_provenance:
       captured_with:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
-  glm_ref_encoded_targets:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  glm_ref_json_looking_strings:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  glm_ref_object:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  glm_ref_scalar_types:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  guided_json_after_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_array_argument:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_bare_tool_header_recovers_inside_a_thought:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_escaped_string_args:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_gt_in_argument_bare_opener:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_gt_in_argument_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_gt_in_argument_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_invalid_call:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_list_with_broken_element:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_malformed_json:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_marker_inside_argument:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_named_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_narrated_invoke_in_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_narrated_prefix_inside_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_native_markup_only:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_orphan_reason_close_before_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_orphan_tool_close_before_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_partial_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_prose_before_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_quoted_bare_header_after_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_quoted_bare_header_in_answer:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_required_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_schema_error_nameless_element_bare_opener:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_schema_error_nameless_element_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_schema_error_nameless_element_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_schema_error_not_a_call_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_schema_error_not_a_call_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_stray_prefix_before_reasoning:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_syntax_error_bare_opener:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_syntax_error_trailing_close:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_syntax_error_wrapped:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_tool_close_after_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_tool_open_before_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_two_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_unterminated_reasoning_then_wrapped_payload:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  guided_json_wrapped_in_tool_markup:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   guided_quoted_reasoning_closer_named:
     capture_provenance:
       captured_with:
@@ -9731,12 +9305,6 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
-  interstitial_text:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   local_schema_id_preserves_type:
     capture_provenance:
       captured_with:
@@ -9749,12 +9317,6 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
-  narrated_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   native_quoted_control_in_reasoning:
     capture_provenance:
       captured_with:
@@ -9809,126 +9371,6 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
-  orphan_close_after_prose:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_redundant_opener:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_then_text:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_then_text_then_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_truncated:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_with_guided_json:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_reasoning_with_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  prefilled_response_reasoning_markers_literal:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  qwen_string_null:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.26.0
-      capture_origin: null
-      inherited_from: null
-  reason_after_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_between_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_interleaved:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_markup_in_arg:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_markup_in_arg_with_text:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_only:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_then_content:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_then_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_tool_reason_tool_reason:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_tool_text_reason_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  reason_unterminated:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   schema_const_array_allof:
     capture_provenance:
       captured_with:
@@ -10613,108 +10055,6 @@ document_overrides:
         vllm_rust: 0.26.0
       capture_origin: null
       inherited_from: null
-  text_before_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  text_between_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  text_only:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  text_reason_tool_text_reason_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  text_sandwich:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_block_never_closed_then_text:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_in_reason:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_in_reason_with_text:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_markup_only_emits_nothing:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_no_close:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  tool_only:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  trailing_text_after_tool:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  truncated_tool_eof:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  two_adjacent_reason_spans:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  two_calls:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  two_calls_same_name:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
-  two_reason_spans:
-    capture_provenance:
-      captured_with:
-        vllm_rust: 0.25.1
-      capture_origin: null
-      inherited_from: 0.25.1
   unused_reference_graph_parameter_types:
     capture_provenance:
       captured_with:

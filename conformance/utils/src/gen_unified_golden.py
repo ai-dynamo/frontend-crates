@@ -32,7 +32,7 @@ from schema_cases import (
     unified_schema_cases,
 )
 from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
-from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from null_cases import NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -2689,8 +2689,8 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
-# GLM's XML values have no native type marker. Keep these references unresolved
-# in the request so the parser must consult definitions on the parameters root.
+# Keep references unresolved so schema-driven grammars must consult the tool
+# parameters root; explicitly typed grammars preserve the same authored values.
 EDGE += [
     (
         scenario,
@@ -2701,19 +2701,20 @@ EDGE += [
         {"finish_reason": "stop"},
         OnlyFamilies({
             family: (
-                _NULL_TEXT_INPUTS[family],
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+            for family in TEMPLATE_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
+        }}] for family in TEMPLATE_FAMILIES},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
-         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+         '`city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'),
         ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
          'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
@@ -2721,19 +2722,16 @@ EDGE += [
 
 EDGE.append((
     "arg_null_mixed_labels",
-    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-driven grammars receive identical bare null text; explicitly typed grammars use native null and string encodings. Both yield {"label": null, "note": null, "literal": "null"}.',
     ["I7"],
     [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop"},
     OnlyFamilies({family: (
-        "<tool_call>set_labels"
-        "<arg_key>label</arg_key><arg_value>null</arg_value>"
-        "<arg_key>note</arg_key><arg_value>null</arg_value>"
-        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
-    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+        r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
+    ) for family in TEMPLATE_FAMILIES}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in TEMPLATE_FAMILIES},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.

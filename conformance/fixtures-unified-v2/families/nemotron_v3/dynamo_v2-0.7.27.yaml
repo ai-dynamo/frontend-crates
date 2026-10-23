@@ -137,6 +137,15 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: d10486b1faab39b026867d5634e387f508a0497ae596290841c043e86200f036
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.27 source could not be recovered with its recorded identity c853718136a8432101a9bfd4a0bfeab39510d564502a93a8b1832a8de3244c10; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_marker_in_string:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
@@ -185,6 +194,15 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: da923691df771a00e171cc1e70a62e6c53acb0eefd317e8d83a473e6493f4fdd
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.27 source could not be recovered with its recorded identity c853718136a8432101a9bfd4a0bfeab39510d564502a93a8b1832a8de3244c10; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null:
     case_key: UNIFIED.7-arg_string_null
     stimulus:
@@ -7682,4 +7700,16 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin: null
+      inherited_from: null

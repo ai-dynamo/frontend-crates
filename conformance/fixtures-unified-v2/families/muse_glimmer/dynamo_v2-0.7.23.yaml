@@ -7,6 +7,33 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 67c1596410ab2fb2b2cf7f94ce811363c57408658b1f635182aef2fda5e2908a
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: abd87670c935a8c941d1914683a8671be9edfbb95afb0e2b5808609a4ae8f672
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8dbf7c490f0d93aa7e8b5c5ba88b634ab3f114b4b00f81d3acdfa4a48ebef3ba
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.23 source could not be recovered with its recorded identity a579601791d455958325bc275ad5b2aa81ff68cb70883e0de667de313c992c68; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       unavailable:
@@ -89,31 +116,19 @@ changes:
         - expected: []
 metadata_changes: {}
 document_overrides:
-  gpt_oss_quoted_message_header_literal:
+  arg_json_null_ref:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.23
       capture_origin: null
       inherited_from: null
-  gpt_oss_quoted_truncated_tool_then_final:
+  arg_null_mixed_labels:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.23
       capture_origin: null
       inherited_from: null
-  guided_json_native_parameter_string_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.23
-      capture_origin: null
-      inherited_from: null
-  guided_json_noncall_before_native_array_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.23
-      capture_origin: null
-      inherited_from: null
-  guided_response_native_wrapper_whitespace_before_prose:
+  arg_string_null_ref:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.23
@@ -154,6 +169,36 @@ document_overrides:
         crate_version: 0.7.23
         source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
         git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+      inherited_from: null
+  gpt_oss_quoted_message_header_literal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin: null
       inherited_from: null
   schema_const_array_allof:
     capture_provenance:

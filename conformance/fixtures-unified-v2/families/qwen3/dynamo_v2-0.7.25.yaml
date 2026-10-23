@@ -5,6 +5,24 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f7794a80a0c556b20d0da6b7df74d93ac864f5b5eadfbfa40c5f81874064f9e1
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: b890a527fb32b9d696b354035883caa2f2bfccfeec9214a03685019252015502
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_string_before_payload:
     observation:
       value:

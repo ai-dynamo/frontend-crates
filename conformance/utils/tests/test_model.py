@@ -35,6 +35,7 @@ from fixture_snapshot import fixture_snapshot_root  # noqa: E402
 from fixtures import _version_sort_key  # noqa: E402
 from case_variants import leaf_cells
 from schema_cases import ARGUMENT_SECTIONS, schema_fold
+from null_cases import NULL_VARIANTS
 import unified_taxonomy
 from validate_conformance_status import cell_state
 from capture_stimulus import batch_final_events, capture_input  # noqa: E402
@@ -355,6 +356,21 @@ def test_case_schema_metadata_survives_model_serialization():
     raw = model_mod.to_script_json(model_mod.build_page({}, [tab]))
     decoded = json.loads(raw)
     assert decoded["tabs"][0]["columns"][0]["schemas"] == schemas
+
+
+def test_generic_unified_columns_span_multiple_families(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    for column in tab["columns"]:
+        if not re.match(r"unified_g\d+(?:_|$)", column["group_key"]):
+            continue
+        families = {
+            row["family"] for row in tab["rows"]
+            if row.get("family")
+            and (cell := row["cells"].get(column["sub"]))
+            and cell.get("status") != "na"
+            and cell.get("kind") in {"cell", "missing"}
+        }
+        assert len(families) > 1, (column["sub"], "single-family generic column", families)
 
 
 def test_rendered_model_carries_only_explicit_unified_case_schemas(model_v2):
@@ -707,7 +723,7 @@ def test_null_case_descriptions_explain_schema_difference(model_v2):
     assert all("request tool schema declares" in markup for markup in rendered)
     assert all("non-nullable" in markup or "string | null" in markup for markup in rendered)
 
-    assert [markup.count('class="case-variant"') for markup in rendered] == [8, 5]
+    assert [markup.count('class="case-variant"') for markup in rendered] == [9, 7]
     assert "nullable: true" in rendered[1]
     assert "intersection" in rendered[0]
 
@@ -1770,17 +1786,18 @@ def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2)
     for row in tab["rows"]:
         if row.get("family") not in families:
             continue
-        mixed = row["family"] == "glm47"
-        refs = row["family"] == "glm47"
         groups = []
-        for label, count in (("7-arg_json_null", 5), ("7-arg_string_null", 7)):
+        for scenario in ("arg_json_null", "arg_string_null"):
+            label = "7-" + scenario
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = table.gen_unified_golden.unified_grammar_family(row["family"]) == "qwen3" and label == "7-arg_string_null"
-            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
+            expected = {name for name, *_ in NULL_VARIANTS if name.startswith(scenario)}
+            expected.update({scenario + "_ref", "arg_null_mixed_labels"})
+            assert {leaf["sub"] for leaf in cell["variants"]} == expected
+            assert len(cell["variants"]) == len(expected)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
-        assert len(groups[0] & groups[1]) == int(mixed)
+        assert groups[0] & groups[1] == {"arg_null_mixed_labels"}
 
 
 def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
