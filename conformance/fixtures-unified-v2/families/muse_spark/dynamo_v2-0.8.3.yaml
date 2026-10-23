@@ -1,0 +1,180 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.3
+    git_commit: 0536fac00a30d114a577fae341f94ef3ccc48a5e
+    source_sha256: 3033037f40f0da45eb6a8475793fa2d8b14df7a7375716430b634306cb3121db
+document:
+  mode: unified
+changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
+  xml_string_type_double_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 14f684c1955adc9d51673da59bb0272e14bf135da74cd4d3e56c9e59122f2761
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"a":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"a\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  xml_string_type_single_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_single_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 57c037d9d1fe4e0b4538fefefd9f31356dbdbd3ad78dbbf9a8451c46a597896e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{''a'':1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{''a'':1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.3
+      capture_origin:
+        crate_version: 0.8.3
+        source_sha256: 3033037f40f0da45eb6a8475793fa2d8b14df7a7375716430b634306cb3121db
+        git_commit: 0536fac00a30d114a577fae341f94ef3ccc48a5e
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.3
+      capture_origin:
+        crate_version: 0.8.3
+        source_sha256: 3033037f40f0da45eb6a8475793fa2d8b14df7a7375716430b634306cb3121db
+        git_commit: 0536fac00a30d114a577fae341f94ef3ccc48a5e
+      inherited_from: null
+  xml_string_type_double_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.3
+      capture_origin:
+        crate_version: 0.8.3
+        source_sha256: 3033037f40f0da45eb6a8475793fa2d8b14df7a7375716430b634306cb3121db
+        git_commit: 0536fac00a30d114a577fae341f94ef3ccc48a5e
+      inherited_from: null
+  xml_string_type_single_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.3
+      capture_origin:
+        crate_version: 0.8.3
+        source_sha256: 3033037f40f0da45eb6a8475793fa2d8b14df7a7375716430b634306cb3121db
+        git_commit: 0536fac00a30d114a577fae341f94ef3ccc48a5e
+      inherited_from: null

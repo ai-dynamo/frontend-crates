@@ -2940,3 +2940,21 @@ document_overrides:
         dynamo_v2: 0.7.20
       capture_origin: null
       inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+        source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+        crate_version: 0.7.20
+        git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
+        source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
+      inherited_from: null

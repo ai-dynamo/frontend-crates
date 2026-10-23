@@ -101,11 +101,15 @@ pub(crate) fn resolve_tool_calling<'a>(
     }
 }
 
-pub(crate) fn resolve_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
+pub(crate) fn uses_declared_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> bool {
     let enforce_schema =
         schema_mode == StructuralTagSchemaMode::Strict || tool.strict.unwrap_or(false);
 
-    if enforce_schema && !tool.parameters.is_null() {
+    enforce_schema && !tool.parameters.is_null()
+}
+
+pub(crate) fn resolve_tool_schema(tool: &Tool, schema_mode: StructuralTagSchemaMode) -> Value {
+    if uses_declared_tool_schema(tool, schema_mode) {
         tool.parameters.clone()
     } else {
         // xgrammar uses `true` for syntactically valid, schema-unconstrained JSON.

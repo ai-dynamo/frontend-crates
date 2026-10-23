@@ -23,7 +23,7 @@ import re
 
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
-from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_fold, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -44,6 +44,8 @@ UNIFIED_TAX = {
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
+    "adjacent_calls_partial_header": (2, "3"),
+    "three_calls_partial_header": (2, "4"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.
@@ -70,6 +72,7 @@ UNIFIED_TAX = {
     "unused_reference_graph_parameter_types": (7, "14"),
     "nullable_reference_alias_literals": (7, "15"),
     "local_schema_id_preserves_type": (7, "16"),
+    **{case["name"]: (7, f"26.{index}") for index, case in enumerate(XML_COMPATIBILITY_CASES, 1)},
     "deepseek_v41_json_invocation_body": ("deepseek", "1"),
     "glm47_reference_type_intersection": ("glm5", "2"),
     **{f"schema_{case['name']}": (7, f"{SCHEMA_GROUPS[schema_group(case['name'])][1]}.{case['name']}")
@@ -101,6 +104,8 @@ UNIFIED_TAX = {
     "muse_opaque_undeclared_invoke": ("muse", "opaque_undeclared_invoke"),
     "muse_opaque_declared_invoke": ("muse", "opaque_declared_invoke"),
     "muse_recovery_second_parameter": ("muse", "recovery_second_parameter"),
+    # Beam-specific: only Beam's grammar admits a bare tool header at EOS as a call.
+    "empty_args_no_close": ("beam", "1"), "optional_args_no_close": ("beam", "2"),
     "muse_quoted_reserved_eom_argument": ("muse", "2"),
     "muse_quoted_reserved_eot_argument": ("muse", "3"),
     "muse_quoted_reserved_start_argument": ("muse", "4"),

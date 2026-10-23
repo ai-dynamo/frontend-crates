@@ -288,13 +288,13 @@ fn valid_header_fragment(after: &str) -> bool {
     rest.is_empty() || (rest.len() < MESSAGE.len() && MESSAGE.starts_with(rest))
 }
 
-/// Whether Muse Spark reached EOF after committing to a framed channel header but
+/// Whether Muse reached EOF after committing to a framed channel header but
 /// before emitting its `<|message|>` terminator.
 ///
 /// Framing supplies the provenance: an unframed `assistant to=user` remains visible
-/// prose. This predicate is only enabled by [`muse_spark_scanner`] and the Muse Spark
-/// guided callback, so Muse Glimmer retains its existing EOF behavior.
-fn is_incomplete_muse_spark_framed_header(buffered: &str) -> bool {
+/// prose. Both native Muse scanners must drop these unfinished headers before
+/// stripping the framing that distinguishes them from ordinary prose.
+fn is_incomplete_framed_header(buffered: &str) -> bool {
     let Some(mut rest) = buffered.strip_prefix(START) else {
         return false;
     };
@@ -556,7 +556,7 @@ pub(crate) fn muse_spark_guided_stray_header(
     if flush {
         return haystack.find(START).map(|at| {
             let framed = &haystack[at..];
-            let consumed = if is_incomplete_muse_spark_framed_header(framed) {
+            let consumed = if is_incomplete_framed_header(framed) {
                 framed.len()
             } else {
                 START.len()
@@ -1029,9 +1029,6 @@ pub(crate) struct MuseChannelScanner {
     /// Muse Spark treats native grammar examples as reserved even when the model
     /// narrates them inside a thought. Muse Glimmer keeps its historical behavior.
     reasoning_sanitizer: Option<MuseSparkReasoningSanitizer>,
-    /// Muse Spark drops a framed channel header that reaches EOF before
-    /// `<|message|>`. Muse Glimmer retains its existing recovery behavior.
-    drop_incomplete_framed_header_at_eof: bool,
 }
 
 /// Build the scan core for the Muse Glimmer grammar.
@@ -1069,7 +1066,6 @@ fn channel_scanner(tools: &[Tool], commentary_is_content: bool) -> MuseChannelSc
         preserve_phases: false,
         open_message: false,
         reasoning_sanitizer: commentary_is_content.then(MuseSparkReasoningSanitizer::default),
-        drop_incomplete_framed_header_at_eof: commentary_is_content,
     }
 }
 
@@ -1600,13 +1596,10 @@ impl MuseChannelScanner {
             // into framing. Complete markers are stripped; a committed partial
             // special token (`<|sta`) is parser-owned markup and dropped; the
             // ambiguous `<` / `<|` and any `to=`-shaped prose stay visible.
-            State::Idle
-                if self.drop_incomplete_framed_header_at_eof
-                    && is_incomplete_muse_spark_framed_header(&buffered) =>
-            {
+            State::Idle if is_incomplete_framed_header(&buffered) => {
                 tracing::debug!(
                     buffered_bytes = buffered.len(),
-                    "dropping incomplete framed Muse Spark header at end of stream"
+                    "dropping incomplete framed Muse header at end of stream"
                 );
             }
             State::Idle | State::InContent => {

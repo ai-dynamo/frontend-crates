@@ -56,6 +56,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 - **P4 Structural whitespace** -> strip only tokenizer-structural whitespace bound to the marker grammar (e.g. gemma4 `thought\n`), preserve model-authored whitespace. RESOLVED for gemma4 by `ReasoningSpec::start_label`: the role label is consumed when present and TOLERATED when absent, so `<|channel>thoughtful musing<channel|>` keeps its first word and a bare `<|channel>` still opens a thought instead of leaking as text. Folding the label into the opener would have passed this corpus and broken both.
 - **P5 Implicit reasoning start** -> prompt-conditioned per family (forced-reasoning models start in reasoning with no `<think>`).
 - **P6 Marker quoted in prose** -> counts only as a real control token; text-only input is best-effort (known limitation, not pass/fail).
+  - **beam** is the exception by design: its markers are tokenizer special tokens the engine emits as such, so a quotation never keeps one literal. The quoted-control scenarios (`native_quoted_control_*`, `native_single_quote*`, `native_quoted_incomplete_header`, `guided_json_narrated_invoke_in_reasoning`) carry beam-specific goldens: the prose before the quote stays, the quoted header is framing (a header it cannot complete is skipped with what follows it), and a real call after it still dispatches. The builder's reference parser reads these the same way.
 - **P7 Nested channel markers (a marker of one channel inside another)** -> marker recognition is CHANNEL-SCOPED, and both directions follow the same best-effort-recovery rule (recover real structure, never leak markup, never drop a valid call):
   - Inside a **quoted tool-argument string value**, marker-looking bytes are DATA (I7). A reasoning marker there does NOT open a reasoning channel — it is the literal arg string (`reason_markup_in_arg`). A reasoning-first pipeline that extracts `<think>`/`<|channel>` before tool parsing corrupts the arg -> red (ARG_MISMATCH / MERGE).
   - A **well-formed tool-call envelope inside a reasoning span** is STRUCTURAL: break out of reasoning, emit the call, resume reasoning after its close (`tool_in_reason`). Leaking the raw `<|tool_call>...<tool_call|>` into `reasoning_content`, or dropping the call, is the regression -> red (LEAK). The asymmetry is deliberate: quote delimiters explicitly mark a data region, whereas a reasoning span is opaque text that can still contain recoverable structure.
@@ -85,6 +86,8 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 ### Group 2 — TC Multiple calls (TOOLCALLING.streamv1.2)
 - **`2-two_calls`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
 - **`2-two_calls_same_name`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
+- **`2-adjacent_calls_partial_header`** (`adjacent_calls_partial_header`) Native/default state: one delta closes a complete call and carries the next opener plus a partial call header. Preserve both calls and emit no visible markup. Uses authored Unified inputs, tools, chunk schedules, and independent expected calls; DeepSeek V4.1 splits inside its second invoke in one calls container.
+- **`2-three_calls_partial_header`** (`three_calls_partial_header`) Native/default state: three adjacent calls delivered with a boundary inside the second call header. Preserve f, g, h in order and emit no visible markup. Both scenarios apply to nine families: deepseek_v4, deepseek_v41, gemma4, glm47, kimi_k2, kimi_k3, muse_glimmer, nemotron_v3, and qwen3 (18 family-specific cases). Beam and GPT-OSS are excluded from this Unified case set. The authored schedules exercise delivery boundaries that marker-aligned and fixed-width chunking can miss.
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
 - **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
@@ -157,9 +160,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 242 of the 345 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 246 of the 353 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 103 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 107 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
@@ -363,7 +366,7 @@ The shared `35-guided_json_native_parameter_object_before_payload`, `35-guided_j
 - **`41-prefilled_reasoning_truncated`** (`prefilled_reasoning_truncated`) Budget runs out mid-call. Keep the completed reasoning, drop the partial call (P2).
 
 ### Group 50 — Prefilled response
-- **`50-prefilled_response_reasoning_markers_literal`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression.
+- **`50-prefilled_response_reasoning_markers_literal`** (`prefilled_response_reasoning_markers_literal`) `<think>literal</think>` must reach the user as TEXT, markers and all, because this stream has no reasoning channel. It is the direct visible-marker regression. Beam's reasoning markers are special tokens, so its authored golden differs: the input carries the full framed opener (`<|start|>assistant<|channel|>analysis<|message|>literal<|end|>`), and under Response the stream has no reasoning channel, so that framing is consumed as control (never leaked) while its body `literal` is visible TEXT that joins the prose after it (`literal then a call`); the following call still dispatches.
 
 The marker-free prefilled-Response variants were removed because they emitted the same observable result as their default-state peers. Group 50 retains reasoning-marker stimuli that distinguish Response from default initialization; the ordinary native, guided, multi-call, and malformed payload contracts remain covered by groups 8, 30, and 31.
 
@@ -415,6 +418,12 @@ Scope: the separator is DeepSeek template framing, so other families have no equ
 
 - **`muse-unterminated_parameter_then_empty_call`** (`muse_unterminated_parameter_then_empty_call`) places parameterless invocation-shaped text inside a parameter that never closes. At EOF, discard the ambiguous outer invocation without dispatching the embedded call. This covers the missing conformance case raised in [PR #316](https://github.com/ai-dynamo/frontend-crates/pull/316#discussion_r4171144832).
 - **`muse-unterminated_parameter_then_call`** (`muse_unterminated_parameter_then_call`) places a declared invocation-shaped sequence inside the outer parameter. Preserve the outer call and its complete argument through the parameter closer; do not guess that the embedded text is a new executable call. Both cases are Muse-only because they exercise the ATEM scanner's treatment of open parameters.
+### Beam applicability
+
+Beam (`<|start|>assistant[ to=NAME]<|channel|>analysis|final[ <|constrain|>xml]<|message|>… <|end|>|<|return|>|<|call|>`, NOT Harmony) joins every shared scenario with a Beam-native wire and an independently authored golden; the numeric IDs are unchanged. The grammar changes the bytes, not the meaning, except in three authored exceptions: `5-2` (a call never dispatches without its terminator), `5-3` (`<|call|>` inside `final` is text) and `50-4` (under Response the framed analysis message's body is text and its framing is consumed). Beam receives every shared null schema unchanged (`7-5.*`): its typing intersects a sibling `type` with anyOf/oneOf branches, a deliberate correction of the frozen reference's union, so no per-family "effective schema" is substituted. Quote, contraction, header and unmatched-quote scenarios (`native_quoted_*`, `native_single_quote*`, `native_unmatched_quote_then_call`) use `<|start|>assistant to=get_weather<|channel|>` as the quoted native control. The model builder's reference is the grammar's source of truth, not a peer engine, so the vLLM cell is `UNSUPPORTED` for every Beam case; no peer verdict is claimed.
+
+- **`beam-empty_args_no_close`** (`empty_args_no_close`) A header for a strict tool with no properties, then EOS (no parameter tags, no `<|call|>`). Beam's serving grammar makes the parameter body optional for such a tool and lets EOS stand for the closer, so the parser emits `noop({})`. Beam-specific: the other grammars need an argument body or an inner closing marker.
+- **`beam-optional_args_no_close`** (`optional_args_no_close`) The same bare header for a tool whose only property is optional. Nothing is required, so it is the call `noop({})`; a required argument keeps a bare header a truncation.
 
 ## Authoring a case: what to check BEFORE adding one
 
@@ -468,12 +477,12 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 ## Shared schema conformance probes
 
-Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 142 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 62 visible entries covering 145 authored scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
 
 | Behavior section | Visible entries |
 |---|---:|
 | Text preservation | 3 |
-| Declared types and enums | 10 |
+| Declared types and enums | 12 |
 | Type arrays and null interpretation | 6 |
 | String constants | 10 |
 | Unions, intersections, and ambiguous values | 17 |
@@ -510,7 +519,15 @@ Muse reasoning treats `to=self` in prose as literal text. Complete framed header
 
 `muse_unterminated_reasoning_native` and `muse_unterminated_reasoning_guided` pin an intentional distinction for both Muse families: native reasoning keeps an incomplete invocation header as literal prose, while JSON-guided reasoning strips the native invoke-start control and retains its following prose. Complete native invocations in guided reasoning remain stray controls owned by the shared guided reader. Other registered families do not use ATEM invoke headers.
 
-Declared-call recovery is a tie-breaker for ambiguous malformed ATEM, not an unambiguous reconstruction: invocation-shaped text naming another declared tool can replace an outer call. Recovery logs a warning whenever that outer call is dropped. Requiring schema property names would not resolve this ambiguity because a quoted call can itself have schema-valid keys, and open schemas permit additional keys.
+### XML custom-type compatibility
+
+The shared group 7 cases `xml_string_type_single_quoted_object` and `xml_string_type_double_quoted_object` preserve the exact string spelling in all 11 Unified families using their native string encoding. Both quote spellings remain literal text, including in JSON-body grammars.
+
+The Qwen3/Nemotron-specific XML section contains `xml_custom_type_single_quoted_object` and `xml_custom_type_double_quoted_object`. Both spellings become an object under the direct, unconstrained `type: custom` compatibility fallback owned by the Qwen XML grammar. `custom` is not a JSON Schema type, so these probes remain separate from the schema-valid suite. GLM uses strict JSON parsing for JSON-looking bodies, MiniMax M3 preserves unknown scalar types as text, and JSON-body or explicitly typed grammars carry the argument type in their native encoding; they do not share this Python-literal conversion rule. MiniMax M2 exercises that fallback in the legacy streaming corpus and has no registered Unified parser.
+
+Only display placement changes: the custom probes retain their stable `UNIFIED.7-xml_custom_type_*` IDs and capture history. They no longer occupy shared group 7 columns. Existing published IDs and older unmeasured observations remain unchanged.
+
+
 ### GPT-OSS Harmony headers and retained request variants
 
 The six standalone GPT-OSS entries test recipient/channel ordering, the template JSON format label, a constrained final header without a tool recipient, an implicit recipient-first header, and complete tool messages ending with a message/turn terminator instead of handoff. Incomplete Harmony headers, interrupted reasoning, quoted controls, malformed bodies, and historical `_pr424` requests are variants beneath their shared semantic parents. `unified_taxonomy.case_fold()` owns these relationships, and `case_variants.group_unified_variants()` folds them through the same path as schema variants. Each popup retains the original case ID, request, initialization, chunk schedule, expected events, and independent observations; a failing or missing applicable child cannot become a passing parent.

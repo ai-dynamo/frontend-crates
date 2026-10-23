@@ -30,6 +30,81 @@ const TURN: &str = concat!(
 );
 
 #[test]
+fn muse_eof_drops_every_truncated_framed_header_prefix() {
+    for family in ["muse_glimmer", "muse_spark_open"] {
+        for header in [
+            "<|start|><|message|>",
+            "<|start|>assistant<|message|>",
+            "<|start|>assistant to=self<|message|>",
+            "<|start|>assistant to=user<|message|>",
+            "<|start|>assistant to=get_weather<|message|>",
+        ] {
+            for end in "<|start|>".len()..header.len() {
+                let input = &header[..end];
+                let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
+                assert_eq!(
+                    parser.parse_complete(input).unwrap(),
+                    vec![],
+                    "{family}: {input}"
+                );
+                let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
+                let mut deltas = Vec::new();
+                for ch in input.chars() {
+                    deltas.extend(parser.push(&ch.to_string()).unwrap());
+                }
+                deltas.extend(parser.finish().unwrap());
+                assert_eq!(assemble(&deltas), vec![], "{family} streamed: {input}");
+
+                let mut parser = create_tool_parser_for_family(family, &tools()).unwrap();
+                let output = parser.parse_complete(input).unwrap();
+                assert!(
+                    output.normal_text.is_empty(),
+                    "{family} tool parser: {input}: {output:?}"
+                );
+                assert!(output.calls.is_empty());
+                let mut parser = create_tool_parser_for_family(family, &tools()).unwrap();
+                for ch in input.chars() {
+                    let output = parser.push(&ch.to_string()).unwrap();
+                    assert!(
+                        output.normal_text.is_empty(),
+                        "{family} streamed tool parser: {input}: {output:?}"
+                    );
+                    assert!(output.calls.is_empty());
+                }
+                let output = parser.finish().unwrap();
+                assert!(
+                    output.normal_text.is_empty(),
+                    "{family} tool parser EOF: {input}: {output:?}"
+                );
+                assert!(output.calls.is_empty());
+            }
+        }
+    }
+}
+
+#[test]
+fn muse_eof_keeps_unframed_header_like_prose() {
+    for family in ["muse_glimmer", "muse_spark_open"] {
+        for (input, expected) in [
+            ("to=user", "to=user"),
+            ("assistant to=user", "assistant to=user"),
+            ("<|start|>assistant says hello", "assistant says hello"),
+        ] {
+            let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
+            assert_eq!(
+                parser.parse_complete(input).unwrap(),
+                vec![UnifiedEvent::Text {
+                    text: expected.into()
+                }],
+                "{family}: {input}",
+            );
+            let mut parser = create_tool_parser_for_family(family, &tools()).unwrap();
+            assert_eq!(parser.parse_complete(input).unwrap().normal_text, expected);
+        }
+    }
+}
+
+#[test]
 fn muse_spark_forced_tools_have_a_native_structural_tag_builder() {
     use dynamo_parsers_v2::structural_tag::{
         StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,

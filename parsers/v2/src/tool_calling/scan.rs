@@ -48,7 +48,900 @@
 use std::collections::HashSet;
 
 use crate::tool_calling::traits::{ToolCallDelta, ToolParseResult};
-use crate::unified::{Kind, UnifiedParserEvent};
+use crate::unified::{
+    GuidedChannel, GuidedChannelState, GuidedTurnScope, Kind, MalformedToolCall,
+    MalformedToolCallPolicy, ToolCallPolicy, UnifiedParserEvent,
+};
+
+/// Declarative channel envelope for grammars whose messages are framed as
+/// `START ROLE [recipient_key NAME] CHANNEL name [constrain TOKEN] MESSAGE body TERM`
+/// rather than as wrapped blocks (Beam). The scanner owns buffering, quote/control
+/// protection, holdback, call indices and lifecycle; the family supplies only this
+/// table, an [`InvokeBoundary::channel_body`] walk and an
+/// [`InvokeEmitter::parse_channel_call`].
+///
+/// A header may be full (`START ROLE ..`), a continuation (`CHANNEL ..`), or begin
+/// after the role the prompt already consumed (` to=NAME CHANNEL ..`).
+pub(crate) struct ChannelEnvelope {
+    pub start: &'static str,
+    pub channel: &'static str,
+    pub message: &'static str,
+    pub role: &'static str,
+    pub recipient_key: &'static str,
+    pub constrain: &'static str,
+    /// Tokens the grammar allows after `constrain`; any other token makes the header
+    /// invalid (the model's own template only emits `xml`).
+    pub constrain_tokens: &'static [&'static str],
+    /// Longest valid recipient prefix of the text (0 when none).
+    pub recipient_len: fn(&str) -> usize,
+    pub channels: &'static [EnvelopeChannel],
+    /// The only channel a tool header may name; any other is a malformed header.
+    pub tool_channel: &'static str,
+    /// A channel header longer than this without `message` is not a header.
+    pub max_header: usize,
+    /// Whether bytes outside every channel body (between messages, before the first
+    /// header) are visible text. `false` for a grammar whose assistant turn is channel
+    /// framing only (no implicit region): such bytes are framing debris and are dropped,
+    /// never shown (goal 3/4), exactly as the builder's template parser treats them.
+    pub prose_between_messages: bool,
+    /// Whether a quotation in prose or in a message body keeps the control markers
+    /// inside it literal (`"<|return|>"` stays text until the quote closes). `false`
+    /// for a grammar whose markers are special tokens: a terminator ends its body
+    /// wherever it stands, so an unbalanced quote can never hold a body open, swallow
+    /// the next message, or stall streaming until the stream ends.
+    pub quote_aware: bool,
+    /// Control tokens that are debris BETWEEN messages: a terminator with no open
+    /// channel is stripped there, while inside a body only that channel's own
+    /// `terminators` are structural and the rest stay literal.
+    pub orphan_controls: &'static [&'static str],
+    /// Terminators that end the whole TURN for the guided reader (the answer's
+    /// `return`): once one is seen, no guided payload can follow. A visible-channel
+    /// terminator left out of this list only closes its message, so a tool-call
+    /// handoff (`call`) standing alone before the payload is debris, not the end.
+    pub turn_end: &'static [&'static str],
+}
+
+pub(crate) struct EnvelopeChannel {
+    pub name: &'static str,
+    pub reasoning: bool,
+    /// Markers closing this channel's body. A trailing `start` is lookahead for the
+    /// next header and is never consumed, including when it is the whole marker.
+    pub terminators: &'static [&'static str],
+    /// Whether a body that opens with `{` or `[` is read as a JSON answer: a terminator
+    /// inside one of its open strings is data, not the end of the body. The reference
+    /// serving layer keeps closers inside content literal under constrained decoding
+    /// (`response_format` JSON answers), and the request does not tell the parser when
+    /// that is, so the body's own shape decides.
+    pub json_body: bool,
+}
+
+/// String-context tracker for a body read as a JSON answer. It survives the body's
+/// streamed emissions, so a marker inside an open string is still data when the bytes
+/// before it have already gone out.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct JsonBodyState {
+    /// `Some(true)` once the body's first non-blank byte is `{` or `[`, `Some(false)`
+    /// once it is anything else, `None` while the body is still blank.
+    shape: Option<bool>,
+    in_string: bool,
+    escaped: bool,
+}
+
+impl JsonBodyState {
+    pub(crate) fn reset(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Advance over body bytes that were emitted (or are about to be).
+    pub(crate) fn advance(&mut self, text: &str) {
+        for c in text.chars() {
+            if self.shape.is_none() {
+                if matches!(c, ' ' | '\t' | '\n' | '\r') {
+                    continue;
+                }
+                self.shape = Some(matches!(c, '{' | '['));
+            }
+            if self.shape != Some(true) {
+                return;
+            }
+            if self.escaped {
+                self.escaped = false;
+            } else if self.in_string && c == '\\' {
+                self.escaped = true;
+            } else if c == '"' {
+                self.in_string = !self.in_string;
+            }
+        }
+    }
+
+    /// Whether byte `at` of `buffer` (the unemitted rest of the body) falls inside an
+    /// open JSON string of a JSON-shaped body.
+    pub(crate) fn inside_string_at(mut self, buffer: &str, at: usize) -> bool {
+        self.advance(&buffer[..at]);
+        self.shape == Some(true) && self.in_string
+    }
+}
+
+/// Verdict of a family's walk over one tool-channel body.
+pub(crate) enum BodyScan {
+    Wait,
+    /// `body_end` is where the body stops; `consume` includes its terminator.
+    Complete {
+        body_end: usize,
+        consume: usize,
+    },
+    /// The call can never complete; `discard` bytes are the bad region.
+    Malformed {
+        discard: usize,
+        reason: &'static str,
+    },
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EnvMode {
+    Idle,
+    Channel(usize),
+    Call,
+}
+
+enum HeaderLead {
+    /// `Some(recipient)` for a tool header, `None` for a message header.
+    Lead(Option<String>),
+    NotHeader,
+}
+
+fn envelope_parse_prefix(env: &ChannelEnvelope, prefix: &str) -> HeaderLead {
+    let t = prefix.strip_prefix(env.role).unwrap_or(prefix);
+    let t = t.trim_start_matches(' ');
+    if t.is_empty() {
+        return HeaderLead::Lead(None);
+    }
+    // The recipient is whatever `recipient_key NAME` ends the lead; bytes glued in front
+    // of it (`assistant\tto=NAME`, `assistantto=NAME`) are header debris, never prose:
+    // the header is identified by its tail, as the builder's template regex does.
+    let mut after_invalid = 0;
+    for (k, _) in t.match_indices(env.recipient_key) {
+        let start = k + env.recipient_key.len();
+        if start < after_invalid {
+            continue;
+        }
+        let r = &t[start..];
+        let len = (env.recipient_len)(r);
+        if !r.is_empty() && len == r.len() {
+            return HeaderLead::Lead(Some(r.to_string()));
+        }
+        // Earlier suffixes share this invalid byte; never scan them again.
+        after_invalid = start + len + 1;
+    }
+    HeaderLead::NotHeader
+}
+
+/// Whether `text` could still grow into a valid header lead.
+fn envelope_prefix_possible(env: &ChannelEnvelope, text: &str) -> bool {
+    let t = match text.strip_prefix(env.role) {
+        Some(t) => t,
+        None if env.role.starts_with(text) => return true,
+        None => text,
+    };
+    let t = t.trim_start_matches(' ');
+    if t.is_empty() || env.recipient_key.starts_with(t) {
+        return true;
+    }
+    t.strip_prefix(env.recipient_key)
+        .is_some_and(|r| (env.recipient_len)(r) == r.len())
+}
+
+/// The span of a complete tool header plus body starting at `at`, which prose
+/// quote tracking must skip. Anything that is not a legal tool header is not owned.
+///
+/// The body is walked by the SAME boundary the drain installs for that recipient:
+/// `boundary_for` is the emitter's per-recipient hook
+/// ([`InvokeEmitter::channel_boundary`]), falling back to the static factory when it
+/// declines. Walking a quoted call with a different framing than the real call would be
+/// walked with (a factory boundary with no schema knowledge) read a JSON slot's embedded
+/// closer as the end of the value, judged the complete call malformed and let the prose
+/// lexer run through its markup — whose attribute quotes then closed the prose quote.
+fn envelope_tool_span(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    policy: ToolCallPolicy,
+    boundary_for: &dyn Fn(&str) -> Option<Box<dyn InvokeBoundary>>,
+    text: &str,
+    at: usize,
+    flush: bool,
+) -> ProseGrammarSpan {
+    let suffix = &text[at..];
+    // A chunk ending inside `start` may still grow into a tool header: the prose
+    // cursor must wait here, not walk into the header bytes and miss the header once
+    // it completes (whose attribute quotes would then close the prose quote).
+    let partial_start = !suffix.is_empty() && suffix.len() < env.start.len();
+    if !flush && partial_start && env.start.starts_with(suffix) {
+        return ProseGrammarSpan::Pending;
+    }
+    if !suffix.starts_with(env.start) {
+        return ProseGrammarSpan::NotOwned;
+    }
+    let rest = &suffix[env.start.len()..];
+    let Some(ci) = rest.find(env.channel) else {
+        let lead = &rest[..rest.len() - marker_prefix_suffix_len(rest, [env.channel])];
+        return if !flush && rest.len() <= env.max_header && envelope_prefix_possible(env, lead) {
+            ProseGrammarSpan::Pending
+        } else {
+            ProseGrammarSpan::NotOwned
+        };
+    };
+    let HeaderLead::Lead(Some(recipient)) = envelope_parse_prefix(env, &rest[..ci]) else {
+        return ProseGrammarSpan::NotOwned;
+    };
+    let after = ci + env.channel.len();
+    let Some(mi) = rest[after..].find(env.message) else {
+        return if !flush && rest.len() - after <= env.max_header {
+            ProseGrammarSpan::Pending
+        } else {
+            ProseGrammarSpan::NotOwned
+        };
+    };
+    let legal = envelope_parse_channel(env, &rest[after..after + mi])
+        .is_some_and(|index| env.channels[index].name == env.tool_channel);
+    if !legal {
+        return ProseGrammarSpan::NotOwned;
+    }
+    // The recipient's own walk first (schema-framed slots), the factory otherwise.
+    let Some(mut boundary) =
+        boundary_for(&recipient).or_else(|| factory.map(InvokeBoundaryFactory::create))
+    else {
+        return ProseGrammarSpan::NotOwned;
+    };
+    let header = env.start.len() + after + mi + env.message.len();
+    boundary.configure(policy);
+    // Only a COMPLETE call is grammar: a quoted header that never closes its call
+    // stays prose, so its closing quote still counts.
+    match boundary.channel_body(&suffix[header..], flush) {
+        BodyScan::Wait if !flush => ProseGrammarSpan::Pending,
+        BodyScan::Complete { consume, .. } => ProseGrammarSpan::Owned(header + consume),
+        BodyScan::Wait | BodyScan::Malformed { .. } => ProseGrammarSpan::NotOwned,
+    }
+}
+
+/// Length of the longest prefix of `rest` (bytes after `start`) that could still grow
+/// into a header lead, on a char boundary.
+fn envelope_lead_len(env: &ChannelEnvelope, rest: &str) -> usize {
+    let mut best = 0;
+    for (idx, c) in rest.char_indices() {
+        let end = idx + c.len_utf8();
+        if envelope_prefix_possible(env, &rest[..end]) {
+            best = end;
+        } else {
+            break;
+        }
+    }
+    best
+}
+
+/// One header resolved by the shared envelope grammar, for the guided reader.
+struct EnvelopeHeader {
+    start: usize,
+    /// Bytes through `message`.
+    len: usize,
+    recipient: Option<String>,
+    /// Index into `env.channels`, `None` for an unknown channel name.
+    channel: Option<usize>,
+    framed: bool,
+}
+
+/// How much of an UNFRAMED header the guided reader may honour, from the turn scope.
+///
+/// The native drain's header slot is open at turn start and between messages, and a
+/// message BODY is cut only by its own terminators and `start`. The guided scope maps
+/// onto that: an open thought is a body, so nothing unframed resolves inside it (a
+/// bare `to=` there is narration, exactly as it is natively); a routed turn is between
+/// messages, where a `channel` continuation is still a header but the words in front
+/// of it are prose; only the unrouted turn may still carry the prompt-consumed lead.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EnvelopeBare {
+    /// `[role][ ][recipient_key NAME] CHANNEL …`: the prompt consumed the framing.
+    Lead,
+    /// `CHANNEL …` only; a lead in front of it is prose.
+    Marker,
+    /// Nothing unframed is a header; only `start` interrupts the body.
+    None,
+}
+
+fn envelope_bare(state: GuidedChannelState) -> EnvelopeBare {
+    match state.scope {
+        GuidedTurnScope::Unrouted => EnvelopeBare::Lead,
+        // A response prefill has routed the turn the same way visible content does:
+        // a bare lead is prose, and only the channel marker itself opens a header.
+        GuidedTurnScope::Routed | GuidedTurnScope::ResponsePrefill => EnvelopeBare::Marker,
+        GuidedTurnScope::InReasoning => EnvelopeBare::None,
+    }
+}
+
+/// The bare lead directly before a `channel` marker: `[role][ ]recipient_key NAME`, or
+/// the role alone, at a word boundary. `(start, recipient)`; `None` when the bytes
+/// before the marker are not a lead (so the header starts at the marker).
+///
+/// The role-only form is the template's own `assistant<|channel|>…` continuation
+/// after a prompt that consumed `<|start|>`; without it the role word leaked as text
+/// in front of the thought. Separator spaces are absorbed only together with a lead
+/// word, never alone: `Sure. <|channel|>` keeps its trailing space as prose.
+fn envelope_bare_lead(env: &ChannelEnvelope, before: &str) -> Option<(usize, Option<String>)> {
+    let (mut p, recipient) = match before.find(env.recipient_key).and_then(|k| {
+        match envelope_parse_prefix(env, &before[k..]) {
+            HeaderLead::Lead(Some(r)) => Some((k, r)),
+            _ => None,
+        }
+    }) {
+        Some((k, r)) => (k, Some(r)),
+        _ => (before.len(), None),
+    };
+    while p > 0 && before.as_bytes()[p - 1] == b' ' {
+        p -= 1;
+    }
+    if before[..p].ends_with(env.role) {
+        p -= env.role.len();
+    } else if recipient.is_none() {
+        return None;
+    }
+    let boundary = p == 0 || before[..p].ends_with(|c: char| c.is_whitespace() || c == '>');
+    boundary.then_some((p, recipient))
+}
+
+/// The first complete header at or after `floor`, resolved by the SAME lead and
+/// channel rules the native drain applies. Nothing before `floor` is consulted: the
+/// bytes there belong to a header or native body already resolved, so neither a
+/// `channel` marker nor a lead may be borrowed from them. An unframed header is
+/// honoured as far as the turn scope allows ([`EnvelopeBare`]); otherwise its words
+/// are prose and only the fixed markers are structural.
+fn envelope_header_after(
+    env: &ChannelEnvelope,
+    haystack: &str,
+    floor: usize,
+    bare: EnvelopeBare,
+) -> Option<EnvelopeHeader> {
+    let hay = &haystack[floor..];
+    let mut search = 0;
+    while let Some(rel) = hay[search..].find(env.message) {
+        let msg = search + rel;
+        search = msg + env.message.len();
+        let Some(ci) = hay[..msg].rfind(env.channel) else {
+            continue;
+        };
+        let after = ci + env.channel.len();
+        if msg - after > env.max_header {
+            continue;
+        }
+        let channel = envelope_parse_channel(env, &hay[after..msg]);
+        let before = &hay[..ci];
+        let framed = before.rfind(env.start).filter(|&si| {
+            matches!(
+                envelope_parse_prefix(env, &before[si + env.start.len()..]),
+                HeaderLead::Lead(_)
+            )
+        });
+        let (start, recipient) = if let Some(si) = framed {
+            match envelope_parse_prefix(env, &before[si + env.start.len()..]) {
+                HeaderLead::Lead(r) => (si, r),
+                HeaderLead::NotHeader => unreachable!("filtered above"),
+            }
+        } else {
+            match bare {
+                EnvelopeBare::None => continue,
+                EnvelopeBare::Marker => (ci, None),
+                EnvelopeBare::Lead => envelope_bare_lead(env, before).unwrap_or((ci, None)),
+            }
+        };
+        return Some(EnvelopeHeader {
+            start: floor + start,
+            len: search - start,
+            recipient,
+            channel,
+            framed: framed.is_some(),
+        });
+    }
+    None
+}
+
+/// Who owns which bytes of a guided haystack, resolved LEFT TO RIGHT.
+///
+/// Header-shaped bytes inside a native parameter value are data, not headers: a model
+/// may legitimately pass a whole framed message as a string argument. Resolving every
+/// header-shaped run independently read that value as a thought (or a content switch)
+/// and released the outer call's header in front of it as text. So ownership is
+/// settled from the earliest tool header onwards, with the family's own
+/// [`InvokeBoundary::channel_body`] — the same walk the native drain uses — deciding
+/// where its body ends: a complete call owns exactly its span; a body still arriving
+/// owns everything behind its header to the end of the haystack; a body that can
+/// never complete (or is cut off at EOF) owns only its header; that header alone is
+/// stripped and the body bytes are read again as guided narration. This guided
+/// recovery does NOT reuse the native drain's malformed discard span.
+///
+/// Every guided hook of the envelope consults ONE of these over the same bytes, so
+/// open, close, turn end, transition, routing, stray and holdback cannot disagree
+/// about what is a header and what is argument data.
+struct EnvelopeOwnership {
+    /// Headers outside every native body, in order.
+    headers: Vec<EnvelopeHeader>,
+    /// Complete native calls, `(start, end)`, in order.
+    owned: Vec<(usize, usize)>,
+    /// A tool header whose native body is still arriving owns from here to the end.
+    pending_from: Option<usize>,
+}
+
+impl EnvelopeOwnership {
+    /// Whether the byte at `at` belongs to no native body, complete or arriving.
+    fn free(&self, at: usize) -> bool {
+        self.pending_from.is_none_or(|from| at < from)
+            && !self
+                .owned
+                .iter()
+                .any(|&(start, end)| start <= at && at < end)
+    }
+
+    /// The end of the last complete native body, below which no lead may reach.
+    fn floor(&self) -> usize {
+        self.owned.last().map_or(0, |&(_, end)| end)
+    }
+
+    /// Bytes a stray tool header at `h` owns: its whole native call when complete,
+    /// its header alone when the body is malformed or absent, `None` while the body
+    /// is still arriving (what follows decides whether it is narration or a call).
+    fn stray_len(&self, h: &EnvelopeHeader) -> Option<usize> {
+        if self.pending_from == Some(h.start) {
+            return None;
+        }
+        Some(
+            self.owned
+                .iter()
+                .find(|&&(start, _)| start == h.start)
+                .map_or(h.len, |&(start, end)| end - start),
+        )
+    }
+}
+
+fn envelope_resolve(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    bare: EnvelopeBare,
+) -> EnvelopeOwnership {
+    let mut resolved = EnvelopeOwnership {
+        headers: Vec::new(),
+        owned: Vec::new(),
+        pending_from: None,
+    };
+    let mut floor = 0;
+    while let Some(h) = envelope_header_after(env, haystack, floor, bare) {
+        let body_at = h.start + h.len;
+        floor = body_at;
+        let body = &haystack[body_at..];
+        // A tool header wraps a payload the backend delivers as JSON; only native
+        // parameter markup after a LEGAL tool header has a body to walk.
+        let legal = h.recipient.is_some()
+            && h.channel
+                .is_some_and(|i| env.channels[i].name == env.tool_channel);
+        let payload = body.trim_start().starts_with(['{', '[']);
+        if legal && !payload {
+            let verdict = match factory {
+                Some(factory) => factory.create().channel_body(body, flush),
+                None if body.trim().is_empty() => BodyScan::Wait,
+                None => BodyScan::Malformed {
+                    discard: 0,
+                    reason: "no body walker",
+                },
+            };
+            match verdict {
+                BodyScan::Complete { consume, .. } => {
+                    resolved.owned.push((h.start, body_at + consume));
+                    floor = body_at + consume;
+                }
+                BodyScan::Wait if !flush => {
+                    resolved.pending_from = Some(h.start);
+                    resolved.headers.push(h);
+                    break;
+                }
+                BodyScan::Wait | BodyScan::Malformed { .. } => {}
+            }
+        }
+        resolved.headers.push(h);
+    }
+    resolved
+}
+
+/// An UNFRAMED header still arriving at the tail: `channel` without `message` within
+/// `max_header`, outside every native body, with whatever bare lead the scope lets it
+/// carry (the SAME rule [`envelope_header_after`] resolves it by, so the bytes held
+/// or discarded are exactly the bytes the header would own). `(start, channel_at)`.
+fn envelope_unframed_tail(
+    env: &ChannelEnvelope,
+    haystack: &str,
+    resolved: &EnvelopeOwnership,
+    bare: EnvelopeBare,
+) -> Option<(usize, usize)> {
+    if bare == EnvelopeBare::None {
+        return None;
+    }
+    let ci = haystack.rfind(env.channel)?;
+    if !resolved.free(ci)
+        || haystack[ci..].contains(env.message)
+        || haystack.len() - ci - env.channel.len() > env.max_header
+    {
+        return None;
+    }
+    let floor = resolved.floor();
+    let start = match bare {
+        EnvelopeBare::Lead => {
+            envelope_bare_lead(env, &haystack[floor..ci]).map_or(ci, |(p, _)| floor + p)
+        }
+        _ => ci,
+    };
+    Some((start, ci))
+}
+
+fn envelope_header_is_reasoning(env: &ChannelEnvelope, h: &EnvelopeHeader) -> bool {
+    h.recipient.is_none() && h.channel.is_some_and(|i| env.channels[i].reasoning)
+}
+
+fn envelope_header_is_content(env: &ChannelEnvelope, h: &EnvelopeHeader) -> bool {
+    h.recipient.is_none() && h.channel.is_some_and(|i| !env.channels[i].reasoning)
+}
+
+/// Guided reader: earliest header that OPENS a thought.
+pub(crate) fn envelope_guided_open(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    envelope_resolve(env, factory, haystack, flush, envelope_bare(state))
+        .headers
+        .into_iter()
+        .find(|h| envelope_header_is_reasoning(env, h))
+        .map(|h| (h.start, h.len))
+}
+
+/// Guided reader: earliest header that routes to VISIBLE content.
+pub(crate) fn envelope_guided_transition(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    envelope_resolve(env, factory, haystack, flush, envelope_bare(state))
+        .headers
+        .into_iter()
+        .find(|h| envelope_header_is_content(env, h))
+        .map(|h| (h.start, h.len))
+}
+
+/// Guided reader: earliest header that names a channel at all.
+pub(crate) fn envelope_guided_routing(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    envelope_resolve(env, factory, haystack, flush, envelope_bare(state))
+        .headers
+        .into_iter()
+        .find(|h| h.recipient.is_some() || h.framed || h.channel.is_some())
+        .map(|h| (h.start, h.len))
+}
+
+/// Earliest occurrence of any of `markers` outside every native body.
+fn envelope_free_marker<'a>(
+    haystack: &str,
+    resolved: &EnvelopeOwnership,
+    markers: impl Iterator<Item = &'a str>,
+    json: Option<JsonBodyState>,
+) -> Option<(usize, usize)> {
+    markers
+        .filter_map(|m| {
+            haystack
+                .match_indices(m)
+                .map(|(at, _)| at)
+                .find(|&at| {
+                    resolved.free(at)
+                        && json.is_none_or(|state| !state.inside_string_at(haystack, at))
+                })
+                .map(|at| (at, m.len()))
+        })
+        .min_by_key(|(at, _)| *at)
+}
+
+/// Guided reader: earliest reasoning CLOSER — the reasoning channels' terminators —
+/// outside every native tool body (inside one it is parameter data).
+pub(crate) fn envelope_guided_close(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    let resolved = envelope_resolve(env, factory, haystack, flush, envelope_bare(state));
+    envelope_free_marker(
+        haystack,
+        &resolved,
+        env.channels
+            .iter()
+            .filter(|c| c.reasoning)
+            .flat_map(|c| c.terminators.iter().copied()),
+        state.content_routed.then_some(state.content_json),
+    )
+    .map(|(at, len)| (at, envelope_close_len(env, &haystack[at..at + len])))
+}
+
+/// A closer can include the next header's start marker as lookahead.
+fn envelope_close_len(env: &ChannelEnvelope, marker: &str) -> usize {
+    marker.strip_suffix(env.start).unwrap_or(marker).len()
+}
+
+/// Guided reader: earliest TURN-END marker ([`ChannelEnvelope::turn_end`]) outside
+/// every native tool body.
+pub(crate) fn envelope_guided_turn_end(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    let resolved = envelope_resolve(env, factory, haystack, flush, envelope_bare(state));
+    envelope_free_marker(
+        haystack,
+        &resolved,
+        env.turn_end.iter().copied(),
+        state.content_routed.then_some(state.content_json),
+    )
+}
+
+/// What an unfinished header lead at a `start` marker turns out to be.
+enum LeadVerdict {
+    /// Still growing: hold every byte from the marker.
+    Pending,
+    /// Can never become a header: strip this many bytes from the marker.
+    Strip(usize),
+}
+
+/// Judge the `start` marker at `at` that has NOT resolved into a complete header.
+///
+/// Mirrors the native idle drain: a lead that is still possible waits; a lead that
+/// stops at a payload, a control marker or EOF is framing debris and is stripped
+/// through its recipient key (the recipient itself stays text, as a prefix-form invoke
+/// opener leaves its NAME); anything else was never a header and only the marker goes.
+fn envelope_lead_verdict(
+    env: &ChannelEnvelope,
+    haystack: &str,
+    at: usize,
+    flush: bool,
+    competitors: &[&str],
+) -> LeadVerdict {
+    let full = &haystack[at + env.start.len()..];
+    // A later `start` marker ends this header for certain, whatever it was.
+    let next_start = full.find(env.start);
+    let rest = &full[..next_start.unwrap_or(full.len())];
+    let settled = flush || next_start.is_some();
+    if let Some(ci) = rest.find(env.channel) {
+        if matches!(
+            envelope_parse_prefix(env, &rest[..ci]),
+            HeaderLead::NotHeader
+        ) {
+            return LeadVerdict::Strip(env.start.len());
+        }
+        let after = ci + env.channel.len();
+        if !settled && rest.len() - after <= env.max_header {
+            return LeadVerdict::Pending;
+        }
+        // A header that never reached `message`: strip through the channel marker and
+        // whatever channel bytes follow, up to the next competing marker.
+        let tail = &rest[after..];
+        let bound = competitors
+            .iter()
+            .filter_map(|m| tail.find(m))
+            .min()
+            .unwrap_or(tail.len());
+        return LeadVerdict::Strip(env.start.len() + after + bound);
+    }
+    // A trailing partial of ANY fixed marker — the `channel` marker that would continue
+    // the header, or a control that would end it (`to=weather<|e` before `nd|>`) — is
+    // not yet judged: the whole lead stays held until that marker resolves, otherwise
+    // the lead would be stripped before the control that decides it has arrived.
+    let hold = if settled {
+        0
+    } else {
+        marker_prefix_suffix_len(rest, competitors.iter().copied())
+    };
+    let lead_len = envelope_lead_len(env, &rest[..rest.len() - hold]);
+    if lead_len + hold == rest.len() && !settled {
+        return LeadVerdict::Pending;
+    }
+    // Once the lead cannot grow into a header, preserve a guided JSON payload
+    // even though its opening bracket was also a possible recipient character.
+    let lead_len = rest[..lead_len].find(['{', '[']).unwrap_or(lead_len);
+    let lead = &rest[..lead_len];
+    let next = &rest[lead_len..];
+    let decided = next.is_empty()
+        || next.starts_with(['{', '['])
+        || competitors.iter().any(|m| next.starts_with(m));
+    if !decided {
+        return LeadVerdict::Strip(env.start.len());
+    }
+    // Framing through the recipient key goes; a recipient NAME stays text, as the
+    // name after a prefix-form invoke opener does for the marker-pair grammars.
+    let through = lead
+        .find(env.recipient_key)
+        .map_or(lead_len, |k| k + env.recipient_key.len());
+    LeadVerdict::Strip(env.start.len() + through)
+}
+
+/// Guided reader: earliest framing run that is neither a thought nor a channel switch.
+///
+/// A tool header wraps a payload the backend delivers as JSON, so it is stripped WHOLE;
+/// when native parameter markup follows it instead, the family's own body walk decides
+/// where that call ends and the whole native call is stripped, exactly as the prose
+/// path does through [`envelope_tool_span`]. A header to an unknown channel and a
+/// `start` marker whose header can no longer complete are debris too.
+pub(crate) fn envelope_guided_stray(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    flush: bool,
+    state: GuidedChannelState,
+) -> Option<(usize, usize)> {
+    let bare = envelope_bare(state);
+    let resolved = envelope_resolve(env, factory, haystack, flush, bare);
+    let stray_header = resolved
+        .headers
+        .iter()
+        .find(|h| !envelope_header_is_reasoning(env, h) && !envelope_header_is_content(env, h))
+        .map(|h| (h.start, resolved.stray_len(h)));
+    let competitors = envelope_competitors(env);
+    let stray_start = haystack
+        .match_indices(env.start)
+        .filter(|(at, _)| resolved.free(*at))
+        .filter(|(at, _)| !resolved.headers.iter().any(|h| h.framed && h.start == *at))
+        .find_map(
+            |(at, _)| match envelope_lead_verdict(env, haystack, at, flush, &competitors) {
+                LeadVerdict::Strip(len) => Some((at, Some(len))),
+                LeadVerdict::Pending => None,
+            },
+        );
+    // At EOF an UNFRAMED header that never reached `message` is debris too, exactly
+    // like its framed twin above: the native idle drain emits nothing for it. While
+    // the stream is open `envelope_guided_holdback` retains the same bytes instead.
+    // Only a run the scope already recognises as a header-in-progress qualifies —
+    // the `channel` marker with its lead — so a role word or `to=` in prose, and
+    // anything inside an open body or a native parameter, stays untouched.
+    let stray_unframed = flush
+        .then(|| envelope_unframed_tail(env, haystack, &resolved, bare))
+        .flatten()
+        .map(|(start, ci)| {
+            let tail = &haystack[ci + env.channel.len()..];
+            let bound = competitors
+                .iter()
+                .filter_map(|m| tail.find(m))
+                .min()
+                .unwrap_or(tail.len());
+            (start, Some(ci + env.channel.len() + bound - start))
+        });
+    [stray_header, stray_start, stray_unframed]
+        .into_iter()
+        .flatten()
+        .min_by_key(|(at, _)| *at)
+        .and_then(|(at, len)| len.map(|len| (at, len)))
+}
+
+/// Every fixed marker of the envelope: the terminator competition for a header that
+/// never completes, and the split-marker set.
+fn envelope_competitors(env: &ChannelEnvelope) -> Vec<&'static str> {
+    std::iter::once(env.start)
+        .chain([env.channel, env.message])
+        .chain(
+            env.channels
+                .iter()
+                .flat_map(|c| c.terminators.iter().copied()),
+        )
+        .chain(env.orphan_controls.iter().copied())
+        .collect()
+}
+
+/// Guided reader: trailing bytes a header still arriving occupies.
+///
+/// OWNERSHIP FIRST: a tool header whose native body is still arriving owns every
+/// byte from its first one, whatever header-shaped bytes that body contains. Only
+/// outside every native body is a later `start` marker, an unframed `channel`
+/// marker or a bare lead judged on its own.
+pub(crate) fn envelope_guided_holdback(
+    env: &ChannelEnvelope,
+    factory: Option<InvokeBoundaryFactory>,
+    haystack: &str,
+    state: GuidedChannelState,
+) -> usize {
+    let bare = envelope_bare(state);
+    let resolved = envelope_resolve(env, factory, haystack, false, bare);
+    // A complete tool header whose native body is still arriving, or that nothing has
+    // followed yet: what comes next decides whether it is narration or a call.
+    if let Some(at) = resolved.pending_from {
+        return haystack.len() - at;
+    }
+    let competitors = envelope_competitors(env);
+    // A framed header still arriving.
+    if let Some(at) = haystack
+        .rmatch_indices(env.start)
+        .map(|(at, _)| at)
+        .find(|&at| resolved.free(at))
+        && !resolved.headers.iter().any(|h| h.framed && h.start == at)
+        && matches!(
+            envelope_lead_verdict(env, haystack, at, false, &competitors),
+            LeadVerdict::Pending
+        )
+    {
+        return haystack.len() - at;
+    }
+    // An unframed header still arriving: `channel` without `message`, with whatever
+    // bare lead the scope lets it carry.
+    if let Some((start, _)) = envelope_unframed_tail(env, haystack, &resolved, bare) {
+        return haystack.len() - start;
+    }
+    if bare != EnvelopeBare::Lead {
+        return 0;
+    }
+    // A bare lead that has not reached its `channel` marker yet — possibly with the
+    // first bytes of that marker already behind it (`assistant<|chan`), which are not
+    // part of the lead and are judged separately as a split marker.
+    let lead_end = haystack.len() - marker_prefix_suffix_len(haystack, [env.channel]);
+    let floor = lead_end
+        .saturating_sub(env.max_header)
+        .max(resolved.floor());
+    haystack[..lead_end]
+        .char_indices()
+        .map(|(p, _)| p)
+        .filter(|&p| p >= floor)
+        .filter(|&p| p == 0 || haystack[..p].ends_with(|c: char| c.is_whitespace() || c == '>'))
+        .find(|&p| {
+            let t = haystack[p..lead_end].trim_start_matches(' ');
+            !t.is_empty() && envelope_prefix_possible(env, t)
+        })
+        .map_or(0, |p| haystack.len() - p)
+}
+
+/// Channel index for `name`, optionally followed by ` constrain TOKEN`.
+/// Offset of the first control marker (`<|start|>`, `<|channel|>` or an orphan
+/// control) inside a header's label region when it comes BEFORE any `<|message|>`:
+/// the header is broken there. `None` when the label is intact so far.
+fn envelope_label_cut(env: &ChannelEnvelope, label_region: &str) -> Option<usize> {
+    let message_at = label_region.find(env.message).unwrap_or(usize::MAX);
+    [env.start, env.channel]
+        .into_iter()
+        .chain(env.orphan_controls.iter().copied())
+        // `<|message|>` ends the label and `<|constrain|>` is part of a legal label.
+        .filter(|m| *m != env.message && *m != env.constrain)
+        .filter_map(|m| label_region.find(m))
+        .min()
+        .filter(|cut| *cut < message_at)
+}
+
+fn envelope_parse_channel(env: &ChannelEnvelope, text: &str) -> Option<usize> {
+    let (name, rest) = match text.split_once(' ') {
+        Some((name, rest)) => (name, Some(rest)),
+        None => (text, None),
+    };
+    if let Some(rest) = rest {
+        let token = rest.strip_prefix(env.constrain)?;
+        if token.is_empty() || !token.chars().all(|c| c.is_ascii_alphanumeric()) {
+            return None;
+        }
+        // Spec-bound: the template emits exactly `<|constrain|>xml`; a different token is not
+        // a tool header (goal 1 — follow the model's own grammar, as the reference does).
+        if !env.constrain_tokens.is_empty() && !env.constrain_tokens.contains(&token) {
+            return None;
+        }
+    }
+    env.channels.iter().position(|c| c.name == name)
+}
 
 /// Longest non-empty proper prefix of any `marker` that `text` ends with, so a
 /// marker split across chunk boundaries is held back instead of leaked as
@@ -479,6 +1372,19 @@ pub(crate) trait InvokeBoundary: Send {
     }
     fn resync(&mut self, text: &str, flush: bool, tool_index: usize) -> Option<usize>;
     fn reset(&mut self) {}
+
+    /// Apply the request-scoped tool-call policy.
+    fn configure(&mut self, _policy: ToolCallPolicy) {}
+
+    /// Walk one tool-channel body (bytes after the header). Channel envelopes only.
+    /// `body` only ever grows between calls until a verdict is returned.
+    fn channel_body(&mut self, _body: &str, _flush: bool) -> BodyScan {
+        BodyScan::Wait
+    }
+
+    fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
+        self.channel_body(body, true)
+    }
 }
 
 struct StatelessInvokeBoundary {
@@ -633,6 +1539,50 @@ pub(crate) trait InvokeEmitter {
     /// `tool_index` (Kimi) must override this or a new stream's index 0
     /// would read back the abandoned stream's id.
     fn reset(&mut self) {}
+
+    /// Apply the request-scoped tool-call policy.
+    fn configure(&mut self, _policy: ToolCallPolicy) {}
+
+    /// A body walker for the channel-envelope call addressed to `recipient`, when the
+    /// family frames that recipient's body differently from the next one (per-tool
+    /// schema knowledge the static [`InvokeBoundaryFactory`] cannot carry). The scanner
+    /// installs it at the completed tool header, applies the request policy and resets
+    /// its cursor; `None` (the default) keeps the factory boundary.
+    fn channel_boundary(&self, _recipient: &str) -> Option<Box<dyn InvokeBoundary>> {
+        None
+    }
+
+    /// Decode one complete channel-envelope call body for `recipient`. An `Err` is a
+    /// malformed body; the scanner applies the request's [`MalformedToolCallPolicy`].
+    fn parse_channel_call(
+        &mut self,
+        _recipient: &str,
+        _body: &str,
+        _tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        Ok(None)
+    }
+
+    /// Emit an append-safe update while a channel-envelope call body is still open: a
+    /// prefix of the text [`Self::parse_channel_call`] will produce for the finished
+    /// body. `body` only grows between calls. The default streams nothing before the
+    /// terminator.
+    fn parse_partial_channel_call(
+        &mut self,
+        _recipient: &str,
+        _body: &str,
+        _tool_index: usize,
+    ) -> anyhow::Result<Option<ToolCallDelta>> {
+        Ok(None)
+    }
+
+    /// The open channel-envelope call is over without [`Self::parse_channel_call`]
+    /// completing it (dropped or rejected): forget any partial-emission state. `true`
+    /// when fragments of it had already been emitted — they cannot be retracted, so the
+    /// scanner spends their index rather than let the next call append to them.
+    fn channel_call_done(&mut self) -> bool {
+        false
+    }
 }
 
 #[derive(Clone, Default)]
@@ -1069,6 +2019,20 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     pending_parse_error: Option<DeferredParseError>,
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
     invoke_boundary_len: usize,
+    envelope: Option<&'static ChannelEnvelope>,
+    /// The guided reader's view of the envelope: the same header rules as fn hooks.
+    guided_channel: Option<GuidedChannel>,
+    env_mode: EnvMode,
+    /// Mode a fresh stream starts in, chosen by the request's starting state.
+    env_initial: EnvMode,
+    env_recipient: String,
+    /// JSON string context of the open message body (see [`EnvelopeChannel::json_body`]).
+    env_json: JsonBodyState,
+    /// A header may begin at the buffer start (stream start or after a message end),
+    /// so a prompt-consumed `role NAME` lead must be held, not emitted.
+    header_slot: bool,
+    policy: ToolCallPolicy,
+    finish_at_eos: bool,
 }
 
 struct DeferredParseError {
@@ -1102,6 +2066,65 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             pending_parse_error: None,
             invoke_boundary,
             invoke_boundary_len: 0,
+            envelope: None,
+            guided_channel: None,
+            env_mode: EnvMode::Idle,
+            env_initial: EnvMode::Idle,
+            env_recipient: String::new(),
+            env_json: JsonBodyState::default(),
+            header_slot: true,
+            policy: ToolCallPolicy::default(),
+            finish_at_eos: false,
+        }
+    }
+
+    /// Frame this scanner's messages with a [`ChannelEnvelope`] instead of wrapped
+    /// blocks. Tool bodies are walked by the family's invoke boundary.
+    pub(crate) fn with_envelope(mut self, envelope: &'static ChannelEnvelope) -> Self {
+        self.envelope = Some(envelope);
+        self
+    }
+
+    pub(crate) fn has_envelope(&self) -> bool {
+        self.envelope.is_some()
+    }
+
+    /// Hand the guided reader the envelope's header hooks. Built by the family from
+    /// the shared `envelope_guided_*` resolvers over its own [`ChannelEnvelope`], so
+    /// native and guided ownership follow one grammar table.
+    pub(crate) fn with_guided_channel(mut self, channel: GuidedChannel) -> Self {
+        self.guided_channel = Some(channel);
+        self
+    }
+
+    pub(crate) fn guided_channel(&self) -> Option<GuidedChannel> {
+        self.guided_channel
+    }
+
+    /// Control markers for the guided reader. An envelope's header markers (`start`,
+    /// `channel`, `message`) belong to its header resolver — a header is held,
+    /// stripped or opened WHOLE, from its first byte — so none of them is also a
+    /// standalone control there; only the envelope's terminators and orphan controls
+    /// are. Treating `channel` as a control consumed it out of a header still
+    /// arriving and released the lead in front of it as text.
+    pub(crate) fn guided_control_markers(&self) -> Vec<String> {
+        self.spec
+            .holdback_markers
+            .iter()
+            .filter(|m| {
+                self.envelope
+                    .is_none_or(|env| ![env.start, env.channel, env.message].contains(&m.as_str()))
+            })
+            .cloned()
+            .collect()
+    }
+
+    /// Request-scoped malformed-call and argument-framing policy. Survives `reset`.
+    pub(crate) fn set_tool_policy(&mut self, policy: ToolCallPolicy) {
+        self.policy = policy;
+        self.emitter.configure(policy);
+        if let Some(boundary) = self.invoke_boundary.as_mut() {
+            boundary.configure(policy);
         }
     }
 
@@ -1125,6 +2148,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             prefixed_openers,
         });
         self
+    }
+
+    pub(crate) fn allow_implicit_tool_terminator(&mut self) {
+        self.finish_at_eos = true;
     }
 
     /// Also own the reasoning channel, making this scanner unified.
@@ -1151,22 +2178,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.reasoning
     }
 
-    /// Every control marker of this family's tool grammar, as ONE set.
-    ///
-    /// This is `holdback_markers`, which the family already declares for exactly
-    /// this purpose — the markers the scanner reacts to, so a split one is never
-    /// leaked. The guided path needs the same set for BOTH lookup and boundary
-    /// holdback, and assembling it there from `orphan_markers` plus openers, at
-    /// several sites, is how the two drifted apart repeatedly: a closer stripped
-    /// while the opener beside it leaked, an opener recognised whole but lost when
-    /// split. One owner, one set, both uses.
-    pub(crate) fn control_markers(&self) -> &[String] {
-        &self.spec.holdback_markers
-    }
-
     /// The invoke terminator, for pairing with a stripped invoke opener.
     ///
-    /// NOT part of [`Self::control_markers`]: a BARE `</function>` with no invoke
+    /// NOT part of [`Self::guided_control_markers`]: a BARE `</function>` with no invoke
     /// open is ordinary text to the native scanner, and measured identical on both
     /// paths, so stripping it unconditionally would create a divergence rather than
     /// remove one. It is consumed only as the tail of an invoke already stripped.
@@ -1200,6 +2214,21 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // rules out `GuidedJson`), so the assert forbade a shape the porting guide
         // invites. The check could not tell "this family has no reasoning" from
         // "this scanner was built wrong" anyway; it only ever caught the former.
+        if let Some(env) = self.envelope {
+            // The prompt already opened a channel: a thought (`Some(true)`) or the
+            // visible reply (`Some(false)`). `None` starts between messages.
+            self.env_initial = match forced_start {
+                Some(reasoning) => env
+                    .channels
+                    .iter()
+                    .position(|c| c.reasoning == reasoning)
+                    .map_or(EnvMode::Idle, EnvMode::Channel),
+                None => EnvMode::Idle,
+            };
+            self.env_mode = self.env_initial;
+            self.header_slot = true;
+            self.env_recipient.clear();
+        }
         let enabled = enabled && self.reasoning.is_some();
         self.reasoning_enabled = enabled;
         self.reasoning_forced_start = forced_start
@@ -1270,6 +2299,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
+        self.finish_at_eos = false;
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
         self.buffer_previous = None;
@@ -1285,6 +2315,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.pending_parse_error = None;
         self.emitter.reset();
         self.reset_invoke_boundary();
+        self.env_mode = self.env_initial;
+        self.header_slot = true;
+        self.env_recipient.clear();
+        // The JSON-body string state belongs to the stream too: left over from a
+        // reply that ended inside a string, it made the next reply's terminator
+        // read as string data (or a quoted marker read as the terminator).
+        self.env_json.reset();
         pending
     }
 
@@ -1652,7 +2689,566 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Ok(false)
     }
 
+    /// Drain a channel-envelope grammar. Same buffer, prose-quote protection,
+    /// holdback, call indices and reset contract as the wrapped-block drain.
+    fn drain_envelope<S: EventSink + ?Sized>(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        flush: bool,
+        out: &mut S,
+    ) -> anyhow::Result<()> {
+        loop {
+            if self.env_mode == EnvMode::Call {
+                if self.envelope_call(flush, out)? {
+                    continue;
+                }
+                return Ok(());
+            }
+            let channel = match self.env_mode {
+                EnvMode::Channel(i) => Some(&env.channels[i]),
+                _ => None,
+            };
+            // `Response` means the prompt already opened visible content, so this
+            // stream has no reasoning channel: a framed thought's body is visible text
+            // (its framing is still control, never leaked).
+            let kind = match channel {
+                Some(c) if c.reasoning && self.reasoning_enabled => Kind::Reasoning,
+                _ => Kind::Text,
+            };
+            let markers: Vec<&'static str> = match channel {
+                Some(c) => c.terminators.iter().copied().chain([env.start]).collect(),
+                None => [env.start, env.channel]
+                    .into_iter()
+                    .chain(env.orphan_controls.iter().copied())
+                    .collect(),
+            };
+            // A tool header and its body belong to the grammar, not to prose: their
+            // attribute quotes can never close or open a prose quotation. The body is
+            // walked with the recipient's own boundary — the one `envelope_idle` would
+            // install for the real call — so prose ownership and the call agree about
+            // where every parameter value ends.
+            let factory = self.spec.invoke_boundary_factory;
+            let policy = self.policy;
+            let emitter = &self.emitter;
+            let boundary_for = |recipient: &str| emitter.channel_boundary(recipient);
+            let control = if env.quote_aware {
+                self.prose.classify(
+                    &self.buffer,
+                    markers.iter().copied(),
+                    flush,
+                    |text, at, flush| {
+                        envelope_tool_span(env, factory, policy, &boundary_for, text, at, flush)
+                    },
+                )
+            } else {
+                ProseControl::Ordinary
+            };
+            let (length, waiting, unmatched) = match control {
+                ProseControl::Literal(length) => (length, false, false),
+                ProseControl::Pending(at) => (at, true, false),
+                ProseControl::Unmatched(at) => (at, false, true),
+                ProseControl::Ordinary => (0, false, false),
+            };
+            if length > 0 {
+                let prose: String = self.buffer.drain(..length).collect();
+                self.prose.consume(&prose);
+                push_run(out, kind, &prose);
+                if channel.is_none() {
+                    self.header_slot = false;
+                }
+            }
+            if waiting {
+                return Ok(());
+            }
+            if unmatched {
+                self.prose.clear();
+            } else if length > 0 {
+                continue;
+            }
+            let progressed = match channel {
+                Some(c) => self.envelope_body(env, c, kind, &markers, flush, out),
+                None => self.envelope_idle(env, flush, out)?,
+            };
+            if !progressed {
+                return Ok(());
+            }
+        }
+    }
+
+    /// One step inside a message body. `true` means progress was made.
+    fn envelope_body<S: EventSink + ?Sized>(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        channel: &EnvelopeChannel,
+        kind: Kind,
+        markers: &[&'static str],
+        flush: bool,
+        out: &mut S,
+    ) -> bool {
+        // The first marker that is not data: inside a JSON answer's open string a
+        // marker is literal (`{"value":"<|return|>"}<|return|>` ends at the second).
+        let mut candidates: Vec<(usize, &'static str)> = markers
+            .iter()
+            .flat_map(|m| self.buffer.match_indices(m).map(move |(at, _)| (at, *m)))
+            .collect();
+        candidates.sort_unstable();
+        let found = candidates.into_iter().find(|(at, _)| {
+            !(channel.json_body && self.env_json.inside_string_at(&self.buffer, *at))
+        });
+        if let Some((at, marker)) = found {
+            push_run(out, kind, &self.buffer[..at]);
+            self.env_json.reset();
+            let consumed = at + envelope_close_len(env, marker);
+            self.buffer.drain(..consumed);
+            self.prose.clear();
+            self.env_mode = EnvMode::Idle;
+            self.header_slot = true;
+            return true;
+        }
+        let keep = if flush {
+            0
+        } else {
+            marker_prefix_suffix_len(&self.buffer, markers.iter().copied())
+                .max(self.prose.punctuation_holdback(&self.buffer))
+        };
+        let emit = self.buffer.len() - keep;
+        if emit > 0 {
+            push_run(out, kind, &self.buffer[..emit]);
+            self.env_json.advance(&self.buffer[..emit]);
+            self.prose.consume(&self.buffer[..emit]);
+            self.buffer.drain(..emit);
+        }
+        false
+    }
+
+    /// One step between messages: text, or a header. `Ok(true)` means progress.
+    fn envelope_idle<S: EventSink + ?Sized>(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        flush: bool,
+        out: &mut S,
+    ) -> anyhow::Result<bool> {
+        if self.buffer.is_empty() {
+            return Ok(false);
+        }
+        let hold = marker_prefix_suffix_len(
+            &self.buffer,
+            [env.start, env.channel]
+                .into_iter()
+                .chain(env.orphan_controls.iter().copied()),
+        );
+        let s = self.buffer.find(env.start);
+        let c = self.buffer.find(env.channel);
+        // A terminator with no channel open is debris between messages (`I3`): strip
+        // it, keeping the text before it. Inside a body the channel's own terminator
+        // list decides, so a `final` body keeps a literal call marker.
+        if let Some((p, len)) = env
+            .orphan_controls
+            .iter()
+            .filter_map(|m| self.buffer.find(m).map(|p| (p, m.len())))
+            .min_by_key(|(p, _)| *p)
+            && s.is_none_or(|s| p < s)
+            && c.is_none_or(|c| p < c)
+        {
+            if p > 0 {
+                self.envelope_text(p, out);
+            }
+            tracing::debug!(
+                why = %format!("{}_orphan_control", self.spec.family),
+                "stream stripped a control token outside any channel"
+            );
+            self.buffer.drain(..len);
+            self.prose.clear();
+            return Ok(true);
+        }
+        // `(position of the channel marker, header lead)`.
+        let (channel_pos, recipient) = match (s, c) {
+            (None, None) => {
+                let lead = &self.buffer[..self.buffer.len() - hold];
+                if self.header_slot
+                    && !flush
+                    && (lead.len() <= env.max_header || envelope_prefix_possible(env, lead))
+                {
+                    return Ok(false);
+                }
+                let n = self.buffer.len() - if flush { 0 } else { hold };
+                if n == 0 {
+                    return Ok(false);
+                }
+                self.envelope_text(n, out);
+                return Ok(true);
+            }
+            (Some(s), c) if c.is_none_or(|c| s < c) => {
+                if s > 0 {
+                    self.envelope_text(s, out);
+                    return Ok(true);
+                }
+                let rest = &self.buffer[env.start.len()..];
+                // A control marker inside the lead (`<|start|>ysis<|message|>…<|start|>
+                // assistant<|channel|>`) ends the garbled region there: the bytes up to it
+                // are debris, the marker itself is resolved on the next step.
+                let lead_cut = env
+                    .orphan_controls
+                    .iter()
+                    .chain(std::iter::once(&env.start))
+                    .filter_map(|m| rest.find(m))
+                    .min();
+                match rest.find(env.channel) {
+                    found if lead_cut.is_some_and(|q| found.is_none_or(|ci| q < ci)) => {
+                        let q = lead_cut.expect("checked above");
+                        tracing::debug!(
+                            why = %format!("{}_garbled_lead", self.spec.family),
+                            "stream dropped a start marker with a broken lead"
+                        );
+                        self.buffer.drain(..env.start.len() + q);
+                        self.prose.clear();
+                        return Ok(true);
+                    }
+                    // Within a header's length budget the lead is held back until
+                    // CHANNEL arrives (or not): a garbled header such as
+                    // `<|start|>assistant\tto=NAME<|channel|>` must be judged whole, in
+                    // the chunked stream exactly as in the batch one. A lead that can
+                    // still grow into a legal header waits regardless of length.
+                    None if !flush
+                        && (rest.len() <= env.max_header
+                            || envelope_prefix_possible(
+                                env,
+                                &rest[..rest.len() - marker_prefix_suffix_len(rest, [env.channel])],
+                            )) =>
+                    {
+                        return Ok(false);
+                    }
+                    None => {
+                        // A recognizable header that stops before or inside CHANNEL can
+                        // never complete. A tool lead is an unfinished call, not prose:
+                        // strict rejects it with every byte (START included) still
+                        // buffered for `reset`; a role-only lead is framing debris and is
+                        // dropped whole. Ordinary text after START keeps only START out.
+                        if flush {
+                            let lead =
+                                &rest[..rest.len() - marker_prefix_suffix_len(rest, [env.channel])];
+                            match envelope_parse_prefix(env, lead) {
+                                HeaderLead::Lead(Some(_)) => {
+                                    return self.envelope_bad_header(true, self.buffer.len());
+                                }
+                                HeaderLead::Lead(None) => {
+                                    return self.envelope_bad_header(false, self.buffer.len());
+                                }
+                                HeaderLead::NotHeader => {}
+                            }
+                        }
+                        self.buffer.drain(..env.start.len());
+                        return Ok(true);
+                    }
+                    Some(ci) => match envelope_parse_prefix(env, &rest[..ci]) {
+                        HeaderLead::NotHeader if ci <= env.max_header => {
+                            // `<|start|>` + a lead that is not `role[ to=NAME]` + `<|channel|>`:
+                            // a garbled header. Its bytes are framing, not prose (goal 3/4), so
+                            // the whole header is skipped; a tool-framed one (`to=` in the lead
+                            // or `<|constrain|>` in the label) also takes its body up to the
+                            // tool channel's terminator under the malformed-call policy.
+                            return self.envelope_garbled_header(env, ci, flush);
+                        }
+                        HeaderLead::NotHeader => {
+                            // Longer than any header: START is debris in front of prose.
+                            self.buffer.drain(..env.start.len());
+                            return Ok(true);
+                        }
+                        HeaderLead::Lead(r) => (env.start.len() + ci, r),
+                    },
+                }
+            }
+            (_, Some(c)) => match envelope_parse_prefix(env, &self.buffer[..c]) {
+                HeaderLead::Lead(r) => (c, r),
+                HeaderLead::NotHeader => {
+                    self.envelope_text(c, out);
+                    return Ok(true);
+                }
+            },
+            _ => unreachable!("one marker is present"),
+        };
+        let after = channel_pos + env.channel.len();
+        // A control marker inside the label (`<|channel|>analysis<|end|>`) means the
+        // header never had a `<|message|>`: the label is debris up to that marker, which
+        // the next step then handles as an orphan or a new header.
+        if let Some(cut) = envelope_label_cut(env, &self.buffer[after..]) {
+            return self.envelope_bad_header(recipient.is_some(), after + cut);
+        }
+        let Some(mi) = self.buffer[after..].find(env.message) else {
+            if !flush && self.buffer.len() - after <= env.max_header {
+                return Ok(false);
+            }
+            let skip = if flush { self.buffer.len() } else { after };
+            return self.envelope_bad_header(recipient.is_some(), skip);
+        };
+        let label = &self.buffer[after..after + mi];
+        match envelope_parse_channel(env, label) {
+            // A tool-framed header (`<|constrain|>` in the label) on a message channel is
+            // an illegal tool header: strict rejects it, drop skips it with its body.
+            Some(index)
+                if env.channels[index].name != env.tool_channel
+                    && label.contains(env.constrain) =>
+            {
+                self.envelope_bad_tool_header(env, after + mi + env.message.len(), flush)
+            }
+            // `<|channel|>analysis <|constrain|>xml<|message|>` with no recipient: a tool
+            // header missing its addressee, not a thought. Its body is tool markup and is
+            // skipped with it; it never becomes reasoning text.
+            Some(_) if recipient.is_none() && label.contains(env.constrain) => {
+                self.envelope_bad_tool_header(env, after + mi + env.message.len(), flush)
+            }
+            Some(index) => {
+                let consume = after + mi + env.message.len();
+                // A bare recipient on a message channel (`to=x<|channel|>final<|message|>`)
+                // is header debris: the channel opens as written, nothing is dropped.
+                let recipient = if env.channels[index].name == env.tool_channel {
+                    recipient
+                } else {
+                    None
+                };
+                match recipient {
+                    Some(name) => {
+                        self.uncommitted_block = self.buffer[..consume].to_string();
+                        // A family may frame THIS recipient's body from its schema; the
+                        // factory boundary stays in place otherwise.
+                        if let Some(mut boundary) = self.emitter.channel_boundary(&name) {
+                            boundary.configure(self.policy);
+                            self.invoke_boundary = Some(boundary);
+                        }
+                        self.env_recipient = name;
+                        self.env_mode = EnvMode::Call;
+                        self.reset_invoke_boundary();
+                    }
+                    None => {
+                        self.env_json.reset();
+                        self.env_mode = EnvMode::Channel(index);
+                    }
+                }
+                self.buffer.drain(..consume);
+                self.prose.clear();
+                Ok(true)
+            }
+            None if recipient.is_some() => {
+                self.envelope_bad_tool_header(env, after + mi + env.message.len(), flush)
+            }
+            // An unknown label (`<|channel|>reasoning  <|constrain|>xml<|message|>`) is
+            // still a complete header: skip it whole instead of leaking the label.
+            None if self.buffer[after..after + mi].contains(env.constrain) => {
+                self.envelope_bad_tool_header(env, after + mi + env.message.len(), flush)
+            }
+            // An unknown channel (`<|channel|>commentary<|message|>…<|end|>`) is a whole
+            // message the grammar does not define: its body is not visible text either,
+            // so header and body go together, through the nearest terminator.
+            None => self.envelope_skip_message(env, after + mi + env.message.len(), flush),
+        }
+    }
+
+    /// `<|start|>` followed by a lead that is not a header, then `<|channel|>` at
+    /// `ci` (relative to the byte after START). Skips the header as framing debris;
+    /// when it is tool-framed, also skips the body through the tool channel's
+    /// terminator (waiting for it while the stream is open). `Ok(true)` on progress.
+    fn envelope_garbled_header(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        ci: usize,
+        flush: bool,
+    ) -> anyhow::Result<bool> {
+        let start_len = env.start.len();
+        let lead = &self.buffer[start_len..start_len + ci];
+        let after = start_len + ci + env.channel.len();
+        let tool_lead = lead.contains(env.recipient_key);
+        let Some(mi) = self.buffer[after..].find(env.message) else {
+            if !flush && self.buffer.len() - after <= env.max_header {
+                return Ok(false);
+            }
+            let skip = if flush { self.buffer.len() } else { after };
+            return self.envelope_bad_header(tool_lead, skip);
+        };
+        let label = &self.buffer[after..after + mi];
+        let tool = tool_lead || label.contains(env.constrain);
+        let header_end = after + mi + env.message.len();
+        if !tool {
+            return self.envelope_skip_message(env, header_end, flush);
+        }
+        self.envelope_bad_tool_header(env, header_end, flush)
+    }
+
+    /// A complete but undefined message header whose `<|message|>` ends at `header_end`:
+    /// the body is skipped with it, through the nearest terminator any channel knows
+    /// (waiting for one while the stream is open; everything goes at flush).
+    fn envelope_skip_message(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        header_end: usize,
+        flush: bool,
+    ) -> anyhow::Result<bool> {
+        let body_end = env
+            .channels
+            .iter()
+            .flat_map(|c| c.terminators.iter())
+            .filter_map(|m| {
+                self.buffer[header_end..]
+                    .find(m)
+                    .map(|p| header_end + p + m.len())
+            })
+            .min();
+        match body_end {
+            Some(end) => self.envelope_bad_header(false, end),
+            None if flush => self.envelope_bad_header(false, self.buffer.len()),
+            None => Ok(false),
+        }
+    }
+
+    /// A malformed TOOL header whose `<|message|>` ends at `header_end`: the body that
+    /// follows is tool markup too, so it is skipped through the tool channel's terminator
+    /// (waiting for it while the stream is open) under the malformed-call policy.
+    fn envelope_bad_tool_header(
+        &mut self,
+        env: &'static ChannelEnvelope,
+        header_end: usize,
+        flush: bool,
+    ) -> anyhow::Result<bool> {
+        let body_end = env
+            .channels
+            .iter()
+            .find(|c| c.name == env.tool_channel)
+            .map(|c| c.terminators)
+            .unwrap_or(&[])
+            .iter()
+            .filter_map(|m| {
+                self.buffer[header_end..]
+                    .find(m)
+                    .map(|p| header_end + p + m.len())
+            })
+            .min();
+        match body_end {
+            Some(end) => self.envelope_bad_header(true, end),
+            None if flush => self.envelope_bad_header(true, self.buffer.len()),
+            None => Ok(false),
+        }
+    }
+
+    fn envelope_text<S: EventSink + ?Sized>(&mut self, n: usize, out: &mut S) {
+        // `Response` (no reasoning channel: the prompt already opened the visible reply)
+        // keeps every byte visible, as the whole stream IS the reply.
+        let prose =
+            self.envelope.is_none_or(|env| env.prose_between_messages) || !self.reasoning_enabled;
+        if prose {
+            out.push_text(&self.buffer[..n]);
+            self.prose.consume(&self.buffer[..n]);
+        } else {
+            tracing::debug!(
+                why = %format!("{}_outside_channel", self.spec.family),
+                bytes = n,
+                "stream dropped bytes outside every channel"
+            );
+        }
+        self.buffer.drain(..n);
+        self.header_slot = false;
+    }
+
+    /// A header that can never complete. A tool header follows the request's
+    /// malformed-call policy; a message header is control debris and is skipped.
+    fn envelope_bad_header(&mut self, tool: bool, skip: usize) -> anyhow::Result<bool> {
+        if tool && self.policy.malformed == MalformedToolCallPolicy::Reject {
+            return Err(anyhow::Error::new(MalformedToolCall {
+                reason: "malformed tool-call header",
+            }));
+        }
+        tracing::warn!(
+            why = %format!("{}_malformed_header", self.spec.family),
+            "stream skipped a malformed channel header"
+        );
+        self.buffer.drain(..skip);
+        Ok(true)
+    }
+
+    /// One step inside a tool call body. `Ok(true)` means progress was made.
+    fn envelope_call<S: EventSink + ?Sized>(
+        &mut self,
+        flush: bool,
+        out: &mut S,
+    ) -> anyhow::Result<bool> {
+        let verdict = match self.invoke_boundary.as_mut() {
+            Some(boundary) if flush && self.finish_at_eos => {
+                boundary.channel_body_at_eos(&self.buffer)
+            }
+            Some(boundary) => boundary.channel_body(&self.buffer, flush),
+            None => anyhow::bail!("channel envelope needs an invoke boundary"),
+        };
+        let (body_end, consume) = match verdict {
+            BodyScan::Wait => {
+                // Still open: a family that can prove a prefix of its final arguments
+                // streams it now instead of holding everything for the terminator.
+                if !flush
+                    && let Some(delta) = self.emitter.parse_partial_channel_call(
+                        &self.env_recipient,
+                        &self.buffer,
+                        self.next_index,
+                    )?
+                {
+                    out.push_call(delta);
+                }
+                return Ok(false);
+            }
+            BodyScan::Malformed { discard, reason } => {
+                if self.policy.malformed == MalformedToolCallPolicy::Reject {
+                    // Leave every byte in place so `reset` returns the whole call.
+                    return Err(anyhow::Error::new(MalformedToolCall { reason }));
+                }
+                tracing::warn!(
+                    why = %format!("{}_malformed_call", self.spec.family),
+                    reason,
+                    "stream dropped a malformed tool call"
+                );
+                self.buffer.drain(..discard);
+                self.envelope_call_done();
+                return Ok(true);
+            }
+            BodyScan::Complete { body_end, consume } => (body_end, consume),
+        };
+        let recipient = self.env_recipient.clone();
+        // Emit BEFORE consuming, like the wrapped drain: a failure keeps the bytes.
+        match self
+            .emitter
+            .parse_channel_call(&recipient, &self.buffer[..body_end], self.next_index)
+        {
+            Ok(Some(delta)) => {
+                out.push_call(delta);
+                self.next_index += 1;
+            }
+            Ok(None) => {}
+            Err(error) => {
+                if self.policy.malformed == MalformedToolCallPolicy::Reject {
+                    return Err(error);
+                }
+                tracing::warn!(
+                    why = %format!("{}_malformed_call", self.spec.family),
+                    "stream dropped a tool call with a malformed body"
+                );
+            }
+        }
+        self.buffer.drain(..consume);
+        self.envelope_call_done();
+        Ok(true)
+    }
+
+    fn envelope_call_done(&mut self) {
+        if self.emitter.channel_call_done() {
+            self.next_index += 1;
+        }
+        self.reset_invoke_boundary();
+        self.uncommitted_block.clear();
+        self.env_recipient.clear();
+        self.env_mode = EnvMode::Idle;
+        self.header_slot = true;
+        self.prose.clear();
+    }
+
     fn drain<S: EventSink + ?Sized>(&mut self, flush: bool, out: &mut S) -> anyhow::Result<()> {
+        if let Some(env) = self.envelope {
+            return self.drain_envelope(env, flush, out);
+        }
         loop {
             if !self.in_block {
                 let control = self.prose.classify(
@@ -2208,6 +3804,14 @@ mod tests {
     #[test]
     fn marker_only_scanner_has_no_invoke_boundary_factory() {
         assert!(failing_scanner().invoke_boundary_factory().is_none());
+    }
+
+    /// An emitter without per-recipient framing never replaces the factory boundary.
+    #[test]
+    fn emitter_channel_boundary_defaults_to_none() {
+        let scanner = failing_scanner();
+        assert!(scanner.emitter.channel_boundary("any").is_none());
+        assert!(scanner.invoke_boundary.is_none());
     }
 
     #[test]

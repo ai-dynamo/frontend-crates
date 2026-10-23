@@ -689,11 +689,11 @@ fn capture_case_with_chunks(
             "split capture cannot apply the requested initialization".into(),
         ));
     }
-    assert_eq!(
-        chunks,
-        chunk_input(input),
-        "legacy split capture cannot replay this schedule"
-    );
+    if chunks != chunk_input(input) {
+        return Err(CaptureFailure::Unavailable(
+            "legacy split capture cannot replay this authored schedule".into(),
+        ));
+    }
     let (rows, assembled) =
         split_path_capture_with_parsers(&reasoning, &tool, input, tool_schemas)?;
     let rows = rows

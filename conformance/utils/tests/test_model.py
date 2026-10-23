@@ -1429,6 +1429,18 @@ def test_shared_reference_cases_keep_older_peer_captures_unmeasured(model_v2: di
             assert cmp["dynamo"]["na"] == 0, (family, scenario, "current")
             if family in peer_families | {"gpt_oss"}:
                 _assert_unmeasured_versions(cmp, older_keys)
+            elif family == "beam":
+                # Beam joined the corpus at 0.8.1: every Dynamo column older than that is
+                # unmeasured; 0.8.1 and later carry its captures.
+                _assert_unmeasured_versions(
+                    cmp,
+                    [
+                        candidate["key"]
+                        for candidate in dynamo_candidates
+                        if candidate["key"] != "dynamo"
+                        and tuple(map(int, candidate["version"].split("."))) < (0, 7, 29)
+                    ],
+                )
             else:
                 assert cmp["dynamo@0.7.8"]["na"] == 0, (family, scenario, "original_capture")
 
@@ -1887,12 +1899,12 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
     tab = _tab(model_v2, "tab-unified")
     sections = [group for group in tab["column_groups"] if group["key"].startswith("unified_g7_")]
     assert [group["label"] for group in sections] == list(ARGUMENT_SECTIONS.values())
-    assert [group["span"] for group in sections] == [3, 10, 6, 10, 17, 14]
+    assert [group["span"] for group in sections] == [3, 12, 6, 10, 17, 14]
     columns = [column for column in tab["columns"] if column["group_key"].startswith("unified_g7_")]
-    assert len(columns) == 60
-    assert [column["display_number"] for column in columns] == list(range(1, 61))
+    assert len(columns) == 62
+    assert [column["display_number"] for column in columns] == list(range(1, 63))
     expected = {scenario for scenario in unified_taxonomy.UNIFIED_TAX if unified_taxonomy.display_tax(scenario)[0] == 7}
-    assert len(expected) == 143
+    assert len(expected) == 145
     assert "gpt_oss_quoted_message_header_literal" in expected
     found = set()
     for row in tab["rows"]:
@@ -2018,3 +2030,21 @@ def test_unified_stream_assembly_keeps_phase_boundaries():
             {"kind":"message_end"},{"kind":"message_start","phase":"final_answer"},
             {"kind":"text","text":"Done."},{"kind":"message_end"}]
     assert _assemble_stream([[event] for event in events]) == events
+
+
+def test_custom_quote_columns_use_the_qwen_nemotron_section(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    columns = {column["sub"]: column for column in tab["columns"]}
+    groups = {group["key"]: group for group in tab["column_groups"]}
+    assert groups["unified_gqwen3"]["label"] == "Family-specific tests: Qwen3 and Nemotron v3 XML"
+    for quotes in ("single", "double"):
+        custom = columns[f"xml_custom_type_{quotes}_quoted_object"]
+        string = columns[f"xml_string_type_{quotes}_quoted_object"]
+        assert custom["group_key"] == "unified_gqwen3"
+        assert custom["label"].startswith("qwen3-")
+        assert string["group_key"] == "unified_g7_declared"
+        for row in tab["rows"]:
+            cell = leaf_cells(row)[custom["sub"]]
+            assert cell["case_id"] == f"UNIFIED.7-{custom['sub']}"
+            state, _ = cell_state(cell, {"key": "dynamo", "label": "Dynamo"})
+            assert state == ("green" if row["family"] in {"qwen3", "nemotron_v3"} else "na")

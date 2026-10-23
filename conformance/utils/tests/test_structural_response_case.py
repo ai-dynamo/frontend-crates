@@ -20,7 +20,7 @@ SCENARIO = "structured_response_after_reasoning"
 
 
 def test_structural_case_has_one_shared_id_and_explicit_builder_scope():
-    assert scenario_families(SCENARIO) == {"gpt_oss", "qwen3", "glm47", "deepseek_v4"}
+    assert scenario_families(SCENARIO) == {"gpt_oss", "qwen3", "glm47", "deepseek_v4", "muse_spark"}
     assert numbered_id(SCENARIO) == "UNIFIED.36-structured_response_after_reasoning"
     assert f"UNIFIED.{SCENARIO}.nemotron_v3" not in build_cases("nemotron_v3")
     assert "UNIFIED.guided_response_native_wrapper_whitespace_before_prose.nemotron_v3" in build_cases("nemotron_v3")
@@ -38,7 +38,11 @@ def test_structural_request_is_bound_in_every_retained_dynamo_column(committed_u
         history = store.histories[(family, "dynamo_v2")]
         case_id = next(key for key, case in history.family.cases.items() if case["scenario"] == SCENARIO)
         digest = unified_history._request_digest(history.family.cases[case_id]["request"])
-        states = {capture_id: history.resolve(capture_id) for capture_id in history.ordered_capture_ids()}
+        capture_ids = history.ordered_capture_ids()
+        # Spark gained this grammar case in 0.8.2; older captures stay unchanged.
+        if family == "muse_spark":
+            capture_ids = capture_ids[capture_ids.index("dynamo_v2-0.8.2"):]
+        states = {capture_id: history.resolve(capture_id) for capture_id in capture_ids}
         _assert_bound_columns(states, case_id, digest)
         oldest = next(iter(states))
         missing = {oldest: {key: value for key, value in states[oldest].items() if key != case_id}}

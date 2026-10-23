@@ -500,6 +500,10 @@ suites:
           w.integer_const_ambiguous: {desc: "Schema probe integer_const_ambiguous: independently authored value \"42\" under {\"anyOf\": [{\"const\": \"42\"}, {\"type\": \"integer\"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           w.object_const_union: {desc: "Schema probe object_const_union: independently authored value \"{\\\"x\\\":1}\" under {\"anyOf\": [{\"const\": \"{\\\"x\\\":1}\"}, {\"type\": \"object\"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
           o.id_direct_integer: {desc: "Schema probe id_direct_integer: independently authored value 42 under {\"$id\": \"https://example.test/schema\", \"type\": \"integer\"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.", required: false}
+          x.xml_custom_type_single_quoted_object: {desc: "Unrecognized custom type uses the native XML object compatibility fallback", required: false}
+          x.xml_custom_type_double_quoted_object: {desc: "Unrecognized custom type uses the native XML object compatibility fallback", required: false}
+          x.xml_string_type_single_quoted_object: {desc: "Declared string preserves the exact object-looking argument text", required: false}
+          x.xml_string_type_double_quoted_object: {desc: "Declared string preserves the exact object-looking argument text", required: false}
       "8":
         title: Narration around calls
         required: true

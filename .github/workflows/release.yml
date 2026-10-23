@@ -2,7 +2,11 @@ name: release
 
 on:
   push:
-    branches: [main]
+    # `pull-request/<n>` is the copy-pr-bot mirror pushed after `/ok to test`.
+    # Mirror pushes run only the read-only preview job below.
+    branches:
+      - main
+      - "pull-request/[0-9]+"
   workflow_dispatch:
 
 permissions:
@@ -13,6 +17,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Dry run of the bump step against the squash commit this PR would land.
+  # Fails when release-plz would generate a major version, so the author either
+  # drops the breaking marker or pegs the major version before merge.
+  preview:
+    if: startsWith(github.ref, 'refs/heads/pull-request/')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read  # read the PR title
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      # release-plz sizes bumps from the commit that lands on main: the squash
+      # commit titled with the PR title, not the branch's own commits.
+      - name: Build the squash commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title=$(gh pr view "${GITHUB_REF_NAME#pull-request/}" --repo "$GITHUB_REPOSITORY" --json title -q .title)
+          git config user.name  "release-preview"
+          git config user.email "release-preview@invalid"
+          git fetch -q origin "$GITHUB_SHA"
+          git merge --squash "$GITHUB_SHA"
+          git commit -q -m "$title"
+
+      # After the squash, so the PR's own scripts and toolchain are used.
+      - name: Install Rust
+        run: rustup toolchain install
+
+      - name: Install release tools
+        run: .github/scripts/install-release-tools.sh
+
+      - name: Bump versions (dry run)
+        run: .github/scripts/bump-versions.sh
+
+      - name: Reject generated major versions
+        run: .github/scripts/check-major-bumps.sh
+
   release:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -27,7 +75,8 @@ jobs:
       id-token: write       # OIDC for crates.io trusted publishing
     # Recursion guard: skip the run triggered by our own "chore: release" push.
     # workflow_dispatch bypasses the guard so a partial publish can be re-run.
-    if: "${{ github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release') }}"
+    # Mirror branches never publish.
+    if: "${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !startsWith(github.event.head_commit.message, 'chore: release')) }}"
     steps:
       - name: Generate release app token
         id: release-token
@@ -51,71 +100,14 @@ jobs:
       - name: Install Rust
         run: rustup toolchain install
 
-      - name: Install release-plz CLI
-        run: |
-          curl -sSLf https://github.com/release-plz/release-plz/releases/download/release-plz-v0.3.158/release-plz-x86_64-unknown-linux-gnu.tar.gz \
-            | tar xz -C /usr/local/bin release-plz
-          release-plz --version
+      - name: Install release tools
+        run: .github/scripts/install-release-tools.sh
 
-      - name: Install cargo-semver-checks
-        run: |
-          curl -sSLf https://github.com/obi1kenobi/cargo-semver-checks/releases/download/v0.48.0/cargo-semver-checks-x86_64-unknown-linux-gnu.tar.gz \
-            | tar xz -C /usr/local/bin
-          cargo-semver-checks --version
-
-      # Path-scoped auto-bump (DIS-2414). A blanket `release-plz update` cascades:
-      # a change to one crate re-releases its dependents even when their code
-      # didn't change (all inter-crate deps are caret reqs, so a compatible bump
-      # never requires re-releasing a dependent). That churned versions — e.g.
-      # dynamo-parsers-v2 went 0.1.17 -> 0.1.21 in days, and v1/v2 were bumped
-      # in lockstep despite sharing no code. Instead, run `release-plz update
-      # -p <crate>` only for crates whose OWN directory changed since their last
-      # release tag, and never touch a version a human already bumped:
-      #   - version != last release tag  -> manually PEGGED: leave it alone;
-      #     the publish step below ships exactly that version (same number the
-      #     HF fixture upload embeds — Cargo.toml is the single source of truth)
-      #   - version == last tag, no changes under the crate dir -> nothing
-      #   - version == last tag, changes under the crate dir -> auto-bump this
-      #     crate only (release-plz still sizes the bump from conventional
-      #     commits, writes the changelog, and runs cargo-semver-checks)
+      # Path-scoped auto-bump; see the script header. Generated major
+      # versions are rejected by the preview job before merge, so this step
+      # publishes whatever was merged.
       - name: Bump versions for crates whose own files changed
-        run: |
-          # `--allow-dirty` below is intentional: each package update leaves
-          # its version/changelog edits for the final combined release commit.
-          # Fail here so it cannot mask changes that predate this loop.
-          if [ -n "$(git status --porcelain)" ]; then
-            git status --short
-            echo "Release checkout must start clean."
-            exit 1
-          fi
-
-          members=$(sed -n '/^members = \[/,/^]/p' Cargo.toml | grep -oE '"[^"]+"' | tr -d '"')
-          for dir in $members; do
-            grep -q '^publish *= *false' "$dir/Cargo.toml" && continue
-            name=$(grep -m1 '^name *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
-            ver=$(grep -m1 '^version *=' "$dir/Cargo.toml" | sed -E 's/.*"([^"]+)".*/\1/')
-            # Exact-match this crate's tags: the glob "dynamo-parsers-v*" would
-            # also match dynamo-parsers-v2-v0.1.21, so require <name>-v<semver>.
-            last=$(git tag -l "$name-v*" | grep -E "^$name-v[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -1)
-            if [ -z "$last" ]; then
-              echo "$name: no release tag yet -> first release is manual, skipping"
-            elif [ "$ver" != "${last#"$name"-v}" ]; then
-              echo "$name: $ver != last released ${last#"$name"-v} -> manually pegged"
-              # A manual peg bypasses release-plz update — the only path that
-              # runs cargo-semver-checks — so validate here that the pegged
-              # jump is big enough for the actual API diff vs the last release.
-              cargo semver-checks check-release --package "$name" --baseline-rev "$last"
-              echo "$name: peg passes semver-checks, publish as-is"
-            # The root Cargo.toml is part of every crate's change scope:
-            # workspace-inherited dependency versions and [workspace.package]
-            # metadata land in the published manifest of each member crate.
-            elif git diff --quiet "$last"..HEAD -- "$dir" Cargo.toml; then
-              echo "$name: no changes under $dir/ or the root Cargo.toml since $last"
-            else
-              echo "$name: changes under $dir/ (or root Cargo.toml) since $last -> auto-bump"
-              release-plz update --allow-dirty -p "$name"
-            fi
-          done
+        run: .github/scripts/bump-versions.sh
 
       - name: Commit and push version bumps (if any)
         run: |
