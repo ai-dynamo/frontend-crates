@@ -5,6 +5,7 @@ import fcntl
 import gzip
 import json
 import os
+import shutil
 import sys
 import threading
 import uuid
@@ -80,6 +81,36 @@ def published_viewer(tmp_path_factory, source_catalog):
 
 
 @pytest.fixture(scope="session")
+def historical_published_viewer(history_source, tmp_path_factory):
+    """Frozen release journeys explicitly opt into the verified external dataset."""
+    configured = os.environ.get("CONFORMANCE_HISTORY_SITE")
+    if configured:
+        site = Path(configured).resolve(strict=True)
+    else:
+        site = tmp_path_factory.mktemp("historical-browser") / "published"
+        publish(REPO, site, extra=("--include-history", "--history-source", str(history_source)))
+    catalog = json.loads(gzip.decompress((site / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
+    publication = json.loads((site / "conformance/viewer-publication.json").read_bytes())
+    assert publication["publisher_inputs_sha256"] == capture_sources.publication_inputs_digest(REPO, include_history=True)
+    assert catalog["capture_generation"]["mode"] == "history"
+    assert catalog["capture_generation"]["history_pin"] == json.loads(capture_sources.read(REPO, capture_sources.PIN))
+    assert catalog["capture_generation"]["current"] == capture_sources.current_identities(capture_sources.current(REPO))
+    return site
+
+
+@pytest.fixture
+def current_source_view(tmp_path):
+    source = tmp_path / "current-source"
+    capture_sources.stage_current_sources(REPO, source)
+    shutil.copyfile(REPO / "index.html", source / "index.html")
+    shutil.copytree(REPO / "conformance/viewer", source / "conformance/viewer",
+                    ignore=shutil.ignore_patterns("node_modules"))
+    shutil.copytree(REPO / "conformance/utils/src/assets", source / "conformance/utils/src/assets")
+    shutil.copyfile(source / "conformance/viewer-catalog.json", source / "conformance/viewer-unified-catalog.json")
+    return source
+
+
+@pytest.fixture(scope="session")
 def viewer_url(published_viewer):
     prefix = "/frontend-crates"
 
@@ -114,7 +145,7 @@ def pytest_addoption(parser):
 
 def needs_publication(item):
     # Closure names include indirect dependencies (e.g. a browser driver).
-    return (bool({"published_viewer", "source_catalog", "native_publisher"}.intersection(item.fixturenames))
+    return (bool({"published_viewer", "historical_published_viewer", "source_catalog", "native_publisher"}.intersection(item.fixturenames))
             or item.path.name in {"test_viewer_catalog.py", "test_unified_regeneration.py", "test_capture_split_browser.py"}
             or item.name in {"test_reference_backfills_require_request_bound_version_receipts",
                              "test_external_history_json_snapshots_match_original_yaml",

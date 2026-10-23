@@ -118,12 +118,16 @@ def current(root: Path) -> dict:
     return document
 
 
-def copy_authored(root: Path, destination: Path) -> list[dict]:
-    inputs = []
+def authored_sources(root: Path):
     for path in sorted((root / STORE / "families").glob("*/inputs_and_golden.yaml")):
         name = path.relative_to(root).as_posix()
-        data = read(root, name)
-        target = destination / path.relative_to(root / STORE)
+        yield name, read(root, name)
+
+
+def copy_authored(root: Path, destination: Path) -> list[dict]:
+    inputs = []
+    for name, data in authored_sources(root):
+        target = destination / relative(name.removeprefix(STORE + "/"))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
         inputs.append(identity(name, data))
@@ -173,6 +177,28 @@ def unified_view(root: Path):
         yield destination
 
 
+def publication_input_paths(root: Path) -> list[str]:
+    files = subprocess.check_output(
+        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=root).decode().split("\0")
+    return [name for name in sorted(set(files) - {"", CURRENT, PIN})
+            if ci_publication_cache.is_publication_input(name)
+            and not name.startswith((STORE + "/", "conformance/fixtures/", "conformance/captures/", "conformance/viewer-"))
+            and (root / name).is_file()]
+
+
+def publication_inputs_digest(root: Path, *, include_history: bool) -> str:
+    """Bind reusable reports to the same bytes admitted by source preparation."""
+    inputs = [identity(name, read(root, name)) for name in publication_input_paths(root)]
+    inputs.extend(identity(name, data) for name, data in authored_sources(root))
+    controls = [identity(CURRENT, read(root, CURRENT))]
+    if include_history:
+        controls.append(identity(PIN, read(root, PIN)))
+    # Rust preserves the parsed guard key order, then inserts inputs before controls.
+    guard = json.loads(encoded({"inputs": inputs, "controls": controls}))
+    value = {"inputs": guard["inputs"], "controls": guard["controls"]}
+    return digest((json.dumps(value, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
+
+
 def prepare(root: Path, destination: Path, *, include_history: bool = False,
             history_source: Path | None = None, publisher: str | None = None) -> None:
     """Build a private logical source view for the existing catalog and Rust pipeline."""
@@ -185,14 +211,8 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
         if history_source is None:
             raise ValueError("history mode requires an explicit --history-source directory")
         verify(history_source, pin)
-    files = subprocess.check_output(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"], cwd=root).decode().split("\0")
     inputs = []
-    for name in sorted(set(files) - {"", CURRENT, PIN}):
-        if (not ci_publication_cache.is_publication_input(name)
-                or name.startswith((STORE + "/", "conformance/fixtures/", "conformance/captures/"))
-                or name.startswith("conformance/viewer-") or not (root / name).is_file()):
-            continue
+    for name in publication_input_paths(root):
         data = read(root, name)
         target = destination / relative(name)
         target.parent.mkdir(parents=True, exist_ok=True)

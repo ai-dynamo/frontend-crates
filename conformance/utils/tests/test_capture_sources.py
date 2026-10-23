@@ -21,7 +21,8 @@ import unified_archives
 import unified_history
 import migrate_unified_snapshots
 from test_unified_history import _store
-from native_publication import publisher_binary, fixture_catalog
+from native_publication import publisher_binary
+from fixture_test_support import prepare_isolated_publication
 
 
 def pin_history(root):
@@ -203,44 +204,24 @@ def test_publication_identity_excludes_installed_dependencies():
 @pytest.mark.parametrize("mode", ["latest", "history"])
 def test_isolated_report_modes_share_native_publication(split_evidence, tmp_path, monkeypatch, native_publisher, mode):
     root, history, _capture, _path = split_evidence
-    original_run = sources.subprocess.run
-    originals = Path(sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "yaml_fast.py"):
-        target = root / "conformance/utils/src" / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(originals / name, target)
-    (root / "index.html").write_bytes(b"<head></head><body></body>")
-    (root / "conformance/CONFORMANCE_v2.html").write_bytes(b'<a href="../">Viewer</a>')
-    (root / "conformance/fixtures-manifest.json").write_bytes(b'{"shards":[]}\n')
-    source_files = [path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()]
-    monkeypatch.setattr(sources.subprocess, "check_output", lambda *_args, **_kwargs: "\0".join(source_files).encode())
     view = tmp_path / "view"
-    view.mkdir()
-
-    def build_catalog(command, **kwargs):
-        if any(str(value).endswith("viewer_catalog.py") for value in command):
-            generation = json.loads((view / "conformance/capture-generation.json").read_bytes())
-            if not unified_archives.paths(view / sources.STORE):
-                unified_archives.pack(view / sources.STORE, unified_history.CAPTURE_DIRECTORY_RE,
-                                      unified_history._capture_release_sort_key)
-            versions = ["0.5.0", "0.5.2"] if mode == "history" else ["0.5.2"]
-            fixture_catalog(view, {"capture_generation": generation,
-                "metadata": {"unified_capture_policy": {"dynamo_v2": {"mode": "stream"}}},
-                "sources": {"lineage": generation["lineage"], "candidates": [
-                    {"mode": "unified", "implementation": "dynamo_v2", "version": version} for version in versions]}})
-            return SimpleNamespace(returncode=0)
-        return original_run(command, **kwargs)
-
-    monkeypatch.setattr(sources.subprocess, "run", build_catalog)
-    monkeypatch.delenv("CONFORMANCE_DOCUMENT_LOCK", raising=False)
-    sources.prepare(root, view, include_history=mode == "history", history_source=history if mode == "history" else None,
-                    publisher=str(native_publisher))
+    prepare_isolated_publication(root, history, view, monkeypatch, native_publisher, mode=mode)
     output = tmp_path / "published"
-    result = original_run([str(native_publisher), "--root", str(view), "--output", str(output), "--revision", "a" * 40],
+    result = subprocess.run([str(native_publisher), "--root", str(view), "--output", str(output), "--revision", "a" * 40],
                           capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     catalog = json.loads(gzip.decompress((output / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
     assert catalog["capture_generation"]["mode"] == mode
+    publication = json.loads((output / "conformance/viewer-publication.json").read_bytes())
+    with monkeypatch.context() as patch:
+        paths = [path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()]
+        patch.setattr(subprocess, "check_output", lambda *_args, **_kwargs: "\0".join(paths).encode())
+        expected = sources.publication_inputs_digest(root, include_history=mode == "history")
+        assert publication["publisher_inputs_sha256"] == expected
+        original = (root / "index.html").read_bytes()
+        (root / "index.html").write_bytes(b"changed publisher input")
+        assert sources.publication_inputs_digest(root, include_history=mode == "history") != expected
+        (root / "index.html").write_bytes(original)
     versions = {item["version"] for item in catalog["sources"]["unified"] if item["kind"] == "resolved-capture"}
     assert versions == ({"0.5.0", "0.5.2"} if mode == "history" else {"0.5.2"})
     assert (output / "index.html").is_file()
@@ -249,7 +230,7 @@ def test_isolated_report_modes_share_native_publication(split_evidence, tmp_path
     if mode == "history":
         with pytest.raises(ValueError, match="pin mismatch"):
             sources.verify_prepared(view)
-        rejected = original_run([str(native_publisher), "--root", str(view), "--output", str(output), "--revision", "a" * 40],
+        rejected = subprocess.run([str(native_publisher), "--root", str(view), "--output", str(output), "--revision", "a" * 40],
                                 capture_output=True, text=True, timeout=60)
         assert rejected.returncode != 0
         assert "capture source changed during publication" in rejected.stderr

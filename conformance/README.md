@@ -39,6 +39,8 @@ Publication stages output, verifies its original inputs again, and installs only
 
 Current native tests materialize local authored inputs and selected current YAML through `ensure_unified_fixtures()` or `extract_fixtures.py`. They need neither a publisher build nor a history directory. Explicit frozen-version qualification supplies `--history-source` to `unified_history.py` together with its selected `--capture`; the source is checked against the pin before materialization. Legacy historical maintenance uses the retained format readers against the explicitly verified external dataset.
 
+Browser qualification uses the latest publication by default. Frozen historical browser journeys require `CONFORMANCE_HISTORY_SOURCE`; `CONFORMANCE_HISTORY_SITE` can reuse a report generated from the same pin and current YAML identities. CI always exercises both publication modes with isolated pinned datasets, including real Chromium selection, URL reload, and byte-exact downloads after the fixture history directory becomes unavailable.
+
 ### Archive capture evidence before advancing current
 
 Publish a complete, validated Unified snapshot with its real producer identity:

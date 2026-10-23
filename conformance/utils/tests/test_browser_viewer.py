@@ -5,12 +5,11 @@ import hashlib
 import gzip
 import json
 import re
-import shutil
 import sys
-import tarfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit
+from viewer_test_support import historical_source_bytes
 
 import pytest
 
@@ -184,25 +183,6 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert set(driver.execute_script("return window.__conformanceModel.rows.filter(r => !r.section).map(r => r.family)")) == set(expected_rows)
         assert family_labels == sorted(family_labels)
         assert all(" (v" not in label for label in family_labels), family_labels
-        def color_summary():
-            return driver.execute_script("""
-                const counts = {equal: 0, different: 0, unavailable: 0};
-                for (const cell of document.querySelectorAll('#tab-unified table[data-parity-table] td.cell')) {
-                  if (cell.classList.contains('cmp-eq')) counts.equal++;
-                  if (cell.classList.contains('cmp-leak')) counts.different++;
-                  if (cell.classList.contains('cmp-na')) counts.unavailable++;
-                }
-                return counts;
-            """)
-        newest_reference = color_summary()
-        Select(select).select_by_value('dynamo@0.6.3')
-        _ready(driver, 'tab-unified')
-        older_reference = color_summary()
-        assert older_reference != newest_reference, (
-            f"changing the Dynamo Reference did not recolor the matrix: {newest_reference}"
-        )
-        Select(select).select_by_value('dynamo')
-        _ready(driver, 'tab-unified')
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert "transpose-mode" in driver.find_element("tag name", "body").get_attribute("class")
         assert driver.find_elements("css selector", "#tab-unified table[data-transpose-table] td.cell")
@@ -236,8 +216,40 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         server.shutdown()
 
 
-def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(published_viewer):
-    server, _requests = _server(root=published_viewer)
+
+def test_historical_reference_switch_recolors_matrix(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
+        _ready(driver, 'tab-unified')
+        select = driver.find_element('css selector', "[data-slot-capture='0']")
+        def color_summary():
+            return driver.execute_script("""
+                const counts = {equal: 0, different: 0, unavailable: 0};
+                for (const cell of document.querySelectorAll('#tab-unified table[data-parity-table] td.cell')) {
+                  if (cell.classList.contains('cmp-eq')) counts.equal++;
+                  if (cell.classList.contains('cmp-leak')) counts.different++;
+                  if (cell.classList.contains('cmp-na')) counts.unavailable++;
+                }
+                return counts;
+            """)
+        newest_reference = color_summary()
+        Select(select).select_by_value('dynamo@0.6.3')
+        _ready(driver, 'tab-unified')
+        older_reference = color_summary()
+        assert older_reference != newest_reference, (
+            f"changing the Dynamo Reference did not recolor the matrix: {newest_reference}"
+        )
+        Select(select).select_by_value('dynamo')
+        _ready(driver, 'tab-unified')
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
@@ -279,8 +291,8 @@ def test_dynamo_capture_picker_keeps_recent_two_and_latest_per_historical_line(p
         server.shutdown()
 
 
-def test_published_viewer_loads_resolved_json_without_yaml_histories(published_viewer):
-    site = published_viewer
+def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_published_viewer):
+    site = historical_published_viewer
     catalog = json.loads(gzip.decompress((site / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
     server, requests = _server(root=site)
     driver = _driver()
@@ -444,8 +456,8 @@ def test_browser_viewer_resolves_nested_http_prefix_and_legacy_empty_reference(p
         server.shutdown()
 
 
-def test_same_engine_slots_none_geometry_duplicate_prevention_and_reset(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_same_engine_slots_none_geometry_duplicate_prevention_and_reset(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified&transpose=0&keep=1#saved")
@@ -516,7 +528,12 @@ def test_empty_slot_and_delayed_case_hints(published_viewer):
         shown_after = driver.execute_script("return arguments[0].__tooltipShownAfter", group)
         assert shown_after >= 1000, f"column tooltip appeared after {shown_after} ms"
 
-        case_label = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a")
+        # The rich group popup can cover the next header. Finish that hover
+        # transaction before measuring the independent native case hint.
+        ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, '#viewer > h1')).perform()
+        WebDriverWait(driver, 3).until(lambda page: page.execute_script(
+            "return !arguments[0]._ttip.classList.contains('ttip-visible')", group))
+        case_label = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a[aria-label='UNIFIED.1-tool_only']")
         full_label = case_label.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
         assert full_label.startswith("1-")
         driver.execute_script("""
@@ -546,9 +563,9 @@ def test_empty_slot_and_delayed_case_hints(published_viewer):
         server.shutdown()
 
 
-def test_delayed_previous_capture_cannot_repaint_current_matrix(published_viewer):
+def test_delayed_previous_capture_cannot_repaint_current_matrix(historical_published_viewer):
     started, release = threading.Event(), threading.Event()
-    server, requests = _server(root=published_viewer, gate=(started, release), gate_path=_published_capture_index(published_viewer), external=True)
+    server, requests = _server(root=historical_published_viewer, gate=(started, release), gate_path=_published_capture_index(historical_published_viewer), external=True)
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
@@ -622,9 +639,9 @@ def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unif
         server.shutdown()
 
 
-def test_first_capture_slot_keeps_horizontal_size_during_version_switch(published_viewer):
+def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historical_published_viewer):
     started, release = threading.Event(), threading.Event()
-    server, _requests = _server(root=published_viewer, gate=(started, release), gate_path=_published_capture_index(published_viewer, "dynamo_v1", "4.1.2"))
+    server, _requests = _server(root=historical_published_viewer, gate=(started, release), gate_path=_published_capture_index(historical_published_viewer, "dynamo_v1", "4.1.2"))
     driver = _driver()
     driver.set_window_size(2048, 1000)
     try:
@@ -654,16 +671,6 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(publishe
         server.shutdown()
 
 
-@pytest.fixture
-def current_source_view(tmp_path):
-    source = tmp_path / "current-source"
-    capture_sources.stage_current_sources(ROOT, source)
-    shutil.copyfile(ROOT / "index.html", source / "index.html")
-    shutil.copytree(ROOT / "conformance/viewer", source / "conformance/viewer",
-                    ignore=shutil.ignore_patterns("node_modules"))
-    shutil.copytree(ROOT / "conformance/utils/src/assets", source / "conformance/utils/src/assets")
-    shutil.copyfile(source / "conformance/viewer-catalog.json", source / "conformance/viewer-unified-catalog.json")
-    return source
 
 
 def test_source_checkout_yaml_catalog_without_generated_snapshots(current_source_view):
@@ -1000,13 +1007,12 @@ def test_reset_discards_popup_pin_during_retained_selection_load(published_viewe
 
 
 @pytest.mark.parametrize('kind', ['archive', 'unified'])
-def test_original_yaml_view_and_blob_download_preserve_source_bytes(kind, published_viewer):
-    archive_path = ROOT / 'conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz'
+def test_original_yaml_view_and_blob_download_preserve_source_bytes(kind, published_viewer, request):
     member = 'toolcalling/fixtures-stream-v1/inputs/deepseek_v4/TOOLCALLING.streamv1.1.yaml'
     direct = 'conformance/fixtures-unified-v2/families/qwen3/inputs_and_golden.yaml'
     if kind == 'archive':
-        with tarfile.open(archive_path) as archive:
-            expected = archive.extractfile(member).read()
+        published_viewer = request.getfixturevalue('historical_published_viewer')
+        expected = historical_source_bytes(request.getfixturevalue('history_source'), member)
         path = member
     else:
         expected = (ROOT / direct).read_bytes()
@@ -1031,8 +1037,8 @@ def test_original_yaml_view_and_blob_download_preserve_source_bytes(kind, publis
         server.shutdown()
 
 
-def test_legacy_capture_alias_and_reset_preserve_unrelated_url_state(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_legacy_capture_alias_and_reset_preserve_unrelated_url_state(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&ref=dynamo_v2%400.7.18&cmp=dynamo_v2%400.6.3&keep=1&transpose=1#saved')
@@ -1041,7 +1047,7 @@ def test_legacy_capture_alias_and_reset_preserve_unrelated_url_state(published_v
         saved = urlsplit(driver.current_url)
         query = dict(parse_qsl(saved.query, keep_blank_values=True))
         slots = query['slots_tab-unified'].split(',')
-        assert slots == [f"dynamo_v2@{_published_capture(published_viewer)['version']}", 'dynamo_v2@0.6.3', 'none']
+        assert slots == [f"dynamo_v2@{_published_capture(historical_published_viewer)['version']}", 'dynamo_v2@0.6.3', 'none']
         assert 'view' not in query and query['transpose'] == '1' and query['keep'] == '1'
         assert 'base_tab-unified' not in query and 'cmp_tab-unified' not in query
         assert 'ref' not in query and 'cmp' not in query and saved.fragment == 'saved'
@@ -1119,8 +1125,8 @@ def test_collapsing_last_legacy_column_restores_no_visible_columns_on_reload(pub
         server.shutdown()
 
 
-def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
@@ -1154,8 +1160,8 @@ def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(published_vi
         server.shutdown()
 
 
-def test_unified_slots_migrate_tab_scoped_legacy_url_after_tab_canonicalization(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_unified_slots_migrate_tab_scoped_legacy_url_after_tab_canonicalization(historical_published_viewer):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
@@ -1217,12 +1223,18 @@ def test_unavailable_jail_capture_deep_link_is_cleared(published_viewer):
         server.shutdown()
 
 
-@pytest.mark.parametrize(("stale_capture", "expected_capture"), [
-    ("dynamo_v1@9.2.10", "dynamo_v1@9.2.12"),
-    ("dynamo_v1@0.9.0", "dynamo_v1@0.9.1"),
-])
-def test_stale_primary_v1_deep_link_keeps_producer_and_major(stale_capture, expected_capture, published_viewer):
-    server, _requests = _server(root=published_viewer)
+@pytest.mark.parametrize("stale_capture", ["dynamo_v1@9.2.10", "dynamo_v1@0.9.0"])
+def test_stale_primary_v1_deep_link_keeps_producer_and_major(stale_capture, historical_published_viewer):
+    producer, version = stale_capture.split("@")
+    major = version.split(".")[0]
+    catalog = _published_catalog(historical_published_viewer)
+    newest = max((row["version"] for row in catalog["sources"]["candidates"]
+                  if row["implementation"] == producer and row["version"].split(".")[0] == major
+                  and row.get("capture_families") and not row.get("source_blocker")
+                  and row.get("has_captured_results") is not False),
+                 key=unified_history._capture_release_sort_key)
+    expected_capture = f"{producer}@{newest}"
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         base = f"http://127.0.0.1:{server.server_port}"
@@ -1274,13 +1286,15 @@ def test_report_details_keep_legend_below_chart_and_generation_last(published_vi
                     inInstructions: instructions.contains(command), last: panel.lastElementChild === instructions,
                     next: table.nextElementSibling === legend || (!table.nextElementSibling.offsetHeight && table.nextElementSibling.nextElementSibling === legend),
                     gap: legend.getBoundingClientRect().top - table.getBoundingClientRect().bottom,
-                    glossary: panel.querySelector('.glossary td.sub').textContent};
+                    glossary: panel.querySelector('.glossary td.sub').textContent,
+                    firstId: table.querySelector('th.case-sub a, th.trow-case a').getAttribute('aria-label'),
+                    firstNumber: table.querySelector('th.case-sub a .case-label-short, th.trow-case a .case-label-short').textContent};
             """, vertical)
             assert command in geometry["text"]
             assert geometry["inInstructions"] and geometry["last"], geometry
             assert geometry["overflow"] <= 1, geometry
             assert geometry["next"] and 0 <= geometry["gap"] < 40, geometry
-            assert geometry["glossary"].startswith("UNIFIED.1-tool_only (1-1)"), geometry
+            assert geometry["glossary"].startswith(f"{geometry['firstId']} ({geometry['firstNumber']})"), geometry
             header = driver.find_element(By.CSS_SELECTOR, "th.trow-case a" if vertical else "th.case-sub a")
             driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'center'})", header)
             ActionChains(driver).move_to_element(header).perform()
@@ -1307,13 +1321,19 @@ def test_popup_heading_uses_case_id_before_description(published_viewer, vertica
         _ready(driver, "tab-unified")
         table = "table[data-transpose-table]" if vertical else "table[data-parity-table]:not([data-transpose-table])"
         header = "th.trow-case[data-ttip-id]" if vertical else "th.case-sub[data-ttip-id]"
-        for selector in [header, f"{table} td.cell[data-ttip-id]"]:
-            cell = driver.find_element(By.CSS_SELECTOR, f"#tab-unified {selector}")
+        tool_header = driver.find_element(By.CSS_SELECTOR, f"#tab-unified {header}:has(a[aria-label='UNIFIED.1-tool_only'])")
+        number = tool_header.find_element(By.CSS_SELECTOR, '.case-label-short').get_attribute('textContent')
+        tool_cell = driver.execute_script("""
+            return [...document.querySelectorAll(arguments[0])].find(node =>
+                window.__conformanceCellModel(node)?.sub === 'tool_only' && node.getBoundingClientRect().height);
+        """, f"#tab-unified {table} td.cell[data-ttip-id]")
+        assert tool_cell is not None
+        for cell in [tool_header, tool_cell]:
             driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'end'})", cell)
             cell.click()
             popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".ttip-pinned")))
             heading = popup.find_element(By.CSS_SELECTOR, ".ttip-head")
-            assert heading.text.startswith("1-tool_only (1-1)"), heading.text
+            assert heading.text.startswith(f"1-tool_only ({number})"), heading.text
             assert "Single tool call" in heading.text, heading.text
             popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
     finally:
@@ -1349,10 +1369,10 @@ def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
     ["sglang_python@0.5.14"],
     ["dynamo_v1@9.2.13"],
 ])
-def test_selected_capture_family_union_and_box_spacing(identities, published_viewer):
-    catalog = json.loads((ROOT / "conformance/viewer-unified-catalog.json").read_text())
+def test_selected_capture_family_union_and_box_spacing(identities, historical_published_viewer):
+    catalog = _published_catalog(historical_published_viewer)
     candidates = {f"{item['implementation']}@{item['version']}": item for item in catalog["sources"]["candidates"]}
-    server, requests = _server(root=published_viewer)
+    server, requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         query = urlencode({"tab": "tab-unified", "slots_tab-unified": ",".join(identities + ["none"] * (3 - len(identities))), "transpose": "0"})
@@ -1396,7 +1416,8 @@ def test_selected_capture_family_union_and_box_spacing(identities, published_vie
                     width: rect.width, radius: getComputedStyle(first).borderRadius,
                     segments: first.children.length};
                 """, "#tab-unified table[data-transpose-table]" if transpose else "#tab-unified table[data-parity-table]")
-                assert geometry["gap"] >= 6, geometry
+                # The 30px content cell plus 1px side padding leaves 5px around a 27px box.
+                assert geometry["gap"] >= 5, geometry
                 assert geometry["width"] == 27
                 assert geometry["radius"] == "4px"
                 assert geometry["segments"] == len(identities)
@@ -1442,8 +1463,8 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
                 selector = "th.trow-case a" if vertical else "th.case-sub a"
                 headers = driver.find_elements(By.CSS_SELECTOR, selector)
                 targets = [next(element for element in headers
-                                if element.find_element(By.CSS_SELECTOR, ".case-label-short").get_attribute("textContent") == name)
-                           for name in ("1-1", "2-1")]
+                                if element.get_attribute("aria-label") == name)
+                           for name in ("UNIFIED.1-tool_only", "UNIFIED.2-two_calls")]
                 if not vertical:
                     rightmost = driver.execute_script("""
                         return [...document.querySelectorAll('th.case-sub a')].filter(a => {
@@ -1550,8 +1571,8 @@ def test_nemotron_default_reasoning_popup_describes_family_default(published_vie
 
 
 @pytest.mark.parametrize('vertical', [False, True])
-def test_shared_parent_displays_missing_child_capture(published_viewer, vertical):
-    server, _requests = _server(root=published_viewer)
+def test_shared_parent_displays_missing_child_capture(historical_published_viewer, vertical):
+    server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
         query = urlencode({'tab': 'tab-unified', 'slots_tab-unified': 'vllm_python_batch@0.26.0,none,none', 'transpose': int(vertical)})

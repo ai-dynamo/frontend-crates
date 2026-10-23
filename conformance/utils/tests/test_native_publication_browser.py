@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Qualify the native site's actual Chromium journey under the Pages prefix."""
 import hashlib
+import io
+import copy
 import gzip
 import json
 import re
@@ -17,18 +19,111 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from browser_helpers import raw_view_download
 
-from test_browser_viewer import ROOT, _driver, _ready, _server
+from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine
 from unified_archives import read_source
 from capture_versions import capture_release_sort_key
+from viewer_test_support import historical_source_bytes
+from fixture_test_support import prepare_isolated_publication
+from native_publication import publish
+from test_capture_sources import native_publisher, split_evidence, pin_history
+import capture_sources
 
 
-def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(published_viewer):
+@pytest.mark.parametrize("mode", ["latest", "history"])
+def test_isolated_modes_select_and_download_without_the_history_source(
+        split_evidence, native_publisher, tmp_path, monkeypatch, source_catalog, mode):
+    root, history, _capture, _path = split_evidence
+    archive_probes = []
+    manifest_path = history / "conformance/fixtures-manifest.json"
+    manifest = json.loads(manifest_path.read_bytes())
+    for relative, member_name in (
+            ("toolcalling/isolated.tar.gz", "toolcalling/isolated/original.yaml"),
+            ("source-evidence/isolated.tar.gz", "source-evidence/isolated/SOURCE.json")):
+        archive_path = history / "conformance/fixtures" / relative
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        member_bytes = b'{"recorded": null, "producer": "isolated"}\n'
+        with tarfile.open(archive_path, "w:gz") as output:
+            member = tarfile.TarInfo(member_name)
+            member.size = len(member_bytes)
+            output.addfile(member, io.BytesIO(member_bytes))
+        data = archive_path.read_bytes()
+        manifest["shards"].append({"path": relative, "format": "tar.gz",
+                                   "size": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+        archive_probes.extend([(archive_path.relative_to(history).as_posix(), data),
+                               (member_name, member_bytes), ("conformance/" + member_name, member_bytes)])
+    manifest_path.write_bytes(capture_sources.encoded(manifest))
+    (root / capture_sources.PIN).write_bytes(capture_sources.encoded(pin_history(history)))
+    metadata = copy.deepcopy(source_catalog["metadata"])
+    metadata["tabs"] = [tab for tab in metadata["tabs"] if tab["suite"] == "unified"]
+    metadata["source_hashes"] = {}
+    metadata["unified_presentation"]["authored_scenarios"] = ["text_only"]
+    metadata["unified_presentation"]["scenario_families"] = {"text_only": ["gemma4"]}
+    view = tmp_path / "view"
+    prepare_isolated_publication(root, history, view, monkeypatch, native_publisher,
+                                 mode=mode, metadata=metadata)
+    shutil.copyfile(ROOT / "index.html", view / "index.html")
+    shutil.copytree(ROOT / "conformance/viewer", view / "conformance/viewer",
+                    ignore=shutil.ignore_patterns("node_modules", "*.test.js"))
+    shutil.copytree(ROOT / "conformance/utils/src/assets", view / "conformance/utils/src/assets")
+    monkeypatch.setenv("CONFORMANCE_ESBUILD_ROOT", str(ROOT / "conformance/viewer"))
+    site = tmp_path / "published"
+    publish(view, site)
+    catalog = json.loads((view / "conformance/viewer-catalog.json").read_bytes())
+    version = "0.5.0" if mode == "history" else "0.5.2"
+    resource = next(row for row in catalog["sources"]["unified"]
+                    if row["kind"] == "history" and row["version"] == version)
+    expected = read_source(view, resource)
+    history.rename(tmp_path / "unavailable-history")
+    server, requests = _server(root=site)
+    driver = _driver()
+    base = f"http://127.0.0.1:{server.server_port}/"
+    try:
+        driver.get(base)
+        _ready(driver, "tab-unified")
+        if mode == "history":
+            WebDriverWait(driver, 15).until(lambda page: page.execute_script(
+                "return document.getElementById('viewer').dataset.historyAvailable === 'true'"))
+        assert not any("/viewer-data/" in path for path in requests)
+        choices = [option.get_attribute("value") for option in driver.find_elements(
+            "css selector", "[data-slot-capture='0'] option")]
+        assert ("dynamo@0.5.0" in choices) == (mode == "history")
+        if mode == "history":
+            Select(driver.find_element("css selector", "[data-slot-capture='0']")).select_by_value("dynamo@0.5.0")
+            _ready(driver, "tab-unified")
+            _choose_engine(driver, 1, "dynamo")
+            _ready(driver, "tab-unified")
+            expected_selection = ["dynamo@0.5.0", "dynamo"]
+            assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == expected_selection
+            driver.get(driver.current_url)
+            _ready(driver, "tab-unified")
+            assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == expected_selection
+            assert any("/viewer-data/" in path for path in requests)
+        else:
+            assert not any(path.endswith("viewer-publication.json") for path in requests)
+        driver.get(base + "?" + urlencode({"raw": resource["path"]}))
+        WebDriverWait(driver, 15).until(lambda page: page.find_elements("css selector", "#viewer > a[download]"))
+        downloaded = raw_view_download(driver)
+        assert downloaded["hash"] == downloaded["renderedHash"] == hashlib.sha256(expected).hexdigest()
+        if mode == "history":
+            for path, data in archive_probes:
+                driver.get(base + "?" + urlencode({"raw": path}))
+                WebDriverWait(driver, 15).until(lambda page: page.find_elements("css selector", "#viewer > a[download]"))
+                downloaded = raw_view_download(driver)
+                assert downloaded["hash"] == hashlib.sha256(data).hexdigest()
+                assert downloaded["size"] == len(data)
+    finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(historical_published_viewer, history_source):
     prefix = "/frontend-crates"
-    server, requests = _server(prefix=prefix, root=published_viewer)
+    server, requests = _server(prefix=prefix, root=historical_published_viewer)
     driver = _driver()
     base = f"http://127.0.0.1:{server.server_port}{prefix}/"
-    catalog = json.loads(gzip.decompress((published_viewer / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
-    source_catalog = json.loads((ROOT / "conformance/viewer-catalog.json").read_bytes())
+    catalog = json.loads(gzip.decompress((historical_published_viewer / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
+    inventory = json.loads((history_source / "capture-inventory.json").read_bytes())
     assert catalog["transport"]["schema"] == 2
     try:
         driver.get(base + "?tab=tab-unified&keep=native-publication")
@@ -68,24 +163,25 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(publis
         """, hidden)
         _ready(driver, "tab-unified")
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [hidden]
-        originals = source_catalog["sources"]["unified"]
-        probes = []
-        for kind in ("inputs-and-golden", "history"):
-            resource = next(item for item in originals if item["kind"] == kind)
-            probes.append((resource["path"], read_source(ROOT, resource)))
+        originals = catalog["sources"]["original_unified"]
+        authored = next(item for item in catalog["sources"]["unified"] if item["kind"] == "inputs-and-golden")
+        resource = next(item for item in originals if item["kind"] == "history")
+        probes = [(authored["path"], (ROOT / authored["path"]).read_bytes()),
+                  (resource["path"], historical_source_bytes(history_source, resource["path"]))]
         # Execution proofs and historical manifests now travel inside snapshots.
         for version, field in (("0.4.10.post1", b"execution_proof:"), ("0.4.9.post4", b"historical_evidence:")):
             resource = next(item for item in originals if item["family"] == "qwen3"
                             and item["implementation"] == "sglang_python_batch" and item["version"] == version)
-            data = read_source(ROOT, resource)
-            assert b"\n" + field in data
+            data = historical_source_bytes(history_source, resource["path"])
+            assert re.search(rb"\n\s*" + field, data)
             probes.append((resource["path"], data))
-        archive = source_catalog["sources"]["archives"][0]
+        archive = next(row for row in inventory["files"]
+                       if row["path"].startswith("conformance/fixtures/toolcalling/") and "members" in row)
         member = next(item for item in archive["members"] if item["kind"] == "file")
-        with tarfile.open(ROOT / archive["path"]) as stream:
+        with tarfile.open(history_source / archive["path"]) as stream:
             member_bytes = stream.extractfile(member["path"]).read()
             probes.extend([(member["path"], member_bytes), ("conformance/" + member["path"], member_bytes)])
-        probes.append((archive["path"], (ROOT / archive["path"]).read_bytes()))
+        probes.append((archive["path"], (history_source / archive["path"]).read_bytes()))
         for path, expected in probes:
             driver.get(base + "?" + urlencode({"raw": path}))
             WebDriverWait(driver, 180).until(lambda page: page.find_elements("css selector", "#viewer pre") or page.execute_script("return !!window.__conformanceError"))
@@ -114,17 +210,17 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(publis
         server.server_close()
 
 
-def test_checkout_raw_route_retains_original_source_fallback():
-    server, requests = _server(prefix="/frontend-crates", root=ROOT)
+def test_checkout_raw_route_retains_original_source_fallback(current_source_view):
+    server, requests = _server(prefix="/frontend-crates", root=current_source_view)
     driver = _driver()
-    catalog = json.loads((ROOT / "conformance/viewer-catalog.json").read_bytes())
-    resource = next(item for item in catalog["sources"]["unified"] if item["kind"] == "history" and item.get("archive"))
+    catalog = json.loads((current_source_view / "conformance/viewer-catalog.json").read_bytes())
+    resource = next(item for item in catalog["sources"]["unified"] if item["kind"] == "history")
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/frontend-crates/?" + urlencode({"raw": resource["path"]}))
         WebDriverWait(driver, 180).until(lambda page: page.find_elements("css selector", "#viewer pre") or page.execute_script("return !!window.__conformanceError"))
         assert not driver.execute_script("return window.__conformanceError || null")
-        assert driver.find_element("css selector", "#viewer pre").get_property("textContent").encode() == read_source(ROOT, resource)
-        assert "/frontend-crates/" + resource["archive"]["path"] in requests
+        assert driver.find_element("css selector", "#viewer pre").get_property("textContent").encode() == read_source(current_source_view, resource)
+        assert "/frontend-crates/" + resource["path"] in requests
     finally:
         driver.quit()
         server.shutdown()
@@ -164,18 +260,18 @@ def _capture_releases(published_viewer):
 
 
 @pytest.fixture
-def previous_dynamo_capture(published_viewer):
-    version = _capture_releases(published_viewer)['dynamo_v2'][-2]
+def previous_dynamo_capture(historical_published_viewer):
+    version = _capture_releases(historical_published_viewer)['dynamo_v2'][-2]
     return {'version': version, 'key': f'dynamo@{version}', 'identity': f'dynamo_v2@{version}'}
 
 
-def test_recent_captures_are_embedded_and_older_captures_still_fetch(published_viewer, previous_dynamo_capture):
-    html = (published_viewer / 'index.html').read_text()
+def test_recent_captures_are_embedded_and_older_captures_still_fetch(historical_published_viewer, previous_dynamo_capture):
+    html = (historical_published_viewer / 'index.html').read_text()
     payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', html, re.S).group(1))
-    versions = _capture_releases(published_viewer)
+    versions = _capture_releases(historical_published_viewer)
     expected = sorted([implementation, releases[-1]] for implementation, releases in versions.items())
     assert payload['captures'] == expected, 'embed semantic latest one for each independent lineage'
-    server, requests = _server(prefix='/frontend-crates', root=published_viewer)
+    server, requests = _server(prefix='/frontend-crates', root=historical_published_viewer)
     driver = _driver()
     base = f'http://127.0.0.1:{server.server_port}/frontend-crates/'
     try:
@@ -231,11 +327,16 @@ def test_corrupt_embedded_catalog_fails_without_network_fallback(published_viewe
         server.server_close()
 
 
-def test_generated_html_is_standalone_on_file_protocol(published_viewer, tmp_path, previous_dynamo_capture):
+def test_generated_html_is_standalone_on_file_protocol(published_viewer, tmp_path):
     report = tmp_path / 'report.html'
     shutil.copyfile(published_viewer / 'index.html', report)
     assert list(tmp_path.iterdir()) == [report]
     payload = json.loads(re.search(r'id="conformance-embedded">(.*?)</script>', report.read_text(), re.S).group(1))
+    absent_key = 'dynamo@0.6.3'
+    absent_identity = 'dynamo_v2@0.6.3'
+    versions = _capture_releases(published_viewer)
+    assert payload['captures'] == sorted([implementation, version]
+                                         for implementation, releases in versions.items() for version in releases)
     driver = _driver()
     try:
         driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': """
@@ -248,8 +349,11 @@ def test_generated_html_is_standalone_on_file_protocol(published_viewer, tmp_pat
         driver.get(report.as_uri())
         WebDriverWait(driver, 15).until(lambda page: page.find_elements('css selector', '#tab-unified[data-load-state=ready] td.cell'))
         _ready(driver, 'tab-unified')
-        for implementation, version in payload['captures']:
-            descriptor = driver.execute_script("return window.__CONFORMANCE_PAGE.tabs.find(t=>t.id==='tab-unified').candidates.find(c=>c.identity===arguments[0])", f'{implementation}@{version}')
+        descriptors = driver.execute_script("return window.__CONFORMANCE_PAGE.tabs.find(t=>t.id==='tab-unified').candidates.filter(c=>c.identity && c.key!=='golden')")
+        assert len(descriptors) == len(versions)
+        for descriptor in descriptors:
+            implementation, version = descriptor['identity'].split('@')
+            assert version == versions[implementation][-1]
             engine = 'dynamo' if implementation.startswith('dynamo') else 'vllm' if implementation.startswith('vllm') else 'sglang'
             driver.find_element('css selector', "[data-slot-open='0']").click()
             driver.find_element('css selector', f"[data-picker-engine-choice='{engine}']").click()
@@ -259,9 +363,14 @@ def test_generated_html_is_standalone_on_file_protocol(published_viewer, tmp_pat
         assert driver.execute_script('return window.__fileFetches') == []
         assert driver.execute_script("return document.querySelectorAll('script[src],link[rel=stylesheet]').length") == 0
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == 'false'
-        assert driver.execute_script("return [...document.querySelectorAll('[data-slot-capture] option')].every(o=>o.value!==arguments[0])", previous_dynamo_capture["key"])
+        assert driver.execute_script("return [...document.querySelectorAll('[data-slot-capture] option')].every(o=>o.value!==arguments[0])", absent_key)
         driver.get(report.as_uri() + '?' + urlencode({'startup': 'external', 'raw': 'missing.yaml',
-                                                             'slots_tab-unified': previous_dynamo_capture['identity'] + ',none,none'}))
+                                                             'slots_tab-unified': absent_identity + ',none,none'}))
+        WebDriverWait(driver, 15).until(lambda page: page.find_elements('css selector', '#viewer .error'))
+        assert 'missing.yaml' in driver.find_element('css selector', '#viewer .error').text
+        assert driver.execute_script('return window.__fileFetches') == []
+        driver.get(report.as_uri() + '?' + urlencode({'startup': 'external',
+                                                     'slots_tab-unified': absent_identity + ',none,none'}))
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == ['dynamo']
         assert driver.execute_script('return window.__fileFetches') == []
@@ -270,7 +379,7 @@ def test_generated_html_is_standalone_on_file_protocol(published_viewer, tmp_pat
         driver.quit()
 
 
-def test_http_html_without_history_stays_standalone(published_viewer, tmp_path, previous_dynamo_capture):
+def test_http_html_without_history_stays_standalone(published_viewer, tmp_path):
     shutil.copyfile(published_viewer / 'index.html', tmp_path / 'index.html')
     server, requests = _server(prefix='/frontend-crates', root=tmp_path)
     driver = _driver()
@@ -278,8 +387,8 @@ def test_http_html_without_history_stays_standalone(published_viewer, tmp_path, 
         driver.get(f'http://127.0.0.1:{server.server_port}/frontend-crates/')
         _ready(driver, 'tab-unified')
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == 'false'
-        assert not driver.find_elements('css selector', f"option[value='{previous_dynamo_capture['key']}']")
-        assert requests.count('/frontend-crates/conformance/viewer-publication.json') == 1
+        assert not driver.find_elements('css selector', "option[value='dynamo@0.6.3']")
+        assert requests.count('/frontend-crates/conformance/viewer-publication.json') == 0
         assert not any('/viewer-data/' in path or path.endswith(('.js', '.css')) for path in requests)
         assert not driver.execute_script('return window.__conformanceError || null')
     finally:
@@ -289,9 +398,9 @@ def test_http_html_without_history_stays_standalone(published_viewer, tmp_path, 
 
 
 @pytest.mark.parametrize('change_selection', [None, False, True], ids=['default', 'deferred-history', 'changed-selection'])
-def test_history_discovery_renders_first_and_preserves_selection(published_viewer, change_selection, previous_dynamo_capture):
+def test_history_discovery_renders_first_and_preserves_selection(historical_published_viewer, change_selection, previous_dynamo_capture):
     gate = (threading.Event(), threading.Event())
-    server, requests = _server(prefix='/frontend-crates', root=published_viewer, gate=gate, gate_path='/conformance/viewer-publication.json')
+    server, requests = _server(prefix='/frontend-crates', root=historical_published_viewer, gate=gate, gate_path='/conformance/viewer-publication.json')
     driver = _driver()
     try:
         query = '' if change_selection is None else '?' + urlencode({'slots_tab-unified': previous_dynamo_capture['identity'] + ',none,none'})
