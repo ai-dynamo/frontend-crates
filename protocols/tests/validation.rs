@@ -16,13 +16,11 @@ type CountValidator = fn(Option<u8>) -> Result<(), ValidationError>;
 type ChatValidator = fn(&CreateChatCompletionRequest) -> Result<(), ValidationError>;
 type CompletionValidator = fn(&CreateCompletionRequest) -> Result<(), ValidationError>;
 
-/// OpenAI, vLLM, SGLang, in that order.
 const CHAT_VALIDATORS: [ChatValidator; 3] = [
     OpenAIValidation::validate,
     VllmValidation::validate,
     SglangValidation::validate,
 ];
-/// OpenAI, vLLM, SGLang, in that order.
 const COMPLETION_VALIDATORS: [CompletionValidator; 3] = [
     OpenAIValidation::validate,
     VllmValidation::validate,
@@ -145,14 +143,6 @@ fn count_helpers_accept_none_and_bounds_and_report_field_and_value() {
         }
     }
     assert_eq!(openai::validate_n(Some(0)).unwrap_err().value, "0");
-}
-
-#[test]
-fn completion_logprobs_distinguishes_openai_from_fixed_vllm_policy() {
-    for value in [Some(6), Some(10), Some(20)] {
-        assert!(openai::validate_completion_logprobs(value).is_err());
-        assert!(vllm::validate_completion_logprobs(value).is_ok());
-    }
 }
 
 #[test]

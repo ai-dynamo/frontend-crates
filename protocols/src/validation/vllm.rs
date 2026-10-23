@@ -11,7 +11,6 @@
 use super::{ValidationError, check};
 use crate::types::{CreateChatCompletionRequest, CreateCompletionRequest};
 
-// Same as OpenAI.
 pub use super::openai::{
     MAX_FREQUENCY_PENALTY, MAX_PRESENCE_PENALTY, MAX_TEMPERATURE, MAX_TOP_P, MIN_FREQUENCY_PENALTY,
     MIN_LOGPROBS, MIN_PRESENCE_PENALTY, MIN_TEMPERATURE, validate_frequency_penalty,

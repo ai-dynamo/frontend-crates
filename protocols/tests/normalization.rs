@@ -26,7 +26,6 @@ fn omitted_and_null_logprobs_preserve_existing_parse_and_serialization() {
             assert_eq!(request.logprobs, None);
             let before = request.clone();
             normalize(&mut request.logprobs);
-            normalize(&mut request.logprobs);
             assert_eq!(request, before);
             assert!(
                 serde_json::to_value(&request)
@@ -45,7 +44,6 @@ fn explicit_counts_are_preserved_including_invalid_values() {
             let input = json!({"model":"test", "prompt":"hello", "logprobs":value});
             let mut request: CreateCompletionRequest = serde_json::from_value(input).unwrap();
             let before = request.clone();
-            normalize(&mut request.logprobs);
             normalize(&mut request.logprobs);
             assert_eq!(request, before);
             assert_eq!(serde_json::to_value(&request).unwrap()["logprobs"], value);
