@@ -126,3 +126,50 @@ also serve callers that need to preserve the original request.
 Run the wire-level regressions for
 [#299](https://github.com/ai-dynamo/frontend-crates/issues/299) with
 `cargo test -p dynamo-protocols --test request_compatibility`.
+
+## Experimental Custom Content
+
+User and tool content keep their established typed Text, ImageUrl, VideoUrl and
+AudioUrl variants (and user InputAudio). Both enums add `Custom(CustomModalityPart)`:
+
+```json
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Does this structure "},
+    {"type": "custom", "kind": "chemistry", "fields": {
+      "projected_soft_tokens": {
+        "dtype": "float32", "shape": [2, 4096], "data_base64": "..."
+      },
+      "revision": 1
+    }},
+    {"type": "text", "text": " match the reaction diagram?"},
+    {"type": "image_url", "image_url": {"url": "https://example.org/reaction-diagram.png"}}
+  ]
+}
+```
+
+The custom payload describes projected soft tokens, with application-defined
+JSON/base64 inside `fields`. Its encoding, dimensions, and the image URL are
+illustrative; the protocol crate does not define a tensor codec or transfer API.
+
+`kind` must be non-empty; `fields` must be an object. Its values may contain any
+JSON, including arrays and null. Unknown envelope members are rejected. This crate
+preserves all fields but does not interpret payloads or move bytes. The consumer
+must document the plugin-facing representation. Dynamo forwards the **entire**
+fields map under `multi_modal_data[kind]`; it does not select `fields[kind]`.
+Unknown top-level modality tags remain rejected; use the explicit custom envelope.
+
+Adding enum variants still breaks exhaustive Rust matches. This branch prepares
+protocols **9.0.0**, renderer **9.0.0**, and parsers **11.0.0**; the latter two
+expose protocol types and require coordinated publication. These remain major
+bumps relative to current upstream releases. Tokenizers stays at upstream
+**3.1.2**. These versions are not release qualification or publication.
+
+When rendering chat templates, Custom parts retain their content-array positions
+as `{"type":"custom","kind":"chemistry"}` with `fields` omitted. The consumer's
+model-specific template renders its own marker; clients do not duplicate that
+marker in text. The renderer preserves Custom arrays even for templates with
+string and array branches, and removes payload fields from typed template inputs.
+HTTP parsing still requires `fields`; the payload-free view is internal template
+input, not an alternate HTTP content schema.
