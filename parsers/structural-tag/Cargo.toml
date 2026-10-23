@@ -5,7 +5,7 @@ name = "dynamo-structural-tag"
 version = "0.1.0"
 edition.workspace = true
 license = "Apache-2.0"
-description = "Shared native Kimi grammars for Dynamo guided decoding"
+description = "Native model grammars for Dynamo guided decoding"
 repository.workspace = true
 
 [dependencies]
