@@ -122,7 +122,6 @@ def group_null_variants(tab: dict) -> None:
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
         display_group = (NUMERIC_DISPLAY_LABELS[parent] if parent in NUMERIC_DESCRIPTIONS
-                         else parent if parent in NULL_DESCRIPTIONS
                          else root["label"] if len(members) == 1 else display_label(parent))
         display_labels[root["label"]] = display_group
         if unified:

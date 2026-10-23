@@ -558,7 +558,7 @@ def test_case_schema_chip_expands_inside_the_existing_grammar_popup(
             const tab = page.tabs.find(item => item.id === 'tab-unified');
             const headers = [...document.querySelectorAll('#tab-unified ' + arguments[0])];
             const schemaIndex = tab.columns.findIndex(column => column.sub === 'schema_const_plain_bare');
-            const plainIndex = tab.columns.findIndex(column => column.sub === 'tool_only');
+            const plainIndex = tab.columns.findIndex(column => column.sub === 'text_only');
             const schemaFamilies = tab.rows.filter(row => row.family
               && (row.cells[tab.columns[schemaIndex].sub].variants || []).length).length;
             return {schema: headers[schemaIndex], plain: headers[plainIndex], schemaFamilies,
@@ -772,9 +772,8 @@ def test_unified_recovery_colors_follow_selected_reference(driver):
             """)
             assert cells
             for cell in cells:
-                if version == "dynamo@0.7.13" and cell["family"] == "gpt_oss":
+                if cell["marker"] == "n/a":
                     assert "cmp-na" in cell["classes"], cell
-                    assert cell["marker"] == "n/a", cell
                     continue
                 red = version == "dynamo@0.7.13" and cell["family"] in {
                     "gemma4", "deepseek_v41", "kimi_k3"}

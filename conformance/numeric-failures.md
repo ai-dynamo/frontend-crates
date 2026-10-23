@@ -1,10 +1,10 @@
 # Numeric conformance follow-ups
 
-These reproduced differences remain red in the conformance report. The current Unified and tool-stream captures are measured at parser v0.7.21. This report reads the assembled serde_json::Value projection for Unified results; parser tests cover raw argument strings separately. PR #339 adds numeric cases, measured captures, historical back-captures, and qualification tooling. The report groups integral `7-14` cases under `7-17`, fractional-string `7-14` cases under `7-19`, and fractional-number `7-15` cases under `7-18`; popups retain the full Unified or tool-stream case ID. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
+The rows below preserve numeric failures measured in historical captures, including parser v0.7.14 and v0.7.21. PR #339 fixes exact numeric conversion and Gemma exponent scanning in v2; the live report uses the candidate parser v0.7.34 [unpublished]. Historical Dynamo v1 jail failures remain recorded and are not claimed fixed. The Unified report reads assembled serde_json::Value results, which can lose decimal precision; parser tests also compare exact raw argument strings. The report groups integral `7-14` cases under `7-17`, fractional-string `7-14` cases under `7-19`, and fractional-number `7-15` cases under `7-18`; popups retain the full Unified or tool-stream case ID. Bare Unified IDs `7-14` and `7-15` are separate reference-schema cases.
 
 ## TODO NUM-1: preserve decimal values through argument parsing
 
-The original `0.7.14` qualification capture rounds exact decimal tokens when it builds tool arguments. The current Unified capture is reported through the assembled `serde_json::Value` projection, while raw parser argument strings are covered separately. The current tool-stream capture is from `0.7.21`; the historical Dynamo v1 jail captures retain their recorded outputs. This TODO keeps those output paths distinct.
+Status: PR #339 fixes this conversion path in v2. The original `0.7.14` qualification capture below records the historical rounding failures. The historical Unified capture is reported through the assembled `serde_json::Value` projection, while raw parser argument strings are covered separately. The latest pre-fix tool-stream capture is from `0.7.21`; the historical Dynamo v1 jail captures retain their recorded outputs. This TODO keeps those output paths distinct.
 
 - Affected Unified families in the original capture: `deepseek_v4`, `deepseek_v41`, `glm47`, `kimi_k2`, and `muse_glimmer` each round all six values below; `gemma4` rounds five and drops the exponent argument, which is tracked separately under NUM-2. This is 35 failing Unified family/case results: five families round all six values, and Gemma rounds five.
 - Affected tool-stream families in the original capture: `deepseek_v4`, `glm47`, `harmony`, `harmony_text`, `kimi_k2`, `minimax_m3`, and `muse_glimmer` each round all six values below; `gemma4` rounds five and drops the exponent argument, which is tracked separately under NUM-2. This is 47 failing stream family/case results: seven families round all six values, and Gemma rounds five.
@@ -29,7 +29,7 @@ The original `0.7.14` qualification capture rounds exact decimal tokens when it 
 
 ## TODO NUM-2: Gemma drops exponent-form arguments
 
-For `gemma4`, exponent input produces an empty object instead of a call argument containing the number. This is separate from the rounding cases above and is recorded in both original interfaces.
+Status: PR #339 fixes exponent scanning and conversion in v2. The original `0.7.14` captures below record the historical empty-argument result for `gemma4` in both interfaces.
 
 - Affected family and IDs: `gemma4`, `UNIFIED.7-15.exponent`, and `TOOLCALLING.streamv1.7-15.exponent`.
 - Unified input: `<|tool_call>call:get_weather{value:9.0071992547409925e15}<tool_call|>`. Stream input uses the same Gemma native call syntax, with schema `{"type":"object","properties":{"value":{"type":"number"}}}` and no `required` field.
@@ -40,7 +40,7 @@ For `gemma4`, exponent input produces an empty object instead of a call argument
 
 ## TODO NUM-3: convert integral decimal and exponent tokens in Dynamo v1 jail
 
-The Dynamo v1 jail leaves integral decimal and exponent tokens as JSON strings for the Qwen3-Coder and MiniMax-M2 schemas. The shared contract expects mathematically integral values as JSON numbers, including literal constraints and integer-or-string schemas; the three fractional fallback cases pass.
+The Dynamo v1 jail leaves integral decimal and exponent tokens as JSON strings for the Qwen3-Coder and MiniMax-M2 schemas. The v2 contract now emits mathematically integral values as JSON numbers, including literal constraints and integer-or-string schemas. The historical v1 captures and their three passing fractional fallback cases remain recorded separately.
 
 - Affected families: `qwen3_coder` and `minimax_m2` in each of `dynamo_v1-9.1.0`, `dynamo_v1-9.2.4`, and `dynamo_v1-9.2.8`, for 54 failing family/case/version results (18 per source version).
 - Case IDs: `TOOLCALLING.streamv1.7-14.const_decimal`, `TOOLCALLING.streamv1.7-14.const_exponent`, `TOOLCALLING.streamv1.7-14.enum_decimal`, `TOOLCALLING.streamv1.7-14.enum_exponent`, `TOOLCALLING.streamv1.7-14.large_decimal`, `TOOLCALLING.streamv1.7-14.large_exponent`, `TOOLCALLING.streamv1.7-14.negative`, `TOOLCALLING.streamv1.7-14.negative_exponent`, and `TOOLCALLING.streamv1.7-14.zero_underflow`.
@@ -59,10 +59,10 @@ The Dynamo v1 jail emits no tool call for any fractional numeric case in Muse Gl
 
 ## TODO NUM-5: emit numbers for integer-only GLM schemas
 
-GLM returns integral decimal and exponent tokens as strings even when the request permits only integers. The expanded integer-valued `7-14` probes retain numeric expected values so these schema violations remain red. GLM string preference under an integer/string union is separate: the new integral-number probes use integer-only schemas, and the three fractional-string probes retain the union.
+Status: PR #339 fixes this conversion in v2. The original v0.7.21 GLM captures below preserve the historical string results for integer-only schemas. GLM string preference under an integer/string union is separate: the new integral-number probes use integer-only schemas, and the three fractional-string probes retain the union.
 
-- Concrete input: bare argument text `42.0` under `{"type":["integer","null"],"const":42}`. Expected `{"value":42.0}`; actual `{"value":"42.0"}`.
-- Affected Unified cases: all nine integral leaves in the `7-14` family, shown under report alias `7-17`. Source-backed current captures and the exact allowlist in `conformance/unified-known-divergences.yaml` record the failures; the independent decimal oracle keeps their string-versus-number differences visible.
+- Historical concrete input: bare argument text `42.0` under `{"type":["integer","null"],"const":42}`. Expected `{"value":42.0}`; actual in v0.7.21 was `{"value":"42.0"}`.
+- Affected historical Unified cases: all nine integral leaves in the `7-14` family, shown under report alias `7-17`. The v0.7.21 source-backed captures record the string-versus-number differences; candidate tests use an independent decimal oracle to keep the expected values exact.
 
 ## Historical captures that could not be measured
 

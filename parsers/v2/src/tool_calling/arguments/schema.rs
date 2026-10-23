@@ -111,24 +111,50 @@ impl<'a> SchemaFacts<'a> {
 
     // Unknown constraints remain possible, preserving object-union ambiguity.
     pub(crate) fn may_describe_object(&mut self, schema: &'a Value) -> bool {
+        self.may_describe_structural_type(schema, "object")
+    }
+
+    // `items` constrains arrays even when the schema omits an explicit `type`.
+    pub(crate) fn may_describe_array(&mut self, schema: &'a Value) -> bool {
+        self.may_describe_structural_type(schema, "array")
+    }
+
+    pub(crate) fn may_describe_array_constraints(&mut self, schemas: &[&'a Value]) -> bool {
+        !schemas.is_empty() && schemas.iter().all(|schema| self.may_describe_array(schema))
+    }
+
+    fn may_describe_structural_type(&mut self, schema: &'a Value, expected: &str) -> bool {
         self.with_schema(schema, true, |walker, schema| {
             if schema == &Value::Bool(false) {
                 return false;
             }
             if let Some(ty) = schema.get("type") {
-                let object = ty.as_str() == Some("object")
+                let matches_type = ty.as_str() == Some(expected)
                     || ty
                         .as_array()
-                        .is_some_and(|types| types.iter().any(|ty| ty == "object"));
-                if !object {
+                        .is_some_and(|types| types.iter().any(|ty| ty == expected));
+                if !matches_type {
                     return false;
                 }
             }
-            if schema.get("const").is_some_and(|value| !value.is_object())
+            let matches_value = |value: &Value| match expected {
+                "object" => value.is_object(),
+                "array" => value.is_array(),
+                _ => false,
+            };
+            if schema
+                .get("const")
+                .is_some_and(|value| !matches_value(value))
                 || schema
                     .get("enum")
                     .and_then(Value::as_array)
-                    .is_some_and(|values| !values.iter().any(Value::is_object))
+                    .is_some_and(|values| !values.iter().any(matches_value))
+            {
+                return false;
+            }
+            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+                && !walker.may_describe_structural_type(target, expected)
             {
                 return false;
             }
@@ -137,11 +163,11 @@ impl<'a> SchemaFacts<'a> {
                     let possible = if keyword == "allOf" {
                         branches
                             .iter()
-                            .all(|branch| walker.may_describe_object(branch))
+                            .all(|branch| walker.may_describe_structural_type(branch, expected))
                     } else {
                         branches
                             .iter()
-                            .any(|branch| walker.may_describe_object(branch))
+                            .any(|branch| walker.may_describe_structural_type(branch, expected))
                     };
                     if !possible {
                         return false;
@@ -218,6 +244,7 @@ impl<'a> SchemaFacts<'a> {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
         schema.is_some_and(|schema| self.has_type_constraints(&[schema], expected, ""))
     }
@@ -324,7 +351,7 @@ impl<'a> SchemaFacts<'a> {
             for key in ["anyOf", "oneOf"] {
                 if let Some(options) = schema.get(key).and_then(Value::as_array) {
                     for option in options {
-                        if !walker.has_type(Some(option), "array") {
+                        if !walker.may_describe_array(option) {
                             continue;
                         }
                         let branch_items = walker.array_items(option);
@@ -417,6 +444,39 @@ fn intersect_type_hints(left: Option<bool>, right: Option<bool>) -> Option<bool>
         (Some(false), _) | (_, Some(false)) => Some(false),
         (Some(true), _) | (_, Some(true)) => Some(true),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod structural_type_tests {
+    use super::SchemaFacts;
+    use serde_json::json;
+
+    #[test]
+    fn referenced_type_intersects_structural_siblings() {
+        let schema = json!({
+            "$defs": {
+                "Text": {"type": "string"},
+                "Array": {"type": "array"}
+            },
+            "$ref": "#/$defs/Text",
+            "items": {"type": "number"}
+        });
+
+        assert!(!SchemaFacts::new(&schema).may_describe_array(&schema));
+
+        let valid = json!({
+            "$defs": {"Array": {"type": "array"}},
+            "$ref": "#/$defs/Array",
+            "items": {"type": "number"}
+        });
+        assert!(SchemaFacts::new(&valid).may_describe_array(&valid));
+
+        let unresolved = json!({
+            "$ref": "#/$defs/Missing",
+            "items": {"type": "number"}
+        });
+        assert!(SchemaFacts::new(&unresolved).may_describe_array(&unresolved));
     }
 }
 

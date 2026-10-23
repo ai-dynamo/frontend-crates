@@ -479,6 +479,48 @@ mod tests {
     }
 
     #[test]
+    fn nested_array_union_without_explicit_array_type_is_split_invariant() {
+        let tools = vec![Tool {
+            name: "process_data".into(),
+            description: None,
+            parameters: serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "values": {
+                        "type": "array",
+                        "items": {"anyOf": [
+                            {"items": {"type": "number"}},
+                            {"type": "object"}
+                        ]}
+                    }
+                }
+            }),
+            strict: None,
+        }];
+        let input = concat!(
+            "]<]minimax[>[<tool_call>",
+            "]<]minimax[>[<invoke name=\"process_data\">",
+            "]<]minimax[>[<values>",
+            "]<]minimax[>[<item>",
+            "]<]minimax[>[<item>9007199254740992.5",
+            "]<]minimax[>[</item>",
+            "]<]minimax[>[</item>",
+            "]<]minimax[>[</values>",
+            "]<]minimax[>[</invoke>",
+            "]<]minimax[>[</tool_call>"
+        );
+
+        for split in 0..=input.len() {
+            let merged = parse_chunks(&tools, &[&input[..split], &input[split..]]).coalesce_calls();
+            assert_eq!(merged.calls.len(), 1, "split {split}");
+            assert_eq!(
+                merged.calls[0].arguments, r#"{"values":[[9007199254740992.5]]}"#,
+                "split {split}"
+            );
+        }
+    }
+
+    #[test]
     fn literal_null_branch_does_not_erase_nested_integer_type() {
         for union in ["anyOf", "oneOf"] {
             for alternative in [
