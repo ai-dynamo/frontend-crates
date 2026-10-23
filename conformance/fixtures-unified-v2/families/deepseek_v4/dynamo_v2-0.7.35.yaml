@@ -1,0 +1,187 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.35
+    git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+    source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+document:
+  mode: unified
+changes:
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_encoded_targets:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_json_looking_strings:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
+  glm_ref_scalar_types:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
+        git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+      inherited_from: null
