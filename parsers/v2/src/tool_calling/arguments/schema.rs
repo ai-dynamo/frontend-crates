@@ -447,39 +447,6 @@ fn intersect_type_hints(left: Option<bool>, right: Option<bool>) -> Option<bool>
     }
 }
 
-#[cfg(test)]
-mod structural_type_tests {
-    use super::SchemaFacts;
-    use serde_json::json;
-
-    #[test]
-    fn referenced_type_intersects_structural_siblings() {
-        let schema = json!({
-            "$defs": {
-                "Text": {"type": "string"},
-                "Array": {"type": "array"}
-            },
-            "$ref": "#/$defs/Text",
-            "items": {"type": "number"}
-        });
-
-        assert!(!SchemaFacts::new(&schema).may_describe_array(&schema));
-
-        let valid = json!({
-            "$defs": {"Array": {"type": "array"}},
-            "$ref": "#/$defs/Array",
-            "items": {"type": "number"}
-        });
-        assert!(SchemaFacts::new(&valid).may_describe_array(&valid));
-
-        let unresolved = json!({
-            "$ref": "#/$defs/Missing",
-            "items": {"type": "number"}
-        });
-        assert!(SchemaFacts::new(&unresolved).may_describe_array(&unresolved));
-    }
-}
-
 const MAX_NULL_SCHEMA_REF_DEPTH: usize = 16;
 const MAX_NULL_SCHEMA_NODES: usize = 4096;
 
@@ -732,4 +699,37 @@ pub(crate) fn schema_type_match(
         };
     }
     hint
+}
+
+#[cfg(test)]
+mod structural_type_tests {
+    use super::SchemaFacts;
+    use serde_json::json;
+
+    #[test]
+    fn referenced_type_intersects_structural_siblings() {
+        let schema = json!({
+            "$defs": {
+                "Text": {"type": "string"},
+                "Array": {"type": "array"}
+            },
+            "$ref": "#/$defs/Text",
+            "items": {"type": "number"}
+        });
+
+        assert!(!SchemaFacts::new(&schema).may_describe_array(&schema));
+
+        let valid = json!({
+            "$defs": {"Array": {"type": "array"}},
+            "$ref": "#/$defs/Array",
+            "items": {"type": "number"}
+        });
+        assert!(SchemaFacts::new(&valid).may_describe_array(&valid));
+
+        let unresolved = json!({
+            "$ref": "#/$defs/Missing",
+            "items": {"type": "number"}
+        });
+        assert!(SchemaFacts::new(&unresolved).may_describe_array(&unresolved));
+    }
 }
