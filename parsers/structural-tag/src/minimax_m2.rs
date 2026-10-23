@@ -10,6 +10,7 @@ use crate::format::{
 
 pub const BLOCK_BEGIN: &str = "<minimax:tool_call>";
 pub const BLOCK_END: &str = "</minimax:tool_call>";
+pub const INVOKE_PREFIX: &str = "<invoke name=";
 pub const INVOKE_BEGIN: &str = "<invoke name=\"";
 pub const INVOKE_END: &str = "</invoke>";
 

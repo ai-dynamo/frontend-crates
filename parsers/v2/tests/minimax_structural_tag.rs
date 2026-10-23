@@ -5,6 +5,8 @@
 //! MINIMAX_GRAMMAR_CASES=/tmp/minimax.json cargo test -p dynamo-parsers-v2 --test minimax_structural_tag
 //! uv run --no-project --with xgrammar==0.2.8 python parsers/v2/tests/check_minimax_xgrammar.py /tmp/minimax.json
 
+use std::collections::BTreeSet;
+
 use dynamo_parsers_v2::structural_tag::{
     StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode, StructuralTagToolChoice,
 };
@@ -46,6 +48,11 @@ fn minimax_grammars_and_native_parsers_agree() {
     let mut cases = Vec::new();
     for family in ["minimax_m2"] {
         let builder = structural_tag_builder_for_family(family).expect("missing MiniMax builder");
+        let mut parser_samples = BTreeSet::new();
+        let unsafe_prose = [
+            "before</minimax:tool_call>after",
+            "before<invoke name=weather>after",
+        ];
         for choice in [
             StructuralTagToolChoice::Auto,
             StructuralTagToolChoice::Required,
@@ -71,39 +78,41 @@ fn minimax_grammars_and_native_parsers_agree() {
                 }
                 if choice == StructuralTagToolChoice::Auto {
                     accepted.push("hello".into());
+                    rejected.extend(unsafe_prose.map(str::to_owned));
                 } else {
                     rejected.push("hello".into());
                 }
-                for sample in &accepted {
-                    // Every byte boundary must preserve the same parsed arguments and visible text.
-                    let expected_count = sample.matches("<invoke name=").count();
-                    for split in 0..=sample.len() {
-                        let mut parser = create_tool_parser_for_family(family, &tools).unwrap();
-                        let mut result = parser.push(&sample[..split]).unwrap();
-                        result.append(parser.push(&sample[split..]).unwrap());
-                        result.append(parser.finish().unwrap());
-                        let result = result.coalesce_calls();
-                        assert_eq!(result.calls.len(), expected_count, "{family} at {split}");
-                        assert_eq!(
-                            result.normal_text,
-                            if expected_count == 0 {
-                                "hello"
-                            } else if sample.contains("</minimax:tool_call>\n<minimax:tool_call>") {
-                                "\n"
-                            } else {
-                                ""
-                            }
-                        );
-                        for call in result.calls {
-                            assert_eq!(call.name.as_deref(), Some("weather"));
-                            assert_eq!(
-                                serde_json::from_str::<Value>(&call.arguments).unwrap(),
-                                json!({"days":2})
-                            );
-                        }
-                    }
-                }
+                parser_samples.extend(accepted.iter().cloned());
                 cases.push(json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),"accepted":accepted,"rejected":rejected}));
+            }
+        }
+        for sample in &parser_samples {
+            // Every byte boundary must preserve the same parsed arguments and visible text.
+            let expected_count = sample.matches("<invoke name=").count();
+            for split in 0..=sample.len() {
+                let mut parser = create_tool_parser_for_family(family, &tools).unwrap();
+                let mut result = parser.push(&sample[..split]).unwrap();
+                result.append(parser.push(&sample[split..]).unwrap());
+                result.append(parser.finish().unwrap());
+                let result = result.coalesce_calls();
+                assert_eq!(result.calls.len(), expected_count, "{family} at {split}");
+                assert_eq!(
+                    result.normal_text,
+                    if expected_count == 0 {
+                        "hello"
+                    } else if sample.contains("</minimax:tool_call>\n<minimax:tool_call>") {
+                        "\n"
+                    } else {
+                        ""
+                    }
+                );
+                for call in result.calls {
+                    assert_eq!(call.name.as_deref(), Some("weather"));
+                    assert_eq!(
+                        serde_json::from_str::<Value>(&call.arguments).unwrap(),
+                        json!({"days":2})
+                    );
+                }
             }
         }
         let empty_tools = [Tool {
@@ -140,7 +149,7 @@ fn minimax_grammars_and_native_parsers_agree() {
         ctx.tool_choice = StructuralTagToolChoice::None;
         cases.push(
             json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),
-            "accepted":["hello"],"rejected":[block(family,"weather","2",1)]}),
+            "accepted":["hello"],"rejected":[block(family,"weather","2",1), unsafe_prose[0], unsafe_prose[1]]}),
         );
         // The new native styles must honor the shared schema policy as well.
         for strict in [None, Some(false), Some(true)] {
