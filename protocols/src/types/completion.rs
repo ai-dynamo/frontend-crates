@@ -91,6 +91,9 @@ where
 /// - `prompt_embeds`: base64-encoded PyTorch tensor for pre-computed embeddings
 /// - `echo`: strict bool validation (rejects integers/strings)
 /// - `stream_options`: uses our extended `ChatCompletionStreamOptions` (with `continuous_usage_stats`)
+///
+/// Schema bounds document serving limits; they do not add checks to JSON parsing.
+/// Omitted sampling controls remain `None` for the server or backend to resolve.
 #[derive(Clone, Serialize, Deserialize, Default, Debug, Builder, PartialEq)]
 #[builder(name = "CreateCompletionRequestArgs")]
 #[builder(pattern = "mutable")]
@@ -101,7 +104,6 @@ where
 #[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::completion::CreateCompletionRequest))]
 pub struct CreateCompletionRequest {
     pub model: String,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::Prompt))]
     pub prompt: Prompt,
     /// Base64-encoded PyTorch tensor containing pre-computed embeddings.
     /// At least one of prompt or prompt_embeds is required.
@@ -112,16 +114,30 @@ pub struct CreateCompletionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(minimum = 0, maximum = 2))]
     pub temperature: Option<f32>,
+    /// Nucleus-sampling probability. Dynamo's serving layer requires `0 < top_p <= 1`,
+    /// unlike OpenAI's schema, which allows zero. Omission leaves `None` for the backend.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "protocol-schema",
+        schema(exclusive_minimum = 0, maximum = 1)
+    )]
     pub top_p: Option<f32>,
+    /// Number of choices to generate. OpenAI specifies a default of one.
+    /// Parsing omitted or null input leaves `None`; the server must resolve it.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        feature = "protocol-schema",
+        schema(default = 1, minimum = 1, maximum = 128)
+    )]
     pub n: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream_options: Option<ChatCompletionStreamOptions>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(minimum = 0, maximum = 5))]
     pub logprobs: Option<u8>,
     /// Echo back the prompt in addition to the completion.
     /// Strict bool validation -- rejects integers and strings.
@@ -131,12 +147,16 @@ pub struct CreateCompletionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop: Option<Stop>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(minimum = -2, maximum = 2))]
     pub presence_penalty: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(minimum = -2, maximum = 2))]
     pub frequency_penalty: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(minimum = 0, maximum = 20))]
     pub best_of: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(schema_with = super::logit_bias_schema))]
     pub logit_bias: Option<HashMap<String, serde_json::Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user: Option<String>,

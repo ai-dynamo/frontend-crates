@@ -23,7 +23,7 @@ include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [features]
 # Metadata only: no request deserialization or response serialization changes.
-protocol-schema = ["dep:utoipa"]
+protocol-schema = ["dep:utoipa", "async-openai/openapi"]
 utoipa = ["protocol-schema"]
 
 [dependencies]

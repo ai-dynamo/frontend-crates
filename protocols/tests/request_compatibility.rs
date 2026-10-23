@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Wire-level regressions for ai-dynamo/frontend-crates#299.
+//! Wire-level request compatibility regressions, including ai-dynamo/frontend-crates#299.
 //! Backend capability filtering belongs in the serving adapter, not serde.
 
 use dynamo_protocols::types::responses::{
@@ -9,6 +9,44 @@ use dynamo_protocols::types::responses::{
 };
 use dynamo_protocols::types::{CreateChatCompletionRequest, CreateCompletionRequest};
 use serde_json::json;
+
+/// Declaring a schema default must not fill in `n` during JSON parsing.
+/// Omitted/null counts stay `None` and serialize without `n`; explicit counts,
+/// including zero, are preserved. Run with and without `protocol-schema` enabled.
+#[test]
+fn choice_count_schema_default_does_not_inject_wire_values() {
+    for n in [
+        None,
+        Some(json!(null)),
+        Some(json!(0)),
+        Some(json!(1)),
+        Some(json!(2)),
+    ] {
+        let mut chat_wire = json!({
+            "model": "example-model",
+            "messages": [{"role": "user", "content": "Say hello"}]
+        });
+        let mut completion_wire = json!({"model": "example-model", "prompt": "Say hello"});
+        if let Some(value) = &n {
+            chat_wire["n"] = value.clone();
+            completion_wire["n"] = value.clone();
+        }
+        let expected = n
+            .as_ref()
+            .and_then(serde_json::Value::as_u64)
+            .map(|n| n as u8);
+        let chat: CreateChatCompletionRequest = serde_json::from_value(chat_wire).unwrap();
+        let completion: CreateCompletionRequest = serde_json::from_value(completion_wire).unwrap();
+        assert_eq!(chat.n, expected);
+        assert_eq!(completion.n, expected);
+        for serialized in [
+            serde_json::to_value(chat).unwrap(),
+            serde_json::to_value(completion).unwrap(),
+        ] {
+            assert_eq!(serialized.get("n").cloned(), expected.map(|n| json!(n)));
+        }
+    }
+}
 
 #[test]
 fn responses_verbosity_without_format_defaults_to_text() {

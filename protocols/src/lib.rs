@@ -24,6 +24,4 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod error;
-#[cfg(feature = "protocol-schema")]
-pub mod schema;
 pub mod types;

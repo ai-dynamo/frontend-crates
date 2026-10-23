@@ -36,6 +36,32 @@ pub use async_openai::types::files::*;
 // Images: re-exported wholesale from async-openai (no Dynamo overrides).
 pub use async_openai::types::images::*;
 
+/// Build the schema for a nullable map of token IDs to biases in `[-100, 100]`.
+///
+/// Both request types use this with `schema_with` because Dynamo accepts fractional
+/// biases, while upstream declares integers. The returned schema includes the
+/// property's nullability and description, which `schema_with` replaces as well.
+/// It does not parse token IDs, validate requests, or change stored values.
+#[cfg(feature = "protocol-schema")]
+fn logit_bias_schema() -> utoipa::openapi::schema::Object {
+    use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
+
+    ObjectBuilder::new()
+        .schema_type(SchemaType::from_iter([Type::Object, Type::Null]))
+        .description(Some(
+            "Map token IDs to numeric logit biases from -100 to 100. Dynamo accepts \
+             fractional biases as well as integers. Token ID parsing and validation \
+             are performed by the serving layer.",
+        ))
+        .additional_properties(Some(
+            ObjectBuilder::new()
+                .schema_type(Type::Number)
+                .minimum(Some(-100))
+                .maximum(Some(100)),
+        ))
+        .build()
+}
+
 // --- Convenience impls for locally-defined types ---
 mod impls;
 

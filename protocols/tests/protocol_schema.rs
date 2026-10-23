@@ -12,21 +12,27 @@ use utoipa::{OpenApi, ToSchema};
 #[openapi(components(schemas(
     CreateChatCompletionRequest,
     CreateCompletionRequest,
+    CreateCompletionResponse,
     CreateChatCompletionResponse,
     CreateChatCompletionStreamResponse
 )))]
 struct Contract;
 
+/// Return the registered chat/completion schemas as one JSON OpenAPI document.
 fn document() -> Value {
     serde_json::to_value(Contract::openapi()).unwrap()
 }
 
+/// Build a validator for `T`, which must be included in `document()`.
+/// Panics if the generated schema cannot be compiled.
 fn validator<T: ToSchema>() -> jsonschema::Validator {
     let mut doc = document();
     doc["$ref"] = json!(format!("#/components/schemas/{}", T::name()));
     jsonschema::validator_for(&doc).unwrap()
 }
 
+/// Parse `input` as `T`, then assert that its serialized form matches `T`'s schema.
+/// Use for inputs that normalize during parsing; panics on conversion or validation failure.
 fn canonical<T: ToSchema + DeserializeOwned + Serialize>(input: Value) {
     let parsed: T = serde_json::from_value(input).unwrap();
     let output = serde_json::to_value(parsed).unwrap();
@@ -83,27 +89,135 @@ fn component_graph_resolves_every_reference() {
     }
 }
 
+/// Upstream schemas must describe field shapes and include their nested definitions.
+/// Check valid and invalid prompts, then validate a serialized completion response.
 #[test]
-fn unannotated_dependency_types_are_explicit_import_slots() {
+fn dependency_types_describe_native_shapes_and_transitive_components() {
     let doc = document();
     let schemas = doc["components"]["schemas"].as_object().unwrap();
-    for (name, schema) in schemas {
-        if let Some(short) = name.strip_prefix("async_openai.") {
-            assert_eq!(schema["x-dynamo-schema-import"]["crate"], "async-openai");
-            assert_eq!(schema["x-dynamo-schema-import"]["type"], short);
-            let kinds = schema["type"].as_array().unwrap();
-            assert!(
-                !kinds.contains(&json!("null")),
-                "Option<T> owns nullability"
+    for name in [
+        "async_openai.Prompt",
+        "async_openai.FunctionObject",
+        "async_openai.ResponseFormatJsonSchema",
+        "async_openai.CreateCompletionResponse",
+        "async_openai.Choice",
+        "async_openai.CompletionUsage",
+        "async_openai.PromptTokensDetails",
+        "async_openai.CompletionTokensDetails",
+    ] {
+        assert!(
+            schemas.contains_key(name),
+            "missing transitive component {name}"
+        );
+    }
+    assert_eq!(
+        schemas["async_openai.FunctionObject"]["properties"]["name"]["type"],
+        "string"
+    );
+    assert_eq!(
+        schemas["async_openai.CompletionUsage"]["properties"]["total_tokens"]["type"],
+        "integer"
+    );
+    let completion = validator::<CreateCompletionRequest>();
+    for prompt in [
+        json!("hi"),
+        json!(["hi"]),
+        json!([1, 2]),
+        json!([[1], [2]]),
+        json!([]),
+    ] {
+        assert!(completion.is_valid(&json!({"model":"test", "prompt":prompt})));
+    }
+    for prompt in [json!(true), json!({"text":"hi"}), json!(["hi", 2])] {
+        assert!(!completion.is_valid(&json!({"model":"test", "prompt":prompt})));
+    }
+    canonical::<CreateCompletionResponse>(json!({
+        "id":"cmpl-1", "object":"text_completion", "created":1, "model":"test",
+        "choices":[{"index":0,"text":"hi","finish_reason":"stop"}],
+        "usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}
+    }));
+}
+
+/// Schemas must retain field defaults, optional/nullable `n`, and numeric constraints.
+/// Values outside serving limits still parse when their Rust types allow them;
+/// these annotations must not become runtime validation.
+#[test]
+fn owned_request_metadata_preserves_standard_limits_and_dynamo_differences() {
+    let doc = document();
+    let stream_options = &doc["components"]["schemas"]["dynamo_protocols.chat.ChatCompletionStreamOptions"]
+        ["properties"];
+    for field in ["include_usage", "continuous_usage_stats"] {
+        assert_eq!(stream_options[field]["default"], json!(false));
+    }
+    for name in [
+        CreateChatCompletionRequest::name(),
+        CreateCompletionRequest::name(),
+    ] {
+        let request = &doc["components"]["schemas"][name.as_ref()];
+        let fields = &request["properties"];
+        assert_eq!(fields["n"]["default"], json!(1), "{name}");
+        let types = fields["n"]["type"].as_array().unwrap();
+        assert!(types.contains(&json!("integer")) && types.contains(&json!("null")));
+        let required = request["required"].as_array().unwrap();
+        assert!(!required.contains(&json!("n")));
+        for (field, min, max) in [
+            ("temperature", 0, 2),
+            ("presence_penalty", -2, 2),
+            ("frequency_penalty", -2, 2),
+            ("n", 1, 128),
+        ] {
+            assert_eq!(fields[field]["minimum"], json!(min), "{name}.{field}");
+            assert_eq!(fields[field]["maximum"], json!(max), "{name}.{field}");
+        }
+        assert_eq!(fields["top_p"]["exclusiveMinimum"], json!(0));
+        assert_eq!(fields["top_p"]["maximum"], json!(1));
+        assert_eq!(
+            fields["logit_bias"]["additionalProperties"]["type"],
+            "number"
+        );
+        assert_eq!(
+            fields["logit_bias"]["additionalProperties"]["minimum"],
+            json!(-100)
+        );
+        assert_eq!(
+            fields["logit_bias"]["additionalProperties"]["maximum"],
+            json!(100)
+        );
+        // Backend/model defaults are not universal API promises.
+        assert!(fields["temperature"].get("default").is_none());
+    }
+    let chat = validator::<CreateChatCompletionRequest>();
+    let completion = validator::<CreateCompletionRequest>();
+    for (field, good, bad) in [
+        ("temperature", json!(2), json!(2.1)),
+        ("top_p", json!(0.5), json!(0)),
+        ("n", json!(128), json!(129)),
+        ("presence_penalty", json!(-2), json!(-2.1)),
+        ("frequency_penalty", json!(2), json!(2.1)),
+        ("logit_bias", json!({"7":0.5}), json!({"7":101})),
+    ] {
+        for (value, valid) in [(good, true), (bad, false)] {
+            let mut chat_wire = json!({"model":"test","messages":[{"role":"user","content":"hi"}]});
+            let mut completion_wire = json!({"model":"test","prompt":"hi"});
+            chat_wire[field] = value.clone();
+            completion_wire[field] = value;
+            assert_eq!(chat.is_valid(&chat_wire), valid, "{chat_wire}");
+            assert_eq!(
+                completion.is_valid(&completion_wire),
+                valid,
+                "{completion_wire}"
             );
-            assert!(
-                kinds.len() > 1,
-                "must not fabricate an object-only contract"
-            );
+            assert!(serde_json::from_value::<CreateChatCompletionRequest>(chat_wire).is_ok());
+            assert!(serde_json::from_value::<CreateCompletionRequest>(completion_wire).is_ok());
         }
     }
-    assert!(schemas.contains_key("async_openai.Prompt"));
-    assert!(schemas.contains_key("async_openai.FunctionObject"));
+    let chat_fields =
+        &doc["components"]["schemas"][CreateChatCompletionRequest::name().as_ref()]["properties"];
+    assert_eq!(chat_fields["top_logprobs"]["maximum"], json!(20));
+    let completion_fields =
+        &doc["components"]["schemas"][CreateCompletionRequest::name().as_ref()]["properties"];
+    assert_eq!(completion_fields["logprobs"]["maximum"], json!(5));
+    assert_eq!(completion_fields["best_of"]["maximum"], json!(20));
 }
 
 #[test]
