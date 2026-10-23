@@ -129,7 +129,7 @@ from impls import (  # noqa: E402
 # rendering code below and the test suite keep referring to them as module attributes.
 import markers  # noqa: E402  (module handle: structured comparison model, DIS-2434)
 from null_cases import null_group
-from case_variants import group_null_variants, group_unified_variants, group_schema_variants, variant_group
+from case_variants import group_null_variants, group_unified_variants, variant_group
 from numeric_cases import canonical_events, canonical_arguments
 
 import unified_taxonomy  # noqa: E402  (shared UNIFIED scenario->numbered-id taxonomy)
@@ -2605,14 +2605,6 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
             families.append(f)
         by_key[(f, s)] = c
 
-    # Applicability belongs to authored scenarios; a partial fixture tree is
-    # missing evidence, not proof that a shared case belongs to one family.
-    unified_taxonomy.validate_family_sections({
-        scenario: gen_unified_golden.scenario_families(scenario)
-        if scenario in authored_scenarios else
-        {family for family, name in by_key if name == scenario}
-        for scenario in scenarios})
-
     # Numbered taxonomy + axis labels — single source in unified_taxonomy.py (shared
     # with explode_unified_fixtures.py so the numbering can't drift). See UNIFIED_CASES.md.
     UNIFIED_GROUP_LABEL = unified_taxonomy.UNIFIED_GROUP_LABEL
@@ -3205,10 +3197,15 @@ def build_combined_model(output_path: Path | None = None,
         if tab["id"] == "tab-unified":
             # Rank the visible columns after variants have been folded into parents.
             labels = unified_taxonomy.display_case_labels(column["sub"] for column in tab["columns"])
-            display_by_label = {column["label"]: labels[column["sub"]]["label"] for column in tab["columns"]}
+            display_by_label = {
+                column["label"]: column.get("_grouped_display_label", labels[column["sub"]]["label"])
+                for column in tab["columns"]
+            }
             for column in tab["columns"]:
+                grouped_label = column.pop("_grouped_display_label", None)
+                column.update({key: value for key, value in labels[column["sub"]].items() if key != "label"})
+                column["label"] = grouped_label or labels[column["sub"]]["label"]
                 column["case_id"] = "UNIFIED." + column["label"]
-                column.update(labels[column["sub"]])
             for group in tab["glossary"]:
                 group["rows"] = [(display_by_label.get(label, label), desc) for label, desc in group["rows"]]
     return _model.build_page(meta, tabs, parser_ni=_parser_ni_map(),

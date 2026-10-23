@@ -1,0 +1,4516 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.32
+    git_commit: bd3471b067fdb5af3959b58217fe2c1ab84f8109
+    source_sha256: 572686dfa7be98529a2fc07cb62fc66d557bfb81a2391fa0003e5172eb655ab7
+document:
+  mode: unified
+changes:
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-arg_json_null_anyof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_const:
+    case_key: UNIFIED.7-arg_json_null_const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-arg_json_null_nullable
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-arg_json_null_oneof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_marker_in_string:
+    case_key: UNIFIED.7-arg_marker_in_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|tool_call_end|> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log <|tool_call_end|> --oneline"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label": null, "note": null, "literal": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_const_decimal
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_const_exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_enum_decimal
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":42.0}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_enum_exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4.2e1}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_large_decimal
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.0}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_large_exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.007199254740993e15}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-arg_numeric_14_negative
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-4.2E+1}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_negative_exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":4200e-2}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-arg_numeric_14_zero_underflow
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.0e-400}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_exponent:
+    case_key: UNIFIED.7-arg_numeric_15_exponent
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9.0071992547409925e15}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_negative:
+    case_key: UNIFIED.7-arg_numeric_15_negative
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":-9007199254740992.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_quarter:
+    case_key: UNIFIED.7-arg_numeric_15_quarter
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.25}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_down:
+    case_key: UNIFIED.7-arg_numeric_15_round_down
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740992.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_round_up:
+    case_key: UNIFIED.7-arg_numeric_15_round_up
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":9007199254740993.1}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_15_small:
+    case_key: UNIFIED.7-arg_numeric_15_small
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value":0.10000000000000000001}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_numeric_nested_exact:
+    case_key: UNIFIED.7-arg_numeric_nested_exact
+    stimulus:
+      ref: current
+      semantic_sha256: 252dc18c0c2d50c4803c9292f583d32e4de956ecedb24d5d106a2ef74a5d18a7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            nested:
+              fraction: 9007199254740992.0
+              tiny: 0.0
+            values:
+            - 9007199254740993
+            - -9007199254740993
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null:
+    case_key: UNIFIED.7-arg_string_null
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_const:
+    case_key: UNIFIED.7-arg_string_null_const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_enum:
+    case_key: UNIFIED.7-arg_string_null_enum
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-arg_string_null_sibling_anyof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-arg_string_null_sibling_oneof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_union:
+    case_key: UNIFIED.7-arg_string_null_union
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-arg_string_null_untyped_branch
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_unicode:
+    case_key: UNIFIED.7-arg_unicode
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "São Paulo 東京"}'
+            complete: true
+        - expected: []
+        - expected: []
+  content_then_reason_then_tool:
+    case_key: UNIFIED.11-content_then_reason_then_tool
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    case_key: UNIFIED.7-deepseek_v41_mixed_control_text_in_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: " <think>quoted</think> <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": " <think>quoted</think> <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_encoded_targets:
+    case_key: UNIFIED.7-glm_ref_encoded_targets
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    case_key: UNIFIED.7-glm_ref_json_looking_strings
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_object:
+    case_key: UNIFIED.7-glm_ref_object
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    case_key: UNIFIED.7-glm_ref_scalar_types
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  gpt_oss_tool_body_whitespace:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: x
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q": "x"}'
+            complete: true
+        - expected: []
+        - expected: []
+  interstitial_text:
+    case_key: UNIFIED.11-interstitial_text
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-local_schema_id_preserves_type
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    case_key: UNIFIED.5-malformed_json_then_two_valid_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: {}
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"x":"unfinished'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "é"}'
+            complete: true
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "Café"}'
+            complete: true
+        - expected: []
+  narrated_calls:
+    case_key: UNIFIED.8-narrated_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' then I''ll run '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-native_quoted_control_then_call
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|tool_calls_section_begin|>" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <|tool_calls_section_begin|>" marker is part of the explanation.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-native_unmatched_quote_then_call
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-nullable_reference_alias_literals
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text": "null", "enum_text": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    case_key: UNIFIED.41-prefilled_reasoning_redundant_opener
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "London"}'
+            complete: true
+        - expected: []
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_then_text_then_tool
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: weighing options
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here''s what I found: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  prefilled_reasoning_with_tool:
+    case_key: UNIFIED.40-prefilled_reasoning_with_tool
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    case_key: UNIFIED.50-prefilled_response_reasoning_markers_literal
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal</think> then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  qwen_string_null:
+    case_key: UNIFIED.7-arg_json_null
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  reason_after_tool:
+    case_key: UNIFIED.11-reason_after_tool
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: Now answer.
+        - kind: text
+          text: It's 18C.
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Now answer.
+        - expected: []
+        - expected:
+          - kind: text
+            text: It's 18C.
+        - expected: []
+  reason_between_calls:
+    case_key: UNIFIED.11-reason_between_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  reason_interleaved:
+    case_key: UNIFIED.11-reason_interleaved
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  reason_markup_in_arg:
+    case_key: UNIFIED.12-reason_markup_in_arg
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider</think>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<think>reconsider</think>"}'
+            complete: true
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    case_key: UNIFIED.12-reason_markup_in_arg_with_text
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider</think>
+        - kind: text
+          text: ' done.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "<think>reconsider</think>"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' done.'
+        - expected: []
+  reason_then_tool:
+    case_key: UNIFIED.11-reason_then_tool
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  reason_tool_reason_tool_reason:
+    case_key: UNIFIED.11-reason_tool_reason_tool_reason
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        - kind: reasoning
+          text: C
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: C
+        - expected: []
+        - expected: []
+  reason_tool_text_reason_tool:
+    case_key: UNIFIED.11-reason_tool_text_reason_tool
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: working on it
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: working on it
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_array_allof:
+    case_key: UNIFIED.7-const_array_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_array_bare:
+    case_key: UNIFIED.7-const_array_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_array_ref:
+    case_key: UNIFIED.7-const_array_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_array_typed:
+    case_key: UNIFIED.7-const_array_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_boolean_allof:
+    case_key: UNIFIED.7-const_boolean_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_boolean_bare:
+    case_key: UNIFIED.7-const_boolean_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_boolean_ref:
+    case_key: UNIFIED.7-const_boolean_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_boolean_typed:
+    case_key: UNIFIED.7-const_boolean_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_entity_allof:
+    case_key: UNIFIED.7-const_entity_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_entity_bare:
+    case_key: UNIFIED.7-const_entity_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_entity_ref:
+    case_key: UNIFIED.7-const_entity_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_entity_typed:
+    case_key: UNIFIED.7-const_entity_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_null_allof:
+    case_key: UNIFIED.7-const_null_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_null_bare:
+    case_key: UNIFIED.7-const_null_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_null_ref:
+    case_key: UNIFIED.7-const_null_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_null_typed:
+    case_key: UNIFIED.7-const_null_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_number_allof:
+    case_key: UNIFIED.7-const_number_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_number_bare:
+    case_key: UNIFIED.7-const_number_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_number_ref:
+    case_key: UNIFIED.7-const_number_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_number_typed:
+    case_key: UNIFIED.7-const_number_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_object_allof:
+    case_key: UNIFIED.7-const_object_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_object_bare:
+    case_key: UNIFIED.7-const_object_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_object_ref:
+    case_key: UNIFIED.7-const_object_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_object_typed:
+    case_key: UNIFIED.7-const_object_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_plain_allof:
+    case_key: UNIFIED.7-const_plain_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_plain_bare:
+    case_key: UNIFIED.7-const_plain_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_plain_ref:
+    case_key: UNIFIED.7-const_plain_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_plain_typed:
+    case_key: UNIFIED.7-const_plain_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_quoted_allof:
+    case_key: UNIFIED.7-const_quoted_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_quoted_bare:
+    case_key: UNIFIED.7-const_quoted_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_quoted_ref:
+    case_key: UNIFIED.7-const_quoted_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_quoted_typed:
+    case_key: UNIFIED.7-const_quoted_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_space_allof:
+    case_key: UNIFIED.7-const_space_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_space_bare:
+    case_key: UNIFIED.7-const_space_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_space_ref:
+    case_key: UNIFIED.7-const_space_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_space_typed:
+    case_key: UNIFIED.7-const_space_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "  spaced  "}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_unicode_allof:
+    case_key: UNIFIED.7-const_unicode_allof
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_unicode_bare:
+    case_key: UNIFIED.7-const_unicode_bare
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_unicode_ref:
+    case_key: UNIFIED.7-const_unicode_ref
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_const_unicode_typed:
+    case_key: UNIFIED.7-const_unicode_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_array:
+    case_key: UNIFIED.7-declared_array
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_boolean:
+    case_key: UNIFIED.7-declared_boolean
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_integer:
+    case_key: UNIFIED.7-declared_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_null:
+    case_key: UNIFIED.7-declared_null
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_number:
+    case_key: UNIFIED.7-declared_number
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_object:
+    case_key: UNIFIED.7-declared_object
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_declared_string:
+    case_key: UNIFIED.7-declared_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: plain
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "plain"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_enum_integer:
+    case_key: UNIFIED.7-enum_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_enum_string:
+    case_key: UNIFIED.7-enum_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_escaped_ref_const:
+    case_key: UNIFIED.7-escaped_ref_const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_id_direct_integer:
+    case_key: UNIFIED.7-id_direct_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_integer_const_ambiguous:
+    case_key: UNIFIED.7-integer_const_ambiguous
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_intersection_anyof:
+    case_key: UNIFIED.7-intersection_anyOf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_intersection_oneof:
+    case_key: UNIFIED.7-intersection_oneOf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_null_union_ambiguous:
+    case_key: UNIFIED.7-null_union_ambiguous
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_nullable_string:
+    case_key: UNIFIED.7-nullable_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_object_const_union:
+    case_key: UNIFIED.7-object_const_union
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_percent_ref_const:
+    case_key: UNIFIED.7-percent_ref_const
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_ref_sibling_integer:
+    case_key: UNIFIED.7-ref_sibling_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_ref_union_anyof_integer:
+    case_key: UNIFIED.7-ref_union_anyOf_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_ref_union_anyof_string:
+    case_key: UNIFIED.7-ref_union_anyOf_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_ref_union_oneof_integer:
+    case_key: UNIFIED.7-ref_union_oneOf_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_ref_union_oneof_string:
+    case_key: UNIFIED.7-ref_union_oneOf_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_type_array_integer_null:
+    case_key: UNIFIED.7-type_array_integer_null
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_type_array_integer_null_null:
+    case_key: UNIFIED.7-type_array_integer_null_null
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_type_array_string_integer:
+    case_key: UNIFIED.7-type_array_string_integer
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_array_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_array_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_string:
+    case_key: UNIFIED.7-union_anyOf_array_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_typed:
+    case_key: UNIFIED.7-union_anyOf_array_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_boolean_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_boolean_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_string:
+    case_key: UNIFIED.7-union_anyOf_boolean_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_typed:
+    case_key: UNIFIED.7-union_anyOf_boolean_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_integer_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_integer_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_string:
+    case_key: UNIFIED.7-union_anyOf_integer_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_typed:
+    case_key: UNIFIED.7-union_anyOf_integer_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_null_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_null_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_string:
+    case_key: UNIFIED.7-union_anyOf_null_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_typed:
+    case_key: UNIFIED.7-union_anyOf_null_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_number_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_number_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_string:
+    case_key: UNIFIED.7-union_anyOf_number_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_typed:
+    case_key: UNIFIED.7-union_anyOf_number_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_reverse_string:
+    case_key: UNIFIED.7-union_anyOf_object_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_reverse_typed:
+    case_key: UNIFIED.7-union_anyOf_object_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_string:
+    case_key: UNIFIED.7-union_anyOf_object_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_typed:
+    case_key: UNIFIED.7-union_anyOf_object_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_array_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_array_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_string:
+    case_key: UNIFIED.7-union_oneOf_array_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_typed:
+    case_key: UNIFIED.7-union_oneOf_array_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_boolean_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_boolean_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_string:
+    case_key: UNIFIED.7-union_oneOf_boolean_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_typed:
+    case_key: UNIFIED.7-union_oneOf_boolean_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_integer_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_integer_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_string:
+    case_key: UNIFIED.7-union_oneOf_integer_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_typed:
+    case_key: UNIFIED.7-union_oneOf_integer_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_null_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_null_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_string:
+    case_key: UNIFIED.7-union_oneOf_null_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_typed:
+    case_key: UNIFIED.7-union_oneOf_null_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_number_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_number_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_string:
+    case_key: UNIFIED.7-union_oneOf_number_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_typed:
+    case_key: UNIFIED.7-union_oneOf_number_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_reverse_string:
+    case_key: UNIFIED.7-union_oneOf_object_reverse_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_reverse_typed:
+    case_key: UNIFIED.7-union_oneOf_object_reverse_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_string:
+    case_key: UNIFIED.7-union_oneOf_object_string
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+            complete: true
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_typed:
+    case_key: UNIFIED.7-union_oneOf_object_typed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+            complete: true
+        - expected: []
+        - expected: []
+  text_before_tool:
+    case_key: UNIFIED.8-text_before_tool
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'On it: '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  text_between_calls:
+    case_key: UNIFIED.8-text_between_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    case_key: UNIFIED.11-text_reason_tool_text_reason_tool
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: reasoning
+          text: check B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check B
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  text_sandwich:
+    case_key: UNIFIED.8-text_sandwich
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' After.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Before. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' After.'
+        - expected: []
+  tool_in_reason:
+    case_key: UNIFIED.12-tool_in_reason
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    case_key: UNIFIED.12-tool_in_reason_with_text
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: ' now answer'
+        - kind: text
+          text: ' Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []
+  tool_no_close:
+    case_key: UNIFIED.5-tool_no_close
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+  tool_only:
+    case_key: UNIFIED.1-tool_only
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  trailing_text_after_tool:
+    case_key: UNIFIED.8-trailing_text_after_tool
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: The forecast shows clear skies for the rest of the week.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+        - expected: []
+  two_calls:
+    case_key: UNIFIED.2-two_calls
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  two_calls_same_name:
+    case_key: UNIFIED.2-two_calls_same_name
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Tokyo"}'
+            complete: true
+        - expected: []
+        - expected: []
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-unused_reference_graph_parameter_types
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "flag": false, "text": "null"}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

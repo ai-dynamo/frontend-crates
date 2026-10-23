@@ -475,6 +475,16 @@ def test_sob_marker_all_consistent_is_equals_and_green() -> None:
         assert g._sob_status(case, impl) == "ok"  # green
 
 
+def test_sob_comparison_distinguishes_missing_arguments_from_empty_object() -> None:
+    case = _sobcase(
+        stream={D: {"calls": [{"name": "f"}]}},
+        batch={D: {"calls": [{"name": "f", "arguments": {}}]}},
+    )
+
+    assert g._sob_calls_consistent(case, D) is False
+    assert g._sob_status(case, D) == "problem"
+
+
 def test_sob_dynamo_na_when_no_v2_parser() -> None:
     # A family the Dynamo v2 stream parser doesn't implement is a plain neutral n/a
     # (the v1 table has no "TODO" concept), not a distinct orange "todo"/"…" state.

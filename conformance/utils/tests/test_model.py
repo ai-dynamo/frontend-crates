@@ -261,6 +261,10 @@ def test_unified_na_scenarios_have_concise_family_specific_copy(model_v2):
         if cell.get("duplicate_of"):
             continue
         tip = cell["tooltip"]
+        if tip["description"].startswith("Schema-directed fractional string fallback:"):
+            assert tip["na_note"] == "This grammar does not coerce untyped fractional text through an integer/string schema."
+            assert "JSON-native grammars do not apply this coercion" in tip["description"]
+            continue
         reason = f"This scenario is not applicable to {cell['family']}."
         assert tip["description"] == tip["na_note"] == reason
         assert all(candidate["block"] == {
@@ -786,7 +790,7 @@ def test_minimax_nested_union_fixtures_preserve_history_and_input(
             assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
 
 
-@pytest.mark.parametrize("parent", ["7-arg_json_null", "7-arg_string_null"])
+@pytest.mark.parametrize("parent", ["7-4", "7-5"])
 def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "glm47")
@@ -1739,7 +1743,7 @@ vm.runInContext(source.replace('// --- Entry point',
   'window.audit = {columnGrammarModel, buildGrammarHtml};\n// --- Entry point'), context);
 const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
 const results = {};
-for (const sub of ['7-arg_json_null', '7-arg_string_null']) {
+for (const sub of ['7-4', '7-5']) {
   const column = tab.columns.find(col => col.label === sub);
   const model = context.window.audit.columnGrammarModel(tab, column);
   results[sub] = context.window.audit.buildGrammarHtml(model);
@@ -1752,8 +1756,8 @@ process.stdout.write(JSON.stringify(results));
     )
     rendered = json.loads(result.stdout)
     for sub, explanation in (
-        ("7-arg_json_null", "request tool schema permits JSON null"),
-        ("7-arg_string_null", "request tool schema requires a string"),
+        ("7-4", "request tool schema permits JSON null"),
+        ("7-5", "request tool schema requires a string"),
     ):
         column = next(col for col in tab["columns"] if col["label"] == sub)
         assert explanation in column["desc"]
@@ -1761,26 +1765,25 @@ process.stdout.write(JSON.stringify(results));
         header = rendered[sub].split("<table", 1)[0]
         assert 'class="ttip-head-desc"' in header
         assert "request tool schema" in header
-    assert 'JSON <tt>null</tt>' in rendered["7-arg_json_null"].split("<table", 1)[0]
-    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-arg_string_null"].split("<table", 1)[0]
+    assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
+    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
 
 
 def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-arg_json_null", "7-arg_string_null"))} == {"7-arg_json_null", "7-arg_string_null"}
+    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
     families = set(table.gen_unified_golden.FAMILIES)
     for row in tab["rows"]:
         if row.get("family") not in families:
             continue
         mixed = True
-        refs = row["family"] in {"glm47", "qwen3"}
+        refs = row["family"] in {"glm47", "qwen3", "nemotron_v3"}
         groups = []
-        for label, count in (("7-arg_json_null", 5), ("7-arg_string_null", 7)):
+        for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
             cell = row["cells"][sub]
-            qwen_ref = table.gen_unified_golden.unified_grammar_family(row["family"]) == "qwen3" and label == "7-arg_string_null"
-            assert len(cell["variants"]) == count + int(mixed) + int(refs) + int(qwen_ref)
+            assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
         assert len(groups[0] & groups[1]) == int(mixed)
@@ -1793,7 +1796,7 @@ def test_unified_deepseek_only_case_keeps_id_in_family_section(model_v2):
     assert column["label"] == "deepseek_v4-guided_response_rejected_header_quote_ownership"
     assert column["compact_prefix"] == "ds4"
     assert column["display_number"] == 2
-    assert column["case_id"] == "UNIFIED.35-guided_response_rejected_header_quote_ownership"
+    assert column["case_id"] == "UNIFIED.deepseek_v4-guided_response_rejected_header_quote_ownership"
     assert column["group_key"] == "unified_gdeepseek_v4"
     group = next(g for g in tab["column_groups"] if g["key"] == column["group_key"])
     assert group["label"] == "Single Family Test: DeepSeek V4-specific tests"
@@ -1817,6 +1820,22 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
     v1 = versions["dynamo-parsers"]
     batch_tab = _tab(model_v2, "tab-toolcalling-batch")
     stream_tab = _tab(model_v2, "tab-toolcalling-streamv1")
+    root = _cache_root() / "toolcalling"
+    archived_v1_versions = {
+        path.name.removeprefix("dynamo_v1-")
+        for path in (root / "fixtures-batch-v1").glob("dynamo_v1-*")
+        if path.is_dir()
+    }
+    v1_capture_candidates = [
+        candidate
+        for candidate in batch_tab["candidates"]
+        if candidate["impl"] == "dynamo"
+        and candidate["parse_mode"] == "batch"
+        and _version_sort_key(candidate["version"]) <= _version_sort_key(v1)
+        and candidate["version"] in archived_v1_versions
+    ]
+    assert v1_capture_candidates, "no archived Dynamo v1 batch capture is available"
+    v1_capture_candidate = max(v1_capture_candidates, key=lambda c: _version_sort_key(c["version"]))
     stream_candidate = next(
         candidate
         for candidate in stream_tab["candidates"]
@@ -1833,9 +1852,8 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
                     if cell.get("case_id")}
         for tab in (batch_tab, stream_tab)
     }
-    root = _cache_root() / "toolcalling"
     modes = [
-        ("fixtures-batch-v1", root / f"fixtures-batch-v1/dynamo_v1-{v1}", batch_tab, f"dynamo_v1-b-{v1.replace('.', '-')}", "batch"),
+        ("fixtures-batch-v1", root / f"fixtures-batch-v1/dynamo_v1-{v1_capture_candidate['version']}", batch_tab, v1_capture_candidate["key"], "batch"),
         (
             "fixtures-stream-v1",
             root / f"fixtures-stream-v1/dynamo_v2-{stream_candidate['version']}",
@@ -1854,7 +1872,7 @@ def test_visible_schema_mismatches_keep_goldens_and_hidden_aliases_keep_captures
     checked = mismatches = hidden_mismatches = 0
     for input_tree, capture_tree, tab, candidate_prefix, mode in modes:
         # Each surface records its own release; Unified's manifest version can advance independently.
-        candidate = next(c for c in tab["candidates"] if c["key"].startswith(candidate_prefix))
+        candidate = next(c for c in tab["candidates"] if c["key"] == candidate_prefix)
         candidate_key = candidate["key"]
         if mode == "batch-stream":
             capture_dirs = [root / capture_tree]
@@ -1927,12 +1945,12 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
     tab = _tab(model_v2, "tab-unified")
     sections = [group for group in tab["column_groups"] if group["key"].startswith("unified_g7_")]
     assert [group["label"] for group in sections] == list(ARGUMENT_SECTIONS.values())
-    assert [group["span"] for group in sections] == [5, 12, 6, 10, 17, 14]
+    assert [group["span"] for group in sections] == [3, 4, 12, 6, 10, 17, 14]
     columns = [column for column in tab["columns"] if column["group_key"].startswith("unified_g7_")]
-    assert len(columns) == 64
-    assert [column["display_number"] for column in columns] == list(range(1, 65))
+    assert len(columns) == 66
+    assert [column["display_number"] for column in columns] == list(range(1, 67))
     expected = {scenario for scenario in unified_taxonomy.UNIFIED_TAX if unified_taxonomy.display_tax(scenario)[0] == 7}
-    assert len(expected) == 147
+    assert len(expected) == 167
     assert "gpt_oss_quoted_message_header_literal" in expected
     found = set()
     for row in tab["rows"]:
@@ -2076,23 +2094,19 @@ def test_custom_quote_columns_use_the_qwen_nemotron_section(model_v2):
             assert cell["case_id"] == f"UNIFIED.7-{custom['sub']}"
             state, _ = cell_state(cell, {"key": "dynamo", "label": "Dynamo"})
             assert state == ("green" if row["family"] in {"qwen3", "nemotron_v3"} else "na")
-def test_numeric_columns_share_argument_heading_and_band(model_v2):
-    for tab_id, heading in [("tab-unified", "TC Argument fidelity"),
-                            ("tab-toolcalling-streamv1", "Args")]:
-        tab = _tab(model_v2, tab_id)
-        columns = tab["columns"]
-        numeric_labels = {"7-17", "7-18", "7-19"}
-        numeric = [column for column in columns if column["label"] in numeric_labels]
-        assert [column["label"] for column in numeric] == ["7-17", "7-19", "7-18"]
-        previous = next(column for column in columns
-                        if column["group_key"] == numeric[0]["group_key"]
-                        and column["label"] not in numeric_labels)
-        assert all(column["group_key"] == previous["group_key"] for column in numeric)
-        assert all(column["band"] == previous["band"] for column in numeric)
-        groups = [group for group in tab["column_groups"] if group["key"] == previous["group_key"]]
-        assert len(groups) == 1
-        assert groups[0]["label"] == heading
-        assert groups[0]["span"] == sum(column["group_key"] == previous["group_key"] for column in columns)
+def test_unified_numeric_columns_share_argument_heading_and_band(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    columns = tab["columns"]
+    numeric_labels = {"7-17", "7-18", "7-19"}
+    numeric = [column for column in columns if column["label"] in numeric_labels]
+    assert [column["label"] for column in numeric] == ["7-17", "7-19", "7-18"]
+    assert len({column["group_key"] for column in numeric}) == 1
+    assert len({column["band"] for column in numeric}) == 1
+    group_key = numeric[0]["group_key"]
+    groups = [group for group in tab["column_groups"] if group["key"] == group_key]
+    assert len(groups) == 1
+    assert groups[0]["label"] == "TC Argument fidelity"
+    assert groups[0]["span"] == sum(column["group_key"] == group_key for column in columns)
 
 
 @pytest.mark.parametrize("old_id,new_id", [("7-1", "7-5"), ("7-2", "7-4")])
@@ -2123,7 +2137,7 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
         if row.get("family") not in families:
             continue
         mixed = True
-        refs = tab_id == "tab-unified" and row["family"] in {"glm47", "qwen3"}
+        refs = tab_id == "tab-unified" and row["family"] in {"glm47", "qwen3", "nemotron_v3"}
         groups = []
         for label, count in (("7-4", 5), ("7-5", 7)):
             sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
@@ -2140,21 +2154,24 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
 
 def test_bare_schema_cases_remain_independent_of_numeric_groups(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    for scenario, label in [("unused_reference_graph_parameter_types", "7-14"),
-                            ("nullable_reference_alias_literals", "7-15")]:
+    for scenario in ("unused_reference_graph_parameter_types", "nullable_reference_alias_literals"):
         column = next(c for c in tab["columns"] if c["sub"] == scenario)
-        assert column["label"] == label
+        assert column["label"] == "7-" + scenario
         assert "numeric" not in column["desc"].lower()
         for row in tab["rows"]:
             if row.get("family") not in table.gen_unified_golden.FAMILIES:
                 continue
             cell = row["cells"][scenario]
-            assert cell["case_id"] == f"UNIFIED.{label}"
+            assert cell["case_id"] == f"UNIFIED.7-{scenario}"
             assert "variants" not in cell
             assert cell["status"] != "na"
     numeric_columns = [c for c in tab["columns"] if c["label"] in {"7-17", "7-18", "7-19"}]
     assert len(numeric_columns) == 3
-    source_groups = {"7-17": "7-14.", "7-19": "7-14.", "7-18": "7-15."}
+    source_groups = {
+        "7-17": "7-arg_numeric_14_",
+        "7-19": "7-arg_numeric_14_",
+        "7-18": "7-arg_numeric_15_",
+    }
     for column in numeric_columns:
         for row in tab["rows"]:
             cell = row["cells"].get(column["sub"])
@@ -2172,18 +2189,17 @@ def test_nested_minimax_markup_stays_in_its_named_family_section(mode):
     assert all(owners[column["group_key"]] == "Single Family Test: MiniMax M3" for column in columns)
 
 
-@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1"])
-def test_numeric_variants_keep_their_applicability_after_grouping(model_v2, tab_id):
-    tab = _tab(model_v2, tab_id)
+def test_unified_numeric_variants_keep_their_applicability_after_grouping(model_v2):
+    tab = _tab(model_v2, "tab-unified")
     columns = {column["label"]: column for column in tab["columns"]}
     counts = {"7-17": 9, "7-19": 3, "7-18": 7}
-    schema_families = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
+    schema_families = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3", "beam", "nemotron_v3"}
     for row in tab["rows"]:
         if row.get("section"):
             continue
         for label, count in counts.items():
             cell = row["cells"][columns[label]["sub"]]
-            assert len(cell["variants"]) == count, (tab_id, row["family"], label)
+            assert len(cell["variants"]) == count, (row["family"], label)
             assert (cell["status"] == "na") == (label == "7-19" and row["family"] not in schema_families)
 
 

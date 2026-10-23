@@ -208,6 +208,7 @@ pub(crate) enum PyValue {
     Bool(bool),
     Int(PyInt),
     Float(f64),
+    RawNumber(String),
     Str(String),
     List(Vec<PyValue>),
     Dict(PyDict),
@@ -221,6 +222,11 @@ impl PyValue {
             PyValue::Bool(b) => *b,
             PyValue::Int(i) => !i.is_zero(),
             PyValue::Float(f) => *f != 0.0,
+            PyValue::RawNumber(number) => number.split(['e', 'E']).next().is_some_and(|mantissa| {
+                mantissa
+                    .bytes()
+                    .any(|byte| byte.is_ascii_digit() && byte != b'0')
+            }),
             PyValue::Str(s) => !s.is_empty(),
             PyValue::List(l) => !l.is_empty(),
             PyValue::Dict(d) => !d.is_empty(),
@@ -277,6 +283,7 @@ fn dump_into(value: &PyValue, out: &mut String) {
         PyValue::Bool(false) => out.push_str("false"),
         PyValue::Int(i) => write!(out, "{i}").unwrap(),
         PyValue::Float(f) => out.push_str(&float_json(*f)),
+        PyValue::RawNumber(number) => out.push_str(number),
         PyValue::Str(s) => dump_str(s, out),
         PyValue::List(items) => {
             out.push('[');
@@ -703,8 +710,7 @@ impl JsonReader<'_> {
         let text = &self.s[start..i];
         self.pos = i;
         if is_float {
-            let value: f64 = text.parse().ok()?;
-            value.is_finite().then_some(PyValue::Float(value))
+            Some(PyValue::RawNumber(text.to_string()))
         } else {
             parse_int(text).map(PyValue::Int)
         }

@@ -17,7 +17,7 @@ class _JsonNumberToken(str):
 
 NUMERIC_DESCRIPTIONS = {
     "7-14": "Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md.",
-    "7-14.string": "Schema-directed fractional string fallback: Qwen3-Coder, MiniMax M2, GLM, and MiniMax M3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md.",
+    "7-14.string": "Schema-directed fractional string fallback: Qwen3, Qwen3-Coder, MiniMax M2, GLM-4.7, MiniMax M3, Beam, and Nemotron v3 preserve fractional text as a string under an integer/string schema. JSON-native grammars do not apply this coercion. See numeric-failures.md.",
     "7-15": "Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md.",
 }
 
@@ -69,6 +69,7 @@ _STRING_FALLBACK_LABELS = {label for _, label, _, _, expected in NUMERIC_VARIANT
 _NUMERIC_GROUPS = {label: "7-14.string" if label in _STRING_FALLBACK_LABELS
                   else label.split(".", 1)[0] for _, label, *_ in NUMERIC_VARIANTS}
 SCHEMA_DIRECTED_FAMILIES = {"qwen3", "qwen3_coder", "minimax_m2", "glm47", "minimax_m3"}
+NUMERIC_SCHEMA_DIRECTED_FAMILIES = SCHEMA_DIRECTED_FAMILIES | {"beam", "nemotron_v3"}
 
 
 def numeric_group(label):
@@ -77,13 +78,14 @@ def numeric_group(label):
 
 def applicable(family, label):
     group = numeric_group(label)
-    return group is not None and (group != "7-14.string" or family in SCHEMA_DIRECTED_FAMILIES)
+    return group is not None and (group != "7-14.string" or family in NUMERIC_SCHEMA_DIRECTED_FAMILIES)
 
 
 def numeric_schema(family, label, schema):
-    # The original Qwen/M2 union probes are immutable. GLM/M3 prefer strings in
-    # that union, so their new numeric-fidelity probes require an integer alone.
-    if numeric_group(label) == "7-14" and family in {"glm47", "minimax_m3"} and schema.get("type") == ["integer", "string"]:
+    # The original Qwen/M2 union probes are immutable. GLM, M3, Beam, and
+    # Nemotron prefer strings in that union, so numeric-fidelity probes require
+    # an integer alone for those families.
+    if numeric_group(label) == "7-14" and family in {"glm47", "minimax_m3", "beam", "nemotron_v3"} and schema.get("type") == ["integer", "string"]:
         return {"type": "integer"}
     return schema
 
@@ -93,11 +95,23 @@ def numeric_description(label):
 
 
 def numeric_expected(family, label, raw, expected):
-    # Normalization is an existing Qwen/M2 contract. Other grammars may retain
-    # the numeric spelling; the independent decimal oracle compares its value.
-    if numeric_group(label) == "7-14" and family not in {"qwen3", "qwen3_coder", "minimax_m2"}:
+    # These schema-directed parsers normalize integral tokens; the independent
+    # decimal oracle still checks their exact value.
+    if numeric_group(label) == "7-14" and family in {"qwen3", "qwen3_coder", "minimax_m2", "glm47"}:
+        return expected
+    if numeric_group(label) == "7-14":
         return raw
     return expected
+
+
+def unified_numeric_expected(family, label, raw, expected):
+    """Keep schema coercion separate from JSON-native numeric preservation."""
+    if (family == "beam" and numeric_group(label) == "7-14"
+            and not label.split(".", 1)[1].startswith(("const_", "enum_"))):
+        return json.dumps(raw)
+    if numeric_group(label) == "7-14" and family in NUMERIC_SCHEMA_DIRECTED_FAMILIES:
+        return expected
+    return numeric_expected(family, label, raw, expected)
 
 
 def arguments_json(token):

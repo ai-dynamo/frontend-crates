@@ -122,8 +122,11 @@ def group_null_variants(tab: dict) -> None:
         root = next((column for column in members if metadata_label(column) == parent), members[0])
         # A corpus may contain only a named variant; keep its fixture identity.
         display_group = (NUMERIC_DISPLAY_LABELS[parent] if parent in NUMERIC_DESCRIPTIONS
+                         else parent if parent in NULL_DESCRIPTIONS
                          else root["label"] if len(members) == 1 else display_label(parent))
         display_labels[root["label"]] = display_group
+        if unified:
+            root["_grouped_display_label"] = display_group
         display_descriptions[display_group] = description
         # Mixed-field probes exercise both types in one request. Reference their
         # single recorded result from both categories instead of duplicating inputs.
@@ -140,7 +143,7 @@ def group_null_variants(tab: dict) -> None:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             inapplicable = []
-            if parent in NUMERIC_DESCRIPTIONS and not numeric_applicable(row["family"], root["label"]):
+            if parent in NUMERIC_DESCRIPTIONS and not numeric_applicable(row["family"], metadata_label(root)):
                 prefix = "UNIFIED" if tab["id"] == "tab-unified" else "TOOLCALLING.streamv1"
                 for column in members:
                     cell = row["cells"].get(column["sub"])
@@ -179,7 +182,7 @@ def group_null_variants(tab: dict) -> None:
                 grouped = copy.deepcopy(inapplicable[0])
                 grouped.update(
                     sub=root["sub"],
-                    case_id=f"{prefix}.{display_label}",
+                    case_id=f"{prefix}.{display_group}",
                     kind="cell",
                     status="na",
                     red_on_diff=False,
@@ -302,8 +305,7 @@ def group_unified_variants(tab):
             row["cells"].pop(sub, None)
     descriptions = {column["label"]: column["desc"] for column in tab["columns"]}
     for group in tab.get("glossary", []):
-        group["rows"] = [(display_labels.get(label, label),
-                          display_descriptions.get(display_labels.get(label, label), desc))
+        group["rows"] = [(label, descriptions.get(label, desc))
                          for label, desc in group["rows"]
-                         if label not in hidden_labels and (variant_group(label) is None or label in display_labels)]
+                         if label not in hidden_labels and (variant_group(label) is None or label in descriptions)]
     refresh_variant_stats(tab, len(hidden))

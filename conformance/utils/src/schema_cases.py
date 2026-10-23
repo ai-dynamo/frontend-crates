@@ -68,6 +68,7 @@ def schema_group(name: str) -> str:
 # Report sections reuse the schema classification without changing fixture IDs.
 ARGUMENT_SECTIONS = {
     "text": "Text preservation",
+    "numeric": "TC Argument fidelity",
     "declared": "Declared types and enums",
     "nullable": "Type arrays and null interpretation",
     "const": "String constants",
@@ -85,6 +86,8 @@ def argument_section(scenario: str) -> str:
     scenario = scenario.removesuffix("_pr424")
     if scenario.startswith("xml_"):
         return "declared"
+    if scenario.startswith("arg_numeric_"):
+        return "numeric"
     if scenario.startswith("schema_"):
         return _SCHEMA_SECTION[schema_group(scenario.removeprefix("schema_"))]
     if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string",

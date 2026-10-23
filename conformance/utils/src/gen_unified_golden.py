@@ -40,7 +40,7 @@ from numeric_cases import (
     applicable,
     arguments_json,
     numeric_description,
-    numeric_expected,
+    unified_numeric_expected,
     numeric_schema,
 )
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
@@ -252,7 +252,9 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         for key, value in arguments.items()
     }
     if fam == "gpt_oss":
-        args = json.dumps(arguments, ensure_ascii=False)
+        args = (_json_with_numeric_literals(arguments)
+                if _contains_numeric_literal(arguments)
+                else json.dumps(arguments, ensure_ascii=False))
         return (f"<|start|>assistant<|channel|>commentary to=functions.{name} "
                 f"<|constrain|>json<|message|>{args}<|call|>")
     if fam in ("deepseek_v4", "deepseek_v41"):
@@ -3068,13 +3070,48 @@ EDGE += [
      OnlyFamilies({family: (r_tool(family, "get_weather", "value", NumericLiteral(raw), 0),
                              VLLM_UNCAPTURABLE.get(family, M), M,
                              [{"kind": "tool_call", "name": "get_weather",
-                               "arguments": arguments_json(numeric_expected(family, label, raw, expected))}])
+                                "arguments": arguments_json(unified_numeric_expected(family, label, raw, expected))}])
                    for family in FAMILIES if applicable(family, label)}),
      {family: [{"name": "get_weather", "parameters": {
          "type": "object", "properties": {"value": numeric_schema(family, label, schema)}}}]
       for family in FAMILIES if applicable(family, label)})
     for scenario, label, schema, raw, expected in NUMERIC_VARIANTS
 ]
+
+
+_NESTED_NUMERIC_ARGUMENTS = {
+    "nested": {
+        "fraction": NumericLiteral("9007199254740992.5"),
+        "tiny": NumericLiteral("1e-400"),
+    },
+    "values": [NumericLiteral("9007199254740993"), NumericLiteral("-9007199254740993")],
+}
+_NESTED_NUMERIC_GOLDEN = (
+    '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},'
+    '"values":[9007199254740993,-9007199254740993]}'
+)
+_NESTED_NUMERIC_SCHEMA = [{"name": "inspect", "parameters": {
+    "type": "object", "properties": {
+        "nested": {"type": "object", "properties": {
+            "fraction": {"type": "number"}, "tiny": {"type": "number"},
+        }},
+        "values": {"type": "array", "items": {"type": "integer"}},
+    },
+}}]
+EDGE.append((
+    "arg_numeric_nested_exact",
+    "Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.",
+    ["I7"],
+    [{"kind": "tool_call", "name": "inspect", "arguments": _NESTED_NUMERIC_GOLDEN}],
+    {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+    {"finish_reason": "stop"},
+    OnlyFamilies({family: (
+        r_tool_arguments(family, "inspect", _NESTED_NUMERIC_ARGUMENTS, 0),
+        VLLM_UNCAPTURABLE.get(family, M), M,
+        [{"kind": "tool_call", "name": "inspect", "arguments": _NESTED_NUMERIC_GOLDEN}],
+    ) for family in FAMILIES}),
+    {family: _NESTED_NUMERIC_SCHEMA for family in FAMILIES},
+))
 
 
 _NATIVE_QUOTED_CONTROL = {
@@ -3697,6 +3734,27 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     ))
 
 
+def _apply_numeric_tool_schemas(cases, family):
+    for scenario, label, schema, _raw, _expected in NUMERIC_VARIANTS:
+        key = f"UNIFIED.{scenario}.{family}"
+        if key in cases:
+            cases[key]["tools"] = [{
+                "name": "get_weather",
+                "parameters": {"type": "object", "properties": {"value": numeric_schema(family, label, schema)}},
+            }]
+    return cases
+
+
+def _apply_unified_numeric_goldens(cases, family):
+    for scenario, label, _schema, raw, expected in NUMERIC_VARIANTS:
+        case = cases.get(f"UNIFIED.{scenario}.{family}")
+        if case is not None:
+            case["golden"][0]["arguments"] = arguments_json(
+                unified_numeric_expected(family, label, raw, expected)
+            )
+    return cases
+
+
 def build_cases(fam):
     grammar = _MANIFEST[fam].get("grammar")
     if grammar is None:
@@ -3716,7 +3774,9 @@ def build_cases(fam):
                     case["input_chunks"][0] = default_response_prefix(fam) + case["input_chunks"][0]
             cases[key.rsplit(".", 1)[0] + "." + fam] = case
         cases.update(_build_edge_cases(fam, DEFAULT_REASONING_CASES))
+        _apply_numeric_tool_schemas(cases, fam)
         _preserve_historical_requests(cases, fam)
+        cases = _apply_unified_numeric_goldens(cases, fam)
     return {
         key: case
         for key, case in cases.items()
@@ -3765,7 +3825,7 @@ def _build_cases(fam):
     _preserve_historical_requests(cases, fam)
     if fam == "gpt_oss":
         _preserve_gpt_oss_historical_oracle(cases)
-    return cases
+    return _apply_unified_numeric_goldens(cases, fam)
 
 
 @lru_cache(maxsize=16)
