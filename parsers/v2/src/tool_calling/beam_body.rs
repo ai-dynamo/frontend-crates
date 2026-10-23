@@ -873,7 +873,14 @@ fn json_type_names(value: &PyValue) -> &'static [&'static str] {
 /// Beam can emit integer-valued decimal and exponent forms. Keep their digits exact;
 /// this deliberately extends the frozen reference's Python `int()` conversion.
 fn integral_decimal(raw: &str) -> Option<PyValue> {
-    let parsed = coerce_integral_number(beam_py::strip(raw))?;
+    let stripped = beam_py::strip(raw);
+    let parsed = if stripped.contains(['e', 'E']) {
+        coerce_integral_number(&beam_py::numeric_text(raw)?)?
+    } else if stripped.contains('.') {
+        coerce_integral_number(stripped)?
+    } else {
+        return None;
+    };
     Some(PyValue::RawNumber(parsed.json_text().ok()?))
 }
 
@@ -908,7 +915,8 @@ pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
                 if let Some(PyValue::RawNumber(number)) = beam_py::json_loads(raw) {
                     return PyValue::RawNumber(number);
                 }
-                if let Some(number) = normalize_decimal_spelling(beam_py::strip(raw))
+                if let Some(numeric) = beam_py::numeric_text(raw)
+                    && let Some(number) = normalize_decimal_spelling(&numeric)
                     && let Ok(number) = number.json_text()
                 {
                     return PyValue::RawNumber(number);
@@ -1618,6 +1626,38 @@ mod tests {
         ] {
             assert_eq!(super::typed_value(Some(&schema), "3.0").dumps(), expected);
         }
+    }
+
+    #[test]
+    fn numeric_coercion_preserves_python_numeric_whitespace_rules() {
+        for separator in ['\x1c', '\x1d', '\x1e', '\x1f'] {
+            for (kind, token) in [
+                ("integer", "5"),
+                ("integer", "5.5"),
+                ("integer", "5e0"),
+                ("number", "5"),
+                ("number", "5.5"),
+                ("number", "5e0"),
+            ] {
+                for raw in [format!("{token}{separator}"), format!("{separator}{token}")] {
+                    assert_eq!(
+                        super::coerce(&raw, &[kind.to_string()]).dumps(),
+                        super::PyValue::Str(raw.clone()).dumps(),
+                        "kind={kind}, raw={raw:?}"
+                    );
+                }
+            }
+        }
+        for whitespace in [' ', '\t', '\n', '\r', '\x0b', '\x0c', '\u{85}', '\u{a0}'] {
+            for (kind, token) in [("integer", "5"), ("number", "5.5")] {
+                let raw = format!("{whitespace}{token}{whitespace}");
+                assert_eq!(super::coerce(&raw, &[kind.to_string()]).dumps(), token);
+            }
+        }
+        assert_eq!(
+            super::coerce("5.0\x1f", &["integer".to_string()]).dumps(),
+            "5"
+        );
     }
 
     #[test]
