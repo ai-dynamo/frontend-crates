@@ -287,20 +287,19 @@ fn unified_parser_matches_the_golden_oracle() {
                 Ok(result) => (Ok(result.0), Some(result.1)),
                 Err(error) => (Err(error), None),
             };
-            if id.starts_with("UNIFIED.arg_numeric_") {
-                if let Some(actual) = raw_arguments
+            if id.starts_with("UNIFIED.arg_numeric_")
+                && let Some(actual) = raw_arguments
                     .as_ref()
                     .filter(|_| !case.raw_golden_arguments.is_empty())
-                {
-                    let expected = case
-                        .raw_golden_arguments
-                        .iter()
-                        .enumerate()
-                        .map(|(index, arguments)| (index, arguments.clone()))
-                        .collect::<std::collections::BTreeMap<_, _>>();
-                    if actual == &expected {
-                        continue;
-                    }
+            {
+                let expected = case
+                    .raw_golden_arguments
+                    .iter()
+                    .enumerate()
+                    .map(|(index, arguments)| (index, arguments.clone()))
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                if actual == &expected {
+                    continue;
                 }
             }
             if got.as_ref() != Ok(&case.golden) {

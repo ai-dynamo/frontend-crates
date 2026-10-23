@@ -446,12 +446,14 @@ fn dotted_harmony_split_matches_golden_at_every_boundary() {
     assert_eq!(checked, 4);
 }
 
+type NativeCapture = (Vec<Ev>, Vec<ChunkRow>, BTreeMap<usize, String>);
+
 fn capture_native_case(
     family: &str,
     chunks: &[String],
     init: &Init,
     tool_schemas: &[dynamo_parsers_v2::Tool],
-) -> Result<(Vec<Ev>, Vec<ChunkRow>, BTreeMap<usize, String>), capture::CaptureFailure> {
+) -> Result<NativeCapture, capture::CaptureFailure> {
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
