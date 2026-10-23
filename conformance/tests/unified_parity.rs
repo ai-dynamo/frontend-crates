@@ -87,6 +87,25 @@ fn structural_response_case_checks_the_schema_before_parsing() {
                 case.golden,
                 "{id}"
             );
+            if file.family == "gpt_oss" {
+                for invalid in [
+                    "<|return|>".to_string(),
+                    format!("{}extra", case.input),
+                    format!("{}<|return|>", case.input),
+                    case.input.replace("<|return|>", "<|call|>"),
+                ] {
+                    assert!(
+                        events(
+                            &file.family,
+                            std::slice::from_ref(&invalid),
+                            &case.init,
+                            &tools,
+                        )
+                        .is_err(),
+                        "{id}: accepted invalid stop sequence {invalid:?}"
+                    );
+                }
+            }
             // Parsing the same stream still succeeds with a contradictory schema.
             // Only a real grammar check can reject this request before parsing.
             case.init.structural_tag.as_mut().unwrap().schema =
