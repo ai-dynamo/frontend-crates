@@ -560,11 +560,12 @@ def test_narrow_picker_opens_the_normal_version_select(matrix_driver, rendered_p
         d.set_window_size(2400, 1200)
 
 
-@pytest.mark.parametrize("close_over_control", [False, True])
-def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_driver, rendered_page, close_over_control):
+@pytest.mark.parametrize("close_over_control,viewport_width", [(False, 2400), (True, 2400), (True, 2300)])
+def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_driver, rendered_page, close_over_control, viewport_width):
     d = matrix_driver
-    load(d, rendered_page)
+    d.set_window_size(viewport_width, 1200)
     try:
+        load(d, rendered_page)
         cell = d.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-cmp][data-ttip-id]")
         assert len(cell.find_elements(By.CSS_SELECTOR, ".matrix-status")) == 1
         d.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));arguments[0].focus()", cell)
@@ -629,16 +630,24 @@ def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_drive
         if close_over_control:
             geometry = d.execute_script("""
                 const close = arguments[0].getBoundingClientRect(), x = close.x + close.width / 2;
-                const control = [...document.querySelectorAll('[data-col-toggle]')].find(node => {
-                    const r = node.getBoundingClientRect(); return r.width && r.left <= x && x <= r.right;
+                const control = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')].find(node => {
+                    const r = node.getBoundingClientRect(); return r.width && r.height && r.left + r.width / 2 >= x;
                 });
+                if (!control) return null;
+                // The close button can land in a gap between controls. Pan the
+                // matrix to place a real control beneath it before testing clicks.
+                const target = control.getBoundingClientRect();
+                window.scrollBy(target.x + target.width / 2 - x, 0);
                 const r = control.getBoundingClientRect();
                 return {control, height: outerHeight + 2 * (r.y + r.height / 2 - close.y - close.height / 2)};
             """, close)
-            d.set_window_size(2400, round(geometry["height"]))
+            assert geometry is not None, "active matrix has no column control to align beneath the popup close button"
+            d.set_window_size(viewport_width, round(geometry["height"]))
             WebDriverWait(d, 5).until(lambda browser: browser.execute_script("""
                 const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
-                return r.top < c.y + c.height / 2 && c.y + c.height / 2 < r.bottom;
+                const x = c.x + c.width / 2, y = c.y + c.height / 2;
+                return r.left < x && x < r.right && r.top < y && y < r.bottom
+                    && arguments[0].contains(document.elementFromPoint(x, y));
             """, close, geometry["control"]))
         close.click()
         assert_popup_closed(d, popup, cell)
@@ -648,8 +657,7 @@ def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_drive
                 "return arguments[0]._ttip.classList.contains('ttip-visible')", geometry["control"]))
             assert_popup_closed(d, popup, cell)
     finally:
-        if close_over_control:
-            d.set_window_size(2400, 1200)
+        d.set_window_size(2400, 1200)
         load(d, rendered_page)
 
 
