@@ -2034,6 +2034,12 @@ def _assert_cross_family_contract(corpus):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX) - taxonomy.RETIRED_SCENARIOS
+    # These contracts apply to every native grammar; deriving this set from the
+    # generator's applicability would let a Nemotron-only restriction validate itself.
+    for scenario in ("reason_only", "reason_markup_in_arg"):
+        assert set(by_scenario[scenario]) == set(NATIVE_FAMILIES), (
+            scenario, "shared reasoning coverage", set(by_scenario[scenario]),
+        )
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter
@@ -2057,6 +2063,20 @@ def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
     case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
     calls = _native_input_calls("gpt_oss", case["input"], exact_numbers=True)
     assert calls[0]["arguments"]["value"] == Decimal("9007199254740993.0")
+
+@pytest.mark.parametrize("scenario", ["reason_only", "reason_markup_in_arg"])
+def test_cross_family_contract_rejects_nemotron_only_reasoning(scenario, monkeypatch):
+    corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
+    for family, cases in corpus.items():
+        if family != "nemotron_v3":
+            del cases[f"UNIFIED.{scenario}.{family}"]
+    scenario_families = G.scenario_families
+    monkeypatch.setattr(
+        G, "scenario_families",
+        lambda name: frozenset({"nemotron_v3"}) if name == scenario else scenario_families(name),
+    )
+    with pytest.raises(AssertionError, match="shared reasoning coverage"):
+        _assert_cross_family_contract(corpus)
 
 
 @pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family not in {"muse_glimmer", "muse_spark"}])
