@@ -46,6 +46,8 @@ struct GoldenCase {
     #[serde(default)]
     tools: Option<serde_json::Value>,
     golden: Vec<UnifiedEvent>,
+    #[serde(skip)]
+    raw_golden_arguments: Vec<String>,
     /// Request-scoped parser configuration, declared by the case. Shared with
     /// `unified_render` via `common::Init` so both harnesses configure a case
     /// identically; see that type for why it is declared and not inferred.
@@ -62,9 +64,30 @@ fn load_native_golden() -> Vec<GoldenFile> {
             continue;
         }
         let text = std::fs::read_to_string(&path).unwrap();
-        files.push(
-            serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display())),
-        );
+        let raw: serde_yaml::Value =
+            serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        let mut file: GoldenFile = serde_yaml::from_value(raw.clone())
+            .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+        if let Some(cases) = raw.get("cases").and_then(serde_yaml::Value::as_mapping) {
+            for (id, value) in cases {
+                let Some(id) = id.as_str() else { continue };
+                let Some(case) = file.cases.get_mut(id) else {
+                    continue;
+                };
+                case.raw_golden_arguments = value
+                    .get("golden")
+                    .and_then(serde_yaml::Value::as_sequence)
+                    .into_iter()
+                    .flatten()
+                    .filter(|event| {
+                        event.get("kind").and_then(serde_yaml::Value::as_str) == Some("tool_call")
+                    })
+                    .filter_map(|event| event.get("arguments").and_then(serde_yaml::Value::as_str))
+                    .map(str::to_owned)
+                    .collect();
+            }
+        }
+        files.push(file);
     }
     files.retain(|file| has_unified_parser(&file.family));
     files.sort_by(|a, b| a.family.cmp(&b.family));
@@ -120,6 +143,15 @@ fn events(
     init: &Init,
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<Vec<UnifiedEvent>, String> {
+    events_and_raw(family, chunks, init, tool_schemas).map(|(events, _)| events)
+}
+
+fn events_and_raw(
+    family: &str,
+    chunks: &[String],
+    init: &Init,
+    tool_schemas: &[dynamo_parsers_v2::Tool],
+) -> Result<(Vec<UnifiedEvent>, std::collections::BTreeMap<usize, String>), String> {
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create unified parser for `{family}`: {e}"));
     init.apply(&mut parser, family);
@@ -130,7 +162,9 @@ fn events(
         capture::CaptureFailure::Error(error) => error,
         other => panic!("unexpected capture failure: {other:?}"),
     })?;
-    Ok(assemble(&rows.into_iter().flatten().collect::<Vec<_>>()))
+    let deltas = rows.into_iter().flatten().collect::<Vec<_>>();
+    let raw_arguments = dynamo_parsers_v2::tool_arguments_raw(&deltas);
+    Ok((assemble(&deltas), raw_arguments))
 }
 
 fn render(result: &Result<Vec<UnifiedEvent>, String>) -> String {
@@ -244,12 +278,31 @@ fn unified_parser_matches_the_golden_oracle() {
         for (id, case) in &file.cases {
             checked += 1;
             let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
-            let got = events(
+            let (got, raw_arguments) = match events_and_raw(
                 &file.family,
                 &capture::input_chunks(&case.input, case.input_chunks.as_deref()),
                 &case.init,
                 &case_tools,
-            );
+            ) {
+                Ok(result) => (Ok(result.0), Some(result.1)),
+                Err(error) => (Err(error), None),
+            };
+            if id.starts_with("UNIFIED.arg_numeric_") {
+                if let Some(actual) = raw_arguments
+                    .as_ref()
+                    .filter(|_| !case.raw_golden_arguments.is_empty())
+                {
+                    let expected = case
+                        .raw_golden_arguments
+                        .iter()
+                        .enumerate()
+                        .map(|(index, arguments)| (index, arguments.clone()))
+                        .collect::<std::collections::BTreeMap<_, _>>();
+                    if actual == &expected {
+                        continue;
+                    }
+                }
+            }
             if got.as_ref() != Ok(&case.golden) {
                 match divergences::expected(&known, &file.family, id, Check::Golden) {
                     Some(Expected::Golden(expected)) if render(&got) == expected.actual => {

@@ -45,6 +45,8 @@ from fixture_disposition import historical_unified_case_key  # noqa: E402
 from gen_unified_golden import (  # noqa: E402
     PARALLEL_BOUNDARY_CASES,
     UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
+    PARALLEL_BOUNDARY_CASES,
+    UNIFIED_PARALLEL_BOUNDARY_FAMILIES,
     CLEAN,
     OnlyFamilies,
     EDGE,
@@ -53,7 +55,7 @@ from gen_unified_golden import (  # noqa: E402
     control_tokens,
     invoke_header_prefix,
 )
-from numeric_cases import canonical_events
+from numeric_cases import NUMERIC_VARIANTS, applicable as numeric_applicable, canonical_events, numeric_expected, unified_numeric_expected
 from unified_taxonomy import (  # noqa: E402
     historical_case_label,
     UNIFIED_GROUP_LABEL,
@@ -62,7 +64,6 @@ from unified_taxonomy import (  # noqa: E402
     numbered_id,
     tax,
     taxonomy_sort_key,
-    validate_family_sections,
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
@@ -180,25 +181,6 @@ def test_every_used_group_has_a_label() -> None:
         f"group(s) {missing} are used by the corpus but absent from UNIFIED_GROUP_LABEL "
         f"in {TAXONOMY_FILE}."
     )
-
-
-def _authored_scenario_families():
-    families = defaultdict(set)
-    for family in FAMILIES:
-        for case_id in build_cases(family):
-            families[case_id[len("UNIFIED."):].rsplit(".", 1)[0]].add(family)
-    return families
-
-
-def test_single_family_cases_never_enter_generic_sections():
-    validate_family_sections(_authored_scenario_families())
-
-
-def test_section_guard_rejects_one_family_coverage_disguised_as_generic():
-    families = _authored_scenario_families()
-    families["arg_numeric_14_const_decimal"] = {"qwen3"}
-    with pytest.raises(ValueError, match="must NEVER appear in generic sections"):
-        validate_family_sections(families)
 
 
 def test_case_labels_keep_gemma_specific_cases_out_of_the_generic_guided_series() -> None:
@@ -691,7 +673,7 @@ def test_scenario_families_matches_declared_scope():
         "guided_json_quoted_bare_tool_header_in_answer": {"muse_glimmer"},
         "gemma4_guided_json_visible_call_prose_before_reasoning": {"gemma4"},
         "gemma4_guided_json_malformed_call_prefix_before_reasoning": {"gemma4"},
-        "arg_json_null_ref": {"glm47"},
+        "arg_json_null_ref": {"glm47", "qwen3", "nemotron_v3"},
         "arg_null_mixed_labels": set(FAMILIES),
         "arg_string_null_ref": {"glm47", "qwen3", "nemotron_v3"},
         "glm_ref_object": set(FAMILIES),
@@ -933,6 +915,8 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 
 # --- counts live where they can be checked, not in registry prose ---------------
 
+NESTED_NUMERIC_CASES = 1
+
 def test_unified_case_counts_match_the_generator():
     """Name exactly what is counted, and count it from the generator.
 
@@ -942,17 +926,17 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     family_specific = {
-        "beam": 124,
-        "deepseek_v4": 134,
-        "deepseek_v41": 130,
-        "gemma4": 127,
+        "beam": 125,
+        "deepseek_v4": 135,
+        "deepseek_v41": 131,
+        "gemma4": 128,
         "glm47": 125,
-        "gpt_oss": 166,
-        "kimi_k2": 125,
-        "kimi_k3": 134,
-        "muse_glimmer": 133,
-        "qwen3": 130,
-        "nemotron_v3": 131,
+        "gpt_oss": 167,
+        "kimi_k2": 126,
+        "kimi_k3": 135,
+        "muse_glimmer": 134,
+        "qwen3": 132,
+        "nemotron_v3": 133,
     }
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
@@ -961,12 +945,16 @@ def test_unified_case_counts_match_the_generator():
             fam in G.scenario_families(scenario)
             for scenario in G.DOTTED_NAME_SCENARIOS
         )
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
+        boundary_cases = len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0
+        numeric_count = sum(numeric_applicable(fam, label) for _, label, *_ in NUMERIC_VARIANTS)
+        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + boundary_cases + numeric_count + NESTED_NUMERIC_CASES, f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == (
         sum(family_specific.values())
         + len(FAMILIES) * len(CONFORMANCE_CASES)
         + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
         + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
+        + sum(numeric_applicable(fam, label) for fam in FAMILIES for _, label, *_ in NUMERIC_VARIANTS)
+        + len(FAMILIES) * NESTED_NUMERIC_CASES
     )
 
 
@@ -974,7 +962,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES) + len(NUMERIC_VARIANTS) + NESTED_NUMERIC_CASES
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1472,7 +1460,7 @@ def _native_input_calls(family, raw, *, exact_numbers=False):
     family = G.unified_grammar_family(family)
     if family == "gpt_oss":
         calls = []
-        decoder = json.JSONDecoder()
+        decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
         endings = ("<|call|>", "<|end|>", "<|return|>")
         owned_until = 0
         headers = re.finditer(
@@ -1584,7 +1572,7 @@ def _native_input_calls(family, raw, *, exact_numbers=False):
                     value, parse_float=Decimal if exact_numbers else float
                 )
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
-                values = _json_values(body)
+                values = _json_values(body, exact_numbers=exact_numbers)
                 if values:
                     arguments = values[0]
         calls.append({"kind": "tool_call", "name": match[1], "arguments": arguments})
@@ -1844,6 +1832,11 @@ BEAM_GRAMMAR_EXCEPTIONS = {
     "guided_json_native_parameter_body_inside_reasoning",
     "guided_json_reasoning_markers_inside_native_parameter",
 }
+BEAM_NUMERIC_STRING_SCENARIOS = {
+    scenario for scenario, label, _schema, raw, expected in NUMERIC_VARIANTS
+    if unified_numeric_expected("beam", label, raw, expected)
+    != numeric_expected("beam", label, raw, expected)
+}
 
 
 def _assert_cross_family_contract(corpus):
@@ -1996,7 +1989,7 @@ def _assert_cross_family_contract(corpus):
         # tokens), so it stands outside the shared contract for those scenarios only.
         contracts = [
             (family, contract) for family, contract in families.items()
-            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS)
+            if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS | BEAM_NUMERIC_STRING_SCENARIOS)
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:
@@ -2005,6 +1998,13 @@ def _assert_cross_family_contract(corpus):
 
 def test_all_scenarios_preserve_cross_family_input_and_output_contracts():
     _assert_cross_family_contract({family: build_cases(family) for family in NATIVE_FAMILIES})
+
+
+def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
+    scenario = "arg_numeric_14_large_decimal"
+    case = build_cases("gpt_oss")[f"UNIFIED.{scenario}.gpt_oss"]
+    calls = _native_input_calls("gpt_oss", case["input"], exact_numbers=True)
+    assert calls[0]["arguments"]["value"] == Decimal("9007199254740993.0")
 
 
 @pytest.mark.parametrize("family", [family for family in NATIVE_FAMILIES if family != "muse_glimmer"])

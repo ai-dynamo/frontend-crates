@@ -1,0 +1,474 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.32
+    git_commit: bd3471b067fdb5af3959b58217fe2c1ab84f8109
+    source_sha256: 572686dfa7be98529a2fc07cb62fc66d557bfb81a2391fa0003e5172eb655ab7
+document:
+  mode: unified
+changes:
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: d530f06fdb7f9e806b5a6308791d0e470603443b2673cf65e486db356566bca8
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label": null'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "note": null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "literal": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_const_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: b36d9e1606ddb138b13f6b3a264c9d51775265971010b1272ed7f20e3c5bbbe7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  arg_numeric_14_const_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_const_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: ce8241181db48221cc7331d7fae5586e211498e20ab1bb7ecb606657f9fa78d4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_enum_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: dc1598f479e259a932d4904a887e74a67a64a29b3e26439b0c511992759949a3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  arg_numeric_14_enum_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_enum_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 08e40893413102d20d2b9687b9a67680e3da3cfd77b94b5e464e3b0f5c2d076f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 42}'
+            complete: true
+        - expected: []
+  arg_numeric_14_fraction_fallback:
+    case_key: UNIFIED.7-arg_numeric_14_fraction_fallback
+    stimulus:
+      ref: current
+      semantic_sha256: ea2b87a8efd840120591699fea1115306b45227fbde735e2e49c65f028129c7f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: '42.5'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "42.5"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_fraction_near_integer:
+    case_key: UNIFIED.7-arg_numeric_14_fraction_near_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 9fa886a1cf782026ec5a73a8e4839da6ff712a6bc94e6465da4d9bf6bea27fab
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: '42.0000000000000001'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "42.0000000000000001"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_fraction_underflow:
+    case_key: UNIFIED.7-arg_numeric_14_fraction_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: ca565a93f80ab6fb42f02a133028dce1e277f8a14552d1a9024a86ccedfd04d4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 1e-400
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "1e-400"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_decimal:
+    case_key: UNIFIED.7-arg_numeric_14_large_decimal
+    stimulus:
+      ref: current
+      semantic_sha256: b157b148473eb6865701d3d7cee5b42fa8b62b1470d2b67d7735f547e24c115d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: '9007199254740993.0'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "9007199254740993.0"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_large_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_large_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 324e2f4ddd6238d6a350a813879bb54d39f5cc82ab64267bbd3652e5b119192e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9.007199254740993e15
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "9.007199254740993e15"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative:
+    case_key: UNIFIED.7-arg_numeric_14_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 4249c30afc3f828849ef887b0ca2f1fe7dc6ed304d2760b4ac9d55eba86f0815
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: '-4.2E+1'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "-4.2E+1"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_negative_exponent:
+    case_key: UNIFIED.7-arg_numeric_14_negative_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: 08f9365034eee24c88b50a2328cfa9fcad67a57ca5515173555d0f7f0161de0b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 4200e-2
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "4200e-2"}'
+            complete: true
+        - expected: []
+  arg_numeric_14_zero_underflow:
+    case_key: UNIFIED.7-arg_numeric_14_zero_underflow
+    stimulus:
+      ref: current
+      semantic_sha256: ef23a795136fb96b2c1ccbde82c13dfbcec9a78c475a89d0a2a1a381d5b4021e
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: '0.0e-400'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": "0.0e-400"}'
+            complete: true
+        - expected: []
+  arg_numeric_15_exponent:
+    case_key: UNIFIED.7-arg_numeric_15_exponent
+    stimulus:
+      ref: current
+      semantic_sha256: db9db0f19c44d91cde87613c13ba20cba0ebd7419ad61292e3d8561af9c8ee12
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 9.0071992547409925e15}'
+            complete: true
+        - expected: []
+  arg_numeric_15_negative:
+    case_key: UNIFIED.7-arg_numeric_15_negative
+    stimulus:
+      ref: current
+      semantic_sha256: 8b2c1b33c5f5b827c33173a46b59972b0ed69a5fd935eed1cca58aafde073c2a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: -9007199254740992.0
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": -9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_ordinary:
+    case_key: UNIFIED.7-arg_numeric_15_ordinary
+    stimulus:
+      ref: current
+      semantic_sha256: 36d486bbbb6d33add74f5c8fe6096e8815af16301c9bd976c90b0532b4233b7b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 42.5
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 42.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_quarter:
+    case_key: UNIFIED.7-arg_numeric_15_quarter
+    stimulus:
+      ref: current
+      semantic_sha256: 6cc0b0e49242a474f11dfa6ef476d1dbf735e2b0a149ef5997aff5b2853a350d
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 9007199254740993.25}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_down:
+    case_key: UNIFIED.7-arg_numeric_15_round_down
+    stimulus:
+      ref: current
+      semantic_sha256: f48dec5d277a73fb4cb4b3096913f7047f246f90fdf08c0a0952e086b8582785
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740992.0
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 9007199254740992.5}'
+            complete: true
+        - expected: []
+  arg_numeric_15_round_up:
+    case_key: UNIFIED.7-arg_numeric_15_round_up
+    stimulus:
+      ref: current
+      semantic_sha256: 76147fdc18128cf41f4cdddbdd41837bf787c8d91e3b870a49319fa7b822802a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 9007199254740994.0
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 9007199254740993.1}'
+            complete: true
+        - expected: []
+  arg_numeric_15_small:
+    case_key: UNIFIED.7-arg_numeric_15_small
+    stimulus:
+      ref: current
+      semantic_sha256: 212d0fc086e3ac1f47c9c5a3fea41385bded3f1a110d59489068f15fa91ca6d7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            value: 0.1
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"value": 0.10000000000000000001}'
+            complete: true
+        - expected: []
+  arg_numeric_nested_exact:
+    case_key: UNIFIED.7-arg_numeric_nested_exact
+    stimulus:
+      ref: current
+      semantic_sha256: 8b0725049695f396773aedccde7fd0261aba71614883fb1e1644c434573f5c6c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            nested:
+              fraction: 9007199254740992.0
+              tiny: 0.0
+            values:
+            - 9007199254740993
+            - -9007199254740993
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: '{"nested": {"fraction": 9007199254740992.5, "tiny": 1e-400}'
+            complete: false
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "values": [9007199254740993, -9007199254740993]'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

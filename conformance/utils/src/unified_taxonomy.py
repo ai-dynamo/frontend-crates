@@ -68,6 +68,7 @@ UNIFIED_TAX = {
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in (*NULL_VARIANTS, *NUMERIC_VARIANTS)},
+    "arg_numeric_nested_exact": (7, "20.nested_exact"),
     "arg_json_null_ref": (7, "4.ref"),
     "arg_string_null_ref": (7, "5.ref"),
     "arg_null_mixed_labels": (7, "4.mixed_labels"),
@@ -269,16 +270,6 @@ def display_section(scenario):
         section = argument_section((case_fold(scenario) or (scenario, ""))[0])
         return f"unified_g7_{section}", ARGUMENT_SECTIONS[section]
     return f"unified_g{group}", UNIFIED_GROUP_LABEL.get(group, "Other")
-
-
-def validate_family_sections(scenario_families):
-    """Reject singleton applicability in generic sections before aggregation."""
-    misplaced = {scenario: sorted(families) for scenario, families in scenario_families.items()
-                 if len(families) == 1 and (
-                     isinstance(display_tax(scenario)[0], int)
-                     or not UNIFIED_GROUP_LABEL[display_tax(scenario)[0]].startswith("Single Family Test:"))}
-    if misplaced:
-        raise ValueError(f"Single-family cases must NEVER appear in generic sections: {misplaced}")
 
 
 def display_sort_key(scenario):

@@ -80,6 +80,15 @@ metadata_changes:
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin:
+        crate_version: 0.7.13
+        git_commit: 47ef952237deefe0643f94025272a558f249687d
+        source_sha256: b1ad56b250e57723b971e180dee32e394b72abd41b0d262fbddb889ef0a7f6b5
+      inherited_from: null
   gemma4_guided_response_extra_body_opener:
     capture_provenance:
       captured_with:
@@ -115,15 +124,6 @@ document_overrides:
       captured_with:
         dynamo_v2: 0.7.13
       capture_origin: null
-      inherited_from: null
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.13
-      capture_origin:
-        crate_version: 0.7.13
-        git_commit: 47ef952237deefe0643f94025272a558f249687d
-        source_sha256: b1ad56b250e57723b971e180dee32e394b72abd41b0d262fbddb889ef0a7f6b5
       inherited_from: null
   three_calls_partial_header:
     capture_provenance:

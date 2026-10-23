@@ -7,7 +7,6 @@
 mod glm47_parser;
 mod kimi_k2_parser;
 mod minimax_m3_parser;
-mod parsed_value;
 mod parser;
 
 pub use super::response;

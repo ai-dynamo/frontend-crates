@@ -5,6 +5,31 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     observation:
       value:
@@ -1809,6 +1834,40 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
   tool_in_reason:
     observation:
       value:
@@ -1937,67 +1996,17 @@ changes:
         - expected:
           - kind: text
             text: done
-  adjacent_calls_partial_header:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            a: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            b: '2'
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"a":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"b":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-  three_calls_partial_header:
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            x: '2'
-        - kind: tool_call
-          name: h
-          arguments:
-            x: '3'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":"1"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"x":"2"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-          - kind: tool_call
-            name: h
-            arguments: '{"x":"3"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
 metadata_changes: {}
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.3
+      capture_origin:
+        crate_version: 0.3.3
+        git_commit: 27e98d4da34b364069759b2567823a37d3cfa4ac
+        source_sha256: 3be21ec29cf3130b7ecfa8d065bdb4b221ebcfaa0d6f650a519a3a1d2091b808
+      inherited_from: null
   gpt_oss_tool_body_whitespace:
     capture_provenance:
       captured_with:
@@ -2051,15 +2060,6 @@ document_overrides:
         crate_version: 0.3.3
         source_sha256: 3be21ec29cf3130b7ecfa8d065bdb4b221ebcfaa0d6f650a519a3a1d2091b808
         git_commit: 27e98d4da34b364069759b2567823a37d3cfa4ac
-      inherited_from: null
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.3.3
-      capture_origin:
-        crate_version: 0.3.3
-        git_commit: 27e98d4da34b364069759b2567823a37d3cfa4ac
-        source_sha256: 3be21ec29cf3130b7ecfa8d065bdb4b221ebcfaa0d6f650a519a3a1d2091b808
       inherited_from: null
   three_calls_partial_header:
     capture_provenance:

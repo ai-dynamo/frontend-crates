@@ -391,6 +391,15 @@ metadata_changes:
   native_single_quoted_word_control: {}
   native_unmatched_quote_then_call: {}
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.16
+      capture_origin:
+        crate_version: 0.7.16
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
@@ -446,15 +455,6 @@ document_overrides:
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
       inherited_from: null
   guided_response_native_wrapper_whitespace_before_prose:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.16
-      capture_origin:
-        crate_version: 0.7.16
-        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-        source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
-  adjacent_calls_partial_header:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.16

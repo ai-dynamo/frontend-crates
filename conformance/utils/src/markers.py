@@ -355,12 +355,21 @@ def _parser_marker(case: dict | None, impl: str) -> str:
 
 
 def _norm_calls(calls: list) -> list[tuple]:
-    """Normalize a calls list to [(name, canonical-json-args)] for equality."""
+    """Normalize calls while preserving whether the arguments field was present."""
     out = []
     for c in calls or []:
-        out.append(
-            (c.get("name", ""), json.dumps(c.get("arguments", {}), sort_keys=True, ensure_ascii=False))
-        )
+        if "arguments" in c:
+            arguments = (
+                True,
+                json.dumps(
+                    canonical_arguments(c["arguments"]),
+                    sort_keys=True,
+                    ensure_ascii=False,
+                ),
+            )
+        else:
+            arguments = (False, None)
+        out.append((c.get("name", ""), *arguments))
     return out
 
 

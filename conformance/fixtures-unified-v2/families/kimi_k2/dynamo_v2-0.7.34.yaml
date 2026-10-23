@@ -1,0 +1,53 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.34
+    git_commit: 3ace01cdf7094fde7ee6e2dec3463f5e056350fa
+    source_sha256: 76db48b50f8882afccd54f69bfe42b2fdd580dc8a5204096d503c9b4650a9a28
+document:
+  mode: unified
+changes:
+  xml_string_type_double_quoted_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"a":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"a\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  xml_string_type_single_quoted_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{''a'':1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{''a'':1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}
