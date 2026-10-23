@@ -1306,6 +1306,14 @@ mod coderabbit_fix_tests {
     }
 
     #[test]
+    fn python_literal_rejects_excessive_nesting() {
+        for (open, close) in [("[", "]"), ("{'item':", "}"), ("[{'item':", "}]")] {
+            let input = format!("{}None{}", open.repeat(3000), close.repeat(3000));
+            assert!(try_literal_eval(&input).is_err());
+        }
+    }
+
+    #[test]
     fn python_literal_nested_numbers_preserve_exact_tokens() {
         let cfg = one_param("x", json!({"type": "object"}));
         let pv = convert_param_value(
