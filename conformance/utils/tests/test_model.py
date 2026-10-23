@@ -1899,12 +1899,12 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
     tab = _tab(model_v2, "tab-unified")
     sections = [group for group in tab["column_groups"] if group["key"].startswith("unified_g7_")]
     assert [group["label"] for group in sections] == list(ARGUMENT_SECTIONS.values())
-    assert [group["span"] for group in sections] == [3, 12, 6, 10, 17, 14]
+    assert [group["span"] for group in sections] == [5, 12, 6, 10, 17, 14]
     columns = [column for column in tab["columns"] if column["group_key"].startswith("unified_g7_")]
-    assert len(columns) == 62
-    assert [column["display_number"] for column in columns] == list(range(1, 63))
+    assert len(columns) == 64
+    assert [column["display_number"] for column in columns] == list(range(1, 65))
     expected = {scenario for scenario in unified_taxonomy.UNIFIED_TAX if unified_taxonomy.display_tax(scenario)[0] == 7}
-    assert len(expected) == 145
+    assert len(expected) == 147
     assert "gpt_oss_quoted_message_header_literal" in expected
     found = set()
     for row in tab["rows"]:

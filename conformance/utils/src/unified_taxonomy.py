@@ -64,6 +64,8 @@ UNIFIED_TAX = {
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)
     "arg_unicode": (7, "1"), "arg_marker_in_string": (7, "2"),
+    "arg_object_quoted_parameter_close": (7, "27"),
+    "arg_array_quoted_parameter_close": (7, "28"),
     "deepseek_v41_mixed_control_text_in_string": (7, "3"),
     **{scenario: (7, label.split("-", 1)[1]) for scenario, label, *_ in NULL_VARIANTS},
     "arg_json_null_ref": (7, "4.ref"),

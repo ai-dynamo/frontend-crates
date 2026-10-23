@@ -91,32 +91,78 @@ fn parameter_open_re() -> &'static Regex {
     RE.get_or_init(|| Regex::new(PARAMETER_OPEN_PATTERN).unwrap())
 }
 
-/// Both boundary scanning and decoding use the same parameter header grammar.
-fn parameter_re() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    RE.get_or_init(|| {
-        Regex::new(&format!(
-            "(?s){PARAMETER_OPEN_PATTERN}(?P<value>.*?){PARAMETER_CLOSE}"
-        ))
-        .unwrap()
-    })
+fn parameter_schema<'a>(
+    tools: &'a [ToolDefinition],
+    name: Option<&str>,
+    key: &str,
+) -> Option<&'a serde_json::Value> {
+    let name = name?;
+    tools
+        .iter()
+        .find(|tool| tool.name == name)
+        .or_else(|| {
+            // Match normalize_name: an exact registered name wins over the
+            // template's legacy doubled-name alias.
+            let (head, tail) = name.split_once('.')?;
+            (head == tail)
+                .then(|| tools.iter().find(|tool| tool.name == head))
+                .flatten()
+        })
+        .and_then(|tool| tool.parameters.as_ref())
+        .and_then(|schema| schema.get("properties"))
+        .and_then(|properties| properties.get(key))
+}
+
+/// A JSON value owns delimiter-looking bytes in its strings. Raw ATEM strings
+/// keep their first-delimiter framing; their grammar excludes that delimiter.
+fn parameter_end(value: &str, schema: Option<&serde_json::Value>) -> Option<usize> {
+    if !schema.is_some_and(|s| s["type"] == "string")
+        && value.trim_start().starts_with(['{', '[', '"'])
+    {
+        let mut json = serde_json::Deserializer::from_str(value).into_iter::<serde_json::Value>();
+        match json.next() {
+            Some(Ok(_)) => {
+                let end = json.byte_offset();
+                return value[end..].find(PARAMETER_CLOSE).map(|at| end + at);
+            }
+            Some(Err(error)) if error.is_eof() => return None,
+            // Invalid non-JSON text retains the existing verbatim fallback.
+            _ => {}
+        }
+    }
+    value.find(PARAMETER_CLOSE)
 }
 
 /// An open parameter owns its bytes until its closer arrives, including framed channel headers.
-fn outside_parameter(text: &str, marker: &str, at_eof: bool) -> Option<usize> {
+fn outside_parameter<'a>(
+    text: &'a str,
+    marker: &str,
+    at_eof: bool,
+    tools: &[ToolDefinition],
+    mut name: Option<&'a str>,
+) -> Option<usize> {
     let open = parameter_open_re();
     let mut cursor = 0;
     loop {
         let tail = &text[cursor..];
         let at = tail.find(marker)?;
-        let Some(parameter) = open.find(tail) else {
+        let Some(captures) = open.captures(tail) else {
             return Some(cursor + at);
         };
+        let parameter = captures.get(0).expect("regex match has group 0");
         if at < parameter.end() {
             return Some(cursor + at);
         }
+        if let Some(invoke) = invoke_open_re()
+            .captures_iter(&tail[..parameter.start()])
+            .last()
+        {
+            name = invoke.name("name").map(|m| m.as_str());
+        }
+        let key = captures.name("key").expect("regex requires key").as_str();
         let value_start = cursor + parameter.end();
-        let Some(end) = text[value_start..].find(PARAMETER_CLOSE) else {
+        let Some(end) = parameter_end(&text[value_start..], parameter_schema(tools, name, key))
+        else {
             return at_eof.then_some(cursor + at);
         };
         cursor = value_start + end + PARAMETER_CLOSE.len();
@@ -903,20 +949,20 @@ impl InvokeEmitter for MuseInvokeEmitter {
 
         let mut arguments = serde_json::Map::new();
         let mut source_names = Vec::new();
-        for param in parameter_re().captures_iter(body) {
+        let name = normalize_name(name_raw, &self.tools);
+        let mut tail = body;
+        while let Some(param) = parameter_open_re().captures(tail) {
             let key = param.name("key").expect("regex requires key").as_str();
-            let raw = param.name("value").expect("regex requires value").as_str();
-            let name = normalize_name(name_raw, &self.tools);
+            let value = &tail[param.get(0).expect("regex match has group 0").end()..];
+            let schema = parameter_schema(&self.tools, Some(&name), key);
+            let Some(end) = parameter_end(value, schema) else {
+                break;
+            };
+            let raw = &value[..end];
+            tail = &value[end + PARAMETER_CLOSE.len()..];
             // Custom input is verbatim. Spark's native unquoted string parameters
             // retain their declared type, while quoted JSON strings remain accepted.
             // Glimmer retains its historical JSON-first scalar behavior.
-            let schema = self
-                .tools
-                .iter()
-                .find(|tool| tool.name == name)
-                .and_then(|tool| tool.parameters.as_ref())
-                .and_then(|schema| schema.get("properties"))
-                .and_then(|properties| properties.get(key));
             let declared_string = schema.is_some_and(|s| s["type"] == "string");
             let literal_text =
                 declared_string && schema.is_some_and(|s| s["contentMediaType"] == "text/plain");
@@ -946,7 +992,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
         let arguments = reorder_arguments(&serde_json::to_string(&arguments)?, &source_names);
         Ok(Some(ToolCallDelta {
             tool_index,
-            name: Some(normalize_name(name_raw, &self.tools)),
+            name: Some(name),
             arguments,
             complete: true,
         }))
@@ -1240,7 +1286,7 @@ impl MuseChannelScanner {
 
     fn body_marker(&self, marker: &str, at_eof: bool) -> Option<usize> {
         if self.state == State::InToolChannel {
-            outside_parameter(&self.buffer, marker, at_eof)
+            outside_parameter(&self.buffer, marker, at_eof, &self.emitter.tools, None)
         } else {
             self.buffer.find(marker)
         }
@@ -1252,7 +1298,7 @@ impl MuseChannelScanner {
     fn tool_body_limit(&self, flush: bool) -> usize {
         [EOM, EOT, START]
             .iter()
-            .filter_map(|m| outside_parameter(&self.buffer, m, flush))
+            .filter_map(|m| outside_parameter(&self.buffer, m, flush, &self.emitter.tools, None))
             .min()
             .unwrap_or(self.buffer.len())
     }
@@ -1262,9 +1308,16 @@ impl MuseChannelScanner {
     /// engines require the literal close, so it waits for more input.
     fn next_invoke(&self, limit: usize) -> Option<(usize, usize)> {
         let body = &self.buffer[..limit];
-        let open = invoke_open_re().find(body)?;
+        let captures = invoke_open_re().captures(body)?;
+        let open = captures.get(0)?;
         let suffix = &body[open.end()..];
-        let close = outside_parameter(suffix, INVOKE_CLOSE, false);
+        let close = outside_parameter(
+            suffix,
+            INVOKE_CLOSE,
+            false,
+            &self.emitter.tools,
+            captures.name("name").map(|m| m.as_str()),
+        );
         // Parameter values own invocation-shaped text, including declared tool
         // names. A later parameter closer cannot distinguish that literal text
         // from a malformed call followed by another call, so never guess a new
@@ -1300,7 +1353,7 @@ impl MuseChannelScanner {
                         else {
                             return ProseGrammarSpan::Pending;
                         };
-                        outside_parameter(&suffix[open.end()..], INVOKE_CLOSE, flush)
+                        outside_parameter(&suffix[open.end()..], INVOKE_CLOSE, flush, &[], None)
                             .map(|close| {
                                 ProseGrammarSpan::Owned(open.end() + close + INVOKE_CLOSE.len())
                             })

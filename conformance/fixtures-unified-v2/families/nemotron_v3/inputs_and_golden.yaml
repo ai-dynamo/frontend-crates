@@ -19538,3 +19538,155 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
+  arg_array_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_array_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_array_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=record>
+
+        <parameter=value>
+
+        ["é \\\" </atem:parameter>"]
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: array
+              items:
+                type: string
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: </think>
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=record>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          ["é \\\" '
+      - delta_text: </atem:parameter>
+      - delta_text: '"]
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+          - é \" </atem:parameter>
+  arg_object_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_object_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_object_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '</think><tool_call>
+
+        <function=record>
+
+        <parameter=value>
+
+        {"s": "</atem:parameter>"}
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+              properties:
+                s:
+                  type: string
+              required:
+              - s
+              additionalProperties: false
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: </think>
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=record>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=value>
+      - delta_text: '
+
+          {"s": "'
+      - delta_text: </atem:parameter>
+      - delta_text: '"}
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+            s: </atem:parameter>

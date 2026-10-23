@@ -939,9 +939,10 @@ def test_unified_case_counts_match_the_generator():
             fam in G.scenario_families(scenario)
             for scenario in G.DOTTED_NAME_SCENARIOS
         )
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
+        assert per_family[fam] == family_specific[fam] + 2 + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == (
         sum(family_specific.values())
+        + 2 * len(FAMILIES)
         + len(FAMILIES) * len(CONFORMANCE_CASES)
         + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
         + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
@@ -952,7 +953,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 237 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 239 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1383,6 +1384,19 @@ def _parse_gemma_value(raw, index=0):
     return json.loads(token[0]), index + token.end()
 
 
+def _atem_parameter_end(raw, value_start):
+    # Independently decode a JSON value before looking for its XML closer;
+    # otherwise this fixture validator repeats the parser's quoted-closer bug.
+    minimum = value_start
+    at = value_start + len(raw[value_start:]) - len(raw[value_start:].lstrip())
+    if raw[at:at + 1] in {"{", "[", '"'}:
+        try:
+            _, minimum = json.JSONDecoder().raw_decode(raw, at)
+        except json.JSONDecodeError:
+            pass
+    return raw.find("</atem:parameter>", minimum)
+
+
 def _native_input_calls(family, raw):
     """Read authored complete argument fields, not runtime recovery decisions.
 
@@ -1549,7 +1563,7 @@ def _native_input_calls(family, raw):
                     body = tail[:close] if close >= 0 else tail
                     break
                 value_start = cursor + parameter.end()
-                end = tail.find("</atem:parameter>", value_start)
+                end = _atem_parameter_end(tail, value_start)
                 if end < 0:
                     body = tail
                     break
@@ -1560,7 +1574,15 @@ def _native_input_calls(family, raw):
             arguments = {key: value.removeprefix("\n").removesuffix("\n")
                          for key, value in re.findall(r'<parameter=([^>]+)>(.*?)</parameter>', body, re.S)}
         elif family in {"muse_glimmer", "muse_spark"}:
-            for key, value in re.findall(r'<atem:parameter name="([^"]+)">(.*?)</atem:parameter>', body, re.S):
+            cursor = 0
+            while parameter := re.search(r'<atem:parameter name="([^"]+)">', body[cursor:]):
+                key = parameter[1]
+                value_start = cursor + parameter.end()
+                end = _atem_parameter_end(body, value_start)
+                if end < 0:
+                    break
+                value = body[value_start:end]
+                cursor = end + len("</atem:parameter>")
                 try:
                     arguments[key] = json.loads(value)
                 except json.JSONDecodeError:

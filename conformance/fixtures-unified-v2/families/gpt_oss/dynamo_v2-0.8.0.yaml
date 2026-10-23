@@ -1,0 +1,213 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.0
+    git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+    source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+document:
+  mode: unified
+changes:
+  arg_array_quoted_parameter_close:
+    case_key: UNIFIED.7-arg_array_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: 8855f4503748936811f3456092bddf7f237c864cc1962157af1a3b8ce87699f5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments:
+            value:
+            - é \" </atem:parameter>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: value
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' ["'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: é
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' \\'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: \"
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' '
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: atem
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ':'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: parameter
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"]'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  arg_object_quoted_parameter_close:
+    case_key: UNIFIED.7-arg_object_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: cbfbad8882c6a3a1c791bf865d31eb68fc6a912486a49b04b6459f5702b652a9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments:
+            value:
+              s: </atem:parameter>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: value
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' {"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: s
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: atem
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ':'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: parameter
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '>'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"}}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+metadata_changes:
+  dotted_name_minimal: {}
+  dotted_name_mixed_punctuation: {}
+  dotted_name_multiple_segments: {}
+  dotted_name_shared_prefix: {}
+document_overrides:
+  arg_array_quoted_parameter_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.0
+      capture_origin:
+        crate_version: 0.8.0
+        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+      inherited_from: null
+  arg_object_quoted_parameter_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.0
+      capture_origin:
+        crate_version: 0.8.0
+        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+      inherited_from: null

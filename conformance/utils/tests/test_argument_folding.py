@@ -56,7 +56,7 @@ def test_exact_fold_dimensions_and_section_order():
         assert parent in {scenario for scenario, _ in children}
     ordered = sorted((scenario for scenario in taxonomy.UNIFIED_TAX if taxonomy.display_tax(scenario)[0] == 7),
                      key=taxonomy.display_sort_key)
-    assert len(ordered) == 145
+    assert len(ordered) == 147
     assert taxonomy.case_fold("gpt_oss_quoted_message_header_literal")[0] == "arg_marker_in_string"
     assert "gpt_oss_quoted_message_header_literal" in ordered
     assert list(dict.fromkeys(argument_section((taxonomy.case_fold(s) or (s, ""))[0]) for s in ordered)) == list(ARGUMENT_SECTIONS)

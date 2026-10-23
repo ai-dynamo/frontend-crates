@@ -87,7 +87,8 @@ def argument_section(scenario: str) -> str:
         return "declared"
     if scenario.startswith("schema_"):
         return _SCHEMA_SECTION[schema_group(scenario.removeprefix("schema_"))]
-    if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string"}:
+    if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string",
+                    "arg_object_quoted_parameter_close", "arg_array_quoted_parameter_close"}:
         return "text"
     if scenario.startswith("arg_"):
         return "nullable"

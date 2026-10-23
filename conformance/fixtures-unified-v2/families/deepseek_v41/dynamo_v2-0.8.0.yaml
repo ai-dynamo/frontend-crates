@@ -1,0 +1,85 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.0
+    git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+    source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+document:
+  mode: unified
+changes:
+  arg_array_quoted_parameter_close:
+    case_key: UNIFIED.7-arg_array_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: e22419fa540f9042763404e31b628b61089166b9b82f42b8686381df1013ef8b
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments:
+            value:
+            - é \" </atem:parameter>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: '{"value":["é \\\" </atem:parameter>"]}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_object_quoted_parameter_close:
+    case_key: UNIFIED.7-arg_object_quoted_parameter_close
+    stimulus:
+      ref: current
+      semantic_sha256: ef849bc9b46a097c2d67340e38e18a5de8215a7b901853daac4d3d3265956128
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: record
+          arguments:
+            value:
+              s: </atem:parameter>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: record
+            arguments: '{"value":{"s":"</atem:parameter>"}}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  arg_array_quoted_parameter_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.0
+      capture_origin:
+        crate_version: 0.8.0
+        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+      inherited_from: null
+  arg_object_quoted_parameter_close:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.8.0
+      capture_origin:
+        crate_version: 0.8.0
+        source_sha256: 280118009c55ee14ef80a4d1a8440d31d8da4f2f4158ea3161ad05b987c0a1a3
+        git_commit: 22b4ea5423652236852cf04e1eaae08c3c4c3828
+      inherited_from: null

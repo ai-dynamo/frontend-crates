@@ -2926,6 +2926,31 @@ for scenario, description, parameters, raw_arguments, arguments in (
         ) for family in TEMPLATE_FAMILIES}),
         {family: [{"name": "capture_payload", "parameters": parameters}] for family in TEMPLATE_FAMILIES},
     ))
+for scenario, value, value_schema in (
+    ("arg_object_quoted_parameter_close", {"s": "</atem:parameter>"},
+     {"type": "object", "properties": {"s": {"type": "string"}},
+      "required": ["s"], "additionalProperties": False}),
+    ("arg_array_quoted_parameter_close", ['é \\" </atem:parameter>'],
+     {"type": "array", "items": {"type": "string"}}),
+):
+    arguments = {"value": value}
+    EDGE.append((
+        scenario,
+        "JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.",
+        ["I7"],
+        [{"kind": "tool_call", "name": "record", "arguments": arguments}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({family: (
+            r_tool_arguments(family, "record", arguments, 0),
+            D("UNSUPPORTED", "No peer capture recorded for this JSON delimiter probe."), M,
+        ) for family in TEMPLATE_FAMILIES}),
+        {family: [{"name": "record", "parameters": {
+            "type": "object", "properties": {"value": value_schema},
+            "required": ["value"], "additionalProperties": False,
+        }}] for family in TEMPLATE_FAMILIES},
+    ))
+
 _DS41_JSON_BODY_ARGS = {
     "value": ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"\n',
     "nested": {"values": [True, 42, -1250]},

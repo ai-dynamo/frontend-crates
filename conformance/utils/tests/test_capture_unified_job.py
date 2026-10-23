@@ -30,7 +30,7 @@ def test_batch_cli_emits_bound_requests_and_golden(monkeypatch, capsys):
 def test_existing_family_job_is_stable_and_preserves_request_shape():
     job = capture_unified_job.build_job(ROOT, "gemma4")
     assert job["family"] == "gemma4"
-    assert len(job["cases"]) == 247
+    assert len(job["cases"]) == 249
     assert {
         f"UNIFIED.{scenario}.gemma4"
         for scenario in (
@@ -44,6 +44,8 @@ def test_existing_family_job_is_stable_and_preserves_request_shape():
             "three_calls_partial_header",
             "xml_string_type_single_quoted_object",
             "xml_string_type_double_quoted_object",
+            "arg_object_quoted_parameter_close",
+            "arg_array_quoted_parameter_close",
         )
     } <= {case["id"] for case in job["cases"]}
     assert [case["id"] for case in job["cases"]].count("UNIFIED.tool_only.gemma4") == 1

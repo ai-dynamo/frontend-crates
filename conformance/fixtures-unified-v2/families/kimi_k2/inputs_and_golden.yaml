@@ -14138,3 +14138,97 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
+  arg_array_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_array_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_array_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.record:0<|tool_call_argument_begin|>{"value": ["é \\\" </atem:parameter>"]}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: array
+              items:
+                type: string
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.record:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"value": ["é \\\" '
+      - delta_text: </atem:parameter>
+      - delta_text: '"]}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+          - é \" </atem:parameter>
+  arg_object_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_object_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_object_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.record:0<|tool_call_argument_begin|>{"value": {"s": "</atem:parameter>"}}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+              properties:
+                s:
+                  type: string
+              required:
+              - s
+              additionalProperties: false
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.record:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"value": {"s": "'
+      - delta_text: </atem:parameter>
+      - delta_text: '"}}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+            s: </atem:parameter>
