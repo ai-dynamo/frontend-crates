@@ -311,7 +311,8 @@ pub(crate) fn value_framing(
 /// Where the value of a parameter ends, or `None` while it is still open.
 ///
 /// `Lenient` follows the template newline framing when present. Compact legacy
-/// values retain their first-closer rule. `ConstrainedJson` applies only
+/// values retain their first-closer rule; at flush, an absent framed boundary also
+/// falls back to the first closer. `ConstrainedJson` applies only
 /// where the request constrained the output to JSON: a value that opens as a JSON
 /// string, object or array owns its strings, so a closer inside one is data, and an
 /// OPEN value waits rather than falling back to the first literal closer — otherwise a
@@ -339,7 +340,7 @@ pub(crate) fn param_value_span(
     after_key: &str,
     framing: ArgumentFraming,
 ) -> Option<(usize, usize)> {
-    param_value_span_with(after_key, framing, &mut ValueCursor::default())
+    param_value_span_with(after_key, framing, &mut ValueCursor::default(), true)
 }
 
 /// [`param_value_span`] resuming from `cursor`, which must have seen a prefix of
@@ -348,6 +349,7 @@ pub(crate) fn param_value_span_with(
     after_key: &str,
     framing: ArgumentFraming,
     cursor: &mut ValueCursor,
+    flush: bool,
 ) -> Option<(usize, usize)> {
     let framed = after_key.starts_with('\n');
     let mut from = usize::from(framed);
@@ -381,7 +383,17 @@ pub(crate) fn param_value_span_with(
     let span = match (close, follow) {
         (Some(close), Some(follow)) if follow.0 <= close.0 => Some(follow),
         (close, follow) => close.or(follow),
-    };
+    }
+    .or_else(|| {
+        // An inline tag may still be string content until the stream ends.
+        // Rescan at flush: the incremental cursor has already passed this tag.
+        if flush {
+            rest.find(PARAM_CLOSE)
+                .map(|end| (from + end, from + end + PARAM_CLOSE.len()))
+        } else {
+            None
+        }
+    });
     if span.is_none() {
         cursor.closer_searched = rest.len();
     }
@@ -1598,7 +1610,7 @@ mod tests {
             let mut json_walked = 0;
             let mut searched = 0;
             for end in (1..after_key.len()).step_by(7).chain([after_key.len()]) {
-                let got = param_value_span_with(&after_key[..end], framing, &mut cursor);
+                let got = param_value_span_with(&after_key[..end], framing, &mut cursor, false);
                 assert_eq!(
                     got,
                     param_value_span(&after_key[..end], framing),

@@ -269,7 +269,12 @@ impl InvokeBoundary for BeamBoundary {
                     self.open_from = value_from;
                     self.open_value = ValueCursor::default();
                 }
-                match param_value_span_with(&body[value_from..], framing, &mut self.open_value) {
+                match param_value_span_with(
+                    &body[value_from..],
+                    framing,
+                    &mut self.open_value,
+                    flush,
+                ) {
                     Some((_, next)) => {
                         self.scanned = value_from + next;
                         self.complete += 1;
@@ -667,13 +672,21 @@ impl InvokeEmitter for BeamEmitter {
                         after_key,
                         ArgumentFraming::Lenient,
                         &mut value.cursor,
+                        false,
                     );
                     let safe_end = match span {
                         Some((end, _)) => value.start + end,
-                        None => {
-                            body.len()
-                                - marker_prefix_suffix_len(after_key, [PARAM_CLOSE, PARAM_FOLLOW])
-                        }
+                        // Hold a possible EOF closer; already emitted text cannot be retracted.
+                        None => body[value.streamed..].find(PARAM_CLOSE).map_or_else(
+                            || {
+                                body.len()
+                                    - marker_prefix_suffix_len(
+                                        after_key,
+                                        [PARAM_CLOSE, PARAM_FOLLOW],
+                                    )
+                            },
+                            |end| value.streamed + end,
+                        ),
                     };
                     if safe_end > value.streamed {
                         value.append(&body[value.streamed..safe_end], &mut arguments);
@@ -690,7 +703,7 @@ impl InvokeEmitter for BeamEmitter {
                     continue;
                 }
                 let Some((end, next)) =
-                    param_value_span_with(after_key, value.framing, &mut value.cursor)
+                    param_value_span_with(after_key, value.framing, &mut value.cursor, false)
                 else {
                     break;
                 };
@@ -1360,6 +1373,47 @@ mod tests {
             HDR.replace("weather", "fn")
         );
         expect(&input, vec![call("fn", json!({"b": true, "n": 1.5}))]);
+    }
+
+    #[test]
+    fn inline_parameter_closer_is_a_finish_only_fallback() {
+        for location in ["London", "Montréal"] {
+            let prefix = format!("{HDR}<rfl:parameter name=\"location\">\n{location}");
+            let input = format!("{prefix}</rfl:parameter><|call|>");
+            let want = vec![call("weather", json!({"location": location}))];
+            expect_streamed(&tools(), &input, want.clone());
+            expect_with(&tools(), &input, strict(), want);
+
+            let mut parser = beam_unified(&tools());
+            let mut deltas = parser.push(&prefix).unwrap();
+            let partial = argument_text(&deltas);
+            assert_eq!(partial, format!("{{\"location\": \"{location}"));
+            deltas.extend(parser.push("</rfl:parameter><|call|>").unwrap());
+            assert_eq!(argument_text(&deltas), partial);
+            deltas.extend(parser.finish().unwrap());
+            assert_eq!(argument_text(&deltas), format!("{partial}\"}}"));
+        }
+    }
+
+    #[test]
+    fn a_later_framed_closer_releases_buffered_inline_text_before_finish() {
+        let prefix = format!("{HDR}<rfl:parameter name=\"location\">\nx");
+        let input = format!("{prefix}</rfl:parameter>y\n</rfl:parameter><|call|>");
+        let want = vec![call("weather", json!({"location": "x</rfl:parameter>y"}))];
+        expect_streamed(&tools(), &input, want.clone());
+
+        let mut parser = beam_unified(&tools());
+        let mut deltas = parser.push(&prefix).unwrap();
+        let partial = argument_text(&deltas);
+        deltas.extend(parser.push("</rfl:parameter>y").unwrap());
+        assert_eq!(argument_text(&deltas), partial);
+        deltas.extend(parser.push("\n</rfl:parameter><|call|>").unwrap());
+        assert_eq!(assemble(&deltas), want);
+        assert_eq!(
+            argument_text(&deltas),
+            "{\"location\": \"x</rfl:parameter>y\"}"
+        );
+        assert!(parser.finish().unwrap().is_empty());
     }
 
     #[test]
