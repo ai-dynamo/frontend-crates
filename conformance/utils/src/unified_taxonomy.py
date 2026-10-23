@@ -20,6 +20,7 @@ parser cannot see that value — `finish()` takes no argument).
 """
 
 import re
+from typing import NamedTuple
 
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
@@ -381,31 +382,45 @@ UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12
 
 # Historical requests remain separate executions, but share one semantic heading.
 RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped"})
+
+
+class CaseVariant(NamedTuple):
+    parent: str
+    label: str
+    # Visual folding alone cannot qualify a new semantic axis for other families.
+    coverage_parent: str | None = None
+
+
 SHARED_CASE_VARIANTS = {
-    **{scenario + "_pr424": (scenario, "Retained #424 delivery / input")
+    **{scenario + "_pr424": CaseVariant(scenario, "Retained #424 delivery / input", scenario)
        for scenario, active in GPT_OSS_PR424_REQUEST_VARIANTS.items() if active},
-    **{scenario: (scenario.removeprefix("harmony_"), "Harmony partial header")
+    **{scenario: CaseVariant(scenario.removeprefix("harmony_"), "Harmony partial header", scenario.removeprefix("harmony_"))
        for scenario in UNIFIED_TAX if scenario.startswith("harmony_")},
-    "gpt_oss_multiple_unknown_and_empty_tools": ("two_calls", "Empty body and unoffered names"),
-    "gpt_oss_control_marker_inside_argument_string": ("arg_marker_in_string", "All Harmony controls"),
-    "gpt_oss_truncated_tool_resynchronizes_at_next_message": ("tool_no_close", "Next message recovery"),
-    "gpt_oss_interrupted_reasoning_then_tool": ("tool_in_reason", "Interrupted Harmony reasoning"),
-    "gpt_oss_interrupted_reasoning_then_tool_with_text": ("tool_in_reason_with_text", "Interrupted Harmony reasoning"),
-    "gpt_oss_interrupted_reasoning_then_response": ("reason_then_content", "Elided Harmony reasoning close"),
-    "kimi_k3_elided_think_close_to_response": ("reason_then_content", "Elided Kimi K3 reasoning close"),
-    "gpt_oss_invalid_tool_body_then_empty_call": ("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
-    "gpt_oss_invalid_tool_body_then_valid_call": ("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
-    "gpt_oss_tool_body_whitespace": ("tool_only", "Leading JSON body whitespace"),
-    "gpt_oss_quoted_truncated_tool_then_final": ("tool_no_close", "Malformed argument then visible response"),
-    "gpt_oss_quoted_message_header_literal": ("arg_marker_in_string", "Quoted closer and response header"),
+    "gpt_oss_multiple_unknown_and_empty_tools": CaseVariant("two_calls", "Empty body and unoffered names"),
+    "gpt_oss_control_marker_inside_argument_string": CaseVariant("arg_marker_in_string", "Native controls in arguments"),
+    "gpt_oss_truncated_tool_resynchronizes_at_next_message": CaseVariant("tool_no_close", "Next message recovery"),
+    "gpt_oss_interrupted_reasoning_then_tool": CaseVariant("tool_in_reason", "Interrupted Harmony reasoning", "tool_in_reason"),
+    "gpt_oss_interrupted_reasoning_then_tool_with_text": CaseVariant("tool_in_reason_with_text", "Interrupted Harmony reasoning", "tool_in_reason_with_text"),
+    "gpt_oss_interrupted_reasoning_then_response": CaseVariant("reason_then_content", "Elided reasoning close"),
+    "kimi_k3_elided_think_close_to_response": CaseVariant("reason_then_content", "Elided Kimi K3 reasoning close", "gpt_oss_interrupted_reasoning_then_response"),
+    "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
+    "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
+    "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
+    "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response"),
+    "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header"),
 }
-_SHARED_VARIANT_PARENTS = {parent for parent, _ in SHARED_CASE_VARIANTS.values()}
+_SHARED_VARIANT_PARENTS = {variant.parent for variant in SHARED_CASE_VARIANTS.values()}
 
 
 def case_fold(scenario):
     """One grouping owner for schema, native grammar, and delivery variants."""
-    return (schema_fold(scenario) or SHARED_CASE_VARIANTS.get(scenario)
+    return (schema_fold(scenario) or (SHARED_CASE_VARIANTS[scenario][:2] if scenario in SHARED_CASE_VARIANTS else None)
             or ((scenario, "Standard") if scenario in _SHARED_VARIANT_PARENTS else None))
+
+
+def coverage_case(scenario):
+    variant = SHARED_CASE_VARIANTS.get(scenario)
+    return (variant.coverage_parent if variant else None) or scenario
 
 
 def legacy_case_label(scenario):

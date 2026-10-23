@@ -119,6 +119,24 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
+  gpt_oss_interrupted_reasoning_then_response:
+    case_key: UNIFIED.gpt_oss-interrupted_reasoning_then_response
+    stimulus:
+      ref: current
+      semantic_sha256: 0e7ce5749c968a6e6ea27cf68eb9a728a66b452cd1c68f92fd25f91cc3bff545
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 1595c19deba4d2603b8160e5b3773d34151ec06114466927cab13c5e13036d4f
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
   gpt_oss_quoted_message_header_literal:
     case_key: UNIFIED.gpt_oss-quoted_message_header_literal
     stimulus:
@@ -133,6 +151,15 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 827b69565f95f705d7073654f23b741d71bac21b3d1f9c429563007a544ff26a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    stimulus:
+      ref: current
+      semantic_sha256: 137d4dc711e6b750c18c8152e4db8a15bc0117860ae58c5ea14f69ad094b436c
     observation:
       unavailable:
         code: legacy_unclassified
@@ -1473,12 +1500,27 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_interrupted_reasoning_then_response:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   gpt_oss_quoted_message_header_literal:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
   gpt_oss_quoted_truncated_tool_then_final:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     init:
       starting_state: None
       tool_output_mode: Native

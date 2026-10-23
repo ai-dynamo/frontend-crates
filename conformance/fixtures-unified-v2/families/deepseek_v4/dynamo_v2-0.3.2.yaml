@@ -29,7 +29,7 @@ changes:
             name: get_weather
             arguments: ''
           - kind: tool_call
-            name:
+            name: null
             arguments: '{"city":"Paris"}'
         - expected: []
   retired__50_b:
@@ -103,7 +103,7 @@ changes:
             arguments: ''
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
           - kind: tool_call
-            name:
+            name: null
             arguments: '{"city":"Paris"}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
@@ -144,7 +144,7 @@ changes:
             arguments: ''
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
           - kind: tool_call
-            name:
+            name: null
             arguments: '{"city":"Paris"}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
@@ -165,7 +165,7 @@ document_overrides:
         crate_version: 0.3.2
         git_commit: c4b8f391e83af58781b024894b79620acd323389
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
-      inherited_from:
+      inherited_from: null
   arg_json_null_ref:
     capture_provenance:
       captured_with:
@@ -174,7 +174,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   arg_null_mixed_labels:
     capture_provenance:
       captured_with:
@@ -183,7 +183,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   arg_string_null_ref:
     capture_provenance:
       captured_with:
@@ -192,7 +192,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   dotted_name_minimal:
     capture_provenance:
       captured_with:
@@ -201,7 +201,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   dotted_name_mixed_punctuation:
     capture_provenance:
       captured_with:
@@ -210,7 +210,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   dotted_name_multiple_segments:
     capture_provenance:
       captured_with:
@@ -219,7 +219,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   dotted_name_shared_prefix:
     capture_provenance:
       captured_with:
@@ -228,7 +228,43 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:
@@ -237,7 +273,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   guided_json_native_parameter_object_before_payload:
     capture_provenance:
       captured_with:
@@ -246,7 +282,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
@@ -255,7 +291,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   guided_json_noncall_before_native_array_before_payload:
     capture_provenance:
       captured_with:
@@ -264,7 +300,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   guided_response_native_wrapper_whitespace_before_prose:
     capture_provenance:
       captured_with:
@@ -273,7 +309,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   structured_response_after_reasoning:
     capture_provenance:
       captured_with:
@@ -282,7 +318,7 @@ document_overrides:
         crate_version: 0.3.2
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
         git_commit: c4b8f391e83af58781b024894b79620acd323389
-      inherited_from:
+      inherited_from: null
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -291,4 +327,4 @@ document_overrides:
         crate_version: 0.3.2
         git_commit: c4b8f391e83af58781b024894b79620acd323389
         source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
-      inherited_from:
+      inherited_from: null

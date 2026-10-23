@@ -6,28 +6,21 @@ document:
   mode: unified
 changes:
   arg_json_null_ref:
-    case_key: UNIFIED.7-arg_json_null_ref
-    stimulus:
-      ref: current
-      semantic_sha256: de79e3e2e11f8863dab58a39bffa1a80db30b14da12d18248709972425943aec
     observation:
       unavailable:
         code: producer_source_unavailable
         detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_null_mixed_labels:
-    case_key: UNIFIED.7-arg_null_mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: 4872b7b85e01d931049fa9c3b0ab9508cf173de856c9b8674c498dbe204df32c
     observation:
       unavailable:
         code: producer_source_unavailable
         detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null_ref:
-    case_key: UNIFIED.7-arg_string_null_ref
-    stimulus:
-      ref: current
-      semantic_sha256: f2e15c0c307c6ab347fb3249ce4e70b52e7c8d5b5b98debd116792a62c45ebbe
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
     observation:
       unavailable:
         code: producer_source_unavailable
@@ -53,11 +46,13 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_json_null_ref: {}
   arg_marker_in_string:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_null_mixed_labels: {}
   arg_string_null:
     init:
       starting_state: None
@@ -73,6 +68,7 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_string_null_ref: {}
   arg_string_null_sibling_anyof:
     init:
       starting_state: None
@@ -148,6 +144,7 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   guided_json_after_reasoning:
     init:
       starting_state: None

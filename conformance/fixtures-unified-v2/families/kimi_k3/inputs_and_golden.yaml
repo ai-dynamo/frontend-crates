@@ -18530,186 +18530,6 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
-  arg_json_null_ref:
-    lifecycle: active
-    scenario: arg_json_null_ref
-    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_json_null_ref
-    historical_ids: []
-    request:
-      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: get_weather
-        parameters:
-          type: object
-          $defs:
-            City:
-              type:
-              - string
-              - 'null'
-          properties:
-            city:
-              $ref: '#/$defs/City'
-      chunks:
-      - delta_text: <|open|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: call tool="get_weather" index="1"
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: argument key="city" type="null"
-      - delta_text: <|sep|>
-      - delta_text: 'null'
-      - delta_text: <|close|>
-      - delta_text: argument
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: call
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: ‹finish›
-    golden:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: null
-  arg_null_mixed_labels:
-    lifecycle: active
-    scenario: arg_null_mixed_labels
-    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-driven grammars receive identical bare null text; explicitly typed grammars use native null and string encodings. Both yield {"label": null, "note": null, "literal": "null"}.'
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_null_mixed_labels
-    historical_ids: []
-    request:
-      input: <|open|>tools<|sep|><|open|>call tool="set_labels" index="1"<|sep|><|open|>argument key="label" type="null"<|sep|>null<|close|>argument<|sep|><|open|>argument key="note" type="null"<|sep|>null<|close|>argument<|sep|><|open|>argument key="literal" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: set_labels
-        parameters:
-          type: object
-          properties:
-            label:
-              anyOf:
-              - type: string
-              - type: 'null'
-            note:
-              type:
-              - string
-              - 'null'
-            literal:
-              type: string
-      chunks:
-      - delta_text: <|open|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: call tool="set_labels" index="1"
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: argument key="label" type="null"
-      - delta_text: <|sep|>
-      - delta_text: 'null'
-      - delta_text: <|close|>
-      - delta_text: argument
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: argument key="note" type="null"
-      - delta_text: <|sep|>
-      - delta_text: 'null'
-      - delta_text: <|close|>
-      - delta_text: argument
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: argument key="literal" type="string"
-      - delta_text: <|sep|>
-      - delta_text: 'null'
-      - delta_text: <|close|>
-      - delta_text: argument
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: call
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: ‹finish›
-    golden:
-      assembled:
-      - kind: tool_call
-        name: set_labels
-        arguments:
-          label: null
-          note: null
-          literal: 'null'
-  arg_string_null_ref:
-    lifecycle: active
-    scenario: arg_string_null_ref
-    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_string_null_ref
-    historical_ids: []
-    request:
-      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: get_weather
-        parameters:
-          type: object
-          $defs:
-            City:
-              type: string
-          properties:
-            city:
-              $ref: '#/$defs/City'
-      chunks:
-      - delta_text: <|open|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: call tool="get_weather" index="1"
-      - delta_text: <|sep|>
-      - delta_text: <|open|>
-      - delta_text: argument key="city" type="string"
-      - delta_text: <|sep|>
-      - delta_text: 'null'
-      - delta_text: <|close|>
-      - delta_text: argument
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: call
-      - delta_text: <|sep|>
-      - delta_text: <|close|>
-      - delta_text: tools
-      - delta_text: <|sep|>
-      - delta_text: ‹finish›
-    golden:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: 'null'
-
   arg_array_quoted_parameter_close:
     lifecycle: active
     scenario: arg_array_quoted_parameter_close
@@ -18828,3 +18648,379 @@ cases:
         arguments:
           value:
             s: </atem:parameter>
+  arg_json_null_ref:
+    lifecycle: active
+    scenario: arg_json_null_ref
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_json_null_ref
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="null"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type:
+              - string
+              - 'null'
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="null"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_string_null_ref
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="get_weather" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>null<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: 'null'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  gpt_oss_control_marker_inside_argument_string:
+    lifecycle: active
+    scenario: gpt_oss_control_marker_inside_argument_string
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    historical_ids: []
+    request:
+      input: '<|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"markers": "<|open|><|sep|><|close|><|end_of_msg|>"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="lookup" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"markers": "'
+      - delta_text: <|open|>
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: <|end_of_msg|>
+      - delta_text: '"}'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          markers: <|open|><|sep|><|close|><|end_of_msg|>
+  gpt_oss_invalid_tool_body_then_empty_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_empty_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including empty arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>not-json<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="bad" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: not-json
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: {}
+  gpt_oss_invalid_tool_body_then_valid_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_valid_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"city":<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="bad" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"city":'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Paris
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="run" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="not_offered" index="2"<|sep|><|open|>argument key="x" type="integer"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="run" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="not_offered" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="x" type="integer"
+      - delta_text: <|sep|>
+      - delta_text: '2'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    lifecycle: active
+    scenario: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    description: A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.
+    policy:
+    - I3
+    - I4
+    - I5
+    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"unfinished"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="lookup" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"q":"unfinished"}'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: recovered
+      - delta_text: <|close|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: recovered

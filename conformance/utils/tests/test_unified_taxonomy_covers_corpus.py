@@ -938,18 +938,18 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     family_specific = {
-        "beam": 127,
-        "deepseek_v4": 137,
-        "deepseek_v41": 133,
-        "gemma4": 130,
-        "glm47": 125,
+        "beam": 130,
+        "deepseek_v4": 141,
+        "deepseek_v41": 137,
+        "gemma4": 131,
+        "glm47": 126,
         "gpt_oss": 169,
-        "kimi_k2": 128,
-        "kimi_k3": 137,
-        "muse_glimmer": 141,
-        "muse_spark": 149,
-        "qwen3": 132,
-        "nemotron_v3": 133,
+        "kimi_k2": 132,
+        "kimi_k3": 142,
+        "muse_glimmer": 144,
+        "muse_spark": 152,
+        "qwen3": 133,
+        "nemotron_v3": 134,
     }
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
@@ -1298,6 +1298,14 @@ def _family_value(scenario, family):
                 else f"{reason_open}reconsider{reason_close}")
     if scenario == "guided_json_marker_inside_argument":
         return reason_close
+    if scenario == "gpt_oss_control_marker_inside_argument_string":
+        return {
+            "deepseek_v4": '<think></think><｜DSML｜tool_calls><｜DSML｜invoke name="lookup"><｜DSML｜parameter name="q" string="true"></｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><｜DSML｜</｜DSML｜',
+            "deepseek_v41": '<think></think><｜DSML｜ calls><｜DSML｜ invoke name="lookup"><｜DSML｜ parameter name="q" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜',
+            "gpt_oss": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>",
+            "kimi_k2": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>",
+            "kimi_k3": "<|open|><|sep|><|close|><|end_of_msg|>",
+        }[family]
     if scenario == "gpt_oss_quoted_message_header_literal":
         return {
             "gpt_oss": "<|call|><|start|>assistant<|channel|>final<|message|>literal<|return|>",
@@ -1619,7 +1627,11 @@ def _native_input_calls(family, raw, *, exact_numbers=False):
         elif family == "kimi_k2":
             start = len(body) - len(body.lstrip(" \t\r\n"))
             decoder = json.JSONDecoder(parse_float=Decimal if exact_numbers else float)
-            arguments, _ = decoder.raw_decode(body, start)
+            try:
+                arguments, _ = decoder.raw_decode(body, start)
+            except json.JSONDecodeError:
+                # Kimi K2 preserves a named malformed JSON call as empty arguments.
+                arguments = {}
         else:
             pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
             for key, kind, value in re.findall(pattern, body, re.S):
@@ -1906,7 +1918,7 @@ BEAM_NUMERIC_STRING_SCENARIOS = {
 def _assert_generic_cases_span_families(scenarios):
     coverage = defaultdict(set)
     for scenario, families in scenarios.items():
-        parent = (taxonomy.case_fold(scenario) or (scenario, ""))[0]
+        parent = taxonomy.coverage_case(scenario)
         coverage[parent].update(families)
     singletons = {
         scenario: sorted(families)
@@ -1939,6 +1951,25 @@ def _assert_cross_family_contract(corpus):
                 init["starting_state"] = "None"
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _logical_events(scenario, family, case["golden"]))
+            if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
+                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47"} else 2
+                assert case["tools"] == []
+                assert events == [{"kind": "tool_call", "name": "run", "arguments": {}},
+                                  {"kind": "tool_call", "name": "not_offered", "arguments": {"x": raw_value}}]
+                events[1]["arguments"]["x"] = 2
+            if scenario in {"gpt_oss_invalid_tool_body_then_empty_call", "gpt_oss_invalid_tool_body_then_valid_call"}:
+                empty = scenario.endswith("empty_call")
+                malformed = "not-json" if empty else '{"city":'
+                assert malformed in case["input"]
+                assert case["input"].index(malformed) < case["input"].rindex("get_weather")
+                following = [{"kind": "tool_call", "name": "get_weather", "arguments": {} if empty else {"city": "Paris"}}]
+                assert events == ([{"kind": "tool_call", "name": "bad", "arguments": {}}] if family in {"kimi_k2", "deepseek_v4"} else []) + following
+                events = following
+            if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
+                following = [{"kind": "text", "text": "recovered"}]
+                assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
+                                  if family == "muse_glimmer" else []) + following
+                events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
             if scenario == "structured_response_after_reasoning":
@@ -2116,6 +2147,13 @@ def test_generic_case_scope_uses_display_placement_and_variant_coverage(monkeypa
     _assert_generic_cases_span_families({parent: {"qwen3"}, variant: {"gpt_oss"}})
     monkeypatch.setitem(taxonomy._DISPLAY_GROUP, parent, "gpt_oss")
     _assert_generic_cases_span_families({parent: {"gpt_oss"}, variant: {"gpt_oss"}})
+
+
+def test_generic_case_scope_rejects_single_family_semantic_variants(monkeypatch):
+    monkeypatch.setitem(taxonomy.SHARED_CASE_VARIANTS, "future_semantic_variant", taxonomy.CaseVariant("two_calls", "Additional behavior"))
+    for scenario in ("gpt_oss_multiple_unknown_and_empty_tools", "future_semantic_variant"):
+        with pytest.raises(AssertionError, match="single-family generic cases"):
+            _assert_generic_cases_span_families({"two_calls": set(NATIVE_FAMILIES), scenario: {"gpt_oss"}})
 
 
 def test_default_reasoning_cases_use_a_named_family_section():

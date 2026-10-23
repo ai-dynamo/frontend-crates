@@ -9,14 +9,22 @@
 beam: {}
 gpt_oss: {}
 kimi_k3:
+  UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message:
+    golden:
+      note: 'An unclosed tool call swallows the following response instead of resynchronizing at its header.'
+      actual: ''
   UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3:
     golden:
       note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
       actual: ''
-
 muse_glimmer: {}
 gemma4: {}
-deepseek_v41: {}
+deepseek_v41:
+  UNIFIED.gpt_oss-invalid_tool_body_then_empty_call:
+    golden:
+      note: 'An invalid raw invocation body aborts parsing before the following complete empty call.'
+      actual: 'ERROR: native push: invalid DeepSeek V4.1 parameter header'
+
 glm47: {}
 deepseek_v4: {}
 kimi_k2: {}

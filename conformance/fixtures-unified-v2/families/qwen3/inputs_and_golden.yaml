@@ -21125,156 +21125,6 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
-  arg_json_null_ref:
-    lifecycle: active
-    scenario: arg_json_null_ref
-    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_json_null_ref
-    historical_ids: []
-    request:
-      input: <tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: get_weather
-        parameters:
-          type: object
-          $defs:
-            City:
-              type:
-              - string
-              - 'null'
-          properties:
-            city:
-              $ref: '#/$defs/City'
-      chunks:
-      - delta_text: <tool_call>
-      - delta_text: <function=get_weather>
-      - delta_text: <parameter=city>
-      - delta_text: 'null'
-      - delta_text: </parameter>
-      - delta_text: </function>
-      - delta_text: </tool_call>
-      - delta_text: ‹finish›
-    golden:
-      assembled:
-      - kind: tool_call
-        name: get_weather
-        arguments:
-          city: null
-  arg_null_mixed_labels:
-    lifecycle: active
-    scenario: arg_null_mixed_labels
-    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-driven grammars receive identical bare null text; explicitly typed grammars use native null and string encodings. Both yield {"label": null, "note": null, "literal": "null"}.'
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_null_mixed_labels
-    historical_ids: []
-    request:
-      input: '<tool_call>
-
-        <function=set_labels>
-
-        <parameter=label>
-
-        null
-
-        </parameter>
-
-        <parameter=note>
-
-        null
-
-        </parameter>
-
-        <parameter=literal>
-
-        null
-
-        </parameter>
-
-        </function>
-
-        </tool_call>'
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: set_labels
-        parameters:
-          type: object
-          properties:
-            label:
-              anyOf:
-              - type: string
-              - type: 'null'
-            note:
-              type:
-              - string
-              - 'null'
-            literal:
-              type: string
-      chunks:
-      - delta_text: <tool_call>
-      - delta_text: '
-
-          '
-      - delta_text: <function=set_labels>
-      - delta_text: '
-
-          '
-      - delta_text: <parameter=label>
-      - delta_text: '
-
-          null
-
-          '
-      - delta_text: </parameter>
-      - delta_text: '
-
-          '
-      - delta_text: <parameter=note>
-      - delta_text: '
-
-          null
-
-          '
-      - delta_text: </parameter>
-      - delta_text: '
-
-          '
-      - delta_text: <parameter=literal>
-      - delta_text: '
-
-          null
-
-          '
-      - delta_text: </parameter>
-      - delta_text: '
-
-          '
-      - delta_text: </function>
-      - delta_text: '
-
-          '
-      - delta_text: </tool_call>
-      - delta_text: ‹finish›
-    golden:
-      assembled:
-      - kind: tool_call
-        name: set_labels
-        arguments:
-          label: null
-          note: null
-          literal: 'null'
-
   arg_array_quoted_parameter_close:
     lifecycle: active
     scenario: arg_array_quoted_parameter_close
@@ -21425,3 +21275,87 @@ cases:
         arguments:
           value:
             s: </atem:parameter>
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: '<tool_call>
+
+        <function=run>
+
+
+        </function>
+
+        </tool_call><tool_call>
+
+        <function=not_offered>
+
+        <parameter=x>
+
+        2
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=run>
+      - delta_text: '
+
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=not_offered>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=x>
+      - delta_text: '
+
+          2
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: '2'

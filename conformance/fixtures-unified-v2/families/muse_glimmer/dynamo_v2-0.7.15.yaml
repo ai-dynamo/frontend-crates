@@ -238,6 +238,76 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  gpt_oss_interrupted_reasoning_then_response:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":2}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
   gpt_oss_quoted_message_header_literal:
     observation:
       value:
@@ -294,6 +364,43 @@ changes:
         - expected:
           - kind: text
             text: Answer
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: unfinished
+        - kind: text
+          text: recovered
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"unfinished"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: recovered
+        - expected: []
+        - expected: []
   guided_json_native_parameter_string_before_payload:
     observation:
       value:
@@ -446,12 +553,27 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  gpt_oss_interrupted_reasoning_then_response:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   gpt_oss_quoted_message_header_literal:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
   gpt_oss_quoted_truncated_tool_then_final:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     init:
       starting_state: None
       tool_output_mode: Native

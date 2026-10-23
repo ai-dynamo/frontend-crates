@@ -103,8 +103,18 @@ def _assert_golden_schemas(cases, tools):
         for event in case["golden"]:
             if event["kind"] == "tool_call":
                 if not offered_tools:
-                    # Published Harmony calls can exercise lexical parsing without schemas.
-                    assert case_id.endswith(".gpt_oss")
+                    # Native lexical probes deliberately exercise unoffered calls.
+                    assert case_id.endswith(".gpt_oss") or (
+                        scenario in {
+                            "gpt_oss_multiple_unknown_and_empty_tools",
+                            "gpt_oss_control_marker_inside_argument_string",
+                            "gpt_oss_invalid_tool_body_then_empty_call",
+                            "gpt_oss_invalid_tool_body_then_valid_call",
+                            "gpt_oss_truncated_tool_resynchronizes_at_next_message",
+                            "gpt_oss_interrupted_reasoning_then_response",
+                        }
+                        and case["init"]["tool_output_mode"] == "Native"
+                    )
                     continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
@@ -131,6 +141,17 @@ def test_schema_free_text_does_not_imply_a_schema_free_tool_call(family):
     else:
         with pytest.raises(AssertionError):
             _assert_golden_schemas(cases, unified_tools())
+
+
+def test_schema_free_lexical_exception_requires_its_scenario_and_native_mode():
+    case_id = "UNIFIED.gpt_oss_multiple_unknown_and_empty_tools.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({"UNIFIED.tool_only.qwen3": case}, unified_tools())
+    case["init"]["tool_output_mode"] = "GuidedJson"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("mutation", ["arguments", "schema", "family"])

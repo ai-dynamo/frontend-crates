@@ -181,7 +181,7 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
                 assert d.execute_script(legend_matches)
                 # The legend follows visible captures; a passing selection need not diverge.
                 assert styles
-                assert {item["status"] for item in styles} <= {"pass", "unsupported", "diverge"}
+                assert {item["status"] for item in styles} <= {"pass", "unsupported", "diverge", "error"}
                 assert all(item["matches"] and item["width"] > 0 for item in styles)
         choose_slot(d, 1, "vllm", "vllm_python_batch@0.26.0")
         assert d.execute_script(legend_matches)
