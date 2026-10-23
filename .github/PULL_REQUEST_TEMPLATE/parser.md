@@ -28,7 +28,7 @@ Parser bug fixes must complete all five subsections below before requesting revi
 
 ### 4. Unified Regression Cases
 
-<!-- Parser bug fixes: add UNIFIED.* regression cases/test columns and list exact IDs, meanings, applicable families, and exclusions. Capture before/after with identical input, tools, initialization, chunks, and GOLDEN; verify red before and green after. -->
+<!-- Parser bug fixes: add UNIFIED.* regression cases/test columns and list exact IDs, meanings, applicable families, and exclusions. Demonstrate before/after with identical input, tools, initialization, chunks, and expected output. Back-capture is useful but optional; no need to rerun every historical version. For streaming timing, include a regression assertion at the relevant pause rather than relying only on final-output cell colors. -->
 
 ### 5. Visual Conformance Verification
 

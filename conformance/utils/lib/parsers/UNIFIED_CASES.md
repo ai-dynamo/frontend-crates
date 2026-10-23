@@ -16,7 +16,7 @@ The corpus guard checks every generic semantic case, independent of which family
 
 ## Capture version policy
 
-Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. This migration does not change the older stream or batch-on-stream storage. Changing an existing Unified input requires rerunning and updating every prior affected version.
+Follow [the Unified storage contract](../../../README.md#unified-storage-contract-plain-versioned-yaml-only): plain semantic-version YAML only, with unchanged family output carried forward. Source SHA is optional first-capture origin metadata, never a capture name. This migration does not change the older stream or batch-on-stream storage. Historical back-captures are optional; follow the [historical back-capture policy](../../../README.md#historical-back-captures) and preserve each recorded request/result identity.
 
 The original shared-family observations for `7-glm_ref_object`, `7-glm_ref_encoded_targets`, `7-glm_ref_json_looking_strings`, and `7-glm_ref_scalar_types` began in peer families at Dynamo v2 `0.7.18`. This run adds exact-version, request-bound executions for earlier releases and retains their execution receipts separately from original evidence. Original observations and origins remain preserved. GLM was captured on the released Dynamo v2 `0.7.8` source under PR #271, and its existing history is preserved.
 
