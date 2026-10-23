@@ -213,6 +213,7 @@ jobs:
     needs: [changes, conformance-table]
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
+    # Include cold fixture extraction and the full utility suite on hosted runners.
     timeout-minutes: 40
     steps:
       - name: Checkout
