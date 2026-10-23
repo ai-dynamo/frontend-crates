@@ -539,7 +539,6 @@ fn parse_section_block(
             tracing::warn!("Tool '{}' is not defined in the tools list.", function_name);
         }
 
-        // Legacy Kimi reserializes JSON; native streaming keeps its raw payload.
         let arguments_json = crate::tool_calling::arguments::parsed_json_literal(arguments_raw)
             .map(|value| value.json_text())
             .transpose()?
