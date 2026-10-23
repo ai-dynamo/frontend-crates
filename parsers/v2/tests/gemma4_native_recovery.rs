@@ -364,7 +364,7 @@ fn malformed_outer_quote_keeps_a_later_candidate_after_an_incomplete_value() {
 fn malformed_outer_quote_keeps_a_complete_call_with_malformed_arguments() {
     let input = concat!(
         "<|tool_call>call:broken{note:<|\"|>outer",
-        "<|tool_call>call:echo{value:bogus}<tool_call|>",
+        "<|tool_call>call:echo{bogus}<tool_call|>",
     );
     for chunks in chunkings(input) {
         let mut parser = create_tool_parser_for_family("gemma4", &weather_echo_tools())

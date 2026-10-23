@@ -193,7 +193,7 @@ mod tests {
     use crate::unified::{
         InvalidGuidedPayloadPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
         UnifiedParserStartingState, UnifiedToolOutputMode, assemble, guided_prefix_examined_bytes,
-        reset_guided_prefix_examined_bytes,
+        reset_guided_prefix_examined_bytes, tool_arguments_raw,
     };
 
     fn weather_tools() -> Vec<Tool> {
@@ -776,6 +776,47 @@ mod tests {
                 expected,
                 "chunk_size={chunk_size}"
             );
+        }
+    }
+
+    #[test]
+    fn json_numbers_and_bare_words_keep_sibling_arguments_at_every_split() {
+        // Python float repr (what the Gemma 4 chat template prints), an integer
+        // beyond i64, and a bare word used to discard every argument of the call.
+        // Raw bytes are checked because `assemble` would round the big integer.
+        for (args, expected) in [
+            (
+                "lr:1e-07,huge:1e+16,city:<|\"|>Paris<|\"|>",
+                r#"{"lr":1e-07,"huge":1e+16,"city":"Paris"}"#,
+            ),
+            (
+                "big:1180591620717411303424,city:<|\"|>Paris<|\"|>",
+                r#"{"big":1180591620717411303424,"city":"Paris"}"#,
+            ),
+            (
+                "mode:fast,city:<|\"|>Paris<|\"|>",
+                r#"{"mode":"fast","city":"Paris"}"#,
+            ),
+        ] {
+            let input = format!("<|tool_call>call:get_weather{{{args}}}<tool_call|>");
+            for split in 0..=input.len() {
+                let mut parser = gemma4_unified(&weather_tools());
+                let mut deltas = parser.push(&input[..split]).expect("push");
+                deltas.extend(parser.push(&input[split..]).expect("push"));
+                deltas.extend(parser.finish().expect("finish").events);
+                assert_eq!(
+                    tool_arguments_raw(&deltas)
+                        .into_values()
+                        .collect::<Vec<_>>(),
+                    vec![expected.to_string()],
+                    "{args} split={split}"
+                );
+                let events = assemble(&deltas);
+                assert!(
+                    matches!(events.as_slice(), [UnifiedEvent::ToolCall { name, .. }] if name == "get_weather"),
+                    "{args} split={split}: {events:?}"
+                );
+            }
         }
     }
 

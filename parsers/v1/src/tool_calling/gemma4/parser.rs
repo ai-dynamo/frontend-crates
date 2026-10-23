@@ -11,10 +11,13 @@
 // `<|"|>`-delimited strings, bare unquoted keys, nested objects/arrays,
 // multiple calls concatenated without separators.
 
+use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use regex::Regex;
-use serde_json::{Map, Value};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde_json::Value;
+use serde_json::value::RawValue;
 use uuid::Uuid;
 
 use super::super::ToolDefinition;
@@ -64,7 +67,7 @@ fn parse_gemma_call_parts(
                 name,
                 e
             );
-            Value::Object(Map::new())
+            ArgValue::Object(Vec::new())
         }
     };
     let arguments = serde_json::to_string(&args_value)?;
@@ -470,16 +473,51 @@ pub fn try_tool_call_parse_gemma4(
 //   args     = (entry ("," entry)*)?
 //   entry    = key ":" value
 //   key      = bare-identifier (no quoting in Gemma 4 emit)
-//   value    = string | number | bool | null | object | array
+//   value    = string | number | bool | null | object | array | bare
 //   string   = "<|\"|>" .* "<|\"|>"
-//   number   = -? [0-9]+ ( "." [0-9]+ )?
+//   number   = -? [0-9]+ ( "." [0-9]* )? ( [eE] [+-]? [0-9]+ )?
 //   bool     = "true" | "false"
 //   null     = "null" | "none" | "nil"
 //   object   = "{" args "}"
 //   array    = "[" (value ("," value)*)? "]"
+//   bare     = any other token before "," "}" "]", kept as a string
 //
-// We parse straight into `serde_json::Value` so the rest of the pipeline sees
-// the same shape every other parser produces.
+// We parse into `ArgValue`, which serializes to the same JSON shape every other
+// parser produces while keeping each number's digits exact.
+
+/// A parsed argument value. `serde_json::Value` would round numbers through
+/// `f64`, so every number other than an `i64` keeps its source text instead.
+enum ArgValue {
+    /// A string, boolean, null, `i64`, or an `f64` for a spelling JSON forbids.
+    Scalar(Value),
+    RawNumber(Box<RawValue>),
+    Array(Vec<ArgValue>),
+    /// Entries in source order; a repeated key keeps its first position and last value.
+    Object(Vec<(String, ArgValue)>),
+}
+
+impl From<Value> for ArgValue {
+    fn from(value: Value) -> Self {
+        Self::Scalar(value)
+    }
+}
+
+impl Serialize for ArgValue {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Scalar(value) => value.serialize(serializer),
+            Self::RawNumber(raw) => raw.serialize(serializer),
+            Self::Array(items) => items.serialize(serializer),
+            Self::Object(entries) => {
+                let mut map = serializer.serialize_map(Some(entries.len()))?;
+                for (key, value) in entries {
+                    map.serialize_entry(key, value)?;
+                }
+                map.end()
+            }
+        }
+    }
+}
 
 struct Cursor<'a> {
     src: &'a str,
@@ -520,7 +558,7 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<Value> {
+fn parse_args_object(input: &str) -> anyhow::Result<ArgValue> {
     let mut cur = Cursor::new(input);
     cur.skip_whitespace();
     let val = parse_object_body(&mut cur)?;
@@ -535,11 +573,12 @@ pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<Value> {
     Ok(val)
 }
 
-fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
-    let mut map = Map::new();
+fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<ArgValue> {
+    let mut entries: Vec<(String, ArgValue)> = Vec::new();
+    let mut indices: HashMap<&str, usize> = HashMap::new();
     cur.skip_whitespace();
     if cur.eof() || cur.peek_byte() == Some(b'}') {
-        return Ok(Value::Object(map));
+        return Ok(ArgValue::Object(entries));
     }
     loop {
         cur.skip_whitespace();
@@ -551,19 +590,25 @@ fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<Value> {
         cur.skip_whitespace();
         // `key:` with no value emits `{"key": ""}` (matches upstream).
         let value = match cur.peek_byte() {
-            None | Some(b',') | Some(b'}') => Value::String(String::new()),
+            None | Some(b',') | Some(b'}') => Value::String(String::new()).into(),
             _ => parse_value(cur)?,
         };
-        map.insert(key, value);
+        match indices.get(key) {
+            Some(&index) => entries[index].1 = value,
+            None => {
+                indices.insert(key, entries.len());
+                entries.push((key.to_string(), value));
+            }
+        }
         cur.skip_whitespace();
         if !cur.consume_byte(b',') {
             break;
         }
     }
-    Ok(Value::Object(map))
+    Ok(ArgValue::Object(entries))
 }
 
-fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
+fn parse_key<'a>(cur: &mut Cursor<'a>) -> anyhow::Result<&'a str> {
     let bytes = cur.src.as_bytes();
     let start = cur.pos;
     while cur.pos < bytes.len() {
@@ -577,31 +622,10 @@ fn parse_key(cur: &mut Cursor) -> anyhow::Result<String> {
     if cur.pos == start {
         anyhow::bail!("expected bare key at offset {}", start);
     }
-    Ok(cur.src[start..cur.pos].to_string())
+    Ok(&cur.src[start..cur.pos])
 }
 
-/// Consume `keyword` ASCII-case-insensitively, only when the next byte is not
-/// a word character (so `nullable` doesn't match `null` + leftover `able`).
-fn try_consume_keyword(cur: &mut Cursor, keyword: &str) -> bool {
-    let bytes = cur.src.as_bytes();
-    let kw = keyword.as_bytes();
-    let end = cur.pos + kw.len();
-    if end > bytes.len() {
-        return false;
-    }
-    if !bytes[cur.pos..end].eq_ignore_ascii_case(kw) {
-        return false;
-    }
-    if let Some(&next) = bytes.get(end)
-        && (next.is_ascii_alphanumeric() || next == b'_')
-    {
-        return false;
-    }
-    cur.pos = end;
-    true
-}
-
-fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
+fn parse_value(cur: &mut Cursor) -> anyhow::Result<ArgValue> {
     cur.skip_whitespace();
 
     // Delimited string `<|"|>...<|"|>`. If the closing delimiter is missing
@@ -614,12 +638,12 @@ fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
                 let body_end = body_start + end_rel;
                 let s = cur.src[body_start..body_end].to_string();
                 cur.pos = body_end + STRING_DELIM.len();
-                return Ok(Value::String(s));
+                return Ok(Value::String(s).into());
             }
             None => {
                 let s = cur.src[body_start..].to_string();
                 cur.pos = cur.src.len();
-                return Ok(Value::String(s));
+                return Ok(Value::String(s).into());
             }
         }
     }
@@ -639,36 +663,21 @@ fn parse_value(cur: &mut Cursor) -> anyhow::Result<Value> {
         return parse_array(cur);
     }
 
-    // Booleans + null aliases (case-insensitive).
-    if try_consume_keyword(cur, "true") {
-        return Ok(Value::Bool(true));
-    }
-    if try_consume_keyword(cur, "false") {
-        return Ok(Value::Bool(false));
-    }
-    if try_consume_keyword(cur, "null")
-        || try_consume_keyword(cur, "none")
-        || try_consume_keyword(cur, "nil")
-    {
-        return Ok(Value::Null);
-    }
-
-    // Number
-    parse_number(cur)
+    parse_bare_value(cur)
 }
 
-fn parse_array(cur: &mut Cursor) -> anyhow::Result<Value> {
+fn parse_array(cur: &mut Cursor) -> anyhow::Result<ArgValue> {
     let mut items = Vec::new();
     cur.skip_whitespace();
     if cur.consume_byte(b']') {
-        return Ok(Value::Array(items));
+        return Ok(ArgValue::Array(items));
     }
     loop {
         cur.skip_whitespace();
         items.push(parse_value(cur)?);
         cur.skip_whitespace();
         if cur.consume_byte(b']') {
-            return Ok(Value::Array(items));
+            return Ok(ArgValue::Array(items));
         }
         if !cur.consume_byte(b',') {
             anyhow::bail!("expected ',' or ']' in array at offset {}", cur.pos);
@@ -676,39 +685,74 @@ fn parse_array(cur: &mut Cursor) -> anyhow::Result<Value> {
     }
 }
 
-fn parse_number(cur: &mut Cursor) -> anyhow::Result<Value> {
-    let start = cur.pos;
-    let bytes = cur.src.as_bytes();
-    if cur.peek_byte() == Some(b'-') {
-        cur.pos += 1;
+/// A bare value runs to the next `,`, `}`, or `]`. Booleans and null aliases
+/// (case-insensitive) and numbers are typed; any other token is kept as a string,
+/// as upstream vLLM's original parser did, so one unexpected value cannot discard
+/// the other arguments.
+fn parse_bare_value(cur: &mut Cursor) -> anyhow::Result<ArgValue> {
+    let rest = cur.rest();
+    let len = rest.find([',', '}', ']']).unwrap_or(rest.len());
+    let token = rest[..len].trim_ascii();
+    if token.is_empty() {
+        anyhow::bail!("expected value at offset {}", cur.pos);
     }
-    let int_start = cur.pos;
-    while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
-        cur.pos += 1;
-    }
-    if cur.pos == int_start {
-        anyhow::bail!(
-            "expected value at offset {} but got: {:?}",
-            start,
-            &cur.src[start..]
-        );
-    }
-    let mut is_float = false;
-    if cur.peek_byte() == Some(b'.') {
-        is_float = true;
-        cur.pos += 1;
-        while cur.pos < bytes.len() && bytes[cur.pos].is_ascii_digit() {
-            cur.pos += 1;
-        }
-    }
-    let lex = &cur.src[start..cur.pos];
-    if is_float {
-        let f: f64 = lex.parse()?;
-        Ok(serde_json::json!(f))
+    cur.pos += len;
+    let is = |keyword: &str| token.eq_ignore_ascii_case(keyword);
+    Ok(if is("true") {
+        Value::Bool(true).into()
+    } else if is("false") {
+        Value::Bool(false).into()
+    } else if is("null") || is("none") || is("nil") {
+        Value::Null.into()
     } else {
-        let i: i64 = lex.parse()?;
-        Ok(serde_json::json!(i))
+        parse_number(token).unwrap_or_else(|| Value::String(token.to_string()).into())
+    })
+}
+
+/// Types a JSON number token; leading zeros and a bare trailing `.` stay accepted.
+/// An `i64` keeps its `Value` form and any other number its exact source text,
+/// with `f64` only for spellings JSON forbids. `serde_json` cannot read back a
+/// number beyond `f64` range, so such a token is not typed.
+fn parse_number(token: &str) -> Option<ArgValue> {
+    let (int, rest) = split_digits(token.strip_prefix('-').unwrap_or(token));
+    if int.is_empty() {
+        return None;
     }
+    let (fraction, rest) = match rest.strip_prefix('.') {
+        Some(rest) => (true, split_digits(rest).1),
+        None => (false, rest),
+    };
+    let (exponent, rest) = match rest.strip_prefix(['e', 'E']) {
+        Some(rest) => {
+            let (digits, rest) = split_digits(rest.strip_prefix(['+', '-']).unwrap_or(rest));
+            if digits.is_empty() {
+                return None;
+            }
+            (true, rest)
+        }
+        None => (false, rest),
+    };
+    if !rest.is_empty() {
+        return None;
+    }
+    if !fraction
+        && !exponent
+        && let Ok(value) = token.parse::<i64>()
+    {
+        return Some(Value::from(value).into());
+    }
+    let value = token
+        .parse::<f64>()
+        .ok()
+        .filter(|value| value.is_finite())?;
+    Some(match RawValue::from_string(token.to_string()) {
+        Ok(raw) => ArgValue::RawNumber(raw),
+        Err(_) => Value::from(value).into(),
+    })
+}
+
+fn split_digits(s: &str) -> (&str, &str) {
+    s.split_at(s.bytes().take_while(u8::is_ascii_digit).count())
 }
 
 #[cfg(test)]
@@ -925,6 +969,47 @@ mod tests {
         assert!((args["d"].as_f64().unwrap()).abs() < 1e-9);
     }
 
+    #[test] // Numbers as the Gemma 4 chat template prints them: Python float repr and
+    // integers beyond i64. They keep their digits instead of rounding through f64.
+    fn json_numbers_keep_their_value_and_siblings() {
+        for (args, expected) in [
+            (
+                r#"lr:1e-07,eps:1.5e-08,huge:1e+16,scale:1E5,unit:<|"|>c<|"|>"#,
+                r#"{"lr":1e-07,"eps":1.5e-08,"huge":1e+16,"scale":1E5,"unit":"c"}"#,
+            ),
+            (
+                r#"big:1180591620717411303424,max:18446744073709551615,min:-9223372036854775809,unit:<|"|>c<|"|>"#,
+                r#"{"big":1180591620717411303424,"max":18446744073709551615,"min":-9223372036854775809,"unit":"c"}"#,
+            ),
+            (
+                r#"a:9007199254740992.5,b:9007199254740993.1,c:9007199254740993.25,d:9.0071992547409925e15,e:0.10000000000000000001,f:-9007199254740992.5,whole:1."#,
+                r#"{"a":9007199254740992.5,"b":9007199254740993.1,"c":9007199254740993.25,"d":9.0071992547409925e15,"e":0.10000000000000000001,"f":-9007199254740992.5,"whole":1.0}"#,
+            ),
+            (
+                r#"cfg:{ids:[1180591620717411303424,1e-07]},unit:<|"|>c<|"|>"#,
+                r#"{"cfg":{"ids":[1180591620717411303424,1e-07]},"unit":"c"}"#,
+            ),
+        ] {
+            let input = format!("<|tool_call>call:f{{{args}}}<tool_call|>");
+            let (calls, _) = try_tool_call_parse_gemma4(&input, None).unwrap();
+            assert_eq!(calls.len(), 1, "{args}");
+            assert_eq!(calls[0].function.arguments, expected, "{args}");
+        }
+    }
+
+    #[test] // A bare value that is neither a keyword nor a number is kept as a string
+    // (upstream vLLM does the same) instead of discarding every argument of the call.
+    fn unparseable_bare_value_keeps_its_siblings() {
+        let input =
+            r#"<|tool_call>call:f{a:1,mode:fast,ratio:nan,over:1e400,b:<|"|>x<|"|>}<tool_call|>"#;
+        let (calls, _) = try_tool_call_parse_gemma4(input, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            calls[0].function.arguments,
+            r#"{"a":1,"mode":"fast","ratio":"nan","over":"1e400","b":"x"}"#
+        );
+    }
+
     #[test] // TOOLCALLING.fmt.1 — tool validation warns but doesn't drop
     fn parse_with_tool_validation() {
         let input = r#"<|tool_call>call:get_weather{x:1}<tool_call|>"#;
@@ -951,27 +1036,31 @@ mod tests {
 
     // Argument-grammar unit tests (parse_args_object directly)
 
+    fn parsed_args(input: &str) -> Value {
+        serde_json::to_value(parse_args_object(input).unwrap()).unwrap()
+    }
+
     #[test] // TOOLCALLING.batch.6 — empty args at the grammar entry point
     fn args_grammar_empty() {
-        let v = parse_args_object("").unwrap();
+        let v = parsed_args("");
         assert_eq!(v, serde_json::json!({}));
     }
 
     #[test] // TOOLCALLING.batch.7 — string with comma/colon/brace literals
     fn args_grammar_string_with_special_chars() {
-        let v = parse_args_object(r#"x:<|"|>has,comma:and{brace}<|"|>"#).unwrap();
+        let v = parsed_args(r#"x:<|"|>has,comma:and{brace}<|"|>"#);
         assert_eq!(v["x"], "has,comma:and{brace}");
     }
 
     #[test] // TOOLCALLING.batch.7 — deeply nested object value
     fn args_grammar_deeply_nested() {
-        let v = parse_args_object("a:{b:{c:{d:{e:1}}}}").unwrap();
+        let v = parsed_args("a:{b:{c:{d:{e:1}}}}");
         assert_eq!(v["a"]["b"]["c"]["d"]["e"], 1);
     }
 
     #[test] // TOOLCALLING.batch.7 — array of objects
     fn args_grammar_array_of_objects() {
-        let v = parse_args_object(r#"items:[{n:<|"|>x<|"|>},{n:<|"|>y<|"|>}]"#).unwrap();
+        let v = parsed_args(r#"items:[{n:<|"|>x<|"|>},{n:<|"|>y<|"|>}]"#);
         assert_eq!(v["items"][0]["n"], "x");
         assert_eq!(v["items"][1]["n"], "y");
     }
@@ -982,20 +1071,20 @@ mod tests {
         // everything after the opening delimiter becomes the value. We mirror
         // that so a truncated trailing arg doesn't lose all earlier args via
         // the entire-args-object error fallback.
-        let v = parse_args_object(r#"x:<|"|>oops"#).unwrap();
+        let v = parsed_args(r#"x:<|"|>oops"#);
         assert_eq!(v["x"], "oops");
     }
 
     #[test] // TOOLCALLING.batch.4 — empty value mid-args (upstream test_empty_value)
     fn args_grammar_empty_value_yields_empty_string() {
-        let v = parse_args_object("x:,y:1").unwrap();
+        let v = parsed_args("x:,y:1");
         assert_eq!(v["x"], "");
         assert_eq!(v["y"], 1);
     }
 
     #[test] // TOOLCALLING.batch.4 — empty value at end-of-args (upstream test_empty_value)
     fn args_grammar_trailing_empty_value() {
-        let v = parse_args_object("x:1,y:").unwrap();
+        let v = parsed_args("x:1,y:");
         assert_eq!(v["x"], 1);
         assert_eq!(v["y"], "");
     }
@@ -1006,15 +1095,19 @@ mod tests {
             "null", "NULL", "Null", "none", "NONE", "None", "nil", "NIL", "Nil",
         ] {
             let body = format!("x:{variant}");
-            let v = parse_args_object(&body).unwrap();
+            let v = parsed_args(&body);
             assert_eq!(v["x"], Value::Null, "variant: {variant}");
         }
     }
 
     #[test] // TOOLCALLING.batch.4 — keyword-prefix must not partial-match (`nullable` vs `null`)
     fn args_grammar_keyword_prefix_not_consumed() {
-        // `nullable` must not be parsed as `null` + leftover `able`.
-        let _ = parse_args_object("x:nullable").unwrap_err();
+        // `nullable` must not be parsed as `null` + leftover `able`; the whole
+        // token stays a string.
+        assert_eq!(
+            parsed_args("x:nullable"),
+            serde_json::json!({"x": "nullable"})
+        );
     }
 
     // DEPRECATED(parser-fixture-duplicate): Duplicate of YAML fixture coverage: TOOLCALLING.batch.5.c in tests/parity/toolcalling/fixtures/gemma4/TOOLCALLING.batch.5.yaml.

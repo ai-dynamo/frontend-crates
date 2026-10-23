@@ -4606,6 +4606,22 @@ fahrenheit
             .collect()
     }
 
+    fn tool_call_arguments(
+        results: &[Annotated<CreateChatCompletionStreamResponse>],
+    ) -> Vec<String> {
+        results
+            .iter()
+            .flat_map(|r| r.data.as_ref().into_iter())
+            .flat_map(|d| d.choices.iter())
+            .flat_map(|c| c.delta.tool_calls.iter().flatten())
+            .filter_map(|tc| {
+                tc.function
+                    .as_ref()
+                    .and_then(|function| function.arguments.clone())
+            })
+            .collect()
+    }
+
     /// Chunks follow the model's tokenization, where ".\n\n" is one token.
     #[tokio::test]
     async fn test_dsml_block_separator_is_not_content() {
@@ -4889,6 +4905,36 @@ fahrenheit
                     "chunks: {chunks:?}"
                 );
             }
+        }
+    }
+
+    /// Python float repr, an integer beyond i64, and a bare word must not discard
+    /// the call's other arguments, wherever the stream is cut.
+    #[tokio::test]
+    async fn test_gemma4_json_numbers_keep_sibling_arguments_at_every_split() {
+        let input = "<|tool_call>call:f{lr:1e-07,big:1180591620717411303424,mode:fast,unit:<|\"|>c<|\"|>}<tool_call|>";
+        let expected = r#"{"lr":1e-07,"big":1180591620717411303424,"mode":"fast","unit":"c"}"#;
+        for split in 0..input.len() {
+            let input_chunks = [&input[..split], &input[split..]]
+                .into_iter()
+                .filter(|chunk| !chunk.is_empty())
+                .map(|chunk| test_utils::create_mock_response_chunk(chunk.to_string(), 0))
+                .chain(std::iter::once(test_utils::create_final_response_chunk(0)));
+            let jail = JailedStream::builder().tool_call_parser("gemma4").build();
+            let results: Vec<_> = jail
+                .apply_with_finish_reason(stream::iter(input_chunks))
+                .collect()
+                .await;
+            assert_eq!(
+                tool_call_arguments(&results),
+                vec![expected.to_string()],
+                "split={split}"
+            );
+            assert_eq!(
+                test_utils::reconstruct_content(&results),
+                "",
+                "split={split}"
+            );
         }
     }
 

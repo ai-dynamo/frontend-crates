@@ -27,11 +27,10 @@
 //! recovered (v1 parity, case `5.b`), while one truncated mid-value is DROPPED
 //! rather than emitted with empty arguments.
 //!
-//! Arguments are re-serialized in source key order because the v1 parser builds
-//! them from a `serde_json::Map` (a `BTreeMap` without the `preserve_order`
-//! feature), which sorts keys alphabetically; the fixtures store arguments as an
-//! exact JSON string in the model-emitted order (the order vLLM's Rust parser also
-//! preserves), so order has to be pinned to source order.
+//! Arguments are re-serialized in source key order: the fixtures store arguments
+//! as an exact JSON string in the model-emitted order (the order vLLM's Rust
+//! parser also preserves). The v1 parser already emits that order; reordering
+//! here keeps the contract independent of it.
 
 use std::cell::RefCell;
 
@@ -1341,6 +1340,35 @@ mod tests {
     }
 
     #[test]
+    fn json_numbers_and_bare_words_keep_sibling_arguments_at_every_split() {
+        // Python float repr (what the Gemma 4 chat template prints), an integer
+        // beyond i64, and a bare word used to discard every argument of the call.
+        for (args, expected) in [
+            (
+                "lr:1e-07,huge:1e+16,location:<|\"|>NYC<|\"|>",
+                r#"{"lr":1e-07,"huge":1e+16,"location":"NYC"}"#,
+            ),
+            (
+                "big:1180591620717411303424,location:<|\"|>NYC<|\"|>",
+                r#"{"big":1180591620717411303424,"location":"NYC"}"#,
+            ),
+            (
+                "mode:fast,location:<|\"|>NYC<|\"|>",
+                r#"{"mode":"fast","location":"NYC"}"#,
+            ),
+        ] {
+            let input = format!("<|tool_call>call:get_weather{{{args}}}<tool_call|>");
+            for split in 0..=input.len() {
+                let out = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]]);
+                assert_eq!(out.normal_text, "", "{args} split={split}");
+                let merged = out.coalesce_calls();
+                assert_eq!(merged.calls.len(), 1, "{args} split={split}");
+                assert_eq!(merged.calls[0].arguments, expected, "{args} split={split}");
+            }
+        }
+    }
+
+    #[test]
     fn drops_call_truncated_mid_value() {
         let out = parse_chunks(
             &weather_tools(),
@@ -1384,8 +1412,8 @@ mod tests {
 
     #[test]
     fn preserves_source_key_order() {
-        // destination, passengers, first_class is NOT alphabetical; the v1 parser
-        // sorts keys (BTreeMap), so the parser must restore source order.
+        // destination, passengers, first_class is NOT alphabetical, so a key-sorting
+        // step anywhere in the pipeline would show here.
         let tools = vec![Tool {
             name: "book_flight".to_string(),
             description: None,
