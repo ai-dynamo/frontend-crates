@@ -1,8 +1,8 @@
 {
-  "snapshot": "20261022_224310",
-  "created_pt": "2026-10-22 22:43:10 America/Los_Angeles",
+  "snapshot": "20261023_103943",
+  "created_pt": "2026-10-23 10:39:43 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "10.1.0",
+    "dynamo-parsers": "10.1.1",
     "dynamo-parsers-v2": "0.7.33"
   },
   "peers": {
@@ -27,13 +27,28 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v1.tar.gz",
-      "sha256": "6c9a5d7f1ae9c538eb5b8a1d3ebb3a48d82f5205991536bd0755db0c53c789a2",
-      "size": 28552
+      "sha256": "b5e6a8c72028ace08af1bfcebbe176d4508e5f3ab0df71b3d8fe8047f61df52a",
+      "size": 28940
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz",
       "sha256": "5f0626c60fefdc320169341d1467d26fea465e5cc986dd44f849f415d44c2f5b",
       "size": 37864
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.2.tar.gz",
+      "sha256": "1bcbfbce8edb04497d9783cb26f6e8fbe744657b5f9be8be0289c2dc6e265372",
+      "size": 1007
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.7.tar.gz",
+      "sha256": "da5d9dd64d3523a527e4213787b8b2ad945a71f58d6678831232d708c61e33af",
+      "size": 4132
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.1.1.tar.gz",
+      "sha256": "8934aa87303ddd7966b83ec3c7e9b619900da3f8f33f740b1cd259627820848a",
+      "size": 38658
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -107,8 +122,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-v1/inputs.tar.gz",
-      "sha256": "8af3bce0811928ca5ea0972e34bb150aa8aad920d4c98fd0f3b0884ce5cadcf7",
-      "size": 173041
+      "sha256": "a8fc2057a2f440564cec732142105068b1023c562239b1390d239b488a19b486",
+      "size": 175307
     },
     {
       "path": "toolcalling/fixtures-batch-v1/sglang_python-0.5.12.post1.tar.gz",
@@ -383,8 +398,8 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "bfdfc42c9dc9699c4fd98ddcb386d705f4f5f2fad44e3654feb2702dc71ef0c0",
-      "size": 54572733
+      "sha256": "084bd0d0c8740e52f86e0457aa4b40f8cc054d47f7d059d35b5daa22ebb0afeb",
+      "size": 54595200
     }
   ],
   "inactive_shards": []

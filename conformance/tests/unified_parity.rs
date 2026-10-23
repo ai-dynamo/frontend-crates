@@ -640,6 +640,20 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                         arguments: serde_json::from_str(&call.arguments).unwrap(),
                     })
                     .collect();
+                // An allowlisted golden divergence pins the exact observed output;
+                // any other mismatch still fails.
+                if actual != expected
+                    && let Some(Expected::Golden(known_divergence)) =
+                        divergences::expected(&known, &file.family, &id, Check::Golden)
+                {
+                    assert_eq!(
+                        render(&Ok(actual)),
+                        known_divergence.actual,
+                        "{} {id} {label}",
+                        file.family
+                    );
+                    continue;
+                }
                 assert_eq!(actual, expected, "{} {id} {label}", file.family);
             }
         }

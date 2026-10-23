@@ -141,6 +141,25 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  missing_inner_closers_then_valid_call:
+    case_key: UNIFIED.5-missing_inner_closers_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 1875da4d208cdb12fad074e2497a2720241757d999c1c31cbf50a55959bb19ed
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"}'
+            complete: true
+        - expected: []
 metadata_changes: {}
 document_overrides:
   xml_custom_type_double_quoted_object:
@@ -178,4 +197,13 @@ document_overrides:
         crate_version: 0.7.33
         source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
         git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.28
+      capture_origin:
+        crate_version: 0.7.28
+        source_sha256: 6a365db5fd8fc09deedbdd22ee233e472bf76b4f1aced8e28e60783d6a44baac
+        git_commit: bde79e8b79cdf94d0209143f7251deb8403d0e84
       inherited_from: null

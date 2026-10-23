@@ -14809,3 +14809,38 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  missing_inner_closers_then_valid_call:
+    lifecycle: active
+    scenario: missing_inner_closers_then_valid_call
+    description: 'The first call''s argument value is missing its inner closers (Qwen3: </parameter> and </function>) but keeps the outer call close; a complete get_weather(location=Paris) follows. Deliver the entire native input in one push, then finish. Reject the incomplete call and return only the complete one.'
+    policy:
+    - I2
+    - I7
+    - P2
+    display_id: UNIFIED.5-missing_inner_closers_then_valid_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+      chunks:
+      - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="location" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: Paris

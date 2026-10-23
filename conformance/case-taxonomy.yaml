@@ -77,6 +77,7 @@ suites:
           e: {desc: 'Multi-call, last call truncated mid-argument value', required: true}
           f: {desc: Bare valid call before a complete wrapped call, required: false}
           g: {desc: Orphan close marker after prefix prose, required: false}
+          i: {desc: Outer wrapper cannot terminate an unclosed raw argument before a complete call, required: false}
       "6":
         title: Empty arguments
         required: true
@@ -341,6 +342,7 @@ suites:
           f: {desc: Bare valid call before a complete wrapped call, required: false}
           g: {desc: Orphan close marker after prefix prose, required: false}
           h: {desc: Orphan close marker split across chunks after prefix prose, required: false}
+          i: {desc: Outer wrapper cannot terminate an unclosed raw argument before a complete call, required: false}
       "6":
         title: Empty arguments
         required: true

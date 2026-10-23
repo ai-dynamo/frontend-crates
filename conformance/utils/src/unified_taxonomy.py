@@ -56,6 +56,7 @@ UNIFIED_TAX = {
     "truncated_tool_eof": (5, "1"), "tool_no_close": (5, "2"),
     "orphan_close_after_prose": (5, "3"),
     "malformed_json_then_two_valid_calls": (5, "4"),
+    "missing_inner_closers_then_valid_call": (5, "6"),
     # Group 6 — Empty body (streamv1.6)
     "empty_args": (6, "1"),
     # Group 7 — Argument fidelity (streamv1.7)

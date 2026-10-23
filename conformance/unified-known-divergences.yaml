@@ -12,6 +12,11 @@ kimi_k3:
       note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
       actual: ''
 
+  UNIFIED.missing_inner_closers_then_valid_call.kimi_k3:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the first argument value is missing its inner closers, so the parser keeps reading it through the outer close and swallows the following complete call; Paris is lost. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished<|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>argument key=\"location\" type=\"string\"<|sep|>Paris"})
+
 muse_glimmer:
   UNIFIED.muse_unterminated_parameter_then_empty_call.muse_glimmer:
     golden:
@@ -21,3 +26,32 @@ muse_glimmer:
     golden:
       note: 'PR #316 follow-up: the later parameter closer completes the earlier malformed parameter, dispatching f with embedded invoke markup instead of get_weather.'
       actual: tool_call(f, {"x":"bad</atem:invoke><atem:invoke name=\"get_weather\"><atem:parameter name=\"city\">Paris"})
+  UNIFIED.missing_inner_closers_then_valid_call.muse_glimmer:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the first argument value is missing its inner closers, so the parser keeps reading it through the outer close and swallows the following complete call; Paris is lost. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished</atem:function_calls><|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"location\">Paris"})
+deepseek_v4:
+  UNIFIED.missing_inner_closers_then_valid_call.deepseek_v4:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the first argument value is missing its inner closers, so the parser keeps reading it through the outer close and swallows the following complete call; Paris is lost. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished</｜DSML｜tool_calls><｜DSML｜tool_calls><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"location\" string=\"true\">Paris"})
+deepseek_v41:
+  UNIFIED.missing_inner_closers_then_valid_call.deepseek_v41:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the first argument value is missing its inner closers, so the parser keeps reading it through the outer close and swallows the following complete call; Paris is lost. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished</｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"location\" string=\"true\">Paris"})
+glm47:
+  UNIFIED.missing_inner_closers_then_valid_call.glm47:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the incomplete first call is kept as location=unfinished instead of rejected, alongside the complete Paris call. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished"})  |  tool_call(get_weather, {"location":"Paris"})
+qwen3:
+  UNIFIED.missing_inner_closers_then_valid_call.qwen3:
+    golden:
+      note: 'PR #397 review (TOOLCALLING.batch.5.i in Unified): the first argument value is missing its inner closers, so the parser keeps reading it through the outer close and swallows the following complete call; Paris is lost. Parser fix is outside this change.'
+      actual: tool_call(get_weather, {"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"})
+nemotron_v3:
+  UNIFIED.missing_inner_closers_then_valid_call.nemotron_v3:
+    golden:
+      note: 'PR #397 review: Nemotron V3 uses Qwen-style inner closers; the parser keeps the incomplete argument open and swallows the later Paris call.'
+      actual: 'tool_call(get_weather, {"location":"unfinished</tool_call><tool_call><function=get_weather><parameter=location>Paris"})'

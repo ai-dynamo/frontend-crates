@@ -105,6 +105,9 @@ impl Default for JsonParserConfig {
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct XmlParserConfig {
+    /// Treat Markdown code examples as text, not executable tool markup.
+    #[serde(default)]
+    pub protect_code_examples: bool,
     /// Start token for individual tool calls (e.g., "<tool_call>")
     pub tool_call_start_token: String,
     /// End token for individual tool calls (e.g., `</tool_call>`)
@@ -154,6 +157,7 @@ pub struct XmlParserConfig {
 impl Default for XmlParserConfig {
     fn default() -> Self {
         Self {
+            protect_code_examples: false,
             tool_call_start_token: "<tool_call>".to_string(),
             tool_call_end_token: "</tool_call>".to_string(),
             function_start_token: "<function=".to_string(),
@@ -169,6 +173,13 @@ impl Default for XmlParserConfig {
 }
 
 impl XmlParserConfig {
+    pub(crate) fn find_marker(&self, text: &str, marker: &str) -> Option<usize> {
+        if self.protect_code_examples {
+            super::code_spans::find_unquoted(text, marker)
+        } else {
+            text.find(marker)
+        }
+    }
     /// Returns true when the chunk lacks the outer `<tool_call>` wrapper but
     /// contains `<function=...>`, and the family opts into back-off parsing
     /// (qwen3_coder, nemotron_nano). In this mode the function-level tokens
@@ -177,8 +188,12 @@ impl XmlParserConfig {
     /// agree on what counts as a tool call.
     pub fn is_bare_function_mode(&self, chunk: &str) -> bool {
         self.backoff_when_no_wrapper
-            && !chunk.contains(self.tool_call_start_token.as_str())
-            && chunk.contains(self.function_start_token.as_str())
+            && self
+                .find_marker(chunk, &self.tool_call_start_token)
+                .is_none()
+            && self
+                .find_marker(chunk, &self.function_start_token)
+                .is_some()
     }
 }
 
@@ -749,6 +764,7 @@ impl ToolCallConfig {
         //              parse the entire input as a tool block
         Self {
             parser_config: ParserConfig::Xml(XmlParserConfig {
+                protect_code_examples: true,
                 passthrough_when_no_function: true,
                 backoff_when_no_wrapper: true,
                 ..XmlParserConfig::default()
@@ -850,6 +866,7 @@ impl ToolCallConfig {
         Self {
             parser_config: ParserConfig::Xml(XmlParserConfig {
                 tool_call_start_token: "<minimax:tool_call>".to_string(),
+                protect_code_examples: false,
                 tool_call_end_token: "</minimax:tool_call>".to_string(),
                 function_start_token: "<invoke name=".to_string(),
                 function_end_token: "</invoke>".to_string(),
