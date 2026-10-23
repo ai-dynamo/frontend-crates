@@ -89,6 +89,9 @@ _build_stage_base() {
   \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
   \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
+  \cp -f "$TOOLS/unified_parallel_boundary_cases.json" "$STAGE/tests/parity/unified_parallel_boundary_cases.json"
+  # The generator preserves published requests from the canonical family YAML.
+  ln -s "$ROOT/conformance/fixtures-unified-v2" "$STAGE/fixtures-unified-v2"
   [ -f "$TOOLS/assets/conformance_view.js" ] && \
     \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved (at the pinned peer versions) by

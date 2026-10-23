@@ -7,6 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e59fd647ef7ea049cd990fe737329c649a9d7889550548e9d7da2e9aa4e297be
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -39,6 +48,42 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: f9d96f6e097650655e69c3d66d0d18148bed74892edf19af2b93f200497109b9
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 080d9b87468aa5423876d88ce92cce33c4eb7995c201f7e06fc7c6b5ba0df4af
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: e38e9bc77860e64a9ce05e42e9b2c7b96ffe9b3a42e61ea2930ac1cae515b62f
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: c45bd1a9abb4c4d57a7a750e790c88e239b9e362149bb288e0f804ec7c36b90b
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser muse_glimmer: no Dynamo parser v2 for family ''muse_glimmer'''
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -1230,6 +1275,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: d52de6591b6b747b7d637924ee86e05d4d6d8ad3766c703a1dbc837a4d39fcb1
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -1327,6 +1381,11 @@ changes:
         code: legacy_unclassified
         detail: no reasoning parser registered for muse_glimmer
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -1343,6 +1402,26 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   content_then_reason_then_tool:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -1803,6 +1882,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   text_sandwich:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native

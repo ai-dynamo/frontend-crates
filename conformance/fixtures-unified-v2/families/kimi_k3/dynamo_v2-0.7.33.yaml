@@ -1,0 +1,103 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.33
+    git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+    source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+document:
+  mode: unified
+changes:
+  xml_string_type_double_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: d1c6cfa68e23c7111c1b0a4e5213b64be700e1a3ed90ad1b39915391b9d469da
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"a":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"a\":1}"}'
+            complete: true
+        - expected: []
+  xml_string_type_single_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_single_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 23a604b96d2712d787dc90078aefffe98a733b52a7b4521a904500df22701087
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{''a'':1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{''a'':1}"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  xml_string_type_double_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+      inherited_from: null
+  xml_string_type_single_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
+      inherited_from: null

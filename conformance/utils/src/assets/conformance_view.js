@@ -1201,7 +1201,7 @@
   function captureLegendHtml() {
     return '<div class="legend capture-legend"><p><strong>Legend:</strong> Each rounded box has one equal-width segment per active capture, in slot order. Outputs are compared with GOLDEN, including tool-call order and reasoning/content/tool interleaving.</p><ul></ul>'
       + '<p>Click a case cell or heading to open its outputs and status details. '
-      + '<span data-dynamo-parsers hidden>Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser.</span> '
+      + '<span data-dynamo-parsers hidden>Dynamo v1 is the batch parser; Dynamo v2 details identify native UnifiedParser or split capture paths.</span> '
       + '<span data-batch-timing hidden>Order/chunk not applicable for batch.</span></p>'
       + '<p data-output-formats hidden>Output formats: batch <code>calls=[...]</code> is the final list of calls; streaming <code>tool_call=...</code> is one call event. '
       + 'Both are compared as ordered events with the same call names and arguments. Lost reasoning/text/tool-call interleaving remains a mismatch.</p></div>';

@@ -87,6 +87,25 @@ fn structural_response_case_checks_the_schema_before_parsing() {
                 case.golden,
                 "{id}"
             );
+            if file.family == "gpt_oss" {
+                for invalid in [
+                    "<|return|>".to_string(),
+                    format!("{}extra", case.input),
+                    format!("{}<|return|>", case.input),
+                    case.input.replace("<|return|>", "<|call|>"),
+                ] {
+                    assert!(
+                        events(
+                            &file.family,
+                            std::slice::from_ref(&invalid),
+                            &case.init,
+                            &tools,
+                        )
+                        .is_err(),
+                        "{id}: accepted invalid stop sequence {invalid:?}"
+                    );
+                }
+            }
             // Parsing the same stream still succeeds with a contradictory schema.
             // Only a real grammar check can reject this request before parsing.
             case.init.structural_tag.as_mut().unwrap().schema =
@@ -158,6 +177,64 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
         ("3-char".into(), chunk_every(input, 3)),
         ("7-char".into(), chunk_every(input, 7)),
     ]
+}
+
+/// Quote-looking strings must survive every possible two-chunk boundary,
+/// including boundaries inside their native escaping and framing.
+#[test]
+fn string_quote_controls_survive_every_split_for_every_family() {
+    let mut covered = std::collections::BTreeSet::new();
+    for file in load_native_golden() {
+        let mut count = 0;
+        for (id, case) in file.cases {
+            if !id.contains("xml_string_type_") {
+                continue;
+            }
+            count += 1;
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let expected = if id.contains("single_quoted") {
+                "{'a':1}"
+            } else {
+                r#"{"a":1}"#
+            };
+            assert_eq!(
+                case.golden,
+                vec![UnifiedEvent::ToolCall {
+                    name: "schema_probe".into(),
+                    arguments: serde_json::json!({"value": expected}),
+                }],
+                "{id}: oracle must preserve the exact string"
+            );
+            for (schedule, chunks) in splittings(&case.input) {
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: {schedule}"
+                );
+            }
+            for split in
+                (0..=case.input.len()).filter(|offset| case.input.is_char_boundary(*offset))
+            {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: split {split}"
+                );
+            }
+        }
+        assert_eq!(count, 2, "{}: missing quote control", file.family);
+        covered.insert(file.family);
+    }
+    assert_eq!(
+        covered,
+        REGISTERED_UNIFIED_FAMILIES
+            .iter()
+            .map(|family| dynamo_parsers_v2::canonical_unified_family(family)
+                .unwrap()
+                .to_string())
+            .collect()
+    );
 }
 
 /// The gate: assembled events must equal the golden, exactly and in order.
@@ -277,8 +354,8 @@ fn unified_parser_is_chunk_invariant() {
 }
 
 #[test]
-fn reference_argument_cases_preserve_results_at_every_split() {
-    let scenarios = [
+fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
+    let reference_scenarios = [
         "glm_ref_object",
         "glm_ref_encoded_targets",
         "glm_ref_json_looking_strings",
@@ -287,13 +364,32 @@ fn reference_argument_cases_preserve_results_at_every_split() {
         "nullable_reference_alias_literals",
         "local_schema_id_preserves_type",
     ];
+    let dotted_scenarios = [
+        "dotted_name_minimal",
+        "dotted_name_mixed_punctuation",
+        "dotted_name_multiple_segments",
+        "dotted_name_shared_prefix",
+    ];
+    let dotted_native_families = [
+        "beam",
+        "deepseek_v4",
+        "deepseek_v41",
+        "gemma4",
+        "glm47",
+        "gpt_oss",
+        "kimi_k2",
+        "kimi_k3",
+        "muse_glimmer",
+        "nemotron_v3",
+        "qwen3",
+    ];
     let mut checked = 0;
     let files = load_native_golden();
-    let family_count = files.len();
     for file in files {
         for (id, case) in &file.cases {
-            if !scenarios
+            if !reference_scenarios
                 .iter()
+                .chain(dotted_scenarios.iter())
                 .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
             {
                 continue;
@@ -306,6 +402,15 @@ fn reference_argument_cases_preserve_results_at_every_split() {
                 &tools,
             );
             assert!(whole.is_ok(), "{id}: {}", render(&whole));
+            if id.contains(".dotted_name_") {
+                assert_eq!(whole.as_ref(), Ok(&case.golden), "{id}");
+                let characters = chunk_every(&case.input, 1);
+                assert_eq!(
+                    events(&file.family, &characters, &case.init, &tools),
+                    whole,
+                    "{id}: characters"
+                );
+            }
             for split in case
                 .input
                 .char_indices()
@@ -319,7 +424,15 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, family_count * scenarios.len());
+    let native_families = common::unified_families()
+        .values()
+        .filter(|family| family.native)
+        .count();
+    assert_eq!(
+        checked,
+        native_families * reference_scenarios.len()
+            + dotted_native_families.len() * dotted_scenarios.len(),
+    );
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.

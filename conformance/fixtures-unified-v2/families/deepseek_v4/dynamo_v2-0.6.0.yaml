@@ -7,6 +7,39 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     observation:
       value:
@@ -2296,6 +2329,52 @@ changes:
           - kind: text
             text: ' After.'
         - expected: []
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
   tool_block_never_closed_then_text:
     observation:
       value:
@@ -2704,4 +2783,40 @@ metadata_changes:
   two_calls: {}
   two_calls_same_name: {}
   two_reason_spans: {}
-document_overrides: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.0
+      capture_origin:
+        crate_version: 0.6.0
+        source_sha256: fac750820bbe3fe5eda494ca153d42516aab6a5fadd4bbe70a41871b717f5bc4
+        git_commit: c03e9af4c55ecca4852950239537b875d56e0cb1
+      inherited_from: null

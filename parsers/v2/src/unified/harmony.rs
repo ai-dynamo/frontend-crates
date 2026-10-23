@@ -4,6 +4,7 @@
 //! Unified GPT-OSS parser over the incremental Harmony message reader.
 
 use std::collections::HashMap;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use openai_harmony::chat::Role;
 use openai_harmony::{
@@ -15,7 +16,7 @@ use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
     UnifiedParserInit, UnifiedParserInputCapabilities, UnifiedParserOutput,
-    UnifiedParserStartingState,
+    UnifiedParserStartingState, UnifiedToolOutputMode,
 };
 
 const START: &str = "<|start|>";
@@ -723,7 +724,54 @@ impl HarmonyRuntime {
                 "discarded a truncated Harmony tool call"
             );
         }
+        if self.inside_message
+            && !self.in_body
+            && let Err(error) = self.parser.process_eos()
+        {
+            self.recover_final_header(output)?;
+            tracing::warn!(why = "unterminated_harmony_header", error = %error,
+                "finalized Harmony input with an incomplete header");
+        }
         self.finished = true;
+        Ok(())
+    }
+
+    fn recover_final_header(&self, output: &mut UnifiedParserOutput) -> Result<()> {
+        #[derive(serde::Deserialize)]
+        #[serde(tag = "state")]
+        enum State {
+            Header {
+                header_tokens: Vec<u32>,
+            },
+            #[serde(other)]
+            Other,
+        }
+        let State::Header { header_tokens } = serde_json::from_str(&self.parser.state_json()?)?
+        else {
+            return Ok(());
+        };
+        let mut header_bytes = self.encoding.tokenizer().decode_bytes(&header_tokens)?;
+        let (header, _) = take_utf8_prefix(&mut header_bytes, &[]);
+        // Only an undirected assistant final is safe to surface as visible text.
+        let Some(mut text) = header.strip_prefix("assistant<|channel|>final") else {
+            return Ok(());
+        };
+        if text.starts_with(|ch: char| ch.is_alphanumeric() || ch == '_')
+            || text.trim_start().starts_with("to=")
+        {
+            return Ok(());
+        }
+        while let Some(prefix) = [TURN_END, MESSAGE_END, HANDOFF]
+            .iter()
+            .find_map(|marker| text.strip_suffix(marker))
+        {
+            text = prefix;
+        }
+        // Embedded controls make an unfinished header unsafe to recover as visible text.
+        if CONTROL_MARKERS.iter().any(|marker| text.contains(marker)) {
+            return Ok(());
+        }
+        output.push_text(text);
         Ok(())
     }
 
@@ -904,8 +952,8 @@ impl NativeUnified for HarmonyNative {
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
-            find_close: guided_reasoning_close,
-            find_turn_end: guided_turn_end,
+            find_close: |haystack, _, state| guided_reasoning_close(haystack, state),
+            find_turn_end: |haystack, _, _| guided_turn_end(haystack),
             find_stray: guided_stray_header,
             find_routing: guided_routing_header,
             find_transition: guided_content_header,
@@ -915,6 +963,7 @@ impl NativeUnified for HarmonyNative {
             close_markers: &[MESSAGE_END, TURN_END],
             response_literal_markers: CONTROL_MARKERS,
             header_pending: Some(guided_header_pending),
+            envelope_owned: false,
         }))
     }
 
@@ -1030,8 +1079,78 @@ pub(crate) fn gpt_oss_unified(_tools: &[Tool]) -> Box<dyn UnifiedParser> {
     Box::new(GuidedRouted::new(HarmonyNative::new(true, false)))
 }
 
-pub(crate) fn gpt_oss_legacy_tool_adapter() -> Box<dyn UnifiedParser> {
-    Box::new(GuidedRouted::new(HarmonyNative::new(true, true)))
+// Native-only lifecycle keeps unrelated guided state out of the legacy auto-trait contract.
+struct LegacyHarmonyUnified {
+    native: HarmonyNative,
+    started: bool,
+    finished: bool,
+}
+
+impl UnifiedParser for LegacyHarmonyUnified {
+    fn input_capabilities(&self) -> UnifiedParserInputCapabilities {
+        self.native.input_capabilities()
+    }
+
+    fn preserve_special_tokens(&self) -> bool {
+        self.native.preserve_special_tokens()
+    }
+
+    fn initialize_request(&mut self, init: UnifiedParserInit) -> Result<()> {
+        if self.started || self.finished {
+            anyhow::bail!("cannot initialize a unified parser after parsing has started");
+        }
+        if init.tool_output_mode != UnifiedToolOutputMode::Native {
+            anyhow::bail!("legacy Harmony tool parsing does not support guided tool output");
+        }
+        self.native.apply_native_init(&init)
+    }
+
+    fn parse_into(&mut self, delta: &str, output: &mut UnifiedParserOutput) -> Result<()> {
+        if self.finished {
+            anyhow::bail!("cannot push to a finished unified parser");
+        }
+        self.started = true;
+        self.native.push_native(delta, output)
+    }
+
+    fn parse_token_ids_into(
+        &mut self,
+        token_ids: &[u32],
+        output: &mut UnifiedParserOutput,
+    ) -> Result<()> {
+        if self.finished {
+            anyhow::bail!("cannot push to a finished unified parser");
+        }
+        self.started = true;
+        self.native.push_token_ids_native(token_ids, output)
+    }
+
+    fn finish(&mut self) -> Result<UnifiedParserOutput> {
+        if self.finished {
+            anyhow::bail!("cannot finish a unified parser twice");
+        }
+        self.started = true;
+        self.finished = true;
+        let mut output = UnifiedParserOutput::default();
+        self.native.finish_native(&mut output)?;
+        Ok(output)
+    }
+
+    fn reset(&mut self) -> String {
+        let recovered = self.native.reset_native();
+        self.started = false;
+        self.finished = false;
+        recovered
+    }
+}
+
+pub(crate) fn gpt_oss_legacy_tool_adapter()
+-> Box<dyn UnifiedParser + Sync + UnwindSafe + RefUnwindSafe> {
+    Box::new(LegacyHarmonyUnified {
+        native: HarmonyNative::new(true, true),
+        started: false,
+        finished: false,
+    })
 }
 
 fn find_header(haystack: &str) -> Option<(usize, usize, Option<String>)> {
@@ -1077,15 +1196,34 @@ fn is_tool_header(haystack: &str, start: usize, end: usize) -> bool {
     tool_recipient(haystack, start, end).is_some()
 }
 
+fn guided_header(
+    haystack: &str,
+    state: super::GuidedChannelState,
+) -> Option<(usize, usize, Option<String>)> {
+    let offset = if state.scope.allows_bare_header() {
+        0
+    } else if state.scope == super::GuidedTurnScope::ResponsePrefill {
+        return None;
+    } else {
+        // Closing reasoning spends the bare-header scope, not later framed messages.
+        haystack.find(START)?
+    };
+    let (start, end, channel) = find_header(&haystack[offset..])?;
+    if matches!(
+        partial_invoke_prefix(&haystack[offset + start..]),
+        super::GuidedPrefix::Match | super::GuidedPrefix::Strip(_)
+    ) {
+        return None;
+    }
+    Some((start + offset, end + offset, channel))
+}
+
 fn guided_reasoning_open(
     haystack: &str,
     _flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
-        return None;
-    }
-    find_header(haystack).and_then(|(start, end, channel)| {
+    guided_header(haystack, state).and_then(|(start, end, channel)| {
         (channel.as_deref() == Some("analysis")).then_some((start, end - start))
     })
 }
@@ -1095,12 +1233,11 @@ fn guided_content_header(
     _flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
-        return None;
-    }
-    let (start, end, channel) = find_header(haystack)?;
-    (channel.as_deref() != Some("analysis") && !is_tool_header(haystack, start, end))
-        .then_some((start, end - start))
+    let (start, end, channel) = guided_header(haystack, state)?;
+    // Guided tool JSON can be the final message body, rather than visible prose.
+    (!matches!(channel.as_deref(), Some("analysis" | "final"))
+        && !is_tool_header(haystack, start, end))
+    .then_some((start, end - start))
 }
 
 fn guided_routing_header(
@@ -1117,10 +1254,10 @@ fn guided_stray_header(
     flush: bool,
     state: super::GuidedChannelState,
 ) -> Option<(usize, usize)> {
-    if !state.scope.allows_bare_header() {
+    if state.scope == super::GuidedTurnScope::ResponsePrefill {
         return None;
     }
-    let Some(header) = find_header(haystack) else {
+    let Some(header) = guided_header(haystack, state) else {
         return flush
             .then(|| haystack.find(START).map(|at| (at, START.len())))
             .flatten();
@@ -1131,10 +1268,22 @@ fn guided_stray_header(
     Some((header.0, header.1 - header.0))
 }
 
-fn guided_reasoning_close(haystack: &str) -> Option<(usize, usize)> {
+fn guided_reasoning_close(
+    haystack: &str,
+    state: super::GuidedChannelState,
+) -> Option<(usize, usize)> {
+    // A final header ends reasoning without deciding whether its body is tool JSON.
+    let final_header = (state.scope == super::GuidedTurnScope::InReasoning)
+        .then(|| guided_header(haystack, state))
+        .flatten()
+        .filter(|(start, end, channel)| {
+            channel.as_deref() == Some("final") && !is_tool_header(haystack, *start, *end)
+        })
+        .map(|(start, end, _)| (start, end - start));
     [MESSAGE_END, TURN_END]
         .iter()
         .filter_map(|marker| haystack.find(marker).map(|at| (at, marker.len())))
+        .chain(final_header)
         .min_by_key(|(at, _)| *at)
 }
 
@@ -1223,6 +1372,45 @@ mod tests {
     use super::*;
     use crate::unified::{UnifiedEvent, UnifiedParserEvent, UnifiedParserExt};
 
+    #[test]
+    fn legacy_adapter_matches_routed_native_lifecycle() {
+        let input = concat!(
+            "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>",
+            r#"{"q":"x"}<|call|>"#
+        );
+        let ids = encode_harmony(input).unwrap();
+        for tokens in [false, true] {
+            let mut legacy = gpt_oss_legacy_tool_adapter();
+            let mut routed = GuidedRouted::new(HarmonyNative::new(true, true));
+            for _ in 0..2 {
+                legacy.initialize(&[]).unwrap();
+                routed.initialize(&[]).unwrap();
+                let (actual, expected) = if tokens {
+                    (
+                        legacy.push_tokens(&ids).unwrap(),
+                        routed.push_tokens(&ids).unwrap(),
+                    )
+                } else {
+                    (legacy.push(input).unwrap(), routed.push(input).unwrap())
+                };
+                assert_eq!(actual, expected);
+                assert_eq!(
+                    legacy.initialize(&[]).unwrap_err().to_string(),
+                    routed.initialize(&[]).unwrap_err().to_string()
+                );
+                assert_eq!(legacy.finish().unwrap(), routed.finish().unwrap());
+                assert_eq!(
+                    legacy.finish().unwrap_err().to_string(),
+                    routed.finish().unwrap_err().to_string()
+                );
+                assert_eq!(
+                    legacy.push("").unwrap_err().to_string(),
+                    routed.push("").unwrap_err().to_string()
+                );
+                assert_eq!(legacy.reset(), routed.reset());
+            }
+        }
+    }
     fn parse_text(
         input: &str,
         starting_state: UnifiedParserStartingState,
@@ -1327,6 +1515,111 @@ mod tests {
         assert!(
             matches!(events.as_slice(), [UnifiedParserEvent::Reasoning(text)] if text == "legacy thought")
         );
+    }
+
+    #[test]
+    fn malformed_final_header_recovers_only_unemitted_final_text() {
+        let reasoning = "<|channel|>analysis<|message|>thought<|end|>";
+        for (tail, text) in [
+            ("<|start|>assistant<|channel|>final*)__Hello!", "*)__Hello!"),
+            (
+                "<|start|>assistant<|channel|>final*)__hé🙂<|return|>",
+                "*)__hé🙂",
+            ),
+            (
+                "<|start|>assistant<|channel|>finalx<|message|>Hello!",
+                "Hello!",
+            ),
+            ("<|start|>assistant<|channel|>analysis*)__private", ""),
+            (
+                "<|start|>assistant to=functions.lookup<|channel|>final*)__private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final to=functions.lookup", ""),
+            ("<|start|>assistant<|channel|>final<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final <|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final\t<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final\n<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final  <|constrain|>json", ""),
+            (
+                "<|start|>assistant<|channel|>final<|channel|>analysis private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final safe<|end|>private", ""),
+            (
+                "<|start|>assistant<|channel|>final safe<|return|>private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final safe<|call|>private", ""),
+        ] {
+            let input = format!("{reasoning}{tail}");
+            let mut expected = vec![UnifiedEvent::Reasoning {
+                text: "thought".into(),
+            }];
+            if !text.is_empty() {
+                expected.push(UnifiedEvent::Text { text: text.into() });
+            }
+            for seed in [false, true] {
+                let mut parser = gpt_oss_unified(&[]);
+                let init = UnifiedParserInit {
+                    prompt_token_ids: if seed {
+                        encode_harmony("<|start|>assistant").unwrap()
+                    } else {
+                        vec![]
+                    },
+                    ..Default::default()
+                };
+                for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                    parser.reset();
+                    parser.initialize_request(init.clone()).unwrap();
+                    let mut events = parser.push(&input[..split]).unwrap();
+                    events.extend(parser.push(&input[split..]).unwrap());
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        crate::unified::assemble(&events),
+                        expected,
+                        "text split={split} seed={seed} tail={tail}"
+                    );
+                }
+                let ids = encode_harmony(&input).unwrap();
+                for split in 0..=ids.len() {
+                    parser.reset();
+                    parser.initialize_request(init.clone()).unwrap();
+                    let mut events = parser.push_tokens(&ids[..split]).unwrap();
+                    events.extend(parser.push_tokens(&ids[split..]).unwrap());
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        crate::unified::assemble(&events),
+                        expected,
+                        "token split={split} seed={seed} tail={tail}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn malformed_final_header_preserves_text_before_partial_utf8_at_eof() {
+        let mut ids = encode_harmony("<|start|>assistant<|channel|>final Hello ").unwrap();
+        let character = encode_harmony("\u{1f468}").unwrap();
+        assert!(character.len() > 1);
+        ids.push(character[0]);
+        assert!(decode_harmony(&ids).is_err());
+        for chunk_size in [ids.len(), 1] {
+            let mut parser = gpt_oss_unified(&[]);
+            parser.initialize(&[]).unwrap();
+            let mut events = Vec::new();
+            for chunk in ids.chunks(chunk_size) {
+                events.extend(parser.push_tokens(chunk).unwrap());
+            }
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                crate::unified::assemble(&events),
+                vec![UnifiedEvent::Text {
+                    text: " Hello ".into()
+                }]
+            );
+        }
     }
 
     #[test]
@@ -1980,6 +2273,116 @@ mod tests {
                     && call.name.as_deref() == Some("get_weather")
                     && call.arguments == r#"{"city":"Paris"}"#
         ));
+    }
+
+    #[test]
+    fn guided_final_header_wraps_json_after_optional_reasoning() {
+        let arguments = serde_json::json!({"literal_text":"assistantfinal"});
+        for reasoning in [
+            "",
+            "<|channel|>analysis<|message|>checking<|end|>",
+            "<|channel|>analysis<|message|>checking",
+        ] {
+            for named in [false, true] {
+                let payload = if named {
+                    arguments.clone()
+                } else {
+                    serde_json::json!([{"name":"record_literal","parameters":arguments}])
+                };
+                let input = format!(
+                    "{reasoning}<|start|>assistant<|channel|>final<|message|>{payload}<|return|>"
+                );
+                let mut expected = Vec::new();
+                if !reasoning.is_empty() {
+                    expected.push(UnifiedEvent::Reasoning {
+                        text: "checking".into(),
+                    });
+                }
+                expected.push(UnifiedEvent::ToolCall {
+                    name: "record_literal".into(),
+                    arguments: arguments.clone(),
+                });
+                let ids = encode_harmony(&input).unwrap();
+                for tokens in [false, true] {
+                    let splits: Vec<_> = if tokens {
+                        (0..=ids.len()).collect()
+                    } else {
+                        input
+                            .char_indices()
+                            .map(|(at, _)| at)
+                            .chain([input.len()])
+                            .collect()
+                    };
+                    let end = if tokens { ids.len() } else { input.len() };
+                    let mut schedules: Vec<_> = splits.iter().map(|at| vec![0, *at, end]).collect();
+                    schedules.push(splits);
+                    for boundaries in schedules {
+                        let mut parser = gpt_oss_unified(&[]);
+                        parser
+                            .initialize_request(UnifiedParserInit {
+                                tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                                    named_tool: named.then(|| "record_literal".into()),
+                                },
+                                invalid_guided_payload:
+                                    crate::unified::InvalidGuidedPayloadPolicy::StreamBestEffort,
+                                ..Default::default()
+                            })
+                            .unwrap();
+                        let mut events = Vec::new();
+                        for pair in boundaries.windows(2) {
+                            events.extend(if tokens {
+                                parser.push_tokens(&ids[pair[0]..pair[1]]).unwrap()
+                            } else {
+                                parser.push(&input[pair[0]..pair[1]]).unwrap()
+                            });
+                        }
+                        events.extend(parser.finish().unwrap().events);
+                        assert_eq!(
+                            crate::unified::assemble(&events),
+                            expected,
+                            "tokens={tokens}, boundaries={boundaries:?}, named={named}, reasoning={reasoning:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_final_header_ends_unterminated_reasoning_before_prose() {
+        for header in [
+            "<|start|>assistant<|channel|>final<|message|>",
+            "<|channel|>final<|message|>",
+        ] {
+            let input = format!("<|channel|>analysis<|message|>thought{header}Hello!<|return|>");
+            for chunks in [vec![input.as_str()], every_char_chunk(&input)] {
+                let mut parser = gpt_oss_unified(&[]);
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload:
+                            crate::unified::InvalidGuidedPayloadPolicy::StreamBestEffort,
+                        ..Default::default()
+                    })
+                    .unwrap();
+                let mut events = Vec::new();
+                for chunk in chunks {
+                    events.extend(parser.push(chunk).unwrap());
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(
+                    crate::unified::assemble(&events),
+                    vec![
+                        UnifiedEvent::Reasoning {
+                            text: "thought".into()
+                        },
+                        UnifiedEvent::Text {
+                            text: "Hello!".into()
+                        },
+                    ]
+                );
+            }
+        }
     }
 
     #[test]
