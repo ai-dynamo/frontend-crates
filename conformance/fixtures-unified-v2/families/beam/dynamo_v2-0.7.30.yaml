@@ -1,0 +1,226 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.30
+    git_commit: 110d6f15ba7e80113c9818e252f901338545c76b
+    source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+document:
+  mode: unified
+changes:
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: da0c54744cf38762b3dbe58aece0a170e2895f5a814c07f35726dbb1f49bd502
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 0ea8a15f77bbfc8e5f51fd467e1d3f4e04667f7b1d3cb9d3c427ba7609439a48
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Beijing
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: 195a0b74a55bfcd6463eee0a97107ebe1a754c2da949b7a0443b0948ad73875c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Beijing
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: 0fa7ba7be8c6d7e4b9c9ef04dbf362e4aca8633a1af296f72ccf5314f6257608
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Beijing
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone": "'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: Asia/Shanghai
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 110d6f15ba7e80113c9818e252f901338545c76b
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 110d6f15ba7e80113c9818e252f901338545c76b
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 110d6f15ba7e80113c9818e252f901338545c76b
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 110d6f15ba7e80113c9818e252f901338545c76b
+      inherited_from: null

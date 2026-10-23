@@ -352,6 +352,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "dotted_name_shared_prefix",
     ];
     let dotted_native_families = [
+        "beam",
         "deepseek_v4",
         "deepseek_v41",
         "gemma4",
@@ -360,6 +361,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "kimi_k2",
         "kimi_k3",
         "muse_glimmer",
+        "nemotron_v3",
         "qwen3",
     ];
     let mut checked = 0;

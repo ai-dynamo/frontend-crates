@@ -50,6 +50,7 @@ DOTTED_NAME_SCENARIOS = frozenset({
     "dotted_name_shared_prefix",
 })
 DOTTED_NAME_FAMILIES = frozenset({
+    "beam",
     "deepseek_v4",
     "deepseek_v41",
     "gemma4",
@@ -58,6 +59,7 @@ DOTTED_NAME_FAMILIES = frozenset({
     "kimi_k2",
     "kimi_k3",
     "muse_glimmer",
+    "nemotron_v3",
     "qwen3",
 })
 # Families whose unified parser accepts GUIDED tool output, declared in the manifest.

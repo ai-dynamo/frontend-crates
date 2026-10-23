@@ -53,17 +53,16 @@ def test_report_classifier_rejects_truncated_names_and_missing_results():
     assert table._unified_classify("gpt_oss", golden, []) != "MATCH"
 
 
-def test_dotted_name_scope_is_the_nine_families_from_unified_v2():
+def test_dotted_name_scope_covers_native_tool_families():
     expected = frozenset({
-        "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
-        "kimi_k2", "kimi_k3", "muse_glimmer", "qwen3",
+        "beam", "deepseek_v4", "deepseek_v41", "gemma4", "glm47", "gpt_oss",
+        "kimi_k2", "kimi_k3", "muse_glimmer", "nemotron_v3", "qwen3",
     })
     assert generator.DOTTED_NAME_FAMILIES == expected
     assert generator.scenario_families("dotted_name_minimal") == expected
-    assert not any(
-        case_id.split(".")[1] in generator.DOTTED_NAME_SCENARIOS
-        for case_id in generator.build_cases("nemotron_v3")
-    )
+    for family in expected:
+        assert all(f"UNIFIED.{scenario}.{family}" in generator.build_cases(family)
+                   for scenario in generator.DOTTED_NAME_SCENARIOS)
 
 
 @pytest.mark.parametrize("family,opener", [
