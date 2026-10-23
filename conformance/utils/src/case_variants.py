@@ -117,7 +117,7 @@ def group_null_variants(tab: dict) -> None:
             if row.get("section") or root["sub"] not in row["cells"]:
                 continue
             children = [row["cells"][column["sub"]] for column in referenced
-                        if (metadata_label(column) not in MIXED_CASE_FAMILIES
+                        if (unified or metadata_label(column) not in MIXED_CASE_FAMILIES
                             or row["family"] in MIXED_CASE_FAMILIES[metadata_label(column)])
                         and column["sub"] in row["cells"]
                         and row["cells"][column["sub"]].get("kind") in {"cell", "missing"}

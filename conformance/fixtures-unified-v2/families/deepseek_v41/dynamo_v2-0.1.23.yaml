@@ -16,6 +16,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: legacy split capture cannot replay this authored schedule
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 365b87d921de51e5670fe35a0bec8a89b7fe47d06a654fb6d5ed392460c06afe
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -24,6 +33,24 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for deepseek_v41
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: a2a30a9cc55643c454be6458492299edb8fd13200d49e03f03ce1467fa061b07
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ff0675bbcfc65fbbb117459cca000599783882a3a5f5399da68b4e33bd9f39be
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   arg_unicode:
     case_key: UNIFIED.7.a
     stimulus:
@@ -92,6 +119,42 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for deepseek_v41
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    stimulus:
+      ref: current
+      semantic_sha256: 389adc1b98ca0320987b4acf99eafea09e721093effdc8e7806a7498a4d59d8d
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 02b6f12637f24712f003a33b7b210c2b7f62b58dae1869bc22d210a9337a0c8e
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 874f507cb2bd52b4f7ac785c9bd9772069298a92e7998880c3106a5f3f6451be
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 470024efe40512f5410bd96c615bb3fe232206088c6fc078bc001ef97dd7b987
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser deepseek_v41: no Dynamo parser v2 for family ''deepseek_v41'''
   guided_json_after_reasoning:
     case_key: UNIFIED.30.f
     stimulus:
@@ -1222,7 +1285,22 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -1263,6 +1341,26 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   empty_args:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_control_marker_inside_argument_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     init:
       starting_state: None
       tool_output_mode: Native

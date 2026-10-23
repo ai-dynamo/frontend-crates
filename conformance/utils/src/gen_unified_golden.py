@@ -32,7 +32,7 @@ from schema_cases import (
     unified_schema_cases,
 )
 from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
-from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from null_cases import NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
@@ -885,7 +885,7 @@ EDGE = [
      })),
 
     ("gpt_oss_control_marker_inside_argument_string",
-     "Every Harmony control marker spelling inside a JSON string is payload and must not end, split, or resynchronize the tool call.",
+     "Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.",
      ["I5", "I7"],
      [{"kind": "tool_call", "name": "lookup", "arguments": {
          "markers": "<|start|><|channel|><|constrain|><|message|><|end|><|return|><|call|>"
@@ -902,7 +902,7 @@ EDGE = [
      })),
 
     ("gpt_oss_truncated_tool_resynchronizes_at_next_message",
-     "A truncated tool message is discarded at the next message boundary and later assistant content is retained.",
+     "A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.",
      ["I3", "I4", "I5"],
      [{"kind": "text", "text": "recovered"}],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -2283,8 +2283,8 @@ for _empty, _bad_body in ((True, "not-json"), (False, '{"city":')):
     _header = r_tool_arguments("gpt_oss", "bad", {}, 0).split("{", 1)[0]
     EDGE.append((
         "gpt_oss_invalid_tool_body_then_" + ("empty_call" if _empty else "valid_call"),
-        "A completed Harmony tool message contains invalid JSON. Its handoff closes the malformed body; "
-        "drop that call and preserve the following call's name and " + ("empty arguments." if _empty else "arguments."),
+        "A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including "
+        + ("empty arguments." if _empty else "arguments."),
         ["P2", "I7"],
         [{"kind": "tool_call", "name": "get_weather", "arguments": _arguments}],
         {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -2297,8 +2297,7 @@ for _empty, _bad_body in ((True, "not-json"), (False, '{"city":')):
 
 EDGE.append((
     "gpt_oss_interrupted_reasoning_then_response",
-    "A final Harmony message interrupts analysis without a message-end token. "
-    "The preceding reasoning remains withheld, and the explicit final header routes the answer to visible text.",
+    "An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.",
     ["I1", "I3"],
     [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
@@ -2689,8 +2688,8 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
-# GLM's XML values have no native type marker. Keep these references unresolved
-# in the request so the parser must consult definitions on the parameters root.
+# Keep references unresolved so schema-driven grammars must consult the tool
+# parameters root; explicitly typed grammars preserve the same authored values.
 EDGE += [
     (
         scenario,
@@ -2701,19 +2700,20 @@ EDGE += [
         {"finish_reason": "stop"},
         OnlyFamilies({
             family: (
-                _NULL_TEXT_INPUTS[family],
+                _NULL_TEXT_INPUTS[family] if family in _NULL_TEXT_INPUTS
+                else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))
+            for family in TEMPLATE_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in (("glm47", "qwen3") if scenario == "arg_string_null_ref" else ("glm47",))},
+        }}] for family in TEMPLATE_FAMILIES},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
-         'GLM regression for PR #268: `city` uses a local $ref to the tool parameters root; the referenced definition controls null coercion.'),
+         '`city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'),
         ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
          'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )
@@ -2721,19 +2721,16 @@ EDGE += [
 
 EDGE.append((
     "arg_null_mixed_labels",
-    'PR #268: set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Identical bare null text must yield {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.',
+    'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-driven grammars receive identical bare null text; explicitly typed grammars use native null and string encodings. Both yield {"label": null, "note": null, "literal": "null"}.',
     ["I7"],
     [{"kind": "tool_call", "name": "set_labels", "arguments": MIXED_LABELS_ARGS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
     {"finish_reason": "stop"},
     OnlyFamilies({family: (
-        "<tool_call>set_labels"
-        "<arg_key>label</arg_key><arg_value>null</arg_value>"
-        "<arg_key>note</arg_key><arg_value>null</arg_value>"
-        "<arg_key>literal</arg_key><arg_value>null</arg_value></tool_call>", M, M,
-    ) for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]}),
+        r_tool_arguments(family, "set_labels", MIXED_LABELS_ARGS, 0), M, M,
+    ) for family in TEMPLATE_FAMILIES}),
     {family: [{"name": "set_labels", "parameters": MIXED_LABELS_SCHEMA}]
-     for family in MIXED_CASE_FAMILIES["7-4.mixed_labels"]},
+     for family in TEMPLATE_FAMILIES},
 ))
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
@@ -3467,8 +3464,76 @@ _GPT_OSS_REVIEW_CASES = (
 )
 
 
+def _dsml_json_tool(family, name, body):
+    return r_tool_arguments(family, name, {}, 0).replace(
+        "></｜DSML｜", ">" + body + "</｜DSML｜", 1,
+    )
+
+
 def _native_review_variants(scenario):
     arguments = {"q": "x"}
+    if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
+        variants = {}
+        for family in TEMPLATE_FAMILIES:
+            if family == "gpt_oss":
+                continue
+            value = "2" if family in {"beam", "qwen3", "glm47"} else 2
+            golden = [{"kind": "tool_call", "name": "run", "arguments": {}},
+                      {"kind": "tool_call", "name": "not_offered", "arguments": {"x": value}}]
+            variants[family] = (r_tool_arguments(family, "run", {}, 0)
+                                + r_tool_arguments(family, "not_offered", {"x": 2}, 1), golden, M)
+        return variants
+    if scenario == "gpt_oss_control_marker_inside_argument_string":
+        variants = {}
+        for family in ("deepseek_v4", "deepseek_v41", "kimi_k2", "kimi_k3"):
+            frames = r_reason(family, "") + r_text(family, "") + r_tool(family, "lookup", "q", "x", 0)
+            markers = re.findall(r"<[^<>]*>", frames) + _MANIFEST[family].get("leak_markers", [])
+            payload = "".join(dict.fromkeys(markers))
+            arguments = {"markers": payload}
+            if family.startswith("deepseek_"):
+                native_input = _dsml_json_tool(family, "lookup", json.dumps(arguments))
+            elif family == "kimi_k3":
+                native_input = k3_raw_tool("lookup", json.dumps(arguments))
+            else:
+                native_input = r_tool_arguments(family, "lookup", arguments, 0)
+            variants[family] = (native_input, [{"kind": "tool_call", "name": "lookup", "arguments": arguments}], M)
+        return variants
+    if scenario in {"gpt_oss_invalid_tool_body_then_empty_call", "gpt_oss_invalid_tool_body_then_valid_call"}:
+        empty = scenario.endswith("empty_call")
+        body = "not-json" if empty else '{"city":'
+        arguments = {} if empty else {"city": "Paris"}
+        following = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
+        variants = {
+            "kimi_k2": (r_tool_arguments("kimi_k2", "bad", {}, 0).replace("{}", body, 1)
+                        + r_tool_arguments("kimi_k2", "get_weather", arguments, 1),
+                        [{"kind": "tool_call", "name": "bad", "arguments": {}}] + following, M),
+            "kimi_k3": (k3_raw_tool("bad", body) + r_tool_arguments("kimi_k3", "get_weather", arguments, 1), following, M),
+        }
+        for family in ("deepseek_v4", "deepseek_v41"):
+            golden = ([{"kind": "tool_call", "name": "bad", "arguments": {}}]
+                      if family == "deepseek_v4" else []) + following
+            dynamo = (D("ERROR", "An invalid invocation aborts parsing before the following empty call.")
+                      if family == "deepseek_v41" and empty else M)
+            variants[family] = (_dsml_json_tool(family, "bad", body)
+                                + r_tool_arguments(family, "get_weather", arguments, 1), golden, dynamo)
+        return variants
+    if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
+        variants = {}
+        for family in ("beam", "muse_glimmer", "kimi_k3"):
+            if family == "kimi_k3":
+                native_input = k3_tools(k3_call("lookup", 1, k3_json('{"q":"unfinished"}'), close=False), close=False)
+            else:
+                native_input = r_tool(family, "lookup", "q", "unfinished", 0).removesuffix(control_tokens(family)[3])
+            golden = ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
+                      if family == "muse_glimmer" else []) + [{"kind": "text", "text": "recovered"}]
+            dynamo = (D("LOSS", "An unclosed tool call swallows the later response; retain the visible-answer oracle.")
+                      if family == "kimi_k3" else M)
+            variants[family] = (native_input + r_text(family, "recovered"), golden, dynamo)
+        return variants
+    if scenario == "gpt_oss_interrupted_reasoning_then_response":
+        golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
+        return {family: (r_reason(family, "checking").removesuffix(control_tokens(family)[1])
+                         + r_text(family, "done"), golden, M) for family in ("beam", "muse_glimmer")}
     if scenario == "gpt_oss_tool_body_whitespace":
         golden = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
         return {
@@ -3523,6 +3588,23 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
         {"starting_state":"None", "tool_output_mode":"Native", "named_tool":None},
         {"finish_reason": "stop"}, _inputs, _tools,
     ))
+
+
+for _index, _edge in enumerate(EDGE):
+    _variants = _native_review_variants(_edge[0])
+    _inputs = _edge_case_family_policy(_edge)
+    _new = {family: variant for family, variant in _variants.items() if family not in _inputs}
+    if not _new:
+        continue
+    _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
+                    for family, (native_input, golden, dynamo) in _new.items()})
+    _parts = list(_edge)
+    if len(_parts) == 6:
+        _parts.insert(5, {"finish_reason": "stop"})
+    if len(_parts) == 7:
+        _parts.append({"gpt_oss": []})
+    _parts[-1].update({family: [] for family in _new})
+    EDGE[_index] = tuple(_parts)
 
 
 def build_cases(fam):
