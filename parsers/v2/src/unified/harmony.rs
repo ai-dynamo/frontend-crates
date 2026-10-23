@@ -724,7 +724,50 @@ impl HarmonyRuntime {
                 "discarded a truncated Harmony tool call"
             );
         }
+        if self.inside_message
+            && !self.in_body
+            && let Err(error) = self.parser.process_eos()
+        {
+            self.recover_final_header(output)?;
+            tracing::warn!(why = "unterminated_harmony_header", error = %error,
+                "finalized Harmony input with an incomplete header");
+        }
         self.finished = true;
+        Ok(())
+    }
+
+    fn recover_final_header(&self, output: &mut UnifiedParserOutput) -> Result<()> {
+        #[derive(serde::Deserialize)]
+        #[serde(tag = "state")]
+        enum State {
+            Header {
+                header_tokens: Vec<u32>,
+            },
+            #[serde(other)]
+            Other,
+        }
+        let State::Header { header_tokens } = serde_json::from_str(&self.parser.state_json()?)?
+        else {
+            return Ok(());
+        };
+        let header = self.encoding.tokenizer().decode_utf8(&header_tokens)?;
+        // Only an undirected assistant final is safe to surface as visible text.
+        let Some(mut text) = header.strip_prefix("assistant<|channel|>final") else {
+            return Ok(());
+        };
+        if text.starts_with(|ch: char| ch.is_alphanumeric() || ch == '_')
+            || text.trim_start().starts_with("to=")
+            || text.starts_with(FORMAT)
+        {
+            return Ok(());
+        }
+        while let Some(prefix) = [TURN_END, MESSAGE_END, HANDOFF]
+            .iter()
+            .find_map(|marker| text.strip_suffix(marker))
+        {
+            text = prefix;
+        }
+        output.push_text(text);
         Ok(())
     }
 
@@ -1456,6 +1499,72 @@ mod tests {
         assert!(
             matches!(events.as_slice(), [UnifiedParserEvent::Reasoning(text)] if text == "legacy thought")
         );
+    }
+
+    #[test]
+    fn malformed_final_header_recovers_only_unemitted_final_text() {
+        let reasoning = "<|channel|>analysis<|message|>thought<|end|>";
+        for (tail, text) in [
+            ("<|start|>assistant<|channel|>final*)__Hello!", "*)__Hello!"),
+            (
+                "<|start|>assistant<|channel|>final*)__hé🙂<|return|>",
+                "*)__hé🙂",
+            ),
+            (
+                "<|start|>assistant<|channel|>finalx<|message|>Hello!",
+                "Hello!",
+            ),
+            ("<|start|>assistant<|channel|>analysis*)__private", ""),
+            (
+                "<|start|>assistant to=functions.lookup<|channel|>final*)__private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final to=functions.lookup", ""),
+        ] {
+            let input = format!("{reasoning}{tail}");
+            let mut expected = vec![UnifiedEvent::Reasoning {
+                text: "thought".into(),
+            }];
+            if !text.is_empty() {
+                expected.push(UnifiedEvent::Text { text: text.into() });
+            }
+            for seed in [false, true] {
+                let mut parser = gpt_oss_unified(&[]);
+                let init = UnifiedParserInit {
+                    prompt_token_ids: if seed {
+                        encode_harmony("<|start|>assistant").unwrap()
+                    } else {
+                        vec![]
+                    },
+                    ..Default::default()
+                };
+                for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                    parser.reset();
+                    parser.initialize_request(init.clone()).unwrap();
+                    let mut events = parser.push(&input[..split]).unwrap();
+                    events.extend(parser.push(&input[split..]).unwrap());
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        crate::unified::assemble(&events),
+                        expected,
+                        "text split={split} seed={seed} tail={tail}"
+                    );
+                }
+                let ids = encode_harmony(&input).unwrap();
+                for split in 0..=ids.len() {
+                    parser.reset();
+                    parser.initialize_request(init.clone()).unwrap();
+                    let mut events = parser.push_tokens(&ids[..split]).unwrap();
+                    events.extend(parser.push_tokens(&ids[split..]).unwrap());
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        crate::unified::assemble(&events),
+                        expected,
+                        "token split={split} seed={seed} tail={tail}"
+                    );
+                }
+            }
+        }
     }
 
     #[test]
