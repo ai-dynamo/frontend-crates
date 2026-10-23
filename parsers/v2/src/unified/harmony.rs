@@ -750,14 +750,15 @@ impl HarmonyRuntime {
         else {
             return Ok(());
         };
-        let header = self.encoding.tokenizer().decode_utf8(&header_tokens)?;
+        let mut header_bytes = self.encoding.tokenizer().decode_bytes(&header_tokens)?;
+        let (header, _) = take_utf8_prefix(&mut header_bytes, &[]);
         // Only an undirected assistant final is safe to surface as visible text.
         let Some(mut text) = header.strip_prefix("assistant<|channel|>final") else {
             return Ok(());
         };
         if text.starts_with(|ch: char| ch.is_alphanumeric() || ch == '_')
             || text.trim_start().starts_with("to=")
-            || text.starts_with(FORMAT)
+            || text.trim_start().starts_with(FORMAT)
         {
             return Ok(());
         }
@@ -948,7 +949,7 @@ impl NativeUnified for HarmonyNative {
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
-            find_close: |haystack, _, _| guided_reasoning_close(haystack),
+            find_close: |haystack, _, state| guided_reasoning_close(haystack, state),
             find_turn_end: |haystack, _, _| guided_turn_end(haystack),
             find_stray: guided_stray_header,
             find_routing: guided_routing_header,
@@ -1264,10 +1265,22 @@ fn guided_stray_header(
     Some((header.0, header.1 - header.0))
 }
 
-fn guided_reasoning_close(haystack: &str) -> Option<(usize, usize)> {
+fn guided_reasoning_close(
+    haystack: &str,
+    state: super::GuidedChannelState,
+) -> Option<(usize, usize)> {
+    // A final header ends reasoning without deciding whether its body is tool JSON.
+    let final_header = (state.scope == super::GuidedTurnScope::InReasoning)
+        .then(|| guided_header(haystack, state))
+        .flatten()
+        .filter(|(start, end, channel)| {
+            channel.as_deref() == Some("final") && !is_tool_header(haystack, *start, *end)
+        })
+        .map(|(start, end, _)| (start, end - start));
     [MESSAGE_END, TURN_END]
         .iter()
         .filter_map(|marker| haystack.find(marker).map(|at| (at, marker.len())))
+        .chain(final_header)
         .min_by_key(|(at, _)| *at)
 }
 
@@ -1520,6 +1533,11 @@ mod tests {
                 "",
             ),
             ("<|start|>assistant<|channel|>final to=functions.lookup", ""),
+            ("<|start|>assistant<|channel|>final<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final <|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final\t<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final\n<|constrain|>json", ""),
+            ("<|start|>assistant<|channel|>final  <|constrain|>json", ""),
         ] {
             let input = format!("{reasoning}{tail}");
             let mut expected = vec![UnifiedEvent::Reasoning {
@@ -1564,6 +1582,30 @@ mod tests {
                     );
                 }
             }
+        }
+    }
+
+    #[test]
+    fn malformed_final_header_preserves_text_before_partial_utf8_at_eof() {
+        let mut ids = encode_harmony("<|start|>assistant<|channel|>final Hello ").unwrap();
+        let character = encode_harmony("\u{1f468}").unwrap();
+        assert!(character.len() > 1);
+        ids.push(character[0]);
+        assert!(decode_harmony(&ids).is_err());
+        for chunk_size in [ids.len(), 1] {
+            let mut parser = gpt_oss_unified(&[]);
+            parser.initialize(&[]).unwrap();
+            let mut events = Vec::new();
+            for chunk in ids.chunks(chunk_size) {
+                events.extend(parser.push_tokens(chunk).unwrap());
+            }
+            events.extend(parser.finish().unwrap().events);
+            assert_eq!(
+                crate::unified::assemble(&events),
+                vec![UnifiedEvent::Text {
+                    text: " Hello ".into()
+                }]
+            );
         }
     }
 
@@ -2223,7 +2265,11 @@ mod tests {
     #[test]
     fn guided_final_header_wraps_json_after_optional_reasoning() {
         let arguments = serde_json::json!({"literal_text":"assistantfinal"});
-        for reasoning in ["", "<|channel|>analysis<|message|>checking<|end|>"] {
+        for reasoning in [
+            "",
+            "<|channel|>analysis<|message|>checking<|end|>",
+            "<|channel|>analysis<|message|>checking",
+        ] {
             for named in [false, true] {
                 let payload = if named {
                     arguments.clone()
@@ -2285,6 +2331,43 @@ mod tests {
                         );
                     }
                 }
+            }
+        }
+    }
+
+    #[test]
+    fn guided_final_header_ends_unterminated_reasoning_before_prose() {
+        for header in [
+            "<|start|>assistant<|channel|>final<|message|>",
+            "<|channel|>final<|message|>",
+        ] {
+            let input = format!("<|channel|>analysis<|message|>thought{header}Hello!<|return|>");
+            for chunks in [vec![input.as_str()], every_char_chunk(&input)] {
+                let mut parser = gpt_oss_unified(&[]);
+                parser
+                    .initialize_request(UnifiedParserInit {
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                        invalid_guided_payload:
+                            crate::unified::InvalidGuidedPayloadPolicy::StreamBestEffort,
+                        ..Default::default()
+                    })
+                    .unwrap();
+                let mut events = Vec::new();
+                for chunk in chunks {
+                    events.extend(parser.push(chunk).unwrap());
+                }
+                events.extend(parser.finish().unwrap().events);
+                assert_eq!(
+                    crate::unified::assemble(&events),
+                    vec![
+                        UnifiedEvent::Reasoning {
+                            text: "thought".into()
+                        },
+                        UnifiedEvent::Text {
+                            text: "Hello!".into()
+                        },
+                    ]
+                );
             }
         }
     }
