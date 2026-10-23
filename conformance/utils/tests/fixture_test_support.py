@@ -1,0 +1,82 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+"""Isolated checkout identity for synthetic fixture-extraction tests."""
+from pathlib import Path
+import copy
+import json
+import shutil
+import subprocess
+from types import SimpleNamespace
+
+import capture_sources
+import extract_fixtures
+import unified_archives
+import unified_history
+import viewer_catalog
+from native_publication import fixture_catalog
+
+
+REPO = Path(__file__).resolve().parents[3]
+
+
+def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *, mode, metadata=None):
+    """Exercise both source modes against the same tiny, verified synthetic dataset."""
+    tools = Path(capture_sources.__file__).parent
+    for name in ("capture_sources.py", "ci_publication_cache.py", "yaml_fast.py"):
+        target = root / "conformance/utils/src" / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(tools / name, target)
+    (root / "index.html").write_bytes(b"<head></head><body></body>")
+    (root / "conformance/CONFORMANCE_v2.html").write_bytes(b'<a href="../">Viewer</a>')
+    (root / "conformance/fixtures-manifest.json").write_bytes(b'{"shards":[]}\n')
+    source_files = [path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()]
+    original_run = subprocess.run
+    view.mkdir()
+
+    def build_catalog(command, **kwargs):
+        if any(str(value).endswith("viewer_catalog.py") for value in command):
+            generation = json.loads((view / "conformance/capture-generation.json").read_bytes())
+            if not unified_archives.paths(view / capture_sources.STORE):
+                unified_archives.pack(view / capture_sources.STORE, unified_history.CAPTURE_DIRECTORY_RE,
+                                      unified_history._capture_release_sort_key)
+            versions = ["0.5.0", "0.5.2"] if mode == "history" else ["0.5.2"]
+            manifest_path = view / "conformance/fixtures-manifest.json"
+            manifest_bytes = manifest_path.read_bytes()
+            manifest = json.loads(manifest_bytes)
+            archives = viewer_catalog._archive_records(manifest, view)
+            fixture_catalog(view, {"capture_generation": generation,
+                "metadata": copy.deepcopy(metadata or {"unified_capture_policy": {"dynamo_v2": {"mode": "stream"}}}),
+                "sources": {"archives": archives, "lineage": generation["lineage"], "candidates": [
+                    {"mode": "unified", "implementation": "dynamo_v2", "version": version,
+                     "capture_families": ["gemma4"], "native_unified_families": ["gemma4"],
+                     "has_captured_results": True} for version in versions]}})
+            manifest["shards"] = [row for row in manifest["shards"] if row.get("format") != "unified-history"]
+            manifest_path.write_bytes(capture_sources.encoded(manifest))
+            return SimpleNamespace(returncode=0)
+        return original_run(command, **kwargs)
+
+    with monkeypatch.context() as patch:
+        # Only the synthetic code root's file enumeration and catalog metadata are
+        # supplied by this fixture; pin admission and native publication stay real.
+        patch.setattr(subprocess, "check_output", lambda *_args, **_kwargs: "\0".join(source_files).encode())
+        patch.setattr(subprocess, "run", build_catalog)
+        patch.delenv("CONFORMANCE_DOCUMENT_LOCK", raising=False)
+        capture_sources.prepare(root, view, include_history=mode == "history",
+                                history_source=history if mode == "history" else None, publisher=str(publisher))
+
+
+def configure_extractor_root(root, monkeypatch, *, manifest_path=None):
+    # ROOT selects current versus historical storage and supplies release metadata.
+    # Partial path patches can accidentally materialize the real checkout instead.
+    package = root / "parsers/v2/Cargo.toml"
+    package.parent.mkdir(parents=True, exist_ok=True)
+    package.write_bytes((REPO / "parsers/v2/Cargo.toml").read_bytes())
+    conformance = root / "conformance"
+    fixtures = conformance / "fixtures"
+    history = conformance / "fixtures-unified-v2"
+    fixtures.mkdir(parents=True, exist_ok=True)
+    history.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(extract_fixtures, "ROOT", root)
+    monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path or conformance / "fixtures-manifest.json")
+    monkeypatch.setattr(extract_fixtures, "FIXTURES_DIR", fixtures)
+    monkeypatch.setattr(extract_fixtures, "HISTORY_DIR", history)

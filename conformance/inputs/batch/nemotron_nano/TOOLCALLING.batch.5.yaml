@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: nemotron_nano
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    description: Missing </tool_call> end marker
+    ref: dynamo
+    model_text: '<tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      NYC
+
+      </parameter>
+
+      </function>'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.5.b:
+    description: Closing </tool_call> without matching <tool_call> open
+    ref: dynamo
+    model_text: '<function=get_weather>
+
+      <parameter=location>
+
+      NYC
+
+      </parameter>
+
+      </function>
+
+      </tool_call>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.c:
+    description: Truncation mid-parameter value
+    ref: dynamo
+    model_text: '<tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      NY'
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: dynamo
+    model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+      <tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      Boston
+
+      </parameter>
+
+      </function>
+
+      </tool_call>
+
+      <tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      New York
+
+      </parameter>
+
+      </function>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: dynamo
+    model_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+      <tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      Boston
+
+      </parameter>
+
+      </function>
+
+      </tool_call>
+
+      <tool_call>
+
+      <function=get_weather>
+
+      <parameter=location>
+
+      New York'
+    tools:
+    - *id001

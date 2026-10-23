@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: qwen25
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.7-6:
+    description: 'Nested object unions: select the unique object branch of anyOf and oneOf to type integer and boolean members. Preserve scalar string/object children, nullable object null, and real nested objects. Constructed native MiniMax M3 regression probe for PR #270.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+    explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.

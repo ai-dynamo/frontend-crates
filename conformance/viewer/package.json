@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

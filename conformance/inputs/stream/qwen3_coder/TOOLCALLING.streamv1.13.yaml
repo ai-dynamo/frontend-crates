@@ -1,0 +1,20 @@
+family: qwen3_coder
+mode: streamv1
+model_label: Qwen 3 Coder
+cases:
+  TOOLCALLING.streamv1.13:
+    description: Unknown tool name absent from supplied tools
+    ref: derived from TOOLCALLING.batch.13
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: "<tool_call>\n<function=unknown_tool>"
+    - delta_text: "\n<parameter=location>"
+    - delta_text: "NYC</parameter>\n</function>\n</tool_call>"
+    - delta_text: ''
+      finish_reason: tool_calls

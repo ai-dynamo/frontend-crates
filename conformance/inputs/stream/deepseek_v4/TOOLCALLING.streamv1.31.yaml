@@ -1,0 +1,52 @@
+family: deepseek_v4
+model_label: DeepSeek V4
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.31.a:
+    description: DSML invoke-close marker inside the first string parameter before
+      a later invoke
+    ref: derived from TOOLCALLING.batch.31.a
+    tools:
+    - name: echo
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+    - &id001
+      name: get_time
+      parameters:
+        type: object
+        properties: {}
+    chunks:
+    - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+    - delta_text: ' name="echo">'
+    - delta_text: <｜DSML｜parameter name="value" string="true">
+    - delta_text: literal </｜DSML｜invoke>
+    - delta_text: ' stays'
+    - delta_text: ' data</｜DSML｜parameter></｜DSML｜invoke>'
+    - delta_text: <｜DSML｜invoke name="get_time"></｜DSML｜invoke>
+    - delta_text: </｜DSML｜tool_calls>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv1.31.b:
+    description: Nested DSML parameter structures before a later invoke
+    ref: derived from TOOLCALLING.batch.31.b
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        properties:
+          payload:
+            type: object
+    - *id001
+    chunks:
+    - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+    - delta_text: ' name="process_data">'
+    - delta_text: <｜DSML｜parameter name="payload" string="false">
+    - delta_text: '{"items":[{"nested":{"value":1}}]}</｜DSML｜parameter>'
+    - delta_text: </｜DSML｜invoke>
+    - delta_text: <｜DSML｜invoke name="get_time">
+    - delta_text: </｜DSML｜invoke></｜DSML｜tool_calls>
+    - delta_text: ''
+      finish_reason: stop

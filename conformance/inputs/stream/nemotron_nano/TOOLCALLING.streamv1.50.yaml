@@ -1,0 +1,31 @@
+family: nemotron_nano
+mode: streamv1
+model_label: Nemotron Nano v3
+cases:
+  TOOLCALLING.streamv1.50:
+    description: Complete single tool call with a grammar token split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <t
+    - delta_text: ool
+    - delta_text: _call
+    - delta_text: ">\n<function"
+    - delta_text: "=get_weather>\n<para"
+    - delta_text: me
+    - delta_text: ter
+    - delta_text: =loca
+    - delta_text: "tion>\nNYC\n<"
+    - delta_text: "/parameter>\n</funct"
+    - delta_text: io
+    - delta_text: "n>\n"
+    - delta_text: </too
+    - delta_text: l_call>
+    - delta_text: ''
+      finish_reason: tool_calls

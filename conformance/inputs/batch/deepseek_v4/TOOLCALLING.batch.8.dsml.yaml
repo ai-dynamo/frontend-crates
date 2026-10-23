@@ -1,0 +1,198 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: deepseek_v4
+mode: batch
+cases:
+  TOOLCALLING.batch.8.f:
+    description: The encoder's two-LF separator before a calls block is framing, not content.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.
+    model_text: 'I will check the weather.
+
+
+      <｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+  TOOLCALLING.batch.8.g:
+    description: Four LFs before a calls block keep the two that belong to the content.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather.
+
+
+        '
+    model_text: 'I will check the weather.
+
+
+
+
+      <｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+  TOOLCALLING.batch.8.h:
+    description: A calls block directly after content removes nothing from the content.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.
+    model_text: 'I will check the weather.<｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+  TOOLCALLING.batch.8.i:
+    description: A tool-only turn renders just the separator before the calls block, so no content is emitted.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: ''
+    model_text: '
+
+
+      <｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+  TOOLCALLING.batch.8.j:
+    description: A bare invocation consumes the two-LF separator, like a wrapped calls block.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: I will check the weather.
+    model_text: 'I will check the weather.
+
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>'
+  TOOLCALLING.batch.8.k:
+    description: A bare invocation keeps the two LFs that belong to the content.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: 'I will check the weather.
+
+
+        '
+    model_text: 'I will check the weather.
+
+
+
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>'
+  TOOLCALLING.batch.8.l:
+    description: Whitespace-only content keeps its two LFs; only the separator is framing.
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          location: NYC
+      normal_text: '
+
+
+        '
+    model_text: '
+
+
+
+
+      <｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'

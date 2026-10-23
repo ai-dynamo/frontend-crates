@@ -1,0 +1,29 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: inkling
+model_label: Inkling
+mode: stream
+spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+cases:
+  TOOLCALLING.stream.3:
+    description: Complete Inkling call with grammar tokens split across chunk boundaries
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: <
+    - delta_text: '|message_'
+    - delta_text: model|>get_weather<|content_
+    - delta_text: invoke_tool_
+    - delta_text: json|>{"name":"get_weather","args":{"location":"
+    - delta_text: NYC"}}<|end_mes
+    - delta_text: sage|>
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+          unit:
+            type: string

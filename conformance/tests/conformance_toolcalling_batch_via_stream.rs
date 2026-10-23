@@ -195,7 +195,7 @@ fn reconcile(known: &BTreeMap<String, Exception>, observed: &BTreeSet<String>) -
 }
 
 fn capture_matches_version(capture: &StreamCapture, family: &str) -> Result<(), String> {
-    let version = common::STREAM_DYNAMO_V2_CURRENT_CAPTURE
+    let version = common::BATCH_ON_STREAM_DYNAMO_V2_CAPTURE
         .strip_prefix("dynamo_v2-")
         .unwrap();
     if capture.family != family

@@ -2995,9 +2995,7 @@ cases:
     - UNIFIED.31-33
     - UNIFIED.34-10
     request:
-      input: '<|channel>thought
-
-        before call:f{x:<|"|>é🙂<par{value}<|"|>}<tool_call|> after<channel|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      input: "<|channel>thought\nbefore call:f{x:<|\"|>é\U0001F642<par{value}<|\"|>}<tool_call|> after<channel|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -3052,7 +3050,7 @@ cases:
 
           before call:f{x:'
       - delta_text: <|"|>
-      - delta_text: é🙂
+      - delta_text: "é\U0001F642"
       - delta_text: <par{value}<|"|>
       - delta_text: '}'
       - delta_text: <tool_call|>
@@ -14206,6 +14204,47 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native gemma4 grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: gemma4/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []
   dotted_name_minimal:
     lifecycle: active
     scenario: dotted_name_minimal

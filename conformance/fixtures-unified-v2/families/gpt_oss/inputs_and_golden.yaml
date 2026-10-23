@@ -6318,7 +6318,7 @@ cases:
     display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids: []
     request:
-      input: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      input: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -6326,7 +6326,7 @@ cases:
       finish_reason: stop
       tools: []
       chunks:
-      - delta_text: '<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      - delta_text: "<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
     golden:
       assembled:
       - kind: reasoning
@@ -7457,7 +7457,7 @@ cases:
     display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning_pr424
     historical_ids: []
     request:
-      input: '<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{"x": "é🙂<par{value}"}<|call|> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      input: "<|start|>assistant<|channel|>analysis<|message|>before <|start|>assistant<|channel|>commentary to=functions.f <|constrain|>json<|message|>{\"x\": \"é\U0001F642<par{value}\"}<|call|> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -7478,7 +7478,7 @@ cases:
       - delta_text: <|constrain|>
       - delta_text: json
       - delta_text: <|message|>
-      - delta_text: '{"x": "é🙂'
+      - delta_text: "{\"x\": \"é\U0001F642"
       - delta_text: <par{value}"}<|call|>
       - delta_text: ' after'
       - delta_text: <|end|>
@@ -9365,7 +9365,7 @@ cases:
     display_id: UNIFIED.36-structured_response_after_reasoning
     historical_ids: []
     request:
-      input: <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy"}<|return|>
+      input: "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
       init:
         starting_state: None
         tool_output_mode: Native
@@ -9389,19 +9389,19 @@ cases:
             - conditions
             additionalProperties: false
           rejected:
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
-          - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>"
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":<|return|>"
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}<|return|>"
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\"}<|return|>"
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}<|return|>"
+          - "<|channel|>analysis<|message|>Check London météo\U0001F642 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>"
       finish_reason: stop
       tools: []
       chunks:
       - delta_text: <|channel|>
       - delta_text: analysis
       - delta_text: <|message|>
-      - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
+      - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - delta_text: <|end|>
       - delta_text: <|start|>
       - delta_text: assistant
@@ -9414,7 +9414,7 @@ cases:
     golden:
       assembled:
       - kind: reasoning
-        text: Check London météo🙂 before answering; this is prose, not JSON.
+        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
       - kind: text
         text: '{"location":"London","temperature":12,"conditions":"cloudy"}'
   guided_response_native_wrapper_whitespace_before_prose:
@@ -9760,6 +9760,47 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  v1_split_parallel_tool_calls:
+    lifecycle: active
+    scenario: v1_split_parallel_tool_calls
+    description: Two parallel tool calls in the native harmony grammar, using the archived TOOLCALLING.batch.2.a input and Dynamo v1 capture.
+    policy:
+    - 'input: harmony/TOOLCALLING.batch.2.a'
+    display_id: UNIFIED.v1_split-parallel_tool_calls
+    historical_ids: []
+    request:
+      input: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+      - name: get_time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+      chunks:
+      - delta_text: <|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"location":"NYC"}<|call|><|start|>assistant<|channel|>commentary to=functions.get_time <|constrain|>json<|message|>{"timezone":"EST"}<|call|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          location: NYC
+      - kind: tool_call
+        name: get_time
+        arguments:
+          timezone: EST
+      chunks: []
   dotted_name_minimal:
     lifecycle: active
     scenario: dotted_name_minimal

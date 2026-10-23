@@ -1,0 +1,48 @@
+family: minimax_m3
+model_label: MiniMax M3
+mode: stream
+captured_with:
+  dynamo_v1: 9.2.8
+cases:
+  REASONING.stream.4.b:
+    description: Native downstream boundary split across chunks exits open reasoning
+    chunks:
+    - <mm:think>thinking]<]mini
+    - max[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>
+    expected:
+      dynamo_v1:
+        reasoning_text: thinking
+        normal_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      vllm_python:
+        unavailable: No peer capture has been collected for this fixture.
+      sglang_python:
+        unavailable: No peer capture has been collected for this fixture.
+  REASONING.stream.4.c:
+    description: Two native downstream tool calls remain intact
+    chunks:
+    - <mm:think>thinking
+    - ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    - ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_time">]<]minimax[>[<location>LA]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+    expected:
+      dynamo_v1:
+        reasoning_text: thinking
+        normal_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<location>NYC]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>]<]minimax[>[<tool_call>]<]minimax[>[<invoke
+          name="get_time">]<]minimax[>[<location>LA]<]minimax[>[</location>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+      vllm_python:
+        unavailable: No peer capture has been collected for this fixture.
+      sglang_python:
+        unavailable: No peer capture has been collected for this fixture.
+  REASONING.stream.4.d:
+    description: Partial downstream namespace fakeout recovers as visible text
+    chunks:
+    - <mm:think>thinking<
+    - /mm:think>plain ]<]mini
+    - mal answer
+    expected:
+      dynamo_v1:
+        reasoning_text: thinking
+        normal_text: plain ]<]minimal answer
+      vllm_python:
+        unavailable: No peer capture has been collected for this fixture.
+      sglang_python:
+        unavailable: No peer capture has been collected for this fixture.

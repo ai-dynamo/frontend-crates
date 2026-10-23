@@ -73,27 +73,29 @@ pub fn replay_chunks(input: &str, recorded: Option<&[InputChunk]>) -> Vec<String
     match recorded {
         None => input_chunks(input, None),
         Some(rows) => {
-            let (finish, rows) = rows
-                .split_last()
-                .expect("recorded schedule requires finish");
-            // Split-era GPT-OSS inputs store only generated chunks; native
-            // captures also store an explicit terminal observation.
-            let rows = if finish.delta_text == "‹finish›" {
-                rows
-            } else {
-                recorded.expect("recorded schedule")
-            };
-            let chunks: Vec<_> = rows.iter().map(|row| row.delta_text.clone()).collect();
+            let mut chunks: Vec<_> = rows.iter().map(|row| row.delta_text.clone()).collect();
+            // A finish display row is optional; the same text can be literal input.
+            if chunks.last().map(String::as_str) == Some("‹finish›")
+                && chunks[..chunks.len() - 1].concat() == input
+            {
+                chunks.pop();
+            }
             input_chunks(input, Some(&chunks))
         }
     }
 }
 
+#[cfg(all(not(conformance_split_only), conformance_legacy_delta))]
+pub type NativeEvent = dynamo_parsers_v2::UnifiedDelta;
+#[cfg(all(not(conformance_split_only), not(conformance_legacy_delta)))]
+pub type NativeEvent = dynamo_parsers_v2::UnifiedParserEvent;
+
 #[cfg(not(conformance_split_only))]
 pub fn native_capture(
     parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
     chunks: &[String],
-) -> Result<Vec<Vec<dynamo_parsers_v2::UnifiedParserEvent>>, CaptureFailure> {
+) -> Result<Vec<Vec<NativeEvent>>, CaptureFailure> {
+    #[cfg(not(conformance_legacy_delta))]
     use dynamo_parsers_v2::UnifiedParserExt;
     let mut rows = Vec::new();
     for chunk in chunks {
@@ -128,5 +130,25 @@ fn authored_and_recorded_schedules_preserve_utf8_and_empty_chunks() {
     );
     assert_eq!(input_chunks(input, None), chunk_input(input));
     assert!(std::panic::catch_unwind(|| input_chunks(input, Some(&["wrong".into()]))).is_err());
-    assert!(std::panic::catch_unwind(|| replay_chunks(input, Some(&rows[1..]))).is_err());
+    assert_eq!(replay_chunks(input, Some(&rows[..1])), vec![input]);
+}
+
+#[test]
+fn recorded_schedules_accept_text_only_and_disambiguate_literal_finish() {
+    for input in ["", "éCafé", "‹finish›", "éCafé‹finish›"] {
+        let text_only = vec![InputChunk {
+            delta_text: input.into(),
+        }];
+        assert_eq!(replay_chunks(input, Some(&text_only)), vec![input]);
+        let mut terminal = text_only;
+        terminal.push(InputChunk {
+            delta_text: "‹finish›".into(),
+        });
+        assert_eq!(replay_chunks(input, Some(&terminal)), vec![input]);
+    }
+    assert!(replay_chunks("", Some(&[])).is_empty());
+    let wrong = vec![InputChunk {
+        delta_text: "different".into(),
+    }];
+    assert!(std::panic::catch_unwind(|| replay_chunks("expected", Some(&wrong))).is_err());
 }

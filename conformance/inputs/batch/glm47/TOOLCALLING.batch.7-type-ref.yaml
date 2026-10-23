@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Authored GLM reference schemas; parser observations are recorded separately.
+
+family: glm47
+mode: batch
+cases:
+  TOOLCALLING.batch.7-9:
+    description: 'PR #271 compatibility control: JSON text under a local object reference remains an object.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/271
+    model_text: <tool_call>capture_payload<arg_key>payload</arg_key><arg_value>{"x":1}</arg_value></tool_call>
+    tools:
+    - name: capture_payload
+      parameters:
+        type: object
+        $defs:
+          Payload:
+            type: object
+            properties:
+              x:
+                type: integer
+        properties:
+          payload:
+            $ref: '#/$defs/Payload'
+  TOOLCALLING.batch.7-11:
+    description: 'PR #271: URI percent decoding precedes JSON Pointer unescaping; spaces, UTF-8, literal plus, slash, and tilde in definition names resolve to integer types.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/271
+    model_text: <tool_call>capture_payload<arg_key>space</arg_key><arg_value>42</arg_value><arg_key>utf8_plus</arg_key><arg_value>42</arg_value><arg_key>pointer</arg_key><arg_value>42</arg_value></tool_call>
+    tools:
+    - name: capture_payload
+      parameters:
+        type: object
+        $defs:
+          postal code:
+            type: integer
+          café+:
+            type: integer
+          a/b~c:
+            type: integer
+        properties:
+          space:
+            $ref: '#/$defs/postal%20code'
+          utf8_plus:
+            $ref: '#/$defs/caf%c3%a9+'
+          pointer:
+            $ref: '#/$defs/a%7E1b%7E0c'
+  TOOLCALLING.batch.7-12:
+    description: 'PR #271: referenced strings preserve JSON-looking object, array, and quoted text verbatim, including literal quotes; an inline string is the control.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/271
+    model_text: <tool_call>capture_payload<arg_key>object_text</arg_key><arg_value>{"x":1}</arg_value><arg_key>array_text</arg_key><arg_value>[1,2]</arg_value><arg_key>quoted_text</arg_key><arg_value>"hello"</arg_value><arg_key>inline_text</arg_key><arg_value>{"x":1}</arg_value></tool_call>
+    tools:
+    - name: capture_payload
+      parameters:
+        type: object
+        $defs:
+          Text:
+            type: string
+        properties:
+          object_text:
+            $ref: '#/$defs/Text'
+          array_text:
+            $ref: '#/$defs/Text'
+          quoted_text:
+            $ref: '#/$defs/Text'
+          inline_text:
+            type: string
+  TOOLCALLING.batch.7-13:
+    description: 'PR #271: referenced integer, number, and boolean values keep their JSON types; a sibling integer type narrows a referenced string-or-integer union.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/271
+    model_text: <tool_call>capture_payload<arg_key>count</arg_key><arg_value>42</arg_value><arg_key>ratio</arg_key><arg_value>3.5</arg_value><arg_key>flag</arg_key><arg_value>true</arg_value><arg_key>narrowed</arg_key><arg_value>42</arg_value></tool_call>
+    tools:
+    - name: capture_payload
+      parameters:
+        type: object
+        $defs:
+          Integer:
+            type: integer
+          Number:
+            type: number
+          Boolean:
+            type: boolean
+          Scalar:
+            type: [string, integer]
+        properties:
+          count:
+            $ref: '#/$defs/Integer'
+          ratio:
+            $ref: '#/$defs/Number'
+          flag:
+            $ref: '#/$defs/Boolean'
+          narrowed:
+            $ref: '#/$defs/Scalar'
+            type: integer

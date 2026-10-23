@@ -72,7 +72,7 @@ def test_xml_quote_compatibility_has_the_same_oracle_in_both_corpora(probe) -> N
         assert raw in "".join(chunk["delta_text"] for chunk in case["chunks"])
         assert case["golden"] == {"calls": [{"name": "schema_probe", "arguments": expected}], "normal_text": ""}
         assert case["tools"] == schema_tools(probe)
-    applicable = set(unified.FAMILIES) if type_name == "string" else {"qwen3", "nemotron_v3"}
+    applicable = set(unified._TEMPLATE_FAMILIES) if type_name == "string" else {"qwen3", "nemotron_v3"}
     assert unified.scenario_families(probe["name"]) == applicable
     for family in unified.FAMILIES:
         case_id = f"UNIFIED.{probe['name']}.{family}"
@@ -121,4 +121,4 @@ def test_custom_quote_display_is_family_specific_without_changing_identity(quote
     assert unified_taxonomy.numbered_id(custom) == f"UNIFIED.7-{custom}"
     assert unified_taxonomy.display_tax(string)[0] == 7
     assert unified.scenario_families(custom) == {"qwen3", "nemotron_v3"}
-    assert unified.scenario_families(string) == set(unified.FAMILIES)
+    assert unified.scenario_families(string) == set(unified._TEMPLATE_FAMILIES)

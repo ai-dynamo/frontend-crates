@@ -1,0 +1,541 @@
+schema_version: 1
+surface: batch-on-stream
+family: deepseek_v3_1
+implementation: sglang_python
+version: 0.5.14
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.2.yaml
+  size: 1879
+  sha256: 344089a05c9a488815c4e4fea87184e6d0335014120ce4adb1403b0471ef559f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.4.yaml
+  size: 1521
+  sha256: cce4e8f390d507b91d3d4e87755b9acf56b158ed59de7975b451e968aa5f5848
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.5.yaml
+  size: 1952
+  sha256: 8a65c87c26387380e29085af4e3fa28973e89d4081e92afd1c47323c8208d854
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.6.yaml
+  size: 850
+  sha256: 8bbf621bbfacd66b0699ac2d851798c419a3c9b2b3823b72bfcd10bb54352b6f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.7.yaml
+  size: 2226
+  sha256: 366cb7ceec843ba84a2e4563e51885e9ef9e09b7c35005dfcbe9c2f3b466fe38
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.8.yaml
+  size: 1497
+  sha256: 3cac2b9b1517c2e9b881eb6813dd552c47c5701021f7028e81e3d4e0780831b2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/deepseek_v3_1/TOOLCALLING.batch.yaml
+  size: 2476
+  sha256: 6bb3e3844a0c68713d27c182962361b0eff4d50c3671c34b28bace835c9a59d8
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.6.a:
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.b:
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+  TOOLCALLING.batch.8.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.8.a:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.b:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.c:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.d:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜> Then check LA weather. <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather
+            arguments: {}
+  TOOLCALLING.batch.7.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.7.a:
+        vllm_rust:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments: {}
+      TOOLCALLING.batch.7.b:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.7.c:
+        vllm_rust:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments: {}
+      TOOLCALLING.batch.7.d:
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.e:
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.f:
+        vllm_rust:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments: {}
+  TOOLCALLING.batch.5.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.5.a:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.b:
+        vllm_rust:
+          calls: []
+          normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+        vllm_python:
+          calls: []
+          normal_text: <｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.e:
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"Boston"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather
+            arguments: {}
+  TOOLCALLING.batch.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.1:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.3:
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.9.b:
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+          normal_text: '   '
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather
+            arguments: {}
+      TOOLCALLING.batch.30:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        vllm_rust:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: unknown_tool
+            arguments: {}
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.2.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.2.a:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time
+            arguments: {}
+      TOOLCALLING.batch.2.b:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁calls▁end｜><｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time
+            arguments: {}
+      TOOLCALLING.batch.2.c:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time
+            arguments: {}
+      TOOLCALLING.batch.2.d:
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_weather
+            arguments: {}
+  TOOLCALLING.batch.4.yaml:
+    family: deepseek_v3_1
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.4.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: nonsense
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.b:
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete DeepSeek V3.1 tool call'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: ''
+            arguments: {}
+      TOOLCALLING.batch.4.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

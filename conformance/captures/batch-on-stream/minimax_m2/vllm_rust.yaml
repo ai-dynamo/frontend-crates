@@ -1,0 +1,963 @@
+schema_version: 1
+surface: batch-on-stream
+family: minimax_m2
+implementation: vllm_rust
+version: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.2.yaml
+  size: 3378
+  sha256: 0ebb55814f862457e7cd39df86fd04bb2e17b6949bfc82bfae67de900ff6cfce
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.4.yaml
+  size: 1976
+  sha256: 43e0652aaa9318a1c842c9507410b3620b001af94eb7191c617439cc8fc54461
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.5.yaml
+  size: 5245
+  sha256: 075eb359a36d05eb4e11e55f167df3aa758b82c71e30764aa14595270d53d572
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.6.yaml
+  size: 1265
+  sha256: b41c1b1df05490da702e5e1380be33332b12476699aacddd3654f1ebe364bed6
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.7.schema.yaml
+  size: 19238
+  sha256: 5b2bbc471cda7683389db42bf3d2c68f4923c6a42d3fd5a788e6a43c83b33c0d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.7.yaml
+  size: 2755
+  sha256: 5fdb2656b380d5c59d44e966c1e8569f85a7bec1a7c1e301a0d7c93281abd8e2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.8.yaml
+  size: 2910
+  sha256: 843b31e2c5ee1ea5fe0c4ba03797b24b141cf2126556f1e3bca3c42ee907422a
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m2/TOOLCALLING.batch.yaml
+  size: 3393
+  sha256: d811a9a78494f0723fb3433712e317d427d3ad99d9b490976decdc9870e32e3b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.6.a:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.b:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.8.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.8.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather.  Then check LA weather. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: LA
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.7.a:
+        dynamo_v2:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+      TOOLCALLING.batch.7.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+      TOOLCALLING.batch.7.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.d:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.7.f:
+        dynamo_v2:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740992
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740992
+  TOOLCALLING.batch.5.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.5.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.5.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: '
+
+            '
+        vllm_rust:
+          calls: []
+          normal_text: '<invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls: []
+          normal_text: '<invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+      TOOLCALLING.batch.5.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NY'
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: New York
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+      TOOLCALLING.batch.5.e:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: '{"location": "New York'
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: {}
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+      TOOLCALLING.batch.5.f:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '
+
+
+            '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '<invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>
+
+            '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '<invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>
+
+            '
+      TOOLCALLING.batch.5.g:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: "I will check that. \n"
+        vllm_rust:
+          calls: []
+          normal_text: 'I will check that. <invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+        sglang_python:
+          calls: []
+          normal_text: 'I will check that. <invoke name="get_weather">
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+  TOOLCALLING.batch.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.1:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.3:
+        dynamo_v2:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.9.b:
+        dynamo_v2:
+          calls: []
+          normal_text: '   '
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: LA
+          - name: get_weather
+            arguments:
+              location: LA
+      TOOLCALLING.batch.30:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: '<minimax:tool_call>
+
+            <minimax:tool_name>unknown_tool</minimax:tool_name>
+
+            <minimax:tool_args>{"location":"NYC"}</minimax:tool_args>
+
+            </minimax:tool_call>'
+        sglang_python:
+          calls: []
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.2.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+              timezone: EST
+          - name: get_time
+            arguments:
+              timezone: EST
+      TOOLCALLING.batch.2.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: '
+
+            '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+              timezone: EST
+          - name: get_time
+            arguments:
+              timezone: EST
+      TOOLCALLING.batch.2.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: <minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+              timezone: EST
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+      TOOLCALLING.batch.2.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: LA
+          - name: get_weather
+            arguments:
+              location: LA
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.4.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: '<minimax:tool_call>
+
+            nonsense
+
+            </minimax:tool_call>'
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: '<minimax:tool_call>
+
+            <invoke>
+
+            <parameter name="location">NYC</parameter>
+
+            </invoke>
+
+            </minimax:tool_call>'
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.d:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete MiniMax M2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NYC'
+          normal_text: '<minimax:tool_call>
+
+            '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location": "NYC"'
+      TOOLCALLING.batch.4.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

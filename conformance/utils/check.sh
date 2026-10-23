@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-# check.sh <dynamo|vllm|sglang|coverage|status|ci|ci-render|ci-tests|all> [batch|stream|all] [--container N|--pip] [--dry-run]
+# check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip] [--dry-run]
 #   Run a parser against the committed fixtures and report pass/fail (read-only).
 #     dynamo [batch|stream|all]  Dynamo Rust parser vs expected.dynamo_v2 / expected.dynamo_v1 (cargo test)
 #     vllm   [--container N|--pip]   vLLM Python parser vs expected.vllm_python / expected.vllm
@@ -10,10 +10,10 @@
 #     coverage [--family F ...]      fixture-coverage + marker-registration lint vs
 #                                    case-taxonomy.yaml (defaults to --all families)
 #     status [--model F ...] [--tab T ...]
-#                                    render, then fail on every empty/red selected cell
-#     ci [render options]       full local gate: ci-render followed by ci-tests
-#     ci-render [render options]  report, structural sanity, coverage and legacy lint
-#     ci-tests                   complete utility test suite
+#                                    read source resources with the shared JS model, then fail on empty/red selected cells
+#     ci     what the conformance-data CI job runs: catalog, coverage, legacy-store,
+#            and invariant checks
+#            Core gates live in run_ci; CI workflows own native publication and browser qualification.
 #     all    [--container-vllm N --container-sglang M] [--allow-peer-failures]
 #            dynamo(all) + vllm + sglang + coverage. Fails the run on any parser
 #            failure; pass --allow-peer-failures (alias --best-effort-peers) to keep
@@ -22,9 +22,28 @@
 DRY=0; args=()
 while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=("$1"); shift;; esac; done
 set -- ${args+"${args[@]}"}
-source "$(dirname "$0")/src/_common.sh"
+# Direct readers and dry runs must not eagerly materialize historical captures.
+if [ "${1:-}" = status ] || [ "${1:-}" = ci ] || [ "$DRY" = 1 ]; then
+  status_root="$(cd "$(dirname "$0")/../.." && pwd)"
+fi
+if [ "${1:-}" = status ]; then
+  shift
+  if [ "$DRY" = 1 ]; then
+    echo "[dry-run] node $status_root/conformance/viewer/status.js --require-green $*"
+    exit 0
+  fi
+  exec node "$status_root/conformance/viewer/status.js" --root "$status_root" --require-green "$@"
+fi
+if [ "${1:-}" = ci ] || [ "$DRY" = 1 ]; then
+  ROOT="$status_root"
+  UTILS="$ROOT/conformance/utils"
+  TOOLS="$UTILS/src"
+  CARGO="${CARGO:-cargo}"
+else
+  source "$(dirname "$0")/src/_common.sh"
+fi
 
-usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|ci-render|ci-tests|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
+usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
 
 run_dynamo() {  # $1 = batch|stream|all ; returns non-zero if any target fails
   local targets=() rc=0
@@ -55,53 +74,46 @@ run_coverage() {  # $@ = passthrough (--family F ...); defaults to --all
   else python3 "$TOOLS/check_family_coverage.py" --all; fi
 }
 
-run_status() {  # $@ = passthrough (--model F ... --tab T ...)
-  local out="$ROOT/conformance/CONFORMANCE_v2.html"
+run_ci() {  # the conformance-data CI gate; fail-fast, also runnable locally
   if [ "$DRY" = 1 ]; then
-    echo "[dry-run] render v2, then validate empty/red status $*"
+    echo "[dry-run] validate viewer catalog, coverage, legacy store, and selected invariant pytest shard"
     return
   fi
-  "$UTILS/render_table_v2.sh"
-  python3 "$TOOLS/validate_conformance_status.py" \
-    --html "$out" --require-green "$@"
-}
-
-run_ci_render() {
-  if [ "$DRY" = 1 ]; then
-    echo "[dry-run] render v2 $*, status validation, coverage lint, legacy convention"
-    return
-  fi
+  local shard="${CONFORMANCE_CI_SHARD:-all}"
+  case "$shard" in all|fixtures|core|qualification|native-browser|browser|viewer|first-matrix) ;; *) echo "invalid CONFORMANCE_CI_SHARD: $shard" >&2; return 2 ;; esac
   set -e
-  "$UTILS/render_table_v2.sh" "$@"
-  local out="$ROOT/conformance/CONFORMANCE_v2.html"
-  local status="$ROOT/conformance/CONFORMANCE_v2.json"
-  test -s "$out"
-  test -s "$status"
-  python3 "$TOOLS/validate_conformance_status.py" --html "$out" --unified-only-report --summary-only
-  echo "conformance matrix rendered: $(wc -c < "$out") bytes"
-  # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
-  \cp -f "$out" "$UTILS/CONFORMITY.html"
-  \cp -f "$status" "$UTILS/CONFORMITY.json"
-  run_coverage
-  python3 "$TOOLS/validate_legacy_convention.py"
-}
-
-run_ci_tests() {
-  if [ "$DRY" = 1 ]; then
-    echo "[dry-run] python3 -m pytest $UTILS/tests -q --durations=20"
-    return
+  if [ "$shard" = fixtures ]; then
+    CONFORMANCE_FIXTURES_ROOT="$(python3 "$TOOLS/extract_fixtures.py" --legacy-only)"
+    export CONFORMANCE_FIXTURES_ROOT
   fi
-  # The WHOLE tests/ dir, not a hand-maintained file list: the old list named three
-  # files, so the resolver-fold, render-invariant and colorize tests never ran in CI
-  # and a new test file was gated only by remembering to add it here. The browser
-  # tests skip themselves when Selenium isn't installed (CI installs pyyaml/jinja2/
-  # pytest only), so this stays a no-engine, no-browser gate.
-  python3 -m pytest "$UTILS/tests" -q --durations=20
-}
-
-run_ci() {
-  run_ci_render "$@"
-  run_ci_tests
+  if [ "$shard" = all ] || [ "$shard" = core ]; then
+    # Unified readers use the maintained source or qualified publication directly.
+    CONFORMANCE_FIXTURES_ROOT="$(python3 "$TOOLS/extract_fixtures.py" --legacy-only)"
+    export CONFORMANCE_FIXTURES_ROOT
+    python3 "$TOOLS/viewer_catalog.py" --check
+    run_coverage
+    python3 "$TOOLS/validate_legacy_convention.py"
+  fi
+  # Keep every test file covered. Selenium modules run on separate CI runners so
+  # Chrome does not contend with CPU-heavy shared-model Node checks under xdist.
+  # Qualification owns historical parity and receipt proofs; keep negative probes in core.
+  case "$shard" in
+    fixtures|core)
+      local scope=publication
+      if [ "$shard" = fixtures ]; then scope=fixtures; fi
+      python3 -m pytest "$UTILS/tests" -q --conformance-scope "$scope" --ignore="$UTILS/tests/test_browser_smoke.py" --ignore="$UTILS/tests/test_browser_viewer.py" --ignore="$UTILS/tests/test_native_publication_browser.py" --ignore="$UTILS/tests/test_capture_split_browser.py" --deselect="conformance/utils/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" --deselect="conformance/utils/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" --deselect="conformance/utils/tests/test_model.py::test_shared_javascript_matrix_contracts" --deselect="conformance/utils/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column"
+      ;;
+    qualification)
+      python3 -m pytest "$UTILS/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" "$UTILS/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" "$UTILS/tests/test_model.py::test_shared_javascript_matrix_contracts" "$UTILS/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column" -vv -rP --durations=25
+      ;;
+    native-browser) python3 -m pytest "$UTILS/tests/test_native_publication_browser.py" "$UTILS/tests/test_capture_split_browser.py" -vv --durations=25 ;;
+    browser) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k 'not first_visible_matrix_matches_transpose_url and not schema_popup_opens_and_fits_across_themes_viewports_and_transpose and not popup_headings_include_compact_references' -vv --durations=25 ;;
+    first-matrix) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k first_visible_matrix_matches_transpose_url -vv --durations=25 ;;
+    viewer)
+      python3 -m pytest "$UTILS/tests/test_browser_viewer.py" "$UTILS/tests/test_browser_smoke.py::test_schema_popup_opens_and_fits_across_themes_viewports_and_transpose" "$UTILS/tests/test_browser_smoke.py::test_popup_headings_include_compact_references" -vv --durations=25
+      ;;
+    all) python3 -m pytest "$UTILS/tests" -q ;;
+  esac
 }
 
 engine="${1:-}"; shift || true
@@ -111,10 +123,7 @@ case "$engine" in
   vllm)   run_engine vllm "$@" ;;
   sglang) run_engine sglang "$@" ;;
   coverage) run_coverage "$@" ;;
-  status) run_status "$@" ;;
   ci)     run_ci "$@" ;;
-  ci-render) run_ci_render "$@" ;;
-  ci-tests) run_ci_tests ;;
   all)
     cv=""; cs=""; allow_peer=0; rc=0
     while [ $# -gt 0 ]; do case "$1" in

@@ -1,0 +1,35 @@
+family: deepseek_v4
+model_label: DeepSeek V4
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.11.a:
+    description: Conflicting outer and inner tool names are unavailable in DSML
+    explanation: DSML has one tool-name owner in the invoke name attribute and no
+      inner envelope name that can disagree with it.
+    unavailable:
+      dynamo_v2: DSML carries only one tool name, so TOOLCALLING.batch.11.a cannot
+        be expressed by this grammar.
+  TOOLCALLING.streamv1.11.b:
+    description: Empty DSML invoke name
+    ref: derived from TOOLCALLING.batch.11.b
+    tools:
+    - name: f
+      parameters:
+        type: object
+        properties:
+          value:
+            type: integer
+    chunks:
+    - delta_text: <｜DSML｜tool_calls><｜DSML｜invoke
+    - delta_text: ' name="">'
+    - delta_text: <｜DSML｜parameter name="value" string="false">
+    - delta_text: 1</｜DSML｜parameter></｜DSML｜invoke>
+    - delta_text: </｜DSML｜tool_calls>
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv1.11.c:
+    description: Generation-primer header omission is unavailable in DSML
+    explanation: DSML tool calls do not use a separate generation-primer message header.
+    unavailable:
+      dynamo_v2: DSML has no generation-primer header, so TOOLCALLING.batch.11.c cannot
+        be expressed by this grammar.

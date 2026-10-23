@@ -1,0 +1,902 @@
+schema_version: 1
+surface: batch-on-stream
+family: kimi_k2
+implementation: sglang_python
+version: 0.5.14
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.2.yaml
+  size: 2747
+  sha256: e7d3684500bf24a7dda20a8fb5dfe0451530cf8f156b3cfb2869779dc177fabc
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.4.yaml
+  size: 1792
+  sha256: 92b0a6c4826ba45eb55a333f92c091870526111d5eb6935334be0dcdcf3b94c2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.5.yaml
+  size: 4326
+  sha256: cfaab5a4a193948d934a8043e9907fa4565f26d28a3aae1dbf28f55421eacfc3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.6.yaml
+  size: 1155
+  sha256: ced798c669aa813f9d7f67318c7f196e8211745351f816b8e0aad03c9eecfc39
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.7.schema.yaml
+  size: 19276
+  sha256: ee9b3c05e3a46ffa2d4b8672bcfe87629fa5c000749be57ef83de3ebd27bd6b4
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.7.yaml
+  size: 4272
+  sha256: 1e7cfae8da1ab77a44beabf8f8d26fbee33220473639c4e54b83b09d23cb5cc8
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.8.yaml
+  size: 2485
+  sha256: 9acdc155252c056d3d944439e294c0bfa0769e3374b797a16261f2b42cbe8136
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/kimi_k2/TOOLCALLING.batch.yaml
+  size: 3221
+  sha256: 319d33f6d6ba5c7f0f456d3ec23566bbc7f5925ebbe8f53389631cb346094454
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.6.a:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.b:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+  TOOLCALLING.batch.8.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.8.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'I will check the weather. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'I''ll check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: ' Let me know if you need more.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'I''ll check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'First check Dallas.  Then check NYC. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          normal_text: 'First check Dallas. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Dallas
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'First check Dallas. '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+  TOOLCALLING.batch.7.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.7.a:
+        dynamo_v2:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments: {}
+      TOOLCALLING.batch.7.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.7.c:
+        dynamo_v2:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments: {}
+      TOOLCALLING.batch.7.d:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.e:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.f:
+        dynamo_v2:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments: {}
+  TOOLCALLING.batch.5.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.5.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls: []
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"loc'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: '{"location":"New York"'
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.e:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments: '{"location":"New York'
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.f:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.g:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+        vllm_rust:
+          calls: []
+          normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        vllm_python:
+          calls: []
+          normal_text: I will check that. <|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"location":"NYC"}<|tool_call_end|><|tool_calls_section_end|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+  TOOLCALLING.batch.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.1:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.3:
+        dynamo_v2:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.9.b:
+        dynamo_v2:
+          calls: []
+          normal_text: '   '
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.30:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        dynamo_v2:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: unknown_tool
+            arguments: {}
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.2.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.2.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'I will check both. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+  TOOLCALLING.batch.4.yaml:
+    family: kimi_k2
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.4.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments: '{"location":"NYC"'
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Kimi K2 tool call'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location":"NYC"'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.d:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

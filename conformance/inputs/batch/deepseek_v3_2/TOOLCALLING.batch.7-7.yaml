@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: deepseek_v3_2
+mode: batch
+cases:
+  TOOLCALLING.batch.7-7:
+    description: 'Null-only literal union branches: const: null and enum: [null] cannot accept objects, so anyOf and oneOf still have a unique object branch whose page member is an integer. Constructed native MiniMax M3 regression probe for PR #270.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+    explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.

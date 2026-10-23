@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: gemma4
+mode: batch
+cases:
+  TOOLCALLING.batch.7-4:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.anyof:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.oneof:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.nullable:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.const:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.union:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.sibling_anyof:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.sibling_oneof:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.untyped_branch:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.const:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.enum:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.untyped_const:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.untyped_enum:
+    description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+    explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.

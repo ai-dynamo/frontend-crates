@@ -1,0 +1,3670 @@
+schema_version: 1
+surface: stream
+family: harmony
+implementation: sglang_python
+version: 0.5.12.post1
+source_records:
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml
+  size: 1218
+  sha256: 6356000348f6dc7d51d3afebb0b82c9c34748ff6d6b9a61b1aa7833a22e69af8
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.10.yaml
+  size: 2116
+  sha256: e0f7eeb47e008e624d62f9dce037432d2810737aaefca1b897b9e2eb3874c4e2
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.13.yaml
+  size: 1233
+  sha256: e019b0d1206291819f57d845d487a53c73719a8178601de7dce62ce045737077
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.2.yaml
+  size: 6780
+  sha256: 0103a6dc64778003294dd9da48e36ece7f470e36eed34fd8ed1e511f72ce2015
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.3.yaml
+  size: 796
+  sha256: 67aaf80d8e3f56037fe9f176f2291e7455800c1be3bfd543d2cf108be7850a5d
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.4.yaml
+  size: 3380
+  sha256: 0c3cdf7088ed62c7d2d8a456fdd05754d3a3946b4f390b4d0928de1240f8c8a3
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.5.yaml
+  size: 9475
+  sha256: e07dd6de638fee52bb2161795704e88a79f000cb832137f3fa9ecaee4b742341
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.50.yaml
+  size: 1439
+  sha256: 7bbdc07b769efe2835a46aef2cac27ec564f8c1f27f9c2fc80ebed57ae6ae2b5
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.6.yaml
+  size: 2618
+  sha256: 2e94c24a53ffd25663dea95b2446e6e66623d2105f6127ef48ee6e755f2ca912
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.7-6.yaml
+  size: 672
+  sha256: bc95eb9ad16b925c638cec9d91f15f20eb72e11c29e59684a586b3db6cdf3bcf
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.7-7.yaml
+  size: 647
+  sha256: 1d2904befb4b2bc5052ef5736e7e7940766dfa3112e4ecae861667da0a5f0a67
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.7-8.yaml
+  size: 631
+  sha256: 18c1cd80176ee1cefa4211bf17ed7a5553125c8c7c41134fd95278864ab5bf06
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.7.yaml
+  size: 10693
+  sha256: e2c8ec2a3d13a9a97b8b83f9d6cb43b71915624a3adb229a343f07ef6485f09f
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.8.yaml
+  size: 9134
+  sha256: 74a26321ac792d9238845cad7d680bb24deddb593eaf4af291eef318aafc3c62
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.9.yaml
+  size: 816
+  sha256: 6da67380415695baa8a4a5ae3823e61dc6757d390c6b7e9c89fcde63e7fb1fa8
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.1.yaml
+  size: 411
+  sha256: 002097051e5ad4a07427ce771e415ef2e6ec9417ea2d7ceade9880bd54c2f555
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.10.yaml
+  size: 701
+  sha256: 43101bc797ab0ea69ff0ac732db5b3c82fb1043b6e6ae000af3ec0eb08c0bab4
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.13.yaml
+  size: 331
+  sha256: 0486cf075f5e065943a2ae78f25dd96b6c43c886ed8357369eceec49bf94284d
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.2.yaml
+  size: 2110
+  sha256: 8cc16ce2108de85338f7ee25b71da39cdf2aff32a5ae78499d19e13ccb9c04b1
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.3.yaml
+  size: 375
+  sha256: 0c8a8a726ba0a773cc7d4d30e6ce03cd8bb8f4e42ad72e1d4bda8ff8ec25e5c7
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.4.yaml
+  size: 792
+  sha256: d447eb95ed2e6c4bbd066767f0bb51b94eb915960a1ee955a9575c08487eec9a
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.5.yaml
+  size: 2952
+  sha256: a365f72cf6d35f9062f0b7b293e83748e95cb3ce124a90fbf75f44fac89920eb
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.50.yaml
+  size: 652
+  sha256: 6c5b6a4e52a0b1a05366a22ef46395916c11f059718fc4468aa36763f96e5412
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.6.yaml
+  size: 781
+  sha256: ff4f39e1604280509ce38c333b87db1136a043d1eace7ad27a969eabf48bd6f4
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.7.yaml
+  size: 2929
+  sha256: caedddc103f426415eaeff8710dc097c0c65213ac24e75c3bc4c10f1cab05f63
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.8.yaml
+  size: 3366
+  sha256: 9d4c657a81a2261516fd5a36397aab57f3c1905f574f6bd919209964c60bcecc
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+- path: toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1/harmony/TOOLCALLING.streamv1.9.yaml
+  size: 245
+  sha256: 473f5e2f879b7080489e06bf404c5b813eb6e54c88fbe0f26f6b681510bacbee
+  archive: conformance/fixtures/toolcalling/fixtures-stream-v1/sglang_python-0.5.12.post1.tar.gz
+documents:
+  TOOLCALLING.streamv1.5.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.5.a:
+        description: Missing <|call|> end marker (bare envelope)
+        ref: derived from TOOLCALLING.batch.5.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+        dynamo_note: 'No recovery by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): a Harmony commentary/analysis tool call must carry the <|call|> terminator to be recovered. <|call|> is also the gpt-oss EOS/commit token, so a call missing it was cut off before the model committed; the incomplete envelope is dropped, not recovered or leaked into content.'
+      TOOLCALLING.streamv1.5.b:
+        description: Complete commentary tool call without <|start|>assistant prefix
+        ref: derived from TOOLCALLING.batch.5.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.5.c:
+        description: Truncation mid-message JSON
+        ref: derived from TOOLCALLING.batch.5.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"loc'
+          delta_token_ids:
+          - 10848
+          - 9453
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: derived from TOOLCALLING.batch.5.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+          delta_token_ids:
+          - 67504
+          - 1604
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I'll start
+        - delta_text: ' by fetching'
+          delta_token_ids:
+          - 656
+          - 92377
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' by fetching'
+        - delta_text: ' the weather'
+          delta_token_ids:
+          - 290
+          - 11122
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' the weather'
+        - delta_text: ' for both'
+          delta_token_ids:
+          - 395
+          - 2973
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' for both'
+        - delta_text: ' Boston and'
+          delta_token_ids:
+          - 17814
+          - 326
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' Boston and'
+        - delta_text: ' New York'
+          delta_token_ids:
+          - 2036
+          - 6175
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' New York'
+        - delta_text: ' at the'
+          delta_token_ids:
+          - 540
+          - 290
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' at the'
+        - delta_text: ' same time'
+          delta_token_ids:
+          - 2684
+          - 1058
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' same time'
+        - delta_text: '!<|start|>'
+          delta_token_ids:
+          - 0
+          - 200006
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I'll start by fetching the weather for both Boston and New York at the same time!
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: Boston"}
+          delta_token_ids:
+          - 114228
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|><|start|>
+          delta_token_ids:
+          - 200012
+          - 200006
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "Boston"}'
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: New York
+          delta_token_ids:
+          - 3443
+          - 6175
+          expected:
+            sglang_python: []
+        - delta_text: '"}'
+          delta_token_ids:
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+        dynamo_note: 'Trailing call dropped by design (dynamo #10366: https://github.com/ai-dynamo/dynamo/pull/10366): only the commentary call carrying <|call|> (Boston) is recovered; the unterminated trailing call (New York) is dropped, since <|call|> is also the gpt-oss EOS/commit token and its absence means the model was cut off before committing that call.'
+      TOOLCALLING.streamv1.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: derived from TOOLCALLING.batch.5.e
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I'll start
+          delta_token_ids:
+          - 67504
+          - 1604
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I'll start
+        - delta_text: ' by fetching'
+          delta_token_ids:
+          - 656
+          - 92377
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' by fetching'
+        - delta_text: ' the weather'
+          delta_token_ids:
+          - 290
+          - 11122
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' the weather'
+        - delta_text: ' for both'
+          delta_token_ids:
+          - 395
+          - 2973
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' for both'
+        - delta_text: ' Boston and'
+          delta_token_ids:
+          - 17814
+          - 326
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' Boston and'
+        - delta_text: ' New York'
+          delta_token_ids:
+          - 2036
+          - 6175
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' New York'
+        - delta_text: ' at the'
+          delta_token_ids:
+          - 540
+          - 290
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' at the'
+        - delta_text: ' same time'
+          delta_token_ids:
+          - 2684
+          - 1058
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' same time'
+        - delta_text: '!<|start|>'
+          delta_token_ids:
+          - 0
+          - 200006
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I'll start by fetching the weather for both Boston and New York at the same time!
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: Boston"}
+          delta_token_ids:
+          - 114228
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|><|start|>
+          delta_token_ids:
+          - 200012
+          - 200006
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "Boston"}'
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: New York
+          delta_token_ids:
+          - 3443
+          - 6175
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.6.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.6.a:
+        description: Canonical empty {} message body
+        ref: derived from TOOLCALLING.batch.6.a
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_time
+          delta_token_ids:
+          - 775
+          - 6425
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{}<|call|>'
+          delta_token_ids:
+          - 12083
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_time
+              arguments: '{}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.6.b:
+        description: Whitespace inside empty {}
+        ref: derived from TOOLCALLING.batch.6.b
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_time
+          delta_token_ids:
+          - 775
+          - 6425
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{ }'
+          delta_token_ids:
+          - 90
+          - 388
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_time
+              arguments: '{}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.6.c:
+        description: No <|message|> body
+        ref: derived from TOOLCALLING.batch.6.c
+        tools:
+        - name: get_time
+          parameters:
+            type: object
+            properties: {}
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_time
+          delta_token_ids:
+          - 775
+          - 6425
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json
+          delta_token_ids:
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.7.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.7.a:
+        description: Standard scalar types
+        ref: derived from TOOLCALLING.batch.7.a
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .book_f
+          delta_token_ids:
+          - 42850
+          - 1337
+          expected:
+            sglang_python: []
+        - delta_text: 'light '
+          delta_token_ids:
+          - 6038
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: destination":"
+          delta_token_ids:
+          - 51810
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: Paris","
+          delta_token_ids:
+          - 72782
+          - 4294
+          expected:
+            sglang_python: []
+        - delta_text: passengers
+          delta_token_ids:
+          - 9948
+          - 24764
+          expected:
+            sglang_python: []
+        - delta_text: '":2'
+          delta_token_ids:
+          - 1243
+          - 17
+          expected:
+            sglang_python: []
+        - delta_text: ',"first'
+          delta_token_ids:
+          - 3532
+          - 7743
+          expected:
+            sglang_python: []
+        - delta_text: '_class":'
+          delta_token_ids:
+          - 10602
+          - 1243
+          expected:
+            sglang_python: []
+        - delta_text: true}
+          delta_token_ids:
+          - 3309
+          - 92
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: book_flight
+              arguments: '{"destination": "Paris", "passengers": 2, "first_class": true}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.b:
+        description: Unicode + escaped chars
+        ref: derived from TOOLCALLING.batch.7.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"T'
+          delta_token_ids:
+          - 7534
+          - 51
+          expected:
+            sglang_python: []
+        - delta_text: ōky
+          delta_token_ids:
+          - 16191
+          - 5781
+          expected:
+            sglang_python: []
+        - delta_text: ō \"
+          delta_token_ids:
+          - 16191
+          - 14927
+          expected:
+            sglang_python: []
+        - delta_text: central\"
+          delta_token_ids:
+          - 79937
+          - 4017
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "Tōkyō \"central\""}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: derived from TOOLCALLING.batch.7.c
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .set_temperature
+          delta_token_ids:
+          - 1230
+          - 133120
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"c'
+          delta_token_ids:
+          - 10848
+          - 66
+          expected:
+            sglang_python: []
+        - delta_text: elsius":"
+          delta_token_ids:
+          - 63110
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: 20"}
+          delta_token_ids:
+          - 455
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: set_temperature
+              arguments: '{"celsius": "20"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.d:
+        description: Nested object + array
+        ref: derived from TOOLCALLING.batch.7.d
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .process_data
+          delta_token_ids:
+          - 28604
+          - 3537
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"items'
+          delta_token_ids:
+          - 10848
+          - 6918
+          expected:
+            sglang_python: []
+        - delta_text: '":[1'
+          delta_token_ids:
+          - 16853
+          - 16
+          expected:
+            sglang_python: []
+        - delta_text: ',2'
+          delta_token_ids:
+          - 11
+          - 17
+          expected:
+            sglang_python: []
+        - delta_text: ',3'
+          delta_token_ids:
+          - 11
+          - 18
+          expected:
+            sglang_python: []
+        - delta_text: '],"config'
+          delta_token_ids:
+          - 91001
+          - 3154
+          expected:
+            sglang_python: []
+        - delta_text: '":{"nested'
+          delta_token_ids:
+          - 70649
+          - 125059
+          expected:
+            sglang_python: []
+        - delta_text: '":true'
+          delta_token_ids:
+          - 1243
+          - 3309
+          expected:
+            sglang_python: []
+        - delta_text: '}}<|call|>'
+          delta_token_ids:
+          - 6478
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: process_data
+              arguments: '{"items": [1, 2, 3], "config": {"nested": true}}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: derived from TOOLCALLING.batch.7.e
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .process_data
+          delta_token_ids:
+          - 28604
+          - 3537
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"payload'
+          delta_token_ids:
+          - 10848
+          - 39859
+          expected:
+            sglang_python: []
+        - delta_text: '":{"regions'
+          delta_token_ids:
+          - 70649
+          - 134292
+          expected:
+            sglang_python: []
+        - delta_text: '":[{"'
+          delta_token_ids:
+          - 16853
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: name":"
+          delta_token_ids:
+          - 897
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: west","
+          delta_token_ids:
+          - 14914
+          - 4294
+          expected:
+            sglang_python: []
+        - delta_text: scores":[
+          delta_token_ids:
+          - 109945
+          - 16853
+          expected:
+            sglang_python: []
+        - delta_text: 1,
+          delta_token_ids:
+          - 16
+          - 11
+          expected:
+            sglang_python: []
+        - delta_text: 2,
+          delta_token_ids:
+          - 17
+          - 11
+          expected:
+            sglang_python: []
+        - delta_text: 3]
+          delta_token_ids:
+          - 18
+          - 60
+          expected:
+            sglang_python: []
+        - delta_text: '},{"name'
+          delta_token_ids:
+          - 138064
+          - 897
+          expected:
+            sglang_python: []
+        - delta_text: '":"east'
+          delta_token_ids:
+          - 7534
+          - 157488
+          expected:
+            sglang_python: []
+        - delta_text: '","scores'
+          delta_token_ids:
+          - 4294
+          - 109945
+          expected:
+            sglang_python: []
+        - delta_text: '":[4'
+          delta_token_ids:
+          - 16853
+          - 19
+          expected:
+            sglang_python: []
+        - delta_text: ',5'
+          delta_token_ids:
+          - 11
+          - 20
+          expected:
+            sglang_python: []
+        - delta_text: ',6'
+          delta_token_ids:
+          - 11
+          - 21
+          expected:
+            sglang_python: []
+        - delta_text: ']}],"'
+          delta_token_ids:
+          - 28000
+          - 91001
+          expected:
+            sglang_python: []
+        - delta_text: flags":{"
+          delta_token_ids:
+          - 24254
+          - 70649
+          expected:
+            sglang_python: []
+        - delta_text: 'enabled":'
+          delta_token_ids:
+          - 42840
+          - 1243
+          expected:
+            sglang_python: []
+        - delta_text: true,"
+          delta_token_ids:
+          - 3309
+          - 3532
+          expected:
+            sglang_python: []
+        - delta_text: 'retry":'
+          delta_token_ids:
+          - 91799
+          - 1243
+          expected:
+            sglang_python: []
+        - delta_text: null},"
+          delta_token_ids:
+          - 5398
+          - 140781
+          expected:
+            sglang_python: []
+        - delta_text: 'empty":'
+          delta_token_ids:
+          - 6857
+          - 1243
+          expected:
+            sglang_python: []
+        - delta_text: '{}}'
+          delta_token_ids:
+          - 90
+          - 6478
+          expected:
+            sglang_python: []
+        - delta_text: '}<|call|>'
+          delta_token_ids:
+          - 92
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: process_data
+              arguments: '{"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: derived from TOOLCALLING.batch.7.f
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .set_limit
+          delta_token_ids:
+          - 1230
+          - 34361
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"count'
+          delta_token_ids:
+          - 10848
+          - 5420
+          expected:
+            sglang_python: []
+        - delta_text: '":900'
+          delta_token_ids:
+          - 1243
+          - 9752
+          expected:
+            sglang_python: []
+        - delta_text: '719925'
+          delta_token_ids:
+          - 47555
+          - 36831
+          expected:
+            sglang_python: []
+        - delta_text: '474099'
+          delta_token_ids:
+          - 39739
+          - 37986
+          expected:
+            sglang_python: []
+        - delta_text: 3}
+          delta_token_ids:
+          - 18
+          - 92
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: set_limit
+              arguments: '{"count": 9007199254740993}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.7.h:
+        description: Family-native string arguments preserve whitespace and empty strings
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/247
+        tools:
+        - name: inspect
+          parameters:
+            type: object
+            properties:
+              spaced:
+                type: string
+              blank:
+                type: string
+              empty:
+                type: string
+        chunks:
+        - delta_text: <|channel|>commentary to=functions.inspect <|constrain|>json<|message|>{"spaced":"  café\n",
+          delta_token_ids:
+          - 200005
+          - 12606
+          - 815
+          - 316
+          - 28
+          - 44580
+          - 145021
+          - 220
+          - 200003
+          - 4108
+          - 200008
+          - 10848
+          - 1148
+          - 18308
+          - 7534
+          - 220
+          - 30469
+          - 3392
+        - delta_text: '"blank":"\t\r\n ","empty":""}<|call|>'
+          delta_token_ids:
+          - 4294
+          - 20107
+          - 7534
+          - 59
+          - 83
+          - 26543
+          - 3392
+          - 33200
+          - 6857
+          - 1243
+          - 6371
+          - 92
+          - 200012
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.7-8.yaml:
+    family: harmony
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.7-8:
+        description: 'Ambiguous object union branches: multiple object-capable alternatives must retain the string-preserving fallback rather than choose one branch arbitrarily. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.
+  TOOLCALLING.streamv1.13.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.13:
+        description: Unknown tool name absent from supplied tools
+        ref: derived from TOOLCALLING.batch.13
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .unknown
+          delta_token_ids:
+          - 13
+          - 33936
+          expected:
+            sglang_python: []
+        - delta_text: '_tool '
+          delta_token_ids:
+          - 53637
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: NYC
+          delta_token_ids:
+          - 24202
+          - 34
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.7-7.yaml:
+    family: harmony
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.7-7:
+        description: 'Null-only literal union branches: const: null and enum: [null] cannot accept objects, so anyOf and oneOf still have a unique object branch whose page member is an integer. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.
+  TOOLCALLING.streamv1.2.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.2.a:
+        description: Two back-to-back commentary envelopes
+        ref: derived from TOOLCALLING.batch.2.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|><|start|>
+          delta_token_ids:
+          - 200012
+          - 200006
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_time '
+          delta_token_ids:
+          - 6425
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: timezone":"
+          delta_token_ids:
+          - 106775
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: EST"}
+          delta_token_ids:
+          - 8292
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 1
+              name: get_time
+              arguments: '{"timezone": "EST"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.2.c:
+        description: With surrounding narration
+        ref: derived from TOOLCALLING.batch.2.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: Bo
+          delta_token_ids:
+          - 40
+          - 1309
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I need
+        - delta_text: 'th:'
+          delta_token_ids:
+          - 2973
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' both.'
+        - delta_text: ' <|start|>'
+          delta_token_ids:
+          - 220
+          - 200006
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: 'I need both. '
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: NYC
+          delta_token_ids:
+          - 24202
+          - 34
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_time
+          delta_token_ids:
+          - 775
+          - 6425
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"timezone'
+          delta_token_ids:
+          - 10848
+          - 106775
+          expected:
+            sglang_python: []
+        - delta_text: '":"EST'
+          delta_token_ids:
+          - 7534
+          - 8292
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python:
+            - index: 1
+              name: get_time
+              arguments: '{"timezone": "EST"}'
+        - delta_text: ' Done.'
+          delta_token_ids:
+          - 46776
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' Done.'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.2.d:
+        description: Same-name twice
+        ref: derived from TOOLCALLING.batch.2.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|><|start|>
+          delta_token_ids:
+          - 200012
+          - 200006
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: LA"}
+          delta_token_ids:
+          - 11991
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 1
+              name: get_weather
+              arguments: '{"location": "LA"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.3.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.3:
+        description: No tool call (bare text without final channel)
+        ref: derived from TOOLCALLING.batch.3
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: Hello,
+          delta_token_ids:
+          - 13225
+          - 11
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: Hello,
+        - delta_text: ' how can'
+          delta_token_ids:
+          - 1495
+          - 665
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' how can'
+        - delta_text: ' I help'
+          delta_token_ids:
+          - 357
+          - 1652
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' I help'
+        - delta_text: ' you today'
+          delta_token_ids:
+          - 481
+          - 4044
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' you today'
+        - delta_text: '?'
+          delta_token_ids:
+          - 30
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: '?'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.9.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.9.a:
+        description: Empty model text
+        ref: derived from TOOLCALLING.batch.9.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.9.b:
+        description: Blank / whitespace-only model text
+        ref: derived from TOOLCALLING.batch.9.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: '   '
+          delta_token_ids:
+          - 271
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: '   '
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.8.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.8.a:
+        description: Narration before tool call only
+        ref: derived from TOOLCALLING.batch.8.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+          delta_token_ids:
+          - 40
+          - 738
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I will
+        - delta_text: ' check the'
+          delta_token_ids:
+          - 2371
+          - 290
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' check the'
+        - delta_text: ' weather.'
+          delta_token_ids:
+          - 11122
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' weather.'
+        - delta_text: ' <|channel|>'
+          delta_token_ids:
+          - 220
+          - 200005
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: 'I will check the weather. '
+        - delta_text: analysis<|message|>
+          delta_token_ids:
+          - 35644
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: Need to
+          delta_token_ids:
+          - 23483
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: ' use function'
+          delta_token_ids:
+          - 1199
+          - 1114
+          expected:
+            sglang_python: []
+        - delta_text: ' get_weather'
+          delta_token_ids:
+          - 717
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: .<|end|>
+          delta_token_ids:
+          - 13
+          - 200007
+          expected:
+            sglang_python: []
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.8.b:
+        description: Narration after tool call only
+        ref: derived from TOOLCALLING.batch.8.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|channel|>analysis
+          delta_token_ids:
+          - 200005
+          - 35644
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>Need
+          delta_token_ids:
+          - 200008
+          - 23483
+          expected:
+            sglang_python: []
+        - delta_text: ' to use'
+          delta_token_ids:
+          - 316
+          - 1199
+          expected:
+            sglang_python: []
+        - delta_text: ' function get'
+          delta_token_ids:
+          - 1114
+          - 717
+          expected:
+            sglang_python: []
+        - delta_text: _weather.
+          delta_token_ids:
+          - 170154
+          - 13
+          expected:
+            sglang_python: []
+        - delta_text: <|end|><|start|>
+          delta_token_ids:
+          - 200007
+          - 200006
+          expected:
+            sglang_python: []
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: NYC
+          delta_token_ids:
+          - 24202
+          - 34
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: ' Let me'
+          delta_token_ids:
+          - 9024
+          - 668
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' Let me'
+        - delta_text: ' know if'
+          delta_token_ids:
+          - 1761
+          - 538
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' know if'
+        - delta_text: ' you need'
+          delta_token_ids:
+          - 481
+          - 1309
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' you need'
+        - delta_text: ' more.'
+          delta_token_ids:
+          - 945
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' more.'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.8.c:
+        description: Narration both before and after (sandwich)
+        ref: derived from TOOLCALLING.batch.8.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+          delta_token_ids:
+          - 40
+          - 738
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I will
+        - delta_text: ' check the'
+          delta_token_ids:
+          - 2371
+          - 290
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' check the'
+        - delta_text: ' weather.'
+          delta_token_ids:
+          - 11122
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' weather.'
+        - delta_text: ' <|channel|>'
+          delta_token_ids:
+          - 220
+          - 200005
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: 'I will check the weather. '
+        - delta_text: analysis<|message|>
+          delta_token_ids:
+          - 35644
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: Need to
+          delta_token_ids:
+          - 23483
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: ' use function'
+          delta_token_ids:
+          - 1199
+          - 1114
+          expected:
+            sglang_python: []
+        - delta_text: ' get_weather'
+          delta_token_ids:
+          - 717
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: .<|end|>
+          delta_token_ids:
+          - 13
+          - 200007
+          expected:
+            sglang_python: []
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|> Let
+          delta_token_ids:
+          - 200012
+          - 9024
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+          normal_text:
+            sglang_python: ' Let'
+        - delta_text: ' me know'
+          delta_token_ids:
+          - 668
+          - 1761
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' me know'
+        - delta_text: ' if you'
+          delta_token_ids:
+          - 538
+          - 481
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' if you'
+        - delta_text: ' need more'
+          delta_token_ids:
+          - 1309
+          - 945
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' need more'
+        - delta_text: .
+          delta_token_ids:
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: .
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.8.d:
+        description: Narration between multiple tool calls
+        ref: derived from TOOLCALLING.batch.8.d
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: I will
+          delta_token_ids:
+          - 40
+          - 738
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: I will
+        - delta_text: ' check the'
+          delta_token_ids:
+          - 2371
+          - 290
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' check the'
+        - delta_text: ' weather.'
+          delta_token_ids:
+          - 11122
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' weather.'
+        - delta_text: ' <|channel|>'
+          delta_token_ids:
+          - 220
+          - 200005
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: 'I will check the weather. '
+        - delta_text: analysis<|message|>
+          delta_token_ids:
+          - 35644
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: Need to
+          delta_token_ids:
+          - 23483
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: ' use function'
+          delta_token_ids:
+          - 1199
+          - 1114
+          expected:
+            sglang_python: []
+        - delta_text: ' get_weather'
+          delta_token_ids:
+          - 717
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: .<|end|>
+          delta_token_ids:
+          - 13
+          - 200007
+          expected:
+            sglang_python: []
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|> Then
+          delta_token_ids:
+          - 200012
+          - 7801
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+          normal_text:
+            sglang_python: ' Then'
+        - delta_text: ' check LA'
+          delta_token_ids:
+          - 2371
+          - 13120
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' check LA'
+        - delta_text: ' weather.'
+          delta_token_ids:
+          - 11122
+          - 13
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' weather.'
+        - delta_text: ' <|channel|>'
+          delta_token_ids:
+          - 220
+          - 200005
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' '
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: commentary
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' to='
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: functions.get
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: '_weather '
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: LA"}
+          delta_token_ids:
+          - 11991
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.10.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.10:
+        description: Duplicate calls (same name twice)
+        ref: derived from TOOLCALLING.batch.10
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|><|start|>
+          delta_token_ids:
+          - 200012
+          - 200006
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: assistant<|channel|>
+          delta_token_ids:
+          - 173781
+          - 200005
+          expected:
+            sglang_python: []
+        - delta_text: commentary
+          delta_token_ids:
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+        - delta_text: ' to='
+          delta_token_ids:
+          - 316
+          - 28
+          expected:
+            sglang_python: []
+        - delta_text: functions.get
+          delta_token_ids:
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+        - delta_text: '_weather '
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: LA"}
+          delta_token_ids:
+          - 11991
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 1
+              name: get_weather
+              arguments: '{"location": "LA"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.1.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.1:
+        description: Single tool call (basic complete envelope)
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}
+          delta_token_ids:
+          - 34
+          - 18583
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python:
+            - index: 0
+              name: get_weather
+              arguments: '{"location": "NYC"}'
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.50.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.50:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: <|
+        - delta_text: cha
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: cha
+        - delta_text: nnel|
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: nnel|
+        - delta_text: '>commentary'
+          delta_token_ids:
+          - 200005
+          - 12606
+          - 815
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: '>commentary'
+        - delta_text: ' to=functions.get_w'
+          delta_token_ids:
+          - 316
+          - 28
+          - 44580
+          - 775
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ' to=functions.get_w'
+        - delta_text: ea
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: ea
+        - delta_text: the
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: the
+        - delta_text: r <|c
+          delta_token_ids:
+          - 170154
+          - 220
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: r <|c
+        - delta_text: onstrain|>j
+          delta_token_ids:
+          - 200003
+          expected:
+            sglang_python: []
+          normal_text:
+            sglang_python: onstrain|>j
+        - delta_text: son<|message|>{"loc
+          delta_token_ids:
+          - 4108
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: at
+          delta_token_ids: []
+          expected:
+            sglang_python: []
+        - delta_text: ion
+          delta_token_ids:
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C"}<|call|>
+          delta_token_ids:
+          - 34
+          - 18583
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.4.yaml:
+    family: harmony
+    mode: streamv1
+    model_label: gpt-oss (harmony, token-id)
+    cases:
+      TOOLCALLING.streamv1.4.a:
+        description: Channel envelope with garbage body
+        ref: derived from TOOLCALLING.batch.4.a
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: nonse
+          delta_token_ids:
+          - 2878
+          - 5701
+          expected:
+            sglang_python: []
+        - delta_text: nse
+          delta_token_ids:
+          - 540
+          - 722
+          expected:
+            sglang_python: []
+        - delta_text: <|call|>
+          delta_token_ids:
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.4.b:
+        description: Unterminated JSON in message body
+        ref: derived from TOOLCALLING.batch.4.b
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: ary to
+          delta_token_ids:
+          - 815
+          - 316
+          expected:
+            sglang_python: []
+        - delta_text: =functions
+          delta_token_ids:
+          - 28
+          - 44580
+          expected:
+            sglang_python: []
+        - delta_text: .get_weather
+          delta_token_ids:
+          - 775
+          - 170154
+          expected:
+            sglang_python: []
+        - delta_text: ' <|constrain|>'
+          delta_token_ids:
+          - 220
+          - 200003
+          expected:
+            sglang_python: []
+        - delta_text: json<|message|>
+          delta_token_ids:
+          - 4108
+          - 200008
+          expected:
+            sglang_python: []
+        - delta_text: '{"location'
+          delta_token_ids:
+          - 10848
+          - 7693
+          expected:
+            sglang_python: []
+        - delta_text: '":"NY'
+          delta_token_ids:
+          - 7534
+          - 24202
+          expected:
+            sglang_python: []
+        - delta_text: C<|call|>
+          delta_token_ids:
+          - 34
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: tool_calls
+          expected:
+            sglang_python: []
+      TOOLCALLING.streamv1.4.c:
+        description: No to=functions.X recipient
+        ref: derived from TOOLCALLING.batch.4.c
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        chunks:
+        - delta_text: <|start|>assistant
+          delta_token_ids:
+          - 200006
+          - 173781
+          expected:
+            sglang_python: []
+        - delta_text: <|channel|>comment
+          delta_token_ids:
+          - 200005
+          - 12606
+          expected:
+            sglang_python: []
+        - delta_text: 'ary '
+          delta_token_ids:
+          - 815
+          - 220
+          expected:
+            sglang_python: []
+        - delta_text: <|constrain|>json
+          delta_token_ids:
+          - 200003
+          - 4108
+          expected:
+            sglang_python: []
+        - delta_text: <|message|>{"
+          delta_token_ids:
+          - 200008
+          - 10848
+          expected:
+            sglang_python: []
+        - delta_text: location":"
+          delta_token_ids:
+          - 7693
+          - 7534
+          expected:
+            sglang_python: []
+        - delta_text: NYC
+          delta_token_ids:
+          - 24202
+          - 34
+          expected:
+            sglang_python: []
+        - delta_text: '"}<|call|>'
+          delta_token_ids:
+          - 18583
+          - 200012
+          expected:
+            sglang_python: []
+        - delta_text: ''
+          delta_token_ids: []
+          finish_reason: stop
+          expected:
+            sglang_python: []
+    captured_with:
+      sglang_python: 0.5.12.post1
+  TOOLCALLING.streamv1.7-6.yaml:
+    family: harmony
+    mode: streamv1
+    cases:
+      TOOLCALLING.streamv1.7-6:
+        description: 'Nested object unions: select the unique object branch of anyOf and oneOf to type integer and boolean members. Preserve scalar string/object children, nullable object null, and real nested objects. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.

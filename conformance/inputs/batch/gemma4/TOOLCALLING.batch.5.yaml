@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: gemma4
+mode: batch
+cases:
+  TOOLCALLING.batch.5.a:
+    description: Missing <tool_call|> end marker
+    ref: dynamo
+    model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.5.b:
+    description: Closing <tool_call|> without matching <|tool_call> open
+    ref: dynamo
+    model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.c:
+    description: Truncation mid-argument value
+    ref: dynamo
+    model_text: <|tool_call>call:get_weather{location:<|"|>N
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.d:
+    description: Multi-call, last call missing only end marker (body complete)
+    ref: dynamo
+    model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.e:
+    description: Multi-call, last call truncated mid-arg-value
+    ref: dynamo
+    model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.f:
+    description: Bare valid call before a complete wrapped call
+    ref: dynamo
+    model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+    tools:
+    - *id001
+  TOOLCALLING.batch.5.g:
+    description: Closing <tool_call|> without matching <|tool_call> open after prefix prose
+    ref: dynamo
+    model_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+    tools:
+    - *id001

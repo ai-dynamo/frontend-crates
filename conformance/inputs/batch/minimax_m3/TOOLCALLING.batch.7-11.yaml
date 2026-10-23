@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+mode: batch
+cases:
+  TOOLCALLING.batch.7-11:
+    description: 'URI-encoded reference: #/$defs/postal%20code resolves the postal code definition, so postal_code becomes an integer. Constructed native MiniMax M3 regression probe for PR #273; not captured model output.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/273
+    tools:
+    - name: get_address
+      parameters:
+        type: object
+        $defs:
+          postal code:
+            type: integer
+        properties:
+          postal_code:
+            $ref: '#/$defs/postal%20code'
+      strict: true
+    golden:
+      normal_text: ''
+      calls:
+      - name: get_address
+        arguments:
+          postal_code: 18956
+    model_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_address">]<]minimax[>[<postal_code>18956]<]minimax[>[</postal_code>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'

@@ -1,0 +1,729 @@
+schema_version: 1
+surface: batch-on-stream
+family: minimax_m3
+implementation: sglang_python
+version: 0.5.14
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.2.yaml
+  size: 1961
+  sha256: 2f6f571fc0cdb3c2b0227be9f9d50484bb37008fdb71241e31a51f1ead2e45de
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.4.yaml
+  size: 1017
+  sha256: dc8e806df9ee4a2fdc7dd5242c8962267c61183d3716dde8963fd14c113bc008
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.6.yaml
+  size: 930
+  sha256: 4fcca2c8698525deb5562d686c9eb2427266c5de95dd62c33b87d59927828b86
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-10.yaml
+  size: 498
+  sha256: 6221c3385bd3f8f74c8236ad21d251e318cf3352d68830d050983325de06c594
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-11.yaml
+  size: 233
+  sha256: 1286595cae44c405f2d86c7342f71d04b4906cb37fc93ba28264e41a52e75886
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-4.yaml
+  size: 254
+  sha256: 8de5128e6bd9afab9a08cbcebbb2f712e7a1668d3eeb6923c522e3ce12344fdf
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-6.yaml
+  size: 732
+  sha256: f5d402f03deabb08b18d67a85b8fb57367a9d5383f6d78a6f1f231ac24396045
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-7.yaml
+  size: 372
+  sha256: 95a04bf143a9a273796c5175c874b5737551f47e9897a9caabb5ca78a405c13f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-8.yaml
+  size: 302
+  sha256: b3ea23f2517c3b17fc876917294fb0c250838e131a3c73d251adedf87f731ddb
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-9.yaml
+  size: 239
+  sha256: 386462c7c8686193c03a22f5d74b403782e46a5058e76f0b0ee4869fb22d02cf
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7-null.yaml
+  size: 2189
+  sha256: 6d32489f0bc01961535dbab497fd7b86c2ee0d86216d0fba7de6179b911327ad
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7.schema.yaml
+  size: 19268
+  sha256: 81ab9316f81eeda11bddf523c964d891083c55098e72c41ffff7f2bf4b2b4fb4
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.7.yaml
+  size: 3667
+  sha256: dc46438feb26842b3500626a602535b4ddc7b332d66c2d3847fc08b725cf4089
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.8.yaml
+  size: 1737
+  sha256: 381024df2a85f41c7a2d0ef71de4b9c19cfd05b52e3f1dba93b2bbba7a9c9b0a
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/minimax_m3/TOOLCALLING.batch.yaml
+  size: 5850
+  sha256: df82aa369d95bc2aee365f2e9d7bc3a4f42662da3071dca508135b0ccdb3f2ae
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.6.a:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.6.b:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.6.c:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          unavailable: Capture did not return this case.
+  TOOLCALLING.batch.8.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.8.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.8.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.8.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.8.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: Capture did not return this case.
+  TOOLCALLING.batch.7.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.7.a:
+        dynamo_v2:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: '2'
+              first_class: 'true'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central" & west
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō &quot;central&quot; &amp; west
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.c:
+        dynamo_v2:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: twenty
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: twenty
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.d:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+                item:
+                - '1'
+                - '2'
+                - '3'
+              config:
+                nested: 'true'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.e:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                  item:
+                  - name: west
+                    scores:
+                      item:
+                      - '1'
+                      - '2'
+                      - '3'
+                  - name: east
+                    scores:
+                      item:
+                      - '4'
+                      - '5'
+                      - '6'
+                flags:
+                  enabled: 'true'
+                  retry: null
+                empty: ''
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.f:
+        dynamo_v2:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: '9007199254740993'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.7.m:
+        dynamo_v2:
+          calls:
+          - name: view_file
+            arguments:
+              path: src/main.rs
+              view_range:
+              - 1
+              - 50
+              filter:
+                name: src
+                depth: 2
+          normal_text: ''
+      TOOLCALLING.batch.7.n:
+        dynamo_v2:
+          calls:
+          - name: format_rows
+            arguments:
+              options:
+                sep: '  '
+                prefix: '  - '
+              cells:
+              - ' a b '
+              - '
+
+                '
+          normal_text: ''
+  TOOLCALLING.batch.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.1:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.3:
+        dynamo_v2:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+            ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+            ]<]minimax[>[</invoke>
+
+            ]<]minimax[>[</tool_call>'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.e:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.f:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: '
+
+            '
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ']<]minimax[>[<invoke name="get_weather">
+
+            ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+            ]<]minimax[>[</invoke>
+
+            ]<]minimax[>[</tool_call>
+
+            '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.5.g:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+        vllm_python:
+          calls: []
+          normal_text: 'I will check that. ]<]minimax[>[<invoke name="get_weather">
+
+            ]<]minimax[>[<location>NYC]<]minimax[>[</location>
+
+            ]<]minimax[>[</invoke>
+
+            ]<]minimax[>[</tool_call>'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.9.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.9.b:
+        dynamo_v2:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+          normal_text: '   '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.10:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.13:
+        dynamo_v2:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.13.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: unknown_tool
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: unknown_tool
+            arguments:
+              location: LA
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.13.a:
+        dynamo_v2:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+        sglang_python:
+          unavailable: Capture did not return this case.
+  TOOLCALLING.batch.2.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.2.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.2.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.2.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both: '
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.2.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          unavailable: Capture did not return this case.
+  TOOLCALLING.batch.4.yaml:
+    family: minimax_m3
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+    cases:
+      TOOLCALLING.batch.4.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.4.b:
+        dynamo_v2:
+          calls:
+          - name: configure
+            arguments:
+              settings: '{"mode": "fast"'
+          normal_text: ''
+        vllm_python:
+          calls:
+          - name: configure
+            arguments:
+              settings: '{"mode": "fast"'
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.4.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: Capture did not return this case.
+      TOOLCALLING.batch.4.d:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: Capture did not return this case.

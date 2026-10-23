@@ -1,0 +1,761 @@
+schema_version: 1
+surface: batch-on-stream
+family: harmony
+implementation: sglang_python
+version: 0.5.14
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.2.yaml
+  size: 2251
+  sha256: b17c560238507c21065ab71e39820dc0803dc8f4b4428236eb43f55d3aa62c47
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.4.yaml
+  size: 1886
+  sha256: 4fa6139530dabef66f61c76d10d907d4745b7e3020ff333c19abc9ea67fa033e
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.5.yaml
+  size: 2314
+  sha256: 291eecde19fd7adc7a928a33349ca0db58f12e5b4bc373dcc60280473b3cf65c
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.6.yaml
+  size: 1172
+  sha256: 16bc5d42e4173dad7fc4b7851164e5e27c01e893618bbc60f8829023041c0080
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.7.schema.yaml
+  size: 19276
+  sha256: 2c8792b7421586d4fee823f25909a255c10439f2f9e9d77d1945d3bfb3de2c78
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.7.yaml
+  size: 4268
+  sha256: 34e93bfbdc20bf9d6115108c5e56fca5b966aceed694114d3e322000c27df2bd
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.8.yaml
+  size: 2214
+  sha256: 058e9da3bc423355a91a9b593a43a3f58e24ea9b99135158a7664d519fa490e6
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/harmony/TOOLCALLING.batch.yaml
+  size: 3180
+  sha256: 7efea8f5dc8e5cf87387789246674fd09186f73796c376211e1436b3142f3a5b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.6.a:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+      TOOLCALLING.batch.6.b:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_time
+            arguments: {}
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+      TOOLCALLING.batch.6.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.8.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+      TOOLCALLING.batch.8.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+      TOOLCALLING.batch.8.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather.  Then check LA weather. '
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather.  Then check LA weather. '
+  TOOLCALLING.batch.7.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.7.a:
+        dynamo_v2:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+      TOOLCALLING.batch.7.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō "central"
+          normal_text: ''
+      TOOLCALLING.batch.7.c:
+        dynamo_v2:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+      TOOLCALLING.batch.7.d:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+      TOOLCALLING.batch.7.e:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+      TOOLCALLING.batch.7.f:
+        dynamo_v2:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.5.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.5.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+      TOOLCALLING.batch.5.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"loc'
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.5.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+  TOOLCALLING.batch.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.1:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+      TOOLCALLING.batch.3:
+        dynamo_v2:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.9.b:
+        dynamo_v2:
+          calls: []
+          normal_text: '   '
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+      TOOLCALLING.batch.30:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.31:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.13:
+        dynamo_v2:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.2.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.2.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+      TOOLCALLING.batch.2.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+      TOOLCALLING.batch.2.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+      TOOLCALLING.batch.2.b:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.yaml:
+    family: harmony
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.4.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments: nonsense
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: not json at all
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.4.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments: '{"location":"NYC'
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls:
+          - name: get_weather
+            arguments: '{"location":"NYC'
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.4.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: ''
+      TOOLCALLING.batch.4.d:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No vLLM Rust parser for family 'harmony'.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

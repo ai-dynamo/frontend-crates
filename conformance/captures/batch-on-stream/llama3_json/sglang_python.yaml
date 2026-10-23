@@ -1,0 +1,483 @@
+schema_version: 1
+surface: batch-on-stream
+family: llama3_json
+implementation: sglang_python
+version: 0.5.14
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.2.yaml
+  size: 1597
+  sha256: c2ac550fa356a08ca621f3c8e93d809012b8860b08773f4cdfa078ade618de06
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.4.yaml
+  size: 1512
+  sha256: ba604bb1232835d3b1278ddd8327b450e7e1dc883c5c16b36fad87204e3aa39c
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.5.yaml
+  size: 2314
+  sha256: 8e175dd738e6d110e1fdbe358542fca182f5923d0bce0e4c27e4a2695c44cde3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.6.yaml
+  size: 903
+  sha256: 50f17ea90af428ca8dca24f3edef5cfaff972f6d4144a573b0ba3edee610620b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.7.yaml
+  size: 2063
+  sha256: cde15164127c3010b82048e327a85d9ece6b2b1f093fccad6aa386784fbab44b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.8.yaml
+  size: 2035
+  sha256: 6e897a67c2661a518f6036b42bd5d96dc1b09d58d389d3b8a789fae606f52e5d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/llama3_json/TOOLCALLING.batch.yaml
+  size: 3570
+  sha256: 95d601830309728fbb1edd7bb04109382aab823ed64dfa24b8781dd3f1e22881
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.6.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_time", "arguments": {}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_time", "arguments": { }}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_time"}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+  TOOLCALLING.batch.8.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.8.a:
+        vllm_rust:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.c:
+        vllm_rust:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Let me know if you need more.'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.8.d:
+        vllm_rust:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Then check LA weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "LA"}}'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}} Then check LA weather. <|python_tag|>{"name": "get_weather", "arguments": {"location": "LA"}}'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+  TOOLCALLING.batch.7.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.7.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "book_flight", "arguments": {"destination": "Paris", "passengers": 2, "first_class": true}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments: {}
+      TOOLCALLING.batch.7.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "Tōkyō \"central\""}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.7.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "set_temperature", "arguments": {"celsius": "20"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments: {}
+      TOOLCALLING.batch.7.d:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "process_data", "arguments": {"items": [1,2,3], "config": {"nested": true}}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.e:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "process_data", "arguments": {"payload": {"regions": [{"name": "west", "scores": [1, 2, 3]}, {"name": "east", "scores": [4, 5, 6]}], "flags": {"enabled": true, "retry": null}, "empty": {}}}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments: {}
+      TOOLCALLING.batch.7.f:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "set_limit", "arguments": {"count": 9007199254740993}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments: {}
+  TOOLCALLING.batch.5.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.5.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"loc'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.d:
+        vllm_rust:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York"}'
+        vllm_python:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York"}'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.e:
+        vllm_rust:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York'
+        vllm_python:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!<|python_tag|>{"name": "get_weather", "arguments": {"location": "Boston"}};{"name": "get_weather", "arguments": {"location": "New York'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.1:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.3:
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.9.b:
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+          normal_text: '   '
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_weather", "arguments": {"location": "LA"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.30.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "run_query", "arguments": {"sql": "SELECT a; SELECT b"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments: {}
+      TOOLCALLING.batch.30.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments: {}
+      TOOLCALLING.batch.30.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "run_query", "arguments": {"sql": "literal <|python_tag marker|>{name:x} stays text"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments: {}
+      TOOLCALLING.batch.31.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "run_query", "arguments": {"sql": "SELECT a; SELECT b"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments: {}
+      TOOLCALLING.batch.31.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "run_query", "arguments": {"sql": "SELECT value WHERE note has brace } and bracket ]"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments: {}
+      TOOLCALLING.batch.13.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "unknown_tool", "arguments": {"location": "NYC"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "unknown_tool", "arguments": {"location": "LA"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+  TOOLCALLING.batch.2.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.2.a:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.c:
+        vllm_rust:
+          calls: []
+          normal_text: 'Both: <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}} Done.'
+        vllm_python:
+          calls: []
+          normal_text: 'Both: <|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}} Done.'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.d:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_weather", "arguments": {"location": "LA"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.2.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.4.yaml:
+    family: llama3_json
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.4.a:
+        vllm_rust:
+          calls: []
+          normal_text: <|python_tag|>not even json
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.c:
+        vllm_rust:
+          calls: []
+          normal_text: '<|python_tag|>{"arguments": {"location": "NYC"}}'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Llama JSON
+
+            expected `parameters`'
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.d:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

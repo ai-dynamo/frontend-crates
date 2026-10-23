@@ -1,0 +1,35 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+import assert from 'node:assert/strict';
+import { SelectionLoader } from './selection.js';
+const pending = [], paints = [], states = [];
+const loader = new SelectionLoader({ build: (tab, selection) => new Promise((resolve, reject) => pending.push({ tab, selection, resolve, reject })), paint: (tab, model) => paints.push([tab, model]), state: (...args) => states.push(args) });
+const old = loader.select('tab-a', { reference: 'old', selected: ['old'] });
+const newer = loader.select('tab-a', { reference: 'new', selected: ['new', 'peer'] });
+pending[1].resolve('new-model'); await newer;
+pending[0].resolve('old-model'); await old;
+assert.deepEqual(paints, [['tab-a', 'new-model']]);
+const abandoned = loader.select('tab-a', { selected: ['slow'] });
+const active = loader.select('tab-b', { selected: [] });
+pending[3].resolve('empty-reference-model'); await active;
+pending[2].reject(new Error('old load failed')); await abandoned;
+assert.equal(states.filter(([, state]) => state === 'error').length, 0);
+assert.deepEqual(paints.at(-1), ['tab-b', 'empty-reference-model']);
+const failed = loader.select('tab-b', { selected: ['missing'] });
+pending[4].reject(new Error('transport')); await failed;
+assert.equal(states.at(-1)[1], 'error');
+const retry = loader.select('tab-b', { selected: ['missing'] });
+pending[5].resolve('recovered'); await retry;
+assert.deepEqual(paints.at(-1), ['tab-b', 'recovered']);
+const obsolete = loader.select('tab-b', { selected: ['obsolete'] });
+const latestSelection = { reference: null, selected: ['latest'] };
+const latest = loader.select('tab-b', latestSelection);
+const loadingState = states.at(-1);
+assert.equal(loadingState[1], 'loading');
+assert.equal(loadingState[3], latestSelection);
+pending[6].reject(new Error('obsolete failure during current load')); await obsolete;
+assert.equal(states.at(-1), loadingState, 'stale failures must not replace the current loading notice');
+assert.deepEqual(paints.at(-1), ['tab-b', 'recovered'], 'the displayed model remains until replacement succeeds');
+pending[7].resolve('latest-model'); await latest;
+assert.deepEqual(paints.at(-1), ['tab-b', 'latest-model']);
+console.log('Selection generations reject stale paints and failures; empty Reference and Retry recover');
