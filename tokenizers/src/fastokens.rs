@@ -518,7 +518,6 @@ mod tiktoken_parity_tests {
 
     #[test]
     fn non_special_added_tokens_survive_skip_special_tokens() {
-        // The mock model plus one Kimi-style format marker marked `"special": false`.
         let source = Path::new(TIKTOKEN_PATH).parent().unwrap();
         let dir = tempfile::tempdir().unwrap();
         for file in ["tiktoken.model", "config.json"] {

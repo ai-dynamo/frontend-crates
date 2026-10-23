@@ -611,11 +611,9 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
 
-        // Non-special added tokens still encode as one unit.
         let encoding = tokenizer.encode("<|open|>hello").unwrap();
         assert_eq!(encoding.token_ids(), &[22, 19]);
 
-        // Only tokens marked special, plus reserved placeholders, are reported and skipped.
         let special_ids = tokenizer.special_token_ids().unwrap();
         assert!(special_ids.contains(&21));
         assert!(special_ids.contains(&24), "reserved placeholder");
@@ -635,7 +633,6 @@ mod tests {
         let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
         let tokenizer_arc: Arc<dyn crate::traits::Tokenizer> = Arc::new(tokenizer);
 
-        // A reply that opens with a format marker shows it on the first step.
         let mut stream = DecodeStream::new(tokenizer_arc, &[19], true);
         assert_eq!(stream.step(22).unwrap().as_deref(), Some("<|open|>"));
         assert_eq!(stream.step(19).unwrap().as_deref(), Some("hello"));
