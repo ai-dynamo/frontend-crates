@@ -31,7 +31,9 @@ def rendered_page(tmp_path_factory) -> Path:
     out = tmp_path_factory.mktemp("render") / "CONFORMANCE_v2.html"
     if "CONFORMANCE_REPORT_HTML" in os.environ:
         # CI supplies the canonical report from the render job to avoid rendering it twice.
-        shutil.copyfile(os.environ["CONFORMANCE_REPORT_HTML"], out)
+        report_html = Path(os.environ["CONFORMANCE_REPORT_HTML"])
+        shutil.copyfile(report_html, out)
+        shutil.copyfile(report_html.with_suffix(".json"), out.with_suffix(".json"))
     else:
         subprocess.run(
             [str(UTILS / "render_table_v2.sh"), "--output", str(out)],
