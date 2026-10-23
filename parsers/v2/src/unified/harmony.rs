@@ -758,7 +758,6 @@ impl HarmonyRuntime {
         };
         if text.starts_with(|ch: char| ch.is_alphanumeric() || ch == '_')
             || text.trim_start().starts_with("to=")
-            || text.trim_start().starts_with(FORMAT)
         {
             return Ok(());
         }
@@ -767,6 +766,10 @@ impl HarmonyRuntime {
             .find_map(|marker| text.strip_suffix(marker))
         {
             text = prefix;
+        }
+        // Embedded controls make an unfinished header unsafe to recover as visible text.
+        if CONTROL_MARKERS.iter().any(|marker| text.contains(marker)) {
+            return Ok(());
         }
         output.push_text(text);
         Ok(())
@@ -1538,6 +1541,16 @@ mod tests {
             ("<|start|>assistant<|channel|>final\t<|constrain|>json", ""),
             ("<|start|>assistant<|channel|>final\n<|constrain|>json", ""),
             ("<|start|>assistant<|channel|>final  <|constrain|>json", ""),
+            (
+                "<|start|>assistant<|channel|>final<|channel|>analysis private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final safe<|end|>private", ""),
+            (
+                "<|start|>assistant<|channel|>final safe<|return|>private",
+                "",
+            ),
+            ("<|start|>assistant<|channel|>final safe<|call|>private", ""),
         ] {
             let input = format!("{reasoning}{tail}");
             let mut expected = vec![UnifiedEvent::Reasoning {
