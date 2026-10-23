@@ -4941,15 +4941,7 @@ cases:
     display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids: []
     request:
-      input: '</think><think>before <function=f>
-
-        <parameter=x>
-
-        é🙂<par{value}
-
-        </parameter>
-
-        </function> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      input: "</think><think>before <function=f>\n<parameter=x>\né\U0001F642<par{value}\n</parameter>\n</function> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -5007,9 +4999,7 @@ cases:
 
           '
       - delta_text: <parameter=x>
-      - delta_text: '
-
-          é🙂'
+      - delta_text: "\né\U0001F642"
       - delta_text: '<par{value}
 
           </parameter>'

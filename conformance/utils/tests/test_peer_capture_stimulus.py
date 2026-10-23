@@ -20,7 +20,6 @@ import capture_stimulus
 import capture_peer_versions
 import explode_unified_fixtures as explode
 import gen_unified_golden as generator
-import generate_conformance_table as table
 import package_fixtures
 from unified_tools import unified_tools
 
@@ -45,7 +44,7 @@ def producer(request, monkeypatch, tmp_path):
         def __init__(self, *args, **kwargs):
             calls.append(("parser_init", kwargs))
 
-        def parse(self, text, request, enable_auto_tools=False):
+        def parse(self, text, request, enable_auto_tools=False, model_output_token_ids=()):
             calls.append(("batch", text))
             return None, text, []
 
@@ -156,22 +155,12 @@ def test_fresh_peer_capture_binds_actual_input_and_remains_comparable(producer, 
         path = tmp_path / directory / "gemma4/UNIFIED.3-text_only.yaml"
         path.parent.mkdir(parents=True)
         path.write_text(yaml.safe_dump({"family": "gemma4", "cases": {"UNIFIED.3-text_only": value}}))
-    monkeypatch.setattr(table, "_unified_base", lambda _root: tmp_path)
-    monkeypatch.setattr(table, "_unified_dynamo_label", lambda: "missing-source")
-    monkeypatch.setattr(generator, "CLEAN", [row for row in generator.CLEAN if row[0] == "text_only"])
-    monkeypatch.setattr(generator, "EDGE", [])
-    model = table._unified_tab_model(tmp_path, {})
-    cell = model["rows"][0]["cells"]["text_only"]
-    key = {"vllm_python": "vllm", "vllm_rust": "vllm_rust", "sglang_python": "sglang"}[engine]
-    blocks = {candidate["key"]: candidate["block"] for candidate in cell["tooltip"]["candidates"]}
-    if key in blocks:
-        assert blocks[key]["verdict"] == "MATCH"
-        assert blocks[key]["events"] == events
+    if engine == "sglang_python":
+        assert [chunk["expected"] for chunk in record["chunks"]] == [events]
     else:
-        assert engine == "sglang_python"
-        cases, caps, _versions = table._load_unified_fixtures(tmp_path)
-        assert "unavailable" not in caps[engine][cases[0]["id"]]
-        assert caps[engine][cases[0]["id"]]["chunks"] == [events]
+        assert record["assembled"] == events
+    capture_directory = tmp_path / f"{engine}-{version}"
+    assert capture_stimulus.validate_current_capture(capture_directory, [tmp_path / "inputs"]) == 1
 
 
 def test_stream_recapture_can_force_an_unchanged_result_into_the_patch():
@@ -577,6 +566,27 @@ def test_vllm_reasoning_close_ids_appear_only_when_each_split_marker_completes(p
     assert opening[1:] == closing[1:]
 
 
+def test_vllm_engine_token_spans_are_reversible_and_stable_at_every_text_split(producer):
+    engine, _run, _calls = producer
+    if engine != "vllm_python":
+        pytest.skip("vLLM token engine stimulus")
+    adapter = sys.modules["capture_vllm_unified"]
+    for family, markers in adapter.VLLM_TOKENIZER_MARKERS.items():
+        tokenizer = adapter.StubTokenizer(family)
+        for marker in markers:
+            assert tokenizer.decode(tokenizer.encode(marker)) == marker
+    for text in ("plain 尾", "<think>reason</think>answer", "<think>r</think><think>x</think>尾", "<thi"):
+        tokenizer = adapter.StubTokenizer("qwen3")
+        tokenizer.bind_input(text, marker_at_start=True)
+        whole = tokenizer.generated_ids("", text)
+        assert tokenizer.decode(whole) == text
+        for split in range(len(text) + 1):
+            prefix = text[:split]
+            ids = tokenizer.generated_ids("", prefix) + tokenizer.generated_ids(prefix, text)
+            assert ids == whole
+            assert tokenizer.decode(ids) == text
+
+
 def test_tools_capability_alone_binds_the_executed_request_schema():
     case = _case(tools=[{"name": "custom", "parameters": {"type": "object"}}])
     result = capture_stimulus.capture_peer_results(
@@ -585,3 +595,27 @@ def test_tools_capability_alone_binds_the_executed_request_schema():
         tools=unified_tools(), supports_tools=True,
     )[case["id"]]
     assert result["capture_input"]["tools"] == case["tools"]
+
+
+@pytest.mark.parametrize("failure", [ImportError("dependency sentinel"), ModuleNotFoundError("dependency sentinel"), ValueError("parser sentinel")])
+def test_lazy_dependency_failures_propagate_but_parser_failures_remain_observations(producer, monkeypatch, failure):
+    engine, run, _calls = producer
+    if engine == "vllm_rust":
+        pytest.skip("Python stream supervisor boundary")
+    adapter = sys.modules["capture_vllm_unified" if engine == "vllm_python" else "capture_sglang_unified"]
+
+    def fail(*_args, **_kwargs):
+        raise failure
+
+    if engine == "sglang_python":
+        monkeypatch.setattr(adapter, "_stream_chunks", fail)
+    else:
+        class FailingParser:
+            def __init__(self, *_args, **_kwargs):
+                raise failure
+        monkeypatch.setattr(adapter, "_PARSER_FACTORY", lambda **_kwargs: FailingParser)
+    if isinstance(failure, ImportError):
+        with pytest.raises(ImportError, match="dependency sentinel"):
+            run(_case())
+    else:
+        assert "ValueError: parser sentinel" in run(_case())["error"]

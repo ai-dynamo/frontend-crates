@@ -28,7 +28,7 @@ TOOLS="$ROOT/conformance/utils/src"
 # pinning a different snapshot race to repoint that symlink, so a render could read
 # an older snapshot mid-flight (e.g. one missing dynamo_v2-0.1.22). Reading the
 # pinned snapshot dir directly is immune to that race.
-FIXTURES_SNAP=$(python3 "$TOOLS/extract_fixtures.py" 2>/dev/null | tail -1)
+FIXTURES_SNAP=$(python3 "$TOOLS/extract_fixtures.py" --legacy-only)
 if [ -z "$FIXTURES_SNAP" ] || [ ! -d "$FIXTURES_SNAP/toolcalling" ]; then
   echo "[conformance] extract_fixtures.py did not return a usable immutable snapshot" >&2
   exit 1
@@ -37,8 +37,6 @@ else
 fi
 # Export so cargo test subprocesses read the same pinned snapshot.
 export CONFORMANCE_FIXTURES_ROOT="$FIXTURES_ROOT"
-# Ephemeral build tree stays at conformance/utils/.stage (UTILS), not inside src/,
-# so CI and .gitignore find it where they always have.
 if [ -z "${STAGE:-}" ]; then
   STAGE=$(mktemp -d /tmp/frontend-crates-conformance-stage.XXXXXX)
   export STAGE
@@ -58,42 +56,24 @@ _build_stage_base() {
   # contexts. The tests/parity/ subtree below stays the fixture + template layout the
   # generator's path constants and relative-link resolution are written against.
   \cp -Rf "$TOOLS/tables" "$STAGE/tables"
-  # Family marker declarations (DIS-2442): the staged tests/parity/markup.py resolves
-  # its registry at <stage-root>/src/parser_families.yaml, mirroring the repo layout.
+  # Capture metadata resolves the grammar registry relative to the stage root.
   mkdir -p "$STAGE/src"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/src/parser_families.yaml"
   \cp -f "$TOOLS/parser_families.yaml" "$STAGE/parser_families.yaml"
-  # Static CSS/JS inlined into the conformance page at render time (the renderer
-  # reads tests/parity/assets/*). The compare-bar/coloring logic lives in one place.
-  mkdir -p "$STAGE/tests/parity/assets"
-  \cp -f "$TOOLS/assets/conformance.css" "$STAGE/tests/parity/assets/conformance.css"
-  \cp -f "$TOOLS/assets/conformance.js" "$STAGE/tests/parity/assets/conformance.js"
-  \cp -f "$TOOLS/assets/comparison_layout.js" "$STAGE/tests/parity/assets/comparison_layout.js"
-  # Markup colorizer (port of markup.py); inlined before conformance_view.js.
-  \cp -f "$TOOLS/assets/colorize.js" "$STAGE/tests/parity/assets/colorize.js"
-  # JSON data model + JS view: model.py builds it (imported via reasoning_table),
-  # conformance_view.js renders it.
-  \cp -f "$TOOLS/model.py" "$STAGE/tests/parity/model.py"
-  # markers.py (comparison/facts semantics) + impls.py (identity) are the single
-  # source the tables import instead of forking their own comparison copies.
-  # yaml_fast.py is the one place PyYAML gets routed through libyaml; the staged
-  # generator imports it by name, so it has to sit beside it in tests/parity/.
+  # Capture adapters share implementation identities and the grammar registry.
   \cp -f "$TOOLS/yaml_fast.py" "$STAGE/tests/parity/yaml_fast.py"
   \cp -f "$TOOLS/impls.py" "$STAGE/tests/parity/impls.py"
   \cp -f "$TOOLS/markers.py" "$STAGE/tests/parity/markers.py"
   \cp -f "$TOOLS/null_cases.py" "$STAGE/tests/parity/null_cases.py"
   \cp -f "$TOOLS/schema_cases.py" "$STAGE/tests/parity/schema_cases.py"
   \cp -f "$TOOLS/glm47_schema_cases.json" "$STAGE/tests/parity/glm47_schema_cases.json"
-  \cp -f "$TOOLS/case_variants.py" "$STAGE/tests/parity/case_variants.py"
   \cp -f "$TOOLS/unified_taxonomy.py" "$STAGE/tests/parity/unified_taxonomy.py"
   \cp -f "$TOOLS/unified_tools.py" "$STAGE/tests/parity/unified_tools.py"
   \cp -f "$TOOLS/unified_tools.json" "$STAGE/tests/parity/unified_tools.json"
   \cp -f "$TOOLS/gen_unified_golden.py" "$STAGE/tests/parity/gen_unified_golden.py"
   \cp -f "$TOOLS/unified_parallel_boundary_cases.json" "$STAGE/tests/parity/unified_parallel_boundary_cases.json"
-  # The generator preserves published requests from the canonical family YAML.
+  # The generator preserves requests from canonical family YAML.
   ln -s "$ROOT/conformance/fixtures-unified-v2" "$STAGE/fixtures-unified-v2"
-  [ -f "$TOOLS/assets/conformance_view.js" ] && \
-    \cp -f "$TOOLS/assets/conformance_view.js" "$STAGE/tests/parity/assets/conformance_view.js" || true
   # Reasoning fixtures are resolved (at the pinned peer versions) by
   # build_stage_conformance — not here in the shared base.
   # Recorded Dynamo parser v2 stream-on-batch fixture overlay.
@@ -182,17 +162,11 @@ _copy_toolcalling_v2_fixtures() {
 
 build_stage_conformance() {
   _build_stage_base
-  # Keep the current conformance harness owned by conformance/utils while presenting
-  # it in Dynamo's staged tests/parity layout for imports and template lookup.
-  \cp -f "$TOOLS/generate_conformance_table.py" "$STAGE/tests/parity/generate_conformance_table.py"
   \cp -f "$ROOT/conformance/case-taxonomy.yaml" "$STAGE/case-taxonomy.yaml"
   # impls.py + markers.py are staged in _build_stage_base.
-  \cp -f "$TOOLS/fixtures.py" "$STAGE/tests/parity/fixtures.py"
   \cp -f "$TOOLS/fixture_snapshot.py" "$STAGE/tests/parity/fixture_snapshot.py"
   \cp -f "$TOOLS/fixture_disposition.py" "$STAGE/tests/parity/fixture_disposition.py"
   \cp -f "$TOOLS/capture_stimulus.py" "$STAGE/tests/parity/capture_stimulus.py"
-  \cp -f "$TOOLS/conformance_table.html.j2" "$STAGE/tests/parity/conformance_table.html.j2"
-  # Shared CSS/JS assets are staged in _build_stage_base.
   _copy_toolcalling_v2_fixtures
   # Current page: reasoning shows the pinned NEW peer versions, in sync with the v2
   # toolcalling tab (both compare against the current engines).

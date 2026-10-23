@@ -1,14 +1,16 @@
 # Conformance/Utils
 
-This directory is for checking parser behavior and generating the Unified comparison report. By default `render_table_v2.sh` writes `conformance/CONFORMANCE_v2.html`, but you can write another file such as `index.html`.
+**Warning:** [Deleting a source capture named by a retained snapshot's `member` breaks source identity](../README.md#safe-pruning-of-unified-history). Keep every referenced source capture available.
 
-For Unified capture publication, follow [the plain-version YAML contract](../README.md#unified-storage-contract-plain-versioned-yaml-only). This migration applies only to Unified. Keep the existing archive storage for the older tool-calling stream, batch-on-stream, batch, and reasoning tests.
+This directory contains parser checks, fixture tooling, and the browser viewer's catalog builder. Serve the checkout over HTTP and open the root `index.html` to inspect active fixtures. `viewer_catalog.py` refreshes or checks the resource index; it does not extract captures or precompute comparison cells. The frozen #385 Python oracle lives outside the production tree for migration comparisons.
+
+For Unified capture publication, follow [the recent-YAML and engine/version archive contract](../README.md#unified-source-format-recent-yaml-and-engineversion-archives). This migration applies only to Unified. Keep the existing archive storage for the older tool-calling stream, batch-on-stream, batch, and reasoning tests.
 
 Most work has three steps:
 
 1. Verify parser code, table code, and fixture YAML.
 2. Update parser code and/or fixture YAML.
-3. Generate the HTML matrix.
+3. Refresh the catalog and inspect the browser matrix.
 
 ## What Is A Fixture?
 
@@ -30,7 +32,7 @@ For tool-calling, the important fields are:
 
 Fixture locations:
 
-Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `conformance/fixtures/`. Unified fixtures live as reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores into one compatibility tree, so existing report and Rust consumers read the same paths. `conformance/utils/src/parser_families.yaml` is parser configuration, not a fixture.
+Tool-calling and reasoning fixture YAMLs live in git-lfs tarball shards under `conformance/fixtures/`. Unified fixtures live as reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores into one compatibility tree for capture tooling and native Rust tests. A checkout viewer reads selected Unified YAML; a published viewer reads selected typed JSON. Legacy archive source views remain available on demand. `conformance/utils/src/parser_families.yaml` is parser configuration, not a fixture.
 
 | Store path (inside snapshot) | Used By |
 |---|---|
@@ -55,12 +57,12 @@ At runtime, `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental route
 
 ## 1. Verify
 
-Run this when you want to check the local Dynamo parser code, the conformance table generator (`conformance/utils/`), and the fixture YAMLs from the in-repo store.
+Run this when you want to check the local Dynamo parser code, the shared viewer model, and the fixture YAMLs from the in-repo store.
 
 The verification-only path reads the extracted fixtures and reports mismatches. It does not rewrite fixture YAML. The vLLM and SGLang verification commands run live peer parsers against the extracted expected output, but they do not recapture or update fixtures.
 
 ```bash
-# Runs Python regression tests for table generation, marker semantics, vLLM Rust capture plumbing, and path scrubbing.
+# Runs regression tests for the shared viewer model, marker semantics, vLLM Rust capture plumbing, and path scrubbing.
 python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
 
 # Runs Rust smoke tests (quick check) for the v2 parser implementation.
@@ -94,19 +96,28 @@ cargo fmt
 git diff --check
 ```
 
-If you only changed docs or the HTML generator, the Python regression test and `conformance/utils/render_table_v2.sh` are usually enough.
+For viewer changes, run the shared JavaScript model tests and the maintained-viewer Selenium tests. Refresh and check the catalog after source metadata changes.
 
 ## 2. Update Code Or Fixtures
 
-Change parser code under `parsers/v2/` when Dynamo behavior is wrong. When fixture output changes or a new case is added, capture locally then rebuild + commit a new snapshot via `package_fixtures.py`.
+Change parser code under `parsers/v2/` when Dynamo behavior is wrong. For new cases, author independent Unified GOLDEN expectations, capture every applicable pinned version, and package with `package_fixtures.py --unified-only`.
 
-### Capture Parser Behavior Into Fixtures
+### Capture the active Unified corpus
+
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence and historical tests; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+
+Freeze the exact versions and artifact checksums in `../dynamo-capture-inventory.yaml`. Run `python3 conformance/utils/src/capture_dynamo_versions.py --help` from the checkout root, then execute that inventory into a secondary-disk job directory. The shared job builder preserves each request; v2, v1 batch, and v1 jail-buffer use separate producer identities. Import through the shared recapture mechanism, retaining original observations and receipts. A missing or blocked execution never counts as passing.
+
+### Historical capture tools
+
+The commands below are retained for inspecting and maintaining archived evidence. New cases and capture jobs use Unified.
+
 
 Use the same pattern for capture commands: `conformance/utils/capture.sh <target> ...`. The `stream` and `batch-on-stream` targets capture v2 fixture YAMLs locally. The `dynamo-stream`, `dynamo-batch-on-stream`, and `token-ids` targets capture local Dynamo Rust behavior or token IDs. After capturing, rebuild + commit the shard store with `package_fixtures.py`.
 
 `capture.sh` is not the v1 batch rewrite tool for the Dynamo `expected.dynamo_v1` blocks — those are verified in Section 1 against extracted fixtures; update the YAMLs locally and re-package when the expected batch output changes.
 
-Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. One shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}`, captures every corpus x engine (it replaces the per-corpus `capture_streamv1_versions.py`; `recapture_peer.py` still exists separately). Omit `--impl` to capture ALL engines valid for the corpus. A full refresh runs one command per corpus so every tab gets the new version (see [`../README.md`](../README.md#fixture-workflows) workflow 1 for the ordered runbook):
+Peer columns, by contrast, are re-captured as changed-only version overlays against a new engine version. One shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}`, captures every corpus x engine (it replaces the per-corpus `capture_streamv1_versions.py`; `recapture_peer.py` still exists separately). Omit `--impl` to capture ALL engines valid for the corpus. A full refresh runs one command per corpus for the retained historical regression corpora (see [`../README.md`](../README.md#fixture-workflows) for the active Unified runbook):
 - `--corpus stream` — vLLM Python + SGLang Python stream parsers over the resolved streamv1 anchors → changed-only full-case dir `fixtures-stream-v1/<impl>-<ver>/` (written straight to the top level; `package_fixtures.py` shards it directly); `--impl vllm_rust` drives the cargo probe over the `inputs/` cases → full-chunk changed-case dir `fixtures-stream-v1/vllm_rust-<ver>/` (needs `VLLM_RUST_SOURCE` / `--vllm-rust-source`, see below).
 - `--corpus batch` — vLLM Python / SGLang Python non-streaming `extract_tool_calls` over the `fixtures-batch-v1/inputs/` seeds → `fixtures-batch-v1/<impl>-<ver>/` (legacy batch corpus).
 - `--corpus reasoning` — vLLM Python / SGLang Python reasoning parser over the `reasoning/fixtures-v1/inputs/` seeds → `reasoning/fixtures-v1/<impl>-<ver>/` (Reasoning tab; this tab is multi-version — both old and new versions must render).
@@ -126,13 +137,13 @@ conformance/utils/capture.sh dynamo-stream \
 conformance/utils/capture.sh stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.23.0
+  --vllm-rust-source ~/dev/vllm-0.23.0
 
 # Example: capture all Dynamo v2 Rust, vLLM Python, vLLM Rust, and SGLang Python batch-on-stream behavior, then refresh `fixtures-batch-on-stream-v1/`.
 conformance/utils/capture.sh batch-on-stream \
   --vllm-container vllm-localdev \
   --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.23.0 \
+  --vllm-rust-source ~/dev/vllm-0.23.0 \
   --capture-dynamo-rust-json /tmp/dynamo_batch_on_stream.json
 
 # Example: capture one Dynamo v2 Rust batch-on-stream JSON file without refreshing fixture YAML.
@@ -169,62 +180,51 @@ git -C "$VLLM_RUST_SOURCE" rev-parse HEAD
 
 The crate build may need a sibling crate materialized if the checkout is sparse (0.25.x's `vllm-parser` depends on `vllm-tokenizer`: `git -C "$VLLM_RUST_SOURCE" sparse-checkout add rust/src/tokenizer`). Parsers that moved to the native `unified::` interface in a release (e.g. gemma4 in 0.25) have no `tool::ToolParser` and are recorded unavailable — expected, not a capture failure.
 
-The local checkout path is not written to YAML or HTML. Fixtures record only the vLLM tag and commit under `captured_with.vllm_rust`.
+`capture.sh` routes vLLM Rust capture jobs through `src/capture_cli.py` and `src/capture_driver.py` to `src/capture_vllm_rust.py`. The host probe builds a temporary Rust binary against the selected source checkout, then feeds the fixture cases through its streaming parser. Supply the checkout with `--vllm-rust-source` or `VLLM_RUST_SOURCE`; the `stream` and `batch-on-stream` capture targets refresh `expected.vllm_rust`.
 
-## 3. Generate Matrix
+The local checkout path is not written to fixture YAML or displayed in the matrix. Fixtures record only the vLLM tag and commit under `captured_with.vllm_rust`.
 
-Run this after updating code or committing new fixture snapshots.
+## 3. Inspect the Matrix
+
+Refresh the catalog after fixture or source metadata changes, then serve the checkout over HTTP:
 
 ```bash
-# Generates an HTML matrix at the default example path: `conformance/CONFORMANCE_v2.html`.
-conformance/utils/render_table_v2.sh
-
-# Generates the same matrix at a custom path, for example `index.html`.
-conformance/utils/render_table_v2.sh --output index.html
-
-# Prints the render command without writing the table.
-conformance/utils/render_table_v2.sh --dry-run
-
-# Generate immutable GitHub source links and Pages-hosted fixture links.
-conformance/utils/render_table_v2.sh \
-  --github-repository ai-dynamo/frontend-crates \
-  --github-revision "$(git rev-parse HEAD)" \
-  --fixture-base-url https://ai-dynamo.github.io/frontend-crates/fixtures/
+python3 conformance/utils/src/viewer_catalog.py --unified-only
+python3 conformance/utils/src/viewer_catalog.py --unified-only --check
+python3 -m http.server 8000
 ```
 
-Open the generated HTML file in a browser. The table is generated from extracted fixture directories staged by `render_table_v2.sh`.
+Open `http://localhost:8000/?tab=tab-unified`. The browser matrix uses three ordered capture slots and compares each selected capture with GOLDEN. Slots two and three can be None, and duplicate captures are rejected. The default selects the latest available Dynamo v2 Rust Unified capture, followed by None and None. Rows show the union of parser families available in the selected capture versions. Selecting Dynamo v2 Rust shows only families whose selected-release capture records a native `parser_path: unified`. Historical split and v1 records remain archived and appear through v1 selections. Mixed selections show the union of the selected families. A family appears once; a selected capture without that family has an unavailable segment. None adds no rows. Capture errors and missing expected results remain visible. Slot selections, themes, Detailed view, column visibility, Vertical, and popup links persist in the URL. Pinned popups can be resized and remain selected while captures reload. Raw YAML links return the original archive-member or document bytes. In a checkout, the reader parses YAML; published sites use generated typed JSON snapshots and do not fetch YAML histories. YAML remains authoritative, and JSON shards are generated in publication output and are not checked in. Loading errors stay separate from parser results, and Retry revalidates failed resources.
 
-The three web-link options must be supplied together. They change only link destinations: source files and directories use immutable GitHub `blob/<sha>` and `tree/<sha>` URLs, while case links use the fixture base URL and the extracted snapshot layout. Local renders without these options retain filesystem-relative source links and `file://` fixture links. `check.sh ci` accepts and forwards the same render options so CI can validate and publish one render.
-
-The CI workflow automatically publishes this report for matching pushes to `main`, and `workflow_dispatch` can republish it when run from `main`. Mirror branches still run the conformance gate but never upload or deploy the Pages artifact. Before the first deployment, configure the repository's Pages source as **GitHub Actions** and restrict the `github-pages` environment's deployment branches to `main`.
-
-Every successful render also writes `conformance/CONFORMANCE_v2.json`, derived from the same inlined model the browser renders, and prints the aggregate empty/red count. Both outputs contain only Unified. JSON retains per-capture successful observations, ordered-GOLDEN mismatches, parser exceptions, unsupported requests/families, source blockers, and missing captures. Legacy archives, capture commands, and regression tests remain available. The standard compiler-like gate for one or more models and tabs is:
+The scoped status gate uses the same JavaScript model:
 
 ```bash
 conformance/utils/check.sh status --model qwen3 --tab unified
 ```
 
-Repeat `--model` or `--tab` to validate more than one. The command always renders first, prints each empty or red model/case pair, and exits `1` when any requested cell is not green. `validate_conformance_status.py` is the lower-level reader for checking an existing HTML file without rerendering.
+Repeat `--model` or `--tab` to select more than one. Status prints each empty or red model/case pair and exits 1 when requested results are rejected. Invalid arguments and resource/model failures exit 2. Node can write the structured report with `node conformance/viewer/status.js --status-path <output.json>`; this does not render HTML or extract fixtures.
 
-The Unified picker offers existing vLLM Python and Rust captures as distinct selections. `check.sh vllm` runs the live vLLM Python parser against extracted legacy YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the retained legacy stream and batch-on-stream regression corpora.
+The 24 `v1_split_parallel_tool_calls` cases retain source-bound archived regressions. They intentionally overlap the broad purpose of the shared two-call scenario while preserving the archived native syntax, tool schemas, argument values, and recorded Dynamo v1 producer. Replacing them with a generic request would break the binding to the historical observation. The [shared semantic inventory](tests/corpus_semantics.py) compares input, initialization, effective tool schemas, and assembled outcomes without erasing syntax, schemas, or argument keys, types, and values. Both the [canonical uniqueness check](tests/test_unified_taxonomy_covers_corpus.py) and the [retained-profile check](tests/test_gen_unified_v1_cases.py) use that owner. The latter inventories the exact 24-family exception set, records each selected archive source and capture version, and verifies the complete retained records before admitting the exception. These are documented overlaps in scenario purpose, not a claim that every displayed row tests a different behavior.
+
+Packaging, catalog generation, and native publication accept `--workers auto|N`. Use `--workers 1` for the serial reference. Python capture/packaging tools cap automatic selection at eight processes; explicit `N` is bounded by available CPUs, memory, and job count. Native publication uses every process-available CPU, subject to memory admission without changing the configured pool size. Parallel work validates each family in chronological order and writes bundles only in staging. The coordinator publishes the completed generation after every worker succeeds. Progress includes completed jobs, phase time, worker CPU time, and aggregate peak resident memory. The default is `auto`; independent library callers remain serial unless they select a worker policy.
+
+Generate the source catalogs with `python3 conformance/utils/src/viewer_catalog.py` before first publication, viewer tests, or source-status checks. `viewer-catalog.json` and `viewer-unified-catalog.json` are local build inputs and are not versioned. After this initial generation, `--unified-only` can refresh Unified data while reusing manifest-bound historical archive descriptors. CI generates the catalogs once and passes the same generation to each conformance test shard; the source catalogs are not deployed with the public site.
+
+Build the publisher with `cargo build --locked --release -p conformance-publisher`, then run `target/release/conformance-publish --root . --output <site> --revision <full-commit-SHA>`. `--root` defaults to the current directory; `--candidate-tree` records a preview tree, and `--data-only --output .` refreshes checkout browser data as per-resource gzip files. The shared envelope producer writes canonical JSON to bounded disk spools for production packing; production never compresses individual snapshots just to decompress and repack them. Both modes use family input documents without an aggregate input or bootstrap payload. Production assets require Node 18 or newer and the locked bundler: run `npm ci --prefix conformance/viewer --ignore-scripts` before publishing. To install build dependencies outside the checkout, copy `conformance/viewer/package.json` and `package-lock.json` into that directory, run `npm ci --prefix <directory> --ignore-scripts`, and set `CONFORMANCE_ESBUILD_ROOT=<directory>`. Production publishes two JavaScript bundles, one compressed runtime catalog, lazy recipe indexes, and shared gzip packs. FastCDC chunks canonical JSON and exact original bytes with 8 KiB minimum, 32 KiB target, and 128 KiB maximum sizes; each decoded pack is at most 1 MiB. The default dependencies are packed before historical captures and originals. Raw lookups use path-hash buckets fetched only for Raw views and downloads, including retained archive-member aliases. The reader checks pack, chunk, reconstructed-content, and resolved-metadata identities before exposing data. Rust validation and browser browsing each cap their decoded-pack cache at 64 MiB; evicted packs are revalidated on reload, and Rust reserves its validation buffers through shared memory admission. Original downloads retain their exact byte hashes and sizes. Published sites contain no standalone YAML, tarballs, Markdown, text sources, development modules, or tests. Missing or corrupt published data fails with Retry. Direct source reads require the explicit checkout development entry point or a source-parity tool configured with `allowSourceFiles`; production disables them. The publisher rejects undeclared files and writes its dependency inventory beside the site. The prior site stays visible during atomic replacement, and a durable journal recovers interrupted transactions. Those JSON shards are disposable publication output and are not checked in. Publication metadata supplies the full revision for immutable GitHub source links. The report header shows the recorded generation time and source revision. Detailed puts the build, publication, and HTTP serving commands in the final Generate this HTML and JSON section. The publication command wraps as text within that section. The legend stays directly below the chart in both orientations. Table selection changes show Loading... before rebuilding the matrix. Case descriptions include the full case ID followed by the same short reference used in the table, for example UNIFIED.1-tool_only (1-1). Popup headings omit the UNIFIED. prefix and show the case ID and short reference before the description, for example 1-tool_only (1-1). A live checkout with missing or stale generation metadata explains that the browser constructs the view from the current catalog; no publication time is inferred from a capture snapshot. Published pages use embedded generation metadata even if its JSON sidecar cannot be fetched. Hovering compact case labels (for example, `1-1` and `2-1`) shows the full case name away from the pointer in both orientations. The legend reads "One segment is an output capture from the parser when compared with golden output" and labels green segments "Matches golden". Mirror branches validate the viewer without deploying it. Configure the repository's Pages source as GitHub Actions and restrict the `github-pages` deployment environment to `main` before enabling deployment.
+
+Use the matrix to inspect captured vLLM Python and Rust behavior. `check.sh vllm` runs the live vLLM Python parser against extracted YAML; it does not run vLLM Rust. vLLM Python vs Rust is a fixture comparison in the legacy stream and batch-on-stream tabs. Refresh the Rust capture through `capture.sh` when its source version changes.
 
 ### UnifiedParser conversion collection
 
 When a model family is converted to `UnifiedParser`, collecting its current fixture capture is required in the same change. Set the shipping `parsers/v2` version first, then run:
 
 ```bash
-python3 conformance/utils/src/gen_unified_golden.py
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
-python3 conformance/utils/src/explode_unified_fixtures.py
-python3 conformance/utils/src/package_fixtures.py
-python3 conformance/utils/src/extract_fixtures.py --full-refresh
-conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
-conformance/utils/check.sh status --model <family> --tab unified
+bash conformance/utils/regenerate_unified.sh
 ```
 
-This updates the affected family input/golden document and sparse implementation-version capture YAML files under `conformance/fixtures-unified-v2/families/<family>/`, refreshes the manifest pin, and renders the only supported HTML report. Do not generate `CONFORMANCE_unified.html`: it is not a published report and is not read by the v2 renderer. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
+This updates the affected family input/GOLDEN document and complete implementation-version snapshots in the matching engine/version archive, refreshes the manifest pin and viewer catalog, and validates the resulting captures. Reload the maintained viewer to inspect the current capture. A family conversion is unfinished until the scoped status command reports zero red and zero empty current Dynamo cells.
 
-Run `bash conformance/utils/regenerate_unified.sh` when changing Unified parser code or corpus inputs. It performs the live capture, package, extraction, render, case-ID equality checks, and consuming tests in the required order. It always renders the JSON/HTML report before returning a failed gate status, so the resulting page can be used to inspect red or empty cells; do not treat that diagnostic render as publishable until the gate exits 0.
+Run `bash conformance/utils/regenerate_unified.sh` when changing Unified parser code or corpus inputs. It performs the live capture, packaging, native fixture preparation, catalog refresh, case-ID equality checks, and consuming tests. Inspect recorded red or empty cells in the maintained viewer when the gate fails.
 
 ## Matrix Legend
 
@@ -249,16 +249,17 @@ Run these from `conformance/utils/`:
 
 | Command | Purpose |
 |---|---|
-| `render_table_v2.sh` | Builds `.stage/` and writes the v2 conformance HTML matrix. The default example path is `conformance/CONFORMANCE_v2.html`. |
-| `check.sh status --model <family> --tab <tab>` | Renders the matrix and fails with the exact empty/red model-case pairs. |
+| `python3 src/viewer_catalog.py --unified-only` | Refreshes the resource and metadata catalog after source changes; `--check` rejects a stale catalog. |
+| `check.sh status --model <family> --tab <tab>` | Reads source resources through the shared Node model and fails with the exact empty/red model-case pairs. |
 | `check.sh` | Runs Dynamo, vLLM Python, and SGLang checks against staged fixtures. |
-| `capture.sh` | Consistent entry point for capturing parser behavior and refreshing v2 fixtures. |
+| `python3 src/capture_dynamo_versions.py --help` | Executes the frozen Dynamo release inventory against Unified family jobs. |
+| `capture.sh` | Retained entry point for explicit historical archive maintenance. |
 
-The implementation lives under `src/` — don't run these directly unless you're developing the harness: `_common.sh`, the renderer (`generate_conformance_table.py` + `impls.py` / `markers.py` / `fixtures.py` / `model.py`, `conformance_table.html.j2` + `assets/`), the capture chain (`capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`), the fixture builders (`build_stream_fixtures.py` / `fill_streamv1.py` / `gen_harmony_text_fixtures.py`), the validators (`validate.py` / `validate_fixtures.py`), and the data files (`parser_families.yaml`, `pyproject.stub.toml`).
+Python tooling under `src/` owns capture, packaging, storage validation, source metadata, and catalog indexing. The capture chain is `capture_cli.py` / `capture_driver.py` / `capture.py` / `capture_vllm_rust.py`; fixture builders include `build_stream_fixtures.py` / `fill_streamv1.py` / `gen_harmony_text_fixtures.py`, and validators include `validate.py` / `validate_fixtures.py`. Use `capture.sh` and `check.sh` for operator runs; invoke these modules directly when developing the harness. Shared ES modules under `conformance/viewer/` own lossless parsing, history resolution, comparison, tab models, and Node status reports. The maintained view/controller and colorizer live in `src/assets/`.
 
-**Render architecture (DIS-2434).** Python computes ONE documented JSON data model — the whole page (both the v2 conformance table and the v1 parity page) — and the templates inline it as a single `<script type="application/json" id="conformance-model">` blob. A JS view (`assets/conformance_view.js`) parses that blob and builds the tabs, table, cells, compare bar, legend, and popups (popups lazily on hover); `assets/conformance.js` then wires the compare engine, tab switching, column toggles, URL state, and transpose. The comparison/parity SEMANTICS stay in Python (`markers.py`/`impls.py` are the single source of truth) — `model.py` orchestrates them into the schema documented at the top of `model.py`; the view only decides display. The former parser-marker shorthand mini-language (encoded `data-marker-parity-*` attribute strings) is gone: cells carry structured comparison facts and the view renders the glyphs with full descriptive parser labels. `file://` keeps working (the model is inlined, no fetch). Greppability of the rendered `.html` is an explicit non-goal. Structural guards on the model live in `tests/test_model.py`; a few selenium DOM smokes live in `tests/test_browser_*.py`.
+**Viewer architecture.** The root `index.html` loads the compact catalog and capture slots. A checkout uses the development entry point for YAML histories. Rust resolves and validates publication data; the production worker decodes typed JSON and extracts original archives without YAML dependencies. Family inputs share one recipe index, captures load their own indexes, and resources reuse content-addressed packs through the existing cache and scheduler. `startup=external`, `bootstrap`, and `inline` use the same published loader. Browser matrices and Node status checks use the same model. Late responses cannot repaint a newer selection, and popups load lazily. Serve the checkout over HTTP; `file://` cannot load its resources. Model assertions run against JavaScript, and Selenium tests exercise the maintained viewer.
 
-## Fixture Store (git-lfs)
+## Historical Fixture Store (git-lfs)
 
 Fixture shard tarballs live in the repo at `conformance/fixtures/`, tracked via git-lfs (`.gitattributes`). The manifest (`conformance/fixtures-manifest.json`) pins the current snapshot and the sha256 of every shard. On a fresh clone, make sure the LFS objects are present: `git lfs install && git lfs pull`.
 
@@ -281,11 +282,13 @@ To see what snapshot is pinned and whether it is already cached:
 python3 conformance/utils/src/extract_fixtures.py --info
 ```
 
-### Update existing fixtures (re-capture after a parser version bump)
+### Update the active Unified fixtures
 
-For Unified corpus edits, regenerate after every source change: run the generator, explode the loose capture, update the family input/golden and capture YAML files, refresh the manifest pin, render the JSON/HTML matrix, and run the consuming tests before making the next review claim. Repeat the chain after the final edit. A passing test against stale YAML or stale HTML is incomplete; verify that every resolved current capture contains the same case-ID set as the current generator.
+For Unified corpus edits, use `bash conformance/utils/regenerate_unified.sh` after the final source change, then publish with `conformance-publish` and inspect the maintained viewer. Capture/update, evidence validation, and report generation are separate operations; the commands and source contract live in [the conformance guide](../README.md#capture-updates-validation-and-json-generation). The regeneration chain materializes only Unified, packages with `--unified-only`, checks the manifest-bound catalog with `--unified-only`, and runs the consuming tests. Verify that every resolved current capture contains the same canonical case-ID set as the current generator.
 
-After re-capturing YAML locally with `capture.sh`, rebuild the store and commit it together with the manifest:
+### Historical archive maintenance
+
+For explicitly requested historical archive maintenance, the retained capture and generic packaging commands are:
 
 ```bash
 # 1. Re-capture (see capture.sh commands above)
@@ -300,12 +303,12 @@ git commit -s -m "fixtures: snapshot <stamp printed by the script>"
 
 The script builds deterministic per-version tarball shards for tool-calling and reasoning fixtures, updates the reviewable Unified YAML store, and writes the manifest that pins both stores.
 
-### Add new fixtures (new SGLang / vLLM / Dynamo family)
+### Add a family to the active corpus
 
-Add YAML files locally under the appropriate fixture tree, then publish a new snapshot exactly as above. The new family appears as a new subdirectory in the tarball; warm-path downloads on other machines will fetch only the shard(s) that changed.
+Register the family in the shared registry, author its applicable Unified scenarios and independent GOLDEN expectations, and execute the pinned release inventory through the shared family job builder. Follow the active Unified capture and publication workflow above.
 
 ## Notes
 
-Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml`, the single source of truth for renderer and validation selection. Captures record their concrete versions under `captured_with`; vLLM Rust is captured from a local source checkout.
+Peer parser versions for vLLM Python and SGLang are pinned in `src/pyproject.stub.toml`, the source of truth for peer capture and validation versions. Captures record their concrete versions under `captured_with`; vLLM Rust is captured from a local source checkout. The catalog indexes the recorded versions for viewer selection.
 
-The scripts build an ephemeral `.stage/` tree because the table code retains the historical Dynamo repository layout. `.stage*/` is gitignored.
+Capture adapters use an ephemeral stage tree created by `src/_common.sh` to provide the historical Dynamo repository layout.

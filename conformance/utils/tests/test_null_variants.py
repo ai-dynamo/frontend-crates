@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 """Schema variants retain independent oracles and observations when grouped."""
 
-import copy
 import sys
 from pathlib import Path
 
@@ -11,76 +10,8 @@ import pytest
 from conformance.utils.tests.schema_oracle import matches_schema
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from case_variants import aggregate_cells, group_null_variants, leaf_cells
 from gen_null_stream_cases import FAMILIES, build_cases
 from null_cases import NULL_DESCRIPTIONS, NULL_VARIANTS
-from validate_conformance_status import cell_state
-import unified_taxonomy
-
-
-def make_cell(label, sig=1, missing=False):
-    return {"kind": "cell", "status": "ok", "sub": label,
-            "case_id": "UNIFIED." + label, "family": "glm47",
-            "cmp": {"golden": {"sig": 1, "na": 0, "err": 0, "leak": 0},
-                    "dynamo": {"sig": sig, "na": int(missing), "err": 0, "leak": 0}},
-            "tooltip": {"head": "UNIFIED." + label, "description": label,
-                        "input": {"kind": "text", "text": "null"}, "candidates": []}}
-
-
-@pytest.mark.parametrize("signatures,missing,expected", [
-    ([1, 1], [False, False], "green"),
-    ([1, 2], [False, False], "red"),
-    ([1, 1], [False, True], "empty"),
-    ([2, 1], [False, True], "red"),
-])
-def test_group_does_not_hide_failures_or_missing_captures(signatures, missing, expected):
-    cells = [make_cell(label, sig, absent) for label, sig, absent
-             in zip(("7-4", "7-4.anyof"), signatures, missing)]
-    before = copy.deepcopy(cells)
-    result = aggregate_cells(cells, "7-4", NULL_DESCRIPTIONS["7-4"])
-    assert cell_state(result, {"key": "dynamo", "label": "Dynamo"})[0] == expected
-    assert result["variants"] == before == cells
-    assert result["tooltip"]["variants"] == [cell["tooltip"] for cell in before]
-
-
-@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1", "tab-toolcalling-batch"])
-def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str) -> None:
-    labels = ["7-3", "7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
-    tab = {"id": tab_id, "columns": [{"label": label, "sub": label, "group_key": "7"}
-                                    for label in labels],
-           "rows": [{"family": "glm47", "cells": {label: make_cell(label) for label in labels}}],
-           "column_groups": [{"key": "7", "span": len(labels)}], "stats": {}}
-    if tab_id == "tab-unified":
-        for column in tab["columns"]:
-            column["sub"] = unified_taxonomy.scenario_for_label(column["label"])
-            column["label"] = unified_taxonomy.case_label(column["sub"])
-        tab["rows"][0]["cells"] = {
-            column["sub"]: {**make_cell(column["label"]), "sub": column["sub"]}
-            for column in tab["columns"]
-        }
-    original = copy.deepcopy(tab["rows"][0])
-    group_null_variants(tab)
-    expected = ["7-3", "7-4", "7-5"]
-    if tab_id == "tab-unified":
-        expected = [unified_taxonomy.historical_case_label(label) for label in expected]
-    assert [column["label"] for column in tab["columns"]] == expected
-    row = tab["rows"][0]
-    assert leaf_cells(row) == original["cells"]
-    assert tab["stats"]["fixture_cases"] == len(labels)
-    assert tab["column_groups"][0]["span"] == 3
-    for parent in ("7-4", "7-5"):
-        mixed = "7-4.mixed_labels"
-        if tab_id == "tab-unified":
-            parent = unified_taxonomy.scenario_for_label(parent)
-            mixed = unified_taxonomy.scenario_for_label(mixed)
-        assert mixed in {child["sub"] for child in row["cells"][parent]["variants"]}
-
-
-def test_grouped_unified_named_variant_keeps_a_valid_case_id():
-    children = [make_cell("7-arg_string_null_ref"), make_cell("7-arg_null_mixed_labels")]
-    result = aggregate_cells(children, "7-arg_string_null", "string null probes")
-    assert result["case_id"] == "UNIFIED.7-arg_string_null"
-    assert result["variants"] == children
 
 
 @pytest.mark.parametrize("scenario,label,schema,value,description", NULL_VARIANTS)
@@ -113,42 +44,3 @@ def test_mixed_reproducers_keep_both_field_types_and_strict():
     m3 = build_cases("minimax_m3")["TOOLCALLING.streamv1.7-4.mixed_grep"]
     assert m3["tools"][0]["strict"] is True
     assert m3["golden"]["calls"] == [{"name": "grep", "arguments": {"pattern": "null", "path": None}}]
-
-
-def test_missing_fixture_variant_remains_visible_and_incomplete():
-    missing = {"kind": "missing", "status": "missing", "sub": "7-4.anyof", "family": "glm47",
-               "case_id": None, "cmp": None, "tooltip": {"head": "missing fixture"}}
-    for cells in ([make_cell("7-4"), missing], [missing, make_cell("7-4")]):
-        result = aggregate_cells(cells, "7-4", NULL_DESCRIPTIONS["7-4"])
-        assert cell_state(result, {"key": "dynamo", "label": "Dynamo"})[0] == "empty"
-        assert missing in result["variants"]
-
-
-def test_other_families_do_not_gain_missing_mixed_probes():
-    labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5"]
-    row = {"family": "qwen3", "cells": {label: make_cell(label) for label in labels}}
-    row["cells"]["7-4.mixed_labels"].update(kind="missing", status="missing", cmp=None)
-    tab = {"id": "tab-toolcalling-streamv1", "columns": [{"label": label, "sub": label, "group_key": "7"}
-                                                for label in labels], "rows": [row],
-           "column_groups": [{"key": "7", "span": 4}], "stats": {}}
-    group_null_variants(tab)
-    assert "7-4.mixed_labels" not in leaf_cells(row)
-    assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "green"
-
-
-def test_unified_display_order_does_not_change_variant_aggregation():
-    labels = ["7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
-    columns = [{"label": unified_taxonomy.historical_case_label(label),
-                "sub": unified_taxonomy.scenario_for_label(label), "group_key": "7"}
-               for label in labels]
-    tab = {"id": "tab-unified", "columns": columns,
-           "rows": [{"family": "glm47", "cells": {
-               col["sub"]: {**make_cell(col["label"], sig=i + 1), "sub": col["sub"]}
-               for i, col in enumerate(columns)}}],
-           "column_groups": [{"key": "7", "span": len(columns)}], "stats": {}}
-    reordered = copy.deepcopy(tab)
-    reordered["columns"].reverse()
-    group_null_variants(tab)
-    group_null_variants(reordered)
-    assert tab["rows"] == reordered["rows"]
-    assert tab["stats"] == reordered["stats"]

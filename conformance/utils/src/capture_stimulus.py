@@ -11,6 +11,8 @@ import yaml
 
 from fixture_disposition import canonical_unified_record_key, canonicalize_unified_inputs
 from impls import UNIFIED_BATCH_IMPLS
+from viewer_codec import typed_equal
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 
 _UNAVAILABLE_CATEGORIES = {
@@ -138,11 +140,11 @@ def capture_peer_results(
             results[key] = unavailable(code, detail)
             continue
         unsupported = []
-        if not supports_init and requested["init"] != actual["init"]:
+        if not supports_init and not typed_equal(requested["init"], actual["init"]):
             unsupported.append("init")
         if not supports_finish and requested["finish_reason"] != actual["finish_reason"]:
             unsupported.append("finish_reason")
-        if not supports_tools and "tools" in case and case["tools"] != tools:
+        if not supports_tools and "tools" in case and not typed_equal(case["tools"], tools):
             unsupported.append("tools")
         if unsupported:
             if key in results:
@@ -194,7 +196,7 @@ def read_bindings(directory: Path) -> dict:
     if not path.exists():
         return {}
     doc = json.loads(path.read_text())
-    if doc.get("schema_version") != 1 or not isinstance(doc.get("records"), dict):
+    if type(doc.get("schema_version")) is not int or doc["schema_version"] != 1 or not isinstance(doc.get("records"), dict):
         raise ValueError(f"invalid capture input bindings: {path}")
     return doc["records"]
 
@@ -220,6 +222,17 @@ def _without_synthetic_finish_step(request: dict) -> dict:
     ):
         return {**request, "chunks": chunks[:-1]}
     return request
+def unified_record_contract(implementation: str, document: dict) -> str:
+    if implementation not in UNIFIED_BATCH_IMPLS:
+        return "stream"
+    origin = document.get("capture_origin", {})
+    adapter = origin.get("adapter_sha256")
+    job = origin.get("job_sha256")
+    if adapter or job:
+        if not adapter or not job:
+            raise ValueError("adapter-backed batch observation needs adapter and job identities")
+        return "batch"
+    return "batch" if "batch_final" in document.get("record_metadata", {}) else "legacy-stream"
 
 
 def select_peer_observation(record: dict, current: dict, *, implementation: str, version: str) -> dict:
@@ -228,7 +241,7 @@ def select_peer_observation(record: dict, current: dict, *, implementation: str,
     if recapture is None:
         return record
     batch = implementation in UNIFIED_BATCH_IMPLS
-    if implementation not in {"sglang_python", "vllm_python", "vllm_rust"} and not batch:
+    if implementation not in {"sglang_python", "vllm_python", "vllm_rust", "dynamo_v2"} and not batch:
         raise ValueError("verified recapture requires a supported peer implementation")
     if not isinstance(recapture, dict) or set(recapture) != {"result", "provenance", "resolution"}:
         raise ValueError("invalid verified recapture")
@@ -243,23 +256,31 @@ def select_peer_observation(record: dict, current: dict, *, implementation: str,
             raise ValueError(f"verified recapture has invalid {key}")
     resolution = recapture["resolution"]
     if resolution == "historical_request_not_retained":
-        if record.get("capture_stimulus") != {"unavailable": {"code": "original_request_not_retained"}}:
+        if not typed_equal(record.get("capture_stimulus"), {"unavailable": {"code": "original_request_not_retained"}}):
             raise ValueError("verified recapture requires an unbound historical peer observation")
+    elif resolution == "fresh_execution":
+        if provenance.get("implementation") != implementation:
+            raise ValueError("verified recapture implementation differs from candidate")
     elif resolution == "historical_adapter_unsupported" and implementation != "sglang_python":
-        if "unavailable" not in record or record.get("capture_input") != capture_input(current):
+        if "unavailable" not in record or not typed_equal(record.get("capture_input"), capture_input(current)):
             raise ValueError("adapter recapture requires a bound historical unavailable result")
     else:
         raise ValueError("unresolved historical recapture disagreement")
     result = recapture["result"]
-    if not isinstance(result, dict) or result.get("capture_input") != capture_input(current):
+    if not isinstance(result, dict) or not typed_equal(result.get("capture_input"), capture_input(current)):
         raise ValueError("verified recapture request differs from displayed request")
     states = sum(key in result for key in ("error", "unavailable", "assembled" if batch else "chunks"))
     if states != 1:
         raise ValueError("verified recapture must carry exactly one result state")
     if batch:
-        if "chunks" in result or ("assembled" in result and result["assembled"] != batch_final_events(result.get("batch_final", {}))):
+        if "chunks" in result or ("assembled" in result and not typed_equal(result["assembled"], batch_final_events(result.get("batch_final", {})))):
             raise ValueError("invalid verified batch final fields")
+    if batch or implementation == "dynamo_v2" or resolution == "fresh_execution":
         result = {**result, "producer_origin": {"crate_version": version, **provenance}}
+    if resolution == "fresh_execution":
+        if "unavailable" in result:
+            return {**result, "historical_capture_note": "The displayed request remains unavailable in this capture; the original observation and origin remain preserved in YAML."}
+        return {**result, "historical_capture_note": "Fresh execution of the displayed request; the original observation and origin remain preserved in YAML."}
     if resolution == "historical_adapter_unsupported" and "unavailable" in result:
         return {**result, "historical_capture_note": (
             "This comparison uses the recapture adapter's verified request compatibility "
@@ -291,7 +312,7 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
         raise ValueError(f"incomplete capture input binding: {relative}")
     original = _without_synthetic_finish_step(original)
     expected = _without_synthetic_finish_step(expected)
-    changed = [key for key in expected if original[key] != expected[key]]
+    changed = [key for key in expected if not typed_equal(original[key], expected[key])]
     if changed:
         return f"Capture stimulus mismatch ({', '.join(changed)}): historical output belongs to a different request and is not scored against this input."
     return None
@@ -301,6 +322,8 @@ def _effective_capture_records(directory: Path, input_aliases: dict, families: s
     captures = {}
     bindings = read_bindings(directory)
     for path in sorted(directory.glob("*/*.yaml")):
+        if families is not None and path.parent.name not in families:
+            continue
         raw = path.read_bytes()
         doc = yaml.safe_load(raw)
         if doc["family"] != path.parent.name:
@@ -309,7 +332,7 @@ def _effective_capture_records(directory: Path, input_aliases: dict, families: s
             continue
         for key, record in doc["cases"].items():
             ident = canonical_unified_record_key(doc["family"], key, input_aliases)
-            if ident in captures and captures[ident][0] != record:
+            if ident in captures and not typed_equal(captures[ident][0], record):
                 raise ValueError(f"conflicting current capture aliases: {ident}")
             captures[ident] = (record, raw, str(path.relative_to(directory)), bindings)
     return captures
@@ -331,15 +354,26 @@ def validated_current_capture_docs(
     input_keys = {}
     for (family, key), record in raw_inputs.items():
         ident = canonical_unified_record_key(family, key, input_aliases)
-        if inputs.get(ident) == record:
+        if typed_equal(inputs.get(ident), record):
             input_keys[ident] = key
+    intentionally_v1_only = {
+        ident for ident, record in inputs.items()
+        if directory.name.startswith("dynamo_v2-") and record.get("scenario") in V1_SPLIT_SCENARIOS
+    }
+    checked_inputs = {ident: record for ident, record in inputs.items() if ident not in intentionally_v1_only}
     captures = _effective_capture_records(directory, input_aliases, families)
-    if not inputs or inputs.keys() != captures.keys():
-        raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
-    for ident, current in inputs.items():
+    if not inputs or checked_inputs.keys() != captures.keys():
+        raise ValueError(f"current capture/input sets differ: missing={sorted(checked_inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - checked_inputs.keys())}")
+    for ident, current in checked_inputs.items():
         if not isinstance(current.get("tools"), list):
             raise ValueError(f"current input has no executable tool schema: {ident}")
         record, raw, relative, bindings = captures[ident]
+        if record.get("verified_recapture") is not None:
+            implementation, separator, version = directory.name.partition("-")
+            if not separator:
+                raise ValueError("verified recapture requires an engine/version directory")
+            record = select_peer_observation(record, current, implementation=implementation, version=version)
+            captures[ident] = (record, raw, relative, bindings)
         failure = comparison_failure(record, current, raw, relative, bindings)
         if failure:
             raise ValueError(f"{ident}: {failure}")

@@ -1,0 +1,9 @@
+/* Transport state is separate from recorded parser outcomes. */
+.tab-panel:not([data-has-model]) > :not(.cmpctl):not(.capture-slots):not(.load-status) { display: none; }
+.load-status { flex: 0 0 100%; padding: .35rem 0; }
+/* A resized retained popup must not block another selection or Retry. */
+.tab-panel[data-has-model]:not([data-load-state="ready"]) .capture-slots { position: relative; z-index: 3001; background: var(--panel-bg); }
+.load-status[role="alert"], .error { color: #b00; }
+#viewer > pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.ttip-pinned { resize: both; }

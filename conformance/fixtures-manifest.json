@@ -383,9 +383,17 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "81d7e7d9eb0797eaeb898c64de658cdfc6fa086ac22375d4c262ed31ea77368b",
-      "size": 56364802
+      "sha256": "63f0a03a0066abbb0bd95bad5fd4ab82b75dcc3ae86a2a7b28656b431292e9b7",
+      "size": 6055275128
+    },
+    {
+      "path": "source-evidence/2c39c26856c539dfafc01251a7e45be80b4486cd.tar.gz",
+      "format": "source-evidence",
+      "source_revision": "2c39c26856c539dfafc01251a7e45be80b4486cd",
+      "sha256": "6aea35bd3a08071d4538d67b8dc539dfc869d9fdb0d64aa6d7dfa123fd300c6a",
+      "size": 3625538
     }
   ],
-  "inactive_shards": []
+  "inactive_shards": [],
+  "historical_catalog_sha256": "2d2fbd218048dace495ff2d2bfb66fb65e6c80adc0e05fed80925a2819798145"
 }

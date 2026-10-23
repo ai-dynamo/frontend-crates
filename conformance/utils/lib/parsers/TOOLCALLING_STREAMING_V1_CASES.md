@@ -1,5 +1,7 @@
 # Tool-Call Streaming Parser Cases
 
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence and historical tests; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 

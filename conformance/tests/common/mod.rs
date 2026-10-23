@@ -88,6 +88,7 @@ pub fn ensure_fixtures() -> PathBuf {
             "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
+            "--legacy-only",
         ])
         .output()
         .expect("flock/python3 not found — ensure python3 is in PATH");
@@ -139,6 +140,45 @@ pub fn ensure_fixtures() -> PathBuf {
             String::from_utf8_lossy(&output.stderr)
         ),
     }
+}
+
+/// Native parser checks consume authored inputs and only their two selected captures.
+pub fn ensure_unified_fixtures() -> PathBuf {
+    if let Ok(root) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
+        return PathBuf::from(root);
+    }
+    static SELECTED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SELECTED
+        .get_or_init(|| {
+            let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let root = std::env::temp_dir()
+                .join(format!("unified-selected-{}-{nonce}", std::process::id()));
+            let status = std::process::Command::new("python3")
+                .arg(manifest.join("utils/src/unified_history.py"))
+                .arg("--materialize")
+                .arg("--store")
+                .arg(manifest.join("fixtures-unified-v2"))
+                .arg("--output")
+                .arg(root.join("unified"))
+                .args([
+                    "--capture",
+                    "latest:dynamo_v2",
+                    "--capture",
+                    "latest:vllm_rust",
+                ])
+                .status()
+                .expect("python3 selected fixture materialization failed to start");
+            assert!(
+                status.success(),
+                "selected Unified fixture materialization failed"
+            );
+            root
+        })
+        .clone()
 }
 
 /// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,

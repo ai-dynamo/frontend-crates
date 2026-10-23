@@ -429,7 +429,7 @@ def show_info(manifest, cache_root):
         print(f"\nNo cached snapshots in {cache_root}")
 
 
-def _extract(args):
+def _extract(args, *, legacy_only=False):
     if not MANIFEST_PATH.exists():
         sys.exit(
             f"Manifest not found: {MANIFEST_PATH}\n"
@@ -439,6 +439,8 @@ def _extract(args):
     manifest = json.loads(MANIFEST_PATH.read_text())
     pin = manifest["snapshot"]
     shards = fixture_disposition.active_shards(manifest)
+    if legacy_only:
+        shards = [shard for shard in shards if shard.get("format") != "unified-history"]
     inactive = fixture_disposition.verify_inactive_shards(manifest, FIXTURES_DIR)
 
     cache_root = get_cache_root()
@@ -530,9 +532,9 @@ def _extract(args):
     print(snap_dir)
 
 
-def extract_snapshot(args):
+def extract_snapshot(args, *, legacy_only=False):
     with unified_history._store_read_lock(HISTORY_DIR):
-        _extract(args)
+        _extract(args, legacy_only=legacy_only)
 
 
 def main():
@@ -542,10 +544,11 @@ def main():
     ap.add_argument("--full-refresh", action="store_true", help="Ignore existing cache, re-extract all")
     ap.add_argument("--dry-run", action="store_true", help="Show plan without extracting")
     ap.add_argument("--info", action="store_true", help="Show manifest info and cache state, then exit")
+    ap.add_argument("--legacy-only", action="store_true", help="Extract legacy fixtures without materializing Unified history")
     ap.add_argument("-v", "--verbose", action="store_true", help="Print per-shard details")
     args = ap.parse_args()
 
-    extract_snapshot(args)
+    extract_snapshot(args, legacy_only=args.legacy_only)
 
 
 if __name__ == "__main__":

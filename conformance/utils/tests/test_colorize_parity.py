@@ -1,29 +1,20 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Byte-parity between the Python markup colorizer (markup.py) and its JS port
-(src/assets/colorize.js). markup.py is the single source of truth; the JS view calls
-the port to color tooltip text in the browser. This pins them equal via node so the
-two copies can't silently drift.
+"""Maintained JavaScript colorizer matches frozen #385 Python outputs."""
 
-markup.py carries its palette counter as a process-global across all calls in one
-render; the JS port resets per top-level call. We reset the Python globals before each
-call here so both sides color a string from its own text alone — the contract the port
-documents.
-"""
-
+import json
+import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from tables import markup  # noqa: E402
+import yaml
 
 COLORIZE_JS = Path(__file__).resolve().parents[1] / "src" / "assets" / "colorize.js"
-MARKERS = markup.declared_markers()
+REGISTRY = Path(__file__).resolve().parents[1] / "src" / "parser_families.yaml"
+MARKERS = yaml.safe_load(REGISTRY.read_text())["markers"]
 
 # (family, text) — cover every colorizer path: plain JSON + special token, paired XML,
 # nested/per-instance colors, unmatched orphan, harmony segments, MiniMax namespace,
@@ -132,24 +123,11 @@ STREAM_CASES = [
 ]
 
 
-def _reset():
-    markup._color_seq = 0
-    markup._singleton_classes.clear()
-
-
-def _py_markup(text, family):
-    _reset()
-    return markup.colorize_markup(text, family)
-
-
-def _py_stream(chunks, family):
-    _reset()
-    return markup.colorize_stream_deltas(chunks, family)
-
+# Frozen #385 Python-renderer outputs; the production colorizer lives in JavaScript.
+EXPECTED_MARKUP = ['<span class="tt-c0">&lt;|python_tag|&gt;</span>{&quot;name&quot;: &quot;get_weather&quot;, &quot;arguments&quot;: {&quot;location&quot;: &quot;NYC&quot;}}', '<span class="tt-c0">&lt;tool_call&gt;</span>{&quot;name&quot;: &quot;f&quot;}<span class="tt-c0">&lt;/tool_call&gt;</span>', '<span class="tt-c0">&lt;tool_call&gt;</span>a<span class="tt-c0">&lt;/tool_call&gt;</span> mid <span class="tt-c1">&lt;tool_call&gt;</span>b<span class="tt-c1">&lt;/tool_call&gt;</span>', 'text <span class="tt-orphan">&lt;tool_call&gt;</span>unclosed here', 'orphan close <span class="tt-orphan">&lt;/tool_call&gt;</span> after', '<span class="tt-h tt-h-start"><span class="tt-h-token">&lt;|start|&gt;</span>assistant</span><span class="tt-h tt-h-channel"><span class="tt-h-token">&lt;|channel|&gt;</span>final</span><span class="tt-h tt-h-message"><span class="tt-h-token">&lt;|message|&gt;</span>hi there</span><span class="tt-h tt-h-stop"><span class="tt-h-token">&lt;|end|&gt;</span></span>', '<span class="tt-h tt-h-start"><span class="tt-h-token">&lt;|start|&gt;</span>x</span><span class="tt-h tt-h-channel"><span class="tt-h-token">&lt;|channel|&gt;</span>commentary</span><span class="tt-h tt-h-call"><span class="tt-h-token">&lt;|call|&gt;</span></span>run<span class="tt-h tt-h-stop"><span class="tt-h-token">&lt;|return|&gt;</span></span>', '<span class="tt-ns">]&lt;]minimax[&gt;[</span><span class="tt-c0">&lt;tool_call&gt;</span>{&quot;a&quot;:1}<span class="tt-c0">&lt;/tool_call&gt;</span>', '<span class="tt-c0">&lt;|&quot;|&gt;</span>quoted value<span class="tt-c0">&lt;|&quot;|&gt;</span> and <span class="tt-orphan">&lt;|&quot;|&gt;</span>dangling', '<span class="tt-c2">&lt;｜tool▁calls▁begin｜&gt;</span><span class="tt-c1">&lt;｜tool▁call▁begin｜&gt;</span>x<span class="tt-c0">&lt;｜tool▁sep｜&gt;</span>y<span class="tt-c1">&lt;｜tool▁call▁end｜&gt;</span><span class="tt-c2">&lt;｜tool▁calls▁end｜&gt;</span>', '<span class="tt-orphan">[TOOL_CALLS]</span>[{&quot;name&quot;: &quot;f&quot;}]', 'escape &amp; <span class="tt-orphan">&lt; &gt;</span> &quot; &#x27; chars', '<span class="tt-c2">&lt;tool_call&gt;</span>\n<span class="tt-c1">&lt;function=run&gt;</span>\n<span class="tt-c0">&lt;parameter=cmd&gt;</span>\ngit log &lt;/tool_call&gt; --oneline\n<span class="tt-c0">&lt;/parameter&gt;</span>\n<span class="tt-c1">&lt;/function&gt;</span>\n<span class="tt-c2">&lt;/tool_call&gt;</span>', '<span class="tt-c2">&lt;tool_call&gt;</span><span class="tt-c1">&lt;function=log&gt;</span><span class="tt-c0">&lt;parameter=note&gt;</span>&lt;think&gt;reconsider&lt;/think&gt;<span class="tt-c0">&lt;/parameter&gt;</span><span class="tt-c1">&lt;/function&gt;</span><span class="tt-c2">&lt;/tool_call&gt;</span>', '<span class="tt-c3">&lt;tool_call&gt;</span><span class="tt-c2">&lt;function=f&gt;</span><span class="tt-c0">&lt;parameter=a&gt;</span>1<span class="tt-c0">&lt;/parameter&gt;</span><span class="tt-c1">&lt;parameter=b&gt;</span>2<span class="tt-c1">&lt;/parameter&gt;</span><span class="tt-c2">&lt;/function&gt;</span><span class="tt-c3">&lt;/tool_call&gt;</span>', '<span class="tt-orphan">&lt;tool_call&gt;</span>\n<span class="tt-orphan">&lt;function=run&gt;</span>\n<span class="tt-orphan">&lt;parameter=cmd&gt;</span>unterminated value', '<span class="tt-c1">&lt;|tool_call&gt;</span>call:run{cmd:<span class="tt-c0">&lt;|&quot;|&gt;</span>git log }&lt;tool_call|&gt; --oneline<span class="tt-c0">&lt;|&quot;|&gt;</span>}<span class="tt-c1">&lt;tool_call|&gt;</span>', '<span class="tt-c2">&lt;|tool_call&gt;</span>call:f{a:<span class="tt-c0">&lt;|&quot;|&gt;</span>x<span class="tt-c0">&lt;|&quot;|&gt;</span>,b:<span class="tt-c1">&lt;|&quot;|&gt;</span>y<span class="tt-c1">&lt;|&quot;|&gt;</span>}<span class="tt-c2">&lt;tool_call|&gt;</span>', '<span class="tt-c2">&lt;|tool_calls_section_begin|&gt;</span><span class="tt-c1">&lt;|tool_call_begin|&gt;</span>functions.run:0<span class="tt-c0">&lt;|tool_call_argument_begin|&gt;</span>{&quot;cmd&quot;: &quot;git log &lt;|tool_call_end|&gt; --oneline&quot;}<span class="tt-c1">&lt;|tool_call_end|&gt;</span><span class="tt-c2">&lt;|tool_calls_section_end|&gt;</span>', '<span class="tt-c2">&lt;|tool_calls_section_begin|&gt;</span><span class="tt-c1">&lt;|tool_call_begin|&gt;</span>functions.f:0<span class="tt-c0">&lt;|tool_call_argument_begin|&gt;</span>{&quot;a&quot;: &quot;esc \\&quot; quote &lt;|tool_call_end|&gt;&quot;}<span class="tt-c1">&lt;|tool_call_end|&gt;</span><span class="tt-c2">&lt;|tool_calls_section_end|&gt;</span>', '<span class="tt-c0">&lt;|open|&gt;think&lt;|sep|&gt;</span>private<span class="tt-c0">&lt;|close|&gt;think&lt;|sep|&gt;</span><span class="tt-c2">&lt;|open|&gt; call tool=&quot;run&quot; index=&quot;1&quot; &lt;|sep|&gt;</span><span class="tt-c1">&lt;|open|&gt; argument key=&quot;cmd&quot; type=&quot;string&quot; &lt;|sep|&gt;</span>literal &lt;|close|&gt;call&lt;|sep|&gt; text<span class="tt-c1">&lt;|close|&gt; argument &lt;|sep|&gt;</span><span class="tt-c2">&lt;|close|&gt; call &lt;|sep|&gt;</span>', '<span class="tt-c0">&lt;|open|&gt;json type=&quot;object&quot;&lt;|sep|&gt;</span>{&quot;cmd&quot;:&quot;literal &lt;|close|&gt;json&lt;|sep|&gt; text&quot;}<span class="tt-c0">&lt;|close|&gt;json&lt;|sep|&gt;</span><span class="tt-c1">&lt;|open|&gt; message role=&quot;assistant&quot; &lt;|sep|&gt;</span>visible<span class="tt-c1">&lt;|close|&gt; message &lt;|sep|&gt;</span>', 'no family, plain <span class="tt-c0">&lt;tool_call&gt;</span>t<span class="tt-c0">&lt;/tool_call&gt;</span> &amp; &#x27;text&#x27;']
+EXPECTED_STREAM = [['<span class="tt-c0">&lt;tool_</span>', '<span class="tt-c0">call&gt;</span>{&quot;n', '&quot;:1}<span class="tt-c0">&lt;/tool_call&gt;</span>'], ['<span class="tt-h tt-h-channel"><span class="tt-h-token">&lt;|chan</span></span>', '<span class="tt-h tt-h-channel"><span class="tt-h-token">nel|&gt;</span>fin</span>', '<span class="tt-h tt-h-channel">al</span><span class="tt-h tt-h-message"><span class="tt-h-token">&lt;|message|&gt;</span>hi</span>'], ['plain ', 'text &amp; ', 'more'], ['<span class="tt-c2">&lt;tool_call&gt;</span><span class="tt-c1">&lt;function=run&gt;</span><span class="tt-c0">&lt;parameter=cmd&gt;</span>git log ', '&lt;/tool_call&gt; --one', 'line<span class="tt-c0">&lt;/parameter&gt;</span><span class="tt-c1">&lt;/function&gt;</span><span class="tt-c2">&lt;/tool_call&gt;</span>'], ['<span class="tt-c1">&lt;|open|&gt; call tool=&quot;run&quot; index=&quot;1&quot; &lt;|</span>', '<span class="tt-c1">sep|&gt;</span><span class="tt-c0">&lt;|open|&gt; argument key=&quot;cmd&quot; type=&quot;string&quot; &lt;|sep|&gt;</span>', 'literal &lt;|close|&gt;call&lt;|sep|&gt; text<span class="tt-c0">&lt;|close|&gt; argument &lt;|sep|&gt;</span>', '<span class="tt-c1">&lt;|close|&gt; call &lt;|sep|&gt;</span>']]
 
 def _node(fn_body: str, payload: dict) -> list:
-    import json
-
     driver = (
         "const mc = require(" + json.dumps(str(COLORIZE_JS)) + ");"
         "const inp = JSON.parse(require('fs').readFileSync(0, 'utf8'));"
@@ -165,6 +143,7 @@ def _node(fn_body: str, payload: dict) -> list:
         capture_output=True,
         text=True,
         check=True,
+        env={key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ},
     )
     return json.loads(res.stdout)
 
@@ -174,8 +153,8 @@ def test_colorize_markup_parity():
         "const out = inp.cases.map(c => mc.colorizeMarkup(c.text, c.family, inp.markers));",
         {"cases": [{"text": t, "family": f} for f, t in CASES], "markers": MARKERS},
     )
-    for (family, text), got in zip(CASES, js):
-        assert got == _py_markup(text, family), f"family={family!r} text={text!r}"
+    for (family, text), got, expected in zip(CASES, js, EXPECTED_MARKUP):
+        assert got == expected, f"family={family!r} text={text!r}"
 
 
 def test_colorize_stream_deltas_parity():
@@ -183,8 +162,8 @@ def test_colorize_stream_deltas_parity():
         "const out = inp.cases.map(c => mc.colorizeStreamDeltas(c.chunks, c.family, inp.markers));",
         {"cases": [{"chunks": ch, "family": f} for f, ch in STREAM_CASES], "markers": MARKERS},
     )
-    for (family, chunks), got in zip(STREAM_CASES, js):
-        assert got == _py_stream(chunks, family), f"family={family!r} chunks={chunks!r}"
+    for (family, chunks), got, expected in zip(STREAM_CASES, js, EXPECTED_STREAM):
+        assert got == expected, f"family={family!r} chunks={chunks!r}"
 
 
 def test_kimi_k3_linked_renderer_has_no_orphan_composite_markers():

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import ast
 from collections import defaultdict
-from dataclasses import replace
+from copy import deepcopy
 import json
 import re
 import sys
@@ -30,6 +30,7 @@ if str(SRC) not in sys.path:
 
 from conformance.utils.tests import GPT_OSS_STANDALONE_HEADER_SCENARIOS
 from conformance.utils.tests.schema_oracle import matches_schema
+from conformance.utils.tests.corpus_semantics import assert_unique_behaviour, semantic_key
 
 import pytest  # noqa: E402
 import yaml  # noqa: E402
@@ -37,6 +38,9 @@ import yaml  # noqa: E402
 import gen_unified_golden as G  # noqa: E402
 from schema_cases import CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
+import unified_archives
+import ci_coverage
+import capture_stimulus  # noqa: E402
 import unified_taxonomy as taxonomy  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step  # noqa: E402
 from dynamo_version import dynamo_v2_label  # noqa: E402
@@ -63,7 +67,9 @@ from unified_taxonomy import (  # noqa: E402
 )
 
 TAXONOMY_FILE = "conformance/utils/src/unified_taxonomy.py"
-NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES)
+NATIVE_FAMILIES = tuple(family for family in FAMILIES if family in G.UNIFIED_FAMILIES and G._MANIFEST[family].get("scenario_profile") != "native")
+V1_SPLIT_SCENARIOS = frozenset(G.V1_SPLIT_SCENARIOS)
+NATIVE_UNIFIED_TAX = {scenario: entry for scenario, entry in UNIFIED_TAX.items() if scenario not in V1_SPLIT_SCENARIOS and scenario not in taxonomy.RETIRED_SCENARIOS}
 
 
 def test_descriptive_ids_and_all_published_aliases():
@@ -108,12 +114,9 @@ def test_alias_conflicts_and_wrong_scenario_ownership_are_rejected(monkeypatch):
 
 
 def corpus_scenarios() -> list[str]:
-    """Scenario slugs the generator actually emits — the first element of each case."""
-    return [spec[0] for spec in (*CLEAN, *EDGE)] + [
-        scenario + "_pr424"
-        for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items()
-        if active
-    ]
+    """Include dynamically authored request variants and retained v1 scenarios."""
+    variants = {scenario + "_pr424" for scenario, active in taxonomy.GPT_OSS_PR424_REQUEST_VARIANTS.items() if active}
+    return sorted(({spec[0] for spec in (*CLEAN, *EDGE)} | variants | V1_SPLIT_SCENARIOS) - taxonomy.RETIRED_SCENARIOS)
 
 
 def test_every_corpus_scenario_has_a_taxonomy_entry() -> None:
@@ -426,23 +429,37 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
     and fails in CI — which is exactly what the first version of this did.
     """
     for fam in FAMILIES:
-        seen = defaultdict(list)
-        for name, case in build_cases(fam).items():
-            seen[
-                json.dumps(
-                    {
-                        "input": case["input"],
-                        "init": case["init"],
-                        "golden": case["golden"],
-                        "tools": case.get("tools"),
-                        "input_chunks": case.get("input_chunks"),
-                        "finish_reason": case.get("finish_reason"),
-                    },
-                    sort_keys=True,
-                )
-            ].append(name)
-        dupes = {k: v for k, v in seen.items() if len(v) > 1}
-        assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
+        assert_unique_behaviour(fam, build_cases(fam))
+
+
+def test_semantic_inventory_rejects_duplicates_and_reused_ids():
+    case = {"input": "<call>x</call>", "init": {"starting_state": "None", "tool_output_mode": "Native"},
+            "tools": [{"name": "run", "parameters": {"type": "object", "properties": {"x": {"type": "integer"}}}}],
+            "golden": [{"kind": "tool_call", "name": "run", "arguments": {"x": 1}}]}
+    with pytest.raises(AssertionError, match="identical behaviour"):
+        assert_unique_behaviour("sample", {"first": case, "duplicate": deepcopy(case)})
+    changed = deepcopy(case)
+    changed["golden"][0]["arguments"]["x"] = "1"
+    with pytest.raises(AssertionError, match="reused authored case ID"):
+        assert_unique_behaviour("sample", [("same", case), ("same", changed)])
+    assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["tools"][0]["parameters"]["properties"]["x"]["type"] = "string"
+    assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["input"] = "<other>x</other>"
+    assert semantic_key(case) != semantic_key(changed)
+    binding = {"purpose": "Retain a source-bound regression", "input_source": "inputs.tar.gz:family/case", "capture_source": "capture.tar.gz:family/case", "version": "1.0.0"}
+    inventory = assert_unique_behaviour("sample", {"first": case, "retained": deepcopy(case)}, retained_archives={"retained": binding})
+    assert inventory["exact_duplicates"] == [["first", "retained"]]
+    with pytest.raises(AssertionError, match="identical behaviour"):
+        assert_unique_behaviour("sample", {"first": case, "duplicate": deepcopy(case), "retained": deepcopy(case)}, retained_archives={"retained": binding})
+    retired = {"lifecycle": "retired", "request": None, "golden": None}
+    assert assert_unique_behaviour("sample", {"old": retired})["retired_cases"] == ["old"]
+    with pytest.raises(AssertionError, match="no active authored case"):
+        assert_unique_behaviour("sample", {"old": retired}, retained_archives={"old": binding})
+    with pytest.raises(AssertionError, match="requires source and version binding"):
+        assert_unique_behaviour("sample", {"retained": case}, retained_archives={"retained": {"purpose": "overlap"}})
 
 
 def test_deepseek_v41_follows_declared_scope_including_prefilled_cases() -> None:
@@ -910,48 +927,21 @@ def test_inherited_family_preserves_published_chunk_schedules(family):
 
 # --- counts live where they can be checked, not in registry prose ---------------
 
-def test_unified_case_counts_match_the_generator():
-    """Name exactly what is counted, and count it from the generator.
-
-    Counted: cases the generator EMITS per family — the shared scenarios every family
-    gets, plus any the scenario itself scoped with `OnlyFamilies`. Not counted: names
-    reserved in the taxonomy map that the generator does not emit, which is how a stale
-    denominator survived in the prose before.
-    """
-    family_specific = {
-        "beam": 124,
-        "deepseek_v4": 134,
-        "deepseek_v41": 130,
-        "gemma4": 127,
-        "glm47": 125,
-        "gpt_oss": 166,
-        "kimi_k2": 125,
-        "kimi_k3": 134,
-        "muse_glimmer": 133,
-        "qwen3": 130,
-        "nemotron_v3": 131,
-    }
-    assert set(family_specific) == set(FAMILIES)
-    per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
-    for fam in FAMILIES:
-        dotted_cases = sum(
-            fam in G.scenario_families(scenario)
-            for scenario in G.DOTTED_NAME_SCENARIOS
-        )
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
-    assert sum(per_family.values()) == (
-        sum(family_specific.values())
-        + len(FAMILIES) * len(CONFORMANCE_CASES)
-        + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
-        + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
-    )
+def test_unified_case_counts_match_the_generator(authored_unified_store):
+    """Every active authored request has one generator owner; v1 has its own generator."""
+    assert set(authored_unified_store.families) == set(FAMILIES)
+    for family in FAMILIES:
+        expected = {case["scenario"] for case in authored_unified_store.families[family].cases.values()
+                    if case["lifecycle"] == "active" and case["scenario"] not in V1_SPLIT_SCENARIOS}
+        actual = {_scenario_of(case_id, family) for case_id in build_cases(family)}
+        assert actual == expected, family
 
 
 def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1059,12 +1049,39 @@ def _packed_layer(root: Path, directory: str, fam: str, field_map, scenarios):
     return out
 
 
+@pytest.fixture(scope="module")
+def authored_unified_store():
+    return unified_history.load_authored_store(UTILS.parent / "fixtures-unified-v2")
+
+
+def _store_resource(row):
+    prefix = "conformance/fixtures-unified-v2/"
+    return {**row, "path": row["path"].removeprefix(prefix),
+            **({"archive": {**row["archive"], "path": row["archive"]["path"].removeprefix(prefix)}}
+               if "archive" in row else {})}
+
+
+def retained_unified_snapshots(store, *, families=None):
+    """Stream selected complete snapshots; retain at most one decoded YAML document."""
+    root = store.root
+    catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
+    resources = ci_coverage.select_resources(
+        [row for row in catalog["sources"]["unified"]
+         if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
+         and (families is None or row["family"] in families)], profile="exhaustive")
+    selected = [_store_resource(row) for row in resources]
+    with unified_history._store_read_lock(root):
+        for resource, data in unified_archives.read_sources(root, selected):
+            document = yaml.load(data, Loader=unified_history.StrictLoader)
+            assert document["schema_version"] == 2
+            yield resource, document
+
+
 def _materialized_unified_root(tmp_path: Path, store) -> Path:
     root = tmp_path / "unified"
-    # This oracle compares authored inputs/goldens; capture history has its own gate.
-    unified_history.materialize_store(
-        UTILS.parent / "fixtures-unified-v2", root, store=replace(store, histories={}),
-    )
+    # This comparison consumes only authored inputs and GOLDEN, never capture views.
+    inputs = unified_history.Store(store.root, store.families, {})
+    unified_history.materialize_store(UTILS.parent / "fixtures-unified-v2", root, store=inputs)
     return root
 
 
@@ -1082,7 +1099,7 @@ def _taxonomy_scenarios(fam: str, store):
     return out
 
 
-def test_every_case_triple_is_identical_at_every_layer(tmp_path, committed_unified_store):
+def test_every_case_triple_is_identical_at_every_layer(tmp_path, authored_unified_store):
     """One corpus, every tracked representation, zero drift, across all three fields.
 
     Compares `(input, init, golden)` for every case of every family across the generator's
@@ -1102,7 +1119,7 @@ def test_every_case_triple_is_identical_at_every_layer(tmp_path, committed_unifi
     wrong.
     """
     checked = 0
-    store = committed_unified_store
+    store = authored_unified_store
     materialized = _materialized_unified_root(tmp_path, store)
     for fam in FAMILIES:
         spec = _emitted_spec(fam)
@@ -1139,53 +1156,85 @@ def _assert_retained_capture_coverage(captured, expected):
     assert expected <= captured, f"missing retained captures {sorted(expected - captured)}"
 
 
-def _assert_reference_measurements_start_at_introduction(store):
-    shared_ids = {f"UNIFIED.{number}" for number in ("7-glm_ref_object", "7-glm_ref_encoded_targets", "7-glm_ref_json_looking_strings", "7-glm_ref_scalar_types")}
-    for (family, implementation), history in store.histories.items():
-        if implementation != "dynamo_v2":
+def _assert_reference_backfill_record(record, document, request, version):
+    bound = {**record, **document.get("record_metadata", {})}
+    selected = capture_stimulus.select_peer_observation(
+        bound, request, implementation="dynamo_v2", version=version,
+    )
+    receipt = selected.get("producer_origin") or bound.get("dynamo_v2_capture_provenance")
+    assert isinstance(receipt, dict), "reference backfill has no execution receipt"
+    assert receipt.get("implementation") == "dynamo_v2", "reference backfill producer differs"
+    assert receipt.get("version") == version, "reference backfill version differs"
+    for key in ("source_sha256", "adapter_sha256", "job_sha256", "results_sha256", "cargo_lock_sha256"):
+        assert re.fullmatch(r"[0-9a-f]{64}", receipt.get(key, "")), f"reference backfill has invalid {key}"
+    assert selected.get("capture_input") == request, "reference backfill request differs"
+
+
+def test_reference_backfills_require_request_bound_version_receipts(authored_unified_store):
+    for resource, document in retained_unified_snapshots(authored_unified_store):
+        family = authored_unified_store.families[resource["family"]]
+        version = resource["version"]
+        introduced = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
+        if family.name != "glm47":
+            introduced |= {f"UNIFIED.7-glm_ref_{suffix}" for suffix in ("object", "encoded_targets", "json_looking_strings", "scalar_types")}
+        if family.name == "qwen3":
+            introduced.add("UNIFIED.7-arg_string_null_ref")
+        introduced_at = (0, 7, 29) if family.name == "beam" else (0, 7, 18)
+        if tuple(int(part) for part in version.split(".")) >= introduced_at:
+            measured = {family.cases[key]["display_id"] for key in document["records"]}
+            assert introduced <= measured, f"missing current measurements in {family.name}/{version}"
             continue
-        capture_ids = history.ordered_capture_ids()
-        latest_capture_id = capture_ids[-1]
-        for capture_id in capture_ids:
-            measured = {
-                history.family.cases[case_id]["display_id"]
-                for case_id in history.resolve(capture_id)
-            }
-            introduced_ids = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
-            if family != "glm47":
-                introduced_ids |= shared_ids
-            if G.unified_grammar_family(family) == "qwen3":
-                introduced_ids.add("UNIFIED.7-arg_string_null_ref")
-            version = tuple(int(part) for part in history.captures[capture_id]["runtime_version"].split("."))
-            # Beam joined the corpus at 0.7.29.
-            introduced_at = (0, 7, 29) if family == "beam" else (0, 7, 18)
-            if version < introduced_at:
-                assert not measured & introduced_ids, f"retrospective measurements in {family}/{capture_id}"
-            elif capture_id == latest_capture_id:
-                # Historical shards can add selected rows; only the latest resolved
-                # history must contain the complete set of currently applicable cases.
-                assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
+        for case_id, record in document["records"].items():
+            case = family.cases[case_id]
+            if case["display_id"] in introduced:
+                value, metadata = unified_history.materialized_record(case, record["value"])
+                _assert_reference_backfill_record(value, metadata, case["request"], version)
+
+@pytest.mark.parametrize("corruption", [None, "receipt", "producer", "version", "request", "results"])
+def test_reference_backfill_binding_rejects_unproven_older_results(corruption):
+    request = capture_stimulus.capture_input(next(iter(build_cases("qwen3").values())))
+    record = {"capture_input": deepcopy(request), "unavailable": "unsupported request mode"}
+    receipt = {"implementation": "dynamo_v2", "version": "0.1.0",
+               **{key: "a" * 64 for key in ("source_sha256", "adapter_sha256", "job_sha256", "results_sha256", "cargo_lock_sha256")}}
+    document = {"record_metadata": {"dynamo_v2_capture_provenance": receipt}}
+    if corruption == "receipt":
+        document.clear()
+    elif corruption == "producer":
+        receipt["implementation"] = "dynamo_v1"
+    elif corruption == "version":
+        receipt["version"] = "0.1.1"
+    elif corruption == "request":
+        record["capture_input"]["input"] += "altered request"
+    elif corruption == "results":
+        receipt.pop("results_sha256")
+    if corruption is None:
+        _assert_reference_backfill_record(record, document, request, "0.1.0")
+    else:
+        with pytest.raises(AssertionError, match="reference backfill"):
+            _assert_reference_backfill_record(record, document, request, "0.1.0")
 
 
-def test_shared_reference_cases_start_at_their_introduction(committed_unified_store):
-    _assert_reference_measurements_start_at_introduction(committed_unified_store)
-
-def test_retained_unified_captures_cover_the_current_corpus(committed_unified_store):
-    store = committed_unified_store
+def test_retained_unified_captures_cover_the_current_corpus(authored_unified_store):
+    store = authored_unified_store
     captured = set()
-    current_version = unified_history._capture_release_sort_key(dynamo_v2_label(UTILS.parents[1]))
-    for (family, implementation), history in store.histories.items():
-        if implementation != "dynamo_v2":
-            continue
-        capture_ids = [
-            capture_id for capture_id in history.ordered_capture_ids()
-            if unified_history._capture_release_sort_key(history.captures[capture_id]["runtime_version"]) <= current_version
-        ]
-        assert capture_ids, f"no retained captures at or before the active version for {family}"
-        for case_id in history.resolve(capture_ids[-1]):
-            case = history.family.cases[case_id]
-            case_key = case["display_id"] or case["historical_ids"][0]
-            captured.add((family, historical_unified_case_key(family, case_key)))
+    # Coverage is a latest-capture assertion, independent of the parity shard.
+    catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
+    resources = [row for row in catalog["sources"]["unified"]
+                 if row["kind"] == "history" and row["implementation"] == "dynamo_v2"]
+    latest = {}
+    for row in resources:
+        if row["family"] not in latest or unified_history._capture_release_sort_key(row["version"]) > unified_history._capture_release_sort_key(latest[row["family"]]["version"]):
+            latest[row["family"]] = row
+    root = UTILS.parent / "fixtures-unified-v2"
+    selected = [_store_resource(row) for row in latest.values()]
+    with unified_history._store_read_lock(root):
+        for resource, data in unified_archives.read_sources(root, selected):
+            document = yaml.load(data, Loader=unified_history.StrictLoader)
+            family = resource["family"]
+            for case_id in document["records"]:
+                case = store.families[family].cases[case_id]
+                case_key = case["display_id"] or case["historical_ids"][0]
+                captured.add((family, historical_unified_case_key(family, case_key)))
     expected = {
         (family, numbered_id(_scenario_of(case_id, family)))
         for family in NATIVE_FAMILIES for case_id in build_cases(family)
@@ -1943,7 +1992,7 @@ def _assert_cross_family_contract(corpus):
                         if isinstance(call["arguments"]["x"], str):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
-    assert set(by_scenario) == set(UNIFIED_TAX) - taxonomy.RETIRED_SCENARIOS
+    assert set(by_scenario) == set(NATIVE_UNIFIED_TAX)
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter

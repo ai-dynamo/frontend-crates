@@ -2866,7 +2866,7 @@ cases:
     - UNIFIED.31-33
     - UNIFIED.34-10
     request:
-      input: '<think>before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">é🙂<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+      input: "<think>before <｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\">é\U0001F642<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -2920,7 +2920,7 @@ cases:
       - delta_text: 'before '
       - delta_text: <｜DSML｜ invoke name="f">
       - delta_text: <｜DSML｜ parameter name="x" string="true">
-      - delta_text: é🙂
+      - delta_text: "é\U0001F642"
       - delta_text: <par{value}</｜DSML｜ parameter>
       - delta_text: </｜DSML｜ invoke>
       - delta_text: ' after'
@@ -8235,17 +8235,7 @@ cases:
     - UNIFIED.7-6
     - UNIFIED.deepseek-1
     request:
-      input: '<｜DSML｜ calls>
-
-        <｜DSML｜ invoke name="inspect">
-
-        {"value": " café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n", "nested": {"values": [true, 42, -1250]}}
-
-        </｜DSML｜ invoke>
-
-        <｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>
-
-        </｜DSML｜ calls>'
+      input: "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"inspect\">\n{\"value\": \" café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \\\"x\\\"\\n\", \"nested\": {\"values\": [true, 42, -1250]}}\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"done\">{}</｜DSML｜ invoke>\n</｜DSML｜ calls>"
       init:
         starting_state: None
         tool_output_mode: Native
@@ -8272,9 +8262,7 @@ cases:
 
           '
       - delta_text: <｜DSML｜ invoke name="inspect">
-      - delta_text: '
-
-          {"value": " café 🐈 '
+      - delta_text: "\n{\"value\": \" café \U0001F408 "
       - delta_text: </｜DSML｜ invoke>
       - delta_text: ' '
       - delta_text: </｜DSML｜ calls>
@@ -8298,9 +8286,7 @@ cases:
       - kind: tool_call
         name: inspect
         arguments:
-          value: ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"
-
-            '
+          value: " café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n"
           nested:
             values:
             - true

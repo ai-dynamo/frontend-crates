@@ -560,7 +560,7 @@ fn render_unified_conformance_html() {
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
     let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
-        let froot = common::ensure_fixtures().join("unified");
+        let froot = common::ensure_unified_fixtures().join("unified");
         let mut m = BTreeMap::new();
         // Shards key by TAXONOMY id (`UNIFIED.30-guided_json_named_tool`); the golden keys by SCENARIO
         // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
@@ -618,7 +618,7 @@ fn render_unified_conformance_html() {
     let mut dynamo_red = 0usize;
     let mut vllm_red = 0usize;
     let mut total = 0usize;
-    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    // Capture tooling consumes this feed; the viewer prefers resolved JSON even in a checkout.
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
@@ -821,7 +821,7 @@ fn render_unified_conformance_html() {
         }
     }
 
-    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // Machine-readable capture feed consumed by explode_unified_fixtures.py.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).
@@ -924,7 +924,7 @@ struct InputCase {
 /// This closes that gap: touch a parser, and the capture must be regenerated.
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
-    let root = common::ensure_fixtures().join("unified");
+    let root = common::ensure_unified_fixtures().join("unified");
     validate_committed_dynamo_capture(&root);
 }
 
@@ -993,6 +993,11 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
                 meta.retain(|(family, _), previous| {
                     family != &doc.family || previous.scenario != case.scenario
                 });
+                // v1_split scenarios have committed Dynamo v1 captures and are
+                // intentionally absent from the current Dynamo v2 capture.
+                if case.scenario.starts_with("v1_split_") {
+                    continue;
+                }
                 meta.insert((doc.family.clone(), key), case);
             }
         }

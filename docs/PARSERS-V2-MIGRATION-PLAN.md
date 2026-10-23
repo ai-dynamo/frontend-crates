@@ -39,13 +39,13 @@ The v1/v2 split is kept because **v2 is still under active development**: it liv
 | `parsers/v1/tests/` | v1 frontend-crates-owned | v1 crate tests. |
 | `conformance/toolcalling/fixtures-v1/` | frontend-crates legacy v1 | Batch tool-calling fixtures retained for v1 behavior. Do not hand-edit for v2 behavior. |
 | `conformance/reasoning/fixtures/` | frontend-crates legacy v1 | Reasoning fixtures rendered in the conformance table. |
-| `conformance/utils/src/tables/` | frontend-crates-owned | Shared table/markup modules the conformance generator imports. |
-| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case docs used by the conformance renderer. |
+| `conformance/utils/src/tables/` | frontend-crates-owned | Capture/storage value helpers and source metadata. |
+| `conformance/utils/lib/parsers/TOOLCALLING_CASES.md` and `REASONING_CASES.md` | frontend-crates-owned | Case descriptions indexed by the catalog and read by browser/Node models. |
 | `parsers/v2/src/tool_calling/*` | v2 frontend-crate-owned | Rust home for streaming tool-calling parsers. Current Harmony implementation is `parsers/v2/src/tool_calling/harmony.rs`. |
 | `parsers/v2-py/` | v2 frontend-crate-owned | Test-only PyO3 package exposing the v2 parser to Python as `dynamo_parsers_v2`. Not published. |
 | `conformance/toolcalling/fixtures-stream-v1/` | legacy streaming convention | Per-chunk fixtures for non-Unified stream parsers, including `dynamo_v2` implementation captures. |
 | `conformance/toolcalling/fixtures-batch-on-stream-v1/` | legacy streaming convention | Complete batch text captured through non-Unified stream parsers for stream-vs-batch comparison. |
-| `conformance/utils/src/generate_conformance_table.py` and `conformance/utils/src/conformance_table.html.j2` | v2 frontend-crate-owned | Conformance table renderer. |
+| `conformance/viewer/` and `conformance/utils/src/assets/` | frontend-crate-owned | Shared JavaScript data/model engine and maintained matrix renderer. |
 
 ## Migration Steps
 
@@ -62,7 +62,7 @@ Remaining, gated on **v2's streaming API stabilizing** (do not start while v2 is
 1. Stabilize the v2 streaming parser API and cut a `1.0` for `dynamo-parsers-v2`.
 2. Merge v2 into `dynamo-parsers`: move the streaming parsers into the crate under a behavior-named module (not a permanent `v2` name — see below), fold the binding into the crate's final Python package, and retire the separate `dynamo-parsers-v2` / `dynamo-parsers-v2-py` crate boundary in one coordinated release.
 3. Coordinate the Dynamo cutover: land a Dynamo PR that drops the `dynamo-parsers-v2` dependency and rewrites `use dynamo_parsers_v2::…` to the merged path. This is a breaking change — sequence it (publish merged crate → Dynamo PR → remove old crates), do not do it unilaterally.
-4. Merge the old parity renderer and the v2 conformance renderer into one owned renderer; retire the `_v2` fixture/table names once the merged table is the only one.
+4. Retire migration-only fixture/table names after the crate transition. The maintained browser viewer already owns matrix rendering; its old-report redirect preserves saved URLs.
 
 ## Final Target Shape
 
@@ -76,10 +76,11 @@ The `v1`/`v2` directory names are transitional; when the merge happens the survi
 
 ## Ownership
 
-All source, tests, fixtures, and conformance utilities in this repository are frontend-crates-owned. After changing parser fixtures or conformance code, verify the renderer:
+All source, tests, fixtures, and conformance utilities in this repository are frontend-crates-owned. After changing parser fixtures or conformance code, refresh the catalog and run the conformance gate, then serve the checkout over HTTP and inspect the root viewer:
 
 ```bash
-conformance/utils/render_table_v2.sh
+python3 conformance/utils/src/viewer_catalog.py
+conformance/utils/check.sh ci
 ```
 
 ## Version Pins
@@ -98,15 +99,15 @@ These files exist only for the parser v1/v2 migration and conformance workflow.
 | `conformance/toolcalling/fixtures-batch-on-stream-v1/` | Legacy, non-Unified batch-on-stream fixture overlays. |
 | `conformance/utils/src/_common.sh` | Shared stage builder for conformance scripts. |
 | `conformance/utils/check.sh` | Runs local-parser, vLLM, and SGLang checks against staged fixtures; v2 local-parser checks run Dynamo parser v2 code. |
-| `conformance/utils/render_table_v2.sh` | Renders `conformance/CONFORMANCE.html` with the v2 conformance generator. |
+| `conformance/utils/src/viewer_catalog.py` | Indexes active source resources and checks their hashes without rendering a report. |
 | `conformance/utils/src/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/utils/src/build_stream_fixtures.py` | Builds v2 per-chunk stream fixtures from source cases and captured engine output. |
 | `conformance/utils/src/capture.py` | In-container worker for an engine's tool-call parser: `--mode stream` (per-chunk), `--mode batch-on-stream` (batch text through the streaming parser), `--mode harmony-batch` (Harmony batch samples), `--mode harmony-chunk` (vLLM token-native Harmony). |
 | `conformance/utils/src/capture_driver.py` | Host orchestrator: `--mode stream` batch-captures non-Harmony stream fixtures, `--mode batch-on-stream` rewrites the overlays, `--mode merge` builds `harmony_batch_stream.json`. |
 | `conformance/utils/harmony_batch_stream.json` | Recorded batch-on-stream comparison data consumed by the v2 table. |
-| `conformance/utils/src/generate_conformance_table.py` | frontend-crate-owned conformance renderer; staged into `tests/parity/` at render time. |
-| `conformance/utils/src/conformance_table.html.j2` | frontend-crate-owned conformance HTML template; staged into `tests/parity/` at render time. |
-| `conformance/utils/README.md` | Usage docs for validate, render, and record helpers. |
+| `conformance/viewer/page_model.js` | Shared browser/Node matrix-model construction. |
+| `index.html` | Maintained browser viewer; reads the catalog and active source resources over HTTP. |
+| `conformance/utils/README.md` | Usage docs for validation, catalog refresh, status, and capture helpers. |
 | `conformance/utils/.gitignore` | Excludes `.stage*/`, local `CONFORMANCE*.html` outputs, and Python bytecode. |
 | `conformance/utils/tests/__init__.py` | Empty package root for `.stage/` imports. |
 | `parsers/v1/Cargo.toml` | Inlined for standalone publishing. |

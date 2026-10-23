@@ -101,7 +101,8 @@ def _load(reasoning_parser):
     ids=["released-sglang", "muse-sglang"],
 )
 def test_the_flag_is_passed_only_when_sglang_accepts_it(reasoning_parser, expected):
-    assert _load(reasoning_parser)._ACTIVE_KWARG == expected
+    module = _load(reasoning_parser)
+    assert module.sglang_reasoning_kwargs(reasoning_parser, streaming=True) == {"stream_reasoning": True, "force_reasoning": False, **expected}
 
 
 @pytest.mark.parametrize(

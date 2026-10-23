@@ -37,6 +37,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import extract_fixtures  # noqa: E402
+import check_family_coverage
 import fixture_snapshot  # noqa: E402
 
 
@@ -84,6 +85,31 @@ def _run_main(tmp_path, monkeypatch, manifest, argv=()):
     monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path)
     monkeypatch.setattr(sys, "argv", ["extract_fixtures.py", *argv])
     extract_fixtures.main()
+
+
+def test_legacy_only_keeps_full_snapshot_identity_and_materialization_separate(tmp_path, monkeypatch, cache_root, capsys):
+    legacy = _shard("toolcalling/a.tar.gz", "legacy")
+    unified = {**_shard(extract_fixtures.fixture_disposition.UNIFIED_HISTORY_PATH, "unified"), "format": "unified-history"}
+    manifest = {"snapshot": "20260101_000000", "shards": [legacy, unified]}
+    materialized = []
+
+    def materialize(shard, source, destination, *, derived_release_versions=None, verbose=False):
+        materialized.append(shard["path"])
+        (destination / ("unified" if shard.get("format") == "unified-history" else "toolcalling")).mkdir(parents=True)
+
+    monkeypatch.setattr(extract_fixtures, "materialize_shard", materialize)
+    _run_main(tmp_path, monkeypatch, manifest, ["--legacy-only"])
+    legacy_root = Path(capsys.readouterr().out.strip().splitlines()[-1])
+    assert materialized == [legacy["path"]]
+    assert not (legacy_root / "unified").exists()
+    _run_main(tmp_path, monkeypatch, manifest)
+    full_root = Path(capsys.readouterr().out.strip().splitlines()[-1])
+    assert full_root != legacy_root
+    assert (full_root / "unified").is_dir()
+    assert materialized == [legacy["path"], legacy["path"], unified["path"]]
+    _run_main(tmp_path, monkeypatch, manifest, ["--legacy-only"])
+    assert Path(capsys.readouterr().out.strip().splitlines()[-1]) == legacy_root
+    assert materialized == [legacy["path"], legacy["path"], unified["path"]]
 
 
 def test_concurrent_symlink_publishers_do_not_share_a_temp_path(tmp_path, monkeypatch):
@@ -221,19 +247,19 @@ def test_python_consumers_resolve_an_immutable_snapshot_instead_of_stable_links(
     (cache_root / "toolcalling").symlink_to(stale / "toolcalling")
 
     monkeypatch.delenv("CONFORMANCE_FIXTURES_ROOT", raising=False)
-    monkeypatch.setattr(
-        fixture_snapshot.subprocess,
-        "run",
-        lambda *args, **kwargs: fixture_snapshot.subprocess.CompletedProcess(
-            args=args[0], returncode=0, stdout=f"{current}\n", stderr=""
-        ),
-    )
+    commands = []
+    def extract(arguments, **kwargs):
+        commands.append(arguments)
+        return fixture_snapshot.subprocess.CompletedProcess(arguments, 0, stdout=f"{current}\n", stderr="")
+    monkeypatch.setattr(fixture_snapshot.subprocess, "run", extract)
     fixture_snapshot.fixture_snapshot_root.cache_clear()
     try:
         resolved = fixture_snapshot.fixture_snapshot_root()
+        assert check_family_coverage.resolve_fixtures_root() == resolved
     finally:
         fixture_snapshot.fixture_snapshot_root.cache_clear()
 
+    assert commands == [[sys.executable, str(SRC / "extract_fixtures.py"), "--legacy-only"]]
     assert resolved == current
     assert (resolved / "toolcalling" / "marker.txt").read_text() == "current"
     assert (cache_root / "toolcalling" / "marker.txt").read_text() == "stale"
@@ -365,9 +391,8 @@ def test_plain_run_after_full_refresh_resolves_to_the_new_generation(cache_root,
     """MUST finding (blind audit of the `--full-refresh` redesign): a plain
     (no-flag) run must resolve to whatever generation `--full-refresh` most
     recently published, never silently fall back to the abandoned original.
-    `_common.sh` runs this script with no flags before every conformance
-    test/render, so an invisible refresh means the fix `--full-refresh` was
-    run to apply never actually takes effect for anything downstream --
+    An invisible refresh means the fix `--full-refresh` was run to apply
+    never actually takes effect for a subsequent plain reader --
     reproduced against the unmodified module before this fix: the very next
     plain run flipped the symlink straight back to the corrupted original.
     """
