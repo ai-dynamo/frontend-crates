@@ -36,10 +36,13 @@ use aho_corasick::AhoCorasick;
 use moka::sync::Cache;
 use rustc_hash::FxHasher;
 
-use crate::{TokenIdType, traits::Encoder};
+use crate::{EncodeSegment, TokenIdType, traits::Encoder};
 
 /// Hash type for cache keys
 type Blake3Hash = [u8; 32];
+
+/// blake3 derive-key context that keeps segmented-input keys disjoint from plain-text keys.
+const SEGMENT_KEY_CONTEXT: &str = "dynamo-tokenizers 2026-09-24 L1 segmented prefix key";
 
 /// Keys are blake3 digests (already uniformly distributed), so a fast non-DoS-resistant
 /// hasher suffices — no need for the default SipHash.
@@ -123,6 +126,7 @@ fn namespace_hasher(namespace: &[u8]) -> blake3::Hasher {
 }
 
 /// Request-local lookup result. The deepest digest can differ from the matched key.
+/// Offsets are bytes for plain-text lookups and segment counts for segmented lookups.
 pub(super) struct PrefixMatch {
     pub(super) tokens: Arc<[TokenIdType]>,
     pub(super) prefix_len: usize,
@@ -338,17 +342,28 @@ impl L1Cache {
     /// The returned offsets and digests must be used with this same input.
     pub(super) fn lookup_prefix(&self, input: &str) -> PrefixLookup {
         let boundaries = self.boundaries(input);
+        self.resolve_prefix(hash_prefixes(self.hasher(), input, &boundaries).collect())
+    }
 
-        if boundaries.is_empty() {
-            self.misses.fetch_add(1, Ordering::Relaxed);
-            if let Some(cb) = &self.on_miss {
-                cb();
-            }
-            return PrefixLookup::Miss(Vec::new());
-        }
+    /// Segmented [`Self::lookup_prefix`]. Boundaries are segment ends, excluding the last so
+    /// the uncached suffix is never empty.
+    pub(super) fn lookup_prefix_segments(&self, segments: &[EncodeSegment<'_>]) -> PrefixLookup {
+        let mut hasher = blake3::Hasher::new_derive_key(SEGMENT_KEY_CONTEXT);
+        hasher.update(&(self.namespace.len() as u64).to_le_bytes());
+        hasher.update(&self.namespace);
+        let prefix_hashes = (1..segments.len())
+            .map(|boundary| {
+                let segment = &segments[boundary - 1];
+                hasher.update(&[u8::from(segment.allow_special)]);
+                hasher.update(&(segment.text.len() as u64).to_le_bytes());
+                hasher.update(segment.text.as_bytes());
+                (boundary, *hasher.finalize().as_bytes())
+            })
+            .collect();
+        self.resolve_prefix(prefix_hashes)
+    }
 
-        let prefix_hashes: Vec<_> = hash_prefixes(self.hasher(), input, &boundaries).collect();
-
+    fn resolve_prefix(&self, prefix_hashes: Vec<(usize, Blake3Hash)>) -> PrefixLookup {
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(entry) = self.cache.cache.get(&hash_bytes) {
                 self.hits.fetch_add(1, Ordering::Relaxed);
@@ -553,6 +568,61 @@ impl L1Cache {
         // Copy only the populated prefix, excluding capacity reserved for the tail.
         let tokens: Arc<[TokenIdType]> = cumulative.as_slice().into();
         self.insert(hash_bytes, tokens);
+
+        cumulative.extend_from_slice(seg_b.token_ids());
+        Ok(cumulative)
+    }
+
+    /// Segmented [`Self::populate_and_encode_with_hashes`]. `prefix_hashes` must come from
+    /// [`Self::lookup_prefix_segments`] over these segments.
+    pub(super) fn populate_and_encode_segments<E: Encoder + ?Sized>(
+        &self,
+        segments: &[EncodeSegment<'_>],
+        prefix_hashes: Vec<(usize, Blake3Hash)>,
+        tokenizer: &E,
+    ) -> anyhow::Result<Vec<TokenIdType>> {
+        let mut running_tokens: Vec<TokenIdType> = Vec::new();
+        let mut last = 0;
+        for (boundary, hash_bytes) in prefix_hashes {
+            let seg = tokenizer.encode_segments(&segments[last..boundary])?;
+            running_tokens.extend_from_slice(seg.token_ids());
+            self.insert(hash_bytes, running_tokens.as_slice().into());
+            last = boundary;
+        }
+
+        let tail = tokenizer.encode_segments(&segments[last..])?;
+        running_tokens.extend_from_slice(tail.token_ids());
+        Ok(running_tokens)
+    }
+
+    /// Segmented [`Self::extend_after_match_with_hash`]. `matched` must come from
+    /// [`Self::lookup_prefix_segments`] over these segments.
+    pub(super) fn extend_after_match_segments<E: Encoder + ?Sized>(
+        &self,
+        segments: &[EncodeSegment<'_>],
+        matched: PrefixMatch,
+        tokenizer: &E,
+    ) -> anyhow::Result<Vec<TokenIdType>> {
+        let PrefixMatch {
+            tokens: prefix_tokens,
+            prefix_len,
+            deepest_boundary: deepest,
+            deepest_hash,
+        } = matched;
+        if deepest == prefix_len {
+            let suffix_enc = tokenizer.encode_segments(&segments[prefix_len..])?;
+            return Ok([&prefix_tokens[..], suffix_enc.token_ids()].concat());
+        }
+
+        let seg_a = tokenizer.encode_segments(&segments[prefix_len..deepest])?;
+        let seg_b = tokenizer.encode_segments(&segments[deepest..])?;
+        let mut cumulative = Vec::with_capacity(
+            prefix_tokens.len() + seg_a.token_ids().len() + seg_b.token_ids().len(),
+        );
+        cumulative.extend_from_slice(&prefix_tokens);
+        cumulative.extend_from_slice(seg_a.token_ids());
+        let hash_bytes = deepest_hash.expect("lookup supplies the deepest digest");
+        self.insert(hash_bytes, cumulative.as_slice().into());
 
         cumulative.extend_from_slice(seg_b.token_ids());
         Ok(cumulative)
@@ -1071,6 +1141,9 @@ mod tests {
         fn encode_batch(&self, inputs: &[&str]) -> crate::Result<Vec<crate::Encoding>> {
             inputs.iter().map(|s| self.encode(s)).collect()
         }
+        fn encode_segments(&self, _: &[EncodeSegment<'_>]) -> crate::Result<crate::Encoding> {
+            self.encode("")
+        }
     }
 
     #[test]
@@ -1274,6 +1347,75 @@ mod tests {
                     }
                 }
             }
+        }
+    }
+
+    fn segments() -> [EncodeSegment<'static>; 4] {
+        [
+            EncodeSegment::control("<s>"),
+            EncodeSegment::ordinary("a"),
+            EncodeSegment::control("</s>"),
+            EncodeSegment::ordinary("b"),
+        ]
+    }
+
+    #[test]
+    fn segmented_miss_failure_retains_only_completed_prefixes() {
+        let segments = segments();
+        for fail_at in 0..segments.len() {
+            let cache = test_cache(8 * 1024 * 1024);
+            let PrefixLookup::Miss(hashes) = cache.lookup_prefix_segments(&segments) else {
+                panic!("expected miss");
+            };
+            let encoder = FailAt {
+                call: 0.into(),
+                fail_at,
+            };
+            let error = cache
+                .populate_and_encode_segments(&segments, hashes, &encoder)
+                .unwrap_err();
+            assert_eq!(error.to_string(), "suffix failed");
+            assert_eq!(cache.len(), fail_at);
+            match cache.lookup_prefix_segments(&segments) {
+                PrefixLookup::Hit(matched) => {
+                    assert_eq!(matched.prefix_len, fail_at);
+                    assert_eq!(&*matched.tokens, vec![1; fail_at]);
+                }
+                PrefixLookup::Miss(_) => assert_eq!(fail_at, 0),
+            }
+        }
+    }
+
+    #[test]
+    fn segmented_extend_does_not_insert_when_either_run_fails() {
+        let segments = segments();
+        let cache = test_cache(8 * 1024 * 1024);
+        let PrefixLookup::Miss(hashes) = cache.lookup_prefix_segments(&segments[..2]) else {
+            panic!("expected miss");
+        };
+        let seed = FailAt {
+            call: 0.into(),
+            fail_at: usize::MAX,
+        };
+        cache
+            .populate_and_encode_segments(&segments[..2], hashes, &seed)
+            .unwrap();
+        for fail_at in [0, 1] {
+            let PrefixLookup::Hit(matched) = cache.lookup_prefix_segments(&segments) else {
+                panic!("expected hit");
+            };
+            let error = cache
+                .extend_after_match_segments(
+                    &segments,
+                    matched,
+                    &FailAt {
+                        call: 0.into(),
+                        fail_at,
+                    },
+                )
+                .unwrap_err();
+            assert_eq!(error.to_string(), "suffix failed");
+            assert_eq!(cache.len(), 1);
         }
     }
 }
