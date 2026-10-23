@@ -7,6 +7,21 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   glm_ref_encoded_targets:
     case_key: UNIFIED.7-11
     stimulus:
@@ -253,6 +268,9 @@ changes:
         - expected: []
         - expected: []
 metadata_changes:
+  arg_json_null_ref: {}
+  arg_null_mixed_labels: {}
+  arg_string_null_ref: {}
   guided_json_native_parameter_array_before_payload: {}
   guided_json_native_parameter_object_before_payload: {}
   guided_json_native_parameter_string_before_payload: {}
@@ -267,7 +285,13 @@ document_overrides:
         crate_version: 0.7.18
         git_commit: ba6a403ac48ed894b44ab921ddcb0d5a30b14e11
         source_sha256: 2adc805ae85509f2e2efdfc02479b68cbc12805eb350fde85bca9167887b7a6d
-      inherited_from: null
+      inherited_from:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin:
+      inherited_from:
   arg_null_mixed_labels:
     capture_provenance:
       captured_with:
@@ -276,7 +300,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_const_decimal:
     capture_provenance:
       captured_with:
@@ -285,7 +309,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_const_exponent:
     capture_provenance:
       captured_with:
@@ -294,7 +318,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_enum_decimal:
     capture_provenance:
       captured_with:
@@ -303,7 +327,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_enum_exponent:
     capture_provenance:
       captured_with:
@@ -312,7 +336,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_large_decimal:
     capture_provenance:
       captured_with:
@@ -321,7 +345,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_large_exponent:
     capture_provenance:
       captured_with:
@@ -330,7 +354,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_negative:
     capture_provenance:
       captured_with:
@@ -339,7 +363,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_negative_exponent:
     capture_provenance:
       captured_with:
@@ -348,7 +372,7 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   arg_numeric_14_zero_underflow:
     capture_provenance:
       captured_with:
@@ -357,37 +381,37 @@ document_overrides:
         crate_version: 0.7.18
         source_sha256: 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b
         git_commit: 60f830ed84dd49ceb8aebe98a5f771a27dfde313
-      inherited_from: null
+      inherited_from:
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_json_native_parameter_object_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_json_noncall_before_native_array_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_response_native_wrapper_whitespace_before_prose:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   malformed_json_then_two_valid_calls:
     capture_provenance:
       captured_with:
@@ -396,7 +420,7 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
-      inherited_from: null
+      inherited_from:
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -405,28 +429,34 @@ document_overrides:
         crate_version: 0.7.18
         git_commit: ba6a403ac48ed894b44ab921ddcb0d5a30b14e11
         source_sha256: 2adc805ae85509f2e2efdfc02479b68cbc12805eb350fde85bca9167887b7a6d
-      inherited_from: null
+      inherited_from:
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin:
+      inherited_from:
   dotted_name_minimal:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_mixed_punctuation:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_multiple_segments:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_shared_prefix:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:

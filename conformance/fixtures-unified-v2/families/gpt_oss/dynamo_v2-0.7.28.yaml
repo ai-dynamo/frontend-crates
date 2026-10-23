@@ -202,6 +202,53 @@ changes:
             arguments: ''
             complete: true
         - expected: []
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: city
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
   arg_marker_in_string:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
@@ -377,6 +424,99 @@ changes:
             arguments: ''
             complete: true
         - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: label
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ','
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: note
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ','
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: literal
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
   arg_string_null:
     observation:
       value:
@@ -501,6 +641,57 @@ changes:
             name: null
             arguments: '"}'
             complete: false
+          - kind: tool_call
+            name: null
+            arguments: ''
+            complete: true
+        - expected: []
+  arg_string_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: city
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '":'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: ' "'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: 'null'
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '"}'
+            complete: false
+        - expected:
           - kind: tool_call
             name: null
             arguments: ''

@@ -440,6 +440,7 @@ unified_display:
     deepseek_v41: 'Single Family Test: DeepSeek V4.1-specific tests'
     kimi_k2: 'Single Family Test: Kimi K2-specific tests'
     qwen3: 'Family-specific tests: Qwen3 and Nemotron v3 XML'
+    nemotron_v3: 'Single Family Test: Nemotron v3 default reasoning'
     kimi: 'Single Family Test: Kimi K3 XTML'
     muse: 'Single Family Test: Muse-specific'
     muse_spark: 'Single Family Test: Muse Spark message phases'
@@ -447,6 +448,8 @@ unified_display:
     beam: 'Single Family Test: Beam-specific'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
+    default_reasoning_without_opener: nemotron_v3
+    default_reasoning_tool_without_closer: nemotron_v3
     xml_custom_type_double_quoted_object: qwen3
     xml_custom_type_single_quoted_object: qwen3
     guided_response_rejected_header_quote_ownership: deepseek_v4

@@ -6,10 +6,6 @@ document:
   mode: unified
 changes:
   arg_marker_in_string:
-    case_key: arg_marker_in_string
-    stimulus:
-      ref: current
-      semantic_sha256: 51ce3bd9a1f9ba25a082a2f0b4638aa3087d9df3b1af5c23b8bbfe10518c71a4
     observation:
       value:
         assembled:
@@ -41,10 +37,6 @@ changes:
         - expected: []
         - expected: []
   empty_args:
-    case_key: empty_args
-    stimulus:
-      ref: current
-      semantic_sha256: 3ccb6b7c7848d869074aa5b4dae8a67c5ea16d933a265b83ff29ae9556c87658
     observation:
       value:
         assembled:
@@ -64,10 +56,6 @@ changes:
         - expected: []
         - expected: []
   tool_no_close:
-    case_key: tool_no_close
-    stimulus:
-      ref: current
-      semantic_sha256: 0733b54a78cf111eae00cade0eb69a09bce1540046e314b7f24303702432c06d
     observation:
       value:
         assembled:
@@ -92,10 +80,6 @@ changes:
             name: null
             arguments: '"city": "Paris"}'
   truncated_tool_eof:
-    case_key: truncated_tool_eof
-    stimulus:
-      ref: current
-      semantic_sha256: 8a9eb3dc53c2c5ea2000c8218d352692daafd1b84befbfe4b937ef4e4de31e63
     observation:
       value:
         assembled:
@@ -2703,12 +2687,6 @@ document_overrides:
         sglang_python: 0.5.16
       capture_origin: null
       inherited_from: null
-  arg_marker_in_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.16
-      capture_origin: null
-      inherited_from: null
   arg_string_null:
     capture_provenance:
       captured_with:
@@ -2770,12 +2748,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   deepseek_v41_mixed_control_text_in_string:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.16
-      capture_origin: null
-      inherited_from: null
-  empty_args:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.16
@@ -4017,12 +3989,6 @@ document_overrides:
         sglang_python: 0.5.16
       capture_origin: null
       inherited_from: null
-  tool_no_close:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.16
-      capture_origin: null
-      inherited_from: null
   tool_only:
     capture_provenance:
       captured_with:
@@ -4030,12 +3996,6 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   trailing_text_after_tool:
-    capture_provenance:
-      captured_with:
-        sglang_python: 0.5.16
-      capture_origin: null
-      inherited_from: null
-  truncated_tool_eof:
     capture_provenance:
       captured_with:
         sglang_python: 0.5.16

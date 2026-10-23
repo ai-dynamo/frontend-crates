@@ -13,15 +13,16 @@ from conformance.utils.tests.schema_oracle import matches_schema
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from case_variants import aggregate_cells, group_null_variants, leaf_cells
 from gen_null_stream_cases import FAMILIES, build_cases, native_call
+from gen_unified_golden import UNIFIED_FAMILIES
 from null_cases import NULL_DESCRIPTIONS, NULL_VARIANTS
 from numeric_cases import NumericLiteral
 from validate_conformance_status import cell_state
 import unified_taxonomy
 
 
-def make_cell(label, sig=1, missing=False):
+def make_cell(label, sig=1, missing=False, family="glm47"):
     return {"kind": "cell", "status": "ok", "sub": label,
-            "case_id": "UNIFIED." + label, "family": "glm47",
+            "case_id": "UNIFIED." + label, "family": family,
             "cmp": {"golden": {"sig": 1, "na": 0, "err": 0, "leak": 0},
                     "dynamo": {"sig": sig, "na": int(missing), "err": 0, "leak": 0}},
             "tooltip": {"head": "UNIFIED." + label, "description": label,
@@ -44,19 +45,22 @@ def test_group_does_not_hide_failures_or_missing_captures(signatures, missing, e
     assert result["tooltip"]["variants"] == [cell["tooltip"] for cell in before]
 
 
-@pytest.mark.parametrize("tab_id", ["tab-unified", "tab-toolcalling-streamv1", "tab-toolcalling-batch"])
-def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str) -> None:
+@pytest.mark.parametrize("tab_id,family", [
+    *[("tab-unified", family) for family in sorted(UNIFIED_FAMILIES)],
+    ("tab-toolcalling-streamv1", "glm47"), ("tab-toolcalling-batch", "glm47"),
+])
+def test_mixed_probe_is_referenced_twice_but_counted_once(tab_id: str, family: str) -> None:
     labels = ["7-3", "7-4", "7-4.anyof", "7-4.mixed_labels", "7-5", "7-5.union"]
     tab = {"id": tab_id, "columns": [{"label": label, "sub": label, "group_key": "7"}
                                     for label in labels],
-           "rows": [{"family": "glm47", "cells": {label: make_cell(label) for label in labels}}],
+           "rows": [{"family": family, "cells": {label: make_cell(label, family=family) for label in labels}}],
            "column_groups": [{"key": "7", "span": len(labels)}], "stats": {}}
     if tab_id == "tab-unified":
         for column in tab["columns"]:
             column["sub"] = unified_taxonomy.scenario_for_label(column["label"])
             column["label"] = unified_taxonomy.case_label(column["sub"])
         tab["rows"][0]["cells"] = {
-            column["sub"]: {**make_cell(column["label"]), "sub": column["sub"]}
+            column["sub"]: {**make_cell(column["label"], family=family), "sub": column["sub"]}
             for column in tab["columns"]
         }
     original = copy.deepcopy(tab["rows"][0])

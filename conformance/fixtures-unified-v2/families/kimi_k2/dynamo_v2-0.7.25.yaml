@@ -5,6 +5,33 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 6f7a39355abc9d48134c70b5f5c008f8f7e00c44f3c42ce078ed093bdf97e129
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 7d00bac8332cb9ae5b13e47e97257e66bfc9ef584dab4652117c607fdc23ea00
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 02b18a7ae14fed68ecf1b6a7fbd9af5c418d5d280994493af3e57b7b06c5d1ae
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.25 source could not be recovered with its recorded identity not retained; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_tool_body_whitespace:
     observation:
       value:

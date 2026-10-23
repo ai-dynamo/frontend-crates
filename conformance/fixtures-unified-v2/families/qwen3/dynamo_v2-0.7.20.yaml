@@ -7,6 +7,16 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  arg_null_mixed_labels:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_string_before_payload:
     observation:
       unavailable:
@@ -134,13 +144,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -258,13 +268,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -382,13 +392,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -506,13 +516,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -630,13 +640,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -754,13 +764,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -878,13 +888,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1002,13 +1012,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1126,13 +1136,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1250,13 +1260,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1362,7 +1372,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -1464,13 +1474,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1530,13 +1540,13 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '}'
             complete: true
         - expected: []
@@ -1698,7 +1708,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -1727,7 +1737,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -1989,7 +1999,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -2428,7 +2438,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -2486,7 +2496,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -3130,7 +3140,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -3188,7 +3198,7 @@ changes:
         - kind: tool_call
           name: schema_probe
           arguments:
-            value: null
+            value:
         chunks:
         - expected: []
         - expected: []
@@ -3455,31 +3465,67 @@ document_overrides:
         crate_version: 0.7.20
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
         source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
-      inherited_from: null
+      inherited_from:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin:
+      inherited_from:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_json_noncall_before_native_array_before_payload:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   guided_response_native_wrapper_whitespace_before_prose:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   structured_response_after_reasoning:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -3488,28 +3534,4 @@ document_overrides:
         crate_version: 0.7.20
         git_commit: 880701a85f5e398ad36ba49c93d98f4861409636
         source_sha256: 7c1ac1c9239b4698edfc4f8dc9dd23a2e42c29f3f3e191f8df048ca00bb66758
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.20
-      capture_origin: null
-      inherited_from: null
+      inherited_from:

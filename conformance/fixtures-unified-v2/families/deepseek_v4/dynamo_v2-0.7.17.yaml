@@ -54,7 +54,7 @@ changes:
             arguments: ''
             complete: false
           - kind: tool_call
-            name: null
+            name:
             arguments: '{"value":"{\"x\":\"unfinished"}'
             complete: true
           - kind: tool_call
@@ -62,7 +62,7 @@ changes:
             arguments: ''
             complete: false
           - kind: tool_call
-            name: null
+            name:
             arguments: '{"value":"é"}'
             complete: true
           - kind: tool_call
@@ -70,7 +70,7 @@ changes:
             arguments: ''
             complete: false
           - kind: tool_call
-            name: null
+            name:
             arguments: '{"value":"Café"}'
             complete: true
         - expected: []
@@ -88,7 +88,7 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
         source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
-      inherited_from: null
+      inherited_from:
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:
@@ -97,7 +97,7 @@ document_overrides:
         crate_version: 0.7.17
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-      inherited_from: null
+      inherited_from:
   guided_json_native_parameter_object_before_payload:
     capture_provenance:
       captured_with:
@@ -106,7 +106,7 @@ document_overrides:
         crate_version: 0.7.17
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-      inherited_from: null
+      inherited_from:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
       captured_with:
@@ -115,7 +115,7 @@ document_overrides:
         crate_version: 0.7.17
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-      inherited_from: null
+      inherited_from:
   guided_json_noncall_before_native_array_before_payload:
     capture_provenance:
       captured_with:
@@ -124,7 +124,7 @@ document_overrides:
         crate_version: 0.7.17
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
-      inherited_from: null
+      inherited_from:
   guided_quoted_reasoning_closer_named:
     capture_provenance:
       captured_with:
@@ -133,7 +133,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   guided_quoted_reasoning_closer_required:
     capture_provenance:
       captured_with:
@@ -142,7 +142,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   guided_response_native_wrapper_whitespace_before_prose:
     capture_provenance:
       captured_with:
@@ -151,7 +151,7 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
-      inherited_from: null
+      inherited_from:
   guided_response_quoted_control_braces_named:
     capture_provenance:
       captured_with:
@@ -160,7 +160,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   guided_response_quoted_control_braces_required:
     capture_provenance:
       captured_with:
@@ -169,7 +169,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   guided_response_rejected_header_quote_ownership:
     capture_provenance:
       captured_with:
@@ -178,7 +178,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_quoted_control_in_reasoning:
     capture_provenance:
       captured_with:
@@ -187,7 +187,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_quoted_control_in_response:
     capture_provenance:
       captured_with:
@@ -196,7 +196,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_quoted_control_then_call:
     capture_provenance:
       captured_with:
@@ -205,7 +205,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_quoted_incomplete_header:
     capture_provenance:
       captured_with:
@@ -214,7 +214,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_single_quote_contraction_reasoning:
     capture_provenance:
       captured_with:
@@ -223,7 +223,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_single_quote_contraction_response:
     capture_provenance:
       captured_with:
@@ -232,7 +232,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_single_quoted_word_control:
     capture_provenance:
       captured_with:
@@ -241,7 +241,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   native_unmatched_quote_then_call:
     capture_provenance:
       captured_with:
@@ -250,7 +250,7 @@ document_overrides:
         crate_version: 0.7.16
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: b2434b9160737db62d5c1b7ef9473cacabfc18be114d99ffa6c9e1cc29ca43f5
-      inherited_from: null
+      inherited_from:
   structured_response_after_reasoning:
     capture_provenance:
       captured_with:
@@ -259,7 +259,7 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
         source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
-      inherited_from: null
+      inherited_from:
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -268,28 +268,55 @@ document_overrides:
         crate_version: 0.7.17
         git_commit: 58cfc2aa51358234b7c81f730ad29e7edd8e6b82
         source_sha256: 4f0d78e8c87e91f58d7ae55901f81261c3d57d5ecf144cd065ea9ed2ace846e3
-      inherited_from: null
+      inherited_from:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from:
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from:
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.17
+      capture_origin:
+        crate_version: 0.7.17
+        git_commit: c1b413d9b90477e5cb2b19d6d608a691a8ad0f02
+        source_sha256: 2ee7c8b1fef511dc2164522dd329359a8eb175a9532ee3d319ed80e9471b34bd
+      inherited_from:
   dotted_name_minimal:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_mixed_punctuation:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_multiple_segments:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:
   dotted_name_shared_prefix:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.17
-      capture_origin: null
-      inherited_from: null
+      capture_origin:
+      inherited_from:

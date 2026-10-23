@@ -102,6 +102,15 @@ changes:
             arguments: '{"city": null}'
             complete: true
         - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 00a1097e5baecc5f47d3afffaec0b6cdef844a17ffa1898e0a239cc95348b815
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity add2c59dea7800eba96993fbc7f0add387e03964ee319396540ba6eabe139791; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_marker_in_string_pr424:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
@@ -129,6 +138,15 @@ changes:
             arguments: '{"cmd":"git log <|call|> --oneline"}'
             complete: true
         - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 7f2342f3d74db823a64c365ae99a6af84e8db57cf11c3e39a20a86090b1959f9
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity add2c59dea7800eba96993fbc7f0add387e03964ee319396540ba6eabe139791; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null:
     case_key: UNIFIED.7-arg_string_null
     stimulus:
@@ -186,6 +204,15 @@ changes:
             arguments: '{"city": "null"}'
             complete: true
         - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: ab2b3f7100b13704b5814b71e121aae23785c4f2488127c27ad1206e30f924d3
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.24 source could not be recovered with its recorded identity add2c59dea7800eba96993fbc7f0add387e03964ee319396540ba6eabe139791; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-arg_string_null_sibling_anyof
     stimulus:
@@ -5961,6 +5988,18 @@ document_overrides:
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
       inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
+      inherited_from: null
   arg_string_null:
     capture_provenance:
       captured_with:
@@ -5987,6 +6026,12 @@ document_overrides:
         crate_version: 0.7.24
         source_sha256: 2e938e435efa1ce013ab78ceafb3d5406f636ed986e1e333bbe8c40276d0cf27
         git_commit: 5c4c2089df85550e79428e5f682b3974ea595e10
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.24
+      capture_origin: null
       inherited_from: null
   arg_string_null_sibling_anyof:
     capture_provenance:

@@ -18,7 +18,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -43,7 +43,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -76,12 +76,12 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ''
             complete: false
         - expected: []
@@ -97,7 +97,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -122,7 +122,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -155,12 +155,12 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ''
             complete: false
         - expected: []
@@ -184,12 +184,12 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ''
             complete: false
         - expected: []
@@ -205,7 +205,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -230,7 +230,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -263,12 +263,12 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ''
             complete: false
         - expected: []
@@ -299,30 +299,30 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: quoted
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: </think>
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ' <tool_call>'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ' </tool_call>'
             complete: false
         - expected: []
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"}'
             complete: true
         - expected: []
@@ -343,7 +343,7 @@ changes:
         - kind: tool_call
           name: get_weather
           arguments:
-            city: null
+            city:
         chunks:
         - expected: []
         - expected: []
@@ -376,12 +376,12 @@ changes:
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: '"'
             complete: false
         - expected:
           - kind: tool_call
-            name: null
+            name:
             arguments: ''
             complete: false
         - expected: []
@@ -396,8 +396,8 @@ document_overrides:
         crate_version: 0.7.4
         git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
         source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
-      inherited_from: null
-  guided_json_native_parameter_string_before_payload:
+      inherited_from:
+  arg_json_null_ref:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.4
@@ -405,8 +405,8 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
-  guided_json_noncall_before_native_array_before_payload:
+      inherited_from:
+  arg_null_mixed_labels:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.4
@@ -414,34 +414,7 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
-  guided_response_native_wrapper_whitespace_before_prose:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
-  structured_response_after_reasoning:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
-        git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
-  three_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.4
-      capture_origin:
-        crate_version: 0.7.4
-        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
-        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
-      inherited_from: null
+      inherited_from:
   dotted_name_minimal:
     capture_provenance:
       captured_with:
@@ -450,7 +423,7 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
+      inherited_from:
   dotted_name_mixed_punctuation:
     capture_provenance:
       captured_with:
@@ -459,7 +432,7 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
+      inherited_from:
   dotted_name_multiple_segments:
     capture_provenance:
       captured_with:
@@ -468,7 +441,7 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
+      inherited_from:
   dotted_name_shared_prefix:
     capture_provenance:
       captured_with:
@@ -477,4 +450,49 @@ document_overrides:
         crate_version: 0.7.4
         source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
         git_commit: e76882f2d26ac813055d147b3292364da342f40b
-      inherited_from: null
+      inherited_from:
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from:
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from:
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from:
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        source_sha256: 5569cc8d37922fd2f0d8beb794e5caa967a16f3b050a005fd952622a2e09214d
+        git_commit: e76882f2d26ac813055d147b3292364da342f40b
+      inherited_from:
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
+        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
+      inherited_from:

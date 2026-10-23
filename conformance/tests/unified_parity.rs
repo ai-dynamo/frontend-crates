@@ -432,6 +432,9 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "unused_reference_graph_parameter_types",
         "nullable_reference_alias_literals",
         "local_schema_id_preserves_type",
+        "arg_json_null_ref",
+        "arg_string_null_ref",
+        "arg_null_mixed_labels",
     ];
     let dotted_scenarios = [
         "dotted_name_minimal",

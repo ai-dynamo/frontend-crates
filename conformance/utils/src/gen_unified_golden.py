@@ -2816,8 +2816,8 @@ EDGE += [
     for scenario, label, schema, value, detail in NULL_VARIANTS
 ]
 
-# Only schema-directed grammars can distinguish a reference from the equivalent
-# inline type. Typed JSON passthrough would duplicate the ordinary null probes.
+# Keep references unresolved so schema-driven grammars must consult the tool
+# parameters root; explicitly typed grammars preserve the same authored values.
 EDGE += [
     (
         scenario,
@@ -2832,16 +2832,16 @@ EDGE += [
                 else r_tool(family, "get_weather", "city", value, 0),
                 D("UNSUPPORTED", f"No peer capture is recorded for this {family} reference-schema probe."), M,
             )
-            for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES
+            for family in TEMPLATE_FAMILIES
         }),
         {family: [{"name": "get_weather", "parameters": {
             "type": "object", "$defs": {"City": schema},
             "properties": {"city": {"$ref": "#/$defs/City"}},
-        }}] for family in FAMILIES if family in SCHEMA_DIRECTED_FAMILIES},
+        }}] for family in TEMPLATE_FAMILIES},
     )
     for scenario, label, schema, value, detail in (
         ("arg_json_null_ref", "7-4.ref", {"type": ["string", "null"]}, None,
-         '`city` uses a local $ref to the tool parameters root; resolving its nullable definition must turn bare null text into JSON null.'),
+         '`city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'),
         ("arg_string_null_ref", "7-5.ref", {"type": "string"}, "null",
          'A local $ref resolves to a string-only definition; bare null text remains the string "null".'),
     )

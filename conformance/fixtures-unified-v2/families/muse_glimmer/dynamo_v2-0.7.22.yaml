@@ -7,6 +7,12 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    absent: true
+  arg_null_mixed_labels:
+    absent: true
+  arg_string_null_ref:
+    absent: true
   dotted_name_minimal:
     observation:
       value:

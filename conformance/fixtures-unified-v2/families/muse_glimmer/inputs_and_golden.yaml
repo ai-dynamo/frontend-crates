@@ -21139,6 +21139,224 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
+  arg_json_null_ref:
+    lifecycle: active
+    scenario: arg_json_null_ref
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_json_null_ref
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">null</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type:
+              - string
+              - 'null'
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_null_mixed_labels:
+    lifecycle: active
+    scenario: arg_null_mixed_labels
+    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-driven grammars receive identical bare null text; explicitly typed grammars use native null and string encodings. Both yield {"label": null, "note": null, "literal": "null"}.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_null_mixed_labels
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=set_labels<|message|><atem:function_calls>
+
+        <atem:invoke name="set_labels">
+
+        <atem:parameter name="label">null</atem:parameter>
+
+        <atem:parameter name="note">null</atem:parameter>
+
+        <atem:parameter name="literal">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: set_labels
+        parameters:
+          type: object
+          properties:
+            label:
+              anyOf:
+              - type: string
+              - type: 'null'
+            note:
+              type:
+              - string
+              - 'null'
+            literal:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=set_labels
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="set_labels">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="label">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="note">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="literal">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: set_labels
+        arguments:
+          label: null
+          note: null
+          literal: 'null'
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_string_null_ref
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+
   arg_array_quoted_parameter_close:
     lifecycle: active
     scenario: arg_array_quoted_parameter_close

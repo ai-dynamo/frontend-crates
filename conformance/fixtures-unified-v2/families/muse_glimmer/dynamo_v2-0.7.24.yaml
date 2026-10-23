@@ -15,17 +15,23 @@ changes:
     case_key: UNIFIED.7-arg_json_null_nullable
   arg_json_null_oneof:
     case_key: UNIFIED.7-arg_json_null_oneof
+  arg_json_null_ref:
+    absent: true
   arg_marker_in_string:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
       ref: current
       semantic_sha256: 416e2616cf21f289c06eaedaf9912a9f72fbc85a7f098ee155c3be6d051fa054
+  arg_null_mixed_labels:
+    absent: true
   arg_string_null:
     case_key: UNIFIED.7-arg_string_null
   arg_string_null_const:
     case_key: UNIFIED.7-arg_string_null_const
   arg_string_null_enum:
     case_key: UNIFIED.7-arg_string_null_enum
+  arg_string_null_ref:
+    absent: true
   arg_string_null_sibling_anyof:
     case_key: UNIFIED.7-arg_string_null_sibling_anyof
   arg_string_null_sibling_oneof:

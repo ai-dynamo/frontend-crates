@@ -6,7 +6,13 @@ provenance:
     git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
 document:
   mode: unified
-changes: {}
+changes:
+  arg_json_null_ref:
+    absent: true
+  arg_null_mixed_labels:
+    absent: true
+  arg_string_null_ref:
+    absent: true
 metadata_changes: {}
 document_overrides:
   dotted_name_minimal:

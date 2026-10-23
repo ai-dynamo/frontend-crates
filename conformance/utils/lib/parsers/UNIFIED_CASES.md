@@ -8,6 +8,8 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 Always evaluate single-family tests against every registered family when adding, changing, or reviewing them, following the [case applicability policy](../../../README.md#case-applicability). If another family can express the behavior, add family-native inputs and authored expected outputs for every applicable family and use a shared section. Otherwise, explain the grammar or request-mode limitation and place the case in a named family-specific test section. Preserve published IDs, capture history, and older unmeasured results when changing section placement.
 
+The corpus guard checks every generic semantic case, independent of which family exposed the regression. A generic case must have native inputs in more than one registered family. Family-native request and delivery variants may share a generic heading when the combined behavior has coverage across families; they retain their individual inputs, expectations, and captures. A standalone case with one family must gain applicable native inputs or move to a named family section. The rendered-model guard checks the resulting columns as well as the authored corpus.
+
 ## The oracle: GOLDEN is authored, not captured
 
 ## Capture version policy
@@ -74,6 +76,8 @@ The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and share
 ## Nemotron 3 Ultra applicability
 
 The `nemotron_v3` corpus inherits every applicable Qwen XML scenario through the registry's `grammar: qwen3` declaration. Default-state shared inputs first close Ultra's implicit empty thought with `</think>`; explicitly initialized Reasoning and Response inputs keep their original request state and bytes. This preserves the shared scenario's channel semantics without disabling later reasoning markers. The Qwen XML header cases also apply to Nemotron. The structured-response scenario requires a registered structural-tag builder, which Nemotron does not have; it remains explicitly excluded while shared parser scenarios retain Qwen grammar inheritance. DSML, Harmony, Gemma, GLM, Kimi, and ATEM-specific scenarios remain excluded because they require other native grammars.
+
+These two cases display under the Nemotron v3 default-reasoning section. Their published numeric IDs and capture history remain unchanged. Only Nemotron currently enables implicit reasoning under default initialization; explicitly initializing another family to Reasoning exercises a different request contract.
 
 - `10-default_reasoning_without_opener`: with default initialization, `Check Montréal.</think>雪` emits reasoning followed by visible Unicode content. The same input under Response stays literal text.
 - `12-default_reasoning_tool_without_closer`: default reasoning contains a native XML call with literal think markers in its argument, then resumes reasoning at EOF. Both think boundaries are omitted. Other registered families require explicit Reasoning initialization for this contract; their shared prefilled and nesting scenarios cover that state.
@@ -522,6 +526,8 @@ Muse reasoning treats `to=self` in prose as literal text. Complete framed header
 `muse_opaque_undeclared_invoke`, `muse_opaque_declared_invoke`, and `muse_recovery_second_parameter` cover Glimmer and Spark. ATEM argument text remains opaque regardless of whether an embedded tool name is declared or which parameter contains it. Recovery cannot distinguish a malformed call from valid argument text and must not invent executable calls. Other registered families use different argument grammars; shared group-12 scenarios cover their argument opacity. The existing `structured_response_after_reasoning` scenario also covers Spark’s native final-answer envelope and checks it with XGrammar.
 
 `muse_unterminated_reasoning_native` and `muse_unterminated_reasoning_guided` pin an intentional distinction for both Muse families: native reasoning keeps an incomplete invocation header as literal prose, while JSON-guided reasoning strips the native invoke-start control and retains its following prose. Complete native invocations in guided reasoning remain stray controls owned by the shared guided reader. Other registered families do not use ATEM invoke headers.
+
+The local nullable-reference, string-reference, and mixed null/string field probes apply to every registered Unified family. The reference probes retain unresolved references; all three probes use family-native value encoding. Existing published requests remain byte-identical; newly applicable family/case pairs have separate authored requests and recorded results.
 
 ### XML custom-type compatibility
 
