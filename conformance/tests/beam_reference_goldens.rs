@@ -12,9 +12,6 @@
 //! reason in `fixtures-beam/reference-known-divergences.yaml`. That list is checked in both
 //! directions: an unlisted mismatch fails, and a listed case that no longer mismatches fails.
 //!
-//! Both routes are replayed: the V2 unified parser, and the V1 pair (reasoning parser,
-//! then tool parser over the text it forwards). They share one divergence list.
-//!
 //! The recorded prompt prefix selects the parser's starting state: the plain anchor
 //! (`<|start|>assistant`, an empty prefix, or a history ending in the anchor) starts
 //! between messages; a prefix that opened the reply starts in `Response`, one that
@@ -23,7 +20,6 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use dynamo_parsers::{ReasoningParser, ReasoningParserType, ToolDefinition};
 use dynamo_parsers_v2::{
     Tool, ToolCallPolicy, UnifiedEvent, UnifiedParserExt, UnifiedParserInit,
     UnifiedParserStartingState, create_unified_parser_for_family,
@@ -168,59 +164,6 @@ fn run_v2(
         }
     }
     Ok(out)
-}
-
-/// V1 route: the beam reasoning parser (streaming over the recorded chunks, or the
-/// one-shot entry point for a single chunk) then the beam tool parser over the text it
-/// forwarded, as the legacy two-parser pipeline runs them.
-async fn run_v1(
-    case: &Case,
-    chunks: &[&str],
-    state: UnifiedParserStartingState,
-) -> anyhow::Result<Served> {
-    let mut reasoning_parser = ReasoningParserType::get_reasoning_parser_from_name("beam");
-    match state {
-        UnifiedParserStartingState::Reasoning => reasoning_parser.set_in_reasoning(true),
-        UnifiedParserStartingState::Response => reasoning_parser.set_in_content(true),
-        UnifiedParserStartingState::None => {}
-    }
-    let (mut reasoning, mut normal) = (String::new(), String::new());
-    if chunks.len() == 1 {
-        let r = reasoning_parser.detect_and_parse_reasoning(chunks[0], &[]);
-        (reasoning, normal) = (r.reasoning_text, r.normal_text);
-    } else {
-        for chunk in chunks {
-            let r = reasoning_parser.parse_reasoning_streaming_incremental(chunk, &[]);
-            reasoning += &r.reasoning_text;
-            normal += &r.normal_text;
-        }
-        let r = reasoning_parser.finish_reasoning_stream();
-        reasoning += &r.reasoning_text;
-        normal += &r.normal_text;
-    }
-    let tools: Vec<ToolDefinition> = case
-        .tools
-        .iter()
-        .map(|t| ToolDefinition {
-            name: t.name.clone(),
-            parameters: Some(t.parameters.clone()),
-            strict: t.strict,
-        })
-        .collect();
-    let (calls, content) =
-        dynamo_parsers::detect_and_parse_tool_call(&normal, Some("beam"), Some(&tools)).await?;
-    Ok(Served {
-        reasoning,
-        content: content.unwrap_or_default(),
-        calls: calls
-            .into_iter()
-            .map(|c| {
-                let args = serde_json::from_str(&c.function.arguments)
-                    .unwrap_or(Value::String(c.function.arguments.clone()));
-                (c.function.name, args)
-            })
-            .collect(),
-    })
 }
 
 fn served_json(s: &Served) -> Value {
@@ -425,26 +368,6 @@ fn replay_v2(subset: Subset) {
     check(&format!("v2/{subset:?}"), &replayed, &mismatches, &known);
 }
 
-async fn replay_v1(subset: Subset) {
-    let cases = load();
-    let known = known_divergences();
-    let mut mismatches = BTreeMap::new();
-    let mut replayed = BTreeSet::new();
-    for case in cases.iter().filter(|c| subset_of(c) == Some(subset)) {
-        let state = starting_state(&case.prefix).expect("replayable");
-        replayed.insert(case.id.clone());
-        let chunk_refs: Vec<&str> = case.chunks.iter().map(String::as_str).collect();
-        let whole = case.chunks.concat();
-        let chunked = run_v1(case, &chunk_refs, state).await;
-        let batch = run_v1(case, &[whole.as_str()], state).await;
-        if let Some(note) = judge(case, &chunked, &batch) {
-            mismatches.insert(case.id.clone(), note);
-            dump("v1", case, &chunked, &batch, &known);
-        }
-    }
-    check(&format!("v1/{subset:?}"), &replayed, &mismatches, &known);
-}
-
 impl std::fmt::Debug for Subset {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
@@ -482,17 +405,7 @@ fn plain_prefix_cases_match_the_reference_except_known_divergences() {
     replay_v2(Subset::Plain);
 }
 
-#[tokio::test]
-async fn plain_prefix_cases_match_the_reference_on_the_v1_route_except_known_divergences() {
-    replay_v1(Subset::Plain).await;
-}
-
 #[test]
 fn prefilled_prefix_cases_match_the_reference_except_known_divergences() {
     replay_v2(Subset::Prefilled);
-}
-
-#[tokio::test]
-async fn prefilled_prefix_cases_match_the_reference_on_the_v1_route_except_known_divergences() {
-    replay_v1(Subset::Prefilled).await;
 }

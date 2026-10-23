@@ -3,7 +3,6 @@
 
 use serde_json::Value;
 
-pub mod beam;
 pub mod config;
 pub mod dsml;
 pub mod gemma4;
@@ -39,9 +38,6 @@ pub enum ToolChoice {
 }
 
 // Re-export main types and functions for convenience
-pub use beam::{
-    BeamArgumentFraming, BeamParserConfig, try_tool_call_parse_beam, try_tool_call_parse_beam_with,
-};
 pub use config::{
     JsonParserConfig, KimiK2ParserConfig, KimiK3ParserConfig, MiniMaxM3ParserConfig, ParserConfig,
     ToolCallConfig, XmlParserConfig,

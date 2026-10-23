@@ -34,16 +34,3 @@ pub struct Annotated<R> {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
-
-impl<R> Annotated<R> {
-    /// A terminal error item: no data, only the failure.
-    pub fn from_error(error: impl Into<String>) -> Self {
-        Self {
-            data: None,
-            id: None,
-            event: None,
-            comment: None,
-            error: Some(error.into()),
-        }
-    }
-}

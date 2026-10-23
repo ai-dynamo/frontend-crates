@@ -423,12 +423,6 @@ pub enum ParserConfig {
     /// delimiters, and fixed `<|tool_call>...<tool_call|>` markers. No
     /// configuration is required at runtime — markers are not user-tunable.
     Gemma4,
-    /// Beam channel envelopes: `<|start|>assistant to=NAME<|channel|>analysis
-    /// <|constrain|>xml<|message|><rfl:parameter name="K">V</rfl:parameter><|call|>`.
-    /// NOT Harmony. Fixed grammar; the only request-scoped choice is how a parameter
-    /// value ends ([`BeamArgumentFraming`]). Pair with the `beam` reasoning parser.
-    /// See [`crate::tool_calling::beam`].
-    Beam(crate::tool_calling::beam::BeamParserConfig),
     /// Inkling uses `<|message_model|>NAME<|content_invoke_tool_json|>{...}<|end_message|>`
     /// framing around a `{"name":..., "args":{...}}` JSON object.
     ///
@@ -487,10 +481,6 @@ impl ParserConfig {
             ParserConfig::Gemma4 => {
                 vec![crate::tool_calling::gemma4::TOOL_CALL_START.to_string()]
             }
-            ParserConfig::Beam(_) => vec![
-                crate::tool_calling::beam::TOOL_CALL_START.to_string(),
-                crate::tool_calling::beam::BARE_TOOL_CALL_START.to_string(),
-            ],
             ParserConfig::Inkling(_) => {
                 // Both the `<|message_model|>NAME` header and the bare
                 // `<|content_invoke_tool_json|>` (header-less) open a call. Include the
@@ -533,7 +523,6 @@ impl ParserConfig {
                 )]
             }
             ParserConfig::Gemma4 => vec![crate::tool_calling::gemma4::TOOL_CALL_END.to_string()],
-            ParserConfig::Beam(_) => vec![crate::tool_calling::beam::TOOL_CALL_END.to_string()],
             ParserConfig::Inkling(_) => {
                 vec![crate::tool_calling::inkling::END_MESSAGE.to_string()]
             }
@@ -907,30 +896,6 @@ impl ToolCallConfig {
     pub fn gemma4() -> Self {
         Self {
             parser_config: ParserConfig::Gemma4,
-            structural_tag_builder: None,
-        }
-    }
-
-    /// Beam tool calls (not Harmony): XML `<rfl:parameter>` bodies inside channel
-    /// envelopes. Grammar: [`crate::tool_calling::beam`]. Tool schemas are optional;
-    /// they only type the arguments.
-    pub fn beam() -> Self {
-        Self {
-            parser_config: ParserConfig::Beam(crate::tool_calling::beam::BeamParserConfig {
-                argument_framing: crate::tool_calling::beam::BeamArgumentFraming::Lenient,
-            }),
-            structural_tag_builder: None,
-        }
-    }
-
-    /// [`Self::beam`] for a request whose output was constrained to JSON: a parameter
-    /// whose value is a JSON object/array owns its strings, so a literal
-    /// `</rfl:parameter>` inside one is data. Registered as `beam_constrained`.
-    pub fn beam_constrained() -> Self {
-        Self {
-            parser_config: ParserConfig::Beam(crate::tool_calling::beam::BeamParserConfig {
-                argument_framing: crate::tool_calling::beam::BeamArgumentFraming::ConstrainedJson,
-            }),
             structural_tag_builder: None,
         }
     }

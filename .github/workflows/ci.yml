@@ -18,7 +18,7 @@ jobs:
   # is expensive (downloads the private fixture dataset, renders both charts) and
   # is only affected by conformance/parser changes, so skip it otherwise.
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -40,7 +40,7 @@ jobs:
               - '.github/workflows/ci.yml'
 
   rust:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       CARGO_DENY_VERSION: "0.19.4"
@@ -112,7 +112,7 @@ jobs:
   conformance-table:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Render cost scales with the number of peer version dirs: every <impl>-<version>
     # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
     # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
@@ -212,7 +212,7 @@ jobs:
     name: Deploy conformance matrix to GitHub Pages
     needs: conformance-table
     if: ${{ github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
       group: github-pages

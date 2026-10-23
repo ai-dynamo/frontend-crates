@@ -2,14 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! The original 13 Beam parser fixtures (11 positive, 2 strict rejections), unchanged in
-//! `fixtures-beam/original_parser_fixtures.yaml`, driven through the PUBLIC V1 and V2
-//! routes:
-//!
-//! * V1: `beam` reasoning parser, then the `beam` tool parser over the text it forwards.
-//! * V2: the `beam` unified parser, whole and split at every char boundary, under both
-//!   the default (`Drop`) and strict (`Reject`) tool-call policies.
+//! `fixtures-beam/original_parser_fixtures.yaml`, driven through the PUBLIC V2 route:
+//! the `beam` unified parser, whole and split at every char boundary, under both the
+//! default (`Drop`) and strict (`Reject`) tool-call policies.
 
-use dynamo_parsers::{ReasoningParser, ReasoningParserType, ToolDefinition};
 use dynamo_parsers_v2::{
     MalformedToolCallPolicy, Tool, ToolCallPolicy, UnifiedEvent, UnifiedParserExt,
     create_unified_parser_for_family,
@@ -168,84 +164,6 @@ fn v2_unified_strict_rejects_and_default_drops_the_rejection_fixtures() {
             );
             let got = run_v2(case, &chunks, ToolCallPolicy::default()).unwrap();
             assert!(got.calls.is_empty(), "{} must not dispatch", case.id);
-        }
-    }
-}
-
-fn v1_tools(case: &Case) -> Vec<ToolDefinition> {
-    case.tools
-        .iter()
-        .map(|(name, parameters)| ToolDefinition {
-            name: name.clone(),
-            parameters: Some(parameters.clone()),
-            strict: None,
-        })
-        .collect()
-}
-
-/// V1 route: reasoning parser (infallible, forwards tool envelopes) then tool parser.
-async fn run_v1(case: &Case, chunks: &[&str]) -> anyhow::Result<Expected> {
-    let mut reasoning_parser = ReasoningParserType::get_reasoning_parser_from_name("beam");
-    let (mut reasoning, mut normal) = (String::new(), String::new());
-    if chunks.len() == 1 {
-        let r = reasoning_parser.detect_and_parse_reasoning(chunks[0], &[]);
-        (reasoning, normal) = (r.reasoning_text, r.normal_text);
-    } else {
-        for chunk in chunks {
-            let r = reasoning_parser.parse_reasoning_streaming_incremental(chunk, &[]);
-            reasoning += &r.reasoning_text;
-            normal += &r.normal_text;
-        }
-        let r = reasoning_parser.finish_reasoning_stream();
-        reasoning += &r.reasoning_text;
-        normal += &r.normal_text;
-    }
-    let tools = v1_tools(case);
-    let (calls, content) =
-        dynamo_parsers::detect_and_parse_tool_call(&normal, Some("beam"), Some(&tools)).await?;
-    Ok(Expected {
-        reasoning,
-        content: content.unwrap_or_default(),
-        calls: calls
-            .into_iter()
-            .map(|c| {
-                (
-                    c.function.name,
-                    serde_json::from_str(&c.function.arguments).expect("arguments json"),
-                )
-            })
-            .collect(),
-    })
-}
-
-#[tokio::test]
-async fn v1_reasoning_plus_tool_parser_matches_every_positive_fixture() {
-    for case in load().iter().filter(|c| c.expected.is_some()) {
-        let want = case.expected.as_ref().unwrap();
-        for chunks in splits(&case.text) {
-            let got = run_v1(case, &chunks)
-                .await
-                .unwrap_or_else(|e| panic!("{} {chunks:?}: {e}", case.id));
-            assert_eq!(
-                got.reasoning, want.reasoning,
-                "{} reasoning {chunks:?}",
-                case.id
-            );
-            assert_eq!(got.content, want.content, "{} content {chunks:?}", case.id);
-            assert_eq!(got.calls, want.calls, "{} calls {chunks:?}", case.id);
-        }
-    }
-}
-
-#[tokio::test]
-async fn v1_tool_parser_rejects_the_rejection_fixtures() {
-    for case in load().iter().filter(|c| c.expected.is_none()) {
-        for chunks in splits(&case.text) {
-            assert!(
-                run_v1(case, &chunks).await.is_err(),
-                "{} {chunks:?} must be rejected",
-                case.id
-            );
         }
     }
 }

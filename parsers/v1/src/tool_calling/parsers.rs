@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::ToolDefinition;
-use super::beam::{
-    detect_tool_call_start_beam, find_tool_call_end_position_beam_with,
-    try_tool_call_parse_beam_with,
-};
 use super::config::{ParserConfig, ToolCallConfig};
 use super::dsml::{
     detect_tool_call_start_dsml, find_complete_tool_call_end_position_dsml,
@@ -81,8 +77,6 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("gemma4", ToolCallConfig::gemma4());
         map.insert("gemma-4", ToolCallConfig::gemma4());
         map.insert("inkling", ToolCallConfig::inkling());
-        map.insert("beam", ToolCallConfig::beam());
-        map.insert("beam_constrained", ToolCallConfig::beam_constrained());
         map.insert("default", ToolCallConfig::default());
         map.insert("nemotron_nano", ToolCallConfig::qwen3_coder()); // nemotron nano follows qwen3_coder format
         map.insert("qwen25", ToolCallConfig::qwen25()); // qwen2.5 uses the same <tool_call>...</tool_call> format as hermes but never leaks markup; EOF-recovery opt-out is keyed by name in detect_and_parse_tool_call_with_recovery_options
@@ -147,11 +141,6 @@ pub async fn try_tool_call_parse(
         }
         ParserConfig::Gemma4 => {
             let (results, normal_content) = try_tool_call_parse_gemma4(message, tools)?;
-            Ok((results, normal_content))
-        }
-        ParserConfig::Beam(beam_config) => {
-            let (results, normal_content) =
-                try_tool_call_parse_beam_with(message, tools, beam_config.argument_framing)?;
             Ok((results, normal_content))
         }
         ParserConfig::Inkling(inkling_config) => {
@@ -330,7 +319,6 @@ pub fn detect_tool_call_start(chunk: &str, parser_str: Option<&str>) -> anyhow::
                 Ok(detect_tool_call_start_minimax_m3(chunk, minimax_config))
             }
             ParserConfig::Gemma4 => Ok(detect_tool_call_start_gemma4(chunk)),
-            ParserConfig::Beam(_) => Ok(detect_tool_call_start_beam(chunk)),
             ParserConfig::Inkling(inkling_config) => {
                 Ok(detect_tool_call_start_inkling(chunk, inkling_config))
             }
@@ -451,9 +439,6 @@ pub fn find_tool_call_end_position(chunk: &str, parser_str: Option<&str>) -> Opt
                 find_tool_call_end_position_minimax_m3(chunk, minimax_config),
             ),
             ParserConfig::Gemma4 => find_tool_call_end_position_gemma4(chunk),
-            ParserConfig::Beam(beam_config) => {
-                find_tool_call_end_position_beam_with(chunk, beam_config.argument_framing)
-            }
             ParserConfig::Inkling(inkling_config) => {
                 find_tool_call_end_position_inkling(chunk, inkling_config)
             }
@@ -508,7 +493,6 @@ mod tests {
             "gemma4",
             "gemma-4",
             "inkling",
-            "beam",
             "qwen25",
         ];
         for parser in available_parsers {
