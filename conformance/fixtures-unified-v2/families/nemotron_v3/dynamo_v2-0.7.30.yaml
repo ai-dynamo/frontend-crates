@@ -1,0 +1,96 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.30
+    git_commit: 423f1fbed2602da20d971a462e80e444cf51f89b
+    source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+document:
+  mode: unified
+changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a5c980fbdaa672fe9ed3f0f6e291b7b536296c50c96c35b924962fd4d318a7af
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: eea5b19c763aa54ebe9fce1e1f67ad7ff5868904191f6fe541bcfdb29dcc08a9
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 423f1fbed2602da20d971a462e80e444cf51f89b
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.30
+      capture_origin:
+        crate_version: 0.7.30
+        source_sha256: 1fefbcfa7a4d305e8c944153639df709c82c680111f4abb46fc9162a73b5962f
+        git_commit: 423f1fbed2602da20d971a462e80e444cf51f89b
+      inherited_from: null

@@ -62,21 +62,17 @@ impl std::fmt::Display for BeamBodyError {
 
 impl std::error::Error for BeamBodyError {}
 
-/// A recipient (tool name) in a call header: `[A-Za-z0-9_.-]+`, the one name contract
-/// the structural-tag builder holds declared tools to (`name_encodable`), so a call the
-/// grammar admits for a declared tool (`2fa_check`, `-tool`) is never dropped here.
+/// Beam's template name class, with ASCII whitespace explicit for XGrammar.
+pub(crate) const NAME_PATTERN: &str = r"[^ \t\n\r\f\v<]+";
+pub(crate) const NAME_NEGATED_CLASS: &str = r" \t\n\r\f\v<";
+
 pub fn is_valid_recipient(name: &str) -> bool {
     !name.is_empty() && recipient_len(name) == name.len()
 }
 
-/// Whether `c` may appear anywhere in a recipient.
-pub(crate) fn is_recipient_char(c: char) -> bool {
-    c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-')
-}
-
-/// Length of the longest valid recipient prefix of `text` (0 when none).
+/// Length in bytes of the longest prefix without ASCII whitespace or `<`.
 pub fn recipient_len(text: &str) -> usize {
-    text.find(|c: char| !is_recipient_char(c))
+    text.find([' ', '\t', '\n', '\r', '\x0c', '\x0b', '<'])
         .unwrap_or(text.len())
 }
 
@@ -308,10 +304,11 @@ pub(crate) fn value_framing(
     }
 }
 
-/// Where the value of a parameter ends: the offset of its `</rfl:parameter>`, or
-/// `None` while the value is still open.
+/// Where the value of a parameter ends, or `None` while it is still open.
 ///
-/// `Lenient` is the reference regex (first closer). `ConstrainedJson` applies only
+/// `Lenient` follows the template newline framing when present. Compact legacy
+/// values retain their first-closer rule; at flush, an absent framed boundary also
+/// falls back to the first closer. `ConstrainedJson` applies only
 /// where the request constrained the output to JSON: a value that opens as a JSON
 /// string, object or array owns its strings, so a closer inside one is data, and an
 /// OPEN value waits rather than falling back to the first literal closer — otherwise a
@@ -339,7 +336,7 @@ pub(crate) fn param_value_span(
     after_key: &str,
     framing: ArgumentFraming,
 ) -> Option<(usize, usize)> {
-    param_value_span_with(after_key, framing, &mut ValueCursor::default())
+    param_value_span_with(after_key, framing, &mut ValueCursor::default(), true)
 }
 
 /// [`param_value_span`] resuming from `cursor`, which must have seen a prefix of
@@ -348,8 +345,10 @@ pub(crate) fn param_value_span_with(
     after_key: &str,
     framing: ArgumentFraming,
     cursor: &mut ValueCursor,
+    flush: bool,
 ) -> Option<(usize, usize)> {
-    let mut from = 0;
+    let framed = after_key.starts_with('\n');
+    let mut from = usize::from(framed);
     if framing == ArgumentFraming::ConstrainedJson {
         let lead = after_key.len() - after_key.trim_start_matches(['\n', ' ', '\t', '\r']).len();
         if after_key[lead..].starts_with(['"', '{', '[']) {
@@ -362,15 +361,35 @@ pub(crate) fn param_value_span_with(
     }
     let rest = &after_key[from..];
     let close = cursor
-        .find_closer(rest, PARAM_CLOSE)
-        .map(|c| (from + c, from + c + PARAM_CLOSE.len()));
+        .find_closer(
+            rest,
+            if framed {
+                "\n</rfl:parameter>"
+            } else {
+                PARAM_CLOSE
+            },
+        )
+        .map(|c| {
+            let end = from + c + usize::from(framed);
+            (end, end + PARAM_CLOSE.len())
+        });
     let follow = cursor
         .find_closer(rest, PARAM_FOLLOW)
         .map(|f| (from + f + 1, from + f + 1));
     let span = match (close, follow) {
         (Some(close), Some(follow)) if follow.0 <= close.0 => Some(follow),
         (close, follow) => close.or(follow),
-    };
+    }
+    .or_else(|| {
+        // An inline tag may still be string content until the stream ends.
+        // Rescan at flush: the incremental cursor has already passed this tag.
+        if flush {
+            rest.find(PARAM_CLOSE)
+                .map(|end| (from + end, from + end + PARAM_CLOSE.len()))
+        } else {
+            None
+        }
+    });
     if span.is_none() {
         cursor.closer_searched = rest.len();
     }
@@ -841,6 +860,20 @@ fn json_type_names(value: &PyValue) -> &'static [&'static str] {
     }
 }
 
+/// Beam can emit an integer with a zero decimal fraction. Keep its digits exact;
+/// this deliberately extends the frozen reference's Python `int()` conversion.
+fn integral_decimal(raw: &str) -> Option<beam_py::PyInt> {
+    let (whole, fraction) = beam_py::strip(raw).split_once('.')?;
+    let digits = whole.strip_prefix(['-', '+']).unwrap_or(whole);
+    if digits.is_empty()
+        || !digits.bytes().all(|b| b.is_ascii_digit())
+        || !fraction.bytes().all(|b| b == b'0')
+    {
+        return None;
+    }
+    beam_py::parse_int(whole)
+}
+
 /// `raw` typed by the first of `types` it can be read as, else `raw` unchanged.
 pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
     let mut filtered: Vec<&str> = types.iter().map(String::as_str).collect();
@@ -858,7 +891,7 @@ pub(crate) fn coerce(raw: &str, types: &[String]) -> PyValue {
     for type_name in filtered {
         match type_name {
             "integer" => {
-                if let Some(i) = beam_py::parse_int(raw) {
+                if let Some(i) = beam_py::parse_int(raw).or_else(|| integral_decimal(raw)) {
                     return PyValue::Int(i);
                 }
             }
@@ -1438,19 +1471,22 @@ mod tests {
 
     #[test]
     fn recipient_grammar() {
-        // The builder's name contract: digit-, hyphen- and dot-leading names included.
         for ok in [
             "weather",
             "_x",
             "a.b-c9",
             "functions.get_weather",
-            "2fa_check",
-            "-tool",
+            "9a",
+            "-a",
             ".a",
+            "é",
+            "a:b",
+            "a/b",
+            "a\u{a0}b",
         ] {
             assert!(is_valid_recipient(ok), "{ok}");
         }
-        for bad in ["", "a b", "a\tb", "a<b", "a<|channel|>", "é", "[{\"name\""] {
+        for bad in ["", "a b", "a<b", "a\t", "a\n", "a\r", "a\x0b", "a\x0c"] {
             assert!(!is_valid_recipient(bad), "{bad}");
         }
         assert_eq!(recipient_len("get_weather<|channel|>"), 11);
@@ -1540,6 +1576,36 @@ mod tests {
     }
 
     #[test]
+    fn integral_decimals_are_exact_for_integer_parameters() {
+        let integer = json!({"type": "integer"});
+        for (raw, expected) in [
+            ("3.0", "3"),
+            (" -12.00\n", "-12"),
+            ("7.", "7"),
+            ("-0.00", "0"),
+            ("123456789012345678901.0", "123456789012345678901"),
+            ("3.5", r#""3.5""#),
+            ("7e0", r#""7e0""#),
+            (".0", r#"".0""#),
+            ("1_0.0", r#""1_0.0""#),
+            ("3.0000000000000001", r#""3.0000000000000001""#),
+        ] {
+            assert_eq!(
+                super::typed_value(Some(&integer), raw).dumps(),
+                expected,
+                "{raw}"
+            );
+        }
+        for (schema, expected) in [
+            (json!({"type": "string"}), r#""3.0""#),
+            (json!({"type": ["string", "integer"]}), r#""3.0""#),
+            (json!({"type": "number"}), "3.0"),
+        ] {
+            assert_eq!(super::typed_value(Some(&schema), "3.0").dumps(), expected);
+        }
+    }
+
+    #[test]
     fn coercion_follows_reference() {
         let tools = [tool(
             "fn",
@@ -1587,7 +1653,7 @@ mod tests {
             let mut json_walked = 0;
             let mut searched = 0;
             for end in (1..after_key.len()).step_by(7).chain([after_key.len()]) {
-                let got = param_value_span_with(&after_key[..end], framing, &mut cursor);
+                let got = param_value_span_with(&after_key[..end], framing, &mut cursor, false);
                 assert_eq!(
                     got,
                     param_value_span(&after_key[..end], framing),

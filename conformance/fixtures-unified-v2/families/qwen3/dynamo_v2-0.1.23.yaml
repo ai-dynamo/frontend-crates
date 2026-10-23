@@ -2522,6 +2522,24 @@ changes:
         - expected:
           - kind: text
             text: done
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a7346f9840090baf0004548d3db7c2d32d9c740799ac3cb3c8f90b1c2c236df2
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 5a87da3b5f3deb6baff129475ddd6186bb08d2e1e560e650abcce8f15a4d5140
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
 metadata_changes:
   arg_marker_in_string:
     init:
@@ -3087,6 +3105,16 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
 document_overrides:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
@@ -3133,4 +3161,22 @@ document_overrides:
         crate_version: 0.1.23
         source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
         git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
       inherited_from: null

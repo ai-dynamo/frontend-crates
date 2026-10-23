@@ -2070,6 +2070,24 @@ changes:
         - expected:
           - kind: text
             text: done
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: e8fe4ed9023650824ebeb2ed7f689bf77a45edce740dcd9d9295d940451436f7
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 9acdce06340c53443e64548f7a8c440da0afc5813f92e2d67955958f2bddb4c6
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
 metadata_changes:
   arg_marker_in_string:
     init:
@@ -2596,6 +2614,16 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
 document_overrides:
   gemma4_guided_response_extra_body_opener:
     capture_provenance:
@@ -2661,3 +2689,21 @@ document_overrides:
     parser_path: split
   retired__51_b:
     parser_path: split
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null

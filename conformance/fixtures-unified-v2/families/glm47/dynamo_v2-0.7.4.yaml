@@ -665,4 +665,22 @@ metadata_changes:
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London"}
         - Check London météo🙂 before answering; this is prose, not JSON.</think>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}
-document_overrides: {}
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
+        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.4
+      capture_origin:
+        crate_version: 0.7.4
+        git_commit: 1da79b40aa19e11fc3167c7e4024d6125b87133c
+        source_sha256: fe0e0b68ddcc127aa06aeeabe521718a3a26739b6acfe9829331a7816a3456ea
+      inherited_from: null

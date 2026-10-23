@@ -86,6 +86,8 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 ### Group 2 — TC Multiple calls (TOOLCALLING.streamv1.2)
 - **`2-two_calls`** (`two_calls`) Two distinct calls back-to-back, order preserved. This is also covered in: TOOLCALLING.streamv1.2.a.
 - **`2-two_calls_same_name`** (`two_calls_same_name`) Two calls to the SAME function, different args — must not dedup or merge. This is also covered in: TOOLCALLING.streamv1.2.d.
+- **`2-adjacent_calls_partial_header`** (`adjacent_calls_partial_header`) Native/default state: one delta closes a complete call and carries the next opener plus a partial call header. Preserve both calls and emit no visible markup. Uses authored Unified inputs, tools, chunk schedules, and independent expected calls; DeepSeek V4.1 splits inside its second invoke in one calls container.
+- **`2-three_calls_partial_header`** (`three_calls_partial_header`) Native/default state: three adjacent calls delivered with a boundary inside the second call header. Preserve f, g, h in order and emit no visible markup. Both scenarios apply to nine families: deepseek_v4, deepseek_v41, gemma4, glm47, kimi_k2, kimi_k3, muse_glimmer, nemotron_v3, and qwen3 (18 family-specific cases). Beam and GPT-OSS are excluded from this Unified case set. The authored schedules exercise delivery boundaries that marker-aligned and fixed-width chunking can miss.
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
 - **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
@@ -158,9 +160,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 242 of the 337 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 246 of the 343 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 95 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 97 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
@@ -475,12 +477,12 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 ## Shared schema conformance probes
 
-Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 142 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 62 visible entries covering 145 authored scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
 
 | Behavior section | Visible entries |
 |---|---:|
 | Text preservation | 3 |
-| Declared types and enums | 10 |
+| Declared types and enums | 12 |
 | Type arrays and null interpretation | 6 |
 | String constants | 10 |
 | Unions, intersections, and ambiguous values | 17 |
@@ -505,6 +507,15 @@ Historical schema-subgroup aliases below retain their original meaning. Active I
 All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
+
+
+### XML custom-type compatibility
+
+The shared group 7 cases `xml_string_type_single_quoted_object` and `xml_string_type_double_quoted_object` preserve the exact string spelling in all 11 Unified families using their native string encoding. Both quote spellings remain literal text, including in JSON-body grammars.
+
+The Qwen3/Nemotron-specific XML section contains `xml_custom_type_single_quoted_object` and `xml_custom_type_double_quoted_object`. Both spellings become an object under the direct, unconstrained `type: custom` compatibility fallback owned by the Qwen XML grammar. `custom` is not a JSON Schema type, so these probes remain separate from the schema-valid suite. GLM uses strict JSON parsing for JSON-looking bodies, MiniMax M3 preserves unknown scalar types as text, and JSON-body or explicitly typed grammars carry the argument type in their native encoding; they do not share this Python-literal conversion rule. MiniMax M2 exercises that fallback in the legacy streaming corpus and has no registered Unified parser.
+
+Only display placement changes: the custom probes retain their stable `UNIFIED.7-xml_custom_type_*` IDs and capture history. They no longer occupy shared group 7 columns. Existing published IDs and older unmeasured observations remain unchanged.
 
 
 ### GPT-OSS Harmony headers and retained request variants

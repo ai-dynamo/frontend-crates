@@ -104,7 +104,8 @@ pub(crate) struct ChannelEnvelope {
 pub(crate) struct EnvelopeChannel {
     pub name: &'static str,
     pub reasoning: bool,
-    /// Markers closing this channel's body. `start` always cuts without being consumed.
+    /// Markers closing this channel's body. A trailing `start` is lookahead for the
+    /// next header and is never consumed, including when it is the whole marker.
     pub terminators: &'static [&'static str],
     /// Whether a body that opens with `{` or `[` is read as a JSON answer: a terminator
     /// inside one of its open strings is data, not the end of the body. The reference
@@ -198,15 +199,21 @@ fn envelope_parse_prefix(env: &ChannelEnvelope, prefix: &str) -> HeaderLead {
     // The recipient is whatever `recipient_key NAME` ends the lead; bytes glued in front
     // of it (`assistant\tto=NAME`, `assistantto=NAME`) are header debris, never prose:
     // the header is identified by its tail, as the builder's template regex does.
-    let Some(k) = t.rfind(env.recipient_key) else {
-        return HeaderLead::NotHeader;
-    };
-    let r = &t[k + env.recipient_key.len()..];
-    if !r.is_empty() && (env.recipient_len)(r) == r.len() {
-        HeaderLead::Lead(Some(r.to_string()))
-    } else {
-        HeaderLead::NotHeader
+    let mut after_invalid = 0;
+    for (k, _) in t.match_indices(env.recipient_key) {
+        let start = k + env.recipient_key.len();
+        if start < after_invalid {
+            continue;
+        }
+        let r = &t[start..];
+        let len = (env.recipient_len)(r);
+        if !r.is_empty() && len == r.len() {
+            return HeaderLead::Lead(Some(r.to_string()));
+        }
+        // Earlier suffixes share this invalid byte; never scan them again.
+        after_invalid = start + len + 1;
     }
+    HeaderLead::NotHeader
 }
 
 /// Whether `text` could still grow into a valid header lead.
@@ -359,11 +366,13 @@ fn envelope_bare(state: GuidedChannelState) -> EnvelopeBare {
 /// in front of the thought. Separator spaces are absorbed only together with a lead
 /// word, never alone: `Sure. <|channel|>` keeps its trailing space as prose.
 fn envelope_bare_lead(env: &ChannelEnvelope, before: &str) -> Option<(usize, Option<String>)> {
-    let (mut p, recipient) = match before
-        .rfind(env.recipient_key)
-        .map(|k| (k, envelope_parse_prefix(env, &before[k..])))
-    {
-        Some((k, HeaderLead::Lead(Some(r)))) => (k, Some(r)),
+    let (mut p, recipient) = match before.find(env.recipient_key).and_then(|k| {
+        match envelope_parse_prefix(env, &before[k..]) {
+            HeaderLead::Lead(Some(r)) => Some((k, r)),
+            _ => None,
+        }
+    }) {
+        Some((k, r)) => (k, Some(r)),
         _ => (before.len(), None),
     };
     while p > 0 && before.as_bytes()[p - 1] == b' ' {
@@ -628,13 +637,17 @@ fn envelope_free_marker<'a>(
     haystack: &str,
     resolved: &EnvelopeOwnership,
     markers: impl Iterator<Item = &'a str>,
+    json: Option<JsonBodyState>,
 ) -> Option<(usize, usize)> {
     markers
         .filter_map(|m| {
             haystack
                 .match_indices(m)
                 .map(|(at, _)| at)
-                .find(|&at| resolved.free(at))
+                .find(|&at| {
+                    resolved.free(at)
+                        && json.is_none_or(|state| !state.inside_string_at(haystack, at))
+                })
                 .map(|at| (at, m.len()))
         })
         .min_by_key(|(at, _)| *at)
@@ -657,7 +670,14 @@ pub(crate) fn envelope_guided_close(
             .iter()
             .filter(|c| c.reasoning)
             .flat_map(|c| c.terminators.iter().copied()),
+        state.content_routed.then_some(state.content_json),
     )
+    .map(|(at, len)| (at, envelope_close_len(env, &haystack[at..at + len])))
+}
+
+/// A closer can include the next header's start marker as lookahead.
+fn envelope_close_len(env: &ChannelEnvelope, marker: &str) -> usize {
+    marker.strip_suffix(env.start).unwrap_or(marker).len()
 }
 
 /// Guided reader: earliest TURN-END marker ([`ChannelEnvelope::turn_end`]) outside
@@ -670,7 +690,12 @@ pub(crate) fn envelope_guided_turn_end(
     state: GuidedChannelState,
 ) -> Option<(usize, usize)> {
     let resolved = envelope_resolve(env, factory, haystack, flush, envelope_bare(state));
-    envelope_free_marker(haystack, &resolved, env.turn_end.iter().copied())
+    envelope_free_marker(
+        haystack,
+        &resolved,
+        env.turn_end.iter().copied(),
+        state.content_routed.then_some(state.content_json),
+    )
 }
 
 /// What an unfinished header lead at a `start` marker turns out to be.
@@ -733,6 +758,9 @@ fn envelope_lead_verdict(
     if lead_len + hold == rest.len() && !settled {
         return LeadVerdict::Pending;
     }
+    // Once the lead cannot grow into a header, preserve a guided JSON payload
+    // even though its opening bracket was also a possible recipient character.
+    let lead_len = rest[..lead_len].find(['{', '[']).unwrap_or(lead_len);
     let lead = &rest[..lead_len];
     let next = &rest[lead_len..];
     let decided = next.is_empty()
@@ -1352,6 +1380,10 @@ pub(crate) trait InvokeBoundary: Send {
     /// `body` only ever grows between calls until a verdict is returned.
     fn channel_body(&mut self, _body: &str, _flush: bool) -> BodyScan {
         BodyScan::Wait
+    }
+
+    fn channel_body_at_eos(&mut self, body: &str) -> BodyScan {
+        self.channel_body(body, true)
     }
 }
 
@@ -2000,6 +2032,7 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// so a prompt-consumed `role NAME` lead must be held, not emitted.
     header_slot: bool,
     policy: ToolCallPolicy,
+    finish_at_eos: bool,
 }
 
 struct DeferredParseError {
@@ -2041,6 +2074,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             env_json: JsonBodyState::default(),
             header_slot: true,
             policy: ToolCallPolicy::default(),
+            finish_at_eos: false,
         }
     }
 
@@ -2114,6 +2148,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             prefixed_openers,
         });
         self
+    }
+
+    pub(crate) fn allow_implicit_tool_terminator(&mut self) {
+        self.finish_at_eos = true;
     }
 
     /// Also own the reasoning channel, making this scanner unified.
@@ -2261,6 +2299,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Clear one stream's scan state and return bytes not yet emitted.
     pub(crate) fn reset(&mut self) -> String {
+        self.finish_at_eos = false;
         let mut pending = std::mem::take(&mut self.uncommitted_block);
         pending.push_str(&std::mem::take(&mut self.buffer));
         self.buffer_previous = None;
@@ -2759,11 +2798,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         if let Some((at, marker)) = found {
             push_run(out, kind, &self.buffer[..at]);
             self.env_json.reset();
-            let consumed = if marker == env.start {
-                at
-            } else {
-                at + marker.len()
-            };
+            let consumed = at + envelope_close_len(env, marker);
             self.buffer.drain(..consumed);
             self.prose.clear();
             self.env_mode = EnvMode::Idle;
@@ -3135,6 +3170,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         out: &mut S,
     ) -> anyhow::Result<bool> {
         let verdict = match self.invoke_boundary.as_mut() {
+            Some(boundary) if flush && self.finish_at_eos => {
+                boundary.channel_body_at_eos(&self.buffer)
+            }
             Some(boundary) => boundary.channel_body(&self.buffer, flush),
             None => anyhow::bail!("channel envelope needs an invoke boundary"),
         };

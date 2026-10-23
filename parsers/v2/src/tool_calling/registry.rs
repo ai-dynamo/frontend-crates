@@ -61,8 +61,8 @@ family_registry! {
         Glm47ToolStreamParser::create,
         Some(&crate::structural_tag::builders::GLM47)
     ),
-    "kimi_k2"      => (KimiK2ToolStreamParser::create, None),
-    "kimi_k3"      => (KimiK3ToolStreamParser::create, None),
+    "kimi_k2"      => (KimiK2ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K2)),
+    "kimi_k3"      => (KimiK3ToolStreamParser::create, Some(&crate::structural_tag::builders::KIMI_K3)),
 }
 
 fn family_spec(family: &str) -> Option<&'static FamilySpec> {
@@ -120,6 +120,8 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
+        assert!(structural_tag_builder_for_family("kimi_k2").is_some());
+        assert!(structural_tag_builder_for_family("kimi_k3").is_some());
         // Unified-only family: no tool-calling entry, grammar still resolves.
         assert!(structural_tag_builder_for_family("beam").is_some());
         assert!(create_tool_parser_for_family("beam", &[]).is_err());

@@ -5,6 +5,7 @@ pub(crate) mod beam;
 mod deepseek_dsml;
 mod glm47;
 mod harmony;
+mod kimi;
 mod qwen3_coder;
 mod templated_tool_calls;
 
@@ -21,6 +22,7 @@ pub(crate) fn unified_only_builder(family: &str) -> Option<&'static StructuralTa
 pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
+pub(crate) use kimi::{KIMI_K2, KIMI_K3};
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
 use serde_json::Value;

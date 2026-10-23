@@ -15,6 +15,7 @@ sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
 from unified_tools import openai_tools, unified_tools
+from schema_cases import XML_COMPATIBILITY_CASES, schema_tools
 
 
 def _assert_value(value, schema):
@@ -83,6 +84,17 @@ def test_schema_guard_corpus_keywords(schema, valid, invalid):
 
 def _assert_golden_schemas(cases, tools):
     for case_id, case in cases.items():
+        scenario = case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]
+        custom_probe = next((probe for probe in XML_COMPATIBILITY_CASES
+                             if probe["schema"]["type"] == "custom" and probe["name"] == scenario), None)
+        if custom_probe is not None:
+            # These exact native compatibility requests deliberately use an invalid
+            # JSON Schema type. Preserve the strict schema oracle for every other case.
+            assert case_id.rsplit(".", 1)[1] in {"qwen3", "nemotron_v3"}
+            assert case["tools"] == schema_tools(custom_probe)
+            assert case["golden"] == [{"kind": "tool_call", "name": "schema_probe",
+                                       "arguments": {"value": {"a": 1}}}]
+            continue
         offered_tools = case.get("tools", tools)
         schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
         assert len(schemas) == len(offered_tools)
@@ -114,6 +126,23 @@ def test_schema_free_text_does_not_imply_a_schema_free_tool_call(family):
     else:
         with pytest.raises(AssertionError):
             _assert_golden_schemas(cases, unified_tools())
+
+
+@pytest.mark.parametrize("mutation", ["arguments", "schema", "family"])
+def test_custom_compatibility_exclusion_rejects_changed_contracts(mutation):
+    case_id = "UNIFIED.xml_custom_type_single_quoted_object.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_value(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
+    if mutation == "arguments":
+        case["golden"][0]["arguments"]["value"] = "{'a':1}"
+    elif mutation == "schema":
+        case["tools"][0]["parameters"]["properties"]["value"] = {"type": "object"}
+    else:
+        case_id = case_id.removesuffix("qwen3") + "glm47"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", G.FAMILIES)

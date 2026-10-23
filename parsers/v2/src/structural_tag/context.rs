@@ -50,6 +50,8 @@ pub struct StructuralTagOptions {
     /// This weakens JSON Schema validation: required properties may be absent
     /// and duplicate properties may be accepted. It does not affect a
     /// structured-output response schema.
+    /// XGrammar 0.1.32 accepts the JSON Schema `any_order` field but does not
+    /// allow reordered keys. Use a backend version that implements this field.
     pub tool_arguments_any_order: bool,
 }
 

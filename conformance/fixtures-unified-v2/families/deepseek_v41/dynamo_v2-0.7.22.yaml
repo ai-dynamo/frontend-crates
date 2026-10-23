@@ -246,6 +246,15 @@ metadata_changes:
       tool_output_mode: GuidedJson
       named_tool: null
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        git_commit: 4a221009296ad06e435745552069a43c53381d26
+        source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
+      inherited_from: null
   schema_const_array_allof:
     capture_provenance:
       captured_with:
@@ -1271,4 +1280,13 @@ document_overrides:
         crate_version: 0.7.20
         source_sha256: 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37
         git_commit: 8c86cb855effd682692f26df42853d6a179113db
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        git_commit: 4a221009296ad06e435745552069a43c53381d26
+        source_sha256: 1a235f950667eb0723d394d3d6b3b7dd1d683c808fce0e1d127270754802a15d
       inherited_from: null

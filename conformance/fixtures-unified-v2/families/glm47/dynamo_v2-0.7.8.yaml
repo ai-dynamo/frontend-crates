@@ -228,3 +228,21 @@ document_overrides:
         git_commit: f9d218cf9337d4efdbe21b1ff84d7eb8941ba157
         source_sha256: 6085d18742461c74db2c8915c67bdfca27b7c077216a8aafe020a6c6e482c835
       inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.8
+      capture_origin:
+        crate_version: 0.7.8
+        git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
+        source_sha256: 6085d18742461c74db2c8915c67bdfca27b7c077216a8aafe020a6c6e482c835
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.8
+      capture_origin:
+        crate_version: 0.7.8
+        git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
+        source_sha256: 6085d18742461c74db2c8915c67bdfca27b7c077216a8aafe020a6c6e482c835
+      inherited_from: null

@@ -30,6 +30,20 @@ SCHEMA_GROUPS = {
     "ambiguous": ("w", "25", "Ambiguous native strings retain established preference"),
 }
 
+# The custom type is intentionally outside JSON Schema. Keep these compatibility
+# probes and their string controls separate from schema-valid CONFORMANCE_CASES.
+XML_COMPATIBILITY_FAMILIES = ("qwen3_coder", "minimax_m2")
+XML_COMPATIBILITY_CASES = [
+    {
+        "name": f"xml_{type_name}_type_{quotes}_quoted_object",
+        "schema": {"type": type_name}, "raw": raw,
+        "value": {"a": 1} if type_name == "custom" else raw,
+        "strict": False,
+    }
+    for type_name in ("custom", "string")
+    for quotes, raw in (("single", "{'a':1}"), ("double", '{"a":1}'))
+]
+
 
 def schema_group(name: str) -> str:
     if name.startswith("declared_") or name == "id_direct_integer":
@@ -69,6 +83,8 @@ _SCHEMA_SECTION = {
 
 def argument_section(scenario: str) -> str:
     scenario = scenario.removesuffix("_pr424")
+    if scenario.startswith("xml_"):
+        return "declared"
     if scenario.startswith("schema_"):
         return _SCHEMA_SECTION[schema_group(scenario.removeprefix("schema_"))]
     if scenario in {"arg_unicode", "arg_marker_in_string", "deepseek_v41_mixed_control_text_in_string"}:
@@ -99,6 +115,8 @@ def schema_fold(scenario: str) -> tuple[str, str] | None:
 
 def schema_case_label(case: dict[str, Any]) -> str:
     """Legacy tool-calling label; Unified IDs are owned by unified_taxonomy."""
+    if case["name"].startswith("xml_"):
+        return f"7.x.{case['name']}"
     letter, _number, _description = SCHEMA_GROUPS[schema_group(case["name"])]
     return f"7.{letter}.{case['name']}"
 
@@ -110,10 +128,16 @@ def schema_tools(case: dict[str, Any]) -> list[dict[str, Any]]:
     }
     if case.get("defs"):
         parameters["$defs"] = copy.deepcopy(case["defs"])
-    return [{"name": "schema_probe", "parameters": parameters, "strict": True}]
+    return [{"name": "schema_probe", "parameters": parameters, "strict": case.get("strict", True)}]
 
 
 def schema_description(case: dict[str, Any]) -> str:
+    if case["name"].startswith("xml_"):
+        return (
+            f"Native XML compatibility: {case['raw']} under type {case['schema']['type']} "
+            f"must produce {json.dumps(case['value'])}. Custom types use legacy literal "
+            "evaluation; an explicit string type preserves the original text."
+        )
     return (
         f"Schema probe {case['name']}: independently authored value "
         f"{json.dumps(case['value'], ensure_ascii=False)} under "

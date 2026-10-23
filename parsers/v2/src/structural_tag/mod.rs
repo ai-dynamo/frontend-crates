@@ -7,6 +7,11 @@
 //! The public API describes request semantics. The xgrammar JSON wire format is
 //! intentionally private so support can grow without exposing backend-specific
 //! format nodes as a stable parser API.
+//!
+//! Kimi K3 structural tags require XGrammar 0.2 or newer for the `optional`
+//! format node. Check the version bundled with the inference backend.
+//! XGrammar 0.1.32 also ignores JSON Schema `any_order`, so it does not honor
+//! reordered JSON keys requested by [`StructuralTagOptions::tool_arguments_any_order`].
 
 pub(crate) mod builders;
 mod context;

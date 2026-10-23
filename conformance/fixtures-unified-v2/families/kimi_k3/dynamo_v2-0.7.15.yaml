@@ -482,6 +482,40 @@ changes:
             name: echo
             arguments: '{"value":"Café"}'
             complete: true
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes:
   gpt_oss_quoted_message_header_literal:
     init:
@@ -595,4 +629,22 @@ document_overrides:
         crate_version: 0.7.15
         source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
         git_commit: 41d0410e937b31e9665d977a53796e13839801d6
+      inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
       inherited_from: null
