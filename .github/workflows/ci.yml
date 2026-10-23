@@ -162,7 +162,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: conformity-html
-          path: conformance/utils/CONFORMITY.html
+          path: |
+            conformance/utils/CONFORMITY.html
+            conformance/utils/CONFORMITY.json
           retention-days: 14
 
       - name: Prepare GitHub Pages artifact
@@ -230,7 +232,7 @@ jobs:
           /tmp/minimax-xgrammar/bin/python parsers/v2/tests/check_minimax_xgrammar.py "$MINIMAX_GRAMMAR_CASES"
 
   conformance-utils:
-    needs: changes
+    needs: [changes, conformance-table]
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -241,7 +243,15 @@ jobs:
           lfs: true
           fetch-depth: 0
 
+      - name: Download conformance matrix
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: conformity-html
+          path: /tmp/conformance
+
       - name: Run utility tests
+        env:
+          CONFORMANCE_REPORT_HTML: /tmp/conformance/CONFORMITY.html
         run: |
           python3 -m venv /tmp/pvenv
           /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest

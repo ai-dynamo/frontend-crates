@@ -1,0 +1,56 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.23
+    source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
+    git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+document:
+  mode: unified
+changes: {}
+metadata_changes: {}
+document_overrides:
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
+        git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
+        git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
+        git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.23
+      capture_origin:
+        crate_version: 0.7.23
+        source_sha256: 174f39306cf6ea060b2488dda3273713c019d607a8827b7a9e28c9d283a25e44
+        git_commit: 1758aa4b0fab6e8e4719a9f79be513d9f07e728b
+      inherited_from: null
+  malformed_json_then_two_valid_calls:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.22
+      capture_origin:
+        crate_version: 0.7.22
+        git_commit: 3f48393f31571679819dea0c90c15644627b4342
+        source_sha256: 8aebfa40bd4d4c4419c883112edcb9b310b864c7585e2d8551ed02ff7b72dec2
+      inherited_from: null

@@ -4,7 +4,7 @@
 [package]
 name = "dynamo-parsers"
 readme = "README.md"
-version = "10.0.7"
+version = "10.1.0"
 edition.workspace = true
 description = "Reasoning and tool-calling parsers for OpenAI-compatible inference output."
 authors.workspace = true
@@ -15,6 +15,7 @@ keywords = ["llm", "parser", "tool-calling", "reasoning", "inference"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [dependencies]
+dynamo-structural-tag.workspace = true
 anyhow.workspace = true
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["raw_value"] }

@@ -90,9 +90,11 @@ def build_job(input_root: Path, family: str, *, mode: str = "unified") -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--family", required=True, help="one family directory under --input-root"
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument(
+        "--family", help="one family directory under --input-root"
     )
+    selection.add_argument("--families", nargs="+", help="family subset; --output is a directory containing one job per family")
     parser.add_argument(
         "--input-root",
         type=Path,
@@ -101,6 +103,16 @@ def main() -> None:
     parser.add_argument("--output", type=Path, help="write JSON here instead of stdout")
     parser.add_argument("--mode", choices=("unified", "batch"), default="unified")
     args = parser.parse_args()
+    if args.families:
+        if args.output is None:
+            parser.error("--families requires --output directory")
+        if len(set(args.families)) != len(args.families):
+            parser.error("duplicate families")
+        jobs = {family: build_job(args.input_root, family, mode=args.mode) for family in args.families}
+        args.output.mkdir(parents=True, exist_ok=True)
+        for family, job in jobs.items():
+            (args.output / f"{family}.json").write_text(json.dumps(job, indent=2, ensure_ascii=False) + "\n")
+        return
     payload = json.dumps(build_job(args.input_root, args.family, mode=args.mode), indent=2, ensure_ascii=False)
     if args.output:
         args.output.write_text(payload + "\n")

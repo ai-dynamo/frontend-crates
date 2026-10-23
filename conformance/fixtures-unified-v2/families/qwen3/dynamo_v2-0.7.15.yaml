@@ -131,6 +131,152 @@ changes:
       error:
         code: legacy_unclassified
         detail: 'structural tag: no structural-tag builder for qwen3'
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai'
+            complete: false
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+            complete: false
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
 metadata_changes:
   guided_json_native_parameter_string_before_payload:
     init:
@@ -191,4 +337,42 @@ metadata_changes:
 
 
           {"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}'
-document_overrides: {}
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.15
+      capture_origin:
+        crate_version: 0.7.15
+        git_commit: 2edcdd589b2bfc745f8e6ce4d86657019a39bb93
+        source_sha256: 8083be6e32dae8e8e337dca363273bf1ad96f5b705f3685a331e468df9292d2d
+      inherited_from: null

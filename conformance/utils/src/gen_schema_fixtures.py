@@ -11,7 +11,8 @@ import yaml
 import gen_unified_golden as golden
 from refresh_dynamo_captures import ensure_tree
 from schema_cases import (
-    CONFORMANCE_CASES, legacy_schema_wire, schema_case_label,
+    CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, XML_COMPATIBILITY_FAMILIES,
+    legacy_schema_wire, schema_case_label,
     schema_arguments, schema_description, schema_tools,
 )
 
@@ -20,9 +21,9 @@ REGISTRY = yaml.safe_load(Path(__file__).with_name("parser_families.yaml").read_
 HEADER = "# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\n# SPDX-License-Identifier: Apache-2.0\n"
 
 
-def authored_legacy_cases(family: str, stream: bool) -> dict[str, dict[str, Any]]:
+def authored_legacy_cases(family: str, stream: bool, probes=CONFORMANCE_CASES) -> dict[str, dict[str, Any]]:
     cases = {}
-    for probe in CONFORMANCE_CASES:
+    for probe in probes:
         label = schema_case_label(probe)
         prefix = "TOOLCALLING.streamv1" if stream else "TOOLCALLING.batch"
         wire = legacy_schema_wire(family, probe, golden.r_tool_arguments)
@@ -62,6 +63,20 @@ def main() -> None:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(HEADER + yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100000))
     print(f"Authored {len(CONFORMANCE_CASES)} schema probes for {len(REGISTRY)} registered families.")
+    for family, registration in sorted(REGISTRY.items()):
+        if family == "harmony":
+            continue
+        probes = [probe for probe in XML_COMPATIBILITY_CASES
+                  if probe["schema"]["type"] == "string" or family in XML_COMPATIBILITY_FAMILIES]
+        # String fidelity applies to every text grammar; custom-type fallback
+        # remains scoped to the XML owner that defines that compatibility.
+        doc = {"family": family, "mode": "streamv1",
+               "cases": authored_legacy_cases(family, True, probes)}
+        if not registration.get("dynamo_v2"):
+            for case in doc["cases"].values():
+                case["unavailable"] = {"dynamo_v2": "No registered Dynamo v2 parser for this family."}
+        output = stream / family / "TOOLCALLING.streamv1.7.xml-compatibility.yaml"
+        output.write_text(HEADER + yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=100000))
 
 
 if __name__ == "__main__":

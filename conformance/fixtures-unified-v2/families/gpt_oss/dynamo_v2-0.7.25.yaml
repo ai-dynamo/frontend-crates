@@ -4540,82 +4540,7 @@ changes:
         - delta_text: ‹finish›
       semantic_sha256: ba51b0eb8430fd6bdb34ba05763cf26541bd0e9450f8754c2ba4acafaf9dad0c
 metadata_changes:
-  arg_json_null:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_json_null_anyof:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_json_null_const:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_json_null_nullable:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_json_null_oneof:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
   arg_marker_in_string_pr424:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_const:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_enum:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_sibling_anyof:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_sibling_oneof:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_union:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_string_null_untyped_branch:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  arg_unicode:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  content_then_reason:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  content_then_reason_then_tool:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -4626,26 +4551,6 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   empty_args:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  glm_ref_encoded_targets:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  glm_ref_json_looking_strings:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  glm_ref_object:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  glm_ref_scalar_types:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -4985,34 +4890,9 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: GuidedJson
       named_tool: null
-  interstitial_text:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  local_schema_id_preserves_type:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  malformed_json_then_two_valid_calls:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  narrated_calls:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
   native_unmatched_quote_then_call:
     init:
       starting_state: Response
-      tool_output_mode: Native
-      named_tool: null
-  nullable_reference_alias_literals:
-    init:
-      starting_state: None
       tool_output_mode: Native
       named_tool: null
   orphan_close_after_prose:
@@ -5055,6 +4935,186 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
+  reason_markup_in_arg:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  reason_markup_in_arg_with_text:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  reason_unterminated:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  structured_response_after_reasoning:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+      structural_tag:
+        schema:
+          type: object
+          properties:
+            location:
+              type: string
+              enum:
+              - London
+              - New York
+            temperature:
+              type: number
+            conditions:
+              type: string
+          required:
+          - location
+          - temperature
+          - conditions
+          additionalProperties: false
+        rejected:
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
+        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
+  tool_no_close:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  truncated_tool_eof:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  two_adjacent_reason_spans:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null_anyof:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null_const:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null_nullable:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null_oneof:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_const:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_enum:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_sibling_anyof:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_sibling_oneof:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_union:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_untyped_branch:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_unicode:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  content_then_reason:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  content_then_reason_then_tool:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  glm_ref_encoded_targets:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  glm_ref_json_looking_strings:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  glm_ref_object:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  glm_ref_scalar_types:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  interstitial_text:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  local_schema_id_preserves_type:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  malformed_json_then_two_valid_calls:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  narrated_calls:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  nullable_reference_alias_literals:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   reason_after_tool:
     init:
       starting_state: None
@@ -5066,16 +5126,6 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   reason_interleaved:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  reason_markup_in_arg:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  reason_markup_in_arg_with_text:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -5101,11 +5151,6 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   reason_tool_text_reason_tool:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  reason_unterminated:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -5680,36 +5725,6 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
-  structured_response_after_reasoning:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-      structural_tag:
-        schema:
-          type: object
-          properties:
-            location:
-              type: string
-              enum:
-              - London
-              - New York
-            temperature:
-              type: number
-            conditions:
-              type: string
-          required:
-          - location
-          - temperature
-          - conditions
-          additionalProperties: false
-        rejected:
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>[]<|return|>
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":<|return|>
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"Tokyo","temperature":12,"conditions":"cloudy"}<|return|>
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London"}<|return|>
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|message|>{"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}<|return|>
-        - <|channel|>analysis<|message|>Check London météo🙂 before answering; this is prose, not JSON.<|end|><|start|>assistant<|channel|>final<|constrain|>json<|message|>invalid JSON<|return|>
   text_before_tool:
     init:
       starting_state: None
@@ -5745,27 +5760,12 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
-  tool_no_close:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
   tool_only:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
   trailing_text_after_tool:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  truncated_tool_eof:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  two_adjacent_reason_spans:
     init:
       starting_state: None
       tool_output_mode: Native

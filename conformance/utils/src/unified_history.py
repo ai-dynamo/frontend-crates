@@ -1658,11 +1658,12 @@ def _add_bound_legacy_cases(
     for case_id in additions:
         record = records[case_id]
         stimulus = record["stimulus"]
+        origin = record["document"].get("capture_origin")
         if (
             len(stimulus.keys() & {"ref", "inline"}) != 1
             or not isinstance(stimulus.get("semantic_sha256"), str)
             or not stimulus["semantic_sha256"]
-            or "capture_origin" in record["document"]
+            or (origin is not None and origin.get("crate_version") != capture["runtime_version"])
         ):
             return False
 
@@ -1904,6 +1905,28 @@ def _update_from_loose(
                     # view is ingested again.
                     if metadata.get("capture_provenance") == {"format": MATERIALIZED_FORMAT}:
                         metadata.pop("capture_provenance")
+                    capture_origin = metadata.get("capture_origin")
+                    source_provenance = metadata.get("capture_provenance")
+                    if capture_origin is None and isinstance(source_provenance, dict):
+                        origin_fields = {
+                            key: source_provenance[key]
+                            for key in (
+                                "crate_version",
+                                "source_sha256",
+                                "git_commit",
+                                "adapter_sha256",
+                                "job_sha256",
+                            )
+                            if key in source_provenance
+                        }
+                        if {"crate_version", "source_sha256"} <= origin_fields.keys():
+                            capture_origin = origin_fields
+                    if capture_origin is not None:
+                        capture_origin = _validate_source_origin(
+                            capture_origin,
+                            f"{path}.capture_origin",
+                            runtime_version,
+                        )
                 for case_key, record in document["cases"].items():
                     external = (
                         family_name,
@@ -1943,6 +1966,7 @@ def _update_from_loose(
                         "observation": observation,
                         "document": {
                             **metadata,
+                            **({"capture_origin": capture_origin} if capture_origin else {}),
                             **({"record_metadata": record_metadata} if record_metadata else {}),
                         },
                     }
@@ -2008,12 +2032,21 @@ def _update_from_loose(
                 # Non-required snapshots are sparse deltas; absent rows inherit the prior result.
                 conflicts = []
                 corrections = []
+                provenance_enrichments = []
                 for case_id in sorted(set(resolved) & set(records)):
                     before = resolved[case_id]
                     after = records[case_id]
                     if _canonical_json(_capture_semantic(before, case_id)) == _canonical_json(
                         _capture_semantic(after, case_id)
                     ):
+                        origin = after["document"].get("capture_origin")
+                        captured_with = before["document"].get("captured_with", {})
+                        if (
+                            captured_with.get(implementation) != runtime_version
+                            and isinstance(origin, dict)
+                            and origin.get("crate_version") == runtime_version
+                        ):
+                            provenance_enrichments.append(case_id)
                         continue
                     if _is_correctable_capture_placeholder(
                         before,
@@ -2033,6 +2066,13 @@ def _update_from_loose(
                     for case_id in corrections:
                         target[case_id] = copy.deepcopy(records[case_id])
                     _replace_capture_snapshot(history, capture_dir.name, target)
+                    resolved = target
+                if provenance_enrichments:
+                    target = copy.deepcopy(resolved)
+                    for case_id in provenance_enrichments:
+                        target[case_id] = copy.deepcopy(records[case_id])
+                    _replace_capture_snapshot(history, capture_dir.name, target)
+                    resolved = target
                 additions = sorted(set(records) - set(resolved))
                 if not additions:
                     _compact_history(history)

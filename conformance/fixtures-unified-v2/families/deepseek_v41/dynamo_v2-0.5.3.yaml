@@ -7,6 +7,31 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     observation:
       value:
@@ -102,6 +127,99 @@ changes:
             name: get_weather
             arguments: '{"city":"Paris"}'
             complete: true
+        - expected: []
+  dotted_name_minimal:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            complete: true
+        - expected: []
         - expected: []
   empty_args:
     observation:
@@ -2054,6 +2172,40 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+  three_calls_partial_header:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
   tool_block_never_closed_then_text:
     observation:
       value:

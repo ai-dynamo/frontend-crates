@@ -207,8 +207,18 @@ fn harmony_response_format_constrains_final_without_constraining_analysis() {
                             Some("<|start|>assistant"),
                         )
                     } else {
-                        &actual["format"]
+                        &actual["format"]["elements"][1]
                     };
+                    if choice == StructuralTagToolChoice::None || tools.is_empty() {
+                        assert_eq!(format["type"], "tag");
+                        assert_eq!(format["begin"], "<|channel|>final<|message|>");
+                        assert_eq!(format["end"], "");
+                        assert_eq!(
+                            format["content"],
+                            json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                        );
+                        continue;
+                    }
                     assert_eq!(format["type"], "triggered_tags");
                     assert_eq!(format["at_least_one"], false);
                     assert!(
@@ -223,7 +233,7 @@ fn harmony_response_format_constrains_final_without_constraining_analysis() {
                         .iter()
                         .find(|tag| tag["begin"] == "<|channel|>final<|message|>")
                         .unwrap();
-                    assert_eq!(final_tag["end"], "<|return|>");
+                    assert_eq!(final_tag["end"], "");
                     assert_eq!(
                         final_tag["content"],
                         json!({"type":"json_schema", "json_schema":schema, "style":"json"})
@@ -329,16 +339,15 @@ fn harmony_response_schema_envelope_round_trips_without_marker_leakage() {
         false,
         &schema,
     );
-    let final_tag = &tag["format"]["tags"][0];
+    let final_tag = &tag["format"]["elements"][1];
     let body = r#"{"location":"London","temperature":12,"conditions":"cloudy"}"#;
-    // The generation grammar and output parser must agree on the turn delimiter;
-    // a grammar-only acceptance test cannot detect a delimiter leaking as text.
+    // The engine supplies the stop marker after the grammar has completed.
     let input = format!(
         "{}checking météo🙂<|end|><|start|>assistant{}{}{}",
         concat!("<|channel|>", "ana", "lysis<|message|>"),
         final_tag["begin"].as_str().unwrap(),
         body,
-        final_tag["end"].as_str().unwrap(),
+        "<|return|>",
     );
     let expected = vec![
         UnifiedEvent::Reasoning {
@@ -359,6 +368,54 @@ fn harmony_response_schema_envelope_round_trips_without_marker_leakage() {
         actual.extend(parser.push(&input[split..]).unwrap());
         actual.extend(parser.finish().unwrap().events);
         assert_eq!(assemble(&actual), expected, "split at {split}");
+    }
+}
+
+#[test]
+fn harmony_forced_calls_allow_optional_reasoning_before_stop_free_json() {
+    let tools = tools();
+    for choice in [
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Named("get_weather"),
+    ] {
+        let actual = build(
+            &HARMONY,
+            choice,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        let elements = actual["format"]["elements"].as_array().unwrap();
+        assert_eq!(elements[0]["type"], "or");
+        assert_eq!(
+            elements[0]["elements"][0],
+            json!({"type":"const_string","value":""})
+        );
+        let reasoning = &elements[0]["elements"][1]["elements"];
+        assert_eq!(reasoning[0]["begin"], "<|channel|>analysis<|message|>");
+        assert_eq!(reasoning[0]["end"], "<|end|>");
+        assert_eq!(reasoning[1]["value"], "<|start|>assistant");
+        let tags = if matches!(choice, StructuralTagToolChoice::Named(_)) {
+            assert_eq!(elements[1]["type"], "tag");
+            vec![&elements[1]]
+        } else {
+            assert_eq!(elements[1]["stop_after_first"], true);
+            elements[1]["tags"].as_array().unwrap().iter().collect()
+        };
+        assert!(tags.iter().all(|tag| tag["end"] == ""));
+        assert!(
+            tags.iter()
+                .all(|tag| tag["content"]["type"] == "json_schema")
+        );
+        assert_eq!(
+            tags.len(),
+            if matches!(choice, StructuralTagToolChoice::Required) {
+                2
+            } else {
+                1
+            }
+        );
     }
 }
 

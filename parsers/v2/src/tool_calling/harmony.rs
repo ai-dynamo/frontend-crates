@@ -7,6 +7,7 @@ use crate::tool_calling::traits::{Result, Tool, ToolParseResult, ToolParser};
 use crate::tool_calling::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};
 use crate::unified::{UnifiedParser, UnifiedParserEvent, UnifiedParserExt};
 use std::collections::BTreeMap;
+use std::panic::{RefUnwindSafe, UnwindSafe};
 
 pub use crate::unified::harmony::{decode_harmony, encode_harmony};
 
@@ -42,7 +43,7 @@ pub struct ToolStreamResult {
 
 /// Compatibility projection for the old Harmony tool-only parser contract.
 pub struct HarmonyToolStreamParser {
-    parser: Box<dyn UnifiedParser>,
+    parser: Box<dyn UnifiedParser + Sync + UnwindSafe + RefUnwindSafe>,
     pending_normal_text: String,
     next_id: u64,
 }
@@ -205,6 +206,12 @@ impl ToolParser for HarmonyToolStreamParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn legacy_parser_preserves_auto_traits() {
+        fn assert_traits<T: Send + Sync + UnwindSafe + RefUnwindSafe>() {}
+        assert_traits::<HarmonyToolStreamParser>();
+    }
 
     #[test]
     fn legacy_adapter_keeps_missing_recipient_body_out_of_visible_text() {

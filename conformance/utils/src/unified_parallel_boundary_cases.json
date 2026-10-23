@@ -1,0 +1,1163 @@
+{
+  "adjacent_calls_partial_header": {
+    "deepseek_v4": {
+      "input_chunks": [
+        "<｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"a\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na",
+        "me=\"g\"><｜DSML｜parameter name=\"b\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "deepseek_v41": {
+      "input_chunks": [
+        "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"a\" string=\"true\">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke na",
+        "me=\"g\"><｜DSML｜ parameter name=\"b\" string=\"true\">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "gemma4": {
+      "input_chunks": [
+        "<|tool_call>call",
+        ":f{",
+        "a:<|\"|>1<|\"|>",
+        "}<tool_call|><|tool_call>ca",
+        "ll:g{",
+        "b:",
+        "<|\"|>2<|\"|>}<tool_call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "glm47": {
+      "input_chunks": [
+        "<tool_call>f<arg_key>a</arg_key><arg_value>1</arg_value></tool_call><tool_call>g",
+        "<arg_key>b</arg_key><arg_value>2</arg_value></tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "kimi_k2": {
+      "input_chunks": [
+        "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"a\":\"1\"}<|tool_call_end|><|tool_call_begin|>functions.",
+        "g:1<|tool_call_argument_begin|>{\"b\":\"2\"}<|tool_call_end|><|tool_calls_section_end|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "kimi_k3": {
+      "input_chunks": [
+        "<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|><|open|>argument key=\"a\" type=\"string\"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to",
+        "ol=\"g\" index=\"2\"<|sep|><|open|>argument key=\"b\" type=\"string\"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "muse_glimmer": {
+      "input_chunks": [
+        "<|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name=\"f\"><atem:parameter name=\"a\">\"1\"</atem:parameter></atem:invoke><atem:invoke na",
+        "me=\"g\"><atem:parameter name=\"b\">\"2\"</atem:parameter></atem:invoke></atem:function_calls><|eom|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "nemotron_v3": {
+      "input_chunks": [
+        "<tool_call>\n<function=f>\n<parameter=a>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
+        "ction=g>\n<parameter=b>\n2\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    },
+    "qwen3": {
+      "input_chunks": [
+        "<tool_call>\n<function=f>\n<parameter=a>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
+        "ction=g>\n<parameter=b>\n2\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "a"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "b"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "a": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "b": "2"
+          }
+        }
+      ]
+    }
+  },
+  "three_calls_partial_header": {
+    "deepseek_v4": {
+      "input_chunks": [
+        "",
+        "<｜DSML｜tool_calls><｜DSML｜invoke name=\"f\"><｜DSML｜parameter name=\"x\" string=\"true\">1</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke na",
+        "me=\"g\"><｜DSML｜parameter name=\"x\" string=\"true\">2</｜DSML｜parameter></｜DSML｜invoke><｜DSML｜invoke name=\"h\"><｜DSML｜parameter name=\"x\" string=\"true\">3</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "deepseek_v41": {
+      "input_chunks": [
+        "",
+        "<｜DSML｜ calls><｜DSML｜ invoke name=\"f\"><｜DSML｜ parameter name=\"x\" string=\"true\">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke na",
+        "me=\"g\"><｜DSML｜ parameter name=\"x\" string=\"true\">2</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name=\"h\"><｜DSML｜ parameter name=\"x\" string=\"true\">3</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "gemma4": {
+      "input_chunks": [
+        "",
+        "<|tool_call>call:f{x:<|\"|>1<|\"|>}<tool_call|><|tool_call>c",
+        "all:g{x:<|\"|>2<|\"|>}<tool_call|><|tool_call>call:h{x:<|\"|>3<|\"|>}<tool_call|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "glm47": {
+      "input_chunks": [
+        "",
+        "<tool_call>f<arg_key>x</arg_key><arg_value>1</arg_value></tool_call><tool_call>g",
+        "<arg_key>x</arg_key><arg_value>2</arg_value></tool_call><tool_call>h<arg_key>x</arg_key><arg_value>3</arg_value></tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "kimi_k2": {
+      "input_chunks": [
+        "",
+        "<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{\"x\":\"1\"}<|tool_call_end|><|tool_call_begin|>functions.",
+        "g:1<|tool_call_argument_begin|>{\"x\":\"2\"}<|tool_call_end|><|tool_call_begin|>functions.h:2<|tool_call_argument_begin|>{\"x\":\"3\"}<|tool_call_end|><|tool_calls_section_end|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "kimi_k3": {
+      "input_chunks": [
+        "",
+        "<|open|>tools<|sep|><|open|>call tool=\"f\" index=\"1\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to",
+        "ol=\"g\" index=\"2\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool=\"h\" index=\"3\"<|sep|><|open|>argument key=\"x\" type=\"string\"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "muse_glimmer": {
+      "input_chunks": [
+        "",
+        "<|start|>assistant to=functions<|message|><atem:function_calls><atem:invoke name=\"f\"><atem:parameter name=\"x\">\"1\"</atem:parameter></atem:invoke><atem:invoke na",
+        "me=\"g\"><atem:parameter name=\"x\">\"2\"</atem:parameter></atem:invoke><atem:invoke name=\"h\"><atem:parameter name=\"x\">\"3\"</atem:parameter></atem:invoke></atem:function_calls><|eom|>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "nemotron_v3": {
+      "input_chunks": [
+        "",
+        "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
+        "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    },
+    "qwen3": {
+      "input_chunks": [
+        "",
+        "<tool_call>\n<function=f>\n<parameter=x>\n1\n</parameter>\n</function>\n</tool_call><tool_call>\n<fun",
+        "ction=g>\n<parameter=x>\n2\n</parameter>\n</function>\n</tool_call><tool_call>\n<function=h>\n<parameter=x>\n3\n</parameter>\n</function>\n</tool_call>",
+        ""
+      ],
+      "tools": [
+        {
+          "name": "f",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "g",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        },
+        {
+          "name": "h",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "x"
+            ]
+          }
+        }
+      ],
+      "golden": [
+        {
+          "kind": "tool_call",
+          "name": "f",
+          "arguments": {
+            "x": "1"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "g",
+          "arguments": {
+            "x": "2"
+          }
+        },
+        {
+          "kind": "tool_call",
+          "name": "h",
+          "arguments": {
+            "x": "3"
+          }
+        }
+      ]
+    }
+  }
+}

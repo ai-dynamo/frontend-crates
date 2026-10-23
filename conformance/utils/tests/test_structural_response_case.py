@@ -32,16 +32,22 @@ def _assert_bound_columns(states, case_id, digest):
         assert state[case_id]["stimulus"]["semantic_sha256"] == digest
 
 
-def test_structural_request_is_bound_in_every_retained_dynamo_column(committed_unified_store):
+def test_structural_request_is_bound_after_each_family_introduces_it(committed_unified_store):
     store = committed_unified_store
     for family in scenario_families(SCENARIO):
         history = store.histories[(family, "dynamo_v2")]
         case_id = next(key for key, case in history.family.cases.items() if case["scenario"] == SCENARIO)
         digest = unified_history._request_digest(history.family.cases[case_id]["request"])
-        states = {capture_id: history.resolve(capture_id) for capture_id in history.ordered_capture_ids()}
-        _assert_bound_columns(states, case_id, digest)
-        oldest = next(iter(states))
-        missing = {oldest: {key: value for key, value in states[oldest].items() if key != case_id}}
+        capture_ids = history.ordered_capture_ids()
+        states = {capture_id: history.resolve(capture_id) for capture_id in capture_ids}
+        first_capture = next(index for index, capture_id in enumerate(capture_ids)
+                             if case_id in states[capture_id])
+        assert all(case_id in states[capture_id] for capture_id in capture_ids[first_capture:])
+        captured_states = {capture_id: states[capture_id] for capture_id in capture_ids[first_capture:]}
+        _assert_bound_columns(captured_states, case_id, digest)
+        first_retained = next(iter(captured_states))
+        missing = {first_retained: {key: value for key, value in captured_states[first_retained].items()
+                                    if key != case_id}}
         with pytest.raises(AssertionError, match="missing structured request"):
             _assert_bound_columns(missing, case_id, digest)
 

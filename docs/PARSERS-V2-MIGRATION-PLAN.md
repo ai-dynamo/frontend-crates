@@ -29,7 +29,7 @@ In the current Dynamo runtime, parser names come from model deployment configura
 
 Parser source, parser fixtures, and conformance utilities are **frontend-crates-owned**. frontend-crates publishes `dynamo-parsers` to crates.io and Dynamo consumes it from there.
 
-The v1/v2 split is kept because **v2 is still under active development**: it lives on a `0.x` line where breaking changes are free and expected, while `dynamo-parsers` (v1) is a stable, semver-checked `3.x` crate. Merging v2 into v1 now would either force major bumps on the stable crate or block v2's fast iteration under `cargo-semver-checks`. Keep them separate until the v2 streaming API stabilizes.
+The v1/v2 split is kept because **v2 is still under active development**: it lives on a `0.x` line where breaking changes are free and expected, while `dynamo-parsers` (v1) is a stable crate whose major versions are maintainer-controlled. Merging v2 into v1 now would either force major bumps on the stable crate or slow v2's fast iteration. Keep them separate until the v2 streaming API stabilizes.
 
 ## Layout Details
 

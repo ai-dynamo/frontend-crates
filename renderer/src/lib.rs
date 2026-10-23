@@ -34,6 +34,7 @@ use std::sync::Arc;
 /// `dynamo_renderer::dynamo_tokenizers::*` without adding a second dependency.
 pub use dynamo_tokenizers;
 
+pub mod beam;
 pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;

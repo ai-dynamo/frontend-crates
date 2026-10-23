@@ -17146,3 +17146,441 @@ cases:
         name: lookup
         arguments:
           q: x
+  adjacent_calls_partial_header:
+    lifecycle: active
+    scenario: adjacent_calls_partial_header
+    description: 'Adjacent calls: a delta closes one call and ends inside the next call header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-adjacent_calls_partial_header
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="a" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="g" index="2"<|sep|><|open|>argument key="b" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            a:
+              type: string
+          required:
+          - a
+      - name: g
+        parameters:
+          type: object
+          properties:
+            b:
+              type: string
+          required:
+          - b
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="a" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to
+      - delta_text: ol="g" index="2"<|sep|><|open|>argument key="b" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          a: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          b: '2'
+  three_calls_partial_header:
+    lifecycle: active
+    scenario: three_calls_partial_header
+    description: 'Three adjacent calls: retain the middle call after a partial next header'
+    policy:
+    - I2
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.2-three_calls_partial_header
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="g" index="2"<|sep|><|open|>argument key="x" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="h" index="3"<|sep|><|open|>argument key="x" type="string"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: tool_calls
+      tools:
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: g
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      - name: h
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+          required:
+          - x
+      chunks:
+      - delta_text: ''
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="f" index="1"<|sep|><|open|>argument key="x" type="string"<|sep|>1<|close|>argument<|sep|><|close|>call<|sep|><|open|>call to
+      - delta_text: ol="g" index="2"<|sep|><|open|>argument key="x" type="string"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="h" index="3"<|sep|><|open|>argument key="x" type="string"<|sep|>3<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      - delta_text: ''
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: '1'
+      - kind: tool_call
+        name: g
+        arguments:
+          x: '2'
+      - kind: tool_call
+        name: h
+        arguments:
+          x: '3'
+  xml_string_type_double_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_double_quoted_object
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_double_quoted_object
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>{"a":1}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="schema_probe" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="value" type="string"
+      - delta_text: <|sep|>
+      - delta_text: '{"a":1}'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{"a":1}'
+  xml_string_type_single_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_single_quoted_object
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_single_quoted_object
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>{'a':1}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="schema_probe" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="value" type="string"
+      - delta_text: <|sep|>
+      - delta_text: '{''a'':1}'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{''a'':1}'
+  dotted_name_minimal:
+    lifecycle: active
+    scenario: dotted_name_minimal
+    description: A native call to a.b preserves the complete name and empty arguments.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_minimal
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="a.b" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: a.b
+        parameters:
+          type: object
+          properties: {}
+          required: []
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="a.b" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: a.b
+        arguments: {}
+  dotted_name_mixed_punctuation:
+    lifecycle: active
+    scenario: dotted_name_mixed_punctuation
+    description: 'A native call to my-tool.v2 preserves both punctuation characters and its Beijing argument (#416, #423).'
+    policy: []
+    display_id: UNIFIED.1-dotted_name_mixed_punctuation
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="my-tool.v2" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: my-tool.v2
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="my-tool.v2" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: my-tool.v2
+        arguments:
+          location: Beijing
+  dotted_name_multiple_segments:
+    lifecycle: active
+    scenario: dotted_name_multiple_segments
+    description: A native call preserves every segment of server.tools.weather.
+    policy: []
+    display_id: UNIFIED.1-dotted_name_multiple_segments
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="server.tools.weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.tools.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.tools.weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.tools.weather
+        arguments:
+          location: Beijing
+  dotted_name_shared_prefix:
+    lifecycle: active
+    scenario: dotted_name_shared_prefix
+    description: Two native calls preserve server.weather then server.time, with distinct arguments and no protocol text.
+    policy: []
+    display_id: UNIFIED.2-dotted_name_shared_prefix
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="server.weather" index="1"<|sep|><|open|>argument key="location" type="string"<|sep|>Beijing<|close|>argument<|sep|><|close|>call<|sep|><|open|>call tool="server.time" index="2"<|sep|><|open|>argument key="timezone" type="string"<|sep|>Asia/Shanghai<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: server.weather
+        parameters:
+          type: object
+          properties:
+            location:
+              type: string
+          required:
+          - location
+          additionalProperties: false
+      - name: server.time
+        parameters:
+          type: object
+          properties:
+            timezone:
+              type: string
+          required:
+          - timezone
+          additionalProperties: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="location" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Beijing
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="server.time" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="timezone" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Asia/Shanghai
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: server.weather
+        arguments:
+          location: Beijing
+      - kind: tool_call
+        name: server.time
+        arguments:
+          timezone: Asia/Shanghai

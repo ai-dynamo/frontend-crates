@@ -7,6 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 3614508e8b66afeb0f7804ce8825cd8362f72bf02d1347320ccdaff95fab8e64
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -39,6 +48,42 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: e9f45417c8a37f70fe9230c7e20ff4d20ae19e7374d76bf87df2179bb6dc3e03
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: ad07a0092ae99ac765f2809cf6d6643f6edd386ce9c212f9cbb3ab25bd2d884f
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: fd388ff0da10e970590fba0d6a2b7b8e7c909d52aed2956112d02b15b9bfc21c
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: b89ef108c321083c2b2e12f5da29bdd63cc308411395efef7a40044a85399068
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: 'split parser kimi_k3: no Dynamo parser v2 for family ''kimi_k3'''
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -1049,6 +1094,15 @@ changes:
       unavailable:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 5754e1844f45fcd463d11d12ca231370e610c119e5faa9b5ef551804da1e0188
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -1146,6 +1200,11 @@ changes:
         code: legacy_unclassified
         detail: no reasoning parser registered for kimi_k3
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
     init:
       starting_state: None
@@ -1162,6 +1221,26 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   content_then_reason_then_tool:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -1642,6 +1721,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   text_sandwich:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native

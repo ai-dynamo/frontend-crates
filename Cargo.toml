@@ -4,6 +4,7 @@ members = [
     "protocols",
     "decisions",
     "parsers/v1",
+    "parsers/structural-tag",
     "renderer",
     "tokenizers",
     "conformance",
@@ -20,6 +21,7 @@ homepage = "https://github.com/ai-dynamo/frontend-crates"
 repository = "https://github.com/ai-dynamo/frontend-crates.git"
 
 [workspace.dependencies]
+dynamo-structural-tag = { path = "parsers/structural-tag", version = "0.1.0" }
 aho-corasick = "1"
 anyhow = "1"
 async-openai = { version = "0.42", default-features = false }
@@ -37,7 +39,7 @@ chrono = { version = "0.4", default-features = false, features = [
 ] }
 clap = "4"
 derive_builder = "0.20"
-dynamo-parsers = { path = "parsers/v1", version = "10.0.7" }
+dynamo-parsers = { path = "parsers/v1", version = "10.1.0" }
 dynamo-protocols = { path = "protocols", version = "8.2.0" }
 dynamo-decisions = { path = "decisions", version = "0.1.0" }
 dynamo-renderer = { path = "renderer", version = "8.0.4" }

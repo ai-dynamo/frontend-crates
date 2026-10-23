@@ -6,7 +6,8 @@ use dynamo_parsers_v2::{
     UnifiedParserStartingState, UnifiedToolOutputMode, assemble, create_unified_parser_for_family,
 };
 
-const FAMILIES: [(&str, &str, &str); 8] = [
+const FAMILIES: [(&str, &str, &str); 9] = [
+    ("beam", "<|start|>assistant to=run<|channel|>", "<|end|>"),
     ("deepseek_v4", "<｜DSML｜tool_calls>", "</think>"),
     ("deepseek_v41", "<｜DSML｜ calls>", "</think>"),
     ("gemma4", "<|tool_call>", "<channel|>"),
@@ -32,6 +33,9 @@ fn tools() -> Vec<Tool> {
 
 fn native_call(family: &str, value: &str) -> String {
     match family {
+        "beam" => format!(
+            "<|start|>assistant to=run<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"cmd\">{value}</rfl:parameter><|call|>"
+        ),
         "deepseek_v4" => format!(
             "<｜DSML｜tool_calls><｜DSML｜invoke name=\"run\"><｜DSML｜parameter name=\"cmd\" string=\"true\">{value}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
         ),
@@ -109,6 +113,11 @@ fn every_split(
 #[test]
 fn quoted_native_controls_remain_prose_in_both_channels_at_every_split() {
     for (family, marker, _) in FAMILIES {
+        // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
+        // a quotation never keeps a control literal there (see the beam unit tests).
+        if family == "beam" {
+            continue;
+        }
         for quote in ['"', '\'', '`'] {
             let input =
                 format!("The literal {quote}{marker}{quote} marker is part of the explanation.");
@@ -135,6 +144,11 @@ fn quoted_native_controls_remain_prose_in_both_channels_at_every_split() {
 #[test]
 fn literal_controls_do_not_hide_following_calls_or_argument_bytes() {
     for (family, marker, _) in FAMILIES {
+        // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
+        // a quotation never keeps a control literal there (see the beam unit tests).
+        if family == "beam" {
+            continue;
+        }
         let prefix = format!("The literal \"{marker}\" marker; James' request isn't 'twas wrong. ");
         let value = format!("echo \"{marker}\" \\path `quoted` value");
         let input = format!("{prefix}{}", native_call(family, &value));
@@ -159,16 +173,19 @@ fn unmatched_quote_cannot_hide_the_real_reasoning_closer() {
         for quote in ['"', '\'', '`'] {
             let reasoning = format!("He said {quote}maybe");
             let input = format!("{reasoning}{closer}Answer");
+            // Beam's turn is channel framing only: bytes after the closer with no
+            // header are framing debris, not text (the closer is still honoured).
+            let mut expected = vec![UnifiedEvent::Reasoning { text: reasoning }];
+            if family != "beam" {
+                expected.push(UnifiedEvent::Text {
+                    text: "Answer".into(),
+                });
+            }
             every_split(
                 family,
                 &input,
                 UnifiedParserStartingState::Reasoning,
-                &[
-                    UnifiedEvent::Reasoning { text: reasoning },
-                    UnifiedEvent::Text {
-                        text: "Answer".into(),
-                    },
-                ],
+                &expected,
             );
         }
     }
@@ -254,6 +271,11 @@ fn inactive_muse_invoke_attributes_keep_the_same_marker_recovery_at_every_split(
 #[test]
 fn single_quoted_words_own_their_embedded_control() {
     for (family, marker, _) in FAMILIES {
+        // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
+        // a quotation never keeps a control literal there (see the beam unit tests).
+        if family == "beam" {
+            continue;
+        }
         let input = format!("The literal 'example {marker} marker' is part of the explanation.");
         every_split(
             family,
@@ -269,6 +291,11 @@ fn single_quoted_words_own_their_embedded_control() {
 #[test]
 fn contractions_do_not_close_single_quoted_controls() {
     for (family, marker, closer) in FAMILIES {
+        // Beam's markers are special tokens and its envelope sets `quote_aware: false`:
+        // a quotation never keeps a control literal there (see the beam unit tests).
+        if family == "beam" {
+            continue;
+        }
         for control in [marker, closer] {
             for body in ["doesn't", "isn't", "doesn't mean it isn't", "caf\u{e9}'s"] {
                 let input = format!("The literal '{body} {control} marker' stays visible.");

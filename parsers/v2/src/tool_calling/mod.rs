@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod beam_body;
+pub(crate) mod beam_py;
 pub mod debug;
 pub mod dsml;
 pub mod gemma4;

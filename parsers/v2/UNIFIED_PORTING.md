@@ -2,7 +2,7 @@
 
 The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
 
-This doc is for adding a family to the unified path. `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, and `qwen3` are on it today. `nemotron_v3` shares the Qwen XML factory with forced reasoning enabled.
+This doc is for adding a family to the unified path. `beam`, `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, and `qwen3` are on it today. `nemotron_v3` shares the Qwen XML factory with forced reasoning enabled. `beam` is the channel-envelope shape: the shared scanner's `ChannelEnvelope` mode owns its headers, and the same envelope table feeds the guided reader through the `envelope_guided_*` resolvers (each settling native-body ownership left to right through the family's own `channel_body` walk before any header-shaped bytes are read, so a framed message quoted inside a parameter value is argument data for every candidate kind alike), so a family on this shape supplies a grammar table, a body walk and an emitter — never a second header or quote state machine.
 
 ## What you get for free
 
