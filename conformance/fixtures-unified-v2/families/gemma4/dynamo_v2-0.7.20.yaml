@@ -27,6 +27,11 @@ changes:
       unavailable:
         code: producer_source_unavailable
         detail: 'Historical parser 0.7.20 was not executed for this request: the original producer source could not be recovered with its recorded fingerprint 58d44d091dff323ee1caf26b00ce33b32515f8af24e2a3e65f11eecdfe5f3a37. No release tag or newer parser was substituted.'
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       unavailable:
@@ -2807,6 +2812,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20

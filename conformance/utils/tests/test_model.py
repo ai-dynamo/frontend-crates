@@ -1956,7 +1956,8 @@ def test_shared_variants_consolidate_without_losing_requests(model_v2):
         expected = {s for s in unified_taxonomy.UNIFIED_TAX
                     if row["family"] in table.gen_unified_golden.scenario_families(s)}
         assert actual == expected
-        for variant, (parent, _) in unified_taxonomy.SHARED_CASE_VARIANTS.items():
+        for variant, metadata in unified_taxonomy.SHARED_CASE_VARIANTS.items():
+            parent = metadata.parent
             if variant in expected:
                 cell = row["cells"][parent]
                 assert cell["status"] != "na"

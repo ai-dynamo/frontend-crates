@@ -7,6 +7,11 @@ provenance:
 document:
   mode: unified
 changes:
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       unavailable:
@@ -3160,6 +3165,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20

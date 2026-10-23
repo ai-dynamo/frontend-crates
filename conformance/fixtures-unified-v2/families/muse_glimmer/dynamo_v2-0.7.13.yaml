@@ -42,6 +42,16 @@ changes:
       unavailable:
         code: source_unavailable
         detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  gpt_oss_interrupted_reasoning_then_response:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       unavailable:
@@ -52,6 +62,11 @@ changes:
       unavailable:
         code: producer_source_unavailable
         detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8. The parser was not executed, and no newer output was substituted.
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.13 source could not be recovered with its recorded identity f1536c9a9fd7ef3999bfb54e7f3e4d316d5df5c558d43ef9959f1668060f2cf8; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_string_before_payload:
     observation:
       unavailable:
@@ -110,8 +125,11 @@ metadata_changes:
   dotted_name_mixed_punctuation: {}
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
+  gpt_oss_interrupted_reasoning_then_response: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   gpt_oss_quoted_message_header_literal: {}
   gpt_oss_quoted_truncated_tool_then_final: {}
+  gpt_oss_truncated_tool_resynchronizes_at_next_message: {}
   guided_json_native_parameter_string_before_payload: {}
   guided_json_noncall_before_native_array_before_payload: {}
   guided_response_native_wrapper_whitespace_before_prose: {}
@@ -167,6 +185,18 @@ document_overrides:
         dynamo_v2: 0.7.13
       capture_origin: null
       inherited_from: null
+  gpt_oss_interrupted_reasoning_then_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
@@ -174,6 +204,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.13

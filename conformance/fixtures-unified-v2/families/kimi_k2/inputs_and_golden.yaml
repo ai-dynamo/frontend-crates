@@ -14267,3 +14267,168 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  gpt_oss_control_marker_inside_argument_string:
+    lifecycle: active
+    scenario: gpt_oss_control_marker_inside_argument_string
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|>{"markers": "<think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.lookup:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"markers": "'
+      - delta_text: <think>
+      - delta_text: </think>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: '"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          markers: <think></think><|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|><|tool_call_end|><|tool_calls_section_end|>
+  gpt_oss_invalid_tool_body_then_empty_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_empty_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including empty arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    historical_ids: []
+    request:
+      input: <|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>not-json<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.bad:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: not-json
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments: {}
+      - kind: tool_call
+        name: get_weather
+        arguments: {}
+  gpt_oss_invalid_tool_body_then_valid_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_valid_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"city":<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:1<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.bad:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city":'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: bad
+        arguments: {}
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: '<|tool_calls_section_begin|><|tool_call_begin|>functions.run:0<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.not_offered:1<|tool_call_argument_begin|>{"x": 2}<|tool_call_end|><|tool_calls_section_end|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.run:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.not_offered:1
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: '{"x": 2}'
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2

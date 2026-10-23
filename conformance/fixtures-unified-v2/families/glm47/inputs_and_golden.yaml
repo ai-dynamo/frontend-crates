@@ -14407,3 +14407,43 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: <tool_call>run</tool_call><tool_call>not_offered<arg_key>x</arg_key><arg_value>2</arg_value></tool_call>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <tool_call>
+      - delta_text: run
+      - delta_text: </tool_call>
+      - delta_text: <tool_call>
+      - delta_text: not_offered
+      - delta_text: <arg_key>
+      - delta_text: x
+      - delta_text: </arg_key>
+      - delta_text: <arg_value>
+      - delta_text: '2'
+      - delta_text: </arg_value>
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: '2'

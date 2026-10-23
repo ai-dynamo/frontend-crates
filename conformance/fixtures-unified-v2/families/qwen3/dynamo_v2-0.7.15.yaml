@@ -209,6 +209,45 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
   guided_json_native_parameter_string_before_payload:
     observation:
       value:
@@ -360,6 +399,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     init:
       starting_state: None
       tool_output_mode: Native

@@ -17763,3 +17763,273 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  gpt_oss_control_marker_inside_argument_string:
+    lifecycle: active
+    scenario: gpt_oss_control_marker_inside_argument_string
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    historical_ids: []
+    request:
+      input: '<|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"markers": "<|open|><|sep|><|close|><|end_of_msg|>"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="lookup" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"markers": "'
+      - delta_text: <|open|>
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: <|end_of_msg|>
+      - delta_text: '"}'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          markers: <|open|><|sep|><|close|><|end_of_msg|>
+  gpt_oss_invalid_tool_body_then_empty_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_empty_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including empty arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>not-json<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="bad" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: not-json
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: {}
+  gpt_oss_invalid_tool_body_then_valid_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_valid_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="bad" index="1"<|sep|><|open|>json type="object"<|sep|>{"city":<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="get_weather" index="2"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="bad" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"city":'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="city" type="string"
+      - delta_text: <|sep|>
+      - delta_text: Paris
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="run" index="1"<|sep|><|close|>call<|sep|><|close|>tools<|sep|><|open|>tools<|sep|><|open|>call tool="not_offered" index="2"<|sep|><|open|>argument key="x" type="integer"<|sep|>2<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="run" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="not_offered" index="2"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="x" type="integer"
+      - delta_text: <|sep|>
+      - delta_text: '2'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    lifecycle: active
+    scenario: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    description: A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.
+    policy:
+    - I3
+    - I4
+    - I5
+    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"unfinished"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="lookup" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: '{"q":"unfinished"}'
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: recovered
+      - delta_text: <|close|>
+      - delta_text: response
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: recovered

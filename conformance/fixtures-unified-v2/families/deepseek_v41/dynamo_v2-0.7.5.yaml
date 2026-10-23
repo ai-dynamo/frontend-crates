@@ -128,6 +128,42 @@ document_overrides:
         source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
         git_commit: 78b638363d55a580564859769392a52c0203448f
       inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.5
+      capture_origin:
+        crate_version: 0.7.5
+        git_commit: 78b638363d55a580564859769392a52c0203448f
+        source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.5
+      capture_origin:
+        crate_version: 0.7.5
+        git_commit: 78b638363d55a580564859769392a52c0203448f
+        source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.5
+      capture_origin:
+        crate_version: 0.7.5
+        git_commit: 78b638363d55a580564859769392a52c0203448f
+        source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.5
+      capture_origin:
+        crate_version: 0.7.5
+        git_commit: 78b638363d55a580564859769392a52c0203448f
+        source_sha256: 76f78816b54b54873e83a9ede47e3a330f3dc01328135a197f7b22771d0a8a5e
+      inherited_from: null
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:

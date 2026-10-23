@@ -15042,3 +15042,150 @@ cases:
         name: get_weather
         arguments:
           city: 'null'
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="run"></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="not_offered"><｜DSML｜ parameter name="x" string="false">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="run">
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="not_offered">
+      - delta_text: <｜DSML｜ parameter name="x" string="false">
+      - delta_text: '2'
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+  gpt_oss_control_marker_inside_argument_string:
+    lifecycle: active
+    scenario: gpt_oss_control_marker_inside_argument_string
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    historical_ids: []
+    request:
+      input: '<｜DSML｜ calls><｜DSML｜ invoke name="lookup">{"markers": "<think></think><\uff5cDSML\uff5c calls><\uff5cDSML\uff5c invoke name=\"lookup\"><\uff5cDSML\uff5c parameter name=\"q\" string=\"true\"></\uff5cDSML\uff5c parameter></\uff5cDSML\uff5c invoke></\uff5cDSML\uff5c calls><\uff5cDSML\uff5c</\uff5cDSML\uff5c"}</｜DSML｜ invoke></｜DSML｜ calls>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="lookup">
+      - delta_text: '{"markers": "'
+      - delta_text: <think>
+      - delta_text: </think>
+      - delta_text: <\uff5cDSML\uff5c calls>
+      - delta_text: <\uff5cDSML\uff5c invoke name=\"lookup\">
+      - delta_text: <\uff5cDSML\uff5c parameter name=\"q\" string=\"true\">
+      - delta_text: </\uff5cDSML\uff5c parameter>
+      - delta_text: </\uff5cDSML\uff5c invoke>
+      - delta_text: </\uff5cDSML\uff5c calls>
+      - delta_text: <\uff5cDSML\uff5c</\uff5cDSML\uff5c"}</｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          markers: <think></think><｜DSML｜ calls><｜DSML｜ invoke name="lookup"><｜DSML｜ parameter name="q" string="true"></｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜</｜DSML｜
+  gpt_oss_invalid_tool_body_then_empty_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_empty_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including empty arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="bad">not-json</｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="bad">
+      - delta_text: not-json
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: {}
+  gpt_oss_invalid_tool_body_then_valid_call:
+    lifecycle: active
+    scenario: gpt_oss_invalid_tool_body_then_valid_call
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including arguments.
+    policy:
+    - P2
+    - I7
+    display_id: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="bad">{"city":</｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="bad">
+      - delta_text: '{"city":'
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: <｜DSML｜ calls>
+      - delta_text: <｜DSML｜ invoke name="get_weather">
+      - delta_text: <｜DSML｜ parameter name="city" string="true">
+      - delta_text: Paris
+      - delta_text: </｜DSML｜ parameter>
+      - delta_text: </｜DSML｜ invoke>
+      - delta_text: </｜DSML｜ calls>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris

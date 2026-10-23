@@ -528,6 +528,15 @@ document_overrides:
         source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
         git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
       inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.6.1
+      capture_origin:
+        crate_version: 0.6.1
+        source_sha256: 6b3dd4c4938308cae46c18cab3d6ce0d09790116bfd56fd1f0bf2b6725311f50
+        git_commit: f9b3fffecdc02ba7c0a82db499eeafa009274c92
+      inherited_from: null
   structured_response_after_reasoning:
     capture_provenance:
       captured_with:

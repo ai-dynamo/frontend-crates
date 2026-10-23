@@ -252,6 +252,15 @@ changes:
             name: run
             arguments: '{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}'
             complete: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 0c791eae45f7d5976e07d4db5216d0e69cdc9b8af2609a1a27a65a3847341768
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.0 source could not be recovered with its recorded identity e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30-6
     stimulus:
@@ -2885,6 +2894,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.0

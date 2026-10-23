@@ -22,6 +22,16 @@ changes:
       unavailable:
         code: producer_checkout_blocked
         detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_interrupted_reasoning_then_response:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       unavailable:
@@ -32,6 +42,11 @@ changes:
       unavailable:
         code: producer_checkout_blocked
         detail: Historical producer checkout was blocked by the local commit-signature policy. The parser was not executed, and no newer output was substituted.
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      unavailable:
+        code: producer_checkout_blocked
+        detail: Historical parser 0.7.20 checkout was rejected by the mandatory commit-signature guard. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_string_before_payload:
     observation:
       unavailable:
@@ -3877,6 +3892,18 @@ document_overrides:
         dynamo_v2: 0.7.20
       capture_origin: null
       inherited_from: null
+  gpt_oss_interrupted_reasoning_then_response:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
@@ -3884,6 +3911,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   gpt_oss_quoted_truncated_tool_then_final:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.20
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.20

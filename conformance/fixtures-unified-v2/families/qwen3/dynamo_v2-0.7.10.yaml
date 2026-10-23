@@ -334,6 +334,11 @@ changes:
         detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   empty_args:
     case_key: UNIFIED.6.a
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.10 source could not be recovered with its recorded identity 39e6feb494844ddfbcdf21cfb4143696044b295e0f210c27eaab701f8f61bb5d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30.f
   guided_json_array_argument:
@@ -532,6 +537,7 @@ metadata_changes:
   dotted_name_mixed_punctuation: {}
   dotted_name_multiple_segments: {}
   dotted_name_shared_prefix: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   guided_json_native_parameter_string_before_payload: {}
   guided_json_noncall_before_native_array_before_payload: {}
   guided_response_native_wrapper_whitespace_before_prose: {}
@@ -577,6 +583,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.10

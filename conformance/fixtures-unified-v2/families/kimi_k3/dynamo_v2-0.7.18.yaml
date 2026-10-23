@@ -235,6 +235,26 @@ changes:
             arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
             complete: true
         - expected: []
+  gpt_oss_control_marker_inside_argument_string:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_empty_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_invalid_tool_body_then_valid_call:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   gpt_oss_quoted_message_header_literal:
     observation:
       unavailable:
@@ -250,6 +270,11 @@ changes:
       unavailable:
         code: producer_source_unavailable
         detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b. The parser was not executed, and no newer output was substituted.
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.18 source could not be recovered with its recorded identity 8f5276db31e185d38515952cf9a19555b77c98b2581cc887d17a4a737386e48b; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_native_parameter_array_before_payload:
     observation:
       unavailable:
@@ -414,9 +439,14 @@ metadata_changes:
   arg_json_null_ref: {}
   arg_null_mixed_labels: {}
   arg_string_null_ref: {}
+  gpt_oss_control_marker_inside_argument_string: {}
+  gpt_oss_invalid_tool_body_then_empty_call: {}
+  gpt_oss_invalid_tool_body_then_valid_call: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
   gpt_oss_quoted_message_header_literal: {}
   gpt_oss_quoted_truncated_tool_then_final: {}
   gpt_oss_tool_body_whitespace: {}
+  gpt_oss_truncated_tool_resynchronizes_at_next_message: {}
   guided_json_native_parameter_array_before_payload: {}
   guided_json_native_parameter_object_before_payload: {}
   guided_json_native_parameter_string_before_payload: {}
@@ -474,6 +504,30 @@ document_overrides:
         dynamo_v2: 0.7.18
       capture_origin: null
       inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
   gpt_oss_quoted_message_header_literal:
     capture_provenance:
       captured_with:
@@ -487,6 +541,12 @@ document_overrides:
       capture_origin: null
       inherited_from: null
   gpt_oss_tool_body_whitespace:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.18
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
     capture_provenance:
       captured_with:
         dynamo_v2: 0.7.18
