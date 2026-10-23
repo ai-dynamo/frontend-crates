@@ -594,6 +594,10 @@ fn convert_array_item_scalar(
     let trimmed = value.trim();
     let mut facts = SchemaFacts::new(root_schema);
 
+    if let Some(value) = convert_null_scalar(&value, item_schemas, &mut facts) {
+        return value;
+    }
+
     // An array's anyOf/oneOf item schemas are alternatives, unlike the
     // intersection used for sibling constraints on one selected property.
     if facts.has_array_item_type(array_schemas, "string") {
@@ -614,6 +618,27 @@ fn convert_array_item_scalar(
     convert_scalar_value_with_schemas(raw, item_schemas, root_schema)
 }
 
+// Null must be decided before string/number preference, for both properties and
+// array items. Unknown or absent schema constraints preserve the original text.
+fn convert_null_scalar<'a>(
+    value: &str,
+    schemas: &[&'a Value],
+    facts: &mut SchemaFacts<'a>,
+) -> Option<ParsedValue> {
+    if !value.trim().eq_ignore_ascii_case("null") {
+        return None;
+    }
+    let permits_null = !schemas.is_empty()
+        && schemas
+            .iter()
+            .all(|schema| facts.permits_null(schema) == Some(true));
+    Some(if permits_null {
+        ParsedValue::from(Value::Null)
+    } else {
+        ParsedValue::from(Value::String(value.to_string()))
+    })
+}
+
 fn convert_scalar_value_with_schemas(
     raw: &str,
     schema: &[&Value],
@@ -629,17 +654,8 @@ fn convert_scalar_value_with_schemas(
         return ParsedValue::from(Value::String(value));
     }
 
-    // Only collapse the literal "null" into JSON null when the schema actually
-    // permits null. A `string`-typed parameter keeps the literal value "null".
-    if trimmed.eq_ignore_ascii_case("null") {
-        let permits_null = schema
-            .iter()
-            .all(|schema| schemas.permits_null(schema) == Some(true));
-        return if permits_null {
-            ParsedValue::from(Value::Null)
-        } else {
-            ParsedValue::from(Value::String(value))
-        };
+    if let Some(value) = convert_null_scalar(&value, schema, &mut schemas) {
+        return value;
     }
 
     if schemas.has_type_constraints(schema, "string")

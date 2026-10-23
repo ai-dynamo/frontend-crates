@@ -237,6 +237,107 @@ mod tests {
     }
 
     #[test]
+    fn array_items_preserve_schema_directed_null_at_every_split() {
+        use serde_json::json;
+
+        for (item_schema, permits_null) in [
+            (json!({"type": ["number", "null"]}), true),
+            (json!({"type": ["string", "null"]}), true),
+            (json!({"type": ["integer", "null"]}), true),
+            (json!({"type": ["boolean", "null"]}), true),
+            (json!({"type": "number", "nullable": true}), true),
+            (json!({"type": "string", "nullable": true}), true),
+            (
+                json!({"anyOf": [{"type": "number"}, {"const": null}]}),
+                true,
+            ),
+            (
+                json!({"oneOf": [{"type": "string"}, {"type": "null"}]}),
+                true,
+            ),
+            (json!({"$ref": "#/$defs/Nullable"}), true),
+            (json!({"type": "number"}), false),
+            (json!({"type": "string"}), false),
+            (
+                json!({"allOf": [{"type": ["number", "null"]}, {"type": "number"}]}),
+                false,
+            ),
+            (
+                json!({"anyOf": [{"type": "number"}, {"$ref": "#/$defs/Missing"}]}),
+                false,
+            ),
+        ] {
+            for shape in ["direct", "reference", "nested"] {
+                let array_schema = json!({"type": "array", "items": item_schema});
+                let values_schema = match shape {
+                    "reference" => json!({"$ref": "#/$defs/Values"}),
+                    "nested" => json!({"type": "array", "items": array_schema}),
+                    _ => array_schema.clone(),
+                };
+                let tools = vec![Tool {
+                    name: "process_data".into(),
+                    description: None,
+                    parameters: json!({
+                        "type": "object",
+                        "properties": {"values": values_schema, "scalar": item_schema},
+                        "$defs": {
+                            "Nullable": {"type": ["number", "null"]},
+                            "Values": array_schema
+                        }
+                    }),
+                    strict: None,
+                }];
+                for raw in ["null", " NULL "] {
+                    let item = if permits_null {
+                        json!(null)
+                    } else {
+                        json!(raw)
+                    };
+                    let values = if shape == "nested" {
+                        json!([[item, item]])
+                    } else {
+                        json!([item, item])
+                    };
+                    let expected = json!({"values": values, "scalar": item});
+                    // The trailing text exercises array append_text as well as
+                    // the completed <item> path; both must share null handling.
+                    let items = format!("{NS}<item>{raw}{NS}</item>{raw}");
+                    let items = if shape == "nested" {
+                        format!("{NS}<item>{items}{NS}</item>")
+                    } else {
+                        items
+                    };
+                    let invoke = format!(
+                        "{NS}<invoke name=\"process_data\">{NS}<values>{items}{NS}</values>\
+                         {NS}<scalar>{raw}{NS}</scalar>{NS}</invoke>"
+                    );
+                    for wrapped in [false, true] {
+                        let input = if wrapped {
+                            format!("{BLOCK_START}{invoke}{BLOCK_END}")
+                        } else {
+                            invoke.clone()
+                        };
+                        for split in 0..=input.len() {
+                            let output = parse_chunks(&tools, &[&input[..split], &input[split..]])
+                                .coalesce_calls();
+                            assert_eq!(output.normal_text, "");
+                            assert_eq!(output.calls.len(), 1);
+                            let call = &output.calls[0];
+                            assert_eq!(call.name.as_deref(), Some("process_data"));
+                            assert!(call.complete);
+                            assert_eq!(
+                                serde_json::from_str::<serde_json::Value>(&call.arguments).unwrap(),
+                                expected,
+                                "schema={item_schema}, shape={shape}, raw={raw:?}, wrapped={wrapped}, split={split}"
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn emits_complete_call_on_close() {
         let out = parse_chunks(
             &weather_tools(),
