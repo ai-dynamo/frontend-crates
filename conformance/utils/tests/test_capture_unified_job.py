@@ -42,6 +42,8 @@ def test_existing_family_job_is_stable_and_preserves_request_shape():
             "gemma4_guided_response_extra_body_opener",
             "adjacent_calls_partial_header",
             "three_calls_partial_header",
+            "xml_string_type_single_quoted_object",
+            "xml_string_type_double_quoted_object",
         )
     } <= {case["id"] for case in job["cases"]}
     assert [case["id"] for case in job["cases"]].count("UNIFIED.tool_only.gemma4") == 1

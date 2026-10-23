@@ -1,8 +1,8 @@
 {
-  "snapshot": "20261022_171802",
-  "created_pt": "2026-10-22 17:18:02 America/Los_Angeles",
+  "snapshot": "20261022_181502",
+  "created_pt": "2026-10-22 18:15:02 America/Los_Angeles",
   "crates": {
-    "dynamo-parsers": "10.0.7",
+    "dynamo-parsers": "10.1.0",
     "dynamo-parsers-v2": "0.7.33"
   },
   "peers": {
@@ -383,7 +383,7 @@
     {
       "path": "unified-history",
       "format": "unified-history",
-      "sha256": "43c2731594fac66f03bcb6aadd3d7c9bc2667afcb6e6340eb47796035faee09a",
+      "sha256": "45d62f42fbe8dac125ba8d8ee30c7a1ffcd7863c558bf33f876babb459c89a5e",
       "size": 54436781
     }
   ],
