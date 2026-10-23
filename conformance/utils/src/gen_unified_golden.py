@@ -27,7 +27,10 @@ import yaml
 
 import markers
 from impls import unified_grammar_family
-from schema_cases import CONFORMANCE_CASES, unified_schema_cases
+from schema_cases import (
+    CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_description, schema_tools,
+    unified_schema_cases,
+)
 from unified_taxonomy import GPT_OSS_PR424_REQUEST_VARIANTS, RETIRED_SCENARIOS, numbered_id
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
 
@@ -3207,6 +3210,21 @@ for _schema_probe in CONFORMANCE_CASES:
     ))
 
 
+for _probe in XML_COMPATIBILITY_CASES:
+    EDGE.append((
+        _probe["name"], schema_description(_probe), ["I7"],
+        [{"kind": "tool_call", "name": "schema_probe", "arguments": {"value": _probe["value"]}}],
+        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"finish_reason": "stop"},
+        OnlyFamilies({_family: (
+            r_tool_arguments(_family, "schema_probe", {"value": _probe["value"]}, 0,
+                             {"value": _probe["raw"]}),
+            D("UNSUPPORTED", "No peer capture recorded for this quote compatibility probe."), M,
+        ) for _family in (TEMPLATE_FAMILIES if _probe["schema"]["type"] == "string" else ["qwen3"])}),
+        schema_tools(_probe),
+    ))
+
+
 _DSML_TEMPLATE_DIALECTS = {
     "deepseek_v3_2": ("", "function_calls"),
     "deepseek_v4": ("", "tool_calls"),
@@ -3521,10 +3539,10 @@ def _historical_cases(document_text):
 
 def _preserve_historical_requests(cases, family):
     """Keep published request bytes and chunk schedules stable by display ID."""
-    historical_path = (
-        Path(__file__).resolve().parents[2]
-        / f"fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
-    )
+    # The renderer copies this module into a temporary layout. Its existing
+    # repository context keeps history tied to the checkout, not that copy.
+    source_root = Path(os.environ.get("FRONTEND_CRATES_ROOT", Path(__file__).resolve().parents[3]))
+    historical_path = source_root / f"conformance/fixtures-unified-v2/families/{family}/inputs_and_golden.yaml"
     historical = _historical_cases(historical_path.read_text())
     cases_by_scenario = {
         case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]: case

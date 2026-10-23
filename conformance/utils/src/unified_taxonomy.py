@@ -23,7 +23,7 @@ import re
 
 from impls import UNIFIED_DISPLAY, UNIFIED_MARKER_FAMILIES
 from null_cases import NULL_VARIANTS
-from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, argument_section, schema_fold, schema_group
+from schema_cases import ARGUMENT_SECTIONS, CONFORMANCE_CASES, SCHEMA_GROUPS, XML_COMPATIBILITY_CASES, argument_section, schema_fold, schema_group
 
 UNIFIED_TAX = {
     "default_reasoning_without_opener": (10, "6"),
@@ -72,6 +72,7 @@ UNIFIED_TAX = {
     "unused_reference_graph_parameter_types": (7, "14"),
     "nullable_reference_alias_literals": (7, "15"),
     "local_schema_id_preserves_type": (7, "16"),
+    **{case["name"]: (7, f"26.{index}") for index, case in enumerate(XML_COMPATIBILITY_CASES, 1)},
     "deepseek_v41_json_invocation_body": ("deepseek", "1"),
     "glm47_reference_type_intersection": ("glm5", "2"),
     **{f"schema_{case['name']}": (7, f"{SCHEMA_GROUPS[schema_group(case['name'])][1]}.{case['name']}")

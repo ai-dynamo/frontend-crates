@@ -16130,3 +16130,109 @@ cases:
         name: get_weather
         arguments:
           city: Paris
+  xml_string_type_double_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_double_quoted_object
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_double_quoted_object
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        {"a":1}
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=schema_probe
+      - delta_text: <|channel|>
+      - delta_text: 'analysis '
+      - delta_text: <|constrain|>
+      - delta_text: xml
+      - delta_text: <|message|>
+      - delta_text: <rfl:parameter name="value">
+      - delta_text: '
+
+          {"a":1}
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{"a":1}'
+  xml_string_type_single_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_single_quoted_object
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_single_quoted_object
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=schema_probe<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name="value">
+
+        {''a'':1}
+
+        </rfl:parameter><|call|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=schema_probe
+      - delta_text: <|channel|>
+      - delta_text: 'analysis '
+      - delta_text: <|constrain|>
+      - delta_text: xml
+      - delta_text: <|message|>
+      - delta_text: <rfl:parameter name="value">
+      - delta_text: '
+
+          {''a'':1}
+
+          '
+      - delta_text: </rfl:parameter>
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{''a'':1}'

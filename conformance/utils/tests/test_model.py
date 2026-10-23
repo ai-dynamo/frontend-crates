@@ -1899,12 +1899,12 @@ def test_argument_sections_and_folds_preserve_all_authored_scenarios(model_v2):
     tab = _tab(model_v2, "tab-unified")
     sections = [group for group in tab["column_groups"] if group["key"].startswith("unified_g7_")]
     assert [group["label"] for group in sections] == list(ARGUMENT_SECTIONS.values())
-    assert [group["span"] for group in sections] == [3, 10, 6, 10, 17, 14]
+    assert [group["span"] for group in sections] == [3, 12, 6, 10, 17, 14]
     columns = [column for column in tab["columns"] if column["group_key"].startswith("unified_g7_")]
-    assert len(columns) == 60
-    assert [column["display_number"] for column in columns] == list(range(1, 61))
+    assert len(columns) == 62
+    assert [column["display_number"] for column in columns] == list(range(1, 63))
     expected = {scenario for scenario in unified_taxonomy.UNIFIED_TAX if unified_taxonomy.display_tax(scenario)[0] == 7}
-    assert len(expected) == 143
+    assert len(expected) == 145
     assert "gpt_oss_quoted_message_header_literal" in expected
     found = set()
     for row in tab["rows"]:
@@ -2021,3 +2021,21 @@ def test_merged_documented_pair_preserves_outputs_and_reason_when_candidates_rev
         stream_key: stream,
         peer_key: peer,
     }
+
+
+def test_custom_quote_columns_use_the_qwen_nemotron_section(model_v2):
+    tab = _tab(model_v2, "tab-unified")
+    columns = {column["sub"]: column for column in tab["columns"]}
+    groups = {group["key"]: group for group in tab["column_groups"]}
+    assert groups["unified_gqwen3"]["label"] == "Family-specific tests: Qwen3 and Nemotron v3 XML"
+    for quotes in ("single", "double"):
+        custom = columns[f"xml_custom_type_{quotes}_quoted_object"]
+        string = columns[f"xml_string_type_{quotes}_quoted_object"]
+        assert custom["group_key"] == "unified_gqwen3"
+        assert custom["label"].startswith("qwen3-")
+        assert string["group_key"] == "unified_g7_declared"
+        for row in tab["rows"]:
+            cell = leaf_cells(row)[custom["sub"]]
+            assert cell["case_id"] == f"UNIFIED.7-{custom['sub']}"
+            state, _ = cell_state(cell, {"key": "dynamo", "label": "Dynamo"})
+            assert state == ("green" if row["family"] in {"qwen3", "nemotron_v3"} else "na")

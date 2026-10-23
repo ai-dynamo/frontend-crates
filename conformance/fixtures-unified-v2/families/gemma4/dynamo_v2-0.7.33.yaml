@@ -1,0 +1,79 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.33
+    git_commit: 92ba7c8ae66a60129730f30c706d809fda20dad2
+    source_sha256: 2582ba8833386de2a3ced47060f349dbc54b96d5da6a1c1b1125cbc801497724
+document:
+  mode: unified
+changes:
+  xml_string_type_double_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_double_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: 7316ae5c24220816908ffd423ac28b010d8a02a9aba38d6d28506b300905d068
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"a":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{\"a\":1}"}'
+            complete: true
+        - expected: []
+  xml_string_type_single_quoted_object:
+    case_key: UNIFIED.7-xml_string_type_single_quoted_object
+    stimulus:
+      ref: current
+      semantic_sha256: a63bd5b3153b7eb2d836e7f748424cdbce6e5cd26ccf264689b04291851bebc7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{''a'':1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"{''a'':1}"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  xml_string_type_double_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: 2582ba8833386de2a3ced47060f349dbc54b96d5da6a1c1b1125cbc801497724
+        git_commit: 92ba7c8ae66a60129730f30c706d809fda20dad2
+      inherited_from: null
+  xml_string_type_single_quoted_object:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.33
+      capture_origin:
+        crate_version: 0.7.33
+        source_sha256: 2582ba8833386de2a3ced47060f349dbc54b96d5da6a1c1b1125cbc801497724
+        git_commit: 92ba7c8ae66a60129730f30c706d809fda20dad2
+      inherited_from: null

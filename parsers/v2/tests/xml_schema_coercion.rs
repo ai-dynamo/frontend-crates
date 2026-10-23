@@ -148,16 +148,21 @@ fn unsupported_reference_scope_preserves_local_constraints() {
     }
 }
 
-// The shared schema corpus rejects unknown JSON Schema types. Exercise this
-// legacy compatibility fallback through both public XML parser adapters here.
 #[test]
 fn custom_direct_type_preserves_literal_eval_fallback() {
     for type_name in ["custom", "vendor-object"] {
-        assert_calls(
-            json!({"type":"object","properties":{"x":{"type":type_name}}}),
-            &[("x", "{'a':1}")],
-            json!({"x":{"a":1}}),
-        );
+        for raw in ["{'a':1}", r#"{"a":1}"#] {
+            assert_calls(
+                json!({"type":"object","properties":{"x":{"type":type_name}}}),
+                &[("x", raw)],
+                json!({"x":{"a":1}}),
+            );
+            assert_calls(
+                json!({"type":"object","properties":{"x":{"type":"string"}}}),
+                &[("x", raw)],
+                json!({"x":raw}),
+            );
+        }
         assert_calls(
             json!({"type":"object","properties":{"x":{"type":type_name}}}),
             &[("x", "not a literal")],
@@ -188,11 +193,6 @@ fn custom_direct_type_preserves_literal_eval_fallback() {
             json!({"x":"{'a':1}"}),
         );
     }
-    assert_calls(
-        json!({"type":"object","properties":{"x":{"type":"string"}}}),
-        &[("x", "{'a':1}")],
-        json!({"x":"{'a':1}"}),
-    );
 }
 
 #[test]

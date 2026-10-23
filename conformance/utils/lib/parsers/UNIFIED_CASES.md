@@ -160,9 +160,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 244 of the 339 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 244 of the 341 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 95 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 97 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
@@ -477,12 +477,12 @@ The check is the count: if a review round produced N defects the corpus missed a
 
 ## Shared schema conformance probes
 
-Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 60 visible entries covering 142 scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
+Expected values are authored in `conformance/utils/src/glm47_schema_cases.json`, independently of parser captures. `schema_cases.py` owns behavior classification; `unified_taxonomy.py` uses it for report sections and ordering. Group 7 has 62 visible entries covering 145 authored scenarios. Display numbers are ranks; fixture IDs and historical aliases stay unchanged.
 
 | Behavior section | Visible entries |
 |---|---:|
 | Text preservation | 3 |
-| Declared types and enums | 10 |
+| Declared types and enums | 12 |
 | Type arrays and null interpretation | 6 |
 | String constants | 10 |
 | Unions, intersections, and ambiguous values | 17 |
@@ -507,6 +507,15 @@ Historical schema-subgroup aliases below retain their original meaning. Active I
 All registered families are inspected and use native grammar. v1 batch excludes Muse (no v1 parser) and Harmony text (the same batch grammar is covered by Harmony); legacy stream covers the Harmony text path rather than inventing token IDs. Families without a Dynamo v2 parser carry explicit unavailability. Unified covers every registered Unified family. Unresolved/cyclic defensive schemas and the deliberately schema-invalid typed-enum control stay in Rust tests rather than successful conformance goldens. Identical schema/null-string controls are represented once in conformance.
 
 Ambiguous constant unions retain each family's established schema-valid interpretation: Qwen and MiniMax can choose the typed JSON alternative, while GLM prefers a matching string constant. MiniMax M3 uses JSON object/array bodies in these probes; nested native tags do not encode an unconstrained numeric child type. Captures from unrelated families that violate these independent goldens remain visible rather than rewriting expectations.
+
+
+### XML custom-type compatibility
+
+The shared group 7 cases `xml_string_type_single_quoted_object` and `xml_string_type_double_quoted_object` preserve the exact string spelling in all 11 Unified families using their native string encoding. Both quote spellings remain literal text, including in JSON-body grammars.
+
+The Qwen3/Nemotron-specific XML section contains `xml_custom_type_single_quoted_object` and `xml_custom_type_double_quoted_object`. Both spellings become an object under the direct, unconstrained `type: custom` compatibility fallback owned by the Qwen XML grammar. `custom` is not a JSON Schema type, so these probes remain separate from the schema-valid suite. GLM uses strict JSON parsing for JSON-looking bodies, MiniMax M3 preserves unknown scalar types as text, and JSON-body or explicitly typed grammars carry the argument type in their native encoding; they do not share this Python-literal conversion rule. MiniMax M2 exercises that fallback in the legacy streaming corpus and has no registered Unified parser.
+
+Only display placement changes: the custom probes retain their stable `UNIFIED.7-xml_custom_type_*` IDs and capture history. They no longer occupy shared group 7 columns. Existing published IDs and older unmeasured observations remain unchanged.
 
 
 ### GPT-OSS Harmony headers and retained request variants

@@ -17259,3 +17259,109 @@ cases:
         name: h
         arguments:
           x: '3'
+  xml_string_type_double_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_double_quoted_object
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_double_quoted_object
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>{"a":1}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="schema_probe" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="value" type="string"
+      - delta_text: <|sep|>
+      - delta_text: '{"a":1}'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{"a":1}'
+  xml_string_type_single_quoted_object:
+    lifecycle: active
+    scenario: xml_string_type_single_quoted_object
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-xml_string_type_single_quoted_object
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="schema_probe" index="1"<|sep|><|open|>argument key="value" type="string"<|sep|>{'a':1}<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: schema_probe
+        parameters:
+          type: object
+          properties:
+            value:
+              type: string
+          required:
+          - value
+          additionalProperties: false
+        strict: false
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="schema_probe" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: argument key="value" type="string"
+      - delta_text: <|sep|>
+      - delta_text: '{''a'':1}'
+      - delta_text: <|close|>
+      - delta_text: argument
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: schema_probe
+        arguments:
+          value: '{''a'':1}'

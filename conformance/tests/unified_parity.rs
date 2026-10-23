@@ -160,6 +160,64 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
     ]
 }
 
+/// Quote-looking strings must survive every possible two-chunk boundary,
+/// including boundaries inside their native escaping and framing.
+#[test]
+fn string_quote_controls_survive_every_split_for_every_family() {
+    let mut covered = std::collections::BTreeSet::new();
+    for file in load_native_golden() {
+        let mut count = 0;
+        for (id, case) in file.cases {
+            if !id.contains("xml_string_type_") {
+                continue;
+            }
+            count += 1;
+            let tools = common::unified_tools_for_schemas(case.tools.as_ref());
+            let expected = if id.contains("single_quoted") {
+                "{'a':1}"
+            } else {
+                r#"{"a":1}"#
+            };
+            assert_eq!(
+                case.golden,
+                vec![UnifiedEvent::ToolCall {
+                    name: "schema_probe".into(),
+                    arguments: serde_json::json!({"value": expected}),
+                }],
+                "{id}: oracle must preserve the exact string"
+            );
+            for (schedule, chunks) in splittings(&case.input) {
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: {schedule}"
+                );
+            }
+            for split in
+                (0..=case.input.len()).filter(|offset| case.input.is_char_boundary(*offset))
+            {
+                let chunks = vec![case.input[..split].into(), case.input[split..].into()];
+                assert_eq!(
+                    events(&file.family, &chunks, &case.init, &tools).unwrap(),
+                    case.golden,
+                    "{id}: split {split}"
+                );
+            }
+        }
+        assert_eq!(count, 2, "{}: missing quote control", file.family);
+        covered.insert(file.family);
+    }
+    assert_eq!(
+        covered,
+        REGISTERED_UNIFIED_FAMILIES
+            .iter()
+            .map(|family| dynamo_parsers_v2::canonical_unified_family(family)
+                .unwrap()
+                .to_string())
+            .collect()
+    );
+}
+
 /// The gate: assembled events must equal the golden, exactly and in order.
 #[test]
 fn unified_parser_matches_the_golden_oracle() {

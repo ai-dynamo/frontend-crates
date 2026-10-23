@@ -15,6 +15,7 @@ the point the case is added, and name the file to edit.
 """
 from __future__ import annotations
 
+import ast
 from collections import defaultdict
 from dataclasses import replace
 import json
@@ -34,7 +35,7 @@ import pytest  # noqa: E402
 import yaml  # noqa: E402
 
 import gen_unified_golden as G  # noqa: E402
-from schema_cases import CONFORMANCE_CASES, schema_arguments  # noqa: E402
+from schema_cases import CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
 import unified_taxonomy as taxonomy  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step  # noqa: E402
@@ -918,17 +919,17 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     family_specific = {
-        "beam": 122,
-        "deepseek_v4": 132,
-        "deepseek_v41": 128,
-        "gemma4": 125,
-        "glm47": 123,
-        "gpt_oss": 164,
-        "kimi_k2": 123,
-        "kimi_k3": 132,
-        "muse_glimmer": 131,
-        "qwen3": 126,
-        "nemotron_v3": 127,
+        "beam": 124,
+        "deepseek_v4": 134,
+        "deepseek_v41": 130,
+        "gemma4": 127,
+        "glm47": 125,
+        "gpt_oss": 166,
+        "kimi_k2": 125,
+        "kimi_k3": 134,
+        "muse_glimmer": 133,
+        "qwen3": 130,
+        "nemotron_v3": 131,
     }
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
@@ -946,7 +947,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 223 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 227 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1707,6 +1708,10 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
                     # contract types them against the declared schema (a literal
                     # `null` for a nullable property, JSON for a non-string one).
                     if G.unified_grammar_family(family) not in {"qwen3", "glm47", "beam"} or not isinstance(value, str):
+                        continue
+                    if scenario in {probe["name"] for probe in XML_COMPATIBILITY_CASES} and schema == {"type": "custom"}:
+                        assert family == "qwen3"
+                        candidate["arguments"][key] = ast.literal_eval(value.strip())
                         continue
                     if value == "null" and matches_schema(None, schema, parameters):
                         candidate["arguments"][key] = None
