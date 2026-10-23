@@ -71,28 +71,25 @@ def load(driver, rendered_page: Path, query=""):
 def test_structural_response_popup_shows_generation_constraints(matrix_driver, rendered_page):
     driver = matrix_driver
     load(driver, rendered_page)
-    try:
-        host = driver.execute_script("""
+    host = driver.execute_script("""
             return [...document.querySelectorAll('#tab-unified td.cell[data-family="gpt_oss"]')]
                 .find(cell => (window.__conformanceCellModel(cell) || {}).case_id ===
                     'UNIFIED.36-structured_response_after_reasoning');
         """)
-        assert host is not None
-        driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'})", host)
-        host.send_keys(Keys.ENTER)
-        popup = WebDriverWait(driver, 10).until(
-            lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
-        config = next(node for node in popup.find_elements(By.CSS_SELECTOR, ".ttip-config code")
-                      if node.get_attribute("textContent").startswith("structural_tag="))
-        request = json.loads(config.get_attribute("textContent").removeprefix("structural_tag="))
-        assert request["schema"]["additionalProperties"] is False
-        assert request["schema"]["required"] == ["location", "temperature", "conditions"]
-        assert len(request["rejected"]) == 6
-        assert "[object Object]" not in config.text
-        assert driver.execute_script("return getComputedStyle(arguments[0]).whiteSpace", config) == "pre-wrap"
-        popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
-    finally:
-        load(driver, rendered_page)
+    assert host is not None
+    driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'})", host)
+    host.send_keys(Keys.ENTER)
+    popup = WebDriverWait(driver, 10).until(
+        lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-pinned"))
+    config = next(node for node in popup.find_elements(By.CSS_SELECTOR, ".ttip-config code")
+                  if node.get_attribute("textContent").startswith("structural_tag="))
+    request = json.loads(config.get_attribute("textContent").removeprefix("structural_tag="))
+    assert request["schema"]["additionalProperties"] is False
+    assert request["schema"]["required"] == ["location", "temperature", "conditions"]
+    assert len(request["rejected"]) == 6
+    assert "[object Object]" not in config.text
+    assert driver.execute_script("return getComputedStyle(arguments[0]).whiteSpace", config) == "pre-wrap"
+    popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
 
 
 def selection(driver):
@@ -144,26 +141,25 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
             .map(node => node.dataset.legendStatus).sort();
         return JSON.stringify(actual) === JSON.stringify(legend);
     """
-    try:
-        for theme in ("light", "dark"):
-            d.execute_script("document.documentElement.dataset.theme=arguments[0]", theme)
-            for detailed, transpose in ((False, False), (False, True), (True, False), (True, True)):
-                d.execute_script("""
+    for theme in ("light", "dark"):
+        d.execute_script("document.documentElement.dataset.theme=arguments[0]", theme)
+        for detailed, transpose in ((False, False), (False, True), (True, False), (True, True)):
+            d.execute_script("""
                     for (const [selector, on] of [['[data-view-detailed]', arguments[0]], ['[data-transpose-toggle]', arguments[1]]]) {
                         const control = document.querySelector(selector);
                         if (control.checked !== on) { control.checked = on; control.dispatchEvent(new Event('change', {bubbles: true})); }
                     }
                 """, detailed, transpose)
-                legend = d.find_element(By.CSS_SELECTOR, "#tab-unified .capture-legend")
-                assert legend.is_displayed()
-                assert all(symbol not in legend.text for symbol in ("↯", "Δ", "†", "§", "‡"))
-                assert "slot order" in legend.text
-                assert "Not applicable or unsupported" in legend.text
-                assert "Order/chunk not applicable for batch" not in legend.text
-                assert "Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser." in legend.text
-                assert not legend.find_element(By.CSS_SELECTOR, "[data-output-formats]").is_displayed()
-                assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified .legend.summary-only,#tab-unified .legend.details-only")
-                styles = d.execute_script("""
+            legend = d.find_element(By.CSS_SELECTOR, "#tab-unified .capture-legend")
+            assert legend.is_displayed()
+            assert all(symbol not in legend.text for symbol in ("↯", "Δ", "†", "§", "‡"))
+            assert "slot order" in legend.text
+            assert "Not applicable or unsupported" in legend.text
+            assert "Order/chunk not applicable for batch" not in legend.text
+            assert "Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser." in legend.text
+            assert not legend.find_element(By.CSS_SELECTOR, "[data-output-formats]").is_displayed()
+            assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified .legend.summary-only,#tab-unified .legend.details-only")
+            styles = d.execute_script("""
                     const segment = document.querySelector('#tab-unified td.cell .matrix-status');
                     const original = segment.className;
                     const styles = [];
@@ -178,45 +174,43 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
                     } finally { segment.className = original; }
                     return styles;
                 """)
-                assert d.execute_script(legend_matches)
-                assert {item["status"] for item in styles} == {"pass", "unsupported", "diverge"}
-                assert all(item["matches"] and item["width"] > 0 for item in styles)
-        choose_slot(d, 1, "vllm", "vllm_python_batch@0.26.0")
-        assert d.execute_script(legend_matches)
-        format_note = d.find_element(By.CSS_SELECTOR, "[data-output-formats]")
-        assert format_note.is_displayed()
-        assert d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
-        assert "calls=[...]" in format_note.text and "tool_call=..." in format_note.text
-        assert "Both are compared as ordered events" in format_note.text
-        choose_slot(d, 0, "dynamo", "dynamo_v1@10.0.1")
-        assert not format_note.is_displayed()
-        choose_slot(d, 0, "dynamo", "dynamo")
-        assert format_note.is_displayed()
-        choose_slot(d, 1, "none")
-        assert not format_note.is_displayed()
-        assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
-        # Engine/mode notes must update even when the visible status palette is unchanged.
-        choose_slot(d, 0, "vllm", "vllm_rust@0.26.0")
-        assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
-        assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
-        choose_slot(d, 0, "vllm", "vllm_python@0.31.0")
-        assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
-        assert d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
-        assert not format_note.is_displayed()
-        choose_slot(d, 0, "sglang", "sglang_python@0.5.21")
-        assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
-        assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
-        choose_slot(d, 0, "dynamo", "dynamo")
-        assert d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
-        assert d.execute_script(legend_matches)
-        d.execute_script("document.querySelector('[data-transpose-toggle]').click()")
-        d.execute_script("document.querySelectorAll('[data-col-toggle][aria-pressed=true]').forEach(button=>button.click())")
-        assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified [data-legend-status]")
-        assert d.execute_script(legend_matches)
-        d.execute_script("document.querySelector('[data-col-toggle]').click()")
-        assert d.execute_script(legend_matches)
-    finally:
-        load(d, rendered_page)
+            assert d.execute_script(legend_matches)
+            assert {item["status"] for item in styles} == {"pass", "unsupported", "diverge"}
+            assert all(item["matches"] and item["width"] > 0 for item in styles)
+    choose_slot(d, 1, "vllm", "vllm_python_batch@0.26.0")
+    assert d.execute_script(legend_matches)
+    format_note = d.find_element(By.CSS_SELECTOR, "[data-output-formats]")
+    assert format_note.is_displayed()
+    assert d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
+    assert "calls=[...]" in format_note.text and "tool_call=..." in format_note.text
+    assert "Both are compared as ordered events" in format_note.text
+    choose_slot(d, 0, "dynamo", "dynamo_v1@10.0.1")
+    assert not format_note.is_displayed()
+    choose_slot(d, 0, "dynamo", "dynamo")
+    assert format_note.is_displayed()
+    choose_slot(d, 1, "none")
+    assert not format_note.is_displayed()
+    assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
+    # Engine/mode notes must update even when the visible status palette is unchanged.
+    choose_slot(d, 0, "vllm", "vllm_rust@0.26.0")
+    assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
+    assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
+    choose_slot(d, 0, "vllm", "vllm_python@0.31.0")
+    assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
+    assert d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
+    assert not format_note.is_displayed()
+    choose_slot(d, 0, "sglang", "sglang_python@0.5.21")
+    assert not d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
+    assert not d.find_element(By.CSS_SELECTOR, "[data-batch-timing]").is_displayed()
+    choose_slot(d, 0, "dynamo", "dynamo")
+    assert d.find_element(By.CSS_SELECTOR, "[data-dynamo-parsers]").is_displayed()
+    assert d.execute_script(legend_matches)
+    d.execute_script("document.querySelector('[data-transpose-toggle]').click()")
+    d.execute_script("document.querySelectorAll('[data-col-toggle][aria-pressed=true]').forEach(button=>button.click())")
+    assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified [data-legend-status]")
+    assert d.execute_script(legend_matches)
+    d.execute_script("document.querySelector('[data-col-toggle]').click()")
+    assert d.execute_script(legend_matches)
 
 
 def test_unified_report_keeps_the_original_table_and_hides_its_single_tab(matrix_driver, rendered_page):
@@ -290,7 +284,6 @@ def test_default_follows_native_v2_version_and_reset(matrix_driver, rendered_pag
         assert not d.execute_script("return new URL(location.href).searchParams.has('slots_tab-unified')")
     finally:
         d.execute_cdp_cmd("Page.removeScriptToEvaluateOnNewDocument", {"identifier": script["identifier"]})
-        load(d, rendered_page)
 
 
 def test_same_engine_versions_none_and_duplicate_prevention(matrix_driver, rendered_page):
@@ -650,29 +643,25 @@ def test_segments_click_only_popup_keyboard_and_immediate_selection(matrix_drive
     finally:
         if close_over_control:
             d.set_window_size(2400, 1200)
-        load(d, rendered_page)
 
 
 @pytest.mark.parametrize("detailed", [False, True])
 def test_pinned_case_excludes_background_hover_tooltips(matrix_driver, rendered_page, detailed):
     d = matrix_driver
     load(d, rendered_page)
-    try:
-        if detailed:
-            d.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
-        control = d.find_element(By.CSS_SELECTOR, "[data-col-toggle]")
-        ActionChains(d).move_to_element(control).perform()
-        assert d.find_elements(By.CSS_SELECTOR, ".column-control-tooltip.ttip-visible")
-        host = d.execute_script("return [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(cell => cell.getClientRects().length)")
-        host.send_keys(Keys.ENTER)
-        popup = d.find_element(By.CSS_SELECTOR, "body > .ttip-pinned")
-        assert d.find_elements(By.CSS_SELECTOR, ".ttip-visible") == [popup]
-        ActionChains(d).move_to_element(control).perform()
-        assert d.find_elements(By.CSS_SELECTOR, ".ttip-visible") == [popup]
-        popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
-        assert_popup_closed(d, popup, host)
-    finally:
-        load(d, rendered_page)
+    if detailed:
+        d.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
+    control = d.find_element(By.CSS_SELECTOR, "[data-col-toggle]")
+    ActionChains(d).move_to_element(control).perform()
+    assert d.find_elements(By.CSS_SELECTOR, ".column-control-tooltip.ttip-visible")
+    host = d.execute_script("return [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(cell => cell.getClientRects().length)")
+    host.send_keys(Keys.ENTER)
+    popup = d.find_element(By.CSS_SELECTOR, "body > .ttip-pinned")
+    assert d.find_elements(By.CSS_SELECTOR, ".ttip-visible") == [popup]
+    ActionChains(d).move_to_element(control).perform()
+    assert d.find_elements(By.CSS_SELECTOR, ".ttip-visible") == [popup]
+    popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
+    assert_popup_closed(d, popup, host)
 
 
 def test_unified_case_columns_have_no_repeated_vertical_rules(matrix_driver, rendered_page):
@@ -739,30 +728,26 @@ def test_transposed_table_keeps_group_rows_without_vertical_case_rules(matrix_dr
 def test_case_headings_and_cells_stay_click_only_in_all_views(matrix_driver, rendered_page, query, detailed):
     d = matrix_driver
     load(d, rendered_page, query)
-    try:
-        if detailed:
-            d.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
-        for selector in ("td.cell[data-ttip-id]", "th[data-ttip-id]"):
-            host = next(element for element in d.find_elements(By.CSS_SELECTOR, "#tab-unified " + selector) if element.is_displayed())
-            # Closing the modal can expose a hover-enabled control under the pointer.
-            ActionChains(d).move_to_element(host).perform()
-            WebDriverWait(d, 5).until(lambda browser: not browser.find_elements(
-                By.CSS_SELECTOR, ".column-control-tooltip.ttip-visible"))
-            d.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));arguments[0].focus()", host)
-            assert not d.find_elements(By.CSS_SELECTOR, ".ttip-visible")
-            assert not host.find_elements(By.CSS_SELECTOR, ".ttip-built")
-            host.send_keys(Keys.SPACE)
-            popup = WebDriverWait(d, 10).until(lambda b: b.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
-            assert popup.is_displayed()
-            d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-            assert_popup_closed(d, popup, host)
-            host.send_keys(Keys.SPACE)
-            popup = d.find_element(By.CSS_SELECTOR, "body > .ttip-pinned")
-            popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
-            assert_popup_closed(d, popup, host)
-
-    finally:
-        load(d, rendered_page)
+    if detailed:
+        d.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
+    for selector in ("td.cell[data-ttip-id]", "th[data-ttip-id]"):
+        host = next(element for element in d.find_elements(By.CSS_SELECTOR, "#tab-unified " + selector) if element.is_displayed())
+        # Closing the modal can expose a hover-enabled control under the pointer.
+        ActionChains(d).move_to_element(host).perform()
+        WebDriverWait(d, 5).until(lambda browser: not browser.find_elements(
+            By.CSS_SELECTOR, ".column-control-tooltip.ttip-visible"))
+        d.execute_script("arguments[0].dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));arguments[0].focus()", host)
+        assert not d.find_elements(By.CSS_SELECTOR, ".ttip-visible")
+        assert not host.find_elements(By.CSS_SELECTOR, ".ttip-built")
+        host.send_keys(Keys.SPACE)
+        popup = WebDriverWait(d, 10).until(lambda b: b.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
+        assert popup.is_displayed()
+        d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
+        assert_popup_closed(d, popup, host)
+        host.send_keys(Keys.SPACE)
+        popup = d.find_element(By.CSS_SELECTOR, "body > .ttip-pinned")
+        popup.find_element(By.CSS_SELECTOR, ".ttip-close").click()
+        assert_popup_closed(d, popup, host)
 
 
 def test_status_palette_and_source_blocker_are_distinct(matrix_driver, rendered_page):
@@ -834,60 +819,52 @@ def test_shared_parent_displays_missing_child_capture(matrix_driver, rendered_pa
 def test_popup_columns_follow_slot_order_after_swapping_engines(matrix_driver, rendered_page):
     d = matrix_driver
     load(d, rendered_page)
-    try:
-        for keys in (("dynamo_v1@10.0.1", "sglang_python@0.5.21"),
-                     ("sglang_python@0.5.21", "dynamo_v1@10.0.1")):
-            load(d, rendered_page, "?slots_tab-unified=" + quote(",".join(keys) + ","))
-            for selector in ("td.cell[data-cmp][data-ttip-id]", "th[data-ttip-id]"):
-                host = next(node for node in d.find_elements(By.CSS_SELECTOR, "#tab-unified " + selector) if node.is_displayed())
-                host.send_keys(Keys.ENTER)
-                popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
-                orders = d.execute_script("""
+    for keys in (("dynamo_v1@10.0.1", "sglang_python@0.5.21"),
+                 ("sglang_python@0.5.21", "dynamo_v1@10.0.1")):
+        load(d, rendered_page, "?slots_tab-unified=" + quote(",".join(keys) + ","))
+        for selector in ("td.cell[data-cmp][data-ttip-id]", "th[data-ttip-id]"):
+            host = next(node for node in d.find_elements(By.CSS_SELECTOR, "#tab-unified " + selector) if node.is_displayed())
+            host.send_keys(Keys.ENTER)
+            popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
+            orders = d.execute_script("""
                     return [...arguments[0].querySelectorAll('table tr')].map(row => ({
                       grammar: row.closest('table').classList.contains('ttip-grammar'),
                       keys: [...row.querySelectorAll('[data-cand]:not(.col-hidden)')].map(node => node.dataset.cand)
                     })).filter(row => row.keys.length);
                 """, popup)
-                assert orders
-                assert all(row["keys"] == (["golden", *keys] if row["grammar"] else list(keys)) for row in orders)
-                d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-
-    finally:
-        load(d, rendered_page)
+            assert orders
+            assert all(row["keys"] == (["golden", *keys] if row["grammar"] else list(keys)) for row in orders)
+            d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
 
 
 def test_empty_args_capture_segments_match_popup_outcomes(matrix_driver, rendered_page):
     d = matrix_driver
     keys = ["dynamo_v1@10.0.1", "sglang_python@0.5.21"]
-    try:
-        load(d, rendered_page, "?slots_tab-unified=" + quote(",".join(keys) + ","))
-        cell = next(node for node in d.find_elements(By.CSS_SELECTOR, "#tab-unified td.cell[data-ttip-id]")
-                    if d.execute_script("return String(window.__conformanceTooltipModel(arguments[0]).head).endsWith('UNIFIED.6-empty_args (empty_args) — deepseek_v41')", node))
-        assert selection(d)["keys"] == keys
-        statuses = d.execute_script("return [...arguments[0].querySelectorAll('.matrix-status')].map(n=>[n.dataset.capture,n.className.split('status-')[1]])", cell)
-        assert statuses == [[keys[0], "diverge"], [keys[1], "pass"]]
-        outcomes = d.execute_script("const m=window.__conformanceTooltipModel(arguments[0]);return Object.fromEntries(m.candidates.filter(c=>['dynamo_v1@10.0.1','sglang_python@0.5.21'].includes(c.key)).map(c=>[c.key,c.block]))", cell)
-        assert outcomes[keys[1]]["verdict"] == "MATCH"
-        assert outcomes[keys[1]]["events"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {}}]
-        assert outcomes[keys[0]]["verdict"] == "LOSS"
-        assert outcomes[keys[0]]["batch_final"]["calls"] == []
-        assert 'name="get_weather"' in outcomes[keys[0]]["batch_final"]["normal_text"]
-        cell.click()
-        popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
-        orders = d.execute_script("return [...arguments[0].querySelectorAll('table tr')].map(r=>({grammar:r.closest('table').classList.contains('ttip-grammar'),keys:[...r.querySelectorAll('[data-cand]:not(.col-hidden)')].map(n=>n.dataset.cand)})).filter(r=>r.keys.length)", popup)
-        assert orders and all(row["keys"] == (["golden", *keys] if row["grammar"] else keys) for row in orders)
-        d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
-    finally:
-        load(d, rendered_page)
+    load(d, rendered_page, "?slots_tab-unified=" + quote(",".join(keys) + ","))
+    cell = next(node for node in d.find_elements(By.CSS_SELECTOR, "#tab-unified td.cell[data-ttip-id]")
+                if d.execute_script("return String(window.__conformanceTooltipModel(arguments[0]).head).endsWith('UNIFIED.6-empty_args (empty_args) — deepseek_v41')", node))
+    assert selection(d)["keys"] == keys
+    statuses = d.execute_script("return [...arguments[0].querySelectorAll('.matrix-status')].map(n=>[n.dataset.capture,n.className.split('status-')[1]])", cell)
+    assert statuses == [[keys[0], "diverge"], [keys[1], "pass"]]
+    outcomes = d.execute_script("const m=window.__conformanceTooltipModel(arguments[0]);return Object.fromEntries(m.candidates.filter(c=>['dynamo_v1@10.0.1','sglang_python@0.5.21'].includes(c.key)).map(c=>[c.key,c.block]))", cell)
+    assert outcomes[keys[1]]["verdict"] == "MATCH"
+    assert outcomes[keys[1]]["events"] == [{"kind": "tool_call", "name": "get_weather", "arguments": {}}]
+    assert outcomes[keys[0]]["verdict"] == "LOSS"
+    assert outcomes[keys[0]]["batch_final"]["calls"] == []
+    assert 'name="get_weather"' in outcomes[keys[0]]["batch_final"]["normal_text"]
+    cell.click()
+    popup = WebDriverWait(d, 10).until(lambda browser: browser.find_element(By.CSS_SELECTOR, "body > .ttip-visible"))
+    orders = d.execute_script("return [...arguments[0].querySelectorAll('table tr')].map(r=>({grammar:r.closest('table').classList.contains('ttip-grammar'),keys:[...r.querySelectorAll('[data-cand]:not(.col-hidden)')].map(n=>n.dataset.cand)})).filter(r=>r.keys.length)", popup)
+    assert orders and all(row["keys"] == (["golden", *keys] if row["grammar"] else keys) for row in orders)
+    d.find_element(By.TAG_NAME, "body").send_keys(Keys.ESCAPE)
 
 
 def test_engine_picker_choices_match_slot_badge_colors(matrix_driver, rendered_page):
     d = matrix_driver
     load(d, rendered_page)
-    try:
-        d.find_element(By.CSS_SELECTOR, "[data-slot-open='1']").click()
-        picker = d.find_element(By.CSS_SELECTOR, ".comparison-picker[open]")
-        colors = d.execute_script("""
+    d.find_element(By.CSS_SELECTOR, "[data-slot-open='1']").click()
+    picker = d.find_element(By.CSS_SELECTOR, ".comparison-picker[open]")
+    colors = d.execute_script("""
             const root = document.documentElement;
             const original = root.getAttribute('data-theme');
             const result = {};
@@ -912,12 +889,10 @@ def test_engine_picker_choices_match_slot_badge_colors(matrix_driver, rendered_p
             else root.setAttribute('data-theme', original);
             return result;
         """)
-        for theme in ("light", "dark"):
-            for engine in ("dynamo", "sglang", "vllm"):
-                assert colors[theme][engine]["background"] == colors[theme][engine]["badge"]
-                assert colors[theme][engine]["background"] != "rgba(0, 0, 0, 0)"
-            assert colors[theme]["none"]["background"] not in {
-                colors[theme][engine]["background"] for engine in ("dynamo", "sglang", "vllm")
-            }
-    finally:
-        load(d, rendered_page)
+    for theme in ("light", "dark"):
+        for engine in ("dynamo", "sglang", "vllm"):
+            assert colors[theme][engine]["background"] == colors[theme][engine]["badge"]
+            assert colors[theme][engine]["background"] != "rgba(0, 0, 0, 0)"
+        assert colors[theme]["none"]["background"] not in {
+            colors[theme][engine]["background"] for engine in ("dynamo", "sglang", "vllm")
+        }
