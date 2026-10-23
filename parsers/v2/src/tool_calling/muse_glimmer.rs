@@ -27,11 +27,11 @@
 //! Spark reuses this scanner so chunk handling and malformed-call recovery stay
 //! consistent; its commentary, string-typing and reasoning policies are opt-in.
 
-use std::{collections::BTreeMap, sync::OnceLock};
+use std::sync::OnceLock;
 
 use regex::Regex;
 
-use crate::tool_calling::arguments::{ParsedValue, compact_json_literal};
+use crate::tool_calling::arguments::{ParsedObject, ParsedValue, parsed_json_literal};
 use crate::tool_calling::scan::{
     InvokeEmitter, ProseControl, ProseControlState, ProseGrammarSpan, marker_prefix_suffix_len,
     push_run, reorder_arguments,
@@ -948,7 +948,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
             .strip_suffix(INVOKE_CLOSE)
             .unwrap_or_default();
 
-        let mut arguments = BTreeMap::new();
+        let mut arguments = ParsedObject::new();
         let mut source_names = Vec::new();
         let name = normalize_name(name_raw, &self.tools);
         let mut tail = body;
@@ -1005,7 +1005,7 @@ impl InvokeEmitter for MuseInvokeEmitter {
 /// byte-preserving (NOT trimmed): both engines keep surrounding whitespace in
 /// non-JSON string values.
 fn decode_value(raw: &str) -> ParsedValue {
-    compact_json_literal(raw)
+    parsed_json_literal(raw)
         .unwrap_or_else(|| ParsedValue::from(serde_json::Value::String(raw.to_string())))
 }
 

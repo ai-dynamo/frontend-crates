@@ -17,7 +17,7 @@ use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 #[cfg(test)]
 use crate::tool_calling::arguments::schema_type_match;
 use crate::tool_calling::arguments::{
-    ParsedValue, coerce_integral_number, compact_json_literal, normalize_decimal_spelling,
+    ParsedValue, coerce_integral_number, normalize_decimal_spelling, parsed_json_literal,
     raw_number_literal, schema_has_type, schema_permits_null,
 };
 
@@ -384,7 +384,7 @@ fn coerce_value(raw: &str, schema_type: Option<&str>) -> ParsedValue {
 
     // If the value already looks like JSON (object, array, or quoted string), parse it directly
     if (trimmed.starts_with('{') || trimmed.starts_with('[') || trimmed.starts_with('"'))
-        && let Some(value) = compact_json_literal(trimmed)
+        && let Some(value) = parsed_json_literal(trimmed)
     {
         return value;
     }

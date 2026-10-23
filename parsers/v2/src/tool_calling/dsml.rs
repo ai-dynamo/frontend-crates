@@ -7,11 +7,9 @@
 //! `DeepSeekV4ToolStreamParser` remains for compatibility, but it projects the
 //! native UnifiedParser's ordered events instead of maintaining another parser.
 
-use std::collections::BTreeMap;
-
 use serde_json::Value;
 
-use crate::tool_calling::arguments::{ParsedValue, compact_json_literal};
+use crate::tool_calling::arguments::{ParsedObject, ParsedValue, parsed_json_literal};
 
 use crate::tool_calling::scan::{
     BareRecoveryLatch, GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary,
@@ -518,7 +516,7 @@ fn parse_invoke_header(s: &str) -> Option<(String, usize)> {
 }
 
 fn parse_parameters(body: &str) -> anyhow::Result<ParsedValue> {
-    let mut params = BTreeMap::new();
+    let mut params = ParsedObject::new();
     let mut cursor = 0;
     while let Some(rel_start) = body[cursor..].find(PARAMETER_PREFIX) {
         let start = cursor + rel_start + PARAMETER_PREFIX.len();
@@ -544,7 +542,7 @@ fn parse_parameters(body: &str) -> anyhow::Result<ParsedValue> {
             ParsedValue::from(Value::String(raw_value.to_string()))
         } else {
             let raw_value = raw_value.trim();
-            compact_json_literal(raw_value)
+            parsed_json_literal(raw_value)
                 .unwrap_or_else(|| ParsedValue::from(Value::String(raw_value.to_string())))
         };
         params.insert(name.to_string(), value);
@@ -552,7 +550,7 @@ fn parse_parameters(body: &str) -> anyhow::Result<ParsedValue> {
     }
     if params.is_empty()
         && body.trim().starts_with('{')
-        && let Some(object) = compact_json_literal(body.trim())
+        && let Some(object) = parsed_json_literal(body.trim())
     {
         return Ok(object);
     }
@@ -645,7 +643,10 @@ mod tests {
 
         assert_eq!(
             value.json_text().expect("arguments serialize"),
-            r#"{"label":"9007199254740993.0","nested":{"fraction":9007199254740992.5,"tiny":1e-400,"large":9007199254740993}}"#
+            serde_json::to_string(&serde_json::from_str::<Value>(
+                r#"{"nested":{"fraction":"FRACTION","tiny":"TINY","large":"LARGE"},"label":"9007199254740993.0"}"#,
+            ).unwrap()).unwrap().replace("\"FRACTION\"", "9007199254740992.5")
+                .replace("\"TINY\"", "1e-400").replace("\"LARGE\"", "9007199254740993")
         );
     }
 

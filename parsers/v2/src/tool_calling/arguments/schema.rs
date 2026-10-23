@@ -246,18 +246,13 @@ impl<'a> SchemaFacts<'a> {
 
     #[cfg(test)]
     pub(crate) fn has_type(&mut self, schema: Option<&'a Value>, expected: &str) -> bool {
-        schema.is_some_and(|schema| self.has_type_constraints(&[schema], expected, ""))
+        schema.is_some_and(|schema| self.has_type_constraints(&[schema], expected))
     }
 
-    pub(crate) fn has_type_constraints(
-        &mut self,
-        schemas: &[&'a Value],
-        expected: &str,
-        raw: &str,
-    ) -> bool {
+    pub(crate) fn has_type_constraints(&mut self, schemas: &[&'a Value], expected: &str) -> bool {
         let mut matched = false;
         for schema in schemas {
-            match self.type_hint(schema, expected, raw) {
+            match self.explicit_type_hint(schema, expected) {
                 Some(false) => return false,
                 Some(true) => matched = true,
                 None => {}
@@ -266,7 +261,9 @@ impl<'a> SchemaFacts<'a> {
         matched && !self.exhausted
     }
 
-    fn type_hint(&mut self, schema: &'a Value, expected: &str, raw: &str) -> Option<bool> {
+    // Scalar coercion uses explicit types and alternatives; literal constraints
+    // and allOf do not add types. Reference/property siblings still intersect.
+    fn explicit_type_hint(&mut self, schema: &'a Value, expected: &str) -> Option<bool> {
         self.with_schema(schema, None, |walker, schema| {
             if let Some(allowed) = schema.as_bool() {
                 return (!allowed).then_some(false);
@@ -274,59 +271,27 @@ impl<'a> SchemaFacts<'a> {
             if !schema.is_object() {
                 return None;
             }
-
-            let matches = |ty: &Value| {
-                ty.as_str() == Some(expected)
-                    || (expected == "integer" && ty.as_str() == Some("number"))
-            };
             let mut hint = schema.get("type").map(|ty| {
-                ty.as_array()
-                    .map_or_else(|| matches(ty), |types| types.iter().any(matches))
+                ty.as_str() == Some(expected)
+                    || ty
+                        .as_array()
+                        .is_some_and(|types| types.iter().any(|ty| ty.as_str() == Some(expected)))
             });
-            if expected == "string"
-                && let Some(value) = schema.get("const")
-            {
-                hint = Some(hint.unwrap_or(true) && value.as_str() == Some(raw));
-            }
-
-            if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
-                let reference_hint = resolve_local_schema_ref(reference, walker.root)
-                    .and_then(|target| walker.type_hint(target, expected, raw));
-                hint = intersect_type_hints(hint, reference_hint);
-            }
-
-            for keyword in ["allOf", "anyOf", "oneOf"] {
-                let Some(branches) = schema.get(keyword).and_then(Value::as_array) else {
-                    continue;
-                };
-                let mut branch_hint = None;
-                let mut unknown = false;
-                for branch in branches {
-                    match walker.type_hint(branch, expected, raw) {
-                        Some(true) if keyword != "allOf" => {
-                            branch_hint = Some(true);
-                            break;
+            for keyword in ["anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    for branch in branches {
+                        match walker.explicit_type_hint(branch, expected) {
+                            Some(true) => hint = Some(true),
+                            Some(false) if hint.is_none() => hint = Some(false),
+                            _ => {}
                         }
-                        Some(false) if keyword != "allOf" => {}
-                        Some(value) if keyword == "allOf" => {
-                            branch_hint = intersect_type_hints(branch_hint, Some(value));
-                        }
-                        None => unknown = true,
-                        _ => {}
                     }
                 }
-                if keyword != "allOf" {
-                    branch_hint = match (branch_hint, unknown) {
-                        (Some(true), _) => Some(true),
-                        (None, true) => None,
-                        (None, false) => Some(false),
-                        (Some(false), _) => Some(false),
-                    };
-                }
-                hint = intersect_type_hints(hint, branch_hint);
-                if hint == Some(false) {
-                    return hint;
-                }
+            }
+            if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
+                let reference_hint = resolve_local_schema_ref(reference, walker.root)
+                    .and_then(|target| walker.explicit_type_hint(target, expected));
+                hint = intersect_type_hints(hint, reference_hint);
             }
             hint
         })
@@ -367,15 +332,10 @@ impl<'a> SchemaFacts<'a> {
 
     // Array item unions are alternatives. Callers use this query when converting
     // a scalar item so one incompatible branch cannot veto a compatible branch.
-    pub(crate) fn has_array_item_type(
-        &mut self,
-        schemas: &[&'a Value],
-        expected: &str,
-        raw: &str,
-    ) -> bool {
+    pub(crate) fn has_array_item_type(&mut self, schemas: &[&'a Value], expected: &str) -> bool {
         let mut hint = None;
         for schema in schemas {
-            hint = intersect_type_hints(hint, self.array_item_type_hint(schema, expected, raw));
+            hint = intersect_type_hints(hint, self.array_item_type_hint(schema, expected));
             if hint == Some(false) {
                 return false;
             }
@@ -383,30 +343,22 @@ impl<'a> SchemaFacts<'a> {
         hint == Some(true)
     }
 
-    fn array_item_type_hint(
-        &mut self,
-        schema: &'a Value,
-        expected: &str,
-        raw: &str,
-    ) -> Option<bool> {
+    fn array_item_type_hint(&mut self, schema: &'a Value, expected: &str) -> Option<bool> {
         self.with_schema(schema, None, |walker, schema| {
             let mut hint = schema
                 .get("items")
-                .and_then(|items| walker.type_hint(items, expected, raw));
+                .and_then(|items| walker.explicit_type_hint(items, expected));
 
             if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
                 && let Some(target) = resolve_local_schema_ref(reference, walker.root)
             {
-                hint =
-                    intersect_type_hints(hint, walker.array_item_type_hint(target, expected, raw));
+                hint = intersect_type_hints(hint, walker.array_item_type_hint(target, expected));
             }
 
             if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
                 for branch in branches {
-                    hint = intersect_type_hints(
-                        hint,
-                        walker.array_item_type_hint(branch, expected, raw),
-                    );
+                    hint =
+                        intersect_type_hints(hint, walker.array_item_type_hint(branch, expected));
                 }
             }
 
@@ -417,7 +369,7 @@ impl<'a> SchemaFacts<'a> {
                 let mut branch_hint = None;
                 let mut unknown = false;
                 for branch in branches {
-                    match walker.array_item_type_hint(branch, expected, raw) {
+                    match walker.array_item_type_hint(branch, expected) {
                         Some(true) => {
                             branch_hint = Some(true);
                             break;

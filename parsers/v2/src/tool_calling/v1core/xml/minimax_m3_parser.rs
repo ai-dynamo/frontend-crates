@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde_json::Value;
-use std::collections::BTreeMap;
 use uuid::Uuid;
 
 use super::super::ToolDefinition;
@@ -11,8 +10,8 @@ use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 #[cfg(test)]
 use crate::tool_calling::arguments::{MAX_SCHEMA_DEPTH, MAX_SCHEMA_WORK};
 use crate::tool_calling::arguments::{
-    ParsedValue, SchemaFacts, coerce_integral_number, compact_json_literal,
-    normalize_decimal_spelling, raw_number_literal,
+    ParsedObject, ParsedValue, SchemaFacts, coerce_integral_number, normalize_decimal_spelling,
+    parsed_json_literal, raw_number_literal,
 };
 
 // Main entry point: strips normal prefix text and turns M3 tool markup into tool-call responses.
@@ -251,14 +250,14 @@ fn parse_parameters(
     body: &str,
     config: &MiniMaxM3ParserConfig,
     tools: Option<&[ToolDefinition]>,
-) -> anyhow::Result<BTreeMap<String, ParsedValue>> {
+) -> anyhow::Result<ParsedObject> {
     let parameter_start = parameter_start(config);
     let root_schema = get_arguments_config(function_name, tools).unwrap_or(&Value::Null);
     let param_config = root_schema
         .get("properties")
         .filter(|value| value.is_object())
         .unwrap_or(root_schema);
-    let mut parameters = BTreeMap::new();
+    let mut parameters = ParsedObject::new();
     let mut cursor = 0;
 
     while let Some(start_rel) = body[cursor..].find(parameter_start.as_str()) {
@@ -295,11 +294,7 @@ fn parse_parameters(
 }
 
 // Preserves duplicate XML tags by collecting repeated values into arrays.
-fn insert_parameter(
-    parameters: &mut BTreeMap<String, ParsedValue>,
-    key: String,
-    value: ParsedValue,
-) {
+fn insert_parameter(parameters: &mut ParsedObject, key: String, value: ParsedValue) {
     if let Some(existing) = parameters.remove(&key) {
         let mut values = match existing {
             ParsedValue::Array(values) => values,
@@ -353,7 +348,7 @@ fn parse_nested_minimax_xml(
     {
         Some(StackValue::Array(Vec::new()))
     } else {
-        Some(StackValue::Object(BTreeMap::new()))
+        Some(StackValue::Object(ParsedObject::new()))
     };
     let mut stack = vec![StackItem {
         tag: None,
@@ -472,7 +467,7 @@ fn split_end_tag_chunk(chunk: &str) -> (String, &str) {
 
 #[derive(Debug)]
 enum StackValue {
-    Object(BTreeMap<String, ParsedValue>),
+    Object(ParsedObject),
     Array(Vec<ParsedValue>),
 }
 
@@ -521,7 +516,7 @@ impl<'a> StackItem<'a> {
         let value = item.into_value();
         match self.value.as_mut() {
             None => {
-                let mut map = BTreeMap::new();
+                let mut map = ParsedObject::new();
                 map.insert(key, value);
                 self.value = Some(StackValue::Object(map));
             }
@@ -601,15 +596,15 @@ fn convert_array_item_scalar(
 
     // An array's anyOf/oneOf item schemas are alternatives, unlike the
     // intersection used for sibling constraints on one selected property.
-    if facts.has_array_item_type(array_schemas, "string", raw) {
+    if facts.has_array_item_type(array_schemas, "string") {
         return ParsedValue::from(Value::String(value));
     }
-    if facts.has_array_item_type(array_schemas, "integer", raw)
+    if facts.has_array_item_type(array_schemas, "integer")
         && let Some(integer) = coerce_integral_number(trimmed)
     {
         return integer;
     }
-    if facts.has_array_item_type(array_schemas, "number", raw) {
+    if facts.has_array_item_type(array_schemas, "number") {
         return coerce_integral_number(trimmed)
             .or_else(|| raw_number_literal(trimmed))
             .or_else(|| normalize_decimal_spelling(trimmed))
@@ -647,23 +642,23 @@ fn convert_scalar_value_with_schemas(
         };
     }
 
-    if schemas.has_type_constraints(schema, "string", raw)
-        || schemas.has_type_constraints(schema, "enum", raw)
+    if schemas.has_type_constraints(schema, "string")
+        || schemas.has_type_constraints(schema, "enum")
     {
         return ParsedValue::from(Value::String(value));
     }
-    if schemas.has_type_constraints(schema, "integer", raw)
+    if schemas.has_type_constraints(schema, "integer")
         && let Some(integer) = coerce_integral_number(trimmed)
     {
         return integer;
     }
-    if schemas.has_type_constraints(schema, "number", raw) {
+    if schemas.has_type_constraints(schema, "number") {
         return coerce_integral_number(trimmed)
             .or_else(|| raw_number_literal(trimmed))
             .or_else(|| normalize_decimal_spelling(trimmed))
             .unwrap_or_else(|| ParsedValue::from(Value::String(value)));
     }
-    if schemas.has_type_constraints(schema, "boolean", raw) {
+    if schemas.has_type_constraints(schema, "boolean") {
         return match trimmed.to_ascii_lowercase().as_str() {
             "true" => ParsedValue::from(Value::Bool(true)),
             "1" => ParsedValue::from(Value::Bool(true)),
@@ -672,19 +667,19 @@ fn convert_scalar_value_with_schemas(
             _ => ParsedValue::from(Value::String(value)),
         };
     }
-    if schemas.has_type_constraints(schema, "object", raw) {
+    if schemas.has_type_constraints(schema, "object") {
         if trimmed.is_empty() {
-            return ParsedValue::Object(BTreeMap::new());
+            return ParsedValue::Object(ParsedObject::new());
         }
-        if let Some(json) = compact_json_literal(trimmed) {
+        if let Some(json) = parsed_json_literal(trimmed) {
             return json;
         }
     }
-    if schemas.has_type_constraints(schema, "array", raw) {
+    if schemas.has_type_constraints(schema, "array") {
         if trimmed.is_empty() {
             return ParsedValue::Array(Vec::new());
         }
-        if let Some(json) = compact_json_literal(trimmed) {
+        if let Some(json) = parsed_json_literal(trimmed) {
             return json;
         }
     }
@@ -706,6 +701,55 @@ fn html_unescape(s: &str) -> String {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn scalar_hints_preserve_explicit_type_and_alternative_policy() {
+        for (schema, raw, expected) in [
+            (
+                json!({"anyOf": [{"const": "42"}, {"type": "integer"}]}),
+                "42",
+                "42",
+            ),
+            (
+                json!({"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}),
+                "{\"x\":1}",
+                "{\"x\":1}",
+            ),
+            (
+                json!({"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"type": "number", "anyOf": [{"type": "integer"}]}),
+                "2.5",
+                "2.5",
+            ),
+            (
+                json!({"type": "number", "anyOf": [{"type": "string"}]}),
+                "42",
+                "\"42\"",
+            ),
+            (
+                json!({"type": "string", "anyOf": [{"type": "number"}]}),
+                "42",
+                "\"42\"",
+            ),
+        ] {
+            assert_eq!(
+                convert_scalar_value(raw, Some(&schema), &schema)
+                    .json_text()
+                    .unwrap(),
+                expected,
+                "schema={schema}"
+            );
+        }
+    }
 
     #[test]
     fn array_item_union_coerces_a_scalar_when_one_branch_allows_it() {
@@ -1365,7 +1409,11 @@ mod tests {
                 Some(&tools),
             )
             .unwrap();
-            assert_eq!(actual["value"], expected, "{schema}");
+            assert_eq!(
+                ParsedValue::Object(actual).as_object().unwrap()["value"],
+                expected,
+                "{schema}"
+            );
         }
     }
 

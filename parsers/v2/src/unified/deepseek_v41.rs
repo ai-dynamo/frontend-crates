@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Context;
-use std::collections::BTreeMap;
 
 use serde_json::Value;
 
-use crate::tool_calling::arguments::{ParsedValue, compact_json_literal, compact_json_object};
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, parsed_json_literal, parsed_json_object,
+};
 use crate::tool_calling::dsml::BLOCK_SEPARATOR;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, ReasoningSpec,
@@ -338,7 +339,7 @@ impl InvokeEmitter for DeepSeekV41 {
         if body.trim_start().starts_with('{') {
             let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(body)?;
             let arguments =
-                compact_json_object(raw.get()).context("invalid DeepSeek V4.1 JSON arguments")?;
+                parsed_json_object(raw.get()).context("invalid DeepSeek V4.1 JSON arguments")?;
             return Ok(Some(ToolCallDelta {
                 tool_index,
                 name: Some(name.to_string()),
@@ -346,7 +347,7 @@ impl InvokeEmitter for DeepSeekV41 {
                 complete: true,
             }));
         }
-        let mut arguments = BTreeMap::new();
+        let mut arguments = ParsedObject::new();
         while !body.trim().is_empty() {
             let (name, string, value) = parameter_header(body.trim_start())
                 .context("invalid DeepSeek V4.1 parameter header")?;
@@ -357,7 +358,7 @@ impl InvokeEmitter for DeepSeekV41 {
                 ParsedValue::from(Value::String(raw.to_string()))
             } else {
                 let raw = serde_json::from_str::<Box<serde_json::value::RawValue>>(raw)?;
-                compact_json_literal(raw.get()).context("invalid DeepSeek V4.1 parameter JSON")?
+                parsed_json_literal(raw.get()).context("invalid DeepSeek V4.1 parameter JSON")?
             };
             anyhow::ensure!(
                 arguments.insert(name.to_string(), value).is_none(),
