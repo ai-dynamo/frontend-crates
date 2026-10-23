@@ -8,7 +8,6 @@
 //! `logprobs` is covered. Model defaults, sentinel rewrites, greedy
 //! transformations, and request-wide normalization are not implemented.
 
-/// OpenAI baseline normalization.
 pub mod openai {
     /// Preserves completion `logprobs` unchanged: no default is inserted for `None`,
     /// and explicit values, including invalid ones, are left for validation.

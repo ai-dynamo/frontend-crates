@@ -40,17 +40,17 @@ fn omitted_and_null_logprobs_preserve_existing_parse_and_serialization() {
 #[test]
 fn explicit_counts_are_preserved_including_invalid_values() {
     for value in [0, 5, 6, 10, 20, 21, 255] {
+        let input = json!({"model":"test", "prompt":"hello", "logprobs":value});
+        let parsed: CreateCompletionRequest = serde_json::from_value(input).unwrap();
         for normalize in NORMALIZERS {
-            let input = json!({"model":"test", "prompt":"hello", "logprobs":value});
-            let mut request: CreateCompletionRequest = serde_json::from_value(input).unwrap();
-            let before = request.clone();
+            let mut request = parsed.clone();
             normalize(&mut request.logprobs);
-            assert_eq!(request, before);
+            assert_eq!(request, parsed);
             assert_eq!(serde_json::to_value(&request).unwrap()["logprobs"], value);
-            assert_eq!(OpenAIValidation::validate(&request).is_ok(), value <= 5);
-            assert_eq!(VllmValidation::validate(&request).is_ok(), value <= 20);
-            assert_eq!(request.logprobs, Some(value as u8));
         }
+        assert_eq!(parsed.logprobs, Some(value as u8));
+        assert_eq!(OpenAIValidation::validate(&parsed).is_ok(), value <= 5);
+        assert_eq!(VllmValidation::validate(&parsed).is_ok(), value <= 20);
     }
 }
 

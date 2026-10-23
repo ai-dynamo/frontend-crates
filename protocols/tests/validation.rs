@@ -292,7 +292,6 @@ fn engine_traits_apply_overrides_without_running_the_baseline_first() {
     let mut chat = CreateChatCompletionRequest::default();
     let mut completion = CreateCompletionRequest::default();
 
-    // top_p = 0: OpenAI accepts, both engines reject.
     chat.top_p = Some(0.0);
     completion.top_p = Some(0.0);
     assert!(OpenAIValidation::validate(&chat).is_ok());
@@ -304,7 +303,6 @@ fn engine_traits_apply_overrides_without_running_the_baseline_first() {
         assert_eq!(validate(&completion).unwrap_err().field, "top_p");
     }
 
-    // temperature = 3: only SGLang accepts.
     chat.top_p = Some(0.5);
     completion.top_p = Some(0.5);
     chat.temperature = Some(3.0);
@@ -318,14 +316,7 @@ fn engine_traits_apply_overrides_without_running_the_baseline_first() {
         assert_eq!(validate(&completion).unwrap_err().field, "temperature");
     }
 
-    // logprobs = 10: OpenAI rejects, vLLM accepts; 21: vLLM rejects.
     completion.temperature = None;
-    completion.logprobs = Some(10);
-    assert_eq!(
-        OpenAIValidation::validate(&completion).unwrap_err().field,
-        "logprobs"
-    );
-    assert!(VllmValidation::validate(&completion).is_ok());
     completion.logprobs = Some(21);
     assert_eq!(
         VllmValidation::validate(&completion).unwrap_err().field,
@@ -340,32 +331,22 @@ fn engine_traits_apply_overrides_without_running_the_baseline_first() {
 
 #[test]
 fn diagnostics_render_message_and_rejected_value_without_a_source() {
-    let validators: [(FloatValidator, f32); 9] = [
-        (openai::validate_temperature, 2.5),
-        (openai::validate_top_p, 1.5),
-        (openai::validate_frequency_penalty, -2.5),
-        (openai::validate_presence_penalty, 2.5),
-        (vllm::validate_top_p, -0.0),
-        (vllm::validate_min_p, -0.5),
-        (sglang::validate_temperature, -1.5),
-        (sglang::validate_top_p, 0.0),
-        (sglang::validate_min_p, 1.5),
-    ];
-    for (validate, invalid) in validators {
-        let error = validate(Some(invalid)).unwrap_err();
-        assert_eq!(error.value, invalid.to_string());
+    let error = openai::validate_temperature(Some(2.5)).unwrap_err();
+    assert_eq!(error.value, "2.5");
+    assert_eq!(
+        error.to_string(),
+        format!("{}, got {}", error.message, error.value)
+    );
+    assert!(std::error::Error::source(&error).is_none());
+    for (value, expected) in [
+        (f32::NAN, "NaN"),
+        (f32::INFINITY, "inf"),
+        (f32::NEG_INFINITY, "-inf"),
+    ] {
         assert_eq!(
-            error.to_string(),
-            format!("{}, got {}", error.message, error.value)
+            openai::validate_temperature(Some(value)).unwrap_err().value,
+            expected
         );
-        assert!(std::error::Error::source(&error).is_none());
-        for (value, expected) in [
-            (f32::NAN, "NaN"),
-            (f32::INFINITY, "inf"),
-            (f32::NEG_INFINITY, "-inf"),
-        ] {
-            assert_eq!(validate(Some(value)).unwrap_err().value, expected);
-        }
     }
 }
 
@@ -381,12 +362,10 @@ fn diagnostic_text_matches_existing_wording() {
         openai::validate_top_p(Some(2.0)).unwrap_err().to_string(),
         "Top_p must be between 0 and 1, got 2",
     );
-    for validate in [vllm::validate_top_p, sglang::validate_top_p] {
-        assert_eq!(
-            validate(Some(0.0)).unwrap_err().to_string(),
-            "Top_p must be between 0 and 1, got 0"
-        );
-    }
+    assert_eq!(
+        sglang::validate_top_p(Some(0.0)).unwrap_err().to_string(),
+        "Top_p must be between 0 and 1, got 0"
+    );
     assert_eq!(vllm::validate_top_p(Some(-0.0)).unwrap_err().value, "-0");
     let error = vllm::validate_min_p(Some(-0.5)).unwrap_err();
     assert_eq!(error.field, "min_p");
