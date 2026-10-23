@@ -624,6 +624,7 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
     use dynamo_parsers_v2::{ToolParseResult, create_tool_parser_for_family};
 
     let known = divergences::load();
+    let mut observed = std::collections::BTreeSet::new();
     let mut coverage = BTreeMap::<String, usize>::new();
     for file in load_native_golden()
         .into_iter()
@@ -644,8 +645,8 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                 let mut parser = create_tool_parser_for_family("deepseek_v4", &case_tools).unwrap();
                 let mut result = ToolParseResult::default();
                 let mut failure = None;
-                for chunk in chunks {
-                    match parser.push(&chunk) {
+                for chunk in &chunks {
+                    match parser.push(chunk) {
                         Ok(delta) => result.append(delta),
                         Err(error) => {
                             failure = Some(format!("ERROR: native push: {error:#}"));
@@ -653,20 +654,22 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                         }
                     }
                 }
+                if failure.is_none() {
+                    match parser.finish() {
+                        Ok(delta) => result.append(delta),
+                        Err(error) => failure = Some(format!("ERROR: native finish: {error:#}")),
+                    }
+                }
                 if let Some(error) = failure {
                     let Some(Expected::Golden(expected_error)) =
-                        divergences::expected(&known, &file.family, &id, Check::Golden)
+                        divergences::expected(&known, &file.family, &id, Check::ToolAdapter)
                     else {
                         panic!("{id} {label}: unexpected {error}");
                     };
                     assert_eq!(error, expected_error.actual, "{id} {label}");
+                    observed.insert((file.family.clone(), id.clone()));
                     continue;
                 }
-                result.append(
-                    parser
-                        .finish()
-                        .unwrap_or_else(|e| panic!("{id} {label}: {e}")),
-                );
                 let actual: Vec<_> = result
                     .coalesce_calls()
                     .calls
@@ -676,10 +679,26 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                         arguments: serde_json::from_str(&call.arguments).unwrap(),
                     })
                     .collect();
-                assert_eq!(actual, expected, "{} {id} {label}", file.family);
+                if actual != expected {
+                    let Some(Expected::Golden(divergence)) =
+                        divergences::expected(&known, &file.family, &id, Check::ToolAdapter)
+                    else {
+                        panic!(
+                            "{} {id} {label}: unexpected {}",
+                            file.family,
+                            render(&Ok(actual))
+                        );
+                    };
+                    assert_eq!(render(&Ok(actual)), divergence.actual, "{id} {label}");
+                    observed.insert((file.family.clone(), id.clone()));
+                }
             }
         }
     }
+    assert!(
+        divergences::reconcile(&known, Check::ToolAdapter, &observed).is_empty(),
+        "stale tool-adapter divergence"
+    );
     for family in ["deepseek_v4", "deepseek_v41"] {
         assert!(
             coverage.get(family).copied().unwrap_or_default() > 0,

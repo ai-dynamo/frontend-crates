@@ -1,0 +1,67 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.35
+    git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+    source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+document:
+  mode: unified
+changes:
+  dsml_unterminated_parameter_then_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: ee3ceb1ca25cb683bca603efb861f4f094f36e182d84e23d8fb75a1c06ac70c5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dsml_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: 3e78ad38e16c8233cb84130271599597818d244dbf95e72ee0e7a7e85d27ea50
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'native finish: incomplete DeepSeek V4.1 parameter'
+metadata_changes: {}
+document_overrides:
+  dsml_unterminated_parameter_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+      inherited_from: null
+  dsml_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+      inherited_from: null

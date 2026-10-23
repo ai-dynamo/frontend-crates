@@ -784,6 +784,45 @@ _MIXED_CONTROL_STRINGS = {
 }
 
 EDGE = [
+    # Native DSML recovery counterparts to the Muse cases in PR #330.
+    ("dsml_unterminated_parameter_then_empty_call",
+     "DeepSeek V4/V4.1: an unterminated parameter precedes a complete parameterless invoke. Drop the malformed invoke and emit the later call.",
+     ["P2"],
+     [{"kind": "tool_call", "name": "f", "arguments": {}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         family: (
+             f'<｜DSML｜{calls}><｜DSML｜{gap}invoke name="get_weather">'
+             f'<｜DSML｜{gap}parameter name="city" string="true">bad</｜DSML｜{gap}invoke>'
+             f'<｜DSML｜{gap}invoke name="f"></｜DSML｜{gap}invoke></｜DSML｜{calls}>',
+             M, M,
+         )
+         for family, gap, calls in (
+             ("deepseek_v4", "", "tool_calls"),
+             ("deepseek_v41", " ", " calls"),
+         )
+     })),
+
+    ("dsml_unterminated_parameter_then_call",
+     "DeepSeek V4/V4.1: an unterminated parameter precedes a complete invoke with its own parameter. Drop the malformed invoke and preserve the later call's name and arguments.",
+     ["P2", "I7"],
+     [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     OnlyFamilies({
+         family: (
+             f'<｜DSML｜{calls}><｜DSML｜{gap}invoke name="f">'
+             f'<｜DSML｜{gap}parameter name="x" string="true">bad</｜DSML｜{gap}invoke>'
+             f'<｜DSML｜{gap}invoke name="get_weather">'
+             f'<｜DSML｜{gap}parameter name="city" string="true">Paris</｜DSML｜{gap}parameter>'
+             f'</｜DSML｜{gap}invoke></｜DSML｜{calls}>',
+             M, M,
+         )
+         for family, gap, calls in (
+             ("deepseek_v4", "", "tool_calls"),
+             ("deepseek_v41", " ", " calls"),
+         )
+     })),
+
     # Muse EOF recovery must skip an unterminated parameter without losing later
     # invokes in the same ATEM channel. Scope is Muse-specific because the failure
     # depends on its parameter-opaque invoke scanner (PR #316 review).

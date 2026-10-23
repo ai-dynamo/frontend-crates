@@ -1,0 +1,91 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.35
+    git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+    source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+document:
+  mode: unified
+changes:
+  dsml_unterminated_parameter_then_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
+    stimulus:
+      ref: current
+      semantic_sha256: d88c1864b7a75d9154ce03e3f010b7b9ce39e69d414c4af8c849842b9891aee2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: bad</｜DSML｜invoke><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  dsml_unterminated_parameter_then_empty_call:
+    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: f218a2fd4b1482650e777459808ac27a4ce386bf48ead85bd9a2d7bd3414ca4a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  dsml_unterminated_parameter_then_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+      inherited_from: null
+  dsml_unterminated_parameter_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.35
+      capture_origin:
+        crate_version: 0.7.35
+        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+      inherited_from: null

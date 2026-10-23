@@ -34,6 +34,8 @@ pub struct CaseDivergence {
     #[serde(default)]
     pub golden: Option<GoldenDivergence>,
     #[serde(default)]
+    pub tool_adapter: Option<GoldenDivergence>,
+    #[serde(default)]
     pub chunk_invariance: Option<ChunkInvarianceDivergence>,
     #[serde(default)]
     pub stream_batch: Option<StreamBatchDivergence>,
@@ -44,6 +46,7 @@ pub type KnownDivergences = BTreeMap<String, BTreeMap<String, CaseDivergence>>;
 #[derive(Clone, Copy)]
 pub enum Check {
     Golden,
+    ToolAdapter,
     ChunkInvariance,
     StreamBatch,
 }
@@ -58,6 +61,7 @@ impl CaseDivergence {
     fn has_check(&self, check: Check) -> bool {
         match check {
             Check::Golden => self.golden.is_some(),
+            Check::ToolAdapter => self.tool_adapter.is_some(),
             Check::ChunkInvariance => self.chunk_invariance.is_some(),
             Check::StreamBatch => self.stream_batch.is_some(),
         }
@@ -110,12 +114,14 @@ pub fn load() -> KnownDivergences {
         for (case_id, divergence) in cases {
             assert!(
                 divergence.golden.is_some()
+                    || divergence.tool_adapter.is_some()
                     || divergence.chunk_invariance.is_some()
                     || divergence.stream_batch.is_some(),
                 "{family}:{case_id}: no check declared in unified-known-divergences.yaml"
             );
             for note in [
                 divergence.golden.as_ref().map(|d| d.note.as_str()),
+                divergence.tool_adapter.as_ref().map(|d| d.note.as_str()),
                 divergence
                     .chunk_invariance
                     .as_ref()
@@ -144,6 +150,7 @@ pub fn expected<'a>(
     let divergence = known.get(family)?.get(case_id)?;
     match check {
         Check::Golden => divergence.golden.as_ref().map(Expected::Golden),
+        Check::ToolAdapter => divergence.tool_adapter.as_ref().map(Expected::Golden),
         Check::ChunkInvariance => divergence
             .chunk_invariance
             .as_ref()
