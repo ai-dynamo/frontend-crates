@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import gen_unified_golden as generator
 import generate_conformance_table as table
 from case_variants import leaf_cells
+from model import hydrate_page
 from unified_taxonomy import tax
 from validate_conformance_status import load_model
 
@@ -78,7 +79,7 @@ def test_dotted_shared_prefix_reuses_the_baseline_multi_call_envelope(family, op
 
 
 def test_rendered_report_preserves_dotted_v2_names_and_missing_v1_captures(rendered_page):
-    model = load_model(rendered_page)
+    model = hydrate_page(load_model(rendered_page))
     tab = next(tab for tab in model["tabs"] if tab["id"] == "tab-unified")
     for family in sorted(generator.DOTTED_NAME_FAMILIES):
         family_row = next(row for row in tab["rows"] if row["family"] == family)
@@ -105,9 +106,12 @@ def test_rendered_report_preserves_dotted_v2_names_and_missing_v1_captures(rende
         {"kind": "tool_call", "name": "my-tool.v2", "arguments": {"location": "Beijing"}}
     ]
     assert candidates["dynamo"]["block"]["verdict"] == "MATCH"
-    assert candidates["dynamo"]["parse_mode"] == "split"
-    assert "split" in candidates["dynamo"]["label"]
-    assert "UnifiedParser" not in candidates["dynamo"]["label"]
+    assert candidates["dynamo"]["parse_mode"] == "unified"
+    assert "UnifiedParser" in candidates["dynamo"]["label"]
+    assert candidates["dynamo@0.7.27"]["parse_mode"] == "split"
+    assert "split" in candidates["dynamo@0.7.27"]["label"]
+    assert candidates["dynamo@0.7.28"]["parse_mode"] == "unified"
+    assert "UnifiedParser" in candidates["dynamo@0.7.28"]["label"]
     current = next(candidate for candidate in tab["candidates"] if candidate["key"] == "dynamo")
     assert table._version_of_label(candidates["dynamo"]["label"]) == current["version"]
     missing = candidates["vllm_python_batch@0.26.0"]["block"]

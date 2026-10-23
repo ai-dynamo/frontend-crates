@@ -1044,23 +1044,15 @@ def test_unified_dynamo_labels_identify_unified_parser(model_v2):
     assert reference["label_html"] == full_label
     assert reference["version"] == producer["crate_version"]
 
-    tooltip_paths = {
-        (row["family"], candidate["label"], candidate["parse_mode"])
+    tooltip_labels = [
+        candidate["label"]
         for row in tab["rows"]
         for cell in leaf_cells(row).values()
         for candidate in cell.get("tooltip", {}).get("candidates", [])
         if candidate["key"] == "dynamo" and candidate.get("version") == producer["crate_version"]
-    }
-    assert tooltip_paths
-    for family, label, parse_mode in tooltip_paths:
-        if family == "gpt_oss":
-            assert label == table._full_label(
-                "dynamo_v2", expected, "split: v1 reasoning + v2 tool parser"
-            )
-            assert parse_mode == "split"
-        else:
-            assert label == full_label
-            assert parse_mode == "unified"
+    ]
+    assert tooltip_labels
+    assert set(tooltip_labels) == {full_label}
 
 
 def test_tc_source_capture_versions_survive_label_parsing():

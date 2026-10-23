@@ -262,7 +262,7 @@ fn dotted_harmony_split_matches_golden_at_every_boundary() {
         assert_eq!(
             dynamo_events_with_tools("gpt_oss", &case.input, &case.init, &tools),
             case.golden,
-            "{id}: split character input"
+            "{id}: native character input"
         );
         assert_eq!(
             tool_events_with_chunks("harmony", &tools, [Text(&split.normal_text)]),

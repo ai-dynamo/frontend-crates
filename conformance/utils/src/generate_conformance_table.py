@@ -2705,7 +2705,11 @@ def _unified_tab_model(artifact_root: Path, hrefs: dict) -> dict | None:
     )
 
     def _dynamo_path(family: str, version: str) -> dict:
-        native = family in gen_unified_golden.UNIFIED_FAMILIES and family != "gpt_oss"
+        # GPT-OSS gained UnifiedParser in 0.7.28 (#434); older captures used the split adapter.
+        native = family in gen_unified_golden.UNIFIED_FAMILIES and (
+            family != "gpt_oss"
+            or fixtures._version_sort_key(version) >= fixtures._version_sort_key("0.7.28")
+        )
         mode = "stream" if native else "split: v1 reasoning + v2 tool parser"
         return {"label": _full_label(BASELINE_STREAM_IMPL, version, mode),
                 "parse_mode": "unified" if native else "split"}
