@@ -2393,6 +2393,21 @@ def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scena
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
 
 
+def test_kimi_display_sections_match_their_applicable_family():
+    labels = taxonomy.display_case_labels(UNIFIED_TAX)
+    for scenario in UNIFIED_TAX:
+        group = taxonomy.display_tax(scenario)[0]
+        if group not in {"kimi", "kimi_k2"}:
+            continue
+        family = "kimi_k3" if group == "kimi" else "kimi_k2"
+        assert G.scenario_families(scenario) == frozenset({family}), scenario
+        assert labels[scenario]["label"].startswith(f"{family}-"), scenario
+        assert labels[scenario]["compact_prefix"] == family, scenario
+    for scenario in UNIFIED_TAX:
+        if scenario.startswith("kimi_native_"):
+            assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
+
+
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():
     scenarios = list(UNIFIED_TAX)
     identities = {scenario: numbered_id(scenario) for scenario in scenarios}
