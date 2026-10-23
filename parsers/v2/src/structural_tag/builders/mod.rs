@@ -177,6 +177,11 @@ pub(super) trait ToolCallGrammar: Send + Sync {
         build_text_exclusion(self.tool_call_excludes())
     }
 
+    /// Permit a reasoning message when the prompt leaves its header unopened.
+    fn optional_reasoning(&self) -> bool {
+        false
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str>;
 
     fn reasoning_end(&self) -> Option<&'static str>;
@@ -308,11 +313,12 @@ fn reasoning_content(grammar: &dyn ToolCallGrammar, exclude_special_tokens: bool
 
 fn reasoning_tag(
     grammar: &dyn ToolCallGrammar,
+    begin: &str,
     reasoning_end: &str,
     exclude_special_tokens: bool,
 ) -> Format {
     Format::Tag(TagFormat {
-        begin: String::new(),
+        begin: begin.to_string(),
         content: Box::new(reasoning_content(grammar, exclude_special_tokens)),
         end: reasoning_end.to_string(),
     })
@@ -324,7 +330,7 @@ fn wrap_reasoning_if_needed(
     exclude_special_tokens: bool,
     suffix: Format,
 ) -> anyhow::Result<Format> {
-    if !starts_in_reasoning {
+    if !starts_in_reasoning && !grammar.optional_reasoning() {
         return Ok(suffix);
     }
 
@@ -332,8 +338,16 @@ fn wrap_reasoning_if_needed(
         .reasoning_end()
         .ok_or_else(|| anyhow::anyhow!("reasoning end tag is not configured for structural tag"))?;
 
+    let begin = if starts_in_reasoning {
+        ""
+    } else {
+        grammar
+            .reasoning_begin()
+            .ok_or_else(|| anyhow::anyhow!("reasoning begin tag is not configured"))?
+    };
     let mut elements = vec![reasoning_tag(
         grammar,
+        begin,
         reasoning_end,
         exclude_special_tokens,
     )];
@@ -341,6 +355,16 @@ fn wrap_reasoning_if_needed(
         elements.push(Format::ConstString(ConstStringFormat {
             value: grammar.reasoning_suffix().to_string(),
         }));
+    }
+    if !starts_in_reasoning {
+        elements = vec![Format::Or(OrFormat {
+            elements: vec![
+                Format::ConstString(ConstStringFormat {
+                    value: String::new(),
+                }),
+                Format::Sequence(SequenceFormat { elements }),
+            ],
+        })];
     }
     elements.push(suffix);
 

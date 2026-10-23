@@ -744,6 +744,10 @@ impl Init {
                     == dynamo_parsers_v2::UnifiedParserStartingState::Reasoning,
             })?
             .ok_or_else(|| anyhow::anyhow!("response schema produced no structural tag"))?;
+        let stop_tokens: &[&str] = match family {
+            "gpt_oss" | "harmony" => &["<|return|>"],
+            _ => &[],
+        };
         let script = std::env::var_os("CONFORMANCE_STRUCTURAL_TAG_CHECKER")
             .map(PathBuf::from)
             .unwrap_or_else(|| {
@@ -778,6 +782,7 @@ impl Init {
             .expect("piped verifier input")
             .write_all(&serde_json::to_vec(&serde_json::json!({
                 "structural_tag": tag, "chunks": chunks, "rejected": request.rejected,
+                "stop_tokens": stop_tokens,
             }))?)?;
         let output = child.wait_with_output()?;
         anyhow::ensure!(

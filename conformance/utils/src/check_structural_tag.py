@@ -32,12 +32,32 @@ SPEC.loader.exec_module(NATIVE)
 
 def verify(job: dict) -> dict:
     grammar = NATIVE.Grammar.from_structural_tag(json.dumps(job["structural_tag"]))
-    compiler = NATIVE.GrammarCompiler(NATIVE.TokenizerInfo([], 0, None, None, False), 1, False, -1)
+    # Stop tokens stay outside the grammar due to https://github.com/mlc-ai/xgrammar/issues/701.
+    # Simplify this handling once fixed and Harmony's grammar includes its stop tokens again.
+    stop_tokens = job.get("stop_tokens", [])
+    tokenizer = NATIVE.TokenizerInfo(
+        [token.encode() for token in stop_tokens], 0, None,
+        list(range(len(stop_tokens))) or None, False,
+    )
+    compiler = NATIVE.GrammarCompiler(tokenizer, 1, False, -1)
     compiled = compiler.compile_grammar_ebnf(grammar)
 
     def accepts(chunks: list[str]) -> bool:
         matcher = NATIVE.GrammarMatcher(compiled, None, False, 0, None)
-        return all(matcher.accept_string(chunk, False) for chunk in chunks) and matcher.is_completed()
+        text = "".join(chunks)
+        stop = next((token for token in stop_tokens if text.endswith(token)), None)
+        remaining = len(text) - (len(stop) if stop is not None else 0)
+        # Keep body chunk boundaries; the engine consumes the terminal stop as a token.
+        for chunk in chunks:
+            body = chunk[:remaining]
+            remaining -= len(body)
+            if body and not matcher.accept_string(body, False):
+                return False
+        if not matcher.is_completed():
+            return False
+        if stop is not None:
+            return matcher.accept_token(stop_tokens.index(stop), False) and matcher.is_terminated()
+        return True
 
     chunks = job["chunks"]
     rejected = job["rejected"]

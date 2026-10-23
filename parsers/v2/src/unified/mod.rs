@@ -3807,7 +3807,7 @@ impl GuidedState {
             content_json: self.content_json,
             scope: if self.mode == GuidedMode::Reasoning {
                 GuidedTurnScope::InReasoning
-            } else if !self.reasoning_enabled && !self.payload_emitted {
+            } else if !self.reasoning_enabled {
                 GuidedTurnScope::ResponsePrefill
             } else if self.turn_routed {
                 GuidedTurnScope::Routed
@@ -5461,7 +5461,8 @@ impl GuidedState {
                                 .flatten(),
                         )
                         .filter(|(at, _)| !owns(*at))
-                        .min_by_key(|(at, _)| *at);
+                        // Consume a resolved header before its shorter framing marker.
+                        .min_by_key(|(at, len)| (*at, std::cmp::Reverse(*len)));
                     let close_at = stray_close.map(|(at, _)| at);
                     let closer_first = matches!((open_at, close_at), (Some(o), Some(c)) if c < o)
                         || (open_at.is_none() && close_at.is_some());

@@ -9,13 +9,25 @@ use crate::structural_tag::policy::ResolvedToolCallingPolicy;
 use crate::structural_tag::wire::{
     Format, JsonSchemaFormat, JsonSchemaStyle, TagFormat, TriggeredTagsFormat,
 };
-use crate::unified::harmony::TURN_END;
 
 pub(crate) static HARMONY: StructuralTagBuilder = StructuralTagBuilder::new(&HarmonyGrammar);
 
 struct HarmonyGrammar;
 
 impl HarmonyGrammar {
+    fn final_tag(schema: &Value) -> TagFormat {
+        TagFormat {
+            begin: "<|channel|>final<|message|>".to_string(),
+            content: Box::new(Format::JsonSchema(JsonSchemaFormat {
+                json_schema: schema.clone(),
+                style: JsonSchemaStyle::Json,
+                any_order: false,
+            })),
+            // The engine consumes the turn stop after the JSON grammar completes.
+            end: String::new(),
+        }
+    }
+
     fn structured_output(
         &self,
         schema: &Value,
@@ -24,17 +36,8 @@ impl HarmonyGrammar {
     ) -> Format {
         // vLLM considers Harmony reasoning already finished. The final-header
         // trigger must own activation; a bare JSON schema constrains analysis.
-        let final_begin = "<|channel|>final<|message|>";
         let mut triggers = vec!["<|channel|>final".to_string()];
-        let mut tags = vec![TagFormat {
-            begin: final_begin.to_string(),
-            content: Box::new(Format::JsonSchema(JsonSchemaFormat {
-                json_schema: schema.clone(),
-                style: JsonSchemaStyle::Json,
-                any_order: false,
-            })),
-            end: TURN_END.to_string(),
-        }];
+        let mut tags = vec![Self::final_tag(schema)];
         if let Some(policy) = policy {
             triggers.push(FORMAT.tool_call_trigger.to_string());
             tags.extend(FORMAT.tool_tags(policy, tool_arguments_any_order));
@@ -59,6 +62,10 @@ impl HarmonyGrammar {
 }
 
 impl ToolCallGrammar for HarmonyGrammar {
+    fn optional_reasoning(&self) -> bool {
+        true
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str> {
         FORMAT.reasoning_begin()
     }
@@ -76,7 +83,8 @@ impl ToolCallGrammar for HarmonyGrammar {
     }
 
     fn build_structured_output(&self, schema: &Value) -> Format {
-        self.structured_output(schema, None, false)
+        // With tools disabled, require the final payload after optional reasoning.
+        Format::Tag(Self::final_tag(schema))
     }
 
     fn build_auto_with_structured_output(
@@ -111,7 +119,10 @@ impl ToolCallGrammar for HarmonyGrammar {
 static FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     tool_call_begin_prefix: "<|channel|>commentary to=functions.",
     tool_call_begin_suffix: "<|constrain|>json<|message|>",
-    tool_call_end: "<|call|>",
+    // XGrammar rejects <|call|> as a grammar terminal while it is also a stop token.
+    // https://github.com/mlc-ai/xgrammar/issues/701
+    // tool_call_end: "<|call|>",
+    tool_call_end: "",
     tool_call_trigger: "<|channel|>commentary to=functions.",
     first_tool_call_prefix: "",
     tool_call_separator: "<|start|>assistant",
