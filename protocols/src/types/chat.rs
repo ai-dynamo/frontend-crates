@@ -32,7 +32,7 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
     CompletionFinishReason, CompletionTokensDetails, CompletionUsage, FunctionObject,
-    FunctionObjectArgs, ImageDetail, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
+    FunctionObjectArgs, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
     PredictionContentContent, Prompt, PromptTokensDetails, ResponseFormat,
     ResponseFormatJsonSchema, Role, ServiceTier, TopLogprobs, WebSearchContextSize,
     WebSearchLocation, WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
@@ -320,6 +320,31 @@ pub struct ChatCompletionRequestMessageContentPartImage {
     pub uuid: Option<String>,
 }
 
+/// Image detail level.
+///
+/// Owned locally to add `medium`, which SGLang's OpenAI-compatible server
+/// accepts alongside the upstream `auto` / `low` / `high` / `original` set
+/// and which upstream `async-openai` rejects at parse time.
+#[derive(Debug, Serialize, Deserialize, Default, Clone, PartialEq)]
+#[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ImageDetail))]
+pub enum ImageDetail {
+    #[default]
+    Auto,
+    Low,
+    Medium,
+    High,
+    Original,
+}
+
+/// OpenAI documents `detail` as defaulting to `auto`, and SGLang materializes
+/// that default on its request model, so an omitted `detail` parses as `auto`.
+/// An explicit `"detail": null` still parses as `None`.
+fn default_image_detail() -> Option<ImageDetail> {
+    Some(ImageDetail::Auto)
+}
+
 /// Image URL with `url::Url` type and a legacy optional UUID.
 ///
 /// New callers should put vLLM processor-cache identities on
@@ -334,7 +359,7 @@ pub struct ChatCompletionRequestMessageContentPartImage {
 #[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ImageUrl))]
 pub struct ImageUrl {
     pub url: Url,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ImageDetail>))]
+    #[serde(default = "default_image_detail")]
     pub detail: Option<ImageDetail>,
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -399,6 +424,15 @@ impl From<String> for ChatCompletionRequestToolMessageContent {
 pub struct ChatCompletionRequestToolMessage {
     pub content: ChatCompletionRequestToolMessageContent,
     pub tool_call_id: String,
+    /// Name of the tool that produced this result.
+    ///
+    /// Not part of the OpenAI schema. SGLang and vLLM accept it on tool
+    /// messages and expose it to the chat template as `message.name`, which
+    /// templates that render tool results by tool name depend on, so a typed
+    /// frontend must carry it through to the backend. Omitted on the wire
+    /// when absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -690,7 +724,6 @@ pub enum ChatCompletionMessageContent {
 #[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::VideoUrl))]
 pub struct VideoUrl {
     pub url: Url,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ImageDetail>))]
     pub detail: Option<ImageDetail>,
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]

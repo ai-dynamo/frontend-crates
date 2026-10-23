@@ -15,7 +15,7 @@ use super::{
     ChatCompletionRequestSystemMessageContent, ChatCompletionRequestToolMessage,
     ChatCompletionRequestToolMessageContent, ChatCompletionRequestToolMessageContentPart,
     ChatCompletionRequestUserMessageContentPart, ChatCompletionToolChoiceOption,
-    ChatCompletionToolType, FunctionName, ImageUrl, VideoUrl,
+    ChatCompletionToolType, FunctionName, ImageDetail, ImageUrl, VideoUrl,
 };
 
 use crate::error::OpenAIError;
@@ -170,6 +170,7 @@ impl From<async_openai::types::chat::ChatCompletionRequestToolMessage>
         Self {
             content,
             tool_call_id: value.tool_call_id,
+            name: None,
         }
     }
 }
@@ -258,6 +259,17 @@ impl From<ChatCompletionRequestMessageContentPartAudioUrl>
 }
 
 // URL type conversions
+
+impl From<async_openai::types::chat::ImageDetail> for ImageDetail {
+    fn from(value: async_openai::types::chat::ImageDetail) -> Self {
+        match value {
+            async_openai::types::chat::ImageDetail::Auto => Self::Auto,
+            async_openai::types::chat::ImageDetail::Low => Self::Low,
+            async_openai::types::chat::ImageDetail::High => Self::High,
+            async_openai::types::chat::ImageDetail::Original => Self::Original,
+        }
+    }
+}
 
 impl From<&str> for ImageUrl {
     fn from(value: &str) -> Self {
