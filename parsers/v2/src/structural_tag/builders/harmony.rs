@@ -119,7 +119,9 @@ impl ToolCallGrammar for HarmonyGrammar {
 static FORMAT: TemplatedToolCallFormat = TemplatedToolCallFormat {
     tool_call_begin_prefix: "<|channel|>commentary to=functions.",
     tool_call_begin_suffix: "<|constrain|>json<|message|>",
-    // XGrammar must finish before the engine accepts the Harmony handoff stop.
+    // XGrammar rejects <|call|> as a grammar terminal while it is also a stop token.
+    // https://github.com/mlc-ai/xgrammar/issues/701
+    // tool_call_end: "<|call|>",
     tool_call_end: "",
     tool_call_trigger: "<|channel|>commentary to=functions.",
     first_tool_call_prefix: "",
