@@ -92,6 +92,13 @@ fn trim_c_space(s: &str) -> &str {
     s.trim_matches(|c: char| c.is_ascii() && is_c_space(c as u8))
 }
 
+// Python numeric conversion rejects ASCII record separators even though str.strip
+// removes them. Exact decimal conversion must use the same boundary as int/float.
+pub(crate) fn numeric_text(s: &str) -> Option<String> {
+    let ascii = transform_decimal_and_space(s)?;
+    Some(trim_c_space(&ascii).to_string())
+}
+
 /// An exact Python integer, kept as its canonical decimal digits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PyInt {
@@ -381,8 +388,8 @@ pub(crate) fn float_repr(f: f64) -> String {
 
 /// `int(s)` in base 10.
 pub(crate) fn parse_int(s: &str) -> Option<PyInt> {
-    let ascii = transform_decimal_and_space(s)?;
-    let body = trim_c_space(&ascii);
+    let numeric = numeric_text(s)?;
+    let body = numeric.as_str();
     let (negative, digits) = match body.as_bytes().first()? {
         b'-' => (true, &body[1..]),
         b'+' => (false, &body[1..]),
@@ -415,8 +422,8 @@ fn strip_digit_underscores(s: &str) -> Option<String> {
 
 /// `float(s)`.
 pub(crate) fn parse_float(s: &str) -> Option<f64> {
-    let ascii = transform_decimal_and_space(s)?;
-    let body = trim_c_space(&ascii);
+    let numeric = numeric_text(s)?;
+    let body = numeric.as_str();
     let clean = if body.contains('_') {
         let bytes = body.as_bytes();
         let mut out = String::with_capacity(body.len());
