@@ -345,7 +345,8 @@ fn parse_nested_minimax_xml(
 ) -> ParsedValue {
     let chunks: Vec<&str> = raw.split(config.namespace_token.as_str()).collect();
     let leading_text = chunks.first().copied().unwrap_or_default();
-    let root_value = if SchemaFacts::new(root_schema).has_type(schema, "array")
+    let root_value = if schema
+        .is_some_and(|schema| SchemaFacts::new(root_schema).may_describe_array(schema))
         && chunks
             .get(1)
             .is_some_and(|chunk| chunk.starts_with("<item>"))
@@ -400,16 +401,16 @@ fn parse_nested_minimax_xml(
                 .last()
                 .expect("stack has current item")
                 .schema_for_child(tag.as_str());
-            let child_value =
-                if SchemaFacts::new(root_schema).has_type_constraints(&child_schemas, "array", "")
-                    && chunks
-                        .get(chunk_index + 1)
-                        .is_some_and(|next| next.starts_with("<item>"))
-                {
-                    Some(StackValue::Array(Vec::new()))
-                } else {
-                    None
-                };
+            let child_value = if SchemaFacts::new(root_schema)
+                .may_describe_array_constraints(&child_schemas)
+                && chunks
+                    .get(chunk_index + 1)
+                    .is_some_and(|next| next.starts_with("<item>"))
+            {
+                Some(StackValue::Array(Vec::new()))
+            } else {
+                None
+            };
             // Whitespace before a child tag is formatting; before `</tag>` (or at the end of a
             // truncated value) it is the leaf value.
             let closes_leaf = chunks
@@ -776,6 +777,39 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&contradictory_value).unwrap(),
             "[\"9007199254740992.5\"]"
+        );
+    }
+
+    #[test]
+    fn array_item_union_uses_items_when_array_type_is_implicit() {
+        let config = MiniMaxM3ParserConfig::default();
+        let input = format!(
+            "{}<item>{}<item>9007199254740992.5{}</item>{}</item>",
+            config.namespace_token,
+            config.namespace_token,
+            config.namespace_token,
+            config.namespace_token
+        );
+        let schema = json!({
+            "type": "array",
+            "items": {"anyOf": [
+                {"items": {"type": "number"}},
+                {"type": "object"}
+            ]}
+        });
+        let root_schema = json!({"properties": {"values": schema}});
+        let value = parse_nested_minimax_xml(
+            &input,
+            root_schema
+                .get("properties")
+                .and_then(|props| props.get("values")),
+            &root_schema,
+            &config,
+        );
+
+        assert_eq!(
+            serde_json::to_string(&value).unwrap(),
+            "[[9007199254740992.5]]"
         );
     }
 

@@ -89,14 +89,22 @@ def test_aggregation_never_moves_a_family_specific_leaf_into_a_generic_section()
     tab = {"id": "tab-unified", "columns": [
         {"label": label, "sub": label, "group_key": "glm_specific" if label.endswith(".ref") else "7"}
         for label in labels],
-        "rows": [{"family": "glm47", "cells": {label: make_cell(label) for label in labels}}],
+        "rows": [{"family": "glm47", "cells": {}}],
         "column_groups": [{"key": "7", "span": 2}, {"key": "glm_specific", "span": 1}], "stats": {}}
+    for column in tab["columns"]:
+        column["sub"] = unified_taxonomy.scenario_for_label(column["label"])
+        column["label"] = unified_taxonomy.case_label(column["sub"])
+        tab["rows"][0]["cells"][column["sub"]] = {
+            **make_cell(column["label"]), "sub": column["sub"],
+        }
     original = copy.deepcopy(tab["rows"][0])
     group_null_variants(tab)
     assert [(column["label"], column["group_key"]) for column in tab["columns"]] == [
-        ("7-4", "7"), ("7-4.ref", "glm_specific")]
-    assert tab["rows"][0]["cells"]["7-4.ref"] == original["cells"]["7-4.ref"]
-    assert "7-4.ref" not in {leaf["sub"] for leaf in tab["rows"][0]["cells"]["7-4"]["variants"]}
+        ("7-arg_json_null", "7"), ("7-arg_json_null_ref", "glm_specific")]
+    assert tab["rows"][0]["cells"]["arg_json_null_ref"] == original["cells"]["arg_json_null_ref"]
+    assert "arg_json_null_ref" not in {
+        leaf["sub"] for leaf in tab["rows"][0]["cells"]["arg_json_null"]["variants"]
+    }
 
 
 @pytest.mark.parametrize("scenario,label,schema,value,description", NULL_VARIANTS)
@@ -166,8 +174,8 @@ def test_applicable_families_keep_missing_mixed_probes_as_missing_evidence():
                                                 for label in labels], "rows": [row],
            "column_groups": [{"key": "7", "span": 4}], "stats": {}}
     group_null_variants(tab)
-    assert "7-4.mixed_labels" not in leaf_cells(row)
-    assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "green"
+    assert leaf_cells(row)["7-4.mixed_labels"]["status"] == "missing"
+    assert cell_state(row["cells"]["7-4"], {"key": "dynamo", "label": "Dynamo"})[0] == "empty"
 
 
 def test_unified_display_order_does_not_change_variant_aggregation():

@@ -238,7 +238,7 @@ def test_three_capture_slots_drive_the_original_report(matrix_driver, rendered_p
     assert selection(d) == {"keys": DEFAULTS, "reference": None}
     assert len(d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-capture]")) == 1
     assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("value") == DEFAULTS[0]
-    assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("aria-label") == f"Choose capture for comparison slot 1: Dynamo, v2 Rust {DYNAMO_V2_VERSION} (stream, UnifiedParser)"
+    assert d.find_element(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0']").get_attribute("aria-label") == f"Choose capture for comparison slot 1: Dynamo, v2 Rust {DYNAMO_V2_VERSION} [unpublished] (stream, UnifiedParser)"
     assert not d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-capture='0'] option[value='']")
     assert [element.text for element in d.find_elements(By.CSS_SELECTOR, ".capture-slot [data-slot-engine]")] == ["Dynamo", "", ""]
     assert not d.find_elements(By.CSS_SELECTOR, "[data-slot-capture] option[value='']")
