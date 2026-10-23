@@ -3,6 +3,7 @@
 """Qualify the native site's actual Chromium journey under the Pages prefix."""
 import hashlib
 import io
+import os
 import copy
 import gzip
 import json
@@ -65,9 +66,10 @@ def test_isolated_modes_select_and_download_without_the_history_source(
     shutil.copytree(ROOT / "conformance/viewer", view / "conformance/viewer",
                     ignore=shutil.ignore_patterns("node_modules", "*.test.js"))
     shutil.copytree(ROOT / "conformance/utils/src/assets", view / "conformance/utils/src/assets")
-    monkeypatch.setenv("CONFORMANCE_ESBUILD_ROOT", str(ROOT / "conformance/viewer"))
+    monkeypatch.setenv("CONFORMANCE_ESBUILD_ROOT", os.environ.get("CONFORMANCE_ESBUILD_ROOT", str(ROOT / "conformance/viewer")))
     site = tmp_path / "published"
-    publish(view, site)
+    result = publish(view, site, check=False)
+    assert result.returncode == 0, result.stderr
     catalog = json.loads((view / "conformance/viewer-catalog.json").read_bytes())
     version = "0.5.0" if mode == "history" else "0.5.2"
     resource = next(row for row in catalog["sources"]["unified"]
@@ -117,7 +119,7 @@ def test_isolated_modes_select_and_download_without_the_history_source(
         server.server_close()
 
 
-def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(historical_published_viewer, history_source):
+def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(historical_published_viewer, history_source, source_catalog):
     prefix = "/frontend-crates"
     server, requests = _server(prefix=prefix, root=historical_published_viewer)
     driver = _driver()
@@ -164,7 +166,7 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         _ready(driver, "tab-unified")
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == [hidden]
         originals = catalog["sources"]["original_unified"]
-        authored = next(item for item in catalog["sources"]["unified"] if item["kind"] == "inputs-and-golden")
+        authored = next(item for item in source_catalog["sources"]["unified"] if item["kind"] == "inputs-and-golden")
         resource = next(item for item in originals if item["kind"] == "history")
         probes = [(authored["path"], (ROOT / authored["path"]).read_bytes()),
                   (resource["path"], historical_source_bytes(history_source, resource["path"]))]

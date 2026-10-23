@@ -46,7 +46,7 @@ jobs:
               - 'rust-toolchain.toml'
               - 'index.html'
               - '.github/workflows/ci.yml'
-              - '.github/actions/conformance-publication/**'
+              - '.github/actions/conformance-*/**'
 
       - name: Select fail-closed conformance coverage
         id: coverage
@@ -164,7 +164,6 @@ jobs:
       - name: Configure publication output
         run: |
           printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
-          printf 'CONFORMANCE_ESBUILD_ROOT=%s/conformance-viewer-build\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Identify exact publication inputs and reader
         id: identity
         run: echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY")" >> "$GITHUB_OUTPUT"
@@ -188,10 +187,7 @@ jobs:
           fi
       - name: Install locked production JavaScript bundler
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: |
-          mkdir -p "$CONFORMANCE_ESBUILD_ROOT"
-          \cp -f conformance/viewer/package.json conformance/viewer/package-lock.json "$CONFORMANCE_ESBUILD_ROOT/"
-          npm ci --prefix "$CONFORMANCE_ESBUILD_ROOT" --ignore-scripts
+        uses: ./.github/actions/conformance-viewer-build
       # The required Rust lane owns publisher unit/integration tests. The
       # qualification jobs below exercise this release binary on the full store.
       - name: Build native publisher
@@ -374,6 +370,9 @@ jobs:
 
       - name: Restore candidate publication for qualification
         uses: ./.github/actions/conformance-publication
+
+      - name: Install bundler for isolated publication fixtures
+        uses: ./.github/actions/conformance-viewer-build
 
       - name: Strict native publication browser and startup acceptance
         run: |
