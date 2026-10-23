@@ -30,84 +30,6 @@ changes:
           name: log
           arguments:
             note: <think>雪</think>
-  dotted_name_minimal:
-    case_key: dotted_name_minimal
-    stimulus:
-      ref: current
-      semantic_sha256: aaeaba7df6ff49d304d0142877771c87d8cb8d72cdf3a0026329e51c2c1221b2
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: a.b
-          arguments: {}
-  dotted_name_mixed_punctuation:
-    case_key: dotted_name_mixed_punctuation
-    stimulus:
-      ref: current
-      semantic_sha256: 1dec8ac8efd783544b850f568da7d9cb31c96b7c54cbb19a9a5e5a068159b986
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: my-tool.v2
-          arguments:
-            location: Beijing
-  dotted_name_multiple_segments:
-    case_key: dotted_name_multiple_segments
-    stimulus:
-      ref: current
-      semantic_sha256: 2d84bb27b057d398db91a6f9b8d3f9429c5a228470e2e1549daefb01c1b585d4
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.tools.weather
-          arguments:
-            location: Beijing
-  dotted_name_shared_prefix:
-    case_key: dotted_name_shared_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: 4dd4a3976012f2af9eb5183f99adb4262d5677f4e2eafbde1f07c6064d5ee9c9
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.weather
-          arguments:
-            location: Beijing
-        - kind: tool_call
-          name: server.time
-          arguments:
-            timezone: Asia/Shanghai
-  guided_json_native_parameter_string_before_payload:
-    case_key: guided_json_native_parameter_string_before_payload
-    stimulus:
-      ref: current
-      semantic_sha256: 0734389166889daabe2b52b3f00148d23578f7c33b6a62c183e897c8e744953d
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-  guided_json_noncall_before_native_array_before_payload:
-    case_key: guided_json_noncall_before_native_array_before_payload
-    stimulus:
-      ref: current
-      semantic_sha256: b6f85dc03bafa898c8b81b5a40df292079e73f47e1a99a20da0e7235d02d2711
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
-  guided_response_native_wrapper_whitespace_before_prose:
-    case_key: guided_response_native_wrapper_whitespace_before_prose
-    stimulus:
-      ref: current
-      semantic_sha256: 58f84e8629beaf383ead69ce41ecb0a778344c881b83531eeeb99c44fff79963
-    observation:
-      unavailable:
-        code: unsupported_request_mode
-        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
   native_quoted_control_in_reasoning:
     observation:
       value:
@@ -193,40 +115,6 @@ metadata_changes:
       - name: log
         arguments:
           note: <think>雪</think>
-  dotted_name_minimal:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: a.b
-        arguments: {}
-  dotted_name_mixed_punctuation:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: my-tool.v2
-        arguments:
-          location: Beijing
-  dotted_name_multiple_segments:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: server.tools.weather
-        arguments:
-          location: Beijing
-  dotted_name_shared_prefix:
-    batch_final:
-      reasoning_text: ''
-      normal_text: ''
-      calls:
-      - name: server.weather
-        arguments:
-          location: Beijing
-      - name: server.time
-        arguments:
-          timezone: Asia/Shanghai
   native_quoted_control_in_reasoning:
     batch_final:
       reasoning_text: The literal "
@@ -457,46 +345,6 @@ document_overrides:
         source_sha256: 0f8bada09894af79e04152dba1c159d1bed101d05a77c7420c7e7174bc04ee1e
         adapter_sha256: 93adc71713ff4562fe165246fe3de401f8acf98e64b7d8cfc13529795819cd44
         job_sha256: 1d828bcbbb84d3942f1b80275723314fcd98c1d313a0d07a90ad4db46b61dd1b
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
       inherited_from: null
   empty_args:
     capture_provenance:
@@ -737,26 +585,6 @@ document_overrides:
         source_sha256: 0f8bada09894af79e04152dba1c159d1bed101d05a77c7420c7e7174bc04ee1e
         adapter_sha256: 93adc71713ff4562fe165246fe3de401f8acf98e64b7d8cfc13529795819cd44
         job_sha256: 1d828bcbbb84d3942f1b80275723314fcd98c1d313a0d07a90ad4db46b61dd1b
-      inherited_from: null
-  guided_json_native_parameter_string_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
-      inherited_from: null
-  guided_json_noncall_before_native_array_before_payload:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
       inherited_from: null
   guided_json_orphan_reason_close_before_payload:
     capture_provenance:
@@ -1007,16 +835,6 @@ document_overrides:
         source_sha256: 0f8bada09894af79e04152dba1c159d1bed101d05a77c7420c7e7174bc04ee1e
         adapter_sha256: 93adc71713ff4562fe165246fe3de401f8acf98e64b7d8cfc13529795819cd44
         job_sha256: 1d828bcbbb84d3942f1b80275723314fcd98c1d313a0d07a90ad4db46b61dd1b
-      inherited_from: null
-  guided_response_native_wrapper_whitespace_before_prose:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 10.0.7
-      capture_origin:
-        crate_version: 10.0.7
-        source_sha256: 572dd0d4361232e3f59cae967c31317befa4f2ef9a20656632167960919e3f38
-        adapter_sha256: 31b57753d4fb11138335507198b50430e2ba47f764868ed1b5ff092b7f0ecd43
-        job_sha256: a2fcd8562daea83afd33bbfbaefdefc62b7138d014020a690f5fd54338404ab7
       inherited_from: null
   guided_response_quoted_control_braces_named:
     capture_provenance:

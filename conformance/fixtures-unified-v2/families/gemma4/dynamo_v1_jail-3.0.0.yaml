@@ -149,42 +149,6 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
-  dotted_name_minimal:
-    case_key: UNIFIED.1-dotted_name_minimal
-    stimulus:
-      ref: current
-      semantic_sha256: ec075e7e01e1efea60e5de39c28a385cd520727457ef43a781a5e3a19e644ade
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
-  dotted_name_mixed_punctuation:
-    case_key: UNIFIED.1-dotted_name_mixed_punctuation
-    stimulus:
-      ref: current
-      semantic_sha256: d1295a7da5309fb69fce6e7863c32b3032129fe11dca570a5402f1a8ca2e7d46
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
-  dotted_name_multiple_segments:
-    case_key: UNIFIED.1-dotted_name_multiple_segments
-    stimulus:
-      ref: current
-      semantic_sha256: 791b1801f0dd14a07476709520822cc979f48968c7deb8a02d79b75e2621db8d
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
-  dotted_name_shared_prefix:
-    case_key: UNIFIED.2-dotted_name_shared_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: f7080393c917e75c79cf702ede478962ddaf7fbda3c0cb8d2878381e2de0d0f7
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
   empty_args:
     case_key: empty_args
     stimulus:
@@ -2138,33 +2102,5 @@ changes:
       unavailable:
         code: source_unavailable
         detail: 'Jail producer source unavailable: published dynamo-parsers 3.0.0 contains no JailedStream; a matching historical external jail wrapper has not been established.'
-metadata_changes:
-  dotted_name_minimal:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 3.0.0
-      status: source_unavailable
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
-  dotted_name_mixed_punctuation:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 3.0.0
-      status: source_unavailable
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
-  dotted_name_multiple_segments:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 3.0.0
-      status: source_unavailable
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
-  dotted_name_shared_prefix:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 3.0.0
-      status: source_unavailable
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: e084a5078287b22718d9bceed6d45e0b9bb718994fe809a2ec0819cafcac9862
+metadata_changes: {}
 document_overrides: {}

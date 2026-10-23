@@ -69,7 +69,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 The ten native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
 
-The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Nemotron 3 Ultra, and Qwen3. GPT-OSS also retains the historical comparison between v1 reasoning + batch capture and the v2 Harmony tool parser, labeled split.
+The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. The GPT-OSS v2 capture uses v1 reasoning followed by the v2 Harmony tool parser and is labeled split.
 
 ## Nemotron 3 Ultra applicability
 

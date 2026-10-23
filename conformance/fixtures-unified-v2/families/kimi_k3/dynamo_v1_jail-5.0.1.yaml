@@ -88,26 +88,6 @@ changes:
       unavailable:
         code: unsupported_family
         detail: No registered reasoning + batch tool parser for this family
-  dotted_name_minimal:
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
-  dotted_name_mixed_punctuation:
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
-  dotted_name_multiple_segments:
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
-  dotted_name_shared_prefix:
-    observation:
-      unavailable:
-        code: unsupported_family
-        detail: No registered reasoning + batch tool parser for this family
   empty_args:
     observation:
       unavailable:
@@ -1218,81 +1198,5 @@ changes:
       unavailable:
         code: unsupported_family
         detail: No registered reasoning + batch tool parser for this family
-metadata_changes:
-  dotted_name_minimal:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 5.0.1
-      source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
-      cargo_lock_sha256: 48c0e7e1c8cf69c7d48d5868761701e7ed9dbc574a77999f682b18283d841a24
-  dotted_name_mixed_punctuation:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 5.0.1
-      source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
-      cargo_lock_sha256: 48c0e7e1c8cf69c7d48d5868761701e7ed9dbc574a77999f682b18283d841a24
-  dotted_name_multiple_segments:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 5.0.1
-      source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
-      cargo_lock_sha256: 48c0e7e1c8cf69c7d48d5868761701e7ed9dbc574a77999f682b18283d841a24
-  dotted_name_shared_prefix:
-    producer_receipt:
-      implementation: dynamo_v1_jail
-      version: 5.0.1
-      source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-      adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-      job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      crate_checksum: 1426766c2b89eaa3bb6ab578a02707d2203881c04b8b185df1a20e43a3fadf66
-      cargo_lock_sha256: 48c0e7e1c8cf69c7d48d5868761701e7ed9dbc574a77999f682b18283d841a24
-document_overrides:
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 5.0.1
-      capture_origin:
-        crate_version: 5.0.1
-        source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 5.0.1
-      capture_origin:
-        crate_version: 5.0.1
-        source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 5.0.1
-      capture_origin:
-        crate_version: 5.0.1
-        source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v1_jail: 5.0.1
-      capture_origin:
-        crate_version: 5.0.1
-        source_sha256: db6383adc5f376312e70c20d3cea69d64058ddab91d92e8c37836576152aa19a
-        adapter_sha256: dcb803e3d33928be727e888209c85792a8de6e6fce84c491bd20e58fd5a5bd0a
-        job_sha256: 87bf1a686caf623b9151db0e5e56c9dfa15b8779688082898bacb9002ecd0794
-      inherited_from: null
+metadata_changes: {}
+document_overrides: {}

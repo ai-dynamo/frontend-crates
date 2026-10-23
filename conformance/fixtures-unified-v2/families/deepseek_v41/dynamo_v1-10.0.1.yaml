@@ -119,30 +119,6 @@ changes:
             <｜DSML｜ invoke name="done">{}</｜DSML｜ invoke>
 
             </｜DSML｜ calls>'
-  dotted_name_minimal:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <｜DSML｜ calls><｜DSML｜ invoke name="a.b"></｜DSML｜ invoke></｜DSML｜ calls>
-  dotted_name_mixed_punctuation:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <｜DSML｜ calls><｜DSML｜ invoke name="my-tool.v2"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-  dotted_name_multiple_segments:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <｜DSML｜ calls><｜DSML｜ invoke name="server.tools.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-  dotted_name_shared_prefix:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: <｜DSML｜ calls><｜DSML｜ invoke name="server.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="server.time"><｜DSML｜ parameter name="timezone" string="true">Asia/Shanghai</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
   empty_args:
     observation:
       value:
@@ -1463,58 +1439,6 @@ metadata_changes:
 
         </｜DSML｜ calls>'
       calls: []
-  dotted_name_minimal:
-    batch_final:
-      reasoning_text: ''
-      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="a.b"></｜DSML｜ invoke></｜DSML｜ calls>
-      calls: []
-    producer_receipt:
-      implementation: dynamo_v1
-      version: 10.0.1
-      source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      crate_checksum: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
-      cargo_lock_sha256: 2bc93a7d17ee391e840af98e43843689b59e2444f8803c268b30714b3c2f888c
-  dotted_name_mixed_punctuation:
-    batch_final:
-      reasoning_text: ''
-      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="my-tool.v2"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      calls: []
-    producer_receipt:
-      implementation: dynamo_v1
-      version: 10.0.1
-      source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      crate_checksum: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
-      cargo_lock_sha256: 2bc93a7d17ee391e840af98e43843689b59e2444f8803c268b30714b3c2f888c
-  dotted_name_multiple_segments:
-    batch_final:
-      reasoning_text: ''
-      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="server.tools.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      calls: []
-    producer_receipt:
-      implementation: dynamo_v1
-      version: 10.0.1
-      source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      crate_checksum: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
-      cargo_lock_sha256: 2bc93a7d17ee391e840af98e43843689b59e2444f8803c268b30714b3c2f888c
-  dotted_name_shared_prefix:
-    batch_final:
-      reasoning_text: ''
-      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="server.weather"><｜DSML｜ parameter name="location" string="true">Beijing</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="server.time"><｜DSML｜ parameter name="timezone" string="true">Asia/Shanghai</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      calls: []
-    producer_receipt:
-      implementation: dynamo_v1
-      version: 10.0.1
-      source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-      adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-      job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      crate_checksum: 296ec299a8054b36768df675ebb628bb7bf810299eb37ae1a3c301bc5edfae30
-      cargo_lock_sha256: 2bc93a7d17ee391e840af98e43843689b59e2444f8803c268b30714b3c2f888c
   empty_args:
     batch_final:
       reasoning_text: ''
@@ -3376,46 +3300,6 @@ metadata_changes:
       normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">false</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
       calls: []
 document_overrides:
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 10.0.1
-      capture_origin:
-        crate_version: 10.0.1
-        source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 10.0.1
-      capture_origin:
-        crate_version: 10.0.1
-        source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 10.0.1
-      capture_origin:
-        crate_version: 10.0.1
-        source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v1: 10.0.1
-      capture_origin:
-        crate_version: 10.0.1
-        source_sha256: 5bb9a3d28cd2de05598145262690d98f2aeb0ec596967692aca0c1b5520ee3be
-        adapter_sha256: 3aae9eb8b0cee099dade98f73bc83876f4fd691ae4a7a50542b55d7ccdfeb02c
-        job_sha256: cfd01df2453d854bdfd5c6a176ab922328601cbfe7a8c7e7fd13958dc6e4fbd4
-      inherited_from: null
   guided_json_after_reasoning:
     capture_provenance:
       captured_with:

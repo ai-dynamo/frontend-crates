@@ -77,7 +77,7 @@ def test_dotted_shared_prefix_reuses_the_baseline_multi_call_envelope(family, op
     assert dotted.index("server.weather") < dotted.index("server.time")
 
 
-def test_rendered_report_shows_published_harmony_name_boundary(rendered_page):
+def test_rendered_report_preserves_dotted_v2_names_and_missing_v1_captures(rendered_page):
     model = load_model(rendered_page)
     tab = next(tab for tab in model["tabs"] if tab["id"] == "tab-unified")
     for family in sorted(generator.DOTTED_NAME_FAMILIES):
@@ -90,16 +90,20 @@ def test_rendered_report_shows_published_harmony_name_boundary(rendered_page):
             ], (family_row["family"], scenario)
             assert candidate["block"]["verdict"] == "MATCH"
             assert cells[scenario]["cmp"]["dynamo"]["na"] == 0
+            historical_v1 = [
+                candidate for candidate in cells[scenario]["tooltip"]["candidates"]
+                if candidate["key"].startswith(("dynamo_v1@", "dynamo_v1_jail@"))
+            ]
+            assert historical_v1
+            for candidate in historical_v1:
+                assert candidate["block"]["unavailable_code"] == "missing_capture"
+                assert "events" not in candidate["block"]
     row = next(row for row in tab["rows"] if row["family"] == "gpt_oss")
     cell = leaf_cells(row)["dotted_name_mixed_punctuation"]
     candidates = {candidate["key"]: candidate for candidate in cell["tooltip"]["candidates"]}
-    before = candidates["dynamo_v1@10.0.5"]["block"]
-    after = candidates["dynamo_v1@10.0.6"]["block"]
-    assert before["events"] == [{"kind": "tool_call", "name": "my-tool", "arguments": {"location": "Beijing"}}]
-    assert before["verdict"] != "MATCH"
-    assert after["events"] == [{"kind": "tool_call", "name": "my-tool.v2", "arguments": {"location": "Beijing"}}]
-    assert after["verdict"] == "MATCH"
-    assert candidates["dynamo"]["block"]["events"] == after["events"]
+    assert candidates["dynamo"]["block"]["events"] == [
+        {"kind": "tool_call", "name": "my-tool.v2", "arguments": {"location": "Beijing"}}
+    ]
     assert candidates["dynamo"]["block"]["verdict"] == "MATCH"
     assert candidates["dynamo"]["parse_mode"] == "split"
     assert "split" in candidates["dynamo"]["label"]
@@ -109,5 +113,3 @@ def test_rendered_report_shows_published_harmony_name_boundary(rendered_page):
     missing = candidates["vllm_python_batch@0.26.0"]["block"]
     assert missing["unavailable_code"] == "missing_capture"
     assert "events" not in missing
-    assert cell["cmp"]["dynamo_v1@10.0.5"]["sig"] != cell["cmp"]["golden"]["sig"]
-    assert cell["cmp"]["dynamo_v1@10.0.6"]["sig"] == cell["cmp"]["golden"]["sig"]

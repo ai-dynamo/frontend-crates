@@ -99,64 +99,6 @@ def test_missing_result_backfill_keeps_python_batch_and_rust_stream_assembly(pee
     assert history.resolve(f"{implementation}-0.26.0") == {}
 
 
-def test_dynamo_batch_backfill_appends_new_cases_without_rewriting_prior_capture(tmp_path):
-    store = tmp_path / "store"
-    _write_family(store)
-    original_origin = {
-        "crate_version": "10.0.7",
-        "source_sha256": "a" * 64,
-        "adapter_sha256": "b" * 64,
-        "job_sha256": "c" * 64,
-    }
-    existing = _change("historic")
-    existing["observation"]["value"].pop("chunks")
-    _write_capture(
-        store, "10.0.7", {"text_only": existing},
-        implementation="dynamo_v1",
-        metadata_changes={"text_only": {"batch_final": {
-            "reasoning_text": "", "normal_text": "historic", "calls": [],
-        }}},
-        provenance={"status": "captured", "origin": original_origin},
-    )
-    _add_backfill_case(store)
-    history = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")]
-    original = history.resolve("dynamo_v1-10.0.7")["text_only"]
-
-    job = tmp_path / "job.json"
-    job.write_text(json.dumps(build_job(store / "families", "gemma4", mode="batch")))
-    capture = tmp_path / "capture.json"
-    job_data = json.loads(job.read_text())
-    results = {
-        case["id"]: {
-            "capture_input": case["request"],
-            "batch_final": {"reasoning_text": "", "normal_text": "new", "calls": []},
-            "assembled": [{"kind": "text", "text": "new"}],
-        }
-        for case in job_data["cases"]
-    }
-    new_origin = {
-        "implementation": "dynamo_v1",
-        "version": "10.0.7",
-        "source_sha256": "d" * 64,
-        "adapter_sha256": "e" * 64,
-        "job_sha256": digest(job),
-    }
-    capture.write_text(json.dumps({"version": "10.0.7", "results": results, "provenance": new_origin}))
-
-    import_capture(
-        store, job, capture, new_origin, implementation="dynamo_v1", backfill_only=True,
-    )
-
-    history = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")]
-    resolved = history.resolve("dynamo_v1-10.0.7")
-    assert resolved["text_only"] == original
-    assert resolved["new_case"]["observation"] == {
-        "value": {"assembled": [{"kind": "text", "text": "new"}]}
-    }
-    assert history.captures["dynamo_v1-10.0.7"]["provenance"]["origin"] == original_origin
-    assert resolved["new_case"]["document"]["capture_origin"]["job_sha256"] == digest(job)
-
-
 def test_backfill_retains_existing_bound_result_and_later_version(peer_capture):
     store, job, capture, provenance, implementation = peer_capture
     _write_capture(store, "0.25.1", {"text_only": _change("historic")}, implementation=implementation)

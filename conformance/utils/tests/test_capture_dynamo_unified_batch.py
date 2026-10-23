@@ -32,13 +32,6 @@ def test_probe_job_rejects_unregistered_family() -> None:
         capture._probe_job({"family": "unknown", "cases": []})
 
 
-def test_known_family_without_v1_batch_parser_is_attempted_as_unsupported() -> None:
-    job = {"family": "muse_glimmer", "cases": []}
-    wrapped = capture._probe_job(job)
-    assert wrapped == {"reasoning_parser": "", "tool_parser": "", "job": job}
-    assert capture._probe_job(job, jail_buffer=True)["tool_parser"] == "muse"
-
-
 def test_crate_checksum_requires_exact_registry_package(tmp_path: Path) -> None:
     lock = tmp_path / "Cargo.lock"
     lock.write_text(

@@ -91,12 +91,7 @@ def import_capture(store_root: Path, job_path: Path, capture_path: Path, provena
         existing = history.resolve(capture_id) if history and capture_id in history.captures else {}
         if batch and existing and origin is not None:
             previous_origin = history.captures[capture_id]["provenance"].get("origin", {})
-            if previous_origin.get("crate_version") != origin.get("crate_version"):
-                raise ValueError("batch producer provenance is immutable")
-            if not backfill_only and any(
-                previous_origin.get(key) != origin.get(key)
-                for key in ("source_sha256", "adapter_sha256", "job_sha256", "git_commit")
-            ):
+            if any(previous_origin.get(key) != origin.get(key) for key in ("crate_version", "source_sha256", "job_sha256", "git_commit")):
                 raise ValueError("batch producer provenance is immutable")
         target = copy.deepcopy(existing)
         previous_ids = [key for key in history.ordered_capture_ids() if unified_history._capture_release_sort_key(history.captures[key]["runtime_version"]) < unified_history._capture_release_sort_key(version)] if history else []
