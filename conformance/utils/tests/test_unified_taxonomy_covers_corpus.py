@@ -935,11 +935,15 @@ def test_unified_case_counts_match_the_generator():
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
     for fam in FAMILIES:
-        boundary_cases = len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0
-        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + boundary_cases, f"{fam} diverged from the expected case count"
+        dotted_cases = sum(
+            fam in G.scenario_families(scenario)
+            for scenario in G.DOTTED_NAME_SCENARIOS
+        )
+        assert per_family[fam] == family_specific[fam] + len(CONFORMANCE_CASES) + dotted_cases + (len(PARALLEL_BOUNDARY_CASES) if fam in UNIFIED_PARALLEL_BOUNDARY_FAMILIES else 0), f"{fam} diverged from the expected case count"
     assert sum(per_family.values()) == (
         sum(family_specific.values())
         + len(FAMILIES) * len(CONFORMANCE_CASES)
+        + sum(len(G.scenario_families(scenario)) for scenario in G.DOTTED_NAME_SCENARIOS)
         + len(UNIFIED_PARALLEL_BOUNDARY_FAMILIES) * len(PARALLEL_BOUNDARY_CASES)
     )
 
@@ -948,7 +952,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 237 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 237 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1141,7 +1145,9 @@ def _assert_reference_measurements_start_at_introduction(store):
     for (family, implementation), history in store.histories.items():
         if implementation != "dynamo_v2":
             continue
-        for capture_id in history.ordered_capture_ids():
+        capture_ids = history.ordered_capture_ids()
+        latest_capture_id = capture_ids[-1]
+        for capture_id in capture_ids:
             measured = {
                 history.family.cases[case_id]["display_id"]
                 for case_id in history.resolve(capture_id)
@@ -1156,7 +1162,9 @@ def _assert_reference_measurements_start_at_introduction(store):
             introduced_at = (0, 7, 29) if family == "beam" else (0, 7, 18)
             if version < introduced_at:
                 assert not measured & introduced_ids, f"retrospective measurements in {family}/{capture_id}"
-            else:
+            elif capture_id == latest_capture_id:
+                # Historical shards can add selected rows; only the latest resolved
+                # history must contain the complete set of currently applicable cases.
                 assert introduced_ids <= measured, f"missing current measurements in {family}/{capture_id}"
 
 

@@ -106,3 +106,27 @@ document_overrides:
         git_commit: 47ef952237deefe0643f94025272a558f249687d
         source_sha256: b1ad56b250e57723b971e180dee32e394b72abd41b0d262fbddb889ef0a7f6b5
       inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.13
+      capture_origin: null
+      inherited_from: null

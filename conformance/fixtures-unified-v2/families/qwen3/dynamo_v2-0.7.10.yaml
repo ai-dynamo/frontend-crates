@@ -495,11 +495,35 @@ changes:
     case_key: UNIFIED.2.b
   two_reason_spans:
     case_key: UNIFIED.10.c
+  dotted_name_minimal:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
 metadata_changes:
   guided_json_native_parameter_string_before_payload: {}
   guided_json_noncall_before_native_array_before_payload: {}
   guided_response_native_wrapper_whitespace_before_prose: {}
   structured_response_after_reasoning: {}
+  dotted_name_minimal: {}
+  dotted_name_mixed_punctuation: {}
+  dotted_name_multiple_segments: {}
+  dotted_name_shared_prefix: {}
 document_overrides:
   guided_json_native_parameter_string_before_payload:
     capture_provenance:
@@ -542,4 +566,28 @@ document_overrides:
         crate_version: 0.7.10
         git_commit: 1a8eea8f79929cd508088df0c505b1d6bf01c391
         source_sha256: 1e0ec261e03e33995a1f284e24f78080baa207bf59c895683b41bf4e3ff358d8
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.10
+      capture_origin: null
       inherited_from: null

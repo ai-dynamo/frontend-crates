@@ -297,7 +297,7 @@ def comparison_failure(record: dict, current: dict, raw: bytes, relative: str, b
     return None
 
 
-def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
+def _effective_capture_records(directory: Path, input_aliases: dict, families: set[str] | None = None) -> dict:
     captures = {}
     bindings = read_bindings(directory)
     for path in sorted(directory.glob("*/*.yaml")):
@@ -305,6 +305,8 @@ def _effective_capture_records(directory: Path, input_aliases: dict) -> dict:
         doc = yaml.safe_load(raw)
         if doc["family"] != path.parent.name:
             raise ValueError(f"capture family differs from its directory: {path}")
+        if families is not None and doc["family"] not in families:
+            continue
         for key, record in doc["cases"].items():
             ident = canonical_unified_record_key(doc["family"], key, input_aliases)
             if ident in captures and captures[ident][0] != record:
@@ -331,7 +333,7 @@ def validated_current_capture_docs(
         ident = canonical_unified_record_key(family, key, input_aliases)
         if inputs.get(ident) == record:
             input_keys[ident] = key
-    captures = _effective_capture_records(directory, input_aliases)
+    captures = _effective_capture_records(directory, input_aliases, families)
     if not inputs or inputs.keys() != captures.keys():
         raise ValueError(f"current capture/input sets differ: missing={sorted(inputs.keys() - captures.keys())}, extra={sorted(captures.keys() - inputs.keys())}")
     for ident, current in inputs.items():

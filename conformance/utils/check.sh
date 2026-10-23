@@ -81,6 +81,7 @@ run_ci_render() {
   echo "conformance matrix rendered: $(wc -c < "$out") bytes"
   # The uploaded CI artifact name predates the v1/v2 split; keep it stable.
   \cp -f "$out" "$UTILS/CONFORMITY.html"
+  \cp -f "$status" "$UTILS/CONFORMITY.json"
   run_coverage
   python3 "$TOOLS/validate_legacy_convention.py"
 }

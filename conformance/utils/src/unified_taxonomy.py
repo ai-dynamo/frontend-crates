@@ -40,12 +40,16 @@ UNIFIED_TAX = {
 
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "dotted_name_minimal": (1, "3"),
+    "dotted_name_mixed_punctuation": (1, "4"),
+    "dotted_name_multiple_segments": (1, "5"),
     # TODO: restore 1-2 in the follow-up to PR #232 (deferred-cases). Completed below; the family-scoped alias retains its historical ID.
     "kimi_k2_optional_prefix_name_overlap": ("kimi_k2", "1"),
     # Group 2 — Multiple calls (streamv1.2)
     "two_calls": (2, "1"), "two_calls_same_name": (2, "2"),
     "adjacent_calls_partial_header": (2, "3"),
     "three_calls_partial_header": (2, "4"),
+    "dotted_name_shared_prefix": (2, "5"),
     # Group 3 — No call (streamv1.3)
     "text_only": (3, "1"),
     # Group 4 — Malformed envelope. Labelled but EMPTY until now.

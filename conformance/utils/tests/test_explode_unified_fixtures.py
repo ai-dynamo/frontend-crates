@@ -161,6 +161,20 @@ def test_split_only_family_rejects_mismatched_family_scope() -> None:
         )
 
 
+def test_split_only_family_retains_explicit_schedule_and_finish() -> None:
+    case = {
+        "input": "firstsecond", "input_chunks": ["first", "second"], "finish_step": True,
+        "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        "finish_reason": "stop", "tools": [], "golden": [],
+    }
+    rows = explode._split_only_cases("gpt_oss", {
+        "family": "gpt_oss", "cases": {"UNIFIED.tool_only.gpt_oss": case},
+    })
+    assert rows["UNIFIED.1-tool_only"]["request"]["chunks"] == [
+        {"delta_text": "first"}, {"delta_text": "second"}, {"delta_text": "‹finish›"},
+    ]
+
+
 def test_split_only_family_preserves_an_empty_offered_tool_set() -> None:
     rows = explode._split_only_cases(
         "gpt_oss",

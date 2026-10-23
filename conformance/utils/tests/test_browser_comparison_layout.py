@@ -160,7 +160,7 @@ def test_capture_legend_matches_segments_in_both_themes_and_views(matrix_driver,
                 assert "slot order" in legend.text
                 assert "Not applicable or unsupported" in legend.text
                 assert "Order/chunk not applicable for batch" not in legend.text
-                assert "Dynamo v1 is the batch parser; Dynamo v2 is the UnifiedParser." in legend.text
+                assert "Dynamo v1 is the batch parser; Dynamo v2 details identify native UnifiedParser or split capture paths." in legend.text
                 assert not legend.find_element(By.CSS_SELECTOR, "[data-output-formats]").is_displayed()
                 assert not d.find_elements(By.CSS_SELECTOR, "#tab-unified .legend.summary-only,#tab-unified .legend.details-only")
                 styles = d.execute_script("""

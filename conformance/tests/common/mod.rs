@@ -279,7 +279,7 @@ pub fn fixture_name(path: &Path) -> String {
 }
 
 /// Fold prior family captures through the current parser release checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.8.3";
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.8.4";
 
 // Batch-on-stream retains its own snapshot when the streaming capture advances.
 pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
@@ -616,6 +616,24 @@ pub fn unified_families() -> std::collections::BTreeMap<String, UnifiedFamily> {
     let doc: Doc =
         serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("parse {}: {e}", path.display()));
     doc.unified
+}
+
+/// Scope a producer run without changing the shared corpus or its family registry.
+pub fn capture_families() -> Option<std::collections::BTreeSet<String>> {
+    let registered = unified_families();
+    let requested = std::env::var("CONFORMANCE_CAPTURE_FAMILIES").ok()?;
+    let selected: std::collections::BTreeSet<String> = requested
+        .split(',')
+        .map(|name| name.trim().to_string())
+        .collect();
+    assert!(!selected.is_empty(), "empty capture family selection");
+    for family in &selected {
+        assert!(
+            registered.contains_key(family),
+            "unknown capture family: {family}"
+        );
+    }
+    Some(selected)
 }
 
 /// One family, or a panic naming the manifest — a family reaching the harness without a

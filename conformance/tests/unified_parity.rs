@@ -340,8 +340,8 @@ fn unified_parser_is_chunk_invariant() {
 }
 
 #[test]
-fn reference_argument_cases_preserve_results_at_every_split() {
-    let scenarios = [
+fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
+    let reference_scenarios = [
         "glm_ref_object",
         "glm_ref_encoded_targets",
         "glm_ref_json_looking_strings",
@@ -350,13 +350,33 @@ fn reference_argument_cases_preserve_results_at_every_split() {
         "nullable_reference_alias_literals",
         "local_schema_id_preserves_type",
     ];
+    let dotted_scenarios = [
+        "dotted_name_minimal",
+        "dotted_name_mixed_punctuation",
+        "dotted_name_multiple_segments",
+        "dotted_name_shared_prefix",
+    ];
+    let dotted_native_families = [
+        "beam",
+        "deepseek_v4",
+        "deepseek_v41",
+        "gemma4",
+        "glm47",
+        "gpt_oss",
+        "kimi_k2",
+        "kimi_k3",
+        "muse_glimmer",
+        "muse_spark",
+        "nemotron_v3",
+        "qwen3",
+    ];
     let mut checked = 0;
     let files = load_native_golden();
-    let family_count = files.len();
     for file in files {
         for (id, case) in &file.cases {
-            if !scenarios
+            if !reference_scenarios
                 .iter()
+                .chain(dotted_scenarios.iter())
                 .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
             {
                 continue;
@@ -369,6 +389,15 @@ fn reference_argument_cases_preserve_results_at_every_split() {
                 &tools,
             );
             assert!(whole.is_ok(), "{id}: {}", render(&whole));
+            if id.contains(".dotted_name_") {
+                assert_eq!(whole.as_ref(), Ok(&case.golden), "{id}");
+                let characters = chunk_every(&case.input, 1);
+                assert_eq!(
+                    events(&file.family, &characters, &case.init, &tools),
+                    whole,
+                    "{id}: characters"
+                );
+            }
             for split in case
                 .input
                 .char_indices()
@@ -382,7 +411,15 @@ fn reference_argument_cases_preserve_results_at_every_split() {
             checked += 1;
         }
     }
-    assert_eq!(checked, family_count * scenarios.len());
+    let native_families = common::unified_families()
+        .values()
+        .filter(|family| family.native)
+        .count();
+    assert_eq!(
+        checked,
+        native_families * reference_scenarios.len()
+            + dotted_native_families.len() * dotted_scenarios.len(),
+    );
 }
 
 /// I6: parsing the whole output at once assembles to the streamed result.
