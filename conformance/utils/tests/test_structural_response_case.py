@@ -49,7 +49,7 @@ def _assert_required_resources(resources):
     assert required <= present, f"missing pinned structural captures: {sorted(required - present)}"
 
 
-def test_structural_request_is_bound_in_every_retained_dynamo_column(source_catalog):
+def test_structural_request_is_bound_in_every_retained_dynamo_column(historical_unified_sources):
     root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
     store = unified_history.load_authored_store(root)
     expected = {}
@@ -57,9 +57,12 @@ def test_structural_request_is_bound_in_every_retained_dynamo_column(source_cata
         authored = store.families[family]
         case_id = next(key for key, case in authored.cases.items() if case["scenario"] == SCENARIO)
         expected[family] = (case_id, unified_history._request_digest(authored.cases[case_id]["request"]))
-    _assert_required_resources(source_catalog["sources"]["unified"])
+    history_root, resources = historical_unified_sources
+    _assert_required_resources(resources)
     checked = set()
-    for resource, document in retained_unified_snapshots(store, families=expected):
+    snapshots = 0
+    for resource, document in retained_unified_snapshots(store, families=expected, source_root=history_root, resources=resources):
+        snapshots += 1
         family = resource["family"]
         if family not in expected:
             continue
@@ -71,6 +74,7 @@ def test_structural_request_is_bound_in_every_retained_dynamo_column(source_cata
             _assert_bound_columns(states, case_id, digest)
         checked.add(family)
     assert checked == set(expected)
+    print(f"structural history qualification passed: {snapshots} Dynamo snapshots across {len(checked)} families")
 
 
 def test_structural_request_guard_rejects_missing_oldest_checkpoint():

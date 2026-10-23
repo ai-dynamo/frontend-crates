@@ -81,6 +81,7 @@ export async function loadStartupCatalog(baseUrl, params, { fetchImpl = globalTh
 }
 
 export async function discoverHistory(baseUrl, catalog, { fetchImpl = globalThis.fetch.bind(globalThis) } = {}) {
+  if (catalog.capture_generation?.mode === 'latest') return false;
   if (!['http:', 'https:'].includes(globalThis.location?.protocol || baseUrl.protocol)) return false;
   let response;
   try { response = await fetchImpl(new URL('conformance/viewer-publication.json', baseUrl), { cache: 'no-store' }); }

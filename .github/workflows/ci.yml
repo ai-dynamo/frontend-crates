@@ -74,8 +74,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
-          # cargo test extracts them locally (extract_fixtures.py, stdlib-only).
+          # Current fixture YAML is local; cargo tests materialize it without
+          # a publisher build or external-history retrieval.
           lfs: true
           # Release identity compares parser source with the release tag.
           fetch-depth: 0
@@ -205,6 +205,7 @@ jobs:
         run: |
           python3 -m venv "$RUNNER_TEMP/publication-venv"
           "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
+          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
           "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py
       - name: Publish native site
         if: ${{ steps.cache.outputs.usable != 'true' }}

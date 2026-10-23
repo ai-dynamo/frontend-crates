@@ -337,7 +337,8 @@ def test_viewer_catalog_is_current_and_contains_only_resource_metadata():
         if source["kind"] == "inputs-and-golden"
     }
     assert unified_families == set(parser_generations)
-    assert len(unified_families) == 28
+    assert unified_families == {path.parent.name for path in
+                                (ROOT / "conformance/fixtures-unified-v2/families").glob("*/inputs_and_golden.yaml")}
     for family, generation in parser_generations.items():
         assert generation["label"] in {"v1", "v1/v2 split", "v2"}, family
         assert generation["generation"] == {

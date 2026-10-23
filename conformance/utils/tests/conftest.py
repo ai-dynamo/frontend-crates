@@ -23,6 +23,27 @@ if str(Path(__file__).parent) not in sys.path:
 from native_publication import publish
 
 import unified_history  # noqa: E402
+import unified_archives
+import capture_sources
+
+
+@pytest.fixture(scope="session")
+def history_source():
+    configured = os.environ.get("CONFORMANCE_HISTORY_SOURCE")
+    if not configured:
+        pytest.skip("full historical qualification requires CONFORMANCE_HISTORY_SOURCE")
+    source = Path(configured).resolve(strict=True)
+    pin = json.loads(capture_sources.read(REPO, capture_sources.PIN))
+    capture_sources.verify(source, pin)
+    return source
+
+
+@pytest.fixture(scope="session")
+def historical_unified_sources(history_source):
+    root = history_source / capture_sources.STORE
+    resources = [{**row, **unified_history.source_identity(row["path"])}
+                 for row in unified_archives.inventory(root)]
+    return root, resources
 
 
 @pytest.fixture(scope="session")
@@ -93,9 +114,10 @@ def pytest_addoption(parser):
 
 def needs_publication(item):
     # Closure names include indirect dependencies (e.g. a browser driver).
-    return (bool({"published_viewer", "source_catalog"}.intersection(item.fixturenames))
-            or item.path.name in {"test_viewer_catalog.py", "test_unified_regeneration.py"}
+    return (bool({"published_viewer", "source_catalog", "native_publisher"}.intersection(item.fixturenames))
+            or item.path.name in {"test_viewer_catalog.py", "test_unified_regeneration.py", "test_capture_split_browser.py"}
             or item.name in {"test_reference_backfills_require_request_bound_version_receipts",
+                             "test_external_history_json_snapshots_match_original_yaml",
                              "test_retained_unified_captures_cover_the_current_corpus"})
 
 

@@ -1,0 +1,1792 @@
+schema_version: 1
+surface: batch-on-stream
+family: gemma4
+implementation: dynamo_v2
+version: 0.7.24
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.2.yaml
+  size: 2684
+  sha256: b7bd6f64180a8fd72c63a38e75c16c66d6b89aa0d8b23d88414d4f25f8b67985
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.4.yaml
+  size: 1908
+  sha256: 6670e06a62c0024ae0be9b8cf805e08703d4cdae703dcf2b569d6c27d5c5db57
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.5.yaml
+  size: 4356
+  sha256: 4c2f56070a1587f4ea4abb2194b5094bcd2f5d2987a2efd7753e338a16f66f99
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.6.yaml
+  size: 1245
+  sha256: 99f18818a87efe5e53e77176bb125ce160ed42c02ac2504d6da947ff0fc0c6c2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.7.schema.yaml
+  size: 19275
+  sha256: 8cd3640b7974dfeaa51d49393598fe043b3e951094a4d78f0013b5ee8ebc6c79
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.7.yaml
+  size: 4670
+  sha256: ce29c4050938bb77d9ed038e0952281e50369095fb0b57874dbbf865edacb8f5
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.8.yaml
+  size: 3067
+  sha256: ee6ed062cdeae0fc2928e0dbd606684b93044210472f8a75e5bbd99e4d65b242
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/gemma4/TOOLCALLING.batch.yaml
+  size: 6905
+  sha256: 17ee00c2e6b58d145e9d753a799beaac682369e013669c93d4f06e9867f256a5
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.6.a:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_time{}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.b:
+        dynamo_v2:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_time
+            arguments: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_time{ }<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_time
+            arguments: {}
+      TOOLCALLING.batch.6.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_time<tool_call|>
+        sglang_python:
+          calls: []
+  TOOLCALLING.batch.8.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.8.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+        vllm_python:
+          calls: []
+          normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check the weather. '
+      TOOLCALLING.batch.8.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ' Let me know if you need more.'
+      TOOLCALLING.batch.8.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+        vllm_python:
+          calls: []
+          normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: I will check the weather.  Let me know if you need more.
+      TOOLCALLING.batch.8.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather.  Then check LA weather. '
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: 'I will check the weather.  Then check LA weather. '
+        vllm_python:
+          calls: []
+          normal_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weatherget_weather
+            arguments: '{"location": "NYC"}{"location": "LA"}'
+          normal_text: 'I will check the weather.  Then check LA weather. '
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.7.a:
+        dynamo_v2:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+        sglang_python:
+          calls:
+          - name: book_flight
+            arguments:
+              destination: Paris
+              passengers: 2
+              first_class: true
+      TOOLCALLING.batch.7.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Tōkyō central
+      TOOLCALLING.batch.7.c:
+        dynamo_v2:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: set_temperature
+            arguments:
+              celsius: '20'
+      TOOLCALLING.batch.7.d:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              items:
+              - 1
+              - 2
+              - 3
+              config:
+                nested: true
+      TOOLCALLING.batch.7.e:
+        dynamo_v2:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: null
+                empty: {}
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+        sglang_python:
+          calls:
+          - name: process_data
+            arguments:
+              payload:
+                regions:
+                - name: west
+                  scores:
+                  - 1
+                  - 2
+                  - 3
+                - name: east
+                  scores:
+                  - 4
+                  - 5
+                  - 6
+                flags:
+                  enabled: true
+                  retry: 'null'
+                empty: {}
+      TOOLCALLING.batch.7.f:
+        dynamo_v2:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+        sglang_python:
+          calls:
+          - name: set_limit
+            arguments:
+              count: 9007199254740993
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.5.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.5.b:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        vllm_python:
+          calls: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      TOOLCALLING.batch.5.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>N
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.5.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          - name: get_weather
+            arguments:
+              location: New York
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+        sglang_python:
+          calls:
+          - name: get_weatherget_weather
+            arguments: '{"location": "Boston"}{"location": "New York"}'
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+        sglang_python:
+          calls:
+          - name: get_weatherget_weather
+            arguments:
+              location: Boston
+          normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        vllm_python:
+          calls: []
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: Boston
+          normal_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+      TOOLCALLING.batch.5.g:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: 'I will check that. '
+        vllm_rust:
+          calls: []
+          normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        vllm_python:
+          calls: []
+          normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls: []
+          normal_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+  TOOLCALLING.batch.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.1:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.3:
+        dynamo_v2:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.9.b:
+        dynamo_v2:
+          calls: []
+          normal_text: '   '
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+        sglang_python:
+          calls: []
+          normal_text: '   '
+      TOOLCALLING.batch.10:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weatherget_weather
+            arguments: '{"location": "NYC"}{"location": "LA"}'
+      TOOLCALLING.batch.30.a:
+        dynamo_v2:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+      TOOLCALLING.batch.30.b:
+        dynamo_v2:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+      TOOLCALLING.batch.30.c:
+        dynamo_v2:
+          calls:
+          - name: run_query
+            arguments:
+              sql: literal <|tool_call marker> call:get_time{} stays text
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: run_query
+            arguments:
+              sql: literal <|tool_call marker> call:get_time{} stays text
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments:
+              sql: literal <|tool_call marker> call:get_time{} stays text
+      TOOLCALLING.batch.31.a:
+        dynamo_v2:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT a,b:and{brace}
+          - name: get_time
+            arguments:
+              timezone: EST
+      TOOLCALLING.batch.31.b:
+        dynamo_v2:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: run_query
+            arguments:
+              sql: SELECT value WHERE note has brace } and bracket ]
+          - name: get_time
+            arguments:
+              timezone: EST
+      TOOLCALLING.batch.13.a:
+        dynamo_v2:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: unknown_tool
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.13.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: unknown_tool
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: unknown_tool
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: unknown_tool
+            arguments:
+              location: LA
+  TOOLCALLING.batch.2.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.2.a:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+      TOOLCALLING.batch.2.c:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+        vllm_python:
+          calls: []
+          normal_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_time
+            arguments:
+              timezone: EST
+          normal_text: 'Both:  Done.'
+      TOOLCALLING.batch.2.d:
+        dynamo_v2:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_rust:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+          - name: get_weather
+            arguments:
+              location: LA
+          normal_text: ''
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weatherget_weather
+            arguments: '{"location": "NYC"}{"location": "LA"}'
+      TOOLCALLING.batch.2.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+  TOOLCALLING.batch.7.schema.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.7.o.declared_array:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_boolean:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_null:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_number:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_object:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+      TOOLCALLING.batch.7.o.declared_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: plain
+          normal_text: ''
+      TOOLCALLING.batch.7.o.id_direct_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_allof:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_bare:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_ref:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_reverse_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_reverse_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_typed:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+      TOOLCALLING.batch.7.s.escaped_ref_const:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+      TOOLCALLING.batch.7.s.percent_ref_const:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.s.ref_sibling_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_anyOf_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: -7
+          normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_anyOf_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_oneOf_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: -7
+          normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_oneOf_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+      TOOLCALLING.batch.7.t.intersection_anyOf:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.t.intersection_oneOf:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.u.enum_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.u.enum_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.v.nullable_string:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_integer_null:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_integer_null_null:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_string_integer:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.w.integer_const_ambiguous:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+      TOOLCALLING.batch.7.w.null_union_ambiguous:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+      TOOLCALLING.batch.7.w.object_const_union:
+        dynamo_v2:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: 0.7.24
+    cases:
+      TOOLCALLING.batch.4.a:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>nonsense<tool_call|>
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.b:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments: {}
+      TOOLCALLING.batch.4.c:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: '
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+        sglang_python:
+          calls: []
+      TOOLCALLING.batch.4.d:
+        dynamo_v2:
+          calls: []
+          normal_text: ''
+        vllm_rust:
+          error: 'tool parser parsing failed: incomplete Gemma4 tool call'
+        vllm_python:
+          calls: []
+          normal_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+        sglang_python:
+          calls:
+          - name: get_weather
+            arguments:
+              location: NYC
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No batch model_text for this case.

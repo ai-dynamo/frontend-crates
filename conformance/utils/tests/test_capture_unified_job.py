@@ -40,6 +40,7 @@ def test_existing_family_job_is_stable_and_preserves_request_shape():
             "guided_json_noncall_before_native_array_before_payload",
             "guided_response_native_wrapper_whitespace_before_prose",
             "gemma4_guided_response_extra_body_opener",
+            "v1_split_parallel_tool_calls",
             "adjacent_calls_partial_header",
             "three_calls_partial_header",
             "xml_string_type_single_quoted_object",

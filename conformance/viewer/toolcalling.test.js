@@ -4,8 +4,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { toolcallingPanel } from './toolcalling.js';
 import { tabCandidates } from './candidates.js';
+import { syntheticLegacyInputs } from '../utils/tests/fixtures/legacy_catalog.js';
 
 const catalog = JSON.parse(await readFile(new URL('../viewer-catalog.json', import.meta.url), 'utf8'));
+syntheticLegacyInputs(catalog);
 // Synthetic records own their inventory; real corpus controls describe other cases.
 for (const archive of catalog.sources.archives) delete archive.availability_documents;
 const spec = catalog.metadata.tabs.find((tab) => tab.id === 'tab-toolcalling-batch');

@@ -1,0 +1,271 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: qwen3_coder
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.7.x.xml_custom_type_single_quoted_object:
+    description: 'Native XML compatibility: {''a'':1} under type custom must produce {"a": 1}. Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: custom
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            a: 1
+      normal_text: ''
+    chunks:
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: 'l>
+
+        '
+    - delta_text: <fu
+    - delta_text: nct
+    - delta_text: ion
+    - delta_text: =sc
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: 'e>
+
+        '
+    - delta_text: <pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: r=v
+    - delta_text: alu
+    - delta_text: 'e>
+
+        '
+    - delta_text: '{''a'
+    - delta_text: ''':1'
+    - delta_text: '}
+
+        <'
+    - delta_text: /pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: 'r>
+
+        '
+    - delta_text: </f
+    - delta_text: unc
+    - delta_text: tio
+    - delta_text: 'n>
+
+        '
+    - delta_text: </t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+      finish_reason: stop
+  TOOLCALLING.streamv1.7.x.xml_custom_type_double_quoted_object:
+    description: 'Native XML compatibility: {"a":1} under type custom must produce {"a": 1}. Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: custom
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value:
+            a: 1
+      normal_text: ''
+    chunks:
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: 'l>
+
+        '
+    - delta_text: <fu
+    - delta_text: nct
+    - delta_text: ion
+    - delta_text: =sc
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: 'e>
+
+        '
+    - delta_text: <pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: r=v
+    - delta_text: alu
+    - delta_text: 'e>
+
+        '
+    - delta_text: '{"a'
+    - delta_text: '":1'
+    - delta_text: '}
+
+        <'
+    - delta_text: /pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: 'r>
+
+        '
+    - delta_text: </f
+    - delta_text: unc
+    - delta_text: tio
+    - delta_text: 'n>
+
+        '
+    - delta_text: </t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+      finish_reason: stop
+  TOOLCALLING.streamv1.7.x.xml_string_type_single_quoted_object:
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{''a'':1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: 'l>
+
+        '
+    - delta_text: <fu
+    - delta_text: nct
+    - delta_text: ion
+    - delta_text: =sc
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: 'e>
+
+        '
+    - delta_text: <pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: r=v
+    - delta_text: alu
+    - delta_text: 'e>
+
+        '
+    - delta_text: '{''a'
+    - delta_text: ''':1'
+    - delta_text: '}
+
+        <'
+    - delta_text: /pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: 'r>
+
+        '
+    - delta_text: </f
+    - delta_text: unc
+    - delta_text: tio
+    - delta_text: 'n>
+
+        '
+    - delta_text: </t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+      finish_reason: stop
+  TOOLCALLING.streamv1.7.x.xml_string_type_double_quoted_object:
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"a":1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: 'l>
+
+        '
+    - delta_text: <fu
+    - delta_text: nct
+    - delta_text: ion
+    - delta_text: =sc
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: 'e>
+
+        '
+    - delta_text: <pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: r=v
+    - delta_text: alu
+    - delta_text: 'e>
+
+        '
+    - delta_text: '{"a'
+    - delta_text: '":1'
+    - delta_text: '}
+
+        <'
+    - delta_text: /pa
+    - delta_text: ram
+    - delta_text: ete
+    - delta_text: 'r>
+
+        '
+    - delta_text: </f
+    - delta_text: unc
+    - delta_text: tio
+    - delta_text: 'n>
+
+        '
+    - delta_text: </t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+      finish_reason: stop

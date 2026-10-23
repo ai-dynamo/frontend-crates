@@ -181,7 +181,9 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
 #[test]
 fn string_quote_controls_survive_every_split_for_every_family() {
     let mut covered = std::collections::BTreeSet::new();
-    for file in load_native_golden() {
+    for file in load_native_golden().into_iter().filter(|file| {
+        dynamo_parsers_v2::canonical_unified_family(&file.family) == Some(file.family.as_str())
+    }) {
         let mut count = 0;
         for (id, case) in file.cases {
             if !id.contains("xml_string_type_") {

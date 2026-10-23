@@ -39,6 +39,7 @@ if str(SRC) not in sys.path:
 import extract_fixtures  # noqa: E402
 import check_family_coverage
 import fixture_snapshot  # noqa: E402
+from fixture_test_support import configure_extractor_root
 
 
 def _shard(path, sha256, size=1):
@@ -82,7 +83,7 @@ def _run_main(tmp_path, monkeypatch, manifest, argv=()):
     # version just calls the patched version again -- infinite recursion.
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest))
-    monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path)
+    configure_extractor_root(tmp_path, monkeypatch, manifest_path=manifest_path)
     monkeypatch.setattr(sys, "argv", ["extract_fixtures.py", *argv])
     extract_fixtures.main()
 

@@ -1,0 +1,21 @@
+family: deepseek_v4
+mode: streamv1
+model_label: DeepSeek V4
+cases:
+  TOOLCALLING.streamv1.5.h:
+    description: Orphan DSML close marker split across chunks after prefix prose
+    ref: derived from TOOLCALLING.batch.5.g
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: Prefix prose
+    - delta_text: ' </｜DSML｜tool_'
+    - delta_text: calls>
+    - delta_text: ' suffix'
+    - delta_text: ''
+      finish_reason: stop

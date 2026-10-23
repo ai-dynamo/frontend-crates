@@ -35,6 +35,8 @@ import tempfile
 from pathlib import Path
 
 import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
+import capture_sources
+import publish_current_capture
 from dynamo_version import capture_source_fingerprint
 import fixture_disposition
 import stream_capture_archive
@@ -861,6 +863,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="Build tarballs but don't touch the store")
     ap.add_argument("--stream-only", action="store_true", help="Package only the loose tool-calling stream tree")
     ap.add_argument("--unified-only", action="store_true", help="Package only the Unified capture history")
+    ap.add_argument("--history-source", type=Path, default=os.environ.get("CONFORMANCE_HISTORY_SOURCE"))
     ap.add_argument(
         "--replace-stream-case",
         action="append",
@@ -901,6 +904,13 @@ def main():
     )
     generation_workers.add_worker_argument(ap)
     args = ap.parse_args()
+    if (ROOT / capture_sources.CURRENT).is_file():
+        if not args.unified_only or args.stream_only or args.prune or args.dry_run:
+            ap.error("split capture packaging supports --unified-only; legacy archive maintenance requires an explicit historical checkout")
+        if args.history_source is None:
+            ap.error("split capture packaging requires --history-source or CONFORMANCE_HISTORY_SOURCE")
+        print(json.dumps(publish_current_capture.publish_loose(ROOT, Path(args.history_source).resolve(), ROOT / "conformance/unified")))
+        return
     if args.stream_only and args.unified_only:
         ap.error("--stream-only and --unified-only cannot be combined")
     if (args.stream_only or args.unified_only) and args.prune:

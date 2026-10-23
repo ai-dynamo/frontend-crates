@@ -1,0 +1,47 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: deepseek_v3
+model_label: DeepSeek V3
+mode: stream
+cases:
+  TOOLCALLING.stream.1.a:
+    description: Complete tool-call payload delivered in one content chunk
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: '<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>get_weather
+
+        ```json
+
+        {"location": "NYC"}
+
+        ```<｜tool▁call▁end｜><｜tool▁calls▁end｜>'
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools: &id001
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.stream.1.b:
+    description: Complete tool call split across parser-significant boundaries
+    ref: derived from TOOLCALLING.batch.1
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜>
+    - delta_text: <｜tool▁call▁begin｜>function<｜tool▁sep｜>
+    - delta_text: 'get_weather
+
+        ```json
+
+        '
+    - delta_text: '{"location": "NYC"}'
+    - delta_text: '
+
+        ```'
+    - delta_text: <｜tool▁call▁end｜>
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: tool_calls
+    tools: *id001

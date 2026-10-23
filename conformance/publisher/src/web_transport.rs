@@ -30,6 +30,26 @@ fn index(stage: &Path, path: &str, value: &Value) -> Result<Value> {
 }
 
 fn recent_captures(catalog: &Value) -> Result<BTreeSet<(String, String)>> {
+    if catalog["capture_generation"]["mode"] == "latest" {
+        return catalog["sources"]["candidates"]
+            .as_array()
+            .context("missing candidates")?
+            .iter()
+            .filter(|c| c["mode"] == "unified")
+            .map(|c| {
+                Ok((
+                    c["implementation"]
+                        .as_str()
+                        .context("missing implementation")?
+                        .to_string(),
+                    c["version"]
+                        .as_str()
+                        .context("missing version")?
+                        .to_string(),
+                ))
+            })
+            .collect();
+    }
     let mut implementations = BTreeMap::<String, Vec<(Release, String)>>::new();
     for candidate in catalog["sources"]["candidates"]
         .as_array()
@@ -147,6 +167,19 @@ pub fn embedded<'a>(
         descriptors.insert(path.into(), descriptor.clone());
     }
     ensure!(descriptors.len() <= 4096, "too many embedded resources");
+    if catalog["capture_generation"]["mode"] == "latest" {
+        for name in source::inventory(&stage.join("conformance/viewer-data"))? {
+            let path = format!("conformance/viewer-data/{name}");
+            if !stage.join(&path).is_file() {
+                continue;
+            }
+            let bytes = source::read(stage, &path)?;
+            descriptors.insert(
+                path.clone(),
+                json!({"path":path,"size":bytes.len(),"sha256":sha256(&bytes)}),
+            );
+        }
+    }
     let mut total = 0u64;
     for descriptor in descriptors.values() {
         let size = descriptor["size"]
@@ -373,7 +406,9 @@ pub fn assemble(
         lookup[&bucket] = index(stage, &path, &json!({"schema":2,"resources":entries}))?;
     }
     // The reader only needs these identities to validate resolved record members.
-    catalog["sources"]["original_unified"] = json!(original["sources"]["unified"].as_array().unwrap().iter().filter(|r| r["kind"] == "history").map(|r| json!({"path":r["path"],"kind":r["kind"],"family":r["family"],"implementation":r["implementation"],"version":r["version"]})).collect::<Vec<_>>());
+    catalog["sources"]["original_unified"] = json!(original["sources"]["unified"].as_array().unwrap().iter()
+        .chain(original["sources"]["lineage"].as_array().into_iter().flatten())
+        .filter(|r| r["kind"] == "history").map(|r| json!({"path":r["path"],"kind":r["kind"],"family":r["family"],"implementation":r["implementation"],"version":r["version"]})).collect::<Vec<_>>());
     for candidate in catalog["sources"]["candidates"].as_array_mut().unwrap() {
         candidate.as_object_mut().unwrap().remove("sources");
         candidate.as_object_mut().unwrap().remove("source");

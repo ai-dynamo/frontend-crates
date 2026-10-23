@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Authored GLM schema inputs and oracle; parser observations are recorded separately.
+
+family: glm47
+mode: batch
+cases:
+  TOOLCALLING.batch.7-4.inline:
+    description: 'PR #268 inline control: a nullable string parameter converts bare null to JSON null.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/268
+    model_text: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          city:
+            type:
+            - string
+            - 'null'
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+      normal_text: ''
+  TOOLCALLING.batch.7-5.inline:
+    description: 'PR #268 inline control: a string-only parameter preserves bare null as string "null".'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/268
+    model_text: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          city:
+            type: string
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+      normal_text: ''
+  TOOLCALLING.batch.7-4.ref:
+    description: 'PR #268 local reference: a nullable string definition on the tool parameters root permits JSON null.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/268
+    model_text: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        $defs:
+          City:
+            type:
+            - string
+            - 'null'
+        properties:
+          city:
+            $ref: '#/$defs/City'
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+      normal_text: ''
+  TOOLCALLING.batch.7-5.ref:
+    description: 'PR #268 local reference: a string-only definition on the tool parameters root excludes JSON null.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/268
+    model_text: <tool_call>get_weather<arg_key>city</arg_key><arg_value>null</arg_value></tool_call>
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        $defs:
+          City:
+            type: string
+        properties:
+          city:
+            $ref: '#/$defs/City'
+    golden:
+      calls:
+      - name: get_weather
+        arguments:
+          city: 'null'
+      normal_text: ''

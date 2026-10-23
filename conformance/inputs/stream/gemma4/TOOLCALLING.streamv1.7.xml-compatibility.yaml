@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: gemma4
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.7.x.xml_string_type_single_quoted_object:
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{''a'':1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <|t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+    - delta_text: cal
+    - delta_text: l:s
+    - delta_text: che
+    - delta_text: ma_
+    - delta_text: pro
+    - delta_text: be{
+    - delta_text: val
+    - delta_text: 'ue:'
+    - delta_text: <|"
+    - delta_text: '|>{'
+    - delta_text: '''a'''
+    - delta_text: :1}
+    - delta_text: <|"
+    - delta_text: '|>}'
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: l|>
+      finish_reason: stop
+  TOOLCALLING.streamv1.7.x.xml_string_type_double_quoted_object:
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"a":1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <|t
+    - delta_text: ool
+    - delta_text: _ca
+    - delta_text: ll>
+    - delta_text: cal
+    - delta_text: l:s
+    - delta_text: che
+    - delta_text: ma_
+    - delta_text: pro
+    - delta_text: be{
+    - delta_text: val
+    - delta_text: 'ue:'
+    - delta_text: <|"
+    - delta_text: '|>{'
+    - delta_text: '"a"'
+    - delta_text: :1}
+    - delta_text: <|"
+    - delta_text: '|>}'
+    - delta_text: <to
+    - delta_text: ol_
+    - delta_text: cal
+    - delta_text: l|>
+      finish_reason: stop

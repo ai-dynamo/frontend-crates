@@ -156,7 +156,7 @@ Rules:
 
 New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family in `conformance/utils/src/parser_families.yaml`, author applicable family-native scenarios and independent GOLDEN expectations in `conformance/utils/src/gen_unified_golden.py`, and document their contracts in `conformance/utils/lib/parsers/UNIFIED_CASES.md`. Preserve published IDs and expectations. New IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; existing numeric IDs retain their aliases.
 
-Publish authored requests and captures as plain versioned YAML under `conformance/fixtures-unified-v2/families/<family>/`. Execute the frozen release inventory using the shared family job builder and exact version adapters, including separate v1 batch and jail-buffer paths. Follow the capture and publication workflow in `conformance/README.md`.
+Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml` and current capture YAML in `conformance/captures/unified/<family>/<implementation>.yaml`. Preserve historical evidence in the pinned external dataset before advancing current YAML. Execute the frozen release inventory using the shared family job builder and exact version adapters, including separate v1 batch and jail-buffer paths. Follow the capture and publication workflow in `conformance/README.md`.
 
 Retain archive-backed `TOOLCALLING.*` fixtures and their original observations as historical evidence. Their format below is for explicitly requested historical maintenance; normal Unified generation does not read those archives or derive GOLDEN from their results.
 

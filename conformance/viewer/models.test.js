@@ -108,8 +108,14 @@ function validateTab(tab, loadedKeys = null) {
 function validateUnifiedColumns(unified) {
   assert.ok(unified.columns.every(column => column.label.includes('-')));
   assert.ok(unified.columns.some(column => column.variant_labels?.length || column.schemas?.length));
-  assert.ok(unified.candidates.some(candidate => candidate.key === 'dynamo@0.6.0'));
-  assert.ok(unified.candidates.some(candidate => candidate.key === 'vllm_rust'));
+  if (catalog.capture_generation?.mode === 'latest') {
+    const local = new Set(catalog.capture_generation.current.filter(row => row.surface === 'unified')
+      .map(row => `${row.implementation}@${row.version}`));
+    assert.ok(catalog.sources.candidates.filter(row => row.mode === 'unified')
+      .every(row => local.has(`${row.implementation}@${row.version}`)), 'latest choices must name local current observations');
+  } else {
+    assert.ok(unified.candidates.some(candidate => candidate.key === 'dynamo@0.6.0'));
+  }
 }
 const sparseProvenance = resolveUnified([
   { implementation: 'dynamo', version: '0.9.0', path: 'first.yaml', bytes: new Uint8Array(), document: {
@@ -353,7 +359,7 @@ async function checkUnifiedBatch(batch) {
       for (const scenario of ['glm_ref_object', 'glm_ref_encoded_targets', 'glm_ref_json_looking_strings', 'glm_ref_scalar_types']) {
         const cell = leafCells(beam).get(scenario);
         assert.equal(cell.cmp[defaultKey].na, 0, `Beam ${scenario}: current capture is measured`);
-        for (const descriptor of batch.filter(item => item.source.implementation === 'dynamo_v2' && compareLegacyVersions(item.source.version, '0.7.29') < 0)) {
+        for (const descriptor of batch.filter(item => catalog.capture_generation?.mode !== 'latest' && item.source.implementation === 'dynamo_v2' && compareLegacyVersions(item.source.version, '0.7.29') < 0)) {
           const comparison = cell.cmp[descriptor.control.key];
           assert.equal(comparison.na, 1, `Beam ${scenario}: ${descriptor.source.version} predates its introduction`);
           assert.equal(comparison.sig, 0);

@@ -1,0 +1,24 @@
+family: nemotron_nano
+mode: streamv1
+model_label: Nemotron Nano v3
+cases:
+  TOOLCALLING.streamv1.10:
+    description: Duplicate calls (same name twice)
+    ref: derived from TOOLCALLING.batch.10
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: "<tool_call>\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>"
+    - delta_text: "\nNYC\n</parameter>\n</function>"
+    - delta_text: "\n</tool_call>\n<tool_call>"
+    - delta_text: "\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>\nLA"
+    - delta_text: "\n</parameter>\n</function>\n</tool_call>"
+    - delta_text: ''
+      finish_reason: stop

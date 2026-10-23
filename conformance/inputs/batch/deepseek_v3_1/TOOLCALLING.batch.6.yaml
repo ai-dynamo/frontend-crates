@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: deepseek_v3_1
+mode: batch
+cases:
+  TOOLCALLING.batch.6.a:
+    description: Canonical empty {} after tool_sep
+    ref: dynamo
+    model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{}<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+    tools:
+    - &id001
+      name: get_time
+      parameters:
+        type: object
+        properties: {}
+  TOOLCALLING.batch.6.b:
+    description: Whitespace inside empty { }
+    ref: dynamo
+    model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{ }<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+    tools:
+    - *id001
+  TOOLCALLING.batch.6.c:
+    description: No tool_sep / args section
+    ref: dynamo
+    model_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_time<｜tool▁call▁end｜><｜tool▁calls▁end｜>
+    tools:
+    - *id001

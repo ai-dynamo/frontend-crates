@@ -21,6 +21,7 @@ import yaml
 
 import execution_manifests
 import impls
+import capture_sources
 
 
 DIRECTORY = "versions"
@@ -207,6 +208,11 @@ def inventory(root: Path, *, member_callback=None, source_callback=None,
 def read_sources(root: Path, resources: list[dict]):
     """Read selected members, admitting each archive once for the operation."""
     groups = defaultdict(list)
+    checkout = root if (root / capture_sources.CURRENT).is_file() else root.parent.parent
+    current_paths = {}
+    if (checkout / capture_sources.CURRENT).is_file():
+        current_paths = {row["source"]: checkout / row["path"]
+                         for row in capture_sources.current(checkout)["captures"] if row["surface"] == "unified"}
     paths_seen = set()
     for resource in resources:
         path = Path(resource["path"])
@@ -217,7 +223,8 @@ def read_sources(root: Path, resources: list[dict]):
     for archive_path, selected in groups.items():
         if archive_path is None:
             for resource in selected:
-                data = _read_archive(root / resource["path"])
+                logical = resource["path"] if root == checkout else capture_sources.STORE + "/" + resource["path"]
+                data = _read_archive(current_paths.get(logical, root / resource["path"]))
                 if len(data) != resource["size"] or hashlib.sha256(data).hexdigest() != resource["sha256"]:
                     raise ValueError("source member identity mismatch")
                 yield resource, data

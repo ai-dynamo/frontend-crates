@@ -27,6 +27,7 @@ from yaml.cyaml import CParser
 from yaml.resolver import BaseResolver, Resolver
 
 import capture_stimulus
+import capture_sources
 from capture_versions import provenance_release_version, UNIFIED_VERSION_PATTERN, UNIFIED_VERSION_RE, capture_release_sort_key as _capture_release_sort_key
 import impls
 import fixture_disposition
@@ -1118,8 +1119,34 @@ def load_authored_store(root: Path) -> Store:
         return Store(root, _load_families_unlocked(root), {})
 
 
+def mutate_authored_store(root: Path, mutate: Callable[[Store], Any]) -> list[Path]:
+    """Append authored cases without rewriting the current observation snapshots."""
+    root = _canonical_store_root(root)
+    with _store_mutation_lock(root), tempfile.TemporaryDirectory(prefix=".authored-stage-", dir=root.parent) as temporary:
+        store = Store(root, _load_families_unlocked(root), {})
+        before = {family.path: load_yaml(family.path) for family in store.families.values()}
+        mutate(store)
+        pairs = []
+        for index, family in enumerate(store.families.values()):
+            if typed_equal(before[family.path], family.document):
+                continue
+            _validate_family(family.path, family.document)
+            candidate = Path(temporary) / f"{index}.yaml"
+            candidate.write_text(dump_yaml(family.document))
+            pairs.append((candidate, family.path))
+        if pairs:
+            publish_paths_transactionally(pairs, backup_parent=root.parent)
+        return [destination for _candidate, destination in pairs]
+
+
 def load_store(root: Path) -> Store:
     root = _canonical_store_root(root)
+    checkout = root.parent.parent
+    if (checkout / capture_sources.CURRENT).is_file():
+        document = capture_sources.current(checkout)
+        implementations = sorted({row["implementation"] for row in document["captures"] if row["surface"] == "unified"})
+        store, _ = selected_materialization_store(root, [f"latest:{implementation}" for implementation in implementations])
+        return store
     with _store_read_lock(root):
         return _load_store_unlocked(root)
 
@@ -1744,6 +1771,12 @@ def source_identity(relative: str) -> dict:
 
 def selected_materialization_store(root: Path, captures: list[str]) -> tuple[Store, dict[str, str]]:
     """Inventory each archive once, retaining and decoding only selected members."""
+    checkout = root.parent.parent
+    if (checkout / capture_sources.CURRENT).is_file():
+        if any(not capture.startswith("latest:") for capture in captures):
+            raise ValueError("frozen-version fixtures require an explicit pinned history source")
+        with capture_sources.unified_view(checkout) as view:
+            return selected_materialization_store(view, captures)
     requested = {}
     for capture in captures:
         if capture.startswith("latest:"):
@@ -1801,6 +1834,9 @@ def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *
     """Read complete selected checkpoints without loading historical dependencies."""
     prefix = "conformance/fixtures-unified-v2/"
     source_index = {resource["path"]: resource for resource in resources}
+    lineage_path = root / "lineage.json"
+    if lineage_path.is_file():
+        source_index.update({row["path"]: row for row in json.loads(lineage_path.read_bytes())})
     chosen = [resource for resource in resources if resource["kind"] == "inputs-and-golden"]
     for implementation, version in targets.items():
         families = {}
@@ -3183,12 +3219,17 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--history-only", action="store_true")
     parser.add_argument("--capture", action="append", default=[], help="materialize only this implementation-version, or latest:implementation")
+    parser.add_argument("--history-source", type=Path, help="verified external evidence for frozen-version qualification")
     parser.add_argument(
         "--complete-snapshot",
         action="store_true",
         help="retire active cases omitted from a complete loose corpus",
     )
     args = parser.parse_args(argv)
+    if args.history_source is not None:
+        pin = json.loads(capture_sources.read(args.store.resolve().parent.parent, capture_sources.PIN))
+        capture_sources.verify(args.history_source, pin)
+        args.store = args.history_source / capture_sources.STORE
     if args.archive_versions:
         print(json.dumps(archive_versions(args.store)))
     elif args.migrate_descriptive_ids:

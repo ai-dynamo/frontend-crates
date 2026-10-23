@@ -76,10 +76,12 @@ def runtime_catalog(destination):
     return json.loads(gzip.decompress((Path(destination) / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
 
 
-def proof_catalog(root, destination):
+def proof_catalog(root, destination, *, source_resources=None):
     catalog = runtime_catalog(destination)
-    source_catalog = json.loads((Path(root) / "conformance/viewer-catalog.json").read_bytes())
-    catalog["proof_original_unified"] = source_catalog["sources"]["unified"]
+    if source_resources is None:
+        source_catalog = json.loads((Path(root) / "conformance/viewer-catalog.json").read_bytes())
+        source_resources = source_catalog["sources"]["unified"]
+    catalog["proof_original_unified"] = source_resources
     return catalog
 
 

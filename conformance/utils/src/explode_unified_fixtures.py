@@ -35,6 +35,7 @@ from dynamo_version import validate_capture_provenance  # noqa: E402
 from capture_stimulus import _without_synthetic_finish_step, capture_input  # noqa: E402
 from unified_taxonomy import numbered_id  # noqa: E402
 import unified_history  # noqa: E402
+import capture_sources
 from unified_tools import unified_tools
 
 CONF = Path(__file__).resolve().parents[2]   # <repo>/conformance
@@ -282,7 +283,8 @@ def append_authored_inputs():
                     "display_id": display_id, "historical_ids": [],
                     "request": row["request"], "golden": row["golden"],
                 }
-    return unified_history._mutate_store(CONF / "fixtures-unified-v2", append)
+    owner = unified_history.mutate_authored_store if (REPO / capture_sources.CURRENT).is_file() else unified_history._mutate_store
+    return owner(CONF / "fixtures-unified-v2", append)
 
 
 def main():

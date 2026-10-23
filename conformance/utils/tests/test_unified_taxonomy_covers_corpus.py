@@ -1061,12 +1061,14 @@ def _store_resource(row):
                if "archive" in row else {})}
 
 
-def retained_unified_snapshots(store, *, families=None):
+def retained_unified_snapshots(store, *, families=None, source_root=None, resources=None):
     """Stream selected complete snapshots; retain at most one decoded YAML document."""
-    root = store.root
-    catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
+    root = source_root or store.root
+    if resources is None:
+        catalog = json.loads((UTILS.parent / "viewer-catalog.json").read_bytes())
+        resources = catalog["sources"]["unified"]
     resources = ci_coverage.select_resources(
-        [row for row in catalog["sources"]["unified"]
+        [row for row in resources
          if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
          and (families is None or row["family"] in families)], profile="exhaustive")
     selected = [_store_resource(row) for row in resources]
@@ -1170,8 +1172,12 @@ def _assert_reference_backfill_record(record, document, request, version):
     assert selected.get("capture_input") == request, "reference backfill request differs"
 
 
-def test_reference_backfills_require_request_bound_version_receipts(authored_unified_store):
-    for resource, document in retained_unified_snapshots(authored_unified_store):
+def test_reference_backfills_require_request_bound_version_receipts(authored_unified_store, historical_unified_sources):
+    root, resources = historical_unified_sources
+    snapshots = 0
+    backfills = 0
+    for resource, document in retained_unified_snapshots(authored_unified_store, source_root=root, resources=resources):
+        snapshots += 1
         family = authored_unified_store.families[resource["family"]]
         version = resource["version"]
         introduced = {"UNIFIED.7-unused_reference_graph_parameter_types", "UNIFIED.7-nullable_reference_alias_literals", "UNIFIED.7-local_schema_id_preserves_type"}
@@ -1189,6 +1195,9 @@ def test_reference_backfills_require_request_bound_version_receipts(authored_uni
             if case["display_id"] in introduced:
                 value, metadata = unified_history.materialized_record(case, record["value"])
                 _assert_reference_backfill_record(value, metadata, case["request"], version)
+                backfills += 1
+    assert snapshots > 0
+    print(f"reference history qualification passed: {snapshots} Dynamo snapshots, {backfills} request-bound backfill records")
 
 @pytest.mark.parametrize("corruption", [None, "receipt", "producer", "version", "request", "results"])
 def test_reference_backfill_binding_rejects_unproven_older_results(corruption):

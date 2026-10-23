@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+# Shared inputs (version-independent): no expected blocks.
+family: deepseek_v4
+model_label: DeepSeek V4
+mode: batch
+cases:
+  TOOLCALLING.batch.1:
+    description: Single tool call (happy path)
+    model_text: '<｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.13.c:
+    description: Known and unknown invokes in one DSML tool_calls block
+    ref: DeepSeek DSML invoke grammar
+    model_text: '<｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      <｜DSML｜invoke name="unknown_tool">
+
+      <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.13.b:
+    description: Forward-unknown-tools mode is unavailable
+    explanation: DeepSeek V4 DSML exposes no request mode that changes unknown-tool forwarding; the parser returns every well-formed invoke by name.
+  TOOLCALLING.batch.13.d:
+    description: Unknown native tool index is unavailable
+    explanation: DeepSeek V4 DSML identifies tools by the invoke name attribute and has no ordinal or offered-tool registry index in its wire grammar.
+  TOOLCALLING.batch.3:
+    description: No tool call (plain text)
+    model_text: Hello, how can I help you today?
+    tools:
+    - *id001
+  TOOLCALLING.batch.9.a:
+    description: Empty model text
+    model_text: ''
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.9.b:
+    description: Blank / whitespace-only model text
+    ref: dynamo
+    model_text: '   '
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+  TOOLCALLING.batch.10:
+    description: Duplicate calls (same name twice)
+    model_text: '<｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      <｜DSML｜invoke name="get_weather">
+
+      <｜DSML｜parameter name="location" string="true">LA</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+    tools:
+    - *id001
+  TOOLCALLING.batch.13:
+    description: Unknown tool name absent from supplied tools
+    ref: dynamo
+    model_text: '<｜DSML｜tool_calls>
+
+      <｜DSML｜invoke name="unknown_tool">
+
+      <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+      </｜DSML｜invoke>
+
+      </｜DSML｜tool_calls>'
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string

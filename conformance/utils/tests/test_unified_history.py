@@ -1764,8 +1764,8 @@ def test_materialized_null_labels_follow_stable_owners_after_number_swap(tmp_pat
     ("qwen3", ("be1520f44605ed60b906aa03f7847a9210631d43cec8c967f55ac99186d496bd",
                "697ee3feadda33be06413278e6f213f8361a060793518381713cc19a771c2f4d")),
 ])
-def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(tmp_path, family, original_digests):
-    store_root = Path(__file__).resolve().parents[3] / "conformance/fixtures-unified-v2"
+def test_vllm_rust_guided_json_recaptures_preserve_unbound_history(tmp_path, family, original_digests, history_source):
+    store_root = history_source / "conformance/fixtures-unified-v2"
     source = store_root / "families" / family
     destination = tmp_path / "families" / family
     destination.mkdir(parents=True)
@@ -1970,15 +1970,14 @@ def test_frozen_snapshot_proof_keeps_its_executed_members_after_authored_growth(
         unified_history._validate_complete_snapshot(path, snapshot, family, 'dynamo_v2', '0.26.0')
 
 
-def test_retained_kimi_proof_covers_deduplicated_observation_origins(source_catalog):
-    root = Path(__file__).resolve().parents[3] / 'conformance/fixtures-unified-v2'
+def test_retained_kimi_proof_covers_deduplicated_observation_origins(history_source):
+    root = history_source / 'conformance/fixtures-unified-v2'
     member = 'families/kimi_k3/sglang_python_batch-0.5.18.yaml'
-    assert any(row['path'] == f'conformance/fixtures-unified-v2/{member}'
-               for row in source_catalog['sources']['unified'])
     with unified_history._store_read_lock(root):
         family_path = root / 'families/kimi_k3/inputs_and_golden.yaml'
         family = unified_history._validate_family(family_path, unified_history.load_yaml(family_path))
-        payload = next(data for name, data in unified_archives.members(root / 'versions/sglang-0.5.18.tar.gz') if name == member)
+        resource = next(row for row in unified_archives.inventory(root) if row['path'] == member)
+        payload = unified_archives.read_source(root, resource)
         snapshot = yaml.load(payload, Loader=unified_history.StrictLoader)
     assert len(snapshot['records']) == len(snapshot['execution_proof']['requests']) == 239
     assert any(not unified_history.typed_equal(record['value']['document']['capture_origin'], snapshot['provenance']['origin'])

@@ -26,6 +26,7 @@ import refresh_dynamo_captures  # noqa: E402
 import append_stream_regression_cases  # noqa: E402
 import stream_capture_archive  # noqa: E402
 import unified_history  # noqa: E402
+from fixture_test_support import configure_extractor_root
 
 _TEST_STREAM_CAPTURE_VERSION = "99.0.0"
 _TEST_STREAM_CAPTURE_ROOT = f"dynamo_v2-{_TEST_STREAM_CAPTURE_VERSION}"
@@ -80,12 +81,11 @@ def test_canonicalize_unified_inputs_allows_one_historical_alias_rename():
     assert aliases[("gemma4", "UNIFIED.g4-1")] == ident
 
 
-def test_checked_in_manifest_pins_unified_history_store():
-    repo_root = SRC.parents[2]
-    manifest = json.loads((repo_root / "conformance/fixtures-manifest.json").read_text())
+def test_checked_in_manifest_pins_unified_history_store(history_source):
+    manifest = json.loads((history_source / "conformance/fixtures-manifest.json").read_text())
     pinned = next(shard for shard in manifest["shards"] if shard.get("format") == "unified-history")
 
-    digest, size = unified_history.store_digest(repo_root / "conformance/fixtures-unified-v2")
+    digest, size = unified_history.store_digest(history_source / "conformance/fixtures-unified-v2")
 
     assert pinned["sha256"] == digest
     assert pinned["size"] == size
@@ -144,8 +144,7 @@ def evidence(tmp_path, monkeypatch):
     manifest_path.write_text(json.dumps(manifest))
     monkeypatch.setattr(package_fixtures, "ROOT", tmp_path)
     monkeypatch.setattr(package_fixtures, "FIXTURES_DIR", store)
-    monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path)
-    monkeypatch.setattr(extract_fixtures, "FIXTURES_DIR", store)
+    configure_extractor_root(tmp_path, monkeypatch, manifest_path=manifest_path)
     monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: tmp_path / "cache")
     return conf, store, manifest, manifest_path
 
@@ -612,9 +611,7 @@ def test_extract_holds_generation_lock_through_shard_materialization(tmp_path, m
         + "\n"
     )
     cache = tmp_path / "cache"
-    monkeypatch.setattr(extract_fixtures, "MANIFEST_PATH", manifest_path)
-    monkeypatch.setattr(extract_fixtures, "FIXTURES_DIR", fixtures)
-    monkeypatch.setattr(extract_fixtures, "HISTORY_DIR", history)
+    configure_extractor_root(tmp_path, monkeypatch, manifest_path=manifest_path)
     monkeypatch.setattr(extract_fixtures, "get_cache_root", lambda: cache)
     reader_at_shard = threading.Event()
     release_reader = threading.Event()

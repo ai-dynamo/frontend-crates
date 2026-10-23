@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 const sourceAliases = {
-  'conformance/toolcalling/fixtures-v1': 'conformance/fixtures/toolcalling/fixtures-batch-v1',
-  'conformance/toolcalling/fixtures-stream-v1': 'conformance/fixtures/toolcalling/fixtures-stream-v1',
-  'conformance/reasoning/fixtures': 'conformance/fixtures/reasoning/fixtures-v1',
+  'conformance/toolcalling/fixtures-v1': 'conformance/inputs/batch',
+  'conformance/toolcalling/fixtures-stream-v1': 'conformance/inputs/stream',
+  'conformance/reasoning/fixtures': 'conformance/inputs/reasoning',
 };
 export function validatePublication(publication, catalogRevision, resolvedCatalogRevision) {
   if (!publication || publication.schema !== 1 || !/^[0-9a-f]{40}$/.test(publication.revision) || publication.catalog_revision !== catalogRevision

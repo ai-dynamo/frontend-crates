@@ -11,6 +11,7 @@ import { selectedCaptureOutcome } from './selection_comparison.js';
 
 const toolOnlyCell = (panel, family = panel.rows[0].family) => leafCells(panel.rows.find(row => row.family === family)).get('tool_only');
 const catalog = JSON.parse(await readFile(new URL('../viewer-catalog.json', import.meta.url), 'utf8'));
+catalog.capture_generation = { mode: 'history' };
 catalog.metadata.unified_presentation.authored_scenarios = ['tool_only'];
 catalog.sources.unified = catalog.sources.unified.filter((source) => source.family === 'qwen3' && source.kind === 'inputs-and-golden');
 catalog.sources.candidates = [{ mode: 'unified', implementation: 'dynamo_v2', version: '1.0.0', source: 'capture.yaml', native_unified_families: ['qwen3'] }];
@@ -22,6 +23,13 @@ for (const [implementation, versions] of [
 const postCandidates = tabCandidates(postCatalog, { id: 'tab-unified', suite: 'toolcalling', mode: 'unified' });
 assert.deepEqual(postCandidates.filter(item => item.source.implementation === 'vllm_python').map(item => item.source.version), ['0.8.5.post1', '0.8.5']);
 assert.deepEqual(postCandidates.filter(item => item.source.implementation === 'sglang_python').map(item => item.source.version), ['0.4.4.post3', '0.4.4.post2', '0.4.4']);
+const latestCatalog = structuredClone(postCatalog);
+latestCatalog.capture_generation = { mode: 'latest' };
+latestCatalog.sources.candidates.push({ mode: 'unified', implementation: 'dynamo_v2', version: '0.9.0' });
+const latestCandidates = tabCandidates(latestCatalog, { id: 'tab-unified', suite: 'toolcalling', mode: 'unified' });
+assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 'dynamo_v2').map(item => item.source.version), ['1.0.0']);
+assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 'vllm_python').map(item => item.source.version), ['0.8.5.post1']);
+assert.deepEqual(latestCandidates.filter(item => item.source.implementation === 'sglang_python').map(item => item.source.version), ['0.4.4.post3']);
 const request = { input: 'sample', init: { starting_state: 'None', tool_output_mode: 'Native', named_tool: null }, finish_reason: 'stop', tools: [], chunks: [{ delta_text: 'sample' }] };
 const input = { lifecycle: 'active', scenario: 'tool_only', description: 'sample', policy: [], display_id: 'UNIFIED.1-tool_only', historical_ids: [], request, golden: { assembled: [] } };
 const document = { input_document: { family: 'qwen3' }, golden_document: { family: 'qwen3' }, cases: { id: input } };

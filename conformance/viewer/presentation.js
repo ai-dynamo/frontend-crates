@@ -146,7 +146,7 @@ export function tabPresentation(spec, catalog, descriptors, link = null) {
     label_html: 'Tool Calling v1 <span class="tab-sub">(<span class="w-batch">batch</span> data)</span>',
     tab_title: 'Tool Calling (batch data): v1 batch parsers plus v2 stream parsers on the same v1 batch fixtures',
     case_prefix: 'TOOLCALLING.batch.', case_section_id: 'toolcalling-batch', case_docs_href: href(catalog.metadata.documentation.toolcalling), case_docs_label: 'lib/parsers/TOOLCALLING_CASES.md',
-    toolbar_desc_html: `Parsers: <strong>v1</strong> batch (${source('parsers/v1/src/tool_calling/', 'parsers/src/tool_calling/')}) plus <strong>v2</strong> streaming on the same batch text (${source('parsers/v2/src/tool_calling/', 'parsers_v2/src/tool_calling/*')}) · Input: <strong>v1</strong> batch fixtures (${source('conformance/toolcalling/fixtures-v1/', 'conformance/fixtures/toolcalling/fixtures-batch-v1/')}).`,
+    toolbar_desc_html: `Parsers: <strong>v1</strong> batch (${source('parsers/v1/src/tool_calling/', 'parsers/src/tool_calling/')}) plus <strong>v2</strong> streaming on the same batch text (${source('parsers/v2/src/tool_calling/', 'parsers_v2/src/tool_calling/*')}) · Input: <strong>v1</strong> batch fixtures (${source('conformance/inputs/batch/', 'conformance/inputs/batch/')}).`,
   };
   if (spec.id === 'tab-toolcalling-streamv1') {
     const versions = new Map();
@@ -163,14 +163,14 @@ export function tabPresentation(spec, catalog, descriptors, link = null) {
     return { ...base, label_html: 'Tool Calling legacy stream <span class="tab-sub">(<span class="w-stream">stream</span> data)</span>',
       tab_title: 'Tool Calling (legacy stream corpus): Dynamo parser v2', case_prefix: 'TOOLCALLING.streamv1.', case_section_id: 'toolcalling-streamv1', case_docs_href: href(catalog.metadata.documentation.stream), case_docs_label: 'lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md',
       captured_note: `Peer streaming output captured against: ${captures.join(', ')}. A divergence is relative to these versions; re-capture when bumping.`,
-      toolbar_desc_html: `Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming (${source('parsers/v2/src/tool_calling/', 'parsers_v2/src/tool_calling/*')}) · Input: <strong>legacy v1</strong> non-Unified stream fixtures (${source('conformance/toolcalling/fixtures-stream-v1/', 'conformance/fixtures/toolcalling/fixtures-stream-v1/')}).`,
+      toolbar_desc_html: `Parser: <strong>v2</strong> Dynamo parser v2 token-incremental streaming (${source('parsers/v2/src/tool_calling/', 'parsers_v2/src/tool_calling/*')}) · Input: <strong>legacy v1</strong> non-Unified stream fixtures (${source('conformance/inputs/stream/', 'conformance/inputs/stream/')}).`,
       details_note_html: "<p>Red means that engine's stream parser diverges from its batch parser. A <code>≠</code> corner mark is a KNOWN v1-vs-v2 divergence (known-divergences.yaml): calls agree, normal_text differs by design — the popup's v2 block carries the explanation. There is no <code>V_rb</code>; vLLM Rust has stream parser capture only. Harmony captured against vLLM 0.23.0 / SGLang 0.5.12.post1.</p>",
     };
   }
   if (spec.suite === 'reasoning') return { ...base, active: false,
     label_html: `Reasoning v1 <span class="tab-sub">(<span class="w-${spec.mode}">${spec.mode}</span> data)</span>`, tab_title: `Reasoning ${spec.mode}: v1 code on v1 fixtures`,
     case_prefix: 'REASONING.', case_section_id: `reasoning-${spec.mode}`, case_docs_href: href(catalog.metadata.documentation.reasoning), case_docs_label: 'lib/parsers/REASONING_CASES.md',
-    toolbar_desc_html: `Parser: <strong>v1</strong> reasoning parser (${source('parsers/v1/src/reasoning/', 'parsers/v1/src/reasoning/')}) · Input: <strong>v1</strong> reasoning fixtures (${source('conformance/reasoning/fixtures/', 'conformance/fixtures/reasoning/fixtures-v1/')}).`,
+    toolbar_desc_html: `Parser: <strong>v1</strong> reasoning parser (${source('parsers/v1/src/reasoning/', 'parsers/v1/src/reasoning/')}) · Input: <strong>v1</strong> reasoning fixtures (${source('conformance/inputs/reasoning/', 'conformance/inputs/reasoning/')}).`,
   };
   return { ...base, active: false,
     label_html: 'Unified v2 <span class="tab-sub">(reasoning + tools)</span>', tab_title: 'Unified: one ordered event stream (reasoning + content + tool calls) measured against the GOLDEN oracle',

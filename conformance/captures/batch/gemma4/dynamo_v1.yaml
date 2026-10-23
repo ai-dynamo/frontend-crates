@@ -1,0 +1,4634 @@
+schema_version: 1
+surface: batch
+family: gemma4
+implementation: dynamo_v1
+version: 10.0.1
+source_records:
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.2.yaml
+  size: 963
+  sha256: fbe227783df7d0fc342c93fc7a89540d785dd6652ab9b3f6b620ef8ab938d0b0
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.4.yaml
+  size: 622
+  sha256: 4a216d5794df1cffb1294cad43ad59be3d95472ceee5c1fd6a0262faeefa2538
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.5.yaml
+  size: 1686
+  sha256: 9a277f7462a075efad018ffbd344cb7ef992d7c847078a07b4163b150c687b39
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.6.yaml
+  size: 616
+  sha256: 0d52572c77ad759d1b02080e6c98125050866f662004a71cf63a14dce571bc28
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.7.schema.yaml
+  size: 22420
+  sha256: c59d1cd737b1c13a60d43dcda99c891a5b7cc88004b400dbf41b86f6a7eeac0d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.7.yaml
+  size: 1768
+  sha256: 24b792af0a88df1a3629fea3052848672a65890d02831ea448589e724b26abb4
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1053
+  sha256: 45641a325cb498b2ef7582fd41fd6f676c8bf2f647b57836b90ebdb5df71f4d3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.batch.yaml
+  size: 2524
+  sha256: 4a14ea08be2651937821312b7f61456b845b05688d726ec50e355e4403ebb417
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.stream.1.yaml
+  size: 573
+  sha256: 79d661605d9ad4aa0259ac4ddcf6fb3ff3a7b5d147089eb3305e6e4916665c47
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.stream.2.yaml
+  size: 472
+  sha256: a81e3ed957891bba032d19deb12e14e8d5b1a7c6d12d4e7b90b4a110717ff95b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.stream.3.yaml
+  size: 400
+  sha256: bbde7e2fcb17a43bdb32a473702d8a2305c183e6920b39c9c388386eac6545c4
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1/gemma4/TOOLCALLING.stream.4.yaml
+  size: 672
+  sha256: ebd4d253f0ef6d1e0dd7ba9d6a5d22a9fd03db68a423bff5eb5b0d1d57132ea2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.2.yaml
+  size: 986
+  sha256: 9bbe18c4dd17ba242638b6479acef3aeb3afdf3c56e099e750af27fc6f0ef95c
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.4.yaml
+  size: 645
+  sha256: 3cfc3b35cc2adbe1886afd5520aef939e0ffc09a8ed5355a5f3e43f9ce9ed29f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.5.yaml
+  size: 1709
+  sha256: 7ae542211e40c1a7963207232dd92ce8920b4f982babd1bf0260e8f3e40f3223
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.6.yaml
+  size: 639
+  sha256: 92ac25328374f5c3bb1ed643ab78b3ee08e0ce4896514dbc9ddccccbbad341ff
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.7.yaml
+  size: 1791
+  sha256: 4edfd0cb5f3a736ba7b9da8ddf0c7fb12a0ab4ce37a93cce279cdd7249032e8b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1076
+  sha256: 29e2ceba2c53499dee002f817dc1336e3d6c6f92ea3c10cfb1802ca00be5ba53
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.batch.yaml
+  size: 2550
+  sha256: 34e684df2d9a377a99bde05e27ca92b80a31c996c0b24a3b384aaeafd5118bf1
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.stream.1.yaml
+  size: 596
+  sha256: 5e4ac30832db14ce0a45abf4e3335c9c967c578615300fea8094614d3adb54c2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.stream.2.yaml
+  size: 495
+  sha256: c377877fb5b62baeb25ab95a9296de2bbe3313ae1d90031487125b7eeeff9527
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.stream.3.yaml
+  size: 423
+  sha256: bb9d780cb8fdae9756ee8c4aa08d53103b77dbbaab2ac31ed6b0ac6ca8c61426
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0/gemma4/TOOLCALLING.stream.4.yaml
+  size: 695
+  sha256: 55660f4f552eefe05eaee6bf97df24a8adaf1d6b2fb6320c8c0e316eb25c2f10
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.2.yaml
+  size: 962
+  sha256: 22514616a07d0d2c97971adb5e4158366ea4e507302cd4913a1c39cd1ade5880
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.4.yaml
+  size: 621
+  sha256: 69eb28dae6dd9c28605abe1c1baad7c2fed29eeff60577644ea791beded7bf19
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.5.yaml
+  size: 1685
+  sha256: caaf2bbf8fc60c3e7356ffdb54dbfc434856870cbada48d25d73a4f9b47ee683
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.6.yaml
+  size: 615
+  sha256: 5b5819d8b7645766d08480dd8f20345926d813fbde7b1bbe5c48e8d855494519
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.7.yaml
+  size: 1767
+  sha256: 054da267171193eef56a5419e9ade1847e5e312cc86227cd99e7e8855a54e7e8
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1052
+  sha256: 4ea50254cc630f7fbd9daa643d1f0bd2956cd802d6879c4907fff449c0de6efd
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.batch.yaml
+  size: 2523
+  sha256: fb5e4daf760d6a736260adfb77d3c1f6f7bf4a1292a398d35d301ab5d48a69d7
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.stream.1.yaml
+  size: 572
+  sha256: cb77d7e5227a4789de8a5bda9ca822d5e0e36d7d65029ddac0d2269ac55bdf6b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.stream.2.yaml
+  size: 471
+  sha256: 8c9c87e851a97820f5ef8a5befa670d90364910a603c72fe1e0c3c6f38e3e4e8
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.stream.3.yaml
+  size: 399
+  sha256: 3157f3a9fdc2a762843fa9acd3d786abf6d4d78d28f054811edc117a6df5d747
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1/gemma4/TOOLCALLING.stream.4.yaml
+  size: 671
+  sha256: 82fc6d0aaddb7f86d5800bc6fddf5faca16a02e658a80057861bbb73e70f298c
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.0.1.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.2.yaml
+  size: 962
+  sha256: 3c1c1ecd3a84aa341a268e27d94024d97a680ffa93a96fba6a4121ac392e79bf
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.4.yaml
+  size: 621
+  sha256: 0f337baac348605fe0bbda1eefaede6077e605f8db4e9f6a4cda1134c7508e46
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.5.yaml
+  size: 1685
+  sha256: ffb44bef1214a63b78227a8aadf2b77101976c5dbd8afefc1fcd3de00b8375f9
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.6.yaml
+  size: 615
+  sha256: d0fa649acf18e93b2b4557ba843d84364a4be26a72e7629ecb7b0ee573be2bb3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.7.yaml
+  size: 1767
+  sha256: 7a1d804ec76e48e82d7f27eb9665a4af3c19b65d663f046a470ddb6a5b7f0f4d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1052
+  sha256: e53b7467ac7bb8f673a9a03df76b391294c789aa5b2f7adaadd320da5e519904
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.batch.yaml
+  size: 2523
+  sha256: 0a67c37b3d7b417c8f3099ab6b039a25e69bb409ca6f1cf4acafafa2025b4a85
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.stream.1.yaml
+  size: 572
+  sha256: 5c559f11499116b5bd9a1dd95611652e68f10b6bd0db964d4c582dc835681fd2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.stream.2.yaml
+  size: 471
+  sha256: afad52ab092941ec1d0551d86c771930376b5b908d54021a3e725d693bfd838d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.stream.3.yaml
+  size: 399
+  sha256: 7c6a3b05a08c7b67c8ff0d9f192a6a7ff8d8bd70531568eeb0a11f3557e8985d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3/gemma4/TOOLCALLING.stream.4.yaml
+  size: 671
+  sha256: 84ddadc3ece12a457aeb288f29c54dc32c0039014ce7b22d7ec8112efa504735
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-5.1.3.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.2.yaml
+  size: 963
+  sha256: 2aca8edddf9c5e6e8398eef20668321a23450c4caf1b0923535bfd30d6fcf0a5
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.4.yaml
+  size: 622
+  sha256: 31119a3ea927239700d462b33b5949ecbec57c5203bfdab43b4515c0f97f70c4
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.5.yaml
+  size: 1686
+  sha256: 0056fb3708353d92741824ede51995d6d6adab31f83e85c71eff5033e6a62669
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.6.yaml
+  size: 616
+  sha256: e757123c35f7ffcfbc3cad00038cc14a29587903e37ceed116734033247e83f0
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.7.schema.yaml
+  size: 22420
+  sha256: 5e86108a25c8e9602af2af6dd4305837247e80d6c2a9789363d1365e8ae1d9db
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.7.yaml
+  size: 1768
+  sha256: f42970130537084f9c4369f062f878f8dad85357290d5fc91fdcf1b5a604363e
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1053
+  sha256: 9d0777d004572c0f2318cb72fc4ec77def0a5863c2fe9d1a65273c9ebce186d0
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.batch.yaml
+  size: 2524
+  sha256: 35e2687564ec3017ee295079606f658579db2b992b2982e3fb338c5b571dc21d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.stream.1.yaml
+  size: 573
+  sha256: 7bb0dc9ef27d41b534ad7ecf73295e0568f33b9c9df82e4c927082d8aca6def2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.stream.2.yaml
+  size: 472
+  sha256: 88ca3de066a0bf91b0661bfb834328d3f323e83d0c7e38017a977b06aa16e592
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.stream.3.yaml
+  size: 400
+  sha256: a905d3c9e8cd7108affdc3c13f30c44f6e572583a645c90d5b81f34a2fb3fa23
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13/gemma4/TOOLCALLING.stream.4.yaml
+  size: 672
+  sha256: 7297ec996fad23398e8f6f99fdd898236a64edb795e8669a82f14031a3ea99a2
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/dynamo_v1-9.2.13.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.2.yaml
+  size: 1712
+  sha256: 20f7cec07d1b02f04dd1c3a822f214a5eeedacfacf774e405f6049ad9824ae7d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.4.yaml
+  size: 2058
+  sha256: 56dac1e59c73ac5b310f25ffbb9b5c9ebc83b749854ee2acb227a654e12fe1cd
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.5.yaml
+  size: 2141
+  sha256: dc9d194e5f4abd496f5aab3d46249fc1d1079dbb8c224bb4cea9def419170c4d
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.6.yaml
+  size: 1088
+  sha256: e1473b4d445b671b39964147539886fa1330283a91bfc16c2d2e34d2bacb4f6a
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-4.yaml
+  size: 417
+  sha256: 46669245e7eafbb7c93147ab40b3ecf7e23656830ed669ba6bb160cb648dad79
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-6.yaml
+  size: 665
+  sha256: e49a55e3b7c2609a545a7290b8593f586ee34aaf4527dc07461ae35491bdfda3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-7.yaml
+  size: 640
+  sha256: 144c9cb6d23e91b679569e949c1c4c8c4225f6fa67c581efb4ea447db3eb9ce7
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-8.yaml
+  size: 624
+  sha256: 831f4ae0ca46a931aa064f8c2502b2bd250af7bf8868ad04840642e0f8ea66f3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-null-ref.yaml
+  size: 1320
+  sha256: 217eed38746211cafb95fc48bb884d75d2f46358cf5a3c2e890965f90fbe05ec
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7-null.yaml
+  size: 3618
+  sha256: 49d415e8755352687ac95ab4d6ba5f2678efa95fae4f4cd5b477080ebceefa9b
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7.schema.yaml
+  size: 84808
+  sha256: b87b8c7b56e0a5e1d193d87a6bc1bf6bccbd831af4b8371727c6792300f5f259
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.7.yaml
+  size: 2922
+  sha256: 81d875b4f9281d15f02a4cabfd7e7c6b176271d4aba3a92bc8ad2a3a7701d7d8
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.8.yaml
+  size: 1522
+  sha256: 2a0fae36ac328d08fbbce3b335036d21c871b0a0219ab0a14808ffceba71eaac
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.batch.yaml
+  size: 4540
+  sha256: 8d1de30b387e956faf886bd81faaeb86e4ccdb84061b5e21343e5d2c829e3aee
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.stream.1.yaml
+  size: 1139
+  sha256: 22aba157d13b71cc955c0fb7d38c1e58cd3f7e65fda78801f5857c6b4a7e9edb
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.stream.2.yaml
+  size: 1141
+  sha256: 5c0a3223d30b89f9eb13958c2c602f6a910f465bc3b5d9594c0f496869f34dc7
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.stream.3.yaml
+  size: 876
+  sha256: 02a70f66f90d67726c81b080d6fe9bf82c99ff3621a928b249ebf412909e5862
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+- path: toolcalling/fixtures-batch-v1/inputs/gemma4/TOOLCALLING.stream.4.yaml
+  size: 1683
+  sha256: 390e436521e0152ac9e02e42a7b9c7192b26cfcd007b50d13ab61e2cb345679f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-v1/inputs.tar.gz
+documents:
+  TOOLCALLING.batch.7-6.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-6:
+        description: 'Nested object unions: select the unique object branch of anyOf and oneOf to type integer and boolean members. Preserve scalar string/object children, nullable object null, and real nested objects. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-null.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-4:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-4.anyof:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-4.oneof:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-4.nullable:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-4.const:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.union:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.sibling_anyof:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.sibling_oneof:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.untyped_branch:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.const:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.enum:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.untyped_const:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.untyped_enum:
+        description: 'MiniMax M3 v1 null-schema regression (PR #269).'
+        explanation: This constructed probe uses MiniMax M3 native XML and exercises its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.6.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.6.a:
+        description: Canonical empty {} body
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L560
+        model_text: <|tool_call>call:get_time{}<tool_call|>
+        tools:
+        - &id001
+          name: get_time
+          parameters:
+            type: object
+            properties: {}
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.b:
+        description: Whitespace inside empty {}
+        ref: dynamo
+        model_text: <|tool_call>call:get_time{ }<tool_call|>
+        tools:
+        - *id001
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_time
+              arguments: {}
+            normal_text: ''
+      TOOLCALLING.batch.6.c:
+        description: No body (just call:name)
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L280
+        model_text: <|tool_call>call:get_time<tool_call|>
+        tools:
+        - *id001
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+  TOOLCALLING.batch.8.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.8.a:
+        description: Narration before tool call only
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L194
+        model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - &id002
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.b:
+        description: Narration after tool call only
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+        tools:
+        - *id002
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.8.c:
+        description: Narration both before and after (sandwich)
+        ref: dynamo
+        model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Let me know if you need more.
+        tools:
+        - *id002
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check the weather.
+      TOOLCALLING.batch.8.d:
+        description: Narration between multiple tool calls
+        ref: dynamo
+        model_text: I will check the weather. <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|> Then check LA weather. <|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        tools:
+        - *id002
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: I will check the weather.
+  TOOLCALLING.stream.1.yaml:
+    family: gemma4
+    model_label: Gemma 4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.1.a:
+        description: Complete tool-call payload delivered in one content chunk
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: &id003
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.1.b:
+        description: Complete tool call split across parser-significant boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|tool_call>
+        - delta_text: 'call:'
+        - delta_text: get_weather
+        - delta_text: '{location:'
+        - delta_text: <|"|>
+        - delta_text: NYC
+        - delta_text: <|"|>}
+        - delta_text: <tool_call|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools: *id003
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.7.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.a:
+        description: Standard scalar types
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L236
+        model_text: <|tool_call>call:book_flight{destination:<|"|>Paris<|"|>,passengers:2,first_class:true}<tool_call|>
+        tools:
+        - name: book_flight
+          parameters:
+            type: object
+            properties:
+              destination:
+                type: string
+              passengers:
+                type: integer
+              first_class:
+                type: boolean
+        expected:
+          dynamo_v1:
+            calls:
+            - name: book_flight
+              arguments:
+                destination: Paris
+                passengers: 2
+                first_class: true
+            normal_text: ''
+      TOOLCALLING.batch.7.b:
+        description: Unicode in value
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L630
+        model_text: <|tool_call>call:get_weather{location:<|"|>Tōkyō central<|"|>}<tool_call|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Tōkyō central
+            normal_text: ''
+      TOOLCALLING.batch.7.c:
+        description: Schema mismatch — string value where schema declares integer
+        ref: dynamo
+        model_text: <|tool_call>call:set_temperature{celsius:<|"|>20<|"|>}<tool_call|>
+        tools:
+        - name: set_temperature
+          parameters:
+            type: object
+            properties:
+              celsius:
+                type: integer
+        expected:
+          dynamo_v1:
+            calls:
+            - name: set_temperature
+              arguments:
+                celsius: '20'
+            normal_text: ''
+      TOOLCALLING.batch.7.d:
+        description: Nested object + array (existing)
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L179
+        model_text: <|tool_call>call:process_data{items:[1,2,3],config:{nested:true}}<tool_call|>
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              items:
+                type: array
+              config:
+                type: object
+        expected:
+          dynamo_v1:
+            calls:
+            - name: process_data
+              arguments:
+                items:
+                - 1
+                - 2
+                - 3
+                config:
+                  nested: true
+            normal_text: ''
+      TOOLCALLING.batch.7.e:
+        description: Large / deep JSON-edge argument payload
+        ref: dynamo
+        model_text: <|tool_call>call:process_data{payload:{regions:[{name:<|"|>west<|"|>,scores:[1,2,3]},{name:<|"|>east<|"|>,scores:[4,5,6]}],flags:{enabled:true,retry:null},empty:{}}}<tool_call|>
+        tools:
+        - name: process_data
+          parameters:
+            type: object
+            properties:
+              payload:
+                type: object
+        expected:
+          dynamo_v1:
+            calls:
+            - name: process_data
+              arguments:
+                payload:
+                  regions:
+                  - name: west
+                    scores:
+                    - 1
+                    - 2
+                    - 3
+                  - name: east
+                    scores:
+                    - 4
+                    - 5
+                    - 6
+                  flags:
+                    enabled: true
+                    retry: null
+                  empty: {}
+            normal_text: ''
+      TOOLCALLING.batch.7.f:
+        description: Numeric precision edge preserves integer-like number literal
+        ref: inferhub live capture on nvidia/google/gemma-4-31b-it
+        model_text: <|tool_call>call:set_limit{count:9007199254740993}<tool_call|>
+        tools:
+        - name: set_limit
+          parameters:
+            type: object
+            properties:
+              count:
+                type: number
+        expected:
+          dynamo_v1:
+            calls:
+            - name: set_limit
+              arguments:
+                count: 9007199254740993
+            normal_text: ''
+  TOOLCALLING.batch.5.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.5.a:
+        description: Missing <tool_call|> end marker
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+        tools:
+        - &id004
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.b:
+        description: Closing <tool_call|> without matching <|tool_call> open
+        ref: dynamo
+        model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.5.c:
+        description: Truncation mid-argument value
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>N
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.5.d:
+        description: Multi-call, last call missing only end marker (body complete)
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York<|"|>}
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            - name: get_weather
+              arguments:
+                location: New York
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.e:
+        description: Multi-call, last call truncated mid-arg-value
+        ref: dynamo
+        model_text: I'll start by fetching the weather for both Boston and New York at the same time!<|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>New York
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: I'll start by fetching the weather for both Boston and New York at the same time!
+      TOOLCALLING.batch.5.f:
+        description: Bare valid call before a complete wrapped call
+        ref: dynamo
+        model_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>Boston<|"|>}<tool_call|>
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: Boston
+            normal_text: ''
+      TOOLCALLING.batch.5.g:
+        description: Closing <tool_call|> without matching <|tool_call> open after prefix prose
+        ref: dynamo
+        model_text: I will check that. call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - *id004
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: I will check that.
+  TOOLCALLING.batch.7-8.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-8:
+        description: 'Ambiguous object union branches: multiple object-capable alternatives must retain the string-preserving fallback rather than choose one branch arbitrarily. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-null-ref.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-4.inline:
+        description: 'PR #268 inline control: a nullable string parameter converts bare null to JSON null.'
+        explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.inline:
+        description: 'PR #268 inline control: a string-only parameter preserves bare null as string "null".'
+        explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-4.ref:
+        description: 'PR #268 local reference: a nullable string definition on the tool parameters root permits JSON null.'
+        explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+      TOOLCALLING.batch.7-5.ref:
+        description: 'PR #268 local reference: a string-only definition on the tool parameters root excludes JSON null.'
+        explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.yaml:
+    family: gemma4
+    model_label: Gemma 4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.1:
+        description: Single tool call (happy path)
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - &id005
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.3:
+        description: No tool call (plain text)
+        model_text: Hello, how can I help you today?
+        tools:
+        - *id005
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: Hello, how can I help you today?
+      TOOLCALLING.batch.9.a:
+        description: Empty model text
+        model_text: ''
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.9.b:
+        description: Blank / whitespace-only model text
+        ref: dynamo
+        model_text: '   '
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.10:
+        description: Duplicate calls (same name twice)
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        tools:
+        - *id005
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.30.a:
+        description: Call/body delimiters `,`, `:`, and `{}` inside one argument string value
+        ref: dynamo
+        model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|>
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a,b:and{brace}
+            normal_text: ''
+      TOOLCALLING.batch.30.b:
+        description: Structural delimiters `}` and `]` inside one argument string value
+        ref: dynamo
+        model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|>
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            normal_text: ''
+      TOOLCALLING.batch.30.c:
+        description: Tool-call marker `<|tool_call>` text inside one argument string value
+        ref: dynamo
+        model_text: <|tool_call>call:run_query{sql:<|"|>literal <|tool_call marker> call:get_time{} stays text<|"|>}<tool_call|>
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: literal <|tool_call marker> call:get_time{} stays text
+            normal_text: ''
+      TOOLCALLING.batch.31.a:
+        description: Multi-call response with Gemma delimiters `,`, `:`, and `{}` inside the first argument string
+        ref: dynamo
+        model_text: <|tool_call>call:run_query{sql:<|"|>SELECT a,b:and{brace}<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT a,b:and{brace}
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.31.b:
+        description: Multi-call response with structural delimiters inside one argument string value
+        ref: dynamo
+        model_text: <|tool_call>call:run_query{sql:<|"|>SELECT value WHERE note has brace } and bracket ]<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        tools:
+        - name: run_query
+          parameters:
+            type: object
+            properties:
+              sql:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: run_query
+              arguments:
+                sql: SELECT value WHERE note has brace } and bracket ]
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.13.a:
+        description: Unknown-only call under default behavior
+        ref: originated from https://github.com/sgl-project/sglang/blob/612785ffdcaf35552f1ed433a981d596ca9fe900/test/registered/unit/function_call/test_function_call_parser.py#L4312
+        model_text: <|tool_call>call:unknown_tool{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: unknown_tool
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.batch.13.c:
+        description: Mixed known and unknown calls in one response
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:unknown_tool{location:<|"|>LA<|"|>}<tool_call|>
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: unknown_tool
+              arguments:
+                location: LA
+            normal_text: ''
+  TOOLCALLING.stream.3.yaml:
+    family: gemma4
+    model_label: Gemma 4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.3:
+        description: Complete single tool call with a grammar token split across chunk boundaries
+        ref: derived from TOOLCALLING.batch.1
+        chunks:
+        - delta_text: <|
+        - delta_text: too
+        - delta_text: l_cal
+        - delta_text: l>call:get_
+        - delta_text: weather{location:<|
+        - delta_text: '"|'
+        - delta_text: '>NY'
+        - delta_text: C<|"|
+        - delta_text: '>}<tool_cal'
+        - delta_text: l|>
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.2.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.2.a:
+        description: Parallel calls (back-to-back sentinels)
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L207
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|>
+        tools:
+        - &id006
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - &id007
+          name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+      TOOLCALLING.batch.2.c:
+        description: With surrounding narration
+        ref: dynamo
+        model_text: 'Both: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_time{timezone:<|"|>EST<|"|>}<tool_call|> Done.'
+        tools:
+        - *id006
+        - *id007
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: 'Both:'
+      TOOLCALLING.batch.2.d:
+        description: Same-name twice
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><|tool_call>call:get_weather{location:<|"|>LA<|"|>}<tool_call|>
+        tools:
+        - *id006
+        - *id006
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_weather
+              arguments:
+                location: LA
+            normal_text: ''
+      TOOLCALLING.batch.2.b:
+        description: Two back-to-back fence pairs — not applicable to this family
+        explanation: gemma4's multi-call form is exercised by TOOLCALLING.batch.2.a / 2.c / 2.d; no back-to-back fence/wrapper pattern applies to this family's parser syntax.
+  TOOLCALLING.stream.4.yaml:
+    family: gemma4
+    model_label: Gemma 4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.4.a:
+        description: Truncated stream terminates after a complete in-flight tool-call body
+        ref: derived from TOOLCALLING.batch.5.a
+        chunks:
+        - delta_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+      TOOLCALLING.stream.4.b:
+        description: Stream terminates mid-call body before the in-flight argument payload is complete
+        ref: derived from TOOLCALLING.batch.5.c
+        chunks:
+        - delta_text: <|tool_call>call:get_w
+        - delta_text: eather{location:<|"|>N
+        - delta_text: ''
+          finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.stream.4.c:
+        description: Stream reaches length after a valid inner tool-call body without the required outer wrapper, followed by repeated close markers
+        ref: derived from nemotron-ultra-preview-tool-call-leak-repro/repro_tool_call_leak.py
+        chunks:
+        - delta_text: call:get_weather{location:<|"|>NYC<|"|>}<tool_call|><tool_call|><tool_call|>
+        - delta_text: ''
+          finish_reason: length
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            normal_text: ''
+  TOOLCALLING.batch.7-7.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-7:
+        description: 'Null-only literal union branches: const: null and enum: [null] cannot accept objects, so anyOf and oneOf still have a unique object branch whose page member is an integer. Constructed native MiniMax M3 regression probe for PR #270.'
+        ref: https://github.com/ai-dynamo/frontend-crates/pull/270
+        explanation: This probe exercises MiniMax M3 native XML and nested schema coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7-4.mixed_grep:
+        description: 'MiniMax M3 mixed grep null regression (PR #269).'
+        explanation: This probe exercises the MiniMax M3 native XML grammar and its v1 scalar coercion; it does not apply to this parser family.
+  TOOLCALLING.stream.2.yaml:
+    family: gemma4
+    model_label: Gemma 4
+    mode: stream
+    cases:
+      TOOLCALLING.stream.2:
+        description: Multiple tool calls split across multiple content chunks
+        ref: derived from TOOLCALLING.batch.2.a
+        chunks:
+        - delta_text: <|tool_ca
+        - delta_text: ll>call
+        - delta_text: :get_weather{
+        - delta_text: locat
+        - delta_text: ion:<|"|>NYC<|"|>
+        - delta_text: '}<t'
+        - delta_text: ool_call|
+        - delta_text: '><|tool'
+        - delta_text: _call>call:ge
+        - delta_text: t_tim
+        - delta_text: e{timezone:<|"|>E
+        - delta_text: ST<
+        - delta_text: '|"|>}<too'
+        - delta_text: l_call|
+        - delta_text: '>'
+        - delta_text: ''
+          finish_reason: tool_calls
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        expected:
+          dynamo_v1:
+            calls:
+            - name: get_weather
+              arguments:
+                location: NYC
+            - name: get_time
+              arguments:
+                timezone: EST
+            normal_text: ''
+  TOOLCALLING.batch.7.schema.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.7.o.declared_string:
+        description: 'Schema probe declared_string: independently authored value "plain" under {"type": "string"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: plain
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>plain<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: plain
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_integer:
+        description: 'Schema probe declared_integer: independently authored value 42 under {"type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_number:
+        description: 'Schema probe declared_number: independently authored value 3.5 under {"type": "number"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: number
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 3.5
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_boolean:
+        description: 'Schema probe declared_boolean: independently authored value true under {"type": "boolean"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: boolean
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:true}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: true
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_object:
+        description: 'Schema probe declared_object: independently authored value {"x": 1} under {"type": "object"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                  x: 1
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_array:
+        description: 'Schema probe declared_array: independently authored value [1, 2] under {"type": "array"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: array
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                - 1
+                - 2
+            normal_text: ''
+      TOOLCALLING.batch.7.o.declared_null:
+        description: 'Schema probe declared_null: independently authored value null under {"type": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_bare:
+        description: 'Schema probe const_plain_bare: independently authored value "auto" under {"const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_typed:
+        description: 'Schema probe const_plain_typed: independently authored value "auto" under {"type": "string", "const": "auto"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_allof:
+        description: 'Schema probe const_plain_allof: independently authored value "auto" under {"allOf": [{"const": "auto"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: auto
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_plain_ref:
+        description: 'Schema probe const_plain_ref: independently authored value "auto" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: auto
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_bare:
+        description: 'Schema probe const_quoted_bare: independently authored value "\"hello\"" under {"const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '"hello"'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '"hello"'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_typed:
+        description: 'Schema probe const_quoted_typed: independently authored value "\"hello\"" under {"type": "string", "const": "\"hello\""}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '"hello"'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '"hello"'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_allof:
+        description: 'Schema probe const_quoted_allof: independently authored value "\"hello\"" under {"allOf": [{"const": "\"hello\""}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '"hello"'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '"hello"'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_quoted_ref:
+        description: 'Schema probe const_quoted_ref: independently authored value "\"hello\"" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '"hello"'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '"hello"'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_bare:
+        description: 'Schema probe const_object_bare: independently authored value "{\"x\":1}" under {"const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '{"x":1}'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '{"x":1}'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_typed:
+        description: 'Schema probe const_object_typed: independently authored value "{\"x\":1}" under {"type": "string", "const": "{\"x\":1}"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '{"x":1}'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '{"x":1}'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_allof:
+        description: 'Schema probe const_object_allof: independently authored value "{\"x\":1}" under {"allOf": [{"const": "{\"x\":1}"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '{"x":1}'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '{"x":1}'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_object_ref:
+        description: 'Schema probe const_object_ref: independently authored value "{\"x\":1}" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '{"x":1}'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '{"x":1}'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_bare:
+        description: 'Schema probe const_array_bare: independently authored value "[1,2]" under {"const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '[1,2]'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '[1,2]'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_typed:
+        description: 'Schema probe const_array_typed: independently authored value "[1,2]" under {"type": "string", "const": "[1,2]"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '[1,2]'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '[1,2]'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_allof:
+        description: 'Schema probe const_array_allof: independently authored value "[1,2]" under {"allOf": [{"const": "[1,2]"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '[1,2]'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '[1,2]'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_array_ref:
+        description: 'Schema probe const_array_ref: independently authored value "[1,2]" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '[1,2]'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '[1,2]'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>[1,2]<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '[1,2]'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_bare:
+        description: 'Schema probe const_number_bare: independently authored value "42" under {"const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '42'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_typed:
+        description: 'Schema probe const_number_typed: independently authored value "42" under {"type": "string", "const": "42"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '42'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_allof:
+        description: 'Schema probe const_number_allof: independently authored value "42" under {"allOf": [{"const": "42"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '42'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_number_ref:
+        description: 'Schema probe const_number_ref: independently authored value "42" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '42'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_bare:
+        description: 'Schema probe const_boolean_bare: independently authored value "true" under {"const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: 'true'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'true'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_typed:
+        description: 'Schema probe const_boolean_typed: independently authored value "true" under {"type": "string", "const": "true"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: 'true'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'true'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_allof:
+        description: 'Schema probe const_boolean_allof: independently authored value "true" under {"allOf": [{"const": "true"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: 'true'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'true'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_boolean_ref:
+        description: 'Schema probe const_boolean_ref: independently authored value "true" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: 'true'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'true'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>true<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'true'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_typed:
+        description: 'Schema probe const_null_typed: independently authored value "null" under {"type": "string", "const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'null'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_allof:
+        description: 'Schema probe const_null_allof: independently authored value "null" under {"allOf": [{"const": "null"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: 'null'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'null'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_ref:
+        description: 'Schema probe const_null_ref: independently authored value "null" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: 'null'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'null'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_bare:
+        description: 'Schema probe const_space_bare: independently authored value "  spaced  " under {"const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '  spaced  '
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '  spaced  '
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_typed:
+        description: 'Schema probe const_space_typed: independently authored value "  spaced  " under {"type": "string", "const": "  spaced  "}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '  spaced  '
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '  spaced  '
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_allof:
+        description: 'Schema probe const_space_allof: independently authored value "  spaced  " under {"allOf": [{"const": "  spaced  "}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '  spaced  '
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '  spaced  '
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_space_ref:
+        description: 'Schema probe const_space_ref: independently authored value "  spaced  " under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '  spaced  '
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '  spaced  '
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>  spaced  <|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '  spaced  '
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_bare:
+        description: 'Schema probe const_unicode_bare: independently authored value "café" under {"const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: café
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: café
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_typed:
+        description: 'Schema probe const_unicode_typed: independently authored value "café" under {"type": "string", "const": "café"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: café
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: café
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_allof:
+        description: 'Schema probe const_unicode_allof: independently authored value "café" under {"allOf": [{"const": "café"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: café
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: café
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_unicode_ref:
+        description: 'Schema probe const_unicode_ref: independently authored value "café" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: café
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: café
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>café<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: café
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_bare:
+        description: 'Schema probe const_entity_bare: independently authored value "&lt;" under {"const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: '&lt;'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '&lt;'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_typed:
+        description: 'Schema probe const_entity_typed: independently authored value "&lt;" under {"type": "string", "const": "&lt;"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                const: '&lt;'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '&lt;'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_allof:
+        description: 'Schema probe const_entity_allof: independently authored value "&lt;" under {"allOf": [{"const": "&lt;"}, {"minLength": 0}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - const: '&lt;'
+                - minLength: 0
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '&lt;'
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_entity_ref:
+        description: 'Schema probe const_entity_ref: independently authored value "&lt;" under {"$ref": "#/$defs/Literal"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Literal'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Literal:
+                const: '&lt;'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '&lt;'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>&lt;<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '&lt;'
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_string:
+        description: 'Schema probe union_anyOf_integer_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_typed:
+        description: 'Schema probe union_anyOf_integer_typed: independently authored value 42 under {"anyOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_string:
+        description: 'Schema probe union_anyOf_number_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: number
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_typed:
+        description: 'Schema probe union_anyOf_number_typed: independently authored value 3.5 under {"anyOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: number
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 3.5
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_string:
+        description: 'Schema probe union_anyOf_boolean_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: boolean
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_typed:
+        description: 'Schema probe union_anyOf_boolean_typed: independently authored value true under {"anyOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: boolean
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:true}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: true
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_string:
+        description: 'Schema probe union_anyOf_object_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_typed:
+        description: 'Schema probe union_anyOf_object_typed: independently authored value {"x": 1} under {"anyOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                  x: 1
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_string:
+        description: 'Schema probe union_anyOf_array_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: array
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_typed:
+        description: 'Schema probe union_anyOf_array_typed: independently authored value [1, 2] under {"anyOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: array
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                - 1
+                - 2
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_string:
+        description: 'Schema probe union_anyOf_null_string: independently authored value "auto" under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_typed:
+        description: 'Schema probe union_anyOf_null_typed: independently authored value null under {"anyOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: auto
+                - type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_reverse_string:
+        description: 'Schema probe union_anyOf_integer_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: integer
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_integer_reverse_typed:
+        description: 'Schema probe union_anyOf_integer_reverse_typed: independently authored value 42 under {"anyOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: integer
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_reverse_string:
+        description: 'Schema probe union_anyOf_number_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: number
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_number_reverse_typed:
+        description: 'Schema probe union_anyOf_number_reverse_typed: independently authored value 3.5 under {"anyOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: number
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 3.5
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_reverse_string:
+        description: 'Schema probe union_anyOf_boolean_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: boolean
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_boolean_reverse_typed:
+        description: 'Schema probe union_anyOf_boolean_reverse_typed: independently authored value true under {"anyOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: boolean
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:true}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: true
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_reverse_string:
+        description: 'Schema probe union_anyOf_object_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: object
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_object_reverse_typed:
+        description: 'Schema probe union_anyOf_object_reverse_typed: independently authored value {"x": 1} under {"anyOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: object
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                  x: 1
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_reverse_string:
+        description: 'Schema probe union_anyOf_array_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: array
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_array_reverse_typed:
+        description: 'Schema probe union_anyOf_array_reverse_typed: independently authored value [1, 2] under {"anyOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: array
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                - 1
+                - 2
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_reverse_string:
+        description: 'Schema probe union_anyOf_null_reverse_string: independently authored value "auto" under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: 'null'
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.q.union_anyOf_null_reverse_typed:
+        description: 'Schema probe union_anyOf_null_reverse_typed: independently authored value null under {"anyOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - type: 'null'
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_string:
+        description: 'Schema probe union_oneOf_integer_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_typed:
+        description: 'Schema probe union_oneOf_integer_typed: independently authored value 42 under {"oneOf": [{"const": "auto"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_string:
+        description: 'Schema probe union_oneOf_number_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: number
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_typed:
+        description: 'Schema probe union_oneOf_number_typed: independently authored value 3.5 under {"oneOf": [{"const": "auto"}, {"type": "number"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: number
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 3.5
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_string:
+        description: 'Schema probe union_oneOf_boolean_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: boolean
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_typed:
+        description: 'Schema probe union_oneOf_boolean_typed: independently authored value true under {"oneOf": [{"const": "auto"}, {"type": "boolean"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: boolean
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:true}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: true
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_string:
+        description: 'Schema probe union_oneOf_object_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_typed:
+        description: 'Schema probe union_oneOf_object_typed: independently authored value {"x": 1} under {"oneOf": [{"const": "auto"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                  x: 1
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_string:
+        description: 'Schema probe union_oneOf_array_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: array
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_typed:
+        description: 'Schema probe union_oneOf_array_typed: independently authored value [1, 2] under {"oneOf": [{"const": "auto"}, {"type": "array"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: array
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                - 1
+                - 2
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_string:
+        description: 'Schema probe union_oneOf_null_string: independently authored value "auto" under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_typed:
+        description: 'Schema probe union_oneOf_null_typed: independently authored value null under {"oneOf": [{"const": "auto"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - const: auto
+                - type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_reverse_string:
+        description: 'Schema probe union_oneOf_integer_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: integer
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_integer_reverse_typed:
+        description: 'Schema probe union_oneOf_integer_reverse_typed: independently authored value 42 under {"oneOf": [{"type": "integer"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: integer
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_reverse_string:
+        description: 'Schema probe union_oneOf_number_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: number
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_number_reverse_typed:
+        description: 'Schema probe union_oneOf_number_reverse_typed: independently authored value 3.5 under {"oneOf": [{"type": "number"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: number
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 3.5
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:3.5}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 3.5
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_reverse_string:
+        description: 'Schema probe union_oneOf_boolean_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: boolean
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_boolean_reverse_typed:
+        description: 'Schema probe union_oneOf_boolean_reverse_typed: independently authored value true under {"oneOf": [{"type": "boolean"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: boolean
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: true
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:true}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: true
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_reverse_string:
+        description: 'Schema probe union_oneOf_object_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: object
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_object_reverse_typed:
+        description: 'Schema probe union_oneOf_object_reverse_typed: independently authored value {"x": 1} under {"oneOf": [{"type": "object"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: object
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+                x: 1
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:{x:1}}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                  x: 1
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_reverse_string:
+        description: 'Schema probe union_oneOf_array_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: array
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_array_reverse_typed:
+        description: 'Schema probe union_oneOf_array_reverse_typed: independently authored value [1, 2] under {"oneOf": [{"type": "array"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: array
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value:
+              - 1
+              - 2
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:[1,2]}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value:
+                - 1
+                - 2
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_reverse_string:
+        description: 'Schema probe union_oneOf_null_reverse_string: independently authored value "auto" under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: 'null'
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.r.union_oneOf_null_reverse_typed:
+        description: 'Schema probe union_oneOf_null_reverse_typed: independently authored value null under {"oneOf": [{"type": "null"}, {"const": "auto"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                oneOf:
+                - type: 'null'
+                - const: auto
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_anyOf_string:
+        description: 'Schema probe ref_union_anyOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Alias'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Alias:
+                $ref: '#/$defs/Choice'
+              Choice:
+                anyOf:
+                - const: auto
+                - type: integer
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_anyOf_integer:
+        description: 'Schema probe ref_union_anyOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Alias'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Alias:
+                $ref: '#/$defs/Choice'
+              Choice:
+                anyOf:
+                - const: auto
+                - type: integer
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: -7
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:-7}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: -7
+            normal_text: ''
+      TOOLCALLING.batch.7.t.intersection_anyOf:
+        description: 'Schema probe intersection_anyOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"anyOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - type: integer
+                - anyOf:
+                  - const: auto
+                  - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_oneOf_string:
+        description: 'Schema probe ref_union_oneOf_string: independently authored value "auto" under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Alias'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Alias:
+                $ref: '#/$defs/Choice'
+              Choice:
+                oneOf:
+                - const: auto
+                - type: integer
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: auto
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>auto<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: auto
+            normal_text: ''
+      TOOLCALLING.batch.7.s.ref_union_oneOf_integer:
+        description: 'Schema probe ref_union_oneOf_integer: independently authored value -7 under {"$ref": "#/$defs/Alias"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Alias'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Alias:
+                $ref: '#/$defs/Choice'
+              Choice:
+                oneOf:
+                - const: auto
+                - type: integer
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: -7
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:-7}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: -7
+            normal_text: ''
+      TOOLCALLING.batch.7.t.intersection_oneOf:
+        description: 'Schema probe intersection_oneOf: independently authored value 42 under {"allOf": [{"type": "integer"}, {"oneOf": [{"const": "auto"}, {"type": "integer"}]}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                allOf:
+                - type: integer
+                - oneOf:
+                  - const: auto
+                  - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.s.ref_sibling_integer:
+        description: 'Schema probe ref_sibling_integer: independently authored value 42 under {"$ref": "#/$defs/Choice", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Choice'
+                type: integer
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Choice:
+                anyOf:
+                - const: auto
+                - type: integer
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.s.escaped_ref_const:
+        description: 'Schema probe escaped_ref_const: independently authored value "\"hello\"" under {"$ref": "#/$defs/A~1B~0C"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/A~1B~0C'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              A/B~C:
+                const: '"hello"'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '"hello"'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>"hello"<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '"hello"'
+            normal_text: ''
+      TOOLCALLING.batch.7.s.percent_ref_const:
+        description: 'Schema probe percent_ref_const: independently authored value "42" under {"$ref": "#/$defs/Caf%C3%A9"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $ref: '#/$defs/Caf%C3%A9'
+            required:
+            - value
+            additionalProperties: false
+            $defs:
+              Café:
+                const: '42'
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.u.enum_string:
+        description: 'Schema probe enum_string: independently authored value "42" under {"type": "string", "enum": ["auto", "42"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                enum:
+                - auto
+                - '42'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.u.enum_integer:
+        description: 'Schema probe enum_integer: independently authored value 42 under {"type": "integer", "enum": [7, 42]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: integer
+                enum:
+                - 7
+                - 42
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_string_integer:
+        description: 'Schema probe type_array_string_integer: independently authored value "42" under {"type": ["string", "integer"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type:
+                - string
+                - integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_integer_null:
+        description: 'Schema probe type_array_integer_null: independently authored value 42 under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type:
+                - integer
+                - 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+      TOOLCALLING.batch.7.v.type_array_integer_null_null:
+        description: 'Schema probe type_array_integer_null_null: independently authored value null under {"type": ["integer", "null"]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type:
+                - integer
+                - 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.v.nullable_string:
+        description: 'Schema probe nullable_string: independently authored value null under {"type": "string", "nullable": true}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                type: string
+                nullable: true
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.p.const_null_bare:
+        description: 'Schema probe const_null_bare: independently authored value "null" under {"const": "null"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                const: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 'null'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>null<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 'null'
+            normal_text: ''
+      TOOLCALLING.batch.7.w.null_union_ambiguous:
+        description: 'Schema probe null_union_ambiguous: independently authored value null under {"anyOf": [{"const": "null"}, {"type": "null"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: 'null'
+                - type: 'null'
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: null
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:null}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: null
+            normal_text: ''
+      TOOLCALLING.batch.7.w.integer_const_ambiguous:
+        description: 'Schema probe integer_const_ambiguous: independently authored value "42" under {"anyOf": [{"const": "42"}, {"type": "integer"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: '42'
+                - type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '42'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>42<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '42'
+            normal_text: ''
+      TOOLCALLING.batch.7.w.object_const_union:
+        description: 'Schema probe object_const_union: independently authored value "{\"x\":1}" under {"anyOf": [{"const": "{\"x\":1}"}, {"type": "object"}]}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                anyOf:
+                - const: '{"x":1}'
+                - type: object
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: '{"x":1}'
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:<|"|>{"x":1}<|"|>}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: '{"x":1}'
+            normal_text: ''
+      TOOLCALLING.batch.7.o.id_direct_integer:
+        description: 'Schema probe id_direct_integer: independently authored value 42 under {"$id": "https://example.test/schema", "type": "integer"}. Native grammar preserves the intended JSON type; schema-driven grammars must infer it.'
+        tools:
+        - name: schema_probe
+          parameters:
+            type: object
+            properties:
+              value:
+                $id: https://example.test/schema
+                type: integer
+            required:
+            - value
+            additionalProperties: false
+          strict: true
+        golden:
+          calls:
+          - name: schema_probe
+            arguments:
+              value: 42
+          normal_text: ''
+        model_text: <|tool_call>call:schema_probe{value:42}<tool_call|>
+        expected:
+          dynamo_v1:
+            calls:
+            - name: schema_probe
+              arguments:
+                value: 42
+            normal_text: ''
+  TOOLCALLING.batch.4.yaml:
+    family: gemma4
+    mode: batch
+    cases:
+      TOOLCALLING.batch.4.a:
+        description: Sentinel pair with garbage
+        ref: dynamo
+        model_text: <|tool_call>nonsense<tool_call|>
+        tools:
+        - &id008
+          name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.b:
+        description: Missing close brace in body
+        ref: originated from https://github.com/vllm-project/vllm/blob/b53c507bc91f87e28b03e9b54bbff7c76e97d58b/tests/tool_parsers/test_gemma4_tool_parser.py#L572
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|><tool_call|>
+        tools:
+        - *id008
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.c:
+        description: No call:name prefix
+        ref: dynamo
+        model_text: <|tool_call>{location:<|"|>NYC<|"|>}<tool_call|>
+        tools:
+        - *id008
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.d:
+        description: Mismatched sentinels
+        ref: dynamo
+        model_text: <|tool_call>call:get_weather{location:<|"|>NYC<|"|>}</tool_call>
+        tools:
+        - *id008
+        expected:
+          dynamo_v1:
+            calls: []
+            normal_text: ''
+      TOOLCALLING.batch.4.e:
+        description: Malformed-prefix recovery — n/a for this family's syntax
+        explanation: 'TOOLCALLING.batch.4.e is specific to llama3_json''s raw JSON-object scanner: a malformed JSON-looking prefix is followed by a complete JSON object, and the detector may resynchronize on the later object. This family uses a framed parser grammar instead of that raw JSON-prefix scanner; malformed-input coverage for this family lives in TOOLCALLING.batch.4.a through 4.d.'
+      TOOLCALLING.batch.4.f:
+        description: Tool-name XML tag case - n/a for this family's syntax
+        explanation: TOOLCALLING.batch.4.f is specific to Qwen3-Coder XML syntax, where the model may emit a tool-name tag such as <terminal> inside <tool_call> instead of the required <function=Terminal> opener. This family does not use Qwen3-Coder's <function=...> opener.

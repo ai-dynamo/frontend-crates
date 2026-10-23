@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, access, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -177,13 +178,27 @@ export function parseStatusArguments(argv) {
 
 export async function runStatus(options, output = console.log, errorOutput = console.error) {
   let reader;
+  let currentView;
   try {
     const root = resolve(options.root);
-    const catalog = JSON.parse(await readFile(resolve(root, 'conformance/viewer-catalog.json'), 'utf8'));
+    let split = true;
+    try {
+      await access(resolve(root, 'conformance/capture-current.json'));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      split = false;
+    }
+    if (split) {
+      currentView = await mkdtemp(resolve(process.env.TMPDIR || tmpdir(), 'current-source-status-'));
+      await execFileAsync(process.env.CONFORMANCE_PYTHON || 'python3', [resolve(root, 'conformance/utils/src/capture_sources.py'),
+        '--root', root, '--stage-current-source', currentView]);
+    }
+    const sourceRoot = currentView || root;
+    const catalog = JSON.parse(await readFile(resolve(sourceRoot, 'conformance/viewer-catalog.json'), 'utf8'));
     const selected = selectTabs({ tabs: catalog.metadata.tabs.map((spec) => ({ ...spec, kind: spec.suite })) }, options.tabs);
     const commitSha = options.commitSha ?? (await execFileAsync('git', ['-C', root, 'rev-parse', 'HEAD'])).stdout.trim();
     const page = pageMetadata(catalog, { commitSha });
-    reader = new FixtureResources(catalog, await createNodeResourceStore(root, { allowSourceFiles: true }));
+    reader = new FixtureResources(catalog, await createNodeResourceStore(sourceRoot, { allowSourceFiles: true }));
     if (options.knownDivergences && !selected.some((tab) => tab.id === 'tab-unified')) throw new Error('--known-divergences requires selecting the Unified tab');
     const known = options.knownDivergences ? await reader.parser.parseYaml(await readFile(options.knownDivergences), { path: options.knownDivergences }) : null;
     const status = { schema: 1, html: options.reportPath || resolve(root, 'index.html'), generated: page.meta, reports: [] };
@@ -210,6 +225,7 @@ export async function runStatus(options, output = console.log, errorOutput = con
     return 2;
   } finally {
     reader?.dispose();
+    if (currentView) await rm(currentView, { recursive: true, force: true });
   }
 }
 

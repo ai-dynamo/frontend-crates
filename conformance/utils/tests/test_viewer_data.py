@@ -92,8 +92,9 @@ raw[0] ^= 1;
 assert.throws(() => readTarGzip(gzipSync(raw)), /checksum/i);
 const pointer = enc.encode('version https://git-lfs.github.com/spec/v1\noid sha256:abc\nsize 1\n');
 assert.throws(() => readTarGzip(pointer), /LFS/i);
-const archiveBytes = new Uint8Array(await readFile('conformance/fixtures/toolcalling/fixtures-stream-v1/inputs.tar.gz'));
 const member = 'toolcalling/fixtures-stream-v1/inputs/deepseek_v3/TOOLCALLING.streamv1.1.yaml';
+const authored = await readFile('conformance/inputs/stream/deepseek_v3/TOOLCALLING.streamv1.1.yaml');
+const archiveBytes = tar(entry(member, authored), entry('unselected.yaml', 'value: 1\n'));
 assert.equal(readTarGzip(archiveBytes, { selectedPaths: [member] }).size, 1);
 console.log('viewer data primitives passed');
 '''

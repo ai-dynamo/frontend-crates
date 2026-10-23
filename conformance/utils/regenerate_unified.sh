@@ -4,6 +4,10 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
+if [[ -f conformance/capture-current.json ]]; then
+  : "${CONFORMANCE_HISTORY_SOURCE:?Capture regeneration requires an explicit pinned history directory; standalone latest publication uses conformance-publish instead}"
+fi
+
 run() {
   printf '\n==> %s\n' "$*"
   "$@"

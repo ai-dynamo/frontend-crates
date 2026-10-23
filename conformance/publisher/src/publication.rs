@@ -389,16 +389,22 @@ fn asset_graph(root: &Path) -> Result<BTreeMap<String, Vec<u8>>> {
     Ok(files)
 }
 
-fn bundle_assets(
+fn bundle_assets_with_installation(
     root: &Path,
     assets: &BTreeMap<String, Vec<u8>>,
+    installation: Option<&Path>,
 ) -> Result<BTreeMap<String, Vec<u8>>> {
     if !assets.contains_key("conformance/viewer/app.js") {
         return Ok(assets.clone());
     }
-    let output = Command::new("node")
+    let mut command = Command::new("node");
+    command
         .arg(root.join("conformance/viewer/build.mjs"))
-        .current_dir(root)
+        .current_dir(root);
+    if let Some(installation) = installation {
+        command.env("CONFORMANCE_ESBUILD_ROOT", installation);
+    }
+    let output = command
         .output()
         .context("launch locked production JavaScript bundler")?;
     ensure!(
@@ -669,15 +675,35 @@ fn publication_time() -> Result<String> {
 }
 
 fn command(options: &Options, root: &Path, output: &Path) -> Result<String> {
+    let guard = root.join("conformance/capture-source-guard.json");
+    let prepared: Option<Value> = if guard.is_file() {
+        Some(serde_json::from_slice(&fs::read(guard)?)?)
+    } else {
+        None
+    };
     let mut args = vec![
         "conformance-publish".to_string(),
         "--root".into(),
-        root.to_str().context("non UTF8 root")?.into(),
+        prepared
+            .as_ref()
+            .and_then(|value| value["root"].as_str())
+            .unwrap_or(root.to_str().context("non UTF8 root")?)
+            .into(),
         "--output".into(),
         output.to_str().context("non UTF8 output")?.into(),
         "--revision".into(),
         options.revision.clone(),
     ];
+    if let Some(history) = prepared
+        .as_ref()
+        .and_then(|value| value["history_source"].as_str())
+    {
+        args.extend([
+            "--include-history".into(),
+            "--history-source".into(),
+            history.into(),
+        ]);
+    }
     if let Some(tree) = &options.candidate_tree {
         args.extend(["--candidate-tree".into(), tree.clone()]);
     }
@@ -763,6 +789,69 @@ pub fn validate(root: &Path, workers: &str) -> Result<Value> {
 }
 
 pub fn publish(options: Options) -> Result<()> {
+    publish_mode(options, false, None)
+}
+
+pub fn publish_mode(
+    mut options: Options,
+    include_history: bool,
+    history_source: Option<&Path>,
+) -> Result<()> {
+    ensure!(
+        include_history || history_source.is_none(),
+        "--history-source requires --include-history"
+    );
+    if options
+        .root
+        .join("conformance/capture-current.json")
+        .is_file()
+    {
+        ensure!(
+            !options.data_only,
+            "split capture publication requires a separate output directory"
+        );
+        let temporary = tempfile::tempdir()?;
+        let mut command = Command::new(
+            std::env::var_os("CONFORMANCE_PYTHON").unwrap_or_else(|| "python3".into()),
+        );
+        command
+            .arg(
+                options
+                    .root
+                    .join("conformance/utils/src/capture_sources.py"),
+            )
+            .arg("--root")
+            .arg(&options.root)
+            .arg("--prepare")
+            .arg(temporary.path())
+            .arg("--publisher")
+            .arg(std::env::current_exe()?);
+        if include_history {
+            command.arg("--include-history");
+        }
+        if let Some(source) = history_source {
+            command.arg("--history-source").arg(source);
+        }
+        ensure!(
+            command.status()?.success(),
+            "capture source preparation failed"
+        );
+        // The prepared view contains source modules, while the locked package
+        // installation remains in the caller's checkout.
+        let installation = std::env::var_os("CONFORMANCE_ESBUILD_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or(options.root.join("conformance/viewer"));
+        options.root = temporary.path().to_path_buf();
+        return publish_prepared(options, Some(&installation));
+    }
+    ensure!(
+        !include_history,
+        "history mode requires a split capture checkout"
+    );
+    publish_prepared(options, None)
+}
+
+fn publish_prepared(options: Options, installation: Option<&Path>) -> Result<()> {
     let _archives = source::archive_session();
     let started = PhaseClock::now()?;
     ensure!(
@@ -882,7 +971,7 @@ pub fn publish(options: Options) -> Result<()> {
     let web_assets = if options.data_only {
         assets.clone()
     } else {
-        bundle_assets(&root, &assets)?
+        bundle_assets_with_installation(&root, &assets, installation)?
     };
     for path in metadata.keys().chain(assets.keys()) {
         let path = root.join(path);
@@ -941,6 +1030,18 @@ pub fn publish(options: Options) -> Result<()> {
         let mut publication = json!({"schema":1,"revision":options.revision,"generated_revision":options.revision,"catalog_revision":if options.data_only {&catalog["revision"]} else {&resolved["revision"]},"generated_on":publication_time()?,"command":command(&options,&root,&output)?,"output":output.to_str(),"resolved_catalog_revision":resolved["revision"]});
         if let Some(tree) = &options.candidate_tree {
             publication["candidate_tree"] = json!(tree);
+        }
+        if let Some(generation) = catalog.get("capture_generation") {
+            publication["generation_mode"] = generation["mode"].clone();
+            publication["current_captures"] = generation["current"].clone();
+            publication["history_pin"] = generation["history_pin"].clone();
+            let guard: Value = serde_json::from_slice(&source::read(
+                &root,
+                "conformance/capture-source-guard.json",
+            )?)?;
+            publication["publisher_inputs_sha256"] = json!(sha256(&json_bytes(
+                &json!({"inputs":guard["inputs"],"controls":guard["controls"]})
+            )?));
         }
         if options.data_only {
             publication["source_checkout"] = json!(true);
@@ -1049,6 +1150,20 @@ pub fn publish(options: Options) -> Result<()> {
         };
         let install_started = PhaseClock::now()?;
         transaction::publish_checked(&transaction_parent, &pairs, &retain_on_rollback, || {
+            if root.join("conformance/capture-source-guard.json").is_file() {
+                ensure!(
+                    Command::new(
+                        std::env::var_os("CONFORMANCE_PYTHON").unwrap_or_else(|| "python3".into())
+                    )
+                    .arg(root.join("conformance/utils/src/capture_sources.py"))
+                    .arg("--root")
+                    .arg(&root)
+                    .arg("--verify-prepared")
+                    .status()?
+                    .success(),
+                    "capture source changed during publication"
+                );
+            }
             let phase = PhaseClock::now()?;
             ensure!(
                 source::read(&root, "conformance/fixtures-manifest.json")? == manifest,

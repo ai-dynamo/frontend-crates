@@ -8,6 +8,7 @@ import { deriveStreamExpected } from './legacy.js';
 import { canonicalUnifiedLabel } from './unified.js';
 import { toolcallingPanel } from './toolcalling.js';
 import { cellState, selectTabs, selectRows, defaultReference } from './status.js';
+import { syntheticLegacyInputs } from '../utils/tests/fixtures/legacy_catalog.js';
 
 const args = process.argv.slice(2);
 if (args.includes('--help')) {
@@ -17,6 +18,7 @@ if (args.includes('--help')) {
 assert.equal(args.length, 2);
 assert.equal(args[0], '--suite');
 const catalog = JSON.parse(await readFile(new URL('../viewer-catalog.json', import.meta.url), 'utf8'));
+syntheticLegacyInputs(catalog);
 const metadata = catalog.metadata;
 const entry = (sig, fields = {}) => ({ sig, na: 0, err: 0, leak: 0, ...fields });
 const child = (sub, sig = 1, missing = false, inapplicable = false) => ({ sub, case_id: `UNIFIED.${sub}`, family: 'alpha', kind: 'cell', status: inapplicable ? 'na' : 'ok',

@@ -1,0 +1,107 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: mistral
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.7.x.xml_string_type_single_quoted_object:
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{''a'':1}'
+      normal_text: ''
+    chunks:
+    - delta_text: '[TO'
+    - delta_text: OL_
+    - delta_text: CAL
+    - delta_text: LS]
+    - delta_text: '[{"'
+    - delta_text: nam
+    - delta_text: 'e":'
+    - delta_text: '"sc'
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: e",
+    - delta_text: '"ar'
+    - delta_text: gum
+    - delta_text: ent
+    - delta_text: 's":'
+    - delta_text: '{"v'
+    - delta_text: alu
+    - delta_text: 'e":'
+    - delta_text: '"{'''
+    - delta_text: 'a'':'
+    - delta_text: 1}"
+    - delta_text: '}}]'
+    - delta_text: '[/T'
+    - delta_text: OOL
+    - delta_text: _CA
+    - delta_text: LLS
+    - delta_text: ']'
+      finish_reason: stop
+    unavailable:
+      dynamo_v2: No registered Dynamo v2 parser for this family.
+  TOOLCALLING.streamv1.7.x.xml_string_type_double_quoted_object:
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"a":1}'
+      normal_text: ''
+    chunks:
+    - delta_text: '[TO'
+    - delta_text: OL_
+    - delta_text: CAL
+    - delta_text: LS]
+    - delta_text: '[{"'
+    - delta_text: nam
+    - delta_text: 'e":'
+    - delta_text: '"sc'
+    - delta_text: hem
+    - delta_text: a_p
+    - delta_text: rob
+    - delta_text: e",
+    - delta_text: '"ar'
+    - delta_text: gum
+    - delta_text: ent
+    - delta_text: 's":'
+    - delta_text: '{"v'
+    - delta_text: alu
+    - delta_text: 'e":'
+    - delta_text: '"{\'
+    - delta_text: '"a\'
+    - delta_text: '":1'
+    - delta_text: '}"}'
+    - delta_text: '}]['
+    - delta_text: /TO
+    - delta_text: OL_
+    - delta_text: CAL
+    - delta_text: LS]
+      finish_reason: stop
+    unavailable:
+      dynamo_v2: No registered Dynamo v2 parser for this family.

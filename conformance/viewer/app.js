@@ -72,7 +72,8 @@ async function initialize() {
   root.dataset.historyAvailable = embeddedIdentities ? 'checking' : String(historyAvailable);
   let historyDiscovery;
   const readHistory = () => historyDiscovery ||= discoverHistory(baseUrl, catalog);
-  if (params.has('raw') && embeddedIdentities) {
+  const standaloneLatest = catalog.capture_generation?.mode === 'latest';
+  if (params.has('raw') && embeddedIdentities && !standaloneLatest) {
     historyAvailable = await readHistory();
     startup.store.allowExternalResources = historyAvailable;
     if (!historyAvailable) params.delete('raw');
@@ -194,6 +195,10 @@ async function initialize() {
   async function discoverOlderResults() {
     await firstLoad;
     if (!embeddedIdentities) return;
+    if (standaloneLatest) {
+      root.dataset.historyAvailable = 'false';
+      return;
+    }
     historyAvailable = await readHistory();
     startup.store.allowExternalResources = historyAvailable;
     root.dataset.historyAvailable = String(historyAvailable);

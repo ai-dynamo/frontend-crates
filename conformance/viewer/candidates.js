@@ -39,9 +39,13 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
     const identity = `${source.implementation}@${source.mode}@${version}`;
     if (!unique.has(identity)) unique.set(identity, { ...source, id: identity, version });
   }
-  const sources = [...unique.values()];
+  const recordedSources = [...unique.values()];
   const compare = mode === 'unified' ? compareVersions : compareLegacyVersions;
-  const latest = (implementation, dataMode = mode) => sources.filter((item) => item.implementation === implementation && item.mode === dataMode).sort((a, b) => compare(b.version, a.version))[0];
+  const latest = (implementation, dataMode = mode) => recordedSources.filter((item) => item.implementation === implementation && item.mode === dataMode).sort((a, b) => compare(b.version, a.version))[0];
+  // Only the public Unified selector narrows family-local current evidence.
+  const sources = mode === 'unified' && catalog.capture_generation?.mode === 'latest'
+    ? recordedSources.filter(source => source.id === latest(source.implementation, source.mode).id)
+    : recordedSources;
   const control = (source, key, label, bucket = 'C') => ({
     source,
     control: { key, impl: source.engine || metadata.unified_capture_policy?.[source.implementation]?.engine || metadata.implementations.find((item) => item.key === source.implementation)?.engine || source.implementation,

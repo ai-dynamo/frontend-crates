@@ -175,7 +175,7 @@ for (const [implementation, assigned] of implementations) {
       }
       assert(context.originIndex, `no YAML history for ${resource.capture_identity}`);
       const snapshot = resource.families ? bundle[family] : bundle;
-      await validateResolvedUnified(snapshot, context.input, { ...resource, family }, originals);
+      await validateResolvedUnified(snapshot, context.input, { ...resource, family }, catalog.sources.original_unified || originals);
       assert.equal(resolved.size, Object.keys(snapshot).length, `record count differs: ${resource.capture_identity}:${family}`);
       for (const [caseId, value] of resolved) {
         assert(sameValue(value.value, snapshot[caseId].value), `resolved record differs: ${resource.capture_identity}:${family}:${caseId}`);

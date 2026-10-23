@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: qwen25
+mode: batch
+cases:
+  TOOLCALLING.batch.7-4.inline:
+    description: 'PR #268 inline control: a nullable string parameter converts bare null to JSON null.'
+    explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.inline:
+    description: 'PR #268 inline control: a string-only parameter preserves bare null as string "null".'
+    explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-4.ref:
+    description: 'PR #268 local reference: a nullable string definition on the tool parameters root permits JSON null.'
+    explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.
+  TOOLCALLING.batch.7-5.ref:
+    description: 'PR #268 local reference: a string-only definition on the tool parameters root excludes JSON null.'
+    explanation: This probe uses GLM XML argument markers and tests its schema-dependent null coercion; it does not apply to this parser family.

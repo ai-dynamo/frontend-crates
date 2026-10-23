@@ -306,6 +306,12 @@ pub fn snapshots(
     }
     let index = original
         .iter()
+        .chain(
+            catalog["sources"]["lineage"]
+                .as_array()
+                .into_iter()
+                .flatten(),
+        )
         .map(|r| {
             Ok((
                 r["path"]
@@ -658,6 +664,9 @@ pub fn projection(catalog: &Value) -> Result<Value> {
         metadata["folds"] = json!({});
     }
     let mut result = json!({});
+    if let Some(generation) = catalog.get("capture_generation") {
+        result["capture_generation"] = generation.clone();
+    }
     if let Some(revision) = catalog.get("source_revision") {
         result["source_revision"] = revision.clone();
     }

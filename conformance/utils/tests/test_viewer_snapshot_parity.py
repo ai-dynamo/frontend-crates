@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -13,6 +14,8 @@ SRC = ROOT / "conformance/utils/src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 import ci_coverage
+import capture_sources
+import unified_archives
 import unified_history
 import migrate_unified_snapshots
 import viewer_catalog
@@ -120,6 +123,35 @@ def _snapshot_parity_case(tmp_path, fault, *, complete=False):
 def test_full_corpus_json_snapshots_match_python_and_javascript_resolution(tmp_path, published_viewer):
     site = published_viewer
     published = proof_catalog(ROOT, site)
+    if published.get("capture_generation", {}).get("mode") == "latest":
+        source = tmp_path / "current-source"
+        capture_sources.stage_unified(ROOT, source / capture_sources.STORE)
+    else:
+        source = ROOT
+    _assert_full_corpus_parity(tmp_path, source, site, published)
+
+
+def test_external_history_json_snapshots_match_original_yaml(tmp_path, history_source):
+    configured = os.environ.get("CONFORMANCE_HISTORY_SITE")
+    if not configured:
+        pytest.skip("full historical parity requires CONFORMANCE_HISTORY_SITE")
+    site = Path(configured).resolve(strict=True)
+    store = history_source / capture_sources.STORE
+    inventory = unified_archives.inventory(store)
+    assert all(unified_history.source_identity(row["path"])["kind"] in {"history", "inputs-and-golden"}
+               for row in inventory), "permanent history qualification requires self-contained snapshots"
+    # Complete snapshots embed their execution proof. The independent Node
+    # reader still parses each original and rejects any external dependency;
+    # descriptor preparation needs only verified byte identities here.
+    document_index = {row["path"]: {"execution": None} for row in inventory}
+    originals = viewer_catalog._unified_records(history_source, inventory=inventory, document_index=document_index)
+    published = proof_catalog(history_source, site, source_resources=originals)
+    assert published["capture_generation"]["mode"] == "history"
+    assert published["capture_generation"]["history_pin"] == json.loads((ROOT / "conformance/capture-history-pin.json").read_bytes())
+    _assert_full_corpus_parity(tmp_path, history_source, site, published)
+
+
+def _assert_full_corpus_parity(tmp_path, source, site, published):
     catalog_path = tmp_path / "published-catalog.json"
     catalog_path.write_text(json.dumps(published))
     selection = tmp_path / "selection.json"
@@ -127,11 +159,14 @@ def test_full_corpus_json_snapshots_match_python_and_javascript_resolution(tmp_p
     selected = ci_coverage.select_resources(resources)
     selection.write_text(json.dumps([row["path"] for row in selected]))
     result = subprocess.run(
-        ["node", "conformance/viewer/snapshot_parity.js", str(ROOT), str(site), str(catalog_path), str(selection)],
+        ["node", "conformance/viewer/snapshot_parity.js", str(source), str(site), str(catalog_path), str(selection)],
         cwd=ROOT,
         text=True,
         capture_output=True,
-        check=True,
+        check=False,
         timeout=60 * 60,
     )
+    assert result.returncode == 0, result.stderr
     assert "full corpus parity passed:" in result.stdout
+    print(f"parity selected {len(selected)}/{len(resources)} published capture bundles")
+    print("\n".join(result.stdout.splitlines()[-2:]))

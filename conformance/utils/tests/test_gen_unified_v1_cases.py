@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import sys
+import shutil
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ import gen_unified_v1_cases
 import unified_taxonomy
 import unified_history
 import unified_archives
+import capture_sources
 from viewer_codec import typed_equal
 from conformance.utils.tests.test_execution_manifests import compact_store
 from conformance.utils.tests.corpus_semantics import assert_unique_behaviour
@@ -83,14 +85,16 @@ def _retained_regression_provenance(capture, record):
     return capture["document_overrides"][gen_unified_v1_cases.CASE_KEY]["capture_provenance"]
 
 
-def test_retained_archived_split_regressions_preserve_complete_records():
-    archives = {f"dynamo-{version}.tar.gz" for _, version, _ in gen_unified_v1_cases._capture_archives(ROOT)}
-    with unified_archives.expanded(ROOT / "conformance/fixtures-unified-v2", archive_names=archives) as source:
-        _assert_retained_archived_split_regressions(source)
+def test_retained_archived_split_regressions_preserve_complete_records(history_source):
+    archives = {f"dynamo-{version}.tar.gz" for _, version, _ in gen_unified_v1_cases._capture_archives(history_source)}
+    with unified_archives.expanded(history_source / capture_sources.STORE, archive_names=archives) as source:
+        for authored in (ROOT / capture_sources.STORE / "families").glob("*/inputs_and_golden.yaml"):
+            shutil.copyfile(authored, source / "families" / authored.parent.name / authored.name)
+        _assert_retained_archived_split_regressions(source, history_source)
 
 
-def _assert_retained_archived_split_regressions(source):
-    documents = gen_unified_v1_cases._generated_documents(ROOT, source)
+def _assert_retained_archived_split_regressions(source, archive_root):
+    documents = gen_unified_v1_cases._generated_documents(archive_root, source)
     expected_families = set(gen_unified_golden.V1_SPLIT_FAMILIES)
     registered_families = set(gen_unified_golden.yaml.safe_load(
         gen_unified_golden.markers.parser_families_path().read_text()

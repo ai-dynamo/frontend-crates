@@ -24,6 +24,7 @@ from typing import Any
 
 import yaml
 import yaml_fast  # noqa: F401
+import capture_sources
 import unified_history
 import unified_archives
 import generation_workers
@@ -728,6 +729,11 @@ def _retained_candidates(catalog: dict, *, overlay: bool) -> list[dict]:
 
 def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: Path | None = None, manifest: Path | None = None, generation: CatalogGeneration | None = None, unified_only: bool = False) -> dict[str, Any]:
     root = Path(root).resolve()
+    if (root / capture_sources.CURRENT).is_file() and fixtures is None and unified is None and manifest is None:
+        with tempfile.TemporaryDirectory(prefix="current-catalog-") as temporary:
+            view = Path(temporary)
+            capture_sources.prepare(root, view, publisher=os.environ.get("CONFORMANCE_PUBLISHER"))
+            return json.loads((view / "conformance/viewer-catalog.json").read_bytes())
     if generation is not None and generation.root != root:
         raise ValueError("catalog generation lease belongs to another root")
     manifest = json.loads((manifest or root / "conformance/fixtures-manifest.json").read_text())
@@ -833,6 +839,11 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
         },
         "metadata": source_metadata,
     }
+    generation_path = root / "conformance/capture-generation.json"
+    if generation_path.is_file():
+        generation = json.loads(generation_path.read_bytes())
+        catalog["capture_generation"] = generation
+        catalog["sources"]["lineage"] = generation["lineage"]
     catalog["revision"] = _sha256(json.dumps(catalog, sort_keys=True, separators=(",", ":")).encode())
     return catalog
 
@@ -855,7 +866,8 @@ def unified_projection(catalog: dict) -> dict:
     metadata["tabs"] = [tab for tab in catalog["metadata"].get("tabs", []) if tab["suite"] == "unified"]
     metadata["selection_policy"] = {"unified": metadata.get("selection_policy", {}).get("unified", {})}
     metadata["folds"] = metadata.get("folds", {})
-    return {**({"source_revision": catalog["source_revision"]} if "source_revision" in catalog else {}),
+    return {**({"capture_generation": catalog["capture_generation"]} if "capture_generation" in catalog else {}),
+            **({"source_revision": catalog["source_revision"]} if "source_revision" in catalog else {}),
             "schema": catalog.get("schema", 1), "revision": catalog["revision"], "snapshot": catalog.get("snapshot"),
             "metadata": metadata, "sources": {**({"original_unified": catalog["sources"]["original_unified"]} if "original_unified" in catalog["sources"] else {}),
             "archives": [], "unified": catalog["sources"]["unified"],
@@ -1006,7 +1018,9 @@ def main() -> int:
         print(f"viewer catalog is stale: {label}", file=sys.stderr)
         return 1
     if not args.check:
-        revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, check=True, capture_output=True, text=True).stdout.strip()
+        guard_path = root / "conformance/capture-source-guard.json"
+        revision_root = Path(json.loads(guard_path.read_bytes())["root"]) if guard_path.is_file() else root
+        revision = subprocess.run(["git", "rev-parse", "HEAD"], cwd=revision_root, check=True, capture_output=True, text=True).stdout.strip()
         catalog_revision = json.loads(destination.read_text())["revision"]
         command = shlex.join(["python3", "conformance/utils/src/viewer_catalog.py", *sys.argv[1:]])
         provenance = generation_metadata(revision, catalog_revision, command, str(destination))

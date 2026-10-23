@@ -45,7 +45,7 @@ def input_identity(path):
         # Agent configuration links are tracked but can target directories
         # outside the checkout. Their link text belongs to this tree.
         return ["link", hashlib.sha256(os.readlink(path).encode()).hexdigest()]
-    return ["file", file_hash(path)]
+    return ["file", file_hash(path)] if path.is_file() else ["missing", None]
 
 
 def is_publication_input(name):
@@ -58,14 +58,14 @@ def is_publication_input(name):
             or name.startswith("conformance/viewer-data/")):
         return False
     parts = Path(name).parts
-    if "tests" in parts or name.endswith(".test.js"):
+    if "tests" in parts or "node_modules" in parts or name.endswith(".test.js"):
         return False
     if name.endswith((".md", ".rst", ".txt")) and name not in PUBLICATION_DOCUMENTS:
         return False
     return True
 
 
-def cache_key(root, publication_policy):
+def cache_key(root, publication_policy, *, include_history=False, history_source=None):
     if not publication_policy:
         raise ValueError("publication policy is required")
     # Hash publication inputs, including actual LFS content, rather than every
@@ -87,7 +87,17 @@ def cache_key(root, publication_policy):
         raise RuntimeError("cannot inventory release tags")
     inputs = {path: input_identity(root / path) for path in paths.decode().split("\0")
               if path and is_publication_input(path)}
-    identity = {"schema": 3, "publication_policy": publication_policy, "files": inputs, "rust": rust,
+    if history_source is not None and not include_history:
+        raise ValueError("--history-source requires --include-history")
+    history = None
+    if include_history:
+        if history_source is None:
+            raise ValueError("history mode requires --history-source")
+        history = json.loads(subprocess.check_output([
+            "python3", str(root / "conformance/utils/src/capture_sources.py"), "--root", str(root),
+            "--verify-history", str(history_source)], text=True))
+    identity = {"schema": 4, "publication_policy": publication_policy, "files": inputs, "rust": rust,
+                "generation_mode": "history" if include_history else "latest", "history": history,
                 "python": platform.python_version(), "node": node, "tags": tags.stdout.decode(),
                 "platform": [platform.system(), platform.machine()]}
     return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
@@ -159,11 +169,13 @@ def main():
     parser.add_argument("--revision")
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--identity")
+    parser.add_argument("--include-history", action="store_true")
+    parser.add_argument("--history-source", type=Path)
     args = parser.parse_args()
     if args.action == "key":
         if not args.publication_policy:
             parser.error("key requires --publication-policy")
-        print(cache_key(args.root, args.publication_policy))
+        print(cache_key(args.root, args.publication_policy, include_history=args.include_history, history_source=args.history_source))
         return 0
     if args.action == "stamp":
         if args.directory is None or not args.revision:

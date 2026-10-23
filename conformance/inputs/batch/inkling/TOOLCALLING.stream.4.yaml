@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: inkling
+model_label: Inkling
+mode: stream
+spec: https://huggingface.co/thinkingmachines/Inkling-NVFP4
+cases:
+  TOOLCALLING.stream.4.a:
+    description: Stream ends after a complete Inkling call body without the end marker
+    ref: derived from TOOLCALLING.batch.5.a
+    chunks:
+    - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_weather","args":{"location":"NYC"}}
+    - delta_text: ''
+      finish_reason: stop
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+          unit:
+            type: string
+  TOOLCALLING.stream.4.b:
+    description: Stream terminates mid-argument before the Inkling call body is complete
+    ref: derived from TOOLCALLING.batch.5.c
+    chunks:
+    - delta_text: <|message_model|>get_weather<|content_invoke_tool_json|>{"name":"get_wea
+    - delta_text: ther","args":{"loc
+    - delta_text: ''
+      finish_reason: stop
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+          unit:
+            type: string
+  TOOLCALLING.stream.4.c:
+    description: Valid inner JSON without the invoke wrapper, followed by repeated close markers
+    ref: derived from legacy TOOLCALLING.stream.4.c malformed-wrapper coverage
+    chunks:
+    - delta_text: '{"name":"get_weather","args":{"location":"NYC"}}<|end_message|><|end_message|><|end_message|>'
+    - delta_text: ''
+      finish_reason: length
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+          unit:
+            type: string

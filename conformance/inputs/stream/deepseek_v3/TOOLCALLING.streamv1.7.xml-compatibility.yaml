@@ -1,0 +1,156 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+family: deepseek_v3
+mode: streamv1
+cases:
+  TOOLCALLING.streamv1.7.x.xml_string_type_single_quoted_object:
+    description: 'Native XML compatibility: {''a'':1} under type string must produce "{''a'':1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{''a'':1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <｜t
+    - delta_text: ool
+    - delta_text: ▁ca
+    - delta_text: lls
+    - delta_text: ▁be
+    - delta_text: gin
+    - delta_text: ｜><
+    - delta_text: ｜to
+    - delta_text: ol▁
+    - delta_text: cal
+    - delta_text: l▁b
+    - delta_text: egi
+    - delta_text: n｜>
+    - delta_text: fun
+    - delta_text: cti
+    - delta_text: on<
+    - delta_text: ｜to
+    - delta_text: ol▁
+    - delta_text: sep
+    - delta_text: ｜>s
+    - delta_text: che
+    - delta_text: ma_
+    - delta_text: pro
+    - delta_text: 'be
+
+        '
+    - delta_text: '```'
+    - delta_text: jso
+    - delta_text: 'n
+
+        {'
+    - delta_text: '"va'
+    - delta_text: lue
+    - delta_text: '":"'
+    - delta_text: '{''a'
+    - delta_text: ''':1'
+    - delta_text: '}"}'
+    - delta_text: '
+
+        ``'
+    - delta_text: '`<｜'
+    - delta_text: too
+    - delta_text: l▁c
+    - delta_text: all
+    - delta_text: ▁en
+    - delta_text: d｜>
+    - delta_text: <｜t
+    - delta_text: ool
+    - delta_text: ▁ca
+    - delta_text: lls
+    - delta_text: ▁en
+    - delta_text: d｜>
+      finish_reason: stop
+    unavailable:
+      dynamo_v2: No registered Dynamo v2 parser for this family.
+  TOOLCALLING.streamv1.7.x.xml_string_type_double_quoted_object:
+    description: 'Native XML compatibility: {"a":1} under type string must produce "{\"a\":1}". Custom types use legacy literal evaluation; an explicit string type preserves the original text.'
+    tools:
+    - name: schema_probe
+      parameters:
+        type: object
+        properties:
+          value:
+            type: string
+        required:
+        - value
+        additionalProperties: false
+      strict: false
+    golden:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"a":1}'
+      normal_text: ''
+    chunks:
+    - delta_text: <｜t
+    - delta_text: ool
+    - delta_text: ▁ca
+    - delta_text: lls
+    - delta_text: ▁be
+    - delta_text: gin
+    - delta_text: ｜><
+    - delta_text: ｜to
+    - delta_text: ol▁
+    - delta_text: cal
+    - delta_text: l▁b
+    - delta_text: egi
+    - delta_text: n｜>
+    - delta_text: fun
+    - delta_text: cti
+    - delta_text: on<
+    - delta_text: ｜to
+    - delta_text: ol▁
+    - delta_text: sep
+    - delta_text: ｜>s
+    - delta_text: che
+    - delta_text: ma_
+    - delta_text: pro
+    - delta_text: 'be
+
+        '
+    - delta_text: '```'
+    - delta_text: jso
+    - delta_text: 'n
+
+        {'
+    - delta_text: '"va'
+    - delta_text: lue
+    - delta_text: '":"'
+    - delta_text: '{\"'
+    - delta_text: a\"
+    - delta_text: :1}
+    - delta_text: '"}
+
+        '
+    - delta_text: '```'
+    - delta_text: <｜t
+    - delta_text: ool
+    - delta_text: ▁ca
+    - delta_text: ll▁
+    - delta_text: end
+    - delta_text: ｜><
+    - delta_text: ｜to
+    - delta_text: ol▁
+    - delta_text: cal
+    - delta_text: ls▁
+    - delta_text: end
+    - delta_text: ｜>
+      finish_reason: stop
+    unavailable:
+      dynamo_v2: No registered Dynamo v2 parser for this family.

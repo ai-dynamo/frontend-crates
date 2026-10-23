@@ -318,8 +318,11 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current parser release checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.7.24";
+/// Current stream fixtures carry their own release identities, independent of the build.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-latest-recorded";
+
+/// The retained batch-on-stream oracle predates the current stream captures.
+pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
 
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
@@ -374,6 +377,13 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.into_iter().map(|(_, p)| p).collect()
 }
 
+/// Consumer comparisons use recorded evidence, even when the parser build is newer.
+pub fn latest_recorded_capture_dir(root: &Path, prefix: &str) -> Option<PathBuf> {
+    version_dirs_ascending(root, prefix)
+        .into_iter()
+        .rfind(|path| !path.to_string_lossy().contains('+'))
+}
+
 /// The normal capture history plus one caller-selected current capture. `+tag`
 /// directories remain historical unless a test names the exact directory it needs.
 pub fn version_dirs_ascending_with_current(
@@ -390,7 +400,9 @@ fn version_dirs_with_identity_command(
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+    let current_dir = if current_dir == STREAM_DYNAMO_V2_CURRENT_CAPTURE {
+        latest_recorded_capture_dir(root, prefix).expect("no recorded stream release capture")
+    } else if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
         let output = command
             .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
@@ -571,7 +583,7 @@ mod capture_selector_tests {
         write_capture(&release, &recorded);
         assert_eq!(select(&captures, &clone, None).last(), Some(&release));
 
-        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        let stream = captures.join("dynamo_v2-0.7.33");
         std::fs::create_dir_all(&stream).unwrap();
         let stream_dirs = version_dirs_with_identity_command(
             &captures,

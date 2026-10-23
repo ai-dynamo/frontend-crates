@@ -5,6 +5,7 @@ import hashlib
 import gzip
 import json
 import re
+import shutil
 import sys
 import tarfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -27,6 +28,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import unified_history
+import capture_sources
 from browser_helpers import raw_view_download
 
 
@@ -652,14 +654,26 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(publishe
         server.shutdown()
 
 
-def test_source_checkout_yaml_catalog_without_generated_snapshots():
-    catalog = json.loads((ROOT / "conformance/viewer-unified-catalog.json").read_bytes())
+@pytest.fixture
+def current_source_view(tmp_path):
+    source = tmp_path / "current-source"
+    capture_sources.stage_current_sources(ROOT, source)
+    shutil.copyfile(ROOT / "index.html", source / "index.html")
+    shutil.copytree(ROOT / "conformance/viewer", source / "conformance/viewer",
+                    ignore=shutil.ignore_patterns("node_modules"))
+    shutil.copytree(ROOT / "conformance/utils/src/assets", source / "conformance/utils/src/assets")
+    shutil.copyfile(source / "conformance/viewer-catalog.json", source / "conformance/viewer-unified-catalog.json")
+    return source
+
+
+def test_source_checkout_yaml_catalog_without_generated_snapshots(current_source_view):
+    catalog = json.loads((current_source_view / "conformance/viewer-unified-catalog.json").read_bytes())
     assert catalog["sources"]["unified"] and all("format" not in resource for resource in catalog["sources"]["unified"])
     latest = max((item for item in catalog["sources"]["candidates"]
                   if item["implementation"] == "dynamo_v2" and item["mode"] == "unified"),
                  key=lambda item: unified_history._capture_release_sort_key(item["version"]))
     missing = ("/conformance/viewer-resolved-catalog.json.gz", "/conformance/viewer-resolved-catalog.json")
-    server, requests = _server(root=ROOT, missing_paths=missing)
+    server, requests = _server(root=current_source_view, missing_paths=missing)
     driver = _driver()
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": """
         const NativeWorker = window.Worker;
@@ -1400,8 +1414,8 @@ def test_selected_capture_family_union_and_box_spacing(identities, published_vie
         server.server_close()
 
 
-def test_checkout_generation_guidance_and_unclipped_case_names():
-    server, _requests = _server(missing_paths=("/conformance/viewer-publication.json",))
+def test_checkout_generation_guidance_and_unclipped_case_names(current_source_view):
+    server, _requests = _server(root=current_source_view, missing_paths=("/conformance/viewer-publication.json",))
     driver = _driver()
     driver.set_window_size(1500, 1100)
     try:

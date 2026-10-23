@@ -1,0 +1,394 @@
+schema_version: 1
+surface: batch-on-stream
+family: nemotron_nano
+implementation: vllm_python
+version: 0.26.0
+source_records:
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.2.yaml
+  size: 1122
+  sha256: 49e8635e771ba1ffa89d01987b94f949237db6e4df055f0044a040d5844d14e3
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.4.yaml
+  size: 1624
+  sha256: 00263459f5d0231e0e399242c5ccbdeffb9add56e43a0e04f1c53d7fe880b28e
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.5.yaml
+  size: 1780
+  sha256: 4807278c430eed87d67a561d6bb33aa5a23744cb7888f28e951080f72205566f
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.6.yaml
+  size: 880
+  sha256: 80a424777a4067c1c56a7abd71b624357a6550b341c75baffb58068a4f9b8dad
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.7.yaml
+  size: 1590
+  sha256: f264148fa1189270d64687cb1135a1b29abfb0c80d85a72ce8548ed9ba40b766
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.8.yaml
+  size: 1204
+  sha256: 9fa92071b84a30b5b1fc295c1a826ebeb5eaf41ded0b7b9fcd0dc6ad3f30d5bb
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+- path: toolcalling/fixtures-batch-on-stream-v1/nemotron_nano/TOOLCALLING.batch.yaml
+  size: 2275
+  sha256: 42cebef7e55add66533fa5528677512cc5c126573b013a2c08d6a7c5320614c5
+  archive: conformance/fixtures/toolcalling/fixtures-batch-on-stream-v1.tar.gz
+documents:
+  TOOLCALLING.batch.6.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.6.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.6.b:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.6.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.8.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.8.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.8.b:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.8.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.8.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'I will check the weather. '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.7.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.7.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.7.b:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.7.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.7.d:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.7.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.7.f:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.5.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.5.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.5.b:
+        vllm_rust:
+          calls: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+        vllm_python:
+          calls: []
+          normal_text: '<function=get_weather>
+
+            <parameter=location>
+
+            NYC
+
+            </parameter>
+
+            </function>
+
+            </tool_call>'
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.5.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.5.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.5.e:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'I''ll start by fetching the weather for both Boston and New York at the same time!
+
+            '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.1:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.13.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.3:
+        vllm_rust:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        vllm_python:
+          calls: []
+          normal_text: Hello, how can I help you today?
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.9.a:
+        vllm_rust:
+          calls: []
+          normal_text: ''
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.9.b:
+        vllm_rust:
+          calls: []
+          normal_text: '   '
+        vllm_python:
+          calls: []
+          normal_text: '   '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.10:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.30:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.31:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.13:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.2.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.2.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.2.c:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+          normal_text: 'Both: '
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.2.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.2.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+  TOOLCALLING.batch.4.yaml:
+    family: nemotron_nano
+    mode: batch-on-stream
+    captured_with:
+      vllm_python: 0.26.0
+      sglang_python: 0.5.14
+      vllm_rust: v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75
+      dynamo_v2: Dynamo parser v2
+    cases:
+      TOOLCALLING.batch.4.a:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.4.d:
+        vllm_rust:
+          error: 'tool parser parsing failed: invalid Hermes'
+        vllm_python:
+          calls: []
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.4.b:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.4.c:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.4.e:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.
+      TOOLCALLING.batch.4.f:
+        vllm_rust:
+          unavailable: No batch model_text for this case.
+        vllm_python:
+          unavailable: No batch model_text for this case.
+        sglang_python:
+          unavailable: No SGLang parser for family 'nemotron_nano'.

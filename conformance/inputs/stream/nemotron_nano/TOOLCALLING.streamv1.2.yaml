@@ -1,0 +1,80 @@
+family: nemotron_nano
+mode: streamv1
+model_label: Nemotron Nano v3
+cases:
+  TOOLCALLING.streamv1.2.a:
+    description: Parallel calls (back-to-back tool_call wrappers)
+    ref: derived from TOOLCALLING.batch.2.a
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: "<tool_call>\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>"
+    - delta_text: "\nNYC\n</parameter>\n</function>"
+    - delta_text: "\n</tool_call>\n<tool_call>"
+    - delta_text: "\n<function=get_time>"
+    - delta_text: "\n<parameter=timezone>\nEST"
+    - delta_text: "\n</parameter>\n</function>\n</tool_call>"
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv1.2.c:
+    description: With surrounding narration
+    ref: derived from TOOLCALLING.batch.2.c
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - name: get_time
+      parameters:
+        type: object
+        properties:
+          timezone:
+            type: string
+    chunks:
+    - delta_text: 'Both: <tool_call>'
+    - delta_text: "\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>\nNYC\n</parameter>"
+    - delta_text: "\n</function>\n</tool_call>"
+    - delta_text: "\n<tool_call>"
+    - delta_text: "\n<function=get_time>\n<parameter=timezone>"
+    - delta_text: "\nEST\n</parameter>\n</function>"
+    - delta_text: "\n</tool_call>"
+    - delta_text: ' Done.'
+    - delta_text: ''
+      finish_reason: stop
+  TOOLCALLING.streamv1.2.d:
+    description: Same-name twice
+    ref: derived from TOOLCALLING.batch.2.d
+    tools:
+    - &id001
+      name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    - *id001
+    chunks:
+    - delta_text: "<tool_call>\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>"
+    - delta_text: "\nNYC\n</parameter>\n</function>"
+    - delta_text: "\n</tool_call>\n<tool_call>"
+    - delta_text: "\n<function=get_weather>"
+    - delta_text: "\n<parameter=location>\nLA"
+    - delta_text: "\n</parameter>\n</function>\n</tool_call>"
+    - delta_text: ''
+      finish_reason: stop

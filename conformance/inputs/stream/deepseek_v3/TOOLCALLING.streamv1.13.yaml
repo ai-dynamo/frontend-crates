@@ -1,0 +1,22 @@
+family: deepseek_v3
+mode: streamv1
+model_label: DeepSeek V3
+cases:
+  TOOLCALLING.streamv1.13:
+    description: Unknown tool name absent from supplied tools
+    ref: derived from TOOLCALLING.batch.13
+    tools:
+    - name: get_weather
+      parameters:
+        type: object
+        properties:
+          location:
+            type: string
+    chunks:
+    - delta_text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+    - delta_text: function<｜tool▁sep｜>
+    - delta_text: "unknown_tool\n```json\n{\"location\":"
+    - delta_text: " \"NYC\"}\n```<｜tool▁call▁end｜>"
+    - delta_text: <｜tool▁calls▁end｜>
+    - delta_text: ''
+      finish_reason: stop

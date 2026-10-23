@@ -29,6 +29,10 @@ struct Args {
     data_only: bool,
     #[arg(long, default_value = "auto")]
     workers: String,
+    #[arg(long)]
+    include_history: bool,
+    #[arg(long, requires = "include_history")]
+    history_source: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -54,12 +58,16 @@ fn main() -> anyhow::Result<()> {
         temporary.persist(&args.output)?;
         return Ok(());
     }
-    conformance_publisher::publication::publish(conformance_publisher::publication::Options {
-        root: args.root,
-        output: args.output,
-        revision: args.revision,
-        candidate_tree: args.candidate_tree,
-        data_only: args.data_only,
-        workers: args.workers,
-    })
+    conformance_publisher::publication::publish_mode(
+        conformance_publisher::publication::Options {
+            root: args.root,
+            output: args.output,
+            revision: args.revision,
+            candidate_tree: args.candidate_tree,
+            data_only: args.data_only,
+            workers: args.workers,
+        },
+        args.include_history,
+        args.history_source.as_deref(),
+    )
 }

@@ -1,0 +1,70 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+family: minimax_m3
+mode: batch
+cases:
+  TOOLCALLING.batch.7-10:
+    description: 'Nested references: count and enabled use integer and boolean definitions; config, counts, record items, and additional properties resolve their schemas during descent. Constructed native MiniMax M3 regression probe for PR #273; not captured model output.'
+    ref: https://github.com/ai-dynamo/frontend-crates/pull/273
+    tools:
+    - name: process_data
+      parameters:
+        type: object
+        $defs:
+          Count:
+            type: integer
+          Enabled:
+            type: boolean
+          Record:
+            type: object
+            properties:
+              count:
+                $ref: '#/$defs/Count'
+              enabled:
+                $ref: '#/$defs/Enabled'
+          Counts:
+            type: array
+            items:
+              $ref: '#/$defs/Count'
+        properties:
+          data:
+            type: object
+            properties:
+              count:
+                $ref: '#/$defs/Count'
+              enabled:
+                $ref: '#/$defs/Enabled'
+              config:
+                $ref: '#/$defs/Record'
+              counts:
+                $ref: '#/$defs/Counts'
+          records:
+            type: array
+            items:
+              $ref: '#/$defs/Record'
+          limits:
+            type: object
+            additionalProperties:
+              $ref: '#/$defs/Count'
+      strict: true
+    golden:
+      normal_text: ''
+      calls:
+      - name: process_data
+        arguments:
+          data:
+            count: 42
+            enabled: true
+            config:
+              count: 2
+              enabled: false
+            counts:
+            - 1
+            - 2
+          records:
+          - count: 3
+            enabled: true
+          limits:
+            daily: 4
+    model_text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="process_data">]<]minimax[>[<data>]<]minimax[>[<count>42]<]minimax[>[</count>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[<config>]<]minimax[>[<count>2]<]minimax[>[</count>]<]minimax[>[<enabled>false]<]minimax[>[</enabled>]<]minimax[>[</config>]<]minimax[>[<counts>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[</counts>]<]minimax[>[</data>]<]minimax[>[<records>]<]minimax[>[<item>]<]minimax[>[<count>3]<]minimax[>[</count>]<]minimax[>[<enabled>true]<]minimax[>[</enabled>]<]minimax[>[</item>]<]minimax[>[</records>]<]minimax[>[<limits>]<]minimax[>[<daily>4]<]minimax[>[</daily>]<]minimax[>[</limits>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'

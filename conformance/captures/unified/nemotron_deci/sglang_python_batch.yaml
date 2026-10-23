@@ -1,0 +1,3833 @@
+schema_version: 2
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.5.22
+    source_sha256: 351c0ed292b4ec15f4a36a0dbac4cfbb1565fd7c0b285e01d503a73ce01ca8c0
+    adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+    job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+document:
+  mode: unified
+records:
+  arg_json_null:
+    value:
+      case_key: arg_json_null
+      stimulus:
+        ref: current
+        semantic_sha256: d36f2bc5e5912807935672fe748d9b789d71166ab0040682d0a830eabdf06b19
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_json_null_anyof:
+    value:
+      case_key: arg_json_null_anyof
+      stimulus:
+        ref: current
+        semantic_sha256: 819b83e1d9554bffb7b5339e4b8cd765598b0ffdc67809e8282050d0bbae44dd
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_json_null_const:
+    value:
+      case_key: arg_json_null_const
+      stimulus:
+        ref: current
+        semantic_sha256: e1769a2cbcc94c7ffb050845d220ea67987432a16eee34225f608ff909dd106e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_json_null_nullable:
+    value:
+      case_key: arg_json_null_nullable
+      stimulus:
+        ref: current
+        semantic_sha256: 2c84f350c8c0641ba567fe6ea1e2881941c8cb03bb64b1fe32b69776f0c3cdce
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_json_null_oneof:
+    value:
+      case_key: arg_json_null_oneof
+      stimulus:
+        ref: current
+        semantic_sha256: a6e8f5604ac60ae3c43e1c8fa7410f2b56ad780a5c8e8112fc8de85067327591
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null:
+    value:
+      case_key: arg_string_null
+      stimulus:
+        ref: current
+        semantic_sha256: eeb23232ea107c66df74d539aa18469d227f2306d13c83cfb792fc8e5c164eee
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_const:
+    value:
+      case_key: arg_string_null_const
+      stimulus:
+        ref: current
+        semantic_sha256: 82235600864e365ceb29c3d5aad638e5b8d1704d9e0939c81d333af34f7d5510
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_enum:
+    value:
+      case_key: arg_string_null_enum
+      stimulus:
+        ref: current
+        semantic_sha256: e47df1769d23d4fd22b50caa49305dee2d5fba1c242dfcd88f93c78597e1267f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_sibling_anyof:
+    value:
+      case_key: arg_string_null_sibling_anyof
+      stimulus:
+        ref: current
+        semantic_sha256: dad75f3c4d4282e6cb64b1bfd1b1114621cc4dad6258b8a4d91895c987c96351
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_sibling_oneof:
+    value:
+      case_key: arg_string_null_sibling_oneof
+      stimulus:
+        ref: current
+        semantic_sha256: e98c86a9712e4817e90b5c7d14b6b7b1b8ba36600d91f21af4fa3478f5d4fe93
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_union:
+    value:
+      case_key: arg_string_null_union
+      stimulus:
+        ref: current
+        semantic_sha256: 9f22d11bb0cae33f60d79d0d9a4326266fc3b2a86db5debeedac099d5c1dfcdf
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_string_null_untyped_branch:
+    value:
+      case_key: arg_string_null_untyped_branch
+      stimulus:
+        ref: current
+        semantic_sha256: be2d4be1fb6c383e565b9240eff09ddf7e9b00b31bb1559af426b1623d5fecf0
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  arg_unicode:
+    value:
+      case_key: arg_unicode
+      stimulus:
+        ref: current
+        semantic_sha256: 9d92f2b9ebf03de44235983a917da385501ff37c67408d01ec3073685b01f10c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  content_then_reason:
+    value:
+      case_key: content_then_reason
+      stimulus:
+        ref: current
+        semantic_sha256: 2cd85bdb356eddb880cef6b229b38164dc8f603cd9a0b8be0f64e4af3575cd15
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  content_then_reason_then_tool:
+    value:
+      case_key: content_then_reason_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 75c5d8f8b8d5d00a2a3d8fd6867bda5612947552b5e9047e69fd085cccc04a38
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  empty_args:
+    value:
+      case_key: empty_args
+      stimulus:
+        ref: current
+        semantic_sha256: 58c0f2752be307bf334c9681fa18250ba2bdaea693f6228faefdade5994b513a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  glm_ref_encoded_targets:
+    value:
+      case_key: glm_ref_encoded_targets
+      stimulus:
+        ref: current
+        semantic_sha256: c949f54f41d37e13cdc39c3a23d8d7145fea0b92e0c97012b4d524ef0ee5b8f5
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  glm_ref_json_looking_strings:
+    value:
+      case_key: glm_ref_json_looking_strings
+      stimulus:
+        ref: current
+        semantic_sha256: 0651bcd0de8cc11f4aa99c11f57e84080951f020b6d2d1d35d339b15d26ba270
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  glm_ref_object:
+    value:
+      case_key: glm_ref_object
+      stimulus:
+        ref: current
+        semantic_sha256: d5ad8ff7e2555ca4a481ca0e0b1fb10c33f51d8cf27547d2684021bb39fb7af7
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  glm_ref_scalar_types:
+    value:
+      case_key: glm_ref_scalar_types
+      stimulus:
+        ref: current
+        semantic_sha256: 1d01de8def503c295e3daa9700d903b008e76b936a406d67997a386d058bdfc4
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_array_argument:
+    value:
+      case_key: guided_json_array_argument
+      stimulus:
+        ref: current
+        semantic_sha256: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_escaped_string_args:
+    value:
+      case_key: guided_json_escaped_string_args
+      stimulus:
+        ref: current
+        semantic_sha256: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_invalid_call:
+    value:
+      case_key: guided_json_invalid_call
+      stimulus:
+        ref: current
+        semantic_sha256: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_list_with_broken_element:
+    value:
+      case_key: guided_json_list_with_broken_element
+      stimulus:
+        ref: current
+        semantic_sha256: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_malformed_json:
+    value:
+      case_key: guided_json_malformed_json
+      stimulus:
+        ref: current
+        semantic_sha256: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_named_tool:
+    value:
+      case_key: guided_json_named_tool
+      stimulus:
+        ref: current
+        semantic_sha256: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_partial_calls:
+    value:
+      case_key: guided_json_partial_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_required_tool:
+    value:
+      case_key: guided_json_required_tool
+      stimulus:
+        ref: current
+        semantic_sha256: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  guided_json_two_calls:
+    value:
+      case_key: guided_json_two_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  interstitial_text:
+    value:
+      case_key: interstitial_text
+      stimulus:
+        ref: current
+        semantic_sha256: 3f8b72b8e1ca72afb1102e8915611c1a45a3a9ffe4517b45cc9c0b292f875456
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  local_schema_id_preserves_type:
+    value:
+      case_key: local_schema_id_preserves_type
+      stimulus:
+        ref: current
+        semantic_sha256: da82ab37e0d5c810ce172015929491a77982cba5e96f5a53f8946ede89f8db62
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  malformed_json_then_two_valid_calls:
+    value:
+      case_key: malformed_json_then_two_valid_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 0e1cc278956100fc4713322db70e98d0ec5e5d7e92c451cf5986d2188ece62ab
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  narrated_calls:
+    value:
+      case_key: narrated_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 11b565f7aad941abc517bd0c0586200110ea6e7e031ded99f561de4635a0c38c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  nullable_reference_alias_literals:
+    value:
+      case_key: nullable_reference_alias_literals
+      stimulus:
+        ref: current
+        semantic_sha256: 2f1058335c6da19a7749b2f53175fb9c7e5289ea6e3d659576c37811cf67e6d4
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_redundant_opener:
+    value:
+      case_key: prefilled_reasoning_redundant_opener
+      stimulus:
+        ref: current
+        semantic_sha256: 6d041bf091f165120368ce500686f6dbfe371eb98708463f7d01ac437f4d1ee2
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_then_text:
+    value:
+      case_key: prefilled_reasoning_then_text
+      stimulus:
+        ref: current
+        semantic_sha256: 730aa56b99495f5203081371ffcd8e2a04b7db5077a88e8a1d9f300a0471f4d6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_then_text_then_tool:
+    value:
+      case_key: prefilled_reasoning_then_text_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: ca101d97b44637b9f104a39b7b2225901ea808e8d8707487837bb6fa813d4513
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_truncated:
+    value:
+      case_key: prefilled_reasoning_truncated
+      stimulus:
+        ref: current
+        semantic_sha256: 733f99ef046b7549de4668c887534b4a4df00c0cfcae65b2824e07b93d0c4bf9
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_with_guided_json:
+    value:
+      case_key: prefilled_reasoning_with_guided_json
+      stimulus:
+        ref: current
+        semantic_sha256: 84808f9e34bb1f04f493c7f75dc6e0c226442ea15c8eb189a4ce7ba4359fb7ee
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_reasoning_with_tool:
+    value:
+      case_key: prefilled_reasoning_with_tool
+      stimulus:
+        ref: current
+        semantic_sha256: bf1b4bcf11140edeaf288b760c020058b536dae43028105c9f561ddb9dcd2ced
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  prefilled_response_reasoning_markers_literal:
+    value:
+      case_key: prefilled_response_reasoning_markers_literal
+      stimulus:
+        ref: current
+        semantic_sha256: aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_after_tool:
+    value:
+      case_key: reason_after_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 10db3b5f31ea3d81253f21237b2516f2fa13af42a9f605707ddfecee29c8c709
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_between_calls:
+    value:
+      case_key: reason_between_calls
+      stimulus:
+        ref: current
+        semantic_sha256: cdf95611d5bb24262cd21fa91819547f99cd064c71600f46abb6d1f81084bb27
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_interleaved:
+    value:
+      case_key: reason_interleaved
+      stimulus:
+        ref: current
+        semantic_sha256: 4a6fb4eb6e585521fc73150704e5dc4d9d434b022e64a46a4fae24f4e8ab471d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_markup_in_arg:
+    value:
+      case_key: reason_markup_in_arg
+      stimulus:
+        ref: current
+        semantic_sha256: 4c3033522ea052b79cd82262a03ed59ff28187393a5f4250e2ca382fca4b2df8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_markup_in_arg_with_text:
+    value:
+      case_key: reason_markup_in_arg_with_text
+      stimulus:
+        ref: current
+        semantic_sha256: acacd632712232251d7ec018372a47f34a6e782f4e59e4dbad17b7dcb8ecab6e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_only:
+    value:
+      case_key: reason_only
+      stimulus:
+        ref: current
+        semantic_sha256: f5b33d886dd243e5f8d4fc10d84047b1787187c711264e6258809a4cf044bd44
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_then_content:
+    value:
+      case_key: reason_then_content
+      stimulus:
+        ref: current
+        semantic_sha256: 60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_then_tool:
+    value:
+      case_key: reason_then_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 06744da244162d145c0789e3c35a72610076e9f16bfe2eb8dea72c9deea45ff6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_tool_reason_tool_reason:
+    value:
+      case_key: reason_tool_reason_tool_reason
+      stimulus:
+        ref: current
+        semantic_sha256: 0b91ad4262f01d7d81d95d66b67c473650edc752937a0ea02479806adca1bc3f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_tool_text_reason_tool:
+    value:
+      case_key: reason_tool_text_reason_tool
+      stimulus:
+        ref: current
+        semantic_sha256: 5d1ee9253e1b481f9fdfd5d9ebe3c239cb3516cb76009208abfb1f0d9e82ef9e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  reason_unterminated:
+    value:
+      case_key: reason_unterminated
+      stimulus:
+        ref: current
+        semantic_sha256: 6724cf0ef35e8e04572ad568a85bdfc710abf1af7f5096838d80368759df451e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_array_allof:
+    value:
+      case_key: schema_const_array_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 1b565c8f7a931edb330008c3c1b8a549f75da34e265cea7593fb2e376575d94b
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_array_bare:
+    value:
+      case_key: schema_const_array_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 6bbfbb92955f42e1d0dd44f04f21b9949507c8238db7468aadb38e995d491b19
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_array_ref:
+    value:
+      case_key: schema_const_array_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 413b92e1a6383afde9abf281928326ec095216d896c2f71d07b0309a1ec143ca
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_array_typed:
+    value:
+      case_key: schema_const_array_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 4f8ccaa9bc57ac8cf709a001ae239250043868402fa0bac87a5e5ba66b26314e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_boolean_allof:
+    value:
+      case_key: schema_const_boolean_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 959489cf3fed600a4ccc43708dc92ba147e9f3a3554e6350732d70ac9abd1077
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_boolean_bare:
+    value:
+      case_key: schema_const_boolean_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 471e7f7912397d66f31bde75094438057bab597084a3b3b4082162e01827fb55
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_boolean_ref:
+    value:
+      case_key: schema_const_boolean_ref
+      stimulus:
+        ref: current
+        semantic_sha256: cd1ee52028ac643bb803bfab36638676ebdf357081c292add6db5d4d696cc7fd
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_boolean_typed:
+    value:
+      case_key: schema_const_boolean_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 5652f6a65d033a711da131636bfcd51f7116a030fb752b5a5f81c021bf706e9c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_entity_allof:
+    value:
+      case_key: schema_const_entity_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 6f83f8be34999a1bf686df9c9115dbab4e41c16fca76b48244b4964f67cc588c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_entity_bare:
+    value:
+      case_key: schema_const_entity_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 9aa56bc870126f27066476b4f80c941068f63cb4b77b1d794a74a8b09cb05a89
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_entity_ref:
+    value:
+      case_key: schema_const_entity_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 2232a5237566403f027c7dbeaf23f7290d90b41f5974bab8f49b5bcff7db9ed7
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_entity_typed:
+    value:
+      case_key: schema_const_entity_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 318adaac9f2efafff8fe18cd08d99c1589d57010d05239488f84e80663142672
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_null_allof:
+    value:
+      case_key: schema_const_null_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 13d64a1f98dba777bd3aec9513780eae8aee2e472c5650c6b033aca7ed3090b3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_null_bare:
+    value:
+      case_key: schema_const_null_bare
+      stimulus:
+        ref: current
+        semantic_sha256: ea31a03360167e75c9d04693783f492f35b0562b8b1c0d3dd96ee85af599088d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_null_ref:
+    value:
+      case_key: schema_const_null_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 0e8116b61f75768d3bf668f667af14f1fac1f81edc6a931f4850a58b7b47bdb3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_null_typed:
+    value:
+      case_key: schema_const_null_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 516d526dd3494b0750eff061845cc1fdd3d179f8c3f017ae653b315d7d04f747
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_number_allof:
+    value:
+      case_key: schema_const_number_allof
+      stimulus:
+        ref: current
+        semantic_sha256: baefec68be09029f56433181a660745e249d24a68b2d431808e2b337e8a39f4d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_number_bare:
+    value:
+      case_key: schema_const_number_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 1f078cbacc29da062854ec668b62cb012cd7fe4d5ad8914623cd4766f581c383
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_number_ref:
+    value:
+      case_key: schema_const_number_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 8a633acc57092cadef994d90f787991ea0509e092ddd09ef96d735f1342fec86
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_number_typed:
+    value:
+      case_key: schema_const_number_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 701bd26e18a95addac57c50a9ab575f17da28a34fe8a7c4cca4d108e48976516
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_object_allof:
+    value:
+      case_key: schema_const_object_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 33b9ab70cf8e200eef34df70840731a81da83a679a907c789d5fd8b27de6f8e6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_object_bare:
+    value:
+      case_key: schema_const_object_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 6f691f7b9dcbbf0430f3b3d6a11c99dbe653562d7bf9e6897c5ed1e2533647e3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_object_ref:
+    value:
+      case_key: schema_const_object_ref
+      stimulus:
+        ref: current
+        semantic_sha256: f30b674715246a2880d2cae5503adf40edefad3184d4532fe26a7d78201f0660
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_object_typed:
+    value:
+      case_key: schema_const_object_typed
+      stimulus:
+        ref: current
+        semantic_sha256: c1bfb5b0c9cb1174d43add258bf7c001164a7313517a182cc867b78672085d86
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_plain_allof:
+    value:
+      case_key: schema_const_plain_allof
+      stimulus:
+        ref: current
+        semantic_sha256: d415bddd6d0a5df1043e4b004cc40f9592b30dced854af8483a6c11abfebaee2
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_plain_bare:
+    value:
+      case_key: schema_const_plain_bare
+      stimulus:
+        ref: current
+        semantic_sha256: ab6f3ccf678fcae066471364037491925b29e8551425f56da17710d49928eb32
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_plain_ref:
+    value:
+      case_key: schema_const_plain_ref
+      stimulus:
+        ref: current
+        semantic_sha256: ef12ab7a81cc64b726d2044d56318b677f7db5d4caddb42e6d40e575a038fb84
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_plain_typed:
+    value:
+      case_key: schema_const_plain_typed
+      stimulus:
+        ref: current
+        semantic_sha256: ff625a90b1035050b62584de1e9872ff4c932aba892a970b32055bd516be13aa
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_quoted_allof:
+    value:
+      case_key: schema_const_quoted_allof
+      stimulus:
+        ref: current
+        semantic_sha256: 064d9b5307911175335c9d48b6be73cb995a685ec9ba4368aa1fc66528d2aef5
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_quoted_bare:
+    value:
+      case_key: schema_const_quoted_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 88812ffbfc73c06aeb5b7ddf6982ab34acf195243231af5ac4e08749200e3dc9
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_quoted_ref:
+    value:
+      case_key: schema_const_quoted_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 07d854e95db6c7b098605f89728471ab9c385cfdef4334fcedf0ed932d4fd336
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_quoted_typed:
+    value:
+      case_key: schema_const_quoted_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 50bcb68a5713e2d26abb131cd253e90dd26dd0c9470736346755620ff8425add
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_space_allof:
+    value:
+      case_key: schema_const_space_allof
+      stimulus:
+        ref: current
+        semantic_sha256: b657d34d35e5c967887ee5b1ce96df1127d2c44420030830fc909b39179da49e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_space_bare:
+    value:
+      case_key: schema_const_space_bare
+      stimulus:
+        ref: current
+        semantic_sha256: 35daf2260be4f8d4211e76899fa7263e2e309a672dee3eaa4a1a414906694eba
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_space_ref:
+    value:
+      case_key: schema_const_space_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 3a31dae0cf049e8c38fa724974b9a6c9fd42e9c8ed56b742fab1785d718ef0ef
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_space_typed:
+    value:
+      case_key: schema_const_space_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 3eca13b616f91fcb771c4953ecf7ba15d102c094e78161ba009f984cfbec196c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_unicode_allof:
+    value:
+      case_key: schema_const_unicode_allof
+      stimulus:
+        ref: current
+        semantic_sha256: a74d37364233e49de27e80fd411357bb92883a3ebace111563c5c4b00c1cff43
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_unicode_bare:
+    value:
+      case_key: schema_const_unicode_bare
+      stimulus:
+        ref: current
+        semantic_sha256: a2d8aa8ec296457182bbb8ba3257988d2627c7e0c7d9992855fb6da219d4e82e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_unicode_ref:
+    value:
+      case_key: schema_const_unicode_ref
+      stimulus:
+        ref: current
+        semantic_sha256: 31e6699ab3d1ad7d6c9ed86595590ef79a27df9eb3b614467e5dc8a8437c9f31
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_const_unicode_typed:
+    value:
+      case_key: schema_const_unicode_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 954d45f11c08b3d645a85426a7707e8d2eb08e9b2029b08bcee157a07c3bf3ad
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_array:
+    value:
+      case_key: schema_declared_array
+      stimulus:
+        ref: current
+        semantic_sha256: 750e40fc026cafb75458ce7593b708aaa64d44acaad976d079a1eb33420fce11
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_boolean:
+    value:
+      case_key: schema_declared_boolean
+      stimulus:
+        ref: current
+        semantic_sha256: c8e384d8cd3e83077032aed739eba67fdf3c9a9369e421ee7b8b993fb4a5a80a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_integer:
+    value:
+      case_key: schema_declared_integer
+      stimulus:
+        ref: current
+        semantic_sha256: b6f81314dd53bdcf2214bdd9cd3d3e0a45b1df1e570d55eb962ede5a04d5a3c3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_null:
+    value:
+      case_key: schema_declared_null
+      stimulus:
+        ref: current
+        semantic_sha256: 63e000e8456893838791e17f93d085d6153de2affbe7fe1c20895893ef21b030
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_number:
+    value:
+      case_key: schema_declared_number
+      stimulus:
+        ref: current
+        semantic_sha256: 96bf0794e8202e45e3d5986390f58cb8c739812972864eefefe0a2e9d1c4b03d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_object:
+    value:
+      case_key: schema_declared_object
+      stimulus:
+        ref: current
+        semantic_sha256: 8bf013f1dd55e3ac9a4085a2512080ea2a1214f570aff43826899f5a5ff647dc
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_declared_string:
+    value:
+      case_key: schema_declared_string
+      stimulus:
+        ref: current
+        semantic_sha256: adb0019bab57e488833c64fd672e0ab3a229551a6e7ede0c5f28f4d003ab1e6c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_enum_integer:
+    value:
+      case_key: schema_enum_integer
+      stimulus:
+        ref: current
+        semantic_sha256: be430124cd6eea98621c12c318aa82c25346a9fb76f00baa8f8cb537f4b4cf75
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_enum_string:
+    value:
+      case_key: schema_enum_string
+      stimulus:
+        ref: current
+        semantic_sha256: e0e024db6db403e3ab4204a8c8398fc28059cceaf35b25633bd8eaa175ed46b3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_escaped_ref_const:
+    value:
+      case_key: schema_escaped_ref_const
+      stimulus:
+        ref: current
+        semantic_sha256: 680a51c0800880565106e63198d7913a74ab5e18ba2acb605faf9b915e9b5bf7
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_id_direct_integer:
+    value:
+      case_key: schema_id_direct_integer
+      stimulus:
+        ref: current
+        semantic_sha256: aeb886fca6effef671a7be783ff70d8350780342aac0297afa0784f87791347e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_integer_const_ambiguous:
+    value:
+      case_key: schema_integer_const_ambiguous
+      stimulus:
+        ref: current
+        semantic_sha256: c9f3873889462c6e0af2b62014fc947d53a0e4b9c1897d496fb43ea5b5fb32bf
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_intersection_anyOf:
+    value:
+      case_key: schema_intersection_anyOf
+      stimulus:
+        ref: current
+        semantic_sha256: 8f4394cf6a57689e9bb5b7e68020a58e6c6fe5f8ae6d373a94174461865ae405
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_intersection_oneOf:
+    value:
+      case_key: schema_intersection_oneOf
+      stimulus:
+        ref: current
+        semantic_sha256: c431d2a7c186d4fe423925a1c80a76ec42afc5205208cfcd83fbfd77ef3bc459
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_null_union_ambiguous:
+    value:
+      case_key: schema_null_union_ambiguous
+      stimulus:
+        ref: current
+        semantic_sha256: 29db3375ca4eb6df7ee06f654166e48effed5fe5b208b1cfb75d0c9fb3cc9754
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_nullable_string:
+    value:
+      case_key: schema_nullable_string
+      stimulus:
+        ref: current
+        semantic_sha256: f23e7e80acc7e2c3e14af5a8b089bdd7587fa8eaab340b6dd635f0cc83c40b39
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_object_const_union:
+    value:
+      case_key: schema_object_const_union
+      stimulus:
+        ref: current
+        semantic_sha256: 0e7a8ea4622d2ee71483654e8a052d42dc4973da51818a2a3c1602dd77158cbb
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_percent_ref_const:
+    value:
+      case_key: schema_percent_ref_const
+      stimulus:
+        ref: current
+        semantic_sha256: 6e7cfb61d4a25c659deec27af3433df97c5a54780de6e56849eec90805e02a99
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_ref_sibling_integer:
+    value:
+      case_key: schema_ref_sibling_integer
+      stimulus:
+        ref: current
+        semantic_sha256: 6759e9e549a42478e6623e0c9f576f82f5dc9b305e9eed3f54745052f3409736
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_ref_union_anyOf_integer:
+    value:
+      case_key: schema_ref_union_anyOf_integer
+      stimulus:
+        ref: current
+        semantic_sha256: d66eb5654b2e85ddb387ea91ee73dad1934d8fba756cb0b51d3ad1826dd8246e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_ref_union_anyOf_string:
+    value:
+      case_key: schema_ref_union_anyOf_string
+      stimulus:
+        ref: current
+        semantic_sha256: f9c3bb70a9cd7a0aaca86e8a2a4b0abed4719f85ea43e54160b00b017fe50a16
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_ref_union_oneOf_integer:
+    value:
+      case_key: schema_ref_union_oneOf_integer
+      stimulus:
+        ref: current
+        semantic_sha256: 0255ec2829f710c094f4c5e7463355995915e01e4658c0c601120a2cb8d19c90
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_ref_union_oneOf_string:
+    value:
+      case_key: schema_ref_union_oneOf_string
+      stimulus:
+        ref: current
+        semantic_sha256: 063a005f2ac1793006e2a7df694cae60bedeb986b97ccca880bd9f26fc75d2e8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_type_array_integer_null:
+    value:
+      case_key: schema_type_array_integer_null
+      stimulus:
+        ref: current
+        semantic_sha256: 291b7b00ecce476418bd887aa8248c73c665eb0be027d848c64430c825b9b55f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_type_array_integer_null_null:
+    value:
+      case_key: schema_type_array_integer_null_null
+      stimulus:
+        ref: current
+        semantic_sha256: 1e6d40046083a20bcb712ebd6195e3e66f63ca555d4b5a905bf646770e15e941
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_type_array_string_integer:
+    value:
+      case_key: schema_type_array_string_integer
+      stimulus:
+        ref: current
+        semantic_sha256: cc8e6716c19d51d7011a7f5986e6ccf5966f867a2fe6d1da3648537a5d47347a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_array_reverse_string:
+    value:
+      case_key: schema_union_anyOf_array_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 090c2db2c76031b77252f96963b951b9e8d6cb9f74b557b45298ce8a752de50d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_array_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_array_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 860a218ff343552484abdd89f240e6591109c2c8f8e034cf1ddce4d29e4c100a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_array_string:
+    value:
+      case_key: schema_union_anyOf_array_string
+      stimulus:
+        ref: current
+        semantic_sha256: 874b4e6394addfd34106ca31ffd9f71e96b5134a6ab9d17f61cf425662ca45b1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_array_typed:
+    value:
+      case_key: schema_union_anyOf_array_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 274ddc070e20c5c7fbc7d8970067e4fdb3da1ee4523aff34d52097165f2bab2a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_boolean_reverse_string:
+    value:
+      case_key: schema_union_anyOf_boolean_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: cccfa288dcc828e39a5090d8f5da7edbfff319aadbfd38e8deeaddd4fd49cd1a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_boolean_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_boolean_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 33ba582f8f01ae89da13f1af0094012644b930aa2c43c8da622a5e578c03c243
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_boolean_string:
+    value:
+      case_key: schema_union_anyOf_boolean_string
+      stimulus:
+        ref: current
+        semantic_sha256: a25537a859f579de19d3ad758d749256ada239d62853dfdfca5977afd0a39815
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_boolean_typed:
+    value:
+      case_key: schema_union_anyOf_boolean_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 3094c80697908249c851430438f4e80c5d58b136bfb9288358c637bed23c3be1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_integer_reverse_string:
+    value:
+      case_key: schema_union_anyOf_integer_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: ddb13576c42a9ea908ffdaeaefcfcf251fe15786c0978634abef43f9037007c0
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_integer_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_integer_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: e875f1646ebbcc9295168fd673da07a51acb39da43447f3174d0feb22c663227
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_integer_string:
+    value:
+      case_key: schema_union_anyOf_integer_string
+      stimulus:
+        ref: current
+        semantic_sha256: 8bdf22d3a79cdde5296759ef38d4bf8dae1e8f3667e3650f800f0640e5fb978c
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_integer_typed:
+    value:
+      case_key: schema_union_anyOf_integer_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 2a17e6f53c62ebacf7640520ea2e05b0df39e663c8b6c5cf7c71228fc9763ea6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_null_reverse_string:
+    value:
+      case_key: schema_union_anyOf_null_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 874048d9578daed495cb8f16b6a114c4228a6a4d918e460c858c39abcc14b296
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_null_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_null_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 454d06667ee67938e609a4649ddcc32e038264a774a5993f5cf3830c81ed29ae
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_null_string:
+    value:
+      case_key: schema_union_anyOf_null_string
+      stimulus:
+        ref: current
+        semantic_sha256: 34652119893eceb76829d2d6ee1a40c9c1ede350acf4a3780c2ce7710a18e640
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_null_typed:
+    value:
+      case_key: schema_union_anyOf_null_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 73b744cf04557aad7ce4be576358ef35c85d3de6b766cf7bcf185e02f945240d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_number_reverse_string:
+    value:
+      case_key: schema_union_anyOf_number_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: c22ee5431488c45f6eff4695c6035c38f5fa629eaa2d24d70d9cb83f14983543
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_number_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_number_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 0b6b61c7a6f143254c9d101d5003dbbbcc1ce24f3121aaa1210a28db97dd00b3
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_number_string:
+    value:
+      case_key: schema_union_anyOf_number_string
+      stimulus:
+        ref: current
+        semantic_sha256: ac2ff27816d8350ce6ec6eafb493c43e68917e014b89b7ca9c8ee0d80b60edf1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_number_typed:
+    value:
+      case_key: schema_union_anyOf_number_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 1b34935a8d2ca23ed1da7048b7c57400571c72489459dde2469aa2f13142ef5f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_object_reverse_string:
+    value:
+      case_key: schema_union_anyOf_object_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: bdf46248ba63d3ba520d682ec1e83c48d11145b13cb82762229363eb882a7a5a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_object_reverse_typed:
+    value:
+      case_key: schema_union_anyOf_object_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: c0e86d68db9386425afefac3612ae995a85c86714476bd95d32b06665a8a65e4
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_object_string:
+    value:
+      case_key: schema_union_anyOf_object_string
+      stimulus:
+        ref: current
+        semantic_sha256: a7c835fd3f7bf7592fff4409fb8e0772503fa5841badef07450ed1e62f28eb54
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_anyOf_object_typed:
+    value:
+      case_key: schema_union_anyOf_object_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 594cf6f2f417a132d02e457e03d226f1258a419bffc21353b1f5dfe8018b94e0
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_array_reverse_string:
+    value:
+      case_key: schema_union_oneOf_array_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 3a7a01960b5b0fdd16d772452b51066f035c17cf5a8bc2cf355399c97c409a7d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_array_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_array_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: da569948300f7d04b9cb82fe31e9ffb4301c561f6a355fca839ae6ccee7db8ae
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_array_string:
+    value:
+      case_key: schema_union_oneOf_array_string
+      stimulus:
+        ref: current
+        semantic_sha256: a973b810a6b57c73df1766404e4f56cd7a066860122675055eb82c4d9989a4fc
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_array_typed:
+    value:
+      case_key: schema_union_oneOf_array_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 4ec4beed9c52a922db765f823914b41ddcb93dab5d1f2ae7dee60028a5698d8a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_boolean_reverse_string:
+    value:
+      case_key: schema_union_oneOf_boolean_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 7398061494436999ab0e0cdb9e028e0f92cb6f1f506fea30f6dec69e6da1758f
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_boolean_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_boolean_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 716ef8b9ebe985cde1c2521024d1cbf517833439437f66e56f1f05bb3a8ba374
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_boolean_string:
+    value:
+      case_key: schema_union_oneOf_boolean_string
+      stimulus:
+        ref: current
+        semantic_sha256: 03b8524b773004b70f9057070d582e802e34a069d2a79e3fe8b10143bdfb52d9
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_boolean_typed:
+    value:
+      case_key: schema_union_oneOf_boolean_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 7a6ebdfc3fec409ba67e266b83b3dd6e5ca9ef2f3abe2f591c637d49c18dc88e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_integer_reverse_string:
+    value:
+      case_key: schema_union_oneOf_integer_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 17d7f9b3aa090d59ecd23188d1e66ebba7e17659ce7204d4cb8ffc739fb5cb2e
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_integer_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_integer_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 348e634530dd488183ad83093c16663cf2881defe40cc09a62bf0e58ead6cf79
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_integer_string:
+    value:
+      case_key: schema_union_oneOf_integer_string
+      stimulus:
+        ref: current
+        semantic_sha256: ef60917579f769a973eb0d4e690e9a9776e8d769d31b6929406fa5c9844361ad
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_integer_typed:
+    value:
+      case_key: schema_union_oneOf_integer_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 345d15605001148e4d40e8532bd67fd510fead6960c32f0df72f2e3eb7b387e1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_null_reverse_string:
+    value:
+      case_key: schema_union_oneOf_null_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: bec786bab95552b4c4d6d8292becb69532b00500367b4c23c6d5c2f3bd996fbf
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_null_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_null_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 51646738ea3d72967689d2080683d4c2c3e8cc6d07c32440a41582b811eae0e7
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_null_string:
+    value:
+      case_key: schema_union_oneOf_null_string
+      stimulus:
+        ref: current
+        semantic_sha256: d28ad5b9015c148acf4de856d9549983b55b158e9ef21b895fb0ecb52d9e4998
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_null_typed:
+    value:
+      case_key: schema_union_oneOf_null_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 8abb5e053eaed2f197c8bbef5e53abb5b9bed95da70c0ed98c2269e7b21b3ba8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_number_reverse_string:
+    value:
+      case_key: schema_union_oneOf_number_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 5b5e5f4fb2f7d0f731fc5bd639dbaae002703084db6f2723976f203ab60befa6
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_number_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_number_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: abd91f1c9d18c44c50104e843ac92ac77624d66cc04814bff504a9fe4adffda2
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_number_string:
+    value:
+      case_key: schema_union_oneOf_number_string
+      stimulus:
+        ref: current
+        semantic_sha256: 0ebad05d916258fdcc42f2050278fb581e134c2cf9b34938e7417204617a3c78
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_number_typed:
+    value:
+      case_key: schema_union_oneOf_number_typed
+      stimulus:
+        ref: current
+        semantic_sha256: 565ce3a62d3a791891658cc9645d52e302c1f92dd712eac0353cd6fa491cae6d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_object_reverse_string:
+    value:
+      case_key: schema_union_oneOf_object_reverse_string
+      stimulus:
+        ref: current
+        semantic_sha256: 08de816242491798c1b14ed3ad0f11e9debfda33fb8da4896843f86b5f1e5356
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_object_reverse_typed:
+    value:
+      case_key: schema_union_oneOf_object_reverse_typed
+      stimulus:
+        ref: current
+        semantic_sha256: ad8ddcee0ebb85c03036844366170ec913851baeceff6c6a815da89fc436e6a1
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_object_string:
+    value:
+      case_key: schema_union_oneOf_object_string
+      stimulus:
+        ref: current
+        semantic_sha256: c3ee52ed4f583f96f33d5645a55e60e3cd1ad1f75d0c740a45007b686b2934fe
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  schema_union_oneOf_object_typed:
+    value:
+      case_key: schema_union_oneOf_object_typed
+      stimulus:
+        ref: current
+        semantic_sha256: a652125b8f9c798f71842214e4edffb786ce31eb7d77b64997b8844387d95387
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  text_before_tool:
+    value:
+      case_key: text_before_tool
+      stimulus:
+        ref: current
+        semantic_sha256: e4ef6a98ef7a9aff76a40f5cba330f9a7982ab4fbe743b85a3e42f8ffd5029d2
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  text_between_calls:
+    value:
+      case_key: text_between_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 1103c962cbf62e730fb7891c93d672e7af0fbdcfd82cdd1ea3e6de225391a10a
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  text_only:
+    value:
+      case_key: text_only
+      stimulus:
+        ref: current
+        semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  text_reason_tool_text_reason_tool:
+    value:
+      case_key: text_reason_tool_text_reason_tool
+      stimulus:
+        ref: current
+        semantic_sha256: bd24b794c92af4a3bb3a6f8cbef83249821cde22bbd33b4081d0b7389117713d
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  text_sandwich:
+    value:
+      case_key: text_sandwich
+      stimulus:
+        ref: current
+        semantic_sha256: bcb33e09120291396747a8a3da8ad5863b8bbc5b05b4f93f3921718d44697db8
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  tool_in_reason:
+    value:
+      case_key: tool_in_reason
+      stimulus:
+        ref: current
+        semantic_sha256: 3022d33ba078fc5f1796925062421c28aa97666d14971a79b7bb0f50dba6d1df
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  tool_in_reason_with_text:
+    value:
+      case_key: tool_in_reason_with_text
+      stimulus:
+        ref: current
+        semantic_sha256: 068b9793f2fe194b76c749864a2cb860cf103a3ecbdb14807ec5cd6a553db944
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  tool_only:
+    value:
+      case_key: tool_only
+      stimulus:
+        ref: current
+        semantic_sha256: 789d5425eac3b2c8d81c5d053f6260a83acca4e49dd433c12a5a21a165256261
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  trailing_text_after_tool:
+    value:
+      case_key: trailing_text_after_tool
+      stimulus:
+        ref: current
+        semantic_sha256: c857fc3f053b1dd9309761adf7e5b5c03780ad25a2d4f8e0aaffe3123b266556
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  truncated_tool_eof:
+    value:
+      case_key: truncated_tool_eof
+      stimulus:
+        ref: current
+        semantic_sha256: b4062a66c72823fe80b56cce38dea9746396e51d73e8dd34414991f42f75ac02
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  two_adjacent_reason_spans:
+    value:
+      case_key: two_adjacent_reason_spans
+      stimulus:
+        ref: current
+        semantic_sha256: c7824768284c274c8515956bc1bfc1a0dade0bd5d3709041fa45cc428b90abbe
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  two_calls:
+    value:
+      case_key: two_calls
+      stimulus:
+        ref: current
+        semantic_sha256: 244deb74cfcbdc4b7700cecf56e7f111d2f5b7520d21a0aa00e411b415b3014b
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  two_calls_same_name:
+    value:
+      case_key: two_calls_same_name
+      stimulus:
+        ref: current
+        semantic_sha256: 3fae63a765fcf6047acabeae4b5d71837e776a30d0ef2217bf5ecf439d5d8b40
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  two_reason_spans:
+    value:
+      case_key: two_reason_spans
+      stimulus:
+        ref: current
+        semantic_sha256: 0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  unused_reference_graph_parameter_types:
+    value:
+      case_key: unused_reference_graph_parameter_types
+      stimulus:
+        ref: current
+        semantic_sha256: c04cc16c579763480c548e42027c48f3e7682854bae008747e769e919dbf13ee
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
+  v1_split_parallel_tool_calls:
+    value:
+      case_key: v1_split_parallel_tool_calls
+      stimulus:
+        ref: current
+        semantic_sha256: aaa91430969e13c4fd34e14593a92aa8ea9bd61fa6b9cb9606117331ce4ec135
+      observation:
+        unavailable:
+          code: unsupported_family
+          detail: No registered reasoning + batch tool parser for this family
+      document:
+        mode: unified
+        captured_with:
+          sglang_python_batch: 0.4.3.post3
+        capture_origin:
+          crate_version: 0.4.3.post3
+          source_sha256: 47a2d2ead9796f888c05cd94bcc48e2455856c51277e4240ad577ee518346528
+          adapter_sha256: 6f21c47b6988a8714cf379a95efceb38044af1cc0275fe63107f5a507f5c64b4
+          job_sha256: 3f4fbc42dd73cc2bb04e9246725c5d2107a46be932979395ad1a0caa56d8d931
+        inherited_from: 0.4.3.post3
+    member: conformance/fixtures-unified-v2/families/nemotron_deci/sglang_python_batch-0.4.3.post3.yaml
