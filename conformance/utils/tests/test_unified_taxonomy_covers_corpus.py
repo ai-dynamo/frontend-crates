@@ -918,17 +918,17 @@ def test_unified_case_counts_match_the_generator():
     denominator survived in the prose before.
     """
     family_specific = {
-        "beam": 122,
-        "deepseek_v4": 132,
-        "deepseek_v41": 128,
-        "gemma4": 125,
-        "glm47": 123,
-        "gpt_oss": 164,
-        "kimi_k2": 123,
-        "kimi_k3": 132,
-        "muse_glimmer": 131,
-        "qwen3": 126,
-        "nemotron_v3": 127,
+        "beam": 127,
+        "deepseek_v4": 133,
+        "deepseek_v41": 129,
+        "gemma4": 130,
+        "glm47": 128,
+        "gpt_oss": 169,
+        "kimi_k2": 128,
+        "kimi_k3": 137,
+        "muse_glimmer": 136,
+        "qwen3": 131,
+        "nemotron_v3": 132,
     }
     assert set(family_specific) == set(FAMILIES)
     per_family = {fam: len(build_cases(fam)) for fam in FAMILIES}
@@ -946,7 +946,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 223 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 228 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1931,14 +1931,22 @@ def _assert_cross_family_contract(corpus):
                             call["arguments"]["x"] = json.loads(call["arguments"]["x"])
             by_scenario[scenario][family] = (events, init, case["finish_reason"], case["policy"], suppressed)
     assert set(by_scenario) == set(UNIFIED_TAX) - taxonomy.RETIRED_SCENARIOS
+    assert all(family in by_scenario.get(scenario, {}) for scenario, family in G.INHERITED_GOLDEN), "INHERITED_GOLDEN names a case that does not exist"
     for scenario, families in by_scenario.items():
         assert set(families) == (set(G.scenario_families(scenario)) & set(NATIVE_FAMILIES)), (scenario, "applicability", set(families))
         # Beam authors its own golden where its grammar changes the outcome (its parameter
         # tags are plain text outside a routed header; its reasoning markers are special
         # tokens), so it stands outside the shared contract for those scenarios only.
+        # A family-scoped parser rule declares its own golden in `INHERITED_GOLDEN`
+        # (Nemotron V3's tool-only-turn whitespace, issue #406); that cell is checked
+        # against the declaration instead of the shared contract.
+        for family in families:
+            if (scenario, family) in G.INHERITED_GOLDEN:
+                assert families[family][0] == G.INHERITED_GOLDEN[(scenario, family)], (scenario, family, "inherited golden")
         contracts = [
             (family, contract) for family, contract in families.items()
             if not (family == "beam" and scenario in BEAM_GRAMMAR_EXCEPTIONS)
+            and (scenario, family) not in G.INHERITED_GOLDEN
         ]
         first_family, reference = contracts[0]
         for family, contract in contracts[1:]:

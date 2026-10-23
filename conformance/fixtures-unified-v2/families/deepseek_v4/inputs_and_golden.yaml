@@ -14727,3 +14727,78 @@ cases:
         name: h
         arguments:
           x: '3'
+  blank_output_without_call:
+    lifecycle: active
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
+    historical_ids: []
+    request:
+      input: '
+
+
+        '
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: '
+
+
+          '
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '

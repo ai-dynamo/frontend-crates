@@ -1,0 +1,278 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.32
+    git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+    source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+document:
+  mode: unified
+changes:
+  blank_framing_after_reasoning:
+    case_key: UNIFIED.11-blank_framing_after_reasoning
+    stimulus:
+      ref: current
+      semantic_sha256: 6946aebb7a885be03c780f7e0f4b5784ca3eeae8190e577e66d6613c7b08b79c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: '
+
+            '
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'Check '
+        - expected:
+          - kind: reasoning
+            text: weather.
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+  blank_framing_between_calls_single_chunk:
+    case_key: UNIFIED.8-blank_framing_between_calls_single_chunk
+    stimulus:
+      ref: current
+      semantic_sha256: ebcf626b05d3ab1bfa8881337776d11bf2ccc06e128c825ed9b62e679f390451
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        - kind: text
+          text: '
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Tokyo"}'
+            complete: true
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+  blank_framing_tool_only:
+    case_key: UNIFIED.8-blank_framing_tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: e7cef13b2af653b2a594af37fdda39bbcd286e2c3dd72570df66434cdd3014a9
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: '
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+  blank_framing_with_prose:
+    case_key: UNIFIED.8-blank_framing_with_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 716640936c95406fa398101157d2aae270cd17aebf0bc0a044525def5b8393c3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Pressing it now.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: '
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Pressing it now.
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: '
+
+              '
+        - expected: []
+  blank_output_without_call:
+    case_key: UNIFIED.3-blank_output_without_call
+    stimulus:
+      ref: current
+      semantic_sha256: 3bbd8d6a224b1ed1cd05857ffba4f70b4c5bcf1905365cd4df6ee96b473f316e
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  blank_framing_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+        git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+      inherited_from: null
+  blank_framing_between_calls_single_chunk:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+        git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+      inherited_from: null
+  blank_framing_tool_only:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+        git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+      inherited_from: null
+  blank_framing_with_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+        git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+      inherited_from: null
+  blank_output_without_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        source_sha256: f07af0443ae47d74d5767f9455b887ab515ab370d3748c6805dd7a09de2ff753
+        git_commit: 11df556be37f35c1c230cab3ba3f560a3ec44688
+      inherited_from: null

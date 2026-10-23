@@ -220,6 +220,12 @@ UNIFIED_TAX = {
     # TODO: restore 50-1 and 50-2 in the follow-up to PR #232 (deferred-cases). Completed below with family-scoped aliases.
     "prefilled_response_guided_pending_invoke_header": ("deepseek_v41", "2"),
     "prefilled_response_guided_closer_inside_invoke_quote": ("muse", "6"),
+    # Issue #406 — whitespace-only text in a tool-only turn is call framing.
+    "blank_framing_tool_only": (8, "12"),
+    "blank_framing_between_calls_single_chunk": (8, "13"),
+    "blank_framing_with_prose": (8, "14"),
+    "blank_output_without_call": (3, "2"),
+    "blank_framing_after_reasoning": (11, "11"),
     # DeepSeek V4 and V4.1 — DSML tool-call separator framing.
     **{scenario: ("dsml", str(index)) for index, scenario in enumerate([
         "dsml_separator_two_lf", "dsml_separator_four_lf", "dsml_no_separator",

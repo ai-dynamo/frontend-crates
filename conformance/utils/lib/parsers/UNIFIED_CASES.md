@@ -57,6 +57,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 - **P5 Implicit reasoning start** -> prompt-conditioned per family (forced-reasoning models start in reasoning with no `<think>`).
 - **P6 Marker quoted in prose** -> counts only as a real control token; text-only input is best-effort (known limitation, not pass/fail).
   - **beam** is the exception by design: its markers are tokenizer special tokens the engine emits as such, so a quotation never keeps one literal. The quoted-control scenarios (`native_quoted_control_*`, `native_single_quote*`, `native_quoted_incomplete_header`, `guided_json_narrated_invoke_in_reasoning`) carry beam-specific goldens: the prose before the quote stays, the quoted header is framing (a header it cannot complete is skipped with what follows it), and a real call after it still dispatches. The builder's reference parser reads these the same way.
+- **P8 Whitespace-only text in a Nemotron V3 tool-only turn** -> call framing, not content. When a Nemotron V3 turn completes a tool call and shows no visible (non-whitespace) text, its whitespace-only text is dropped. A turn with any visible text keeps every whitespace byte, and whitespace around a call that never completes (truncated, or invalidated) is visible content, as is whitespace with no call. `reset` returns held whitespace with the parser's unconsumed text. Held whitespace is released in front of the visible text that decides it, so the text channel stays byte-identical. Every other family keeps its output unchanged. RESOLVED for issue #406. See [Tool-only turn whitespace](#tool-only-turn-whitespace-issue-406).
 - **P7 Nested channel markers (a marker of one channel inside another)** -> marker recognition is CHANNEL-SCOPED, and both directions follow the same best-effort-recovery rule (recover real structure, never leak markup, never drop a valid call):
   - Inside a **quoted tool-argument string value**, marker-looking bytes are DATA (I7). A reasoning marker there does NOT open a reasoning channel — it is the literal arg string (`reason_markup_in_arg`). A reasoning-first pipeline that extracts `<think>`/`<|channel>` before tool parsing corrupts the arg -> red (ARG_MISMATCH / MERGE).
   - A **well-formed tool-call envelope inside a reasoning span** is STRUCTURAL: break out of reasoning, emit the call, resume reasoning after its close (`tool_in_reason`). Leaking the raw `<|tool_call>...<tool_call|>` into `reasoning_content`, or dropping the call, is the regression -> red (LEAK). The asymmetry is deliberate: quote delimiters explicitly mark a data region, whereas a reasoning span is opaque text that can still contain recoverable structure.
@@ -90,6 +91,7 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`2-three_calls_partial_header`** (`three_calls_partial_header`) Native/default state: three adjacent calls delivered with a boundary inside the second call header. Preserve f, g, h in order and emit no visible markup. Both scenarios apply to nine families: deepseek_v4, deepseek_v41, gemma4, glm47, kimi_k2, kimi_k3, muse_glimmer, nemotron_v3, and qwen3 (18 family-specific cases). Beam and GPT-OSS are excluded from this Unified case set. The authored schedules exercise delivery boundaries that marker-aligned and fixed-width chunking can miss.
 
 ### Group 3 — TC No call (TOOLCALLING.streamv1.3)
+- **`3-blank_output_without_call`** (`blank_output_without_call`) Whitespace-only output with no call is visible content and is kept unchanged by every family (P8).
 - **`3-text_only`** (`text_only`) Plain content, zero tool structure. No spurious call. This is also covered in: TOOLCALLING.streamv1.3. No e2e case has this shape: Qwen3.6 always emits a reasoning span, so the plain-content case is corpus-only.
 
 ### Group 4 — TC Malformed envelope
@@ -132,6 +134,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`8-native_quoted_control_then_call`** (`native_quoted_control_then_call`) Quoted control text stays visible, and the following real call still dispatches.
 - **`8-native_unmatched_quote_then_call`** (`native_unmatched_quote_then_call`) An unmatched quote before a real control marker cannot hide the following call.
 - **`8-native_quoted_incomplete_header`** (`native_quoted_incomplete_header`) An incomplete native tool header inside quoted response text stays literal.
+- **`8-blank_framing_tool_only`** (`blank_framing_tool_only`) A tool-only turn frames its call with a newline on each side; Nemotron V3 emits no text, other families keep the newlines (P8).
+- **`8-blank_framing_between_calls_single_chunk`** (`blank_framing_between_calls_single_chunk`) Newlines before, between, and after two calls, delivered in one push; Nemotron V3 emits no text, other families keep the newlines (P8).
+- **`8-blank_framing_with_prose`** (`blank_framing_with_prose`) Prose before the call makes the turn visible, so every whitespace byte is kept (P8).
 - **`8-native_single_quote_contraction_response`** (`native_single_quote_contraction_response`) A control marker inside a contraction-bearing single-quoted sentence stays literal prose.
 
 ### Group 10 — Reasoning span (`REASONING.*`)
@@ -151,6 +156,7 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`11-content_then_reason`** (`content_then_reason`) content → reasoning → content. Class ORDER.
 - **`11-reason_tool_reason_tool_reason`** (`reason_tool_reason_tool_reason`) Each call wrapped by its own thought, trailing thought too. Class MERGE.
 - **`11-reason_between_calls`** (`reason_between_calls`) call → reasoning → call; reasoning survives BETWEEN two calls. Class MERGE.
+- **`11-blank_framing_after_reasoning`** (`blank_framing_after_reasoning`) Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive; for Nemotron V3 the framing is not text, other families keep it (P8).
 - **`11-text_reason_tool_text_reason_tool`** (`text_reason_tool_text_reason_tool`) Deep well-formed interleave — text → reason → tool → text → reason → tool; user text, reasoning, and calls all mix in one stream, every segment in order. Class MERGE (batch hoists both thoughts).
 
 ### Group 12 — Adversarial nesting (a marker of one channel inside another; P7)
@@ -160,9 +166,9 @@ Every active Unified ID uses `UNIFIED.<group>-<description>`, for example `UNIFI
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 244 of the 339 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, and prefilled states. The current corpus emits 245 of the 344 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 95 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 99 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. The four `blank_framing` rows are excluded because DSML owns its call framing; see [Tool-only turn whitespace](#tool-only-turn-whitespace-issue-406). Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
@@ -399,6 +405,17 @@ The DeepSeek encoders render an assistant tool turn as `content + "\n\n" + calls
 Chunk-boundary variants live in the legacy stream corpus (`TOOLCALLING.streamv1.50.b` and `.50.c`) because Unified identifies a case by its input, not its chunk schedule.
 
 Scope: the separator is DeepSeek template framing, so other families have no equivalent behavior to test. vLLM Python keeps the separator as content (fix pending in vllm-project/vllm#58295); SGLang and vLLM's Rust frontend consume it. Before this fix, Dynamo v2 0.7.23 returned the separator as content in every case except `dsml-no_separator`.
+
+### Tool-only turn whitespace (issue #406)
+
+Nemotron 3 frames each Qwen3-Coder call with a newline on both sides, so a tool-only turn returned `"\n\n"` as content. Policy P8 treats that whitespace as call framing for Nemotron V3 only. Nemotron's chat template renders assistant content as `content | trim` and treats whitespace-only content as empty, so dropping it re-renders the same prompt tokens: measured on Nemotron 3.5 Lightning, Super, and Ultra, a follow-up request with `"\n\n"`, `"\n"`, `""`, or `null` history content reports the same `prompt_tokens`. A template that renders content verbatim, as Qwen3's does, would re-render a dropped turn differently and lose prefix-cache reuse from that turn on, so every other family keeps its output. Each case's GOLDEN is that unchanged output; Nemotron V3's row carries its own GOLDEN.
+
+- **`8-blank_framing_tool_only`**: the recorded shape, delivered on the tag-aligned default schedule so each newline arrives in its own chunk.
+- **`8-blank_framing_between_calls_single_chunk`**: framing before, between, and after two calls, in one push.
+- **`11-blank_framing_after_reasoning`**: the common reasoning-then-call turn.
+- **`8-blank_framing_with_prose`** and **`3-blank_output_without_call`**: guards. Visible text keeps every whitespace byte, and whitespace with no call stays content.
+
+Inputs render each whitespace run as the family's own visible-text segment: bare text for the marker-pair grammars, a `to=user` message for Muse, a `response` channel for Kimi K3, and a `final` message for GPT-OSS and Beam. The four `blank_framing` cases cover Beam, Gemma 4, GLM, GPT-OSS, Kimi K2, Kimi K3, Muse, Qwen3, and Nemotron 3. Nemotron V3 inherits Qwen3's inputs with its default `</think>` prefix; its own GOLDEN comes from `INHERITED_GOLDEN` in the generator. DeepSeek V4 and V4.1 are excluded because their parsers own the call framing: the encoder's `"\n\n"` separator is consumed and any other whitespace stays content (see the DSML framing section). `3-blank_output_without_call` applies to every family. A live capture of Dynamo v2 0.7.29 returned the framing as text in `8-blank_framing_tool_only`, `8-blank_framing_between_calls_single_chunk`, and `11-blank_framing_after_reasoning` for every applicable family, Nemotron included; with this change only Nemotron V3 emits none. Both guards match GOLDEN in both versions. The 0.7.29 checkpoints were already recorded and are immutable, so that before-result is not in the YAML history.
 
 ### Gemma-specific
 

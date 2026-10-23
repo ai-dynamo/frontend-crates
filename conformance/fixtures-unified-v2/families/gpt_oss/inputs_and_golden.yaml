@@ -9674,3 +9674,306 @@ cases:
         name: lookup
         arguments:
           q: x
+  blank_framing_after_reasoning:
+    lifecycle: active
+    scenario: blank_framing_after_reasoning
+    description: 'Reasoning, then a newline-framed call and nothing visible: reasoning and the call survive. Nemotron V3 emits no framing text; every other family keeps it.'
+    policy:
+    - P8
+    - I2
+    display_id: UNIFIED.11-blank_framing_after_reasoning
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>analysis<|message|>Check weather.<|end|><|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: analysis
+      - delta_text: <|message|>
+      - delta_text: Check weather.
+      - delta_text: <|end|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Check weather.
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_output_without_call:
+    lifecycle: active
+    scenario: blank_output_without_call
+    description: Whitespace-only output with no call is visible content and is kept unchanged by every family.
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.3-blank_output_without_call
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+
+          '
+  blank_framing_between_calls_single_chunk:
+    lifecycle: active
+    scenario: blank_framing_between_calls_single_chunk
+    description: Two calls framed by newlines before, between, and after them, delivered in one push. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I6
+    display_id: UNIFIED.8-blank_framing_between_calls_single_chunk
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: '<|start|>assistant<|channel|>final<|message|>
+
+          <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+
+          <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Tokyo"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+          <|return|>'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Tokyo
+      - kind: text
+        text: '
+
+          '
+  blank_framing_tool_only:
+    lifecycle: active
+    scenario: blank_framing_tool_only
+    description: A tool-only turn frames its call with a newline on each side, as Nemotron emits it. The tag-aligned schedule delivers each newline in its own chunk. Nemotron V3 emits no text; every other family keeps the newlines.
+    policy:
+    - P8
+    - I5
+    display_id: UNIFIED.8-blank_framing_tool_only
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: '
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
+  blank_framing_with_prose:
+    lifecycle: active
+    scenario: blank_framing_with_prose
+    description: 'Visible prose before the call: the turn has visible text, so every whitespace byte, including the newline after the call, is kept by every family.'
+    policy:
+    - P8
+    - I1
+    display_id: UNIFIED.8-blank_framing_with_prose
+    historical_ids: []
+    request:
+      input: '<|start|>assistant<|channel|>final<|message|>Pressing it now.
+
+
+        <|return|><|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city": "Paris"}<|call|><|start|>assistant<|channel|>final<|message|>
+
+        <|return|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: 'Pressing it now.
+
+
+          '
+      - delta_text: <|return|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: '{"city": "Paris"}'
+      - delta_text: <|call|>
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: final
+      - delta_text: <|message|>
+      - delta_text: '
+
+          '
+      - delta_text: <|return|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: text
+        text: 'Pressing it now.
+
+
+          '
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+      - kind: text
+        text: '
+
+          '
