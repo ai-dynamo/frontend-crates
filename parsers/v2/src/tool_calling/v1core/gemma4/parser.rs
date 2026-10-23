@@ -12,10 +12,11 @@
 // multiple calls concatenated without separators.
 
 use serde_json::Value;
-use std::collections::BTreeMap;
 use uuid::Uuid;
 
-use crate::tool_calling::arguments::{ParsedValue, normalize_decimal_spelling, raw_number_literal};
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, normalize_decimal_spelling, raw_number_literal,
+};
 
 use super::super::ToolDefinition;
 use super::super::response::{CalledFunction, ToolCallResponse, ToolCallType};
@@ -47,7 +48,7 @@ fn parse_gemma_call_parts(
                 name,
                 e
             );
-            ParsedValue::Object(BTreeMap::new())
+            ParsedValue::Object(ParsedObject::new())
         }
     };
     let arguments = serde_json::to_string(&args_value)?;
@@ -236,7 +237,7 @@ pub(crate) fn parse_args_object(input: &str) -> anyhow::Result<ParsedValue> {
 }
 
 fn parse_object_body(cur: &mut Cursor) -> anyhow::Result<ParsedValue> {
-    let mut map = BTreeMap::new();
+    let mut map = ParsedObject::new();
     cur.skip_whitespace();
     if cur.eof() || cur.peek_byte() == Some(b'}') {
         return Ok(ParsedValue::Object(map));

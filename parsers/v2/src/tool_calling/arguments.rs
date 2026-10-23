@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::Serialize;
+use serde::de::{MapAccess, Visitor};
+use serde::ser::SerializeMap;
+use serde::{Deserializer, Serialize};
 use serde_json::Value;
 use serde_json::value::RawValue;
 use std::collections::BTreeMap;
@@ -23,7 +25,90 @@ pub(crate) enum ParsedValue {
     RawNumber(Box<RawValue>),
     RawJson(Box<RawValue>),
     Array(Vec<ParsedValue>),
-    Object(BTreeMap<String, ParsedValue>),
+    Object(ParsedObject),
+}
+
+// DSML, Gemma, M3 and literal JSON retain serde_json::Map's key and removal
+// order. Only key markers enter Value; argument values keep their exact tokens.
+#[derive(Debug, Default)]
+pub(crate) struct ParsedObject {
+    keys: serde_json::Map<String, Value>,
+    values: BTreeMap<String, ParsedValue>,
+}
+
+impl ParsedObject {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn insert(&mut self, key: String, value: ParsedValue) -> Option<ParsedValue> {
+        self.keys.insert(key.clone(), Value::Null);
+        self.values.insert(key, value)
+    }
+
+    pub(crate) fn remove(&mut self, key: &str) -> Option<ParsedValue> {
+        self.keys.remove(key);
+        self.values.remove(key)
+    }
+
+    pub(crate) fn contains_key(&self, key: &str) -> bool {
+        self.values.contains_key(key)
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+}
+
+impl FromIterator<(String, ParsedValue)> for ParsedObject {
+    fn from_iter<T: IntoIterator<Item = (String, ParsedValue)>>(items: T) -> Self {
+        let mut object = Self::new();
+        for (key, value) in items {
+            object.insert(key, value);
+        }
+        object
+    }
+}
+
+impl Serialize for ParsedObject {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut object = serializer.serialize_map(Some(self.values.len()))?;
+        for key in self.keys.keys() {
+            object.serialize_entry(key, &self.values[key])?;
+        }
+        object.end()
+    }
+}
+
+struct RawFields;
+
+impl<'de> Visitor<'de> for RawFields {
+    type Value = Vec<(String, Box<RawValue>)>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a JSON object")
+    }
+
+    fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut fields = Vec::new();
+        while let Some(field) = map.next_entry()? {
+            fields.push(field);
+        }
+        Ok(fields)
+    }
+}
+
+fn raw_object_fields(value: &str) -> Option<Vec<(String, Box<RawValue>)>> {
+    let mut deserializer = serde_json::Deserializer::from_str(value);
+    let fields = deserializer.deserialize_map(RawFields).ok()?;
+    deserializer.end().ok()?;
+    Some(fields)
 }
 
 impl PartialEq<Value> for ParsedValue {
@@ -80,7 +165,7 @@ impl ParsedValue {
     #[cfg(test)]
     pub(crate) fn as_object(&self) -> Option<&BTreeMap<String, ParsedValue>> {
         match self {
-            Self::Object(fields) => Some(fields),
+            Self::Object(fields) => Some(&fields.values),
             _ => None,
         }
     }
@@ -106,58 +191,30 @@ pub(crate) fn raw_json_literal(value: &str) -> Option<ParsedValue> {
         .map(ParsedValue::RawJson)
 }
 
-pub(crate) fn compact_json_literal(value: &str) -> Option<ParsedValue> {
+pub(crate) fn parsed_json_object(value: &str) -> Option<ParsedValue> {
+    let parsed = parsed_json_literal(value)?;
+    matches!(&parsed, ParsedValue::Object(_)).then_some(parsed)
+}
+
+pub(crate) fn parsed_json_literal(value: &str) -> Option<ParsedValue> {
     RawValue::from_string(value.to_string()).ok()?;
-    let mut compact = Vec::with_capacity(value.len());
-    let mut in_string = false;
-    let mut escaped = false;
-    for byte in value.bytes() {
-        if in_string {
-            compact.push(byte);
-            if escaped {
-                escaped = false;
-            } else if byte == b'\\' {
-                escaped = true;
-            } else if byte == b'"' {
-                in_string = false;
-            }
-        } else if byte == b'"' {
-            in_string = true;
-            compact.push(byte);
-        } else if !byte.is_ascii_whitespace() {
-            compact.push(byte);
-        }
-    }
-    raw_json_literal(std::str::from_utf8(&compact).ok()?)
-}
-
-pub(crate) fn compact_json_object(value: &str) -> Option<ParsedValue> {
-    let fields = serde_json::from_str::<BTreeMap<String, Box<RawValue>>>(value).ok()?;
-    fields
-        .into_iter()
-        .map(|(key, raw)| compact_json_literal(raw.get()).map(|value| (key, value)))
-        .collect::<Option<BTreeMap<_, _>>>()
-        .map(ParsedValue::Object)
-}
-
-pub(crate) fn sorted_json_literal(value: &str) -> Option<ParsedValue> {
     // RawValue skips serde_json's nesting limit; retain that limit before building
-    // recursive nodes so sorting, serialization, and drop remain stack bounded.
-    sorted_json_literal_with_budget(value, 128)
+    // recursive nodes so serialization and drop remain stack bounded.
+    parsed_json_literal_with_budget(value, 128)
 }
 
-fn sorted_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedValue> {
+fn parsed_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedValue> {
     let value = value.trim();
     match value.as_bytes().first()? {
         b'{' => {
             let budget = budget.checked_sub(1).filter(|budget| *budget > 0)?;
-            let fields = serde_json::from_str::<BTreeMap<String, Box<RawValue>>>(value).ok()?;
+            let fields = raw_object_fields(value)?;
             fields
                 .into_iter()
                 .map(|(key, raw)| {
-                    sorted_json_literal_with_budget(raw.get(), budget).map(|value| (key, value))
+                    parsed_json_literal_with_budget(raw.get(), budget).map(|value| (key, value))
                 })
-                .collect::<Option<BTreeMap<_, _>>>()
+                .collect::<Option<ParsedObject>>()
                 .map(ParsedValue::Object)
         }
         b'[' => {
@@ -165,7 +222,7 @@ fn sorted_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedV
             serde_json::from_str::<Vec<Box<RawValue>>>(value)
                 .ok()?
                 .into_iter()
-                .map(|raw| sorted_json_literal_with_budget(raw.get(), budget))
+                .map(|raw| parsed_json_literal_with_budget(raw.get(), budget))
                 .collect::<Option<Vec<_>>>()
                 .map(ParsedValue::Array)
         }
@@ -329,9 +386,58 @@ pub(crate) fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
 #[cfg(test)]
 mod tests {
     use super::{
-        coerce_integral_number, compact_json_literal, normalize_decimal_spelling,
-        raw_number_literal, sorted_json_literal,
+        ParsedObject, ParsedValue, coerce_integral_number, normalize_decimal_spelling,
+        parsed_json_literal, raw_number_literal,
     };
+
+    #[test]
+    fn object_mutations_follow_serde_map_order() {
+        let mut actual = ParsedObject::new();
+        let mut expected = serde_json::Map::new();
+        for key in ["z", "b", "a", "b", "c"] {
+            let value = serde_json::Value::String(format!("value-{key}"));
+            assert_eq!(
+                actual
+                    .insert(key.into(), value.clone().into())
+                    .map(|v| v.to_value()),
+                expected.insert(key.into(), value)
+            );
+        }
+        for key in ["b", "missing", "z"] {
+            assert_eq!(
+                actual.remove(key).map(|v| v.to_value()),
+                expected.remove(key)
+            );
+            let value = serde_json::Value::String(format!("reinserted-{key}"));
+            actual.insert(key.into(), value.clone().into());
+            expected.insert(key.into(), value);
+            assert_eq!(
+                ParsedValue::Object(actual).json_text().unwrap(),
+                serde_json::to_string(&expected).unwrap()
+            );
+            actual = expected
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect();
+        }
+    }
+
+    #[test]
+    fn literal_objects_decode_strings_and_replace_duplicate_keys() {
+        let input = r#"{"z":{"b":1e-400,"a":9007199254740992.5},"a":"old","\u0061":"line\n\"quoted\"","z":{"c":4.2e1,"b":1e9999}}"#;
+        let expected = serde_json::from_str::<serde_json::Value>(
+            r#"{"z":{"b":"old","a":"old"},"a":"old","\u0061":"line\n\"quoted\"","z":{"c":"EXP","b":"HUGE"}}"#,
+        ).unwrap();
+        let expected = serde_json::to_string(&expected)
+            .unwrap()
+            .replace("\"EXP\"", "4.2e1")
+            .replace("\"HUGE\"", "1e9999");
+        assert_eq!(
+            parsed_json_literal(input).unwrap().json_text().unwrap(),
+            expected
+        );
+    }
 
     #[test]
     fn decimal_normalization_rejects_tokens_without_digits() {
@@ -367,13 +473,18 @@ mod tests {
 
     #[test]
     fn compact_json_preserves_number_tokens_and_utf8_strings() {
-        let compact = compact_json_literal(
+        let compact = parsed_json_literal(
             "{ \"city\": \"München\", \"amount\": 9007199254740992.5, \"tiny\": 1e-400 }",
         )
         .expect("valid JSON object");
         assert_eq!(
             compact.json_text().unwrap(),
-            r#"{"city":"München","amount":9007199254740992.5,"tiny":1e-400}"#
+            serde_json::to_string(
+                &serde_json::json!({"city": "München", "amount": "EXACT", "tiny": "TINY"})
+            )
+            .unwrap()
+            .replace("\"EXACT\"", "9007199254740992.5")
+            .replace("\"TINY\"", "1e-400")
         );
     }
 
@@ -383,29 +494,38 @@ mod tests {
             for (open, close) in [("[", "]"), ("{\"item\":", "}"), ("[{\"item\":", "}]")] {
                 let input = format!("{}0{}", open.repeat(depth), close.repeat(depth));
                 assert_eq!(
-                    sorted_json_literal(&input).is_some(),
+                    parsed_json_literal(&input).is_some(),
                     serde_json::from_str::<serde_json::Value>(&input).is_ok(),
                     "depth={depth}, open={open}"
                 );
             }
         }
         let input = format!("{}0{}", "[".repeat(3000), "]".repeat(3000));
-        assert!(sorted_json_literal(&input).is_none());
+        assert!(parsed_json_literal(&input).is_none());
         let quoted = serde_json::to_string(&input).unwrap();
         assert_eq!(
-            sorted_json_literal(&quoted).unwrap().json_text().unwrap(),
+            parsed_json_literal(&quoted).unwrap().json_text().unwrap(),
             quoted
         );
     }
 
     #[test]
     fn sorted_json_preserves_nested_number_tokens() {
-        let value = sorted_json_literal(r#"{"z":{"b":1e-400,"a":9007199254740992.5},"a":[4.2e1]}"#)
+        let value = parsed_json_literal(r#"{"z":{"b":1e-400,"a":9007199254740992.5},"a":[4.2e1]}"#)
             .expect("valid JSON object");
         assert_eq!(
             value.json_text().unwrap(),
-            r#"{"a":[4.2e1],"z":{"a":9007199254740992.5,"b":1e-400}}"#
+            serde_json::to_string(
+                &serde_json::from_str::<serde_json::Value>(
+                    r#"{"z":{"b":"TINY","a":"EXACT"},"a":["EXP"]}"#,
+                )
+                .unwrap()
+            )
+            .unwrap()
+            .replace("\"EXACT\"", "9007199254740992.5")
+            .replace("\"TINY\"", "1e-400")
+            .replace("\"EXP\"", "4.2e1")
         );
-        assert!(sorted_json_literal(r#"{"value":NaN}"#).is_none());
+        assert!(parsed_json_literal(r#"{"value":NaN}"#).is_none());
     }
 }

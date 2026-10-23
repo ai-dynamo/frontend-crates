@@ -539,19 +539,17 @@ fn parse_section_block(
             tracing::warn!("Tool '{}' is not defined in the tools list.", function_name);
         }
 
-        // Validate JSON arguments
-        let arguments_json =
-            match serde_json::value::RawValue::from_string(arguments_raw.to_string()) {
-                Ok(value) => value.get().to_string(),
-                Err(e) => {
-                    tracing::warn!(
-                        "Failed to parse JSON arguments for tool '{}': {}. Using raw string.",
-                        function_name,
-                        e,
-                    );
-                    arguments_raw.to_string()
-                }
-            };
+        // Legacy Kimi reserializes JSON; native streaming keeps its raw payload.
+        let arguments_json = crate::tool_calling::arguments::parsed_json_literal(arguments_raw)
+            .map(|value| value.json_text())
+            .transpose()?
+            .unwrap_or_else(|| {
+                tracing::warn!(
+                    why = "invalid_kimi_tool_arguments",
+                    "using raw malformed legacy arguments"
+                );
+                arguments_raw.to_string()
+            });
 
         // NOTE: Unlike other parsers (XML, DSML) which generate `call-{UUID}` IDs,
         // we preserve the model's native function_id (e.g., "functions.bash:0") here.

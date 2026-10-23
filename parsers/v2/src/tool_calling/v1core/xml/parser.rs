@@ -14,8 +14,8 @@ use super::super::ToolDefinition;
 use super::super::config::XmlParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
 use crate::tool_calling::arguments::{
-    ParsedValue, coerce_integral_number, compact_json_literal, has_unsupported_schema_ref_scope,
-    normalize_decimal_spelling, raw_number_literal, resolve_local_schema_ref, sorted_json_literal,
+    ParsedValue, coerce_integral_number, has_unsupported_schema_ref_scope,
+    normalize_decimal_spelling, parsed_json_literal, raw_number_literal, resolve_local_schema_ref,
 };
 
 /// Build a `<start>name>(body)<end>` regex pattern. When `strict` is false,
@@ -1094,7 +1094,7 @@ fn raw_json_container(value: &str, expected: Option<SchemaType>) -> Option<Parse
     if expected.is_some_and(|expected| expected != category) {
         return None;
     }
-    compact_json_literal(trimmed)
+    parsed_json_literal(trimmed)
 }
 
 fn value_matches_category(value: &ParsedValue, allowed: &HashSet<SchemaType>) -> bool {
@@ -1104,6 +1104,8 @@ fn value_matches_category(value: &ParsedValue, allowed: &HashSet<SchemaType>) ->
             Some(b'[') => allowed.contains(&SchemaType::Array),
             _ => false,
         },
+        ParsedValue::Object(_) => allowed.contains(&SchemaType::Object),
+        ParsedValue::Array(_) => allowed.contains(&SchemaType::Array),
         _ => false,
     }
 }
@@ -1112,7 +1114,7 @@ fn value_matches_category(value: &ParsedValue, allowed: &HashSet<SchemaType>) ->
 /// This is a simplified version that handles common cases.
 fn try_literal_eval(s: &str) -> Result<ParsedValue, ()> {
     // First try standard JSON
-    if let Some(val) = sorted_json_literal(s) {
+    if let Some(val) = parsed_json_literal(s) {
         return Ok(val);
     }
 
@@ -1122,7 +1124,7 @@ fn try_literal_eval(s: &str) -> Result<ParsedValue, ()> {
     // must NOT become `{"message": "true story"}`).
     let normalized = normalize_python_literal(s);
 
-    sorted_json_literal(&normalized).ok_or(())
+    parsed_json_literal(&normalized).ok_or(())
 }
 
 /// Convert a Python-style literal into a JSON-ish string: swap single-quote

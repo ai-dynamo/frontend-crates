@@ -11,7 +11,7 @@ use openai_harmony::{
     HarmonyEncoding, HarmonyEncodingName, StreamableParser, load_harmony_encoding,
 };
 
-use crate::tool_calling::arguments::{raw_json_literal, sorted_json_literal};
+use crate::tool_calling::arguments::{parsed_json_literal, raw_json_literal};
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified, UnifiedParser,
@@ -666,7 +666,7 @@ impl HarmonyRuntime {
         } else {
             match raw_json_literal(&self.call_content) {
                 Some(_) if self.legacy_tool_compatibility => {
-                    sorted_json_literal(&self.call_content)
+                    parsed_json_literal(&self.call_content)
                         .and_then(|value| value.json_text().ok())
                         .unwrap_or_else(|| self.call_content.trim().to_string())
                 }
@@ -1347,7 +1347,16 @@ mod tests {
         let input = format!(
             "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{body}<|call|>"
         );
-        let expected = r#"{"a":[4.2e1],"z":{"a":9007199254740992.5,"b":1e-400}}"#;
+        let expected = serde_json::to_string(
+            &serde_json::from_str::<serde_json::Value>(
+                r#"{"z":{"b":"TINY","a":"FRACTION"},"a":["EXP"]}"#,
+            )
+            .unwrap(),
+        )
+        .unwrap()
+        .replace("\"TINY\"", "1e-400")
+        .replace("\"FRACTION\"", "9007199254740992.5")
+        .replace("\"EXP\"", "4.2e1");
         let token_ids = encode_harmony(&input).unwrap();
 
         for use_tokens in [false, true] {

@@ -790,11 +790,11 @@ def test_minimax_nested_union_fixtures_preserve_history_and_input(
             assert "calls=" + json.dumps(golden["calls"], separators=(",", ":")) in left[-1]
 
 
-@pytest.mark.parametrize("parent", ["7-4", "7-5"])
+@pytest.mark.parametrize("parent", ["arg_json_null", "arg_string_null"])
 def test_grouped_popup_updates_every_candidate_table(model_v2: dict, parent: str) -> None:
     tab = _tab(model_v2, "tab-unified")
     row = next(row for row in tab["rows"] if row.get("family") == "glm47")
-    sub = next(column["sub"] for column in tab["columns"] if column["label"] == parent)
+    sub = next(column["sub"] for column in tab["columns"] if column["sub"] == parent)
     variants = row["cells"][sub]["tooltip"]["variants"]
     assert len(variants) > 1
     script = r"""
@@ -1743,8 +1743,8 @@ vm.runInContext(source.replace('// --- Entry point',
   'window.audit = {columnGrammarModel, buildGrammarHtml};\n// --- Entry point'), context);
 const tab = JSON.parse(fs.readFileSync(0, 'utf8'));
 const results = {};
-for (const sub of ['7-4', '7-5']) {
-  const column = tab.columns.find(col => col.label === sub);
+for (const sub of ['arg_json_null', 'arg_string_null']) {
+  const column = tab.columns.find(col => col.sub === sub);
   const model = context.window.audit.columnGrammarModel(tab, column);
   results[sub] = context.window.audit.buildGrammarHtml(model);
 }
@@ -1756,22 +1756,22 @@ process.stdout.write(JSON.stringify(results));
     )
     rendered = json.loads(result.stdout)
     for sub, explanation in (
-        ("7-4", "request tool schema permits JSON null"),
-        ("7-5", "request tool schema requires a string"),
+        ("arg_json_null", "request tool schema permits JSON null"),
+        ("arg_string_null", "request tool schema requires a string"),
     ):
-        column = next(col for col in tab["columns"] if col["label"] == sub)
+        column = next(col for col in tab["columns"] if col["sub"] == sub)
         assert explanation in column["desc"]
         assert "<table" in rendered[sub]
         header = rendered[sub].split("<table", 1)[0]
         assert 'class="ttip-head-desc"' in header
         assert "request tool schema" in header
-    assert 'JSON <tt>null</tt>' in rendered["7-4"].split("<table", 1)[0]
-    assert 'string <tt>&quot;null&quot;</tt>' in rendered["7-5"].split("<table", 1)[0]
+    assert 'JSON <tt>null</tt>' in rendered["arg_json_null"].split("<table", 1)[0]
+    assert 'string <tt>&quot;null&quot;</tt>' in rendered["arg_string_null"].split("<table", 1)[0]
 
 
 def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2):
     tab = _tab(model_v2, "tab-unified")
-    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert {col["sub"] for col in tab["columns"] if col["sub"] in {"arg_json_null", "arg_string_null"}} == {"arg_json_null", "arg_string_null"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
     families = set(table.gen_unified_golden.FAMILIES)
     for row in tab["rows"]:
@@ -1780,8 +1780,8 @@ def test_unified_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2)
         mixed = True
         refs = row["family"] in {"glm47", "qwen3", "nemotron_v3"}
         groups = []
-        for label, count in (("7-4", 5), ("7-5", 7)):
-            sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
+        for scenario, count in (("arg_json_null", 5), ("arg_string_null", 7)):
+            sub = next(col["sub"] for col in tab["columns"] if col["sub"] == scenario)
             cell = row["cells"][sub]
             assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
@@ -2119,7 +2119,7 @@ def test_stream_null_case_numbers_preserve_recorded_data(old_id, new_id, monkeyp
 def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -> None:
     tab_id = "tab-unified"
     tab = _tab(model_v2, tab_id)
-    assert {col["label"] for col in tab["columns"] if col["label"].startswith(("7-4", "7-5"))} == {"7-4", "7-5"}
+    assert {col["sub"] for col in tab["columns"] if col["sub"] in {"arg_json_null", "arg_string_null"}} == {"arg_json_null", "arg_string_null"}
     assert sum(candidate["key"] == "golden" for candidate in tab["candidates"]) == 1
     families = set(table.gen_unified_golden.FAMILIES) if tab_id == "tab-unified" else {
         "deepseek_v4", "gemma4", "glm47", "kimi_k2", "kimi_k3", "muse_glimmer",
@@ -2130,8 +2130,8 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
         mixed = True
         refs = tab_id == "tab-unified" and row["family"] in {"glm47", "qwen3", "nemotron_v3"}
         groups = []
-        for label, count in (("7-4", 5), ("7-5", 7)):
-            sub = next(col["sub"] for col in tab["columns"] if col["label"] == label)
+        for scenario, count in (("arg_json_null", 5), ("arg_string_null", 7)):
+            sub = next(col["sub"] for col in tab["columns"] if col["sub"] == scenario)
             cell = row["cells"][sub]
             assert len(cell["variants"]) == count + int(mixed) + int(refs)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
