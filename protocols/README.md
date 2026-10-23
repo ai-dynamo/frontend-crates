@@ -133,8 +133,24 @@ User and tool content keep their established typed Text, ImageUrl, VideoUrl and
 AudioUrl variants (and user InputAudio). Both enums add `Custom(CustomModalityPart)`:
 
 ```json
-{"type":"custom","kind":"chemistry","fields":{"chemistry":{"data_base64":"..."},"units":"angstrom"}}
+{
+  "role": "user",
+  "content": [
+    {"type": "text", "text": "Does this structure <chemistry> match the reaction diagram?"},
+    {"type": "custom", "kind": "chemistry", "fields": {
+      "projected_soft_tokens": {
+        "dtype": "float32", "shape": [2, 4096], "data_base64": "..."
+      },
+      "revision": 1
+    }},
+    {"type": "image_url", "image_url": {"url": "https://example.org/reaction-diagram.png"}}
+  ]
+}
 ```
+
+The custom payload describes projected soft tokens, with application-defined
+JSON/base64 inside `fields`. Its encoding, dimensions, and the image URL are
+illustrative; the protocol crate does not define a tensor codec or transfer API.
 
 `kind` must be non-empty; `fields` must be an object. Its values may contain any
 JSON, including arrays and null. Unknown envelope members are rejected. This crate
