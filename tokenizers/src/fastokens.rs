@@ -144,7 +144,10 @@ impl FastTikTokenTokenizer {
         let pattern = tiktoken::detect_bpe_pattern(directory)?;
         let encoder = tiktoken::parse_tiktoken_file(path)?;
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
-        let special_tokens = tiktoken::load_special_tokens(directory, num_base_tokens)?;
+        let tiktoken::AddedTokens {
+            tokens: special_tokens,
+            skip_ids: special_token_ids,
+        } = tiktoken::load_added_tokens(directory, num_base_tokens)?;
 
         let ranks: Vec<(Vec<u8>, u32)> = encoder.into_iter().collect();
         let mut id_to_bytes: FxHashMap<u32, Vec<u8>> = ranks
@@ -156,7 +159,6 @@ impl FastTikTokenTokenizer {
                 .iter()
                 .map(|(content, &id)| (id, content.as_bytes().to_vec())),
         );
-        let special_token_ids = special_tokens.values().copied().collect();
         let special_token_strings = tiktoken::sorted_special_token_strings(&special_tokens);
 
         let config =
@@ -513,6 +515,46 @@ mod tiktoken_parity_tests {
             reference.special_token_ids().unwrap()
         );
         assert_eq!(fast.token_to_id("<|im_end|>").unwrap(), Some(474));
+    }
+
+    #[test]
+    fn non_special_added_tokens_survive_skip_special_tokens() {
+        // The mock model plus one Kimi-style format marker marked `"special": false`.
+        let source = Path::new(TIKTOKEN_PATH).parent().unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        for file in ["tiktoken.model", "config.json"] {
+            std::fs::copy(source.join(file), dir.path().join(file)).unwrap();
+        }
+        let mut config: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(source.join("tokenizer_config.json")).unwrap(),
+        )
+        .unwrap();
+        config["added_tokens_decoder"]["475"] =
+            serde_json::json!({"content": "<|open|>", "special": false});
+        std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string()).unwrap();
+        let path = dir.path().join("tiktoken.model");
+        let path = path.to_str().unwrap();
+        let reference = TikTokenTokenizer::from_file_auto(path).unwrap();
+        let fast = FastTikTokenTokenizer::from_file_auto(path).unwrap();
+
+        let special_ids = fast.special_token_ids().unwrap();
+        assert_eq!(special_ids, reference.special_token_ids().unwrap());
+        assert!(special_ids.contains(&474));
+        assert!(!special_ids.contains(&475));
+
+        let ids = fast.encode("<|open|>hello<|im_end|>").unwrap();
+        assert_eq!(
+            ids.token_ids(),
+            reference
+                .encode("<|open|>hello<|im_end|>")
+                .unwrap()
+                .token_ids()
+        );
+        assert_eq!(ids.token_ids().first(), Some(&475));
+        for tokenizer in [&fast as &dyn Decoder, &reference] {
+            let text: String = tokenizer.decode(ids.token_ids(), true).unwrap().into();
+            assert_eq!(text, "<|open|>hello");
+        }
     }
 
     #[test]

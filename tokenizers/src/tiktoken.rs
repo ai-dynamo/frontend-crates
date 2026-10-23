@@ -74,8 +74,10 @@ impl TikTokenTokenizer {
         let encoder = parse_tiktoken_file(path)?;
         // Use max rank + 1 (not len) to avoid ID collisions with sparse/non-contiguous ranks
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
-        let special_tokens = load_special_tokens(directory, num_base_tokens)?;
-        let special_token_ids: HashSet<u32> = special_tokens.values().copied().collect();
+        let AddedTokens {
+            tokens: special_tokens,
+            skip_ids: special_token_ids,
+        } = load_added_tokens(directory, num_base_tokens)?;
         let special_token_strings = sorted_special_token_strings(&special_tokens);
 
         let bpe = CoreBPE::new(encoder, special_tokens, pattern)
@@ -239,16 +241,25 @@ pub(crate) fn detect_bpe_pattern(directory: &Path) -> Result<&'static str> {
     }
 }
 
-/// Load special tokens from `tokenizer_config.json` in the model directory.
+/// Added tokens from `tokenizer_config.json`, split by how decoding treats them.
+pub(crate) struct AddedTokens {
+    /// Every added token plus the reserved placeholders. Each encodes as one unit.
+    pub(crate) tokens: FxHashMap<String, u32>,
+    /// IDs that `skip_special_tokens` removes: entries marked `"special": true` and the
+    /// reserved placeholders. Entries marked `"special": false`, or with no `special` field,
+    /// are output text and stay, as in Hugging Face (Kimi's `<|open|>`, `<|sep|>`, `<|close|>`).
+    pub(crate) skip_ids: HashSet<u32>,
+}
+
+/// Load added tokens from `tokenizer_config.json` in the model directory.
 ///
-/// Reads the `added_tokens_decoder` field which maps string token IDs to token definitions.
+/// Reads the `added_tokens_decoder` field which maps string token IDs to token definitions,
+/// and records which of them decoding may skip.
 /// Falls back to generating `<|reserved_token_{id}|>` names for unmapped IDs.
-pub(crate) fn load_special_tokens(
-    directory: &Path,
-    num_base_tokens: usize,
-) -> Result<FxHashMap<String, u32>> {
+pub(crate) fn load_added_tokens(directory: &Path, num_base_tokens: usize) -> Result<AddedTokens> {
     let config_path = directory.join("tokenizer_config.json");
     let mut special_tokens = FxHashMap::default();
+    let mut non_special_ids = HashSet::new();
 
     if !config_path.exists() {
         // No tokenizer_config.json — generate default reserved tokens
@@ -256,7 +267,11 @@ pub(crate) fn load_special_tokens(
             let id = num_base_tokens as u32 + i;
             special_tokens.insert(format!("<|reserved_token_{id}|>"), id);
         }
-        return Ok(special_tokens);
+        let skip_ids = special_tokens.values().copied().collect();
+        return Ok(AddedTokens {
+            tokens: special_tokens,
+            skip_ids,
+        });
     }
 
     let contents = std::fs::read_to_string(&config_path)
@@ -287,6 +302,13 @@ pub(crate) fn load_special_tokens(
 
             if !content.is_empty() {
                 special_tokens.insert(content.to_string(), id);
+                let special = token_def
+                    .get("special")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false);
+                if !special {
+                    non_special_ids.insert(id);
+                }
             }
         }
 
@@ -306,7 +328,15 @@ pub(crate) fn load_special_tokens(
         }
     }
 
-    Ok(special_tokens)
+    let skip_ids = special_tokens
+        .values()
+        .copied()
+        .filter(|id| !non_special_ids.contains(id))
+        .collect();
+    Ok(AddedTokens {
+        tokens: special_tokens,
+        skip_ids,
+    })
 }
 
 #[cfg(test)]
@@ -515,8 +545,9 @@ mod tests {
         create_test_config(dir.path(), "kimi");
         create_test_tokenizer_config(dir.path(), 21);
 
-        let mut expected_specials: Vec<String> = load_special_tokens(dir.path(), 21)
+        let mut expected_specials: Vec<String> = load_added_tokens(dir.path(), 21)
             .unwrap()
+            .tokens
             .into_keys()
             .collect();
         expected_specials.sort();
@@ -557,7 +588,7 @@ mod tests {
     #[test]
     fn test_load_special_tokens_no_config() {
         let dir = tempfile::tempdir().unwrap();
-        let tokens = load_special_tokens(dir.path(), 100).unwrap();
+        let tokens = load_added_tokens(dir.path(), 100).unwrap().tokens;
         assert_eq!(tokens.len(), 256);
         assert_eq!(tokens["<|reserved_token_100|>"], 100);
         assert_eq!(tokens["<|reserved_token_355|>"], 355);
@@ -567,11 +598,74 @@ mod tests {
     fn test_load_special_tokens_with_config() {
         let dir = tempfile::tempdir().unwrap();
         create_test_tokenizer_config(dir.path(), 100);
-        let tokens = load_special_tokens(dir.path(), 100).unwrap();
+        let tokens = load_added_tokens(dir.path(), 100).unwrap().tokens;
         assert_eq!(tokens["[BOS]"], 100);
         assert_eq!(tokens["[EOS]"], 101);
         // Should also have reserved tokens filling gaps
         assert!(tokens.len() > 2);
+    }
+
+    /// Kimi-style `added_tokens_decoder`: a control token marked special, a format marker
+    /// marked `"special": false`, and one with no `special` field (Hugging Face default false).
+    fn create_tokenizer_with_non_special_added_tokens(dir: &Path) -> TikTokenTokenizer {
+        let file_path = create_test_tiktoken_file(dir);
+        create_test_config(dir, "kimi_k3");
+        let config = serde_json::json!({"added_tokens_decoder": {
+            "21": {"content": "[BOS]", "special": true},
+            "22": {"content": "<|open|>", "special": false},
+            "23": {"content": "<|sep|>"},
+        }});
+        std::fs::write(dir.join("tokenizer_config.json"), config.to_string()).unwrap();
+        TikTokenTokenizer::from_file_auto(&file_path).unwrap()
+    }
+
+    #[test]
+    fn test_skip_special_tokens_keeps_non_special_added_tokens() {
+        let dir = tempfile::tempdir().unwrap();
+        let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
+
+        // Non-special added tokens still encode as one unit.
+        let encoding = tokenizer.encode("<|open|>hello").unwrap();
+        assert_eq!(encoding.token_ids(), &[22, 19]);
+
+        // Only tokens marked special, plus reserved placeholders, are reported and skipped.
+        let special_ids = tokenizer.special_token_ids().unwrap();
+        assert!(special_ids.contains(&21));
+        assert!(special_ids.contains(&24), "reserved placeholder");
+        assert!(!special_ids.contains(&22));
+        assert!(!special_ids.contains(&23));
+
+        let ids = [21, 22, 19, 23];
+        let skipped: String = tokenizer.decode(&ids, true).unwrap().into();
+        assert_eq!(skipped, "<|open|>hello<|sep|>");
+        let kept: String = tokenizer.decode(&ids, false).unwrap().into();
+        assert_eq!(kept, "[BOS]<|open|>hello<|sep|>");
+    }
+
+    #[test]
+    fn test_decode_stream_emits_leading_non_special_added_token() {
+        let dir = tempfile::tempdir().unwrap();
+        let tokenizer = create_tokenizer_with_non_special_added_tokens(dir.path());
+        let tokenizer_arc: Arc<dyn crate::traits::Tokenizer> = Arc::new(tokenizer);
+
+        // A reply that opens with a format marker shows it on the first step.
+        let mut stream = DecodeStream::new(tokenizer_arc, &[19], true);
+        assert_eq!(stream.step(22).unwrap().as_deref(), Some("<|open|>"));
+        assert_eq!(stream.step(19).unwrap().as_deref(), Some("hello"));
+        assert_eq!(stream.step(21).unwrap(), None);
+        assert_eq!(stream.step(23).unwrap().as_deref(), Some("<|sep|>"));
+    }
+
+    #[test]
+    fn test_load_added_tokens_skip_ids_follow_special_flag() {
+        let dir = tempfile::tempdir().unwrap();
+        create_test_tokenizer_config(dir.path(), 100);
+        let added = load_added_tokens(dir.path(), 100).unwrap();
+        assert_eq!(added.tokens.len(), added.skip_ids.len());
+
+        let empty = tempfile::tempdir().unwrap();
+        let added = load_added_tokens(empty.path(), 100).unwrap();
+        assert_eq!(added.skip_ids.len(), 256);
     }
 
     /// Helper: create a tiktoken file that includes raw byte tokens (byte fallback tokens).
