@@ -40,7 +40,11 @@ impl ToolCallGrammar for MiniMaxM2 {
         Some("</think>")
     }
     fn tool_call_excludes(&self) -> &'static [&'static str] {
-        &[minimax_m2::BLOCK_BEGIN, "<invoke name="]
+        &[
+            minimax_m2::BLOCK_BEGIN,
+            minimax_m2::BLOCK_END,
+            minimax_m2::INVOKE_PREFIX,
+        ]
     }
 
     fn build_triggered_calls(
@@ -55,7 +59,7 @@ impl ToolCallGrammar for MiniMaxM2 {
             self.reasoning_begin(),
             self.reasoning_end(),
             &[
-                minimax_m2::INVOKE_BEGIN,
+                minimax_m2::INVOKE_PREFIX,
                 minimax_m2::INVOKE_END,
                 minimax_m2::BLOCK_END,
             ],
