@@ -144,10 +144,8 @@ impl FastTikTokenTokenizer {
         let pattern = tiktoken::detect_bpe_pattern(directory)?;
         let encoder = tiktoken::parse_tiktoken_file(path)?;
         let num_base_tokens = encoder.values().max().map_or(0, |&m| m + 1) as usize;
-        let tiktoken::AddedTokens {
-            tokens: special_tokens,
-            skip_ids: special_token_ids,
-        } = tiktoken::load_added_tokens(directory, num_base_tokens)?;
+        let tiktoken::AddedTokens { tokens, skip_ids } =
+            tiktoken::load_added_tokens(directory, num_base_tokens)?;
 
         let ranks: Vec<(Vec<u8>, u32)> = encoder.into_iter().collect();
         let mut id_to_bytes: FxHashMap<u32, Vec<u8>> = ranks
@@ -155,14 +153,14 @@ impl FastTikTokenTokenizer {
             .map(|(bytes, rank)| (*rank, bytes.clone()))
             .collect();
         id_to_bytes.extend(
-            special_tokens
+            tokens
                 .iter()
                 .map(|(content, &id)| (id, content.as_bytes().to_vec())),
         );
-        let special_token_strings = tiktoken::sorted_special_token_strings(&special_tokens);
+        let special_token_strings = tiktoken::sorted_special_token_strings(&tokens);
 
         let config =
-            fastokens::tiktoken::TiktokenConfig::new(pattern, special_tokens.into_iter().collect());
+            fastokens::tiktoken::TiktokenConfig::new(pattern, tokens.into_iter().collect());
         let inner = fastokens::Tokenizer::from_tiktoken_ranks(&ranks, config).map_err(|e| {
             Error::msg(format!(
                 "Error loading fastokens tiktoken tokenizer from {path}: {e}"
@@ -171,13 +169,14 @@ impl FastTikTokenTokenizer {
         Ok(Self {
             inner,
             id_to_bytes,
-            special_token_ids,
+            special_token_ids: skip_ids,
             special_tokens: special_token_strings,
         })
     }
 
     /// Atomic special-token strings registered with the encoder, sorted; the boundary set
-    /// for [`CachedTokenizer`](crate::CachedTokenizer).
+    /// for [`CachedTokenizer`](crate::CachedTokenizer). Includes added tokens marked
+    /// `"special": false`, unlike `special_token_ids`.
     pub fn special_tokens(&self) -> &[String] {
         &self.special_tokens
     }
@@ -551,10 +550,10 @@ mod tiktoken_parity_tests {
                 .token_ids()
         );
         assert_eq!(ids.token_ids().first(), Some(&475));
-        for tokenizer in [&fast as &dyn Decoder, &reference] {
-            let text: String = tokenizer.decode(ids.token_ids(), true).unwrap().into();
-            assert_eq!(text, "<|open|>hello");
-        }
+        let fast_text: String = fast.decode(ids.token_ids(), true).unwrap().into();
+        let reference_text: String = reference.decode(ids.token_ids(), true).unwrap().into();
+        assert_eq!(fast_text, "<|open|>hello");
+        assert_eq!(reference_text, "<|open|>hello");
     }
 
     #[test]
