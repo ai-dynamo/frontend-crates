@@ -2372,7 +2372,6 @@ def _load_unified_fixtures(base: Path):
                         )
                         reason = capture_stimulus.comparison_failure(
                             cd, current, raw, str(fp.relative_to(base / name)), input_bindings[name],
-                            terminal_finish_row=implementation == "dynamo_v2",
                         )
                         if reason:
                             cd = {**cd, "unavailable": reason}

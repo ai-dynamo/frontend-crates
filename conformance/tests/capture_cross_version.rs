@@ -886,15 +886,7 @@ fn capture_this_build_against_the_current_corpus() {
                 let recorded: Option<Vec<capture::InputChunk>> = cdoc
                     .get("chunks")
                     .map(|value| serde_yaml::from_value(value.clone()).expect("requested chunks"));
-                let schedule = match recorded.as_deref() {
-                    Some(rows) if rows.last().is_some_and(|row| row.delta_text != "‹finish›") =>
-                    {
-                        let chunks: Vec<_> =
-                            rows.iter().map(|row| row.delta_text.clone()).collect();
-                        capture::input_chunks(input, Some(&chunks))
-                    }
-                    _ => capture::replay_chunks(input, recorded.as_deref()),
-                };
+                let schedule = capture::replay_chunks(input, recorded.as_deref());
                 let mut record = capture_record(
                     capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
                     &init,
