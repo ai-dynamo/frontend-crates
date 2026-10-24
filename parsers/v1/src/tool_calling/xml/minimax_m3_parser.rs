@@ -269,7 +269,18 @@ fn parse_parameters(
         };
         let value_end = value_start + value_end_rel;
         let raw_value = &body[value_start..value_end];
-        let schema = param_config.get(parameter_name);
+        let (required, alternatives) =
+            SchemaWalker::new(root_schema).parameter_schemas(parameter_name);
+        let union;
+        let schema = match (required.first(), alternatives.as_slice()) {
+            (Some(schema), _) => Some(*schema),
+            (None, []) => param_config.get(parameter_name),
+            (None, [schema]) => Some(*schema),
+            (None, _) => {
+                union = serde_json::json!({ "anyOf": alternatives });
+                Some(&union)
+            }
+        };
         let value = parse_parameter_value(raw_value, schema, root_schema, config);
         insert_parameter(&mut parameters, parameter_name.to_string(), value);
 
@@ -734,6 +745,56 @@ impl<'a> SchemaWalker<'a> {
                 }
             }
             true
+        })
+    }
+
+    // Tool parameters may be declared at the root, under allOf, or under anyOf/oneOf
+    // variants. Root and allOf declarations always apply, so they win over variant
+    // declarations; a parameter declared only by several variants is typed by their union.
+    fn parameter_schemas(&mut self, tag: &str) -> (Vec<&'a Value>, Vec<&'a Value>) {
+        let mut required = Vec::new();
+        let mut alternatives = Vec::new();
+        self.collect_parameter_schemas(self.root, tag, false, &mut required, &mut alternatives);
+        if self.exhausted {
+            (Vec::new(), Vec::new())
+        } else {
+            (required, alternatives)
+        }
+    }
+
+    fn collect_parameter_schemas(
+        &mut self,
+        schema: &'a Value,
+        tag: &str,
+        in_variant: bool,
+        required: &mut Vec<&'a Value>,
+        alternatives: &mut Vec<&'a Value>,
+    ) {
+        self.with_schema(schema, (), |walker, schema| {
+            if let Some(child) = schema.get("properties").and_then(|props| props.get(tag)) {
+                let declared = if in_variant {
+                    &mut *alternatives
+                } else {
+                    &mut *required
+                };
+                if !declared.contains(&child) {
+                    declared.push(child);
+                }
+            }
+            for keyword in ["allOf", "anyOf", "oneOf"] {
+                if let Some(branches) = schema.get(keyword).and_then(Value::as_array) {
+                    let in_variant = in_variant || keyword != "allOf";
+                    for branch in branches {
+                        walker.collect_parameter_schemas(
+                            branch,
+                            tag,
+                            in_variant,
+                            required,
+                            alternatives,
+                        );
+                    }
+                }
+            }
         })
     }
 
@@ -1309,6 +1370,191 @@ NS|</tool_call>"#;
                 );
             }
         }
+    }
+
+    fn parse_with_parameters(parameters: Value, raw: &str) -> Value {
+        let tools = vec![ToolDefinition {
+            name: "f".into(),
+            parameters: Some(parameters),
+            strict: None,
+        }];
+        let parsed =
+            parse_parameters("f", raw, &MiniMaxM3ParserConfig::default(), Some(&tools)).unwrap();
+        Value::Object(parsed)
+    }
+
+    #[test]
+    fn top_level_composed_parameters_keep_declared_types() {
+        let tok = "]<]minimax[>[";
+        let raw = format!(
+            "{tok}<number>42{tok}</number>{tok}<ratio>0.5{tok}</ratio>\
+             {tok}<flag>true{tok}</flag>{tok}<ids>[1, 2]{tok}</ids>\
+             {tok}<name>42{tok}</name>{tok}<extra>7{tok}</extra>"
+        );
+        for union in ["oneOf", "anyOf", "allOf"] {
+            let parameters = serde_json::json!({"type": "object", union: [
+                {"properties": {
+                    "number": {"type": "integer"},
+                    "ratio": {"type": "number"},
+                    "flag": {"type": "boolean"},
+                    "ids": {"type": "array", "items": {"type": "integer"}}
+                }, "required": ["number"]},
+                {"properties": {"name": {"type": "string"}}, "required": ["name"]}
+            ]});
+            assert_eq!(
+                parse_with_parameters(parameters, &raw),
+                serde_json::json!({
+                    "number": 42, "ratio": 0.5, "flag": true, "ids": [1, 2],
+                    "name": "42", "extra": "7"
+                }),
+                "{union}"
+            );
+        }
+    }
+
+    #[test]
+    fn top_level_one_of_branches_type_scalars_and_item_arrays() {
+        let tok = "]<]minimax[>[";
+        let parameters = serde_json::json!({"type": "object", "oneOf": [
+            {"properties": {"number": {"type": "number"}}, "additionalProperties": false},
+            {"properties": {"stringList": {"type": "array", "items": {"type": "string"}}},
+             "additionalProperties": false},
+            {"properties": {"numberList": {"type": "array", "items": {"type": "number"}}},
+             "additionalProperties": false}
+        ]});
+        for (raw, expected) in [
+            (
+                format!("{tok}<number>42{tok}</number>"),
+                serde_json::json!({"number": 42}),
+            ),
+            (
+                format!(
+                    "{tok}<stringList>{tok}<item>12{tok}</item>{tok}<item>34{tok}</item>{tok}</stringList>"
+                ),
+                serde_json::json!({"stringList": ["12", "34"]}),
+            ),
+            (
+                format!(
+                    "{tok}<numberList>{tok}<item>12{tok}</item>{tok}<item>34{tok}</item>{tok}</numberList>"
+                ),
+                serde_json::json!({"numberList": [12, 34]}),
+            ),
+        ] {
+            assert_eq!(
+                parse_with_parameters(parameters.clone(), &raw),
+                expected,
+                "{raw}"
+            );
+        }
+    }
+
+    #[test]
+    fn top_level_composed_parameters_follow_nesting_and_refs() {
+        let tok = "]<]minimax[>[";
+        let parameters = serde_json::json!({
+            "$defs": {"Count": {"properties": {"count": {"type": "integer"}}}},
+            "properties": {"label": {"type": "string"}},
+            "allOf": [{"anyOf": [
+                {"$ref": "#/$defs/Count"},
+                {"properties": {"limits": {"type": "object", "properties": {
+                    "max": {"type": "integer"}
+                }}}}
+            ]}]
+        });
+        let raw = format!(
+            "{tok}<label>7{tok}</label>{tok}<count>3{tok}</count>\
+             {tok}<limits>{tok}<max>10{tok}</max>{tok}</limits>"
+        );
+        assert_eq!(
+            parse_with_parameters(parameters, &raw),
+            serde_json::json!({"label": "7", "count": 3, "limits": {"max": 10}})
+        );
+    }
+
+    #[test]
+    fn top_level_parameters_declared_by_several_variants_use_their_union() {
+        let tok = "]<]minimax[>[";
+        for (declarations, raw, expected) in [
+            (
+                [
+                    serde_json::json!({"type": "integer"}),
+                    serde_json::json!({"type": "boolean"}),
+                ],
+                "2",
+                serde_json::json!(2),
+            ),
+            (
+                [
+                    serde_json::json!({"type": "integer"}),
+                    serde_json::json!({"type": "string"}),
+                ],
+                "2",
+                serde_json::json!("2"),
+            ),
+            (
+                [
+                    serde_json::json!({"type": "integer"}),
+                    serde_json::json!({"type": "null"}),
+                ],
+                "null",
+                serde_json::json!(null),
+            ),
+            (
+                [
+                    serde_json::json!({"type": "integer"}),
+                    serde_json::json!({"type": "string"}),
+                ],
+                "null",
+                serde_json::json!("null"),
+            ),
+        ] {
+            let [first, second] = declarations;
+            let parameters = serde_json::json!({"oneOf": [
+                {"properties": {"value": first}},
+                {"properties": {"value": second}}
+            ]});
+            let raw_value = format!("{tok}<value>{raw}{tok}</value>");
+            assert_eq!(
+                parse_with_parameters(parameters.clone(), &raw_value),
+                serde_json::json!({"value": expected}),
+                "{parameters}: {raw}"
+            );
+        }
+    }
+
+    #[test]
+    fn root_and_all_of_parameters_take_precedence_over_variants() {
+        let tok = "]<]minimax[>[";
+        let variants = serde_json::json!([
+            {"properties": {"value": {"type": "string"}}},
+            {"properties": {"other": {"type": "string"}}}
+        ]);
+        let declaration = serde_json::json!({"properties": {"value": {"type": "integer"}}});
+        let raw = format!("{tok}<value>2{tok}</value>");
+        for parameters in [
+            serde_json::json!({
+                "properties": {"value": {"type": "integer"}},
+                "oneOf": variants
+            }),
+            serde_json::json!({"allOf": [declaration], "anyOf": variants}),
+        ] {
+            assert_eq!(
+                parse_with_parameters(parameters.clone(), &raw),
+                serde_json::json!({"value": 2}),
+                "{parameters}"
+            );
+        }
+    }
+
+    #[test]
+    fn plain_parameter_maps_without_properties_stay_supported() {
+        let tok = "]<]minimax[>[";
+        let parameters = serde_json::json!({"count": {"type": "integer"}});
+        let raw = format!("{tok}<count>3{tok}</count>{tok}<other>4{tok}</other>");
+        assert_eq!(
+            parse_with_parameters(parameters, &raw),
+            serde_json::json!({"count": 3, "other": "4"})
+        );
     }
 
     #[test]
