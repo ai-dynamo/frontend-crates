@@ -31,4 +31,5 @@ minijinja = { workspace = true, features = ["loader", "loop_controls"] }
 minijinja-contrib = { workspace = true, features = ["pycompat"] }
 
 [dev-dependencies]
+dynamo-parsers-v2 = { path = "../parsers/v2", version = "0.7.15" }
 tempfile = { workspace = true }
