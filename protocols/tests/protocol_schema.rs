@@ -153,6 +153,7 @@ fn custom_deserializers_produce_schema_valid_canonical_messages() {
     canonical::<CreateChatCompletionRequest>(json!({
         "model":"test",
         "messages":[
+            {"role":"root","content":"policy"},
             {"role":"system","tools":[{"name":"lookup"}]},
             {"role":"assistant","reasoning":"thinking","content":null,
              "tool_calls":[{"id":"call1","function":{"name":"lookup","arguments":{"q":"hi"}}}]}
