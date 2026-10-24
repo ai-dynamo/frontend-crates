@@ -69,7 +69,14 @@ pub(crate) fn build_dsml_tool_calls(
                 begin,
                 content: Box::new(Format::JsonSchema(JsonSchemaFormat {
                     json_schema: resolve_tool_schema(tool, ctx.strict_schema()),
-                    style: JsonSchemaStyle::DeepseekXml,
+                    style: if config
+                        .invoke_begin_template
+                        .starts_with("<｜DSML｜ invoke name=")
+                    {
+                        JsonSchemaStyle::DeepseekV41Xml
+                    } else {
+                        JsonSchemaStyle::DeepseekXml
+                    },
                 })),
                 end: config.invoke_end.clone(),
             }
