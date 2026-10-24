@@ -33,6 +33,8 @@ struct Args {
     include_history: bool,
     #[arg(long, requires = "include_history")]
     history_source: Option<PathBuf>,
+    #[arg(long)]
+    cache_dir: Option<PathBuf>,
 }
 
 fn main() -> anyhow::Result<()> {
@@ -43,7 +45,11 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     if args.index_unified || args.validate_unified {
         let catalog = if args.index_unified {
-            conformance_publisher::catalog::index(&args.root, &args.workers)?
+            conformance_publisher::catalog::index_cached(
+                &args.root,
+                &args.workers,
+                args.cache_dir.as_deref(),
+            )?
         } else {
             conformance_publisher::publication::validate(&args.root, &args.workers)?
         };
@@ -58,7 +64,7 @@ fn main() -> anyhow::Result<()> {
         temporary.persist(&args.output)?;
         return Ok(());
     }
-    conformance_publisher::publication::publish_mode(
+    conformance_publisher::publication::publish_mode_cached(
         conformance_publisher::publication::Options {
             root: args.root,
             output: args.output,
@@ -69,5 +75,6 @@ fn main() -> anyhow::Result<()> {
         },
         args.include_history,
         args.history_source.as_deref(),
+        args.cache_dir.as_deref(),
     )
 }

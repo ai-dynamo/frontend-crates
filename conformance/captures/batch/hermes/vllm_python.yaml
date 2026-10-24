@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"b284085f4c2bdadfe20af59ba40f728b072a34710593d83fb3b119392028396c","surface":"batch","version":"0.23.0"}
 schema_version: 1
 surface: batch
 family: hermes

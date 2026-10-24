@@ -1,0 +1,161 @@
+parent: sglang_python_batch-0.5.12.post1
+execution: 4dd8e877fa735c477dbc2248ed5ecb07712a2de48f6c4d01032f4c6a81b13f19
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Hello there. <think>let me recall
+        - kind: text
+          text: The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure, one sec. <think>checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true"> <think>quoted
+        - kind: text
+          text: " <｜DSML｜tool_calls> </｜DSML｜tool_calls> </｜DSML｜invoke> &amp; \"x\"\\\n </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>"
+  dsml_separator_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_whitespace_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜tool_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls><think>mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜tool_calls><｜DSML｜invoke name="log"><｜DSML｜parameter name="note" string="true"><think>reconsider
+        - kind: text
+          text: </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now: <｜DSML｜tool_calls><｜DSML｜invoke name="log"><｜DSML｜parameter name="note" string="true"><think>reconsider'
+        - kind: text
+          text: </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> done.
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. <think>check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. <think>I should check. <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> now answer
+        - kind: text
+          text: ' Here you go.'
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first
+        - kind: text
+          text: '<think>
+
+            second</think>done'
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: interlude <think>second thought</think>done

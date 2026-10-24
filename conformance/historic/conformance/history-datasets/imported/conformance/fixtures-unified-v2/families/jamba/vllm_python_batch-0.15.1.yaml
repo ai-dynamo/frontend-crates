@@ -1,0 +1,12 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.15.1
+    source_sha256: 418c73c4efac6fed5b61178ed49b738d3418e6f9fe6b3e8264663bf97a702f2e
+    adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+    job_sha256: edb26c3b1cd7fae42636f07632b43a4e9118035033b2ca787099ac82fced3266
+document:
+  mode: unified
+changes: {}
+metadata_changes: {}
+document_overrides: {}

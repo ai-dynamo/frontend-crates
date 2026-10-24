@@ -1,3 +1,4 @@
+capture_selection: {"family":"jamba","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"0c01f62a91e49d202de1779a69382a994aa5381abfa242ce88ba5510a7cfb705","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: jamba

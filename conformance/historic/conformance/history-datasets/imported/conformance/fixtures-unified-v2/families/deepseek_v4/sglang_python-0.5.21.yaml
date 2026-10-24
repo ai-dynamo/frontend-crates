@@ -1,0 +1,3951 @@
+parent: sglang_python-0.5.20
+execution: ae8a1eec8d06f18ce158536074e00bc3c6b4bf94816d6dad4b2073b484da560d
+changes:
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+        - expected: []
+        - expected: []
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+        - expected: []
+        - expected: []
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+        - expected: []
+        - expected: []
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+        - expected: []
+        - expected: []
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: ' --oneline'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' --oneline'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+        - expected: []
+        - expected: []
+  arg_unicode:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "São Paulo 東京"}'
+        - expected: []
+        - expected: []
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Hello there.
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: ' The capital is Paris.'
+        chunks:
+        - expected:
+          - kind: text
+            text: Hello there.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me recall
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' The capital is Paris.'
+        - expected: []
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Sure, one sec.
+        - kind: reasoning
+          text: checking the forecast
+        - kind: text
+          text: ' '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: Sure, one sec.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+        - kind: text
+          text: ' &amp; "x"\'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' &amp; "x"\'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_bare_invoke_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  dsml_bare_invoke_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+  dsml_empty_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_no_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_reasoning_then_separator:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_separator_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_separator_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_whitespace_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  empty_args:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+        - expected: []
+        - expected: []
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space": 42, "utf8_plus": 42, "pointer": 42}'
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text": "{\"x\":1}", "array_text": "[1,2]", "quoted_text": "\"hello\"", "inline_text": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  glm_ref_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload": {"x": 1}}'
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "ratio": 3.5, "flag": true, "narrowed": 42}'
+        - expected: []
+        - expected: []
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go:'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  local_schema_id_preserves_type:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42}'
+        - expected: []
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments:
+            value: '{"x":"unfinished'
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"value": "{\"x\":\"unfinished"}'
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "é"}'
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "Café"}'
+        - expected: []
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  nullable_reference_alias_literals:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"const_text": "null", "enum_text": "null"}'
+        - expected: []
+        - expected: []
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check that. '
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check that.
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+  qwen_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+        - expected: []
+        - expected: []
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": ""}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Logging now:'
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: ' '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Logging now:'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: log
+            arguments: '{"note": ""}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  schema_const_array_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+        - expected: []
+        - expected: []
+  schema_const_array_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+        - expected: []
+        - expected: []
+  schema_const_array_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+        - expected: []
+        - expected: []
+  schema_const_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '[1,2]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "[1,2]"}'
+        - expected: []
+        - expected: []
+  schema_const_boolean_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+        - expected: []
+        - expected: []
+  schema_const_boolean_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+        - expected: []
+        - expected: []
+  schema_const_boolean_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+        - expected: []
+        - expected: []
+  schema_const_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'true'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "true"}'
+        - expected: []
+        - expected: []
+  schema_const_entity_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+        - expected: []
+        - expected: []
+  schema_const_entity_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+        - expected: []
+        - expected: []
+  schema_const_entity_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+        - expected: []
+        - expected: []
+  schema_const_entity_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "&lt;"}'
+        - expected: []
+        - expected: []
+  schema_const_null_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+        - expected: []
+        - expected: []
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+        - expected: []
+        - expected: []
+  schema_const_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+        - expected: []
+        - expected: []
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "null"}'
+        - expected: []
+        - expected: []
+  schema_const_number_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_const_number_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_const_number_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_const_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_const_object_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  schema_const_object_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  schema_const_object_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  schema_const_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  schema_const_plain_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_const_plain_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_const_plain_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_const_plain_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_const_quoted_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+        - expected: []
+        - expected: []
+  schema_const_quoted_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+        - expected: []
+        - expected: []
+  schema_const_quoted_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+        - expected: []
+        - expected: []
+  schema_const_quoted_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+        - expected: []
+        - expected: []
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "spaced"}'
+        - expected: []
+        - expected: []
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "spaced"}'
+        - expected: []
+        - expected: []
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "spaced"}'
+        - expected: []
+        - expected: []
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "spaced"}'
+        - expected: []
+        - expected: []
+  schema_const_unicode_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+        - expected: []
+        - expected: []
+  schema_const_unicode_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+        - expected: []
+        - expected: []
+  schema_const_unicode_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+        - expected: []
+        - expected: []
+  schema_const_unicode_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: café
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "café"}'
+        - expected: []
+        - expected: []
+  schema_declared_array:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+        - expected: []
+        - expected: []
+  schema_declared_boolean:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+        - expected: []
+        - expected: []
+  schema_declared_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_declared_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_declared_number:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+        - expected: []
+        - expected: []
+  schema_declared_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+        - expected: []
+        - expected: []
+  schema_declared_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: plain
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "plain"}'
+        - expected: []
+        - expected: []
+  schema_enum_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_enum_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_escaped_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '"hello"'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "\"hello\""}'
+        - expected: []
+        - expected: []
+  schema_id_direct_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_intersection_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_intersection_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_null_union_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_nullable_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_object_const_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "{\"x\":1}"}'
+        - expected: []
+        - expected: []
+  schema_percent_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_ref_sibling_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_ref_union_anyof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+        - expected: []
+        - expected: []
+  schema_ref_union_anyof_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_ref_union_oneof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": -7}'
+        - expected: []
+        - expected: []
+  schema_ref_union_oneof_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_type_array_integer_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_type_array_integer_null_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '42'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "42"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_anyof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": [1, 2]}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": true}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 42}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": null}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": 3.5}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: auto
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": "auto"}'
+        - expected: []
+        - expected: []
+  schema_union_oneof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value": {"x": 1}}'
+        - expected: []
+        - expected: []
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'On it:'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Sure.
+        - kind: reasoning
+          text: check A
+        - kind: text
+          text: ' '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: text
+            text: Sure.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: Before.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check. <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> now answer
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜invoke name="get_weather">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜parameter name="city" string="true">
+        - expected:
+          - kind: reasoning
+            text: Paris
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜tool_calls>
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Sure.
+        - kind: reasoning
+          text: I should check. <｜DSML｜tool_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls> now answer
+        - kind: text
+          text: '  Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: Sure.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜tool_calls>
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜invoke name="get_weather">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜parameter name="city" string="true">
+        - expected:
+          - kind: reasoning
+            text: Paris
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜invoke>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜tool_calls>
+        - expected:
+          - kind: reasoning
+            text: ' now answer'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '  Here you go.'
+        - expected: []
+  tool_no_close:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_only:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": "1"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"y": "2"}'
+        - expected: []
+        - expected: []
+  two_calls_same_name:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Tokyo"}'
+        - expected: []
+        - expected: []
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: interlude <think>second thought</think>done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first thought
+        - expected: []
+        - expected:
+          - kind: text
+            text: interlude
+        - expected:
+          - kind: text
+            text: ' <think>'
+        - expected:
+          - kind: text
+            text: second thought
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count": 42, "flag": false, "text": "null"}'
+        - expected: []
+        - expected: []
+  v1_split_parallel_tool_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location": "NYC"}'
+          - kind: tool_call
+            name: get_time
+            arguments: '{"timezone": "EST"}'

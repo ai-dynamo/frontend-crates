@@ -1,0 +1,69 @@
+parent: sglang_python_batch-0.5.14
+execution: cdb0c5fa7fc3f29eb8c2972b4ffbdb12c8080a28efa0f3eb7a4dd2fce9fa501a
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        - kind: text
+          text: <tool_call>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: <tool_call> marker' stays quoted.
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+  prefilled_reasoning_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Par
+  prefilled_reasoning_with_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris

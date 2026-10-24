@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"0f1fe3952636ca699a3f5b372e7456be9526a89fed18aa6dcb99560f019a3eae","surface":"batch","version":"0.23.0"}
 schema_version: 1
 surface: batch
 family: phi4

@@ -1,0 +1,49 @@
+parent: dynamo_v2-0.3.2
+execution: 177b0887e18ab31b1d659a20fa20cbeb7a75b0037e6d9be05136c2d150c6b92d
+changes:
+  retired__50_b:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+        - expected: []
+  retired__50_c:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log"}'
+        - expected: []
+  retired__51_b:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        - expected: []

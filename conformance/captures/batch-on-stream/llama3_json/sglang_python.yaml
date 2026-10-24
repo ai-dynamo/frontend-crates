@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"3f0b4545307da3ac4b406b26058042a7d77e89e4bfe369b97507a376f675de1a","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: llama3_json

@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"96ef0d6412b85010d33f35f4df0972c737b178fe42e96d19ad9c2c9eb644c354","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: hermes

@@ -12,6 +12,9 @@ use std::{borrow::Cow, collections::BTreeSet, sync::LazyLock};
 
 /// Restrict shared YAML references to one named file in its owning directory.
 pub fn source_reference<'a>(reference: &'a str, directory: &str) -> Result<&'a str> {
+    if crate::source::hex(reference, 64) {
+        return Ok(reference);
+    }
     let name = reference
         .strip_prefix(directory)
         .and_then(|s| s.strip_prefix('/'));
@@ -27,6 +30,15 @@ pub fn source_reference<'a>(reference: &'a str, directory: &str) -> Result<&'a s
         "invalid {directory} filename reference: {reference}"
     );
     Ok(reference)
+}
+
+pub fn source_path(reference: &str, directory: &str) -> Result<String> {
+    source_reference(reference, directory)?;
+    Ok(if crate::source::hex(reference, 64) {
+        format!("{directory}/{reference}.yaml")
+    } else {
+        reference.into()
+    })
 }
 
 static VERSION: LazyLock<Regex> = LazyLock::new(|| {
@@ -281,6 +293,10 @@ impl Cursor {
             let mut overrides = record
                 .remove("_document_overrides")?
                 .unwrap_or_else(Node::map);
+            let suppress_inherited_from = overrides
+                .get("capture_provenance")
+                .and_then(|provenance| provenance.get("inherited_from"))
+                == Some(&Node::Null);
             let origin_id = record
                 .remove("_origin_capture_id")?
                 .context("observation has no origin")?;
@@ -323,6 +339,9 @@ impl Cursor {
             let mut wrapped = Node::map();
             wrapped.set("value", record)?;
             wrapped.set("member", Node::Str(origin.member.clone()))?;
+            if suppress_inherited_from {
+                wrapped.set("suppress_inherited_from", Node::Bool(true))?;
+            }
             result.set(case_id, wrapped)?;
         }
         Ok(result)
@@ -470,7 +489,8 @@ pub fn expand_execution_bounded(
     result.set("metadata_changes", metadata)?;
     if let Some(proof) = manifest.get("proof") {
         fields(proof, &["receipt", "requests"], &[])?;
-        let digest = source_reference(proof.field("receipt")?.string()?, "receipts")?;
+        let reference = proof.field("receipt")?.string()?;
+        let digest = source_reference(receipt_key(reference), "receipts")?;
         let receipt = receipts
             .get(digest)
             .context("missing execution proof receipt body")?;
@@ -550,6 +570,13 @@ fn expand_slots(
     Ok(())
 }
 
+fn receipt_key(reference: &str) -> &str {
+    reference
+        .strip_prefix("receipt:")
+        .filter(|digest| crate::source::hex(digest, 64))
+        .unwrap_or(reference)
+}
+
 fn expand_slot(
     owner: &mut Node,
     key: &str,
@@ -558,9 +585,9 @@ fn expand_slot(
     observed: &mut std::collections::BTreeMap<String, BTreeSet<String>>,
 ) -> Result<()> {
     if let Node::Str(reference) = owner.field(key)?
-        && reference.starts_with("receipts/")
+        && (reference.starts_with("receipts/") || receipt_key(reference) != reference)
     {
-        let digest = source_reference(reference, "receipts")?;
+        let digest = source_reference(receipt_key(reference), "receipts")?;
         let receipt = receipts
             .get(digest)
             .context("execution receipt body is missing")?;
@@ -821,6 +848,75 @@ receipts: {{{digest}: [a]}}
             .map(|v| Release::parse(v))
             .collect::<Result<Vec<_>>>()?;
         assert!(parsed.windows(2).all(|w| w[0] < w[1]));
+        Ok(())
+    }
+
+    #[test]
+    fn sparse_null_override_survives_later_release_projection() -> Result<()> {
+        let document = load_str(
+            "provenance: {status: legacy}\ndocument: {}\nchanges: {a: {case_key: a, stimulus: {ref: current}, observation: {value: {assembled: []}}}}\nmetadata_changes: {}\ndocument_overrides: {a: {capture_provenance: {inherited_from: null}}}\n",
+        )?;
+        let mut history = History {
+            implementation: "dynamo_v2".into(),
+            captures: vec![Capture {
+                id: "dynamo_v2-1.0.0".into(),
+                version: "1.0.0".into(),
+                member: "source.yaml".into(),
+                document,
+                resolved_records: None,
+            }],
+        };
+        history.validate()?;
+        let mut cursor = Cursor::default();
+        cursor.apply(&history, 0)?;
+        let records = cursor.records(&history, "1.0.0")?;
+        assert_eq!(
+            records.field("a")?.field("suppress_inherited_from")?,
+            &Node::Bool(true)
+        );
+        let selected = selected_snapshot(&records, "1.0.0", "1.1.0")?;
+        assert!(
+            selected
+                .field("a")?
+                .field("value")?
+                .field("document")?
+                .get("inherited_from")
+                .is_none()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn original_hash_receipts_retain_membership_and_null() -> Result<()> {
+        let digest = "a".repeat(64);
+        let manifest = load_str(&format!(
+            "schema_version: 1\nfamily: sample\nimplementation: dynamo_v2\nversion: 1.0.0\ncheckpoint: {{provenance: {{}}, document: {{}}, document_overrides: {{}}}}\ncases: [a]\ndefaults: {{verified_recapture: {{provenance: 'receipt:{digest}'}}}}\nexceptions: {{}}\nreceipts: {{{digest}: [a]}}\n"
+        ))?;
+        let receipt = load_str("version: 1.0.0\nnull_value: null\n")?;
+        let receipts = [(digest.clone(), receipt.clone())].into_iter().collect();
+        let expanded = expand_execution(&manifest, "sample", "dynamo_v2", "1.0.0", &receipts)?;
+        assert_eq!(
+            expanded
+                .field("metadata_changes")?
+                .field("a")?
+                .field("verified_recapture")?
+                .field("provenance")?,
+            &receipt
+        );
+        assert_eq!(
+            source_path(&digest, "executions")?,
+            format!("executions/{digest}.yaml")
+        );
+        assert!(
+            expand_execution(
+                &manifest,
+                "sample",
+                "dynamo_v2",
+                "1.0.0",
+                &std::collections::BTreeMap::new()
+            )
+            .is_err()
+        );
         Ok(())
     }
 

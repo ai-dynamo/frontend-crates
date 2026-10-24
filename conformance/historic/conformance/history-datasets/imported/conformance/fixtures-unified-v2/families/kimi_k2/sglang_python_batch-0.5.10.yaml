@@ -1,0 +1,19 @@
+parent: sglang_python_batch-0.5.9
+execution: 910e3cd402cf3fa2582170ed592f9c3a84f9ab9eb5c98f764565f5d2331285dd
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+        - kind: text
+          text: <|tool_calls_section_begin|>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't
+        - kind: text
+          text: <|tool_calls_section_begin|> marker' stays quoted.

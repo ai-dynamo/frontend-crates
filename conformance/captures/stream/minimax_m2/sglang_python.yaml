@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m2","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"25b61be3c3d5024bc72b960246a77486cd948a5910488d0ea6c9c16b5deeeced","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: minimax_m2

@@ -1,0 +1,80 @@
+parent: dynamo_v1_jail-10.0.6
+execution: 6f768241184ab3d19d1765adad79542779ee16e7e94d16e3e201fe86ee059bdf
+changes:
+  dsml_bare_invoke_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_bare_invoke_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_empty_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_reasoning_then_separator:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_separator_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_separator_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_whitespace_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC

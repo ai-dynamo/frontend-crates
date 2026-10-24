@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"5ab26bb4c5e96f68408a7d91555803ad40386dbd5c49694722f60fb4aa06ee7a","surface":"batch","version":"0.23.0"}
 schema_version: 1
 surface: batch
 family: llama3_json

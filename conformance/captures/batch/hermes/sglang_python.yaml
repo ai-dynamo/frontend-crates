@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"5f7ed7d1508d6bb51223542f0915817c29a5404ba4d41b18ffe13931c7666652","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: hermes

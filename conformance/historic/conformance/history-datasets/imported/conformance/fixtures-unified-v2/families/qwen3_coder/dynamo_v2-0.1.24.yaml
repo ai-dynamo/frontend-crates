@@ -1,0 +1,557 @@
+parent: dynamo_v2-0.1.23
+execution: f73f358905a3227f3d27399878b285de9a4c104d4fabc526ef7eb9d10a0e4d91
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: The capital is Paris.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Hello there. '
+          - kind: reasoning
+            text: let me recall
+          - kind: text
+            text: The capital is Paris.
+        - expected: []
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+          - kind: reasoning
+            text: checking the forecast
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_array_argument:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_escaped_string_args:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_invalid_call:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_list_with_broken_element:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_malformed_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_named_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_partial_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_required_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  guided_json_two_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' then I''ll run '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: ' then I''ll run '
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: ' and '
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_reasoning_then_text:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_reasoning_truncated:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_reasoning_with_guided_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_reasoning_with_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  prefilled_response_reasoning_markers_literal:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: this build has no request initialization API
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: reasoning
+          text: Now answer.
+        - kind: text
+          text: It's 18C.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: reasoning
+            text: Now answer.
+          - kind: text
+            text: It's 18C.
+        - expected: []
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: reasoning
+            text: mid
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: <think>literal</think>
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"<think>literal</think>"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: before
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: <think>literal</think>
+        - kind: text
+          text: after
+        chunks:
+        - expected:
+          - kind: text
+            text: before
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"<think>literal</think>"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: after
+        - expected: []
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        - kind: reasoning
+          text: C
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: reasoning
+            text: C
+        - expected: []
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: working on it
+        - kind: reasoning
+          text: B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: working on it
+          - kind: reasoning
+            text: B
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: ' then '
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: reasoning
+          text: check B
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+          - kind: reasoning
+            text: check A
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: ' and '
+          - kind: reasoning
+            text: check B
+          - kind: tool_call
+            name: g
+            arguments: '{"y":"2"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' After.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Before. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: ' After.'
+        - expected: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: before
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: after
+        chunks:
+        - expected:
+          - kind: text
+            text: before
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: after
+        - expected: []
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: The forecast shows clear skies for the rest of the week.
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+        - expected: []
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: 'interlude '
+        - kind: reasoning
+          text: second thought
+        - kind: text
+          text: done
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: first thought
+          - kind: text
+            text: 'interlude '
+          - kind: reasoning
+            text: second thought
+          - kind: text
+            text: done
+        - expected: []
+  v1_split_parallel_tool_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: text
+          text: '
+
+            '
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"location":"NYC"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: text
+            text: '
+
+              '
+          - kind: tool_call
+            name: get_time
+            arguments: '{"timezone":"EST"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []

@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3_1","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"45f99e80b7181dbc19c6c7affe87562274e6601388d351d21842a64d0c7a85be","surface":"batch","version":"0.23.0"}
 schema_version: 1
 surface: batch
 family: deepseek_v3_1

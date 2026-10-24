@@ -9,9 +9,17 @@ on:
       - main
       - "pull-request/[0-9]+"
   workflow_dispatch:
+    inputs:
+      include-history:
+        description: Publish bundled historical releases and comparison
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+
+env:
+  CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
 
 jobs:
   # The conformance jobs validate the maintained viewer and source resources and
@@ -75,7 +83,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           # Current fixture YAML is local; cargo tests materialize it without
-          # a publisher build or external-history retrieval.
+          # a publisher build or history access.
           lfs: true
           # Release identity compares parser source with the release tag.
           fetch-depth: 0
@@ -154,7 +162,9 @@ jobs:
     env:
       CONFORMANCE_PUBLISHER: ${{ github.workspace }}/target/release/conformance-publish
       # Bump when the publisher command or output policy changes.
-      CONFORMANCE_PUBLICATION_POLICY: native-full-v1
+      CONFORMANCE_PUBLICATION_POLICY: native-latest-v2
+      CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
+      CONFORMANCE_CONVERSION_CACHE: ${{ runner.temp }}/conversion-cache
     steps:
       - name: Checkout publication sources
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -166,12 +176,15 @@ jobs:
           printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - name: Identify exact publication inputs and reader
         id: identity
-        run: echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY")" >> "$GITHUB_OUTPUT"
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")" >> "$GITHUB_OUTPUT"
       - name: Restore exact publication cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ${{ runner.temp }}/native-publication
-          key: ${{ runner.os }}-native-publication-v2-${{ steps.identity.outputs.key }}
+          key: ${{ runner.os }}-native-publication-v3-${{ github.ref }}-${{ steps.identity.outputs.key }}
       - name: Admit cached publication or fall back to cold generation
         id: cache
         run: |
@@ -195,20 +208,39 @@ jobs:
         run: cargo build --locked --release -p conformance-publisher
       - name: Snapshot permanent evidence and YAML paths
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: python3 conformance/utils/src/verify_generation_sources.py snapshot --inventory "$RUNNER_TEMP/source-generation-inventory.json"
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          python3 conformance/utils/src/verify_generation_sources.py snapshot --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
+      - name: Restore compatible family conversion fragments
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ runner.temp }}/conversion-cache
+          key: ${{ runner.os }}-conversion-v1-${{ github.ref }}-${{ steps.identity.outputs.key }}
+          restore-keys: |
+            ${{ runner.os }}-conversion-v1-${{ github.ref }}-
       - name: Generate source catalog inputs
         if: ${{ steps.cache.outputs.usable != 'true' }}
         run: |
           python3 -m venv "$RUNNER_TEMP/publication-venv"
           "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
           echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
-          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
       - name: Publish native site
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: '"$CONFORMANCE_PUBLISHER" --root "$GITHUB_WORKSPACE" --output "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA"'
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          "$CONFORMANCE_PUBLISHER" --root "$GITHUB_WORKSPACE" --output "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA" --cache-dir "$CONFORMANCE_CONVERSION_CACHE" "${history_args[@]}"
       - name: Verify publication preserved evidence without per-case YAML expansion
         if: ${{ steps.cache.outputs.usable != 'true' }}
-        run: python3 conformance/utils/src/verify_generation_sources.py check --inventory "$RUNNER_TEMP/source-generation-inventory.json"
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          python3 conformance/utils/src/verify_generation_sources.py check --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
       - name: Bind publication metadata to this commit
         run: >-
           python3 conformance/utils/src/ci_publication_cache.py stamp

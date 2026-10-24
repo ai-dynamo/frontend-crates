@@ -1,3 +1,4 @@
+capture_selection: {"family":"inkling","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"66a0b6eb8550ad3440aebdf7bb7df6dbbaccea0d53ac7e20d3ac5bd00f07625b","surface":"stream","version":"5.1.2"}
 schema_version: 1
 surface: stream
 family: inkling

@@ -1,0 +1,75 @@
+schema_version: 1
+family: qwen3
+implementation: sglang_python_batch
+version: 0.5.1
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.1
+      source_sha256: 4f0e091bf756f1289ddf3e45ddcac81a1c9d7c65041cceb8f2000a9aaaf9e4c3
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: 66278a3c40778adfb2c3d516aaef81149c26ee3ad0a7ec3acb8a251b57456b62
+cases:
+- native_quoted_control_in_reasoning
+- native_single_quote_contraction_reasoning
+- prefilled_reasoning_redundant_opener
+- prefilled_reasoning_then_text
+- prefilled_reasoning_then_text_then_tool
+- prefilled_reasoning_truncated
+- prefilled_reasoning_with_tool
+defaults: {}
+exceptions:
+  native_quoted_control_in_reasoning:
+    batch_final:
+      reasoning_text: The literal "<tool_call>" marker is part of the explanation.
+      normal_text: ''
+      calls: []
+  native_single_quote_contraction_reasoning:
+    batch_final:
+      reasoning_text: The literal 'doesn't <tool_call> marker' stays quoted.
+      normal_text: ''
+      calls: []
+  prefilled_reasoning_redundant_opener:
+    batch_final:
+      reasoning_text: checking weather
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: London
+  prefilled_reasoning_then_text:
+    batch_final:
+      reasoning_text: no tool needed
+      normal_text: The answer is 42.
+      calls: []
+  prefilled_reasoning_then_text_then_tool:
+    batch_final:
+      reasoning_text: weighing options
+      normal_text: 'Here''s what I found: '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  prefilled_reasoning_truncated:
+    batch_final:
+      reasoning_text: analyzing data
+      normal_text: '<tool_call>
+
+        <function=get_weather>
+
+        <parameter=city>
+
+        Par'
+      calls: []
+  prefilled_reasoning_with_tool:
+    batch_final:
+      reasoning_text: checking weather
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris

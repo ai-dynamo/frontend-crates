@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"103f0c97e5172a3a3504d4e21af3eb53e322b9dd82568c0fbb98c9a02ed261e3","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: glm47

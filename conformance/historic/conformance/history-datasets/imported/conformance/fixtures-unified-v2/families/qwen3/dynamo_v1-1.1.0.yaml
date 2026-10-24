@@ -1,0 +1,258 @@
+parent: dynamo_v1-1.0.2
+execution: 2cfe73df345cec4963d304c85aa767b8b59787f0d1424d538ab7fc542e28802b
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<tool_call>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <tool_call> marker' stays quoted.
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: London
+  prefilled_reasoning_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: no tool needed
+        - kind: text
+          text: The answer is 42.
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: weighing options
+        - kind: text
+          text: 'Here''s what I found:'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+        - kind: text
+          text: '<tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Par'
+  prefilled_reasoning_with_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_object_const_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_anyof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_anyof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_anyof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_anyof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_anyof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_anyof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_anyof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_anyof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_anyof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_anyof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_oneof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_oneof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_union_oneof_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_oneof_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: true
+  schema_union_oneof_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_oneof_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_oneof_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_oneof_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 3.5
+  schema_union_oneof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_union_oneof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1

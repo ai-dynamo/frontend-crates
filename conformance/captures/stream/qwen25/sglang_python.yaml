@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"29bf7332db7bb0267379a5ee4ce7482ecb631da1653d1a5ae4964faa5f867bea","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: qwen25

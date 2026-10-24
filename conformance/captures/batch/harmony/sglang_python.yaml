@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"7850c013ceb8e76103858c2791f37066ee0d8d5179f02d48de8ff5862db65d20","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: harmony

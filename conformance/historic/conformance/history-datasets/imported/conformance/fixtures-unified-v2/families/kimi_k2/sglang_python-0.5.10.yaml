@@ -1,0 +1,109 @@
+parent: sglang_python-0.5.9
+execution: dbbe09e2ac029bf9e49bb5bc6fd66edcd2d12453d1024f79967803447c0d319a
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: '{"cmd": "git log '
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"cmd": "git log '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think>'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think> Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []

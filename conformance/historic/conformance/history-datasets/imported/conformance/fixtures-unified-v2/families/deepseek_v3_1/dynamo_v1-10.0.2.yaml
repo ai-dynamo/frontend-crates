@@ -1,0 +1,13 @@
+parent: dynamo_v1-10.0.1
+execution: d2eab434ff750a2b63bb4149e5637315d771df68e02150524129e539e0c43f44
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 6a34553a757882e4021d37e762116592c02e587fd4e0cf711b8c755a51d55d9b
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>get_weather<｜tool▁sep｜>{"location":"NYC"}<｜tool▁call▁end｜><｜tool▁call▁begin｜>get_time<｜tool▁sep｜>{"timezone":"EST"}<｜tool▁call▁end｜><｜tool▁calls▁end｜>

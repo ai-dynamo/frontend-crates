@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"c1add902d64b46cfb8dd2a3e383c28adb0858c98da5c58a3889f6c8010e603a6","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: phi4

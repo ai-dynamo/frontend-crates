@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3_2","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"6bed54ed1842401a20d006225a2295ec1450e4864b4fc34c0f79e3d3b91044cd","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: deepseek_v3_2

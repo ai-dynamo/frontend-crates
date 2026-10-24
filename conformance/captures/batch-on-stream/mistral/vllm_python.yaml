@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"0094b3e20714c9ca6f6c44a5744c49c631aea255f20a76732a361848525ae6d5","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: mistral

@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"421712039b9d0a805743c889eb51c797cb12a7e1e7413c08cd890364dca4894e","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: gemma4

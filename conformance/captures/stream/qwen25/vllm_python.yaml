@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"011cd0aa3456c8afc31f2404102de7e4ae108c638d86f1cb36b783ab576be3f8","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: qwen25

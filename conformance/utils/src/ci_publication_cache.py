@@ -53,9 +53,9 @@ def is_publication_input(name):
         return True
     if name in PARSER_REGISTRATIONS:
         return True
-    if (not name.startswith("conformance/") or name in GENERATED_CATALOGS
+    if (not name.startswith("conformance/") or name == "conformance/historic-baseline.json" or name in GENERATED_CATALOGS
             or fnmatch.fnmatch(name, "conformance/.CONFORMANCE_v2-*.json")
-            or name.startswith("conformance/viewer-data/")):
+            or name.startswith(("conformance/viewer-data/", "conformance/historic/"))):
         return False
     parts = Path(name).parts
     if "tests" in parts or "node_modules" in parts or name.endswith(".test.js"):
@@ -72,7 +72,7 @@ def cache_key(root, publication_policy, *, include_history=False, history_source
     # tracked file or the commit SHA. The generated page metadata is restamped
     # for the current commit after a cache hit.
     paths = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
-    new_sources = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "-z"],
+    new_sources = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--exclude=conformance/historic/", "-z"],
                                  cwd=root, capture_output=True, check=True).stdout
     paths += new_sources
     rust = subprocess.run(["rustc", "--version"], capture_output=True, check=True).stdout.decode().strip()
@@ -91,8 +91,7 @@ def cache_key(root, publication_policy, *, include_history=False, history_source
         raise ValueError("--history-source requires --include-history")
     history = None
     if include_history:
-        if history_source is None:
-            raise ValueError("history mode requires --history-source")
+        history_source = history_source or root / "conformance/historic"
         history = json.loads(subprocess.check_output([
             "python3", str(root / "conformance/utils/src/capture_sources.py"), "--root", str(root),
             "--verify-history", str(history_source)], text=True))

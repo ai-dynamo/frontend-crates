@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_append_think","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"a4fe03d2e16ee54e3d4b6d8ec16a8edc6e4a1d0af683306eaf1de46222e77f9d","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: minimax_append_think

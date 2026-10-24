@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"sglang_python","lineage":[],"mode":"reasoning","payload_sha256":"8a8e14890815a523ab75e2b5c09970790b02d8f4df5104e89d6d67db8b5ca462","surface":"reasoning","version":"0.5.14"}
 schema_version: 1
 surface: reasoning
 family: gemma4

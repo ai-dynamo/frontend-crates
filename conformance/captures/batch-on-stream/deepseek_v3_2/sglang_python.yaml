@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3_2","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"eea27f333db9c70e700922240606d15d959696c6bbfe65aa9c9885a0586c835c","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: deepseek_v3_2

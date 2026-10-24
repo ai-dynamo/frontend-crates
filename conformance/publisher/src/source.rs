@@ -143,7 +143,18 @@ pub fn read(root: &Path, name: &str) -> Result<Vec<u8>> {
 }
 
 pub fn verified(root: &Path, descriptor: &Value) -> Result<Vec<u8>> {
-    let name = descriptor["path"]
+    let scoped;
+    let root = if let Some(prefix) = descriptor["dataset_root"].as_str() {
+        relative(prefix)?;
+        scoped = root.join(prefix);
+        no_links(&scoped)?;
+        &scoped
+    } else {
+        root
+    };
+    let name = descriptor
+        .get("source_path")
+        .unwrap_or(&descriptor["path"])
         .as_str()
         .context("resource has no path")?;
     let bytes = if let Some(archive) = descriptor.get("archive") {
@@ -157,6 +168,73 @@ pub fn verified(root: &Path, descriptor: &Value) -> Result<Vec<u8>> {
         "resource identity mismatch: {name}"
     );
     Ok(bytes)
+}
+
+pub fn dataset_member(dataset: &str, member: &str) -> Result<String> {
+    relative(dataset)?;
+    ensure!(
+        !dataset.contains('/'),
+        "dataset identity must be a single component"
+    );
+    relative(member)?;
+    Ok(format!("conformance/history-datasets/{dataset}/{member}"))
+}
+
+pub fn original_sources(catalog: &Value) -> Result<Vec<Value>> {
+    let mut sources = Vec::new();
+    for kind in ["unified", "archives"] {
+        sources.extend(
+            catalog["sources"][kind]
+                .as_array()
+                .context("missing original inventory")?
+                .iter()
+                .cloned(),
+        );
+    }
+    for dataset in catalog["sources"]["history_datasets"]
+        .as_array()
+        .into_iter()
+        .flatten()
+    {
+        let identity = dataset["id"].as_str().context("missing dataset identity")?;
+        for resource in dataset["resources"]
+            .as_array()
+            .context("missing dataset originals")?
+        {
+            let mut scoped = resource.clone();
+            scoped["source_path"] = resource["path"].clone();
+            scoped["path"] = Value::String(dataset_member(
+                identity,
+                resource["path"].as_str().context("missing original path")?,
+            )?);
+            sources.push(scoped);
+        }
+    }
+    Ok(sources)
+}
+
+pub fn bind_record_requests(records: &mut Node, authored: &Node) -> Result<()> {
+    let Node::Map(records) = records else {
+        anyhow::bail!("expected resolved records")
+    };
+    for (case, wrapped) in records {
+        let mut value = wrapped.field("value")?.clone();
+        let mut stimulus = value.field("stimulus")?.clone();
+        if stimulus.get("ref") == Some(&Node::Str("current".into())) {
+            stimulus.remove("ref")?;
+            stimulus.set(
+                "inline",
+                authored
+                    .field("cases")?
+                    .field(case.string()?)?
+                    .field("request")?
+                    .clone(),
+            )?;
+            value.set("stimulus", stimulus)?;
+            wrapped.set("value", value)?;
+        }
+    }
+    Ok(())
 }
 
 #[derive(Default)]
@@ -1042,7 +1120,11 @@ pub fn resolved_snapshot<'a>(
     fields(
         node,
         &["schema_version", "provenance", "document", "records"],
-        &["execution_proof", "historical_evidence"],
+        &[
+            "execution_proof",
+            "historical_evidence",
+            "capture_selection",
+        ],
     )?;
     ensure!(
         node.field("schema_version")? == &Node::Int(2.into()),
@@ -1294,7 +1376,10 @@ pub fn load_history(
             );
             let descriptor = admission
                 .index
-                .get(&format!("{STORE}/{digest}"))
+                .get(&format!(
+                    "{STORE}/{}",
+                    crate::history::source_path(digest, "executions")?
+                ))
                 .context("execution is outside catalog inventory")?;
             let bytes = verified(root, descriptor)?;
             let manifest = yaml::load_str(std::str::from_utf8(&bytes)?)?;
@@ -1316,7 +1401,10 @@ pub fn load_history(
                     let digest = source_reference(digest.string()?, "receipts")?;
                     let descriptor = admission
                         .index
-                        .get(&format!("{STORE}/{digest}"))
+                        .get(&format!(
+                            "{STORE}/{}",
+                            crate::history::source_path(digest, "receipts")?
+                        ))
                         .context("receipt is outside catalog inventory")?;
                     let bytes = verified(root, descriptor)?;
                     receipts.insert(

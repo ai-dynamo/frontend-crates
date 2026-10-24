@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"c849dff2a7c94f83011f8c83724611558891f98452484b57eccca49750bb3b2c","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: llama3_json

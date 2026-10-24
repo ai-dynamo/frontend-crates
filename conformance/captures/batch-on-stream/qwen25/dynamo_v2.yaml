@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"6d57cec5ba682503b7b8c0d12ec51d0e0f640bf93b2dee590d863ff0d4a60c20","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: qwen25

@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"79a844ba2b889154a23581b7bef68bed684c3609f98cfb4e160a9ebb918a5599","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: gemma4

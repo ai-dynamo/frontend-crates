@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"b0709e4dd0273911b4e05ef45dd3d0bc96172e47696f0753fe70d62536d7c373","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: gemma4

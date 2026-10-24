@@ -19,7 +19,8 @@ import unified_archives
 import unified_history
 import migrate_unified_snapshots
 import viewer_catalog
-from native_publication import native_snapshots, proof_catalog
+from native_publication import native_snapshots, proof_catalog, snapshot_bytes
+from viewer_codec import decode_typed, typed_equal
 from verify_publication_transport import read_index
 from conformance.utils.tests.test_execution_manifests import compact_store
 
@@ -127,28 +128,55 @@ def test_full_corpus_json_snapshots_match_python_and_javascript_resolution(tmp_p
         source = tmp_path / "current-source"
         capture_sources.stage_unified(ROOT, source / capture_sources.STORE)
     else:
-        source = ROOT
+        with capture_sources.history_view(ROOT, ROOT / capture_sources.HISTORIC) as source:
+            _assert_routed_history_parity(source, site, published)
+        return
     _assert_full_corpus_parity(tmp_path, source, site, published)
 
 
-def test_external_history_json_snapshots_match_original_yaml(tmp_path, history_source):
-    configured = os.environ.get("CONFORMANCE_HISTORY_SITE")
-    if not configured:
-        pytest.skip("full historical parity requires CONFORMANCE_HISTORY_SITE")
-    site = Path(configured).resolve(strict=True)
-    store = history_source / capture_sources.STORE
-    inventory = unified_archives.inventory(store)
-    assert all(unified_history.source_identity(row["path"])["kind"] in {"history", "inputs-and-golden"}
-               for row in inventory), "permanent history qualification requires self-contained snapshots"
-    # Complete snapshots embed their execution proof. The independent Node
-    # reader still parses each original and rejects any external dependency;
-    # descriptor preparation needs only verified byte identities here.
-    document_index = {row["path"]: {"execution": None} for row in inventory}
-    originals = viewer_catalog._unified_records(history_source, inventory=inventory, document_index=document_index)
-    published = proof_catalog(history_source, site, source_resources=originals)
-    assert published["capture_generation"]["mode"] == "history"
-    assert published["capture_generation"]["history_pin"] == json.loads((ROOT / "conformance/capture-history-pin.json").read_bytes())
-    _assert_full_corpus_parity(tmp_path, history_source, site, published)
+def test_bundled_history_json_snapshots_match_original_yaml(tmp_path, history_source, historical_published_viewer):
+    site = historical_published_viewer
+    with capture_sources.history_view(ROOT, history_source) as source:
+        store = source / capture_sources.STORE
+        if (source / capture_sources.DATASETS).is_file():
+            _assert_routed_history_parity(source, site, proof_catalog(source, site))
+            return
+        inventory = unified_archives.inventory(store)
+        originals = viewer_catalog._unified_records(source, inventory=inventory)
+        published = proof_catalog(source, site, source_resources=originals)
+        _assert_full_corpus_parity(tmp_path, source, site, published)
+
+
+def _assert_routed_history_parity(source, site, published):
+    # Exact original-interpreter parity is established before sparse admission;
+    # this gate checks final envelopes/transport against those validated fragments.
+    store = unified_history.load_store(source / capture_sources.STORE)
+    resources = ci_coverage.select_resources([row for row in published["sources"]["unified"]
+                                             if row["kind"] == "resolved-capture"])
+    checked = 0
+    for resource in resources:
+        bundle = decode_typed(json.loads(snapshot_bytes(site, resource))["value"])
+        for family in resource.get("families", [resource.get("family")]):
+            history = store.histories.get((family, resource["implementation"]))
+            if history is None:
+                continue
+            captures = [identity for identity, capture in history.captures.items()
+                        if unified_history._capture_release_sort_key(capture["runtime_version"])
+                        <= unified_history._capture_release_sort_key(resource["version"])]
+            if not captures:
+                continue
+            selected = max(captures, key=lambda identity: unified_history._capture_release_sort_key(history.captures[identity]["runtime_version"]))
+            requested = f"{resource['implementation']}-{resource['version']}"
+            expected = history.resolve(selected, view_capture_id=requested)
+            records = bundle[family] if "families" in resource else bundle
+            assert set(records) == set(expected), (family, resource["version"])
+            members = history.snapshot_members[selected]
+            for case, value in expected.items():
+                assert typed_equal(records[case]["value"], value), (family, resource["version"], case)
+                assert records[case]["member"] == members[case]
+                checked += 1
+    assert checked > 0
+    print(f"routed history transport parity passed: {len(resources)} capture bundles, {checked} records")
 
 
 def _assert_full_corpus_parity(tmp_path, source, site, published):

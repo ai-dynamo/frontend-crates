@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m2","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"12547e349cc3f8d19721503adef55ae4d2a2f83bc37cad7612df3315eb5bdd4b","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: minimax_m2

@@ -299,18 +299,7 @@ pub fn assemble(
     writer.flush_phase()?;
     let mut raw = BTreeMap::<String, Value>::new();
     let mut original_tokens = Vec::new();
-    let originals = ["unified", "archives"]
-        .into_iter()
-        .map(|kind| {
-            original["sources"][kind]
-                .as_array()
-                .context("missing originals")
-        })
-        .collect::<Result<Vec<_>>>()?;
-    let originals = originals
-        .iter()
-        .flat_map(|rows| rows.iter())
-        .collect::<Vec<_>>();
+    let originals = source::original_sources(original)?;
     // Admission releases in each task before returning. Only descriptors are
     // collected, so bounded readers never retain a whole history in memory.
     originals
@@ -336,7 +325,7 @@ pub fn assemble(
             }
             Ok(())
         })?;
-    for resource in originals {
+    for resource in &originals {
         // Re-read and verify the same pinned identity admitted above. Pack
         // insertion order stays independent of validation completion order.
         let size = resource["size"].as_u64().context("missing original size")?;
@@ -406,7 +395,7 @@ pub fn assemble(
         lookup[&bucket] = index(stage, &path, &json!({"schema":2,"resources":entries}))?;
     }
     // The reader only needs these identities to validate resolved record members.
-    catalog["sources"]["original_unified"] = json!(original["sources"]["unified"].as_array().unwrap().iter()
+    catalog["sources"]["original_unified"] = json!(originals.iter()
         .chain(original["sources"]["lineage"].as_array().into_iter().flatten())
         .filter(|r| r["kind"] == "history").map(|r| json!({"path":r["path"],"kind":r["kind"],"family":r["family"],"implementation":r["implementation"],"version":r["version"]})).collect::<Vec<_>>());
     for candidate in catalog["sources"]["candidates"].as_array_mut().unwrap() {

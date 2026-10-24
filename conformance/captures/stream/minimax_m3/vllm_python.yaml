@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m3","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"51b6049c8c6a446dadb85dae1d6dcf642575df991e72cb1825d30322eda7ae70","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: minimax_m3

@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"b3a50aade0af8e1ef03ae80dbc73d51153d67ccfa4c718a0cda20591bbada8d6","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: mistral

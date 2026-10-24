@@ -1,0 +1,175 @@
+parent: vllm_python_batch-0.23.0
+execution: ae7320ccfb998b3ccfc6ef2578692f56b8715d0932d747f0ab2c694549714bd2
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log </tool_call> --oneline
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Hello there. let me recall
+        - kind: text
+          text: The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure, one sec. checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: {}
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go:'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: spaced
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Sure. I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first
+        - kind: text
+          text: '<think>
+
+            seconddone'
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: interlude <think>second thoughtdone

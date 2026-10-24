@@ -208,9 +208,9 @@ def inventory(root: Path, *, member_callback=None, source_callback=None,
 def read_sources(root: Path, resources: list[dict]):
     """Read selected members, admitting each archive once for the operation."""
     groups = defaultdict(list)
-    checkout = root if (root / capture_sources.CURRENT).is_file() else root.parent.parent
+    checkout = root if capture_sources.is_current(root) else root.parent.parent
     current_paths = {}
-    if (checkout / capture_sources.CURRENT).is_file():
+    if capture_sources.is_current(checkout):
         current_paths = {row["source"]: checkout / row["path"]
                          for row in capture_sources.current(checkout)["captures"] if row["surface"] == "unified"}
     paths_seen = set()
@@ -293,6 +293,19 @@ def expanded(root: Path, *, temporary_parent: Path | None = None, archive_names:
                 with target.open("xb") as output:
                     output.write(data)
         yield destination
+
+
+def capture_archive_bytes(documents: dict[str, bytes]) -> bytes:
+    """Publish portable gzip headers and stable tar metadata for independent captures."""
+    output = io.BytesIO()
+    with gzip.GzipFile(filename="", mode="wb", fileobj=output, mtime=0, compresslevel=9) as compressed:
+        with tarfile.open(fileobj=compressed, mode="w|", format=tarfile.USTAR_FORMAT) as archive:
+            for name, data in sorted(documents.items()):
+                capture_sources.relative(name)
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                archive.addfile(member, io.BytesIO(data))
+    return output.getvalue()
 
 
 def engine(implementation: str) -> str:

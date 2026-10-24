@@ -1,0 +1,885 @@
+parent: vllm_python-0.21.0
+execution: 851b9e70277f2a108b8ac1fef3119a62522d40c4ee0f2165af04dbf4335b1f19
+changes:
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments:
+            value: '{"x":"unfinished'
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected: []
+        - expected: []
+  nullable_reference_alias_literals:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            const_text: 'null'
+            enum_text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"const_text": "null"'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "enum_text": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  qwen_nullable_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  qwen_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"city": "null"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  schema_const_null_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_const_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_declared_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_null_union_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_nullable_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_type_array_integer_null_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_union_anyof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  schema_union_oneof_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"value": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: '42'
+            flag: 'false'
+            text: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: ''
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"count": "42"'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "flag": "false"'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ', "text": "null"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []

@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_nano","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"bfa0ff6f02ba36e7205373fb2e6f772f797b927eaede2aa2fdd9c0eec6d28d83","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_nano

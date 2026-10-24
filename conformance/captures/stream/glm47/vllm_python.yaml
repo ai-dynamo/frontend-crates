@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"31e97ad6171aeb97ffca8ca2de7bc4327f414970eab78f5dae54b4bf059b33f9","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: glm47

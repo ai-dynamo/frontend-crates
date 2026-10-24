@@ -1,0 +1,446 @@
+parent: vllm_python_batch-0.23.0
+execution: 4e35212d55ad263c039872e0c61326d79fe7621221b3012881fabacaf9dbb2a8
+changes:
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: Hello there. The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking the forecast
+        - kind: text
+          text: Sure, one sec.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: quoted
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '  <|tool_call>'
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: '42'
+            utf8_plus: '42'
+            pointer: '42'
+  glm_ref_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: '1'
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: '42'
+            ratio: '3.5'
+            flag: 'true'
+            narrowed: 42
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check that. '
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Look it up.thought
+
+            Now answer.'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Athought
+
+            B'
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: 'Logging now:'
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Athought
+
+            Bthought
+
+            C'
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Athought
+
+            B'
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  schema_declared_array:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - '1'
+            - '2'
+  schema_declared_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: '1'
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_nullable_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+  schema_object_const_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: 1
+  schema_ref_union_anyof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '-7'
+  schema_ref_union_oneof_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '-7'
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_union_anyof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - '1'
+            - '2'
+  schema_union_anyof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - '1'
+            - '2'
+  schema_union_anyof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: '1'
+  schema_union_anyof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: '1'
+  schema_union_oneof_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - '1'
+            - '2'
+  schema_union_oneof_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - '1'
+            - '2'
+  schema_union_oneof_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: '1'
+  schema_union_oneof_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+              x: '1'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'check Athought
+
+            check B'
+        - kind: text
+          text: Sure.
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check.
+        - kind: text
+          text: Sure.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_markup_only_emits_nothing:
+    observation:
+      value:
+        assembled: []
+  tool_no_close:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Par
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'firstthought
+
+
+            second'
+        - kind: text
+          text: done
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first thoughtthought
+
+            second thought'
+        - kind: text
+          text: interlude done

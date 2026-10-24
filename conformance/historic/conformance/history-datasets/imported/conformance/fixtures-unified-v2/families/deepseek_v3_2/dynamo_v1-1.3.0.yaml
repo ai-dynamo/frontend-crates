@@ -1,0 +1,1168 @@
+parent: dynamo_v1-1.2.1
+execution: 7e88df58827fe4ce05142a0638da4facfe335b69b137f723803857ba970e6f48
+changes:
+  arg_json_null:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_union:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  arg_unicode:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">São Paulo 東京</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Hello there. <think>let me recall
+        - kind: text
+          text: The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure, one sec. <think>checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  empty_args:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"></｜DSML｜invoke></｜DSML｜function_calls>
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="space" string="false">42</｜DSML｜parameter><｜DSML｜parameter name="utf8_plus" string="false">42</｜DSML｜parameter><｜DSML｜parameter name="pointer" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="object_text" string="true">{"x":1}</｜DSML｜parameter><｜DSML｜parameter name="array_text" string="true">[1,2]</｜DSML｜parameter><｜DSML｜parameter name="quoted_text" string="true">"hello"</｜DSML｜parameter><｜DSML｜parameter name="inline_text" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  glm_ref_object:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="payload" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="count" string="false">42</｜DSML｜parameter><｜DSML｜parameter name="ratio" string="false">3.5</｜DSML｜parameter><｜DSML｜parameter name="flag" string="false">true</｜DSML｜parameter><｜DSML｜parameter name="narrowed" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  guided_json_array_argument:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_escaped_string_args:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_invalid_call:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_list_with_broken_element:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_malformed_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_named_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_partial_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_required_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  guided_json_two_calls:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  local_schema_id_preserves_type:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="count" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls> then I'll run <｜DSML｜function_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls> and <｜DSML｜function_calls><｜DSML｜invoke name="g"><｜DSML｜parameter name="y" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  nullable_reference_alias_literals:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="const_text" string="true">null</｜DSML｜parameter><｜DSML｜parameter name="enum_text" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+  prefilled_reasoning_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  prefilled_reasoning_with_guided_json:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  prefilled_reasoning_with_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_response_reasoning_markers_literal:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy pipeline cannot apply this authored initialization, finish reason, or chunk schedule
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.Now answer.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><think>mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true"><think>literal
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: before<｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true"><think>literal
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_then_content:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_unterminated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  schema_const_array_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_array_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_array_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_boolean_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_boolean_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_boolean_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_entity_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">&lt;</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_entity_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">&lt;</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_entity_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">&lt;</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_entity_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">&lt;</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_null_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_number_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_number_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_number_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_object_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_object_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_object_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_plain_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_plain_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_plain_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_plain_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_quoted_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">"hello"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_quoted_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">"hello"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_quoted_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">"hello"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_quoted_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">"hello"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">  spaced  </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">  spaced  </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">  spaced  </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">  spaced  </｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_unicode_allof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">café</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_unicode_bare:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">café</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_unicode_ref:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">café</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_const_unicode_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">café</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_array:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_boolean:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_null:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_number:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">3.5</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_object:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_declared_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">plain</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_enum_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_enum_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_escaped_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">"hello"</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_id_direct_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_integer_const_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_intersection_anyOf:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_intersection_oneOf:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_null_union_ambiguous:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_nullable_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_object_const_union:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_percent_ref_const:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_ref_sibling_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_ref_union_anyOf_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">-7</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_ref_union_anyOf_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_ref_union_oneOf_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">-7</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_ref_union_oneOf_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_type_array_integer_null:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_type_array_integer_null_null:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">3.5</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">3.5</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_anyOf_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_array_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_array_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_array_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_array_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">[1,2]</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_boolean_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_boolean_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_boolean_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_boolean_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">true</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_integer_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_integer_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_integer_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_integer_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">42</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_null_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_null_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_null_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_number_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_number_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">3.5</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_number_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_number_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">3.5</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_object_reverse_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_object_reverse_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_object_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="true">auto</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  schema_union_oneOf_object_typed:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="false">{"x":1}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'On it: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>'
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls> then <｜DSML｜function_calls><｜DSML｜invoke name="g"><｜DSML｜parameter name="y" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  text_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The answer is 42, no tools needed.
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. <think>check Acheck B
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Before. <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls> After.
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: before<think><｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+        - kind: text
+          text: after
+  tool_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>The forecast shows clear skies for the rest of the week.
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="f"><｜DSML｜parameter name="x" string="true">1</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><｜DSML｜function_calls><｜DSML｜invoke name="g"><｜DSML｜parameter name="y" string="true">2</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  two_calls_same_name:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Paris</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls><｜DSML｜function_calls><｜DSML｜invoke name="get_weather"><｜DSML｜parameter name="city" string="true">Tokyo</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thoughtsecond thought
+        - kind: text
+          text: interlude done
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <｜DSML｜function_calls><｜DSML｜invoke name="capture_payload"><｜DSML｜parameter name="count" string="false">42</｜DSML｜parameter><｜DSML｜parameter name="flag" string="false">false</｜DSML｜parameter><｜DSML｜parameter name="text" string="true">null</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜function_calls>
+  v1_split_parallel_tool_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<｜DSML｜function_calls>
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            <｜DSML｜invoke name="get_time">
+
+            <｜DSML｜parameter name="timezone" string="true">EST</｜DSML｜parameter>
+
+            </｜DSML｜invoke>
+
+            </｜DSML｜function_calls>'

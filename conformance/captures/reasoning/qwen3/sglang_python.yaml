@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3","implementation":"sglang_python","lineage":[],"mode":"reasoning","payload_sha256":"034878e50851a93c611e415bcbff7e9cc0741e5f1c09e26108e49e0e4513e3de","surface":"reasoning","version":"0.5.14"}
 schema_version: 1
 surface: reasoning
 family: qwen3

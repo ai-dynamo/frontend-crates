@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3_2","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"9aea2daae478cce938bf7c8d59ec45856610f1f41a8ca5617c7c78aae379ff57","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: deepseek_v3_2

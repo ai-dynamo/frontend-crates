@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"cdefbc0d256ecef03f3eefe4e4859268cab350aa7c85fb74a7332e200c3a0032","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: kimi_k2

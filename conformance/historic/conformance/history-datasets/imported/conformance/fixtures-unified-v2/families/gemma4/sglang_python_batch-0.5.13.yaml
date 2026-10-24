@@ -1,0 +1,114 @@
+parent: sglang_python_batch-0.5.12.post1
+execution: 83d566953fbd9cc90430e38c473f25087e7975b91bd4de429ed87da9cdf37d1f
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Hello there. <|channel>thought
+
+            let me recall'
+        - kind: text
+          text: The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Sure, one sec. <|channel>thought
+
+            checking the forecast'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<|tool_call>call:f{x:<|"|> <|channel>thought
+
+            quoted'
+        - kind: text
+          text: " <|tool_call> <tool_call|> &amp; \"x\"\\\n <|\"|>}<tool_call|>"
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
+
+            mid'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<|tool_call>call:log{note:<|"|><|channel>thought
+
+            reconsider'
+        - kind: text
+          text: <|"|>}<tool_call|>
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now: <|tool_call>call:log{note:<|"|><|channel>thought
+
+            reconsider'
+        - kind: text
+          text: <|"|>}<tool_call|> done.
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Sure. <|channel>thought
+
+            check A'
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Sure. <|channel>thought
+
+            I should check. <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|> now answer'
+        - kind: text
+          text: ' Here you go.'
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first
+        - kind: text
+          text: '<|channel>thought
+
+
+            second<channel|>done'
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: 'interlude <|channel>thought
+
+            second thought<channel|>done'

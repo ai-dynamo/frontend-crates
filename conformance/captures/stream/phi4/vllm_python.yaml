@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"12490e10ff0c94f9ac6a74b8c404966fb2bbda09d0ba6f5277a4f9d5c26c84aa","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: phi4

@@ -1,3 +1,4 @@
+capture_selection: {"family":"inkling","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"0377a975e7eef576abac422c7bbe85571c9f2cf98e06c96d09af33973e2c2e9e","surface":"stream","version":"0.5.14"}
 schema_version: 1
 surface: stream
 family: inkling

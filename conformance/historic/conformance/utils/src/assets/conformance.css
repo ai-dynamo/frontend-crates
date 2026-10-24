@@ -1,0 +1,1300 @@
+/* SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved. */
+/* SPDX-License-Identifier: Apache-2.0 */
+body { font-family: -apple-system, system-ui, sans-serif; margin: 1.5em; }
+table { border-collapse: collapse; font-family: ui-monospace, monospace; font-size: 13px; }
+th, td { border: 1px solid #ccc; padding: 3px 4px; }
+/* Case columns carry no text of their own — trim their padding too. */
+th.case-sub, td.cell { padding-left: 1px; padding-right: 1px; }
+th { background: #f5f5f5; }
+th.case-group { font-family: -apple-system, system-ui, sans-serif; font-size: 12px; }
+th.case-group:not(.col-collapsed), .transpose-table tr.section td { text-align: left; padding-left: 8px; }
+th.case-group.case-band-0 { background: #f1f3f5; }
+th.case-group.case-band-1 { background: #ffffff; }
+th.case-sub.case-band-0, td.cell.case-band-0 { background: #f8f9fa; }
+th.case-sub.case-band-1, td.cell.case-band-1 { background: #ffffff; }
+.parser-base   { color: #888;    font-size: 11px; margin-left: 4px; }
+.parser-suffix { color: #007acc; font-weight: bold; vertical-align: super; font-size: 0.75em; }
+/* Per-delta argument fragments within one merged chunk cell — each consecutive
+   fragment gets a distinct color (cycled) so a merged multi-delta chunk shows its
+   boundaries, without a ×N count. Render only inside the dark tooltip; all are
+   bright accents, none the default text gray, so every merged piece stands out. */
+/* args fragment values stay WHITE (same convention as name='...': colored
+   label+quotes, plain value). Chunk boundaries survive as a whisper-subtle
+   alternating dotted underline instead of the old 4-color rotation. */
+.frag0, .frag1, .frag2, .frag3 { color: inherit; }
+.frag1, .frag3 { border-bottom: 1px dotted #475569; }
+th a { color: inherit; text-decoration: none; }
+th a:hover { background: #ffd; }
+td.model, td.parser { white-space: nowrap; }
+td.parser a { color: inherit; text-decoration: none; }
+td.parser a:hover { background: #ffd; }
+/* Separate borders keep sticky table cells composited reliably in Chromium while zero
+   spacing preserves the existing one-pixel grid appearance. */
+[data-parity-table], .transpose-table { border-collapse: separate; border-spacing: 0; }
+
+/* Keep both axes identifiable while the matrix is scrolled. The left offsets are measured
+   by conformance.js because labels differ by tab and the parser column is optional. */
+[data-parity-table] > thead > tr.matrix-groups > th,
+[data-parity-table] > thead > tr.matrix-labels > th {
+  position: sticky;
+  background: #f5f5f5;
+}
+[data-parity-table] > thead > tr.matrix-groups > th { top: 0; z-index: 10; }
+[data-parity-table] > thead > tr.matrix-labels > th {
+  top: var(--sticky-top-row-height, 0px);
+  z-index: 9;
+}
+/* The frozen first columns stay above scrolling data but below every popup. */
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"] {
+  z-index: 8;
+}
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"]:focus-within,
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"]:focus-within { z-index: 11; }
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"],
+[data-parity-table] > tbody > tr > td.model { left: 0; }
+[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="parser"],
+[data-parity-table] > tbody > tr > td.parser {
+  left: var(--sticky-model-width, 0px);
+}
+[data-parity-table] > tbody > tr > td.model,
+[data-parity-table] > tbody > tr > td.parser {
+  position: sticky;
+  z-index: 1;
+  background: #fff;
+}
+
+/* The transposed matrix has one optional section header row, model names across the top,
+   and case names down the left. Its measured case-column width is shared by the corner and
+   every body row label. */
+.transpose-table > thead > tr.transpose-sections > th,
+.transpose-table > thead > tr.transpose-models > th {
+  position: sticky;
+  background: #f5f5f5;
+}
+.transpose-table > thead > tr.transpose-sections > th { top: 0; z-index: 10; }
+.transpose-table > thead > tr.transpose-models > th {
+  top: var(--sticky-top-row-height, 0px);
+  z-index: 9;
+}
+.transpose-table > thead > tr.transpose-sections > th.tcorner-case,
+.transpose-table > thead > tr.transpose-models > th.tcorner-case {
+  left: 0;
+  z-index: 8;
+}
+.transpose-table > tbody > tr > th.trow-case {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: var(--sticky-case-width, auto);
+  min-width: var(--sticky-case-width, auto);
+  background: #fff;
+}
+/* Unified tab: per-family parser-variant badge (vLLM Rust unified vs combined). */
+.arch-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px;
+  font-weight: 700; letter-spacing: .02em; border: 1px solid transparent; }
+.arch-unified { background: #e7f6ec; color: #137333; border-color: #9ad6ad; }
+.arch-combined { background: #fef3e0; color: #9a5b00; border-color: #f0c98a; }
+[data-theme="dark"] .arch-unified { background: #14361f; color: #7fe0a0; border-color: #2f6b45; }
+[data-theme="dark"] .arch-combined { background: #3a2a12; color: #f0be7c; border-color: #6b4e24; }
+/* Cell content is a 1-3 char marker and is absolutely positioned, so the column
+   width is pure padding — and across the widest tabs 44px each made the table
+   thousands of pixels wide for markers that need a fraction of it.
+   26px still clears the widest marker; the header labels are short ids (`31-14`),
+   not scenario names, so they fit too. */
+td.cell { position: relative; text-align: center; width: 26px; min-width: 26px; max-width: 26px; font-weight: 400; }
+/* One color = one meaning, whether or not the cell has compare data. A cell without
+   `data-cmp` (an n/a stub or a missing fixture) must read exactly like a compare cell
+   of the same meaning: gray = n/a, light-gray = Base-only, near-white = missing. The
+   static status classes below carry the SAME backgrounds as the cmp-* classes; cmp-*
+   keeps `!important` so it still wins for cells that DO have a comparison. */
+td.cell.ok         { color: #0a7d2c; }
+td.cell.donly      { color: #8b949e; background: #dfe3e7; }
+td.cell.documented { color: #555; }
+td.cell.research   { color: #b00; }
+td.cell.leak       { color: #b00; }
+td.cell.err        { color: #b00; }
+td.cell.na         { color: #aeb6bf; background: #d3d8de; }
+td.cell.todo       { color: #e07000; }
+td.cell.missing    { color: #8a6d3b; background: #eceff2; }
+td.cell a { color: inherit; text-decoration: none; display: block; }
+td.cell a:hover { background: #ffd; }
+tr.section td { background: #eef; font-weight: bold; text-align: left; }
+.legend span { font-family: ui-monospace, monospace; }
+.stats { font-size: 13px; margin-top: 0.4em; }
+.stats span { font-family: ui-monospace, monospace; font-weight: bold; }
+.generated { color: #888; font-size: 12px; margin-top: -0.5em; }
+.generation-instructions { max-width: 1000px; }
+.generation-instructions pre { overflow-x: auto; }
+.generated-command { max-width: 100%; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; }
+.title-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.versions { color: #555; font-size: 12px; margin-top: 0.6em; }
+.legend-note { border-left: 3px solid #d0d7de; padding: 6px 10px; max-width: 1200px; line-height: 1.35; }
+.legend-note p { margin: 0 0 6px; }
+.legend-note p:last-child { margin-bottom: 0; }
+.marker-defs { margin: 4px 0 6px 18px; padding: 0; }
+.marker-defs li { margin: 2px 0; }
+.marker-defs span { font-family: ui-monospace, monospace; font-weight: 600; }
+.table-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0.7em 0 0.8em; }
+/* Per-tab source scope. JS swaps it per active tab. */
+.toolbar-desc { display: block; margin: 0.85em 0; padding: 7px 9px; border: 1px solid #f2c94c; background: #fff4b8; color: #3f3100; font-size: 12px; line-height: 1.35; max-width: 1200px; }
+.toolbar-desc a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+/* The legend explains the Reference/Compare model, the NΔ count and the red-cell rule —
+   all of which only exist once the compare bar and per-cell markers are on screen.
+   Overview is the at-a-glance view, so it reads as a wall of text about controls the
+   reader cannot see. Show it with Detailed, alongside the things it describes. */
+body.view-overview .toolbar-desc { display: none; }
+.radio-group { display: flex; align-items: center; gap: 8px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; }
+.radio-group-label { font-size: 13px; font-weight: 600; }
+/* Compare model (all tabs): per-panel drag buckets — A=Base reference (0 or 1),
+ * B=Compare with, C=Others. Each cell shows how many selected candidates differ
+ * from Base ("=" if none); color encodes leak only (red) vs clean (green). */
+/* Unified view controls share a row with the three parser selections. */
+.tabs-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.cmp-reset { border: 1px solid #d0d7de; background: #fff; border-radius: 6px;
+  padding: 6px 10px; font-size: 13px; cursor: pointer; color: #333; }
+.cmp-reset:hover { background: #f1f3f5; }
+/* Parser picker: ONE visible box; inside, one invisible column per engine
+ * (Dynamo / vLLM / SGLang) of equal width, separated by a divider line. Engine
+ * names are omitted (the parser labels are self-explanatory). Each parser row is a
+ * Reference star (acts as a radio, one across all columns) + a Compare checkbox
+ * (any number) + the label; the ref/cmp header labels sit directly over the two
+ * control columns. */
+.cmpctl { display: inline-flex; align-items: stretch; margin: 16px 0 10px; max-width: 100%;
+  border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 5px 0; }
+/* Each engine column shrink-wraps to its longest label — no full-width stretch and
+ * no dead space trailing the checkbox+label rows. */
+.cmpcol { flex: 0 0 auto; min-width: 0; padding: 0 12px; }
+.cmpcol + .cmpcol { border-left: 1px solid #dde3ea; }
+/* header + data rows share the same grid so ref/cmp headers align over the star
+ * and checkbox columns. */
+.cmprow { display: grid; grid-template-columns: 26px 26px 1fr; align-items: center;
+  padding: 1px 0; border-radius: 4px; }
+.cmprow.cmphd { padding-bottom: 3px; margin-bottom: 3px; border-bottom: 1px solid #e3e8ee; }
+.cmphd-ref, .cmphd-cmp { font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; color: #8a95a3; text-align: center; }
+/* "COMPARE WITH" is too wide for the 26px checkbox column, so let the header span
+   into the (empty) label column and left-align it over the checkboxes. */
+.cmphd-cmp { grid-column: 2 / 4; text-align: left; white-space: nowrap; padding-left: 3px; }
+.cmprow-ref, .cmprow-cmp { position: relative; display: flex; justify-content: center;
+  align-items: center; margin: 0; cursor: pointer; }
+.cmprow input.cmp-on { margin: 0; cursor: pointer; }
+/* Reference control: a star that behaves as the radio. The native radio stays for
+ * semantics/a11y but is transparent and overlaid, so the label click toggles it;
+ * the star fills gold when its radio is checked. */
+.cmprow-ref input.cmp-ref { position: absolute; inset: 0; width: 100%; height: 100%;
+  margin: 0; opacity: 0; cursor: pointer; }
+.cmprow-ref .star { font-size: 15px; line-height: 1; color: #cbd2da; pointer-events: none; }
+.cmprow-ref input.cmp-ref:checked ~ .star { color: #f5a623; }
+.cmprow-ref input.cmp-ref:focus-visible ~ .star { outline: 2px solid #6b9bd6; outline-offset: 1px; border-radius: 2px; }
+.cmprow-label { font-size: 12px; color: #2d3440; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; padding-left: 4px; }
+.cmprow.is-ref { background: #eef4fc; }
+.cmprow.is-ref .cmprow-label { font-weight: 700; color: #174a86; }
+/* Mode word coding in candidate labels: (batch) maroon, (stream) NVIDIA green. */
+.cmprow-label .cand-batch { color: #800000; }
+.cmprow-label .cand-stream { color: #15803d; }
+/* The Reference's Compare box is checked + locked (can't be unchecked) — keep it
+ * clearly visible (pressed), just slightly muted to read as locked. */
+.cmprow input.cmp-on:disabled { opacity: 0.55; }
+/* Overview (non-Detailed) cells show only leak color, which depends solely on the
+ * Reference — the Compare-with count is a Details-only marker. So hide the CMP
+ * column entirely in Overview and keep just the Reference picker (REF), collapsing
+ * the row to two tracks. Compare selections are preserved and reappear in Details. */
+body.view-overview .cmpctl .cmphd-cmp,
+body.view-overview .cmpctl .cmprow-cmp { display: none; }
+body.view-overview .cmpctl .cmprow { grid-template-columns: 26px 1fr; }
+/* Cells: compare coloring wins over the dormant parser-status rules (!important).
+ * Numbers are not bold. */
+.cmp-marker { position: absolute; inset: 0; display: none; align-items: center;
+  justify-content: center; color: #111; pointer-events: none; font-weight: 400; }
+/* Known v1-vs-v2 divergence suffix (batch-on-stream tab, from
+ * known-divergences.yaml): calls agree (cell stays green) but normal_text
+ * differs by design. Muted corner glyph; the popup carries the explanation. */
+:root { --duplicate-color: #7b61a8; }
+td.cell .kdiv,
+td.cell .duplicate-marker { display: none; position: absolute; top: 0; font-size: 9px;
+  line-height: 1.1; }
+td.cell .kdiv { right: 1px; color: #375a7f; opacity: 0.75; pointer-events: none; }
+td.cell .duplicate-marker { left: 1px; color: var(--duplicate-color); opacity: 0.9; cursor: help; }
+body.view-details td.cell .kdiv,
+body.view-details td.cell .duplicate-marker { display: block; }
+.ttip-duplicate { margin-top: 6px; padding: 4px 6px; color: var(--duplicate-color);
+  border-left: 3px solid var(--duplicate-color); background: #f4effa; font-weight: 600; }
+[data-theme="dark"] .ttip-duplicate { color: #d0b9f2; background: #2b2140; }
+/* Comparison cells use .cmp-marker; hide the static marker despite parser-status rules. */
+td.cell[data-cmp] .cell-marker { display: none !important; }
+body.view-details td.cell .cmp-marker { display: flex; }
+td.cell.cmp-eq { background: #76b884 !important; }
+body.view-overview td.cell.cmp-eq { color: #76b884; }
+td.cell.cmp-leak { background: #db7777 !important; }
+body.view-overview td.cell.cmp-leak { color: #db7777; }
+td.cell.cmp-na { background: #d3d8de !important; }
+body.view-overview td.cell.cmp-na { color: #d3d8de; }
+td.cell.cmp-nobase { background: #eceff2 !important; }
+body.view-overview td.cell.cmp-nobase { color: #eceff2; }
+/* Base-only "·" (no peer to compare): neutral gray, not green. */
+td.cell.cmp-donly { background: #dfe3e7 !important; }
+body.view-overview td.cell.cmp-donly { color: #dfe3e7; }
+/* No-comparison markers (n/a, —, ·) recede to a subtle gray in the detailed view so
+   the real data markers (=, divergence counts) stay high-contrast. */
+body.view-details td.cell.cmp-na .cmp-marker,
+body.view-details td.cell.cmp-nobase .cmp-marker,
+body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
+/* Tooltip candidate sections: hidden until the selection shows them. */
+.ttip .cand { display: none; }
+.ttip .cand.cand-on { display: block; }
+/* JS-inserted reference-aware "not implemented" note (the selected Reference parser
+ * doesn't support this family) — distinct from a case-level "not applicable". */
+.cmp-why { font-weight: 600; color: #8a4b0b; background: #fdf2e2; border: 1px solid #f0d9b5;
+  border-radius: 4px; padding: 4px 6px; margin-bottom: 6px; font-size: 12px; line-height: 1.35;
+  white-space: normal; }
+/* The Reference section (and the per-chunk Reference column) is flagged with a
+ * gold ★ (matching the compare-bar Reference star) before the name and `← REF` after. */
+.ttip .cand.cand-base .ttip-section::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .cand.cand-base .ttip-section::after { content: ' ← REF'; font-weight: 700; }
+.ttip .ttip-ref { font-weight: 700; white-space: nowrap; }
+.ttip .ttip-ref-star { color: #f5a623; font-weight: 700; }
+/* Per-chunk grid column hidden when it isn't in the Reference/Compare-with set. */
+.ttip .ttip-chunks .col-hidden { display: none; }
+/* The Reference candidate column: gold ★ before + `← REF` after its header label. */
+.ttip .ttip-chunks th.col-ref::before { content: '★ '; color: #f5a623; font-weight: 700; }
+.ttip .ttip-chunks th.col-ref::after { content: ' ← REF'; font-weight: 700; white-space: nowrap; }
+.radio-option { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+/* The parser-radio JS hides options the active tab doesn't support via `hidden`;
+   the explicit display above would otherwise override the default [hidden] rule
+   (e.g. vLLM Rust must vanish on Reasoning, which has no vLLM Rust column). */
+.radio-option[hidden] { display: none; }
+.radio-option input { margin: 0; }
+.checkbox-option { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #d0d7de; background: #f8fafc; border-radius: 6px; padding: 6px 8px; font-size: 13px; cursor: pointer; }
+.checkbox-option input { margin: 0; }
+/* Detailed toggle is a subtle, boxless, grayed-out control (not a prominent button). */
+.checkbox-option.cmp-detailed { border: none; background: none; padding: 4px 2px; color: #8a8f98; }
+.checkbox-option.cmp-detailed input { accent-color: #8a8f98; }
+.case-label-full { display: none; }
+.case-label-short { display: inline; }
+.case-label-placeholder { color: #8a8f98; font-size: 0.72em; }
+.case-sub a[data-hover-hint], .trow-case a[data-hover-hint] { position: relative; }
+th.case-sub:has(a[data-hover-hint]:hover), th.case-sub:has(a[data-hover-hint]:focus-visible),
+th.trow-case:has(a[data-hover-hint]:hover), th.trow-case:has(a[data-hover-hint]:focus-visible) { z-index: 2000; }
+.case-sub a[data-hover-hint]::after, .trow-case a[data-hover-hint]::after {
+  content: attr(data-hover-hint); position: absolute; left: var(--case-hint-left, 0px); top: var(--case-hint-top, calc(100% + 24px)); z-index: 4000;
+  box-sizing: border-box; width: max-content; max-width: min(560px, calc(100vw - 64px)); padding: 5px 8px;
+  border-radius: 5px; background: #1f2937; color: #e5e7eb; font: 12px/1.35 -apple-system, system-ui, sans-serif;
+  text-align: left; white-space: normal; visibility: hidden; opacity: 0; pointer-events: none;
+  transition: opacity 0s linear 650ms, visibility 0s linear 650ms;
+}
+.case-sub a[data-hover-hint]:hover::after, .case-sub a[data-hover-hint]:focus-visible::after,
+.trow-case a[data-hover-hint]:hover::after, .trow-case a[data-hover-hint]:focus-visible::after { visibility: visible; opacity: 1; }
+#tab-unified th.case-group .col-toggle-label,
+#tab-unified .transpose-table tr.section td { color: #596575; }
+body.transpose-mode .transpose-table .case-label-full { display: inline; }
+body.transpose-mode .transpose-table .case-label-short { display: none; }
+body.transpose-mode .transpose-table .case-label-reference { display: inline-block; margin-left: 0.8em; white-space: nowrap; }
+.view-overview .parity-option { display: none; }
+.view-overview .details-only { display: none; }
+.view-details .summary-only { display: none; }
+.summary-key { display: inline-block; width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.22); margin: 0 4px 0 10px; vertical-align: -2px; }
+.summary-key:first-of-type { margin-left: 0; }
+.summary-key.ok { background: #76b884; }
+.summary-key.problem { background: #db7777; }
+.summary-key.na   { background: #d3d8de; }
+.summary-key.todo { background: #d3d8de; }
+.view-overview td.cell, .view-details td.cell { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04); }
+.view-overview td.cell { font-size: 0; line-height: 0; }
+.view-overview td.cell > a { color: inherit; height: 16px; overflow: hidden; white-space: nowrap; }
+.view-overview td.cell > a:hover { background: transparent; }
+.view-overview td.cell:hover, .view-overview td.cell.ttip-open { filter: brightness(0.90); }
+/* A cell whose popup is showing reads as PRESSED, so the popup is visibly anchored to
+   the cell it describes — with several popups' worth of chart on screen it is
+   otherwise easy to lose which cell you are looking at.
+
+   The press must mark the cell whose popup is ACTUALLY up, never a second cell. So it
+   is driven by two states that mirror how a popup opens: :hover / :focus-within while
+   hovering opens popups, and `.ttip-open` on the pinned cell. Once a pin is held,
+   `body.ttip-pin-mode` switches the hover half OFF — hover no longer opens a popup
+   then, so a hovered cell looking pressed would point at a popup that is not there.
+
+   Depth comes from the inset shadow and the dim ONLY — deliberately no `transform`.
+   A transformed element becomes the containing block for its absolutely-positioned
+   descendants AND scales them, and the popup is a child of the cell: `scale(.97)` shrank
+   the popup to 97% and re-anchored it, so a correctly-computed placement (right edge at
+   exactly viewport - margin) rendered 55px further right and overflowed the window.
+
+   Keyed to `[data-ttip-wired]` — the mark `attachTooltip` leaves on each element it wires —
+   so the press marks exactly what can open a popup. Listing the classes instead meant the
+   transpose headers (wired dynamically, never in any static list) got popups with no press. */
+[data-ttip-wired]:hover,
+[data-ttip-wired]:focus-within,
+[data-ttip-wired].ttip-open {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+/* Pin held: only the pinned cell is pressed. */
+body.ttip-pin-mode [data-ttip-wired]:hover:not(.ttip-open),
+body.ttip-pin-mode [data-ttip-wired]:focus-within:not(.ttip-open) {
+  box-shadow: none;
+}
+body.view-overview.ttip-pin-mode td.cell:hover:not(.ttip-open) { filter: none; }
+[data-theme="dark"] [data-ttip-wired]:hover,
+[data-theme="dark"] [data-ttip-wired]:focus-within,
+[data-theme="dark"] [data-ttip-wired].ttip-open {
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.view-overview td.cell .cell-marker { display: none; }
+.view-overview td.cell .ttip { font-size: 12px; line-height: 1.4; }
+.view-details td.cell { color: transparent; }
+/* Clamp the transparent anchor like overview does (line above): in details view the
+   visible marker is the absolutely-positioned .cell-marker, but the underlying <a>
+   still sits in normal flow — long marker strings (e.g. `VPB?SRB?`) wrap in the 24px
+   cell and stretch the whole row to two lines. Clamp height/overflow so hidden anchor
+   text never drives row height; the <a> stays the hover/click target. */
+.view-details td.cell > a { height: 16px; overflow: hidden; white-space: nowrap; }
+.view-details td.cell::before { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #111; pointer-events: none; }
+.view-details td.cell .cell-marker { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; color: #111; pointer-events: none; padding: 0 4px; box-sizing: border-box; }
+.view-details td.cell .cell-marker .marker-text { display: inline-block; color: inherit; white-space: nowrap; }
+.view-details td.cell .cell-marker sub { font-size: 0.65em; line-height: 0; vertical-align: -0.35em; }
+.view-details td.cell.donly::before { color: #8b949e; }
+.view-details td.cell.donly .cell-marker { color: #8b949e; }
+/* Cells without a comparison (n/a stubs, missing fixtures) show their marker in the
+   same subtle gray as the compare markers (#9aa1a9), so `n/a` and `—` read identically
+   whether or not the cell carries compare data. Scoped to :not([data-cmp]) so compare
+   cells keep rendering their marker via .cmp-marker (no double text). */
+.view-details td.cell.na:not([data-cmp]) > a,
+.view-details td.cell.missing:not([data-cmp]) { color: #9aa1a9; }
+.view-details td.cell a { color: transparent; }
+.view-details td.cell a:hover { background: rgba(255,255,255,0.35); }
+.view-details td.cell .ttip { font-weight: 400; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid #ccc; margin: 1em 0; align-items: center; flex-wrap: wrap; }
+.tab-button { appearance: none; border: 1px solid #ccc; border-bottom: 0; background: #f5f5f5; color: #222; padding: 6px 10px; font: inherit; cursor: pointer; border-radius: 4px 4px 0 0; }
+.tab-button.active { background: #fff; font-weight: 600; position: relative; top: 1px; }
+/* Smaller-font parenthetical in tab labels, with "batch"/"stream" color-coded so the
+   data axis and parser axis read at a glance. */
+.tab-button .tab-sub { font-size: 0.82em; font-weight: 400; }
+.tab-button .w-batch { color: #800000; }
+.tab-button .w-stream { color: #15803d; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+.column-control { padding: 2px; }
+.column-control.col-collapsed { background: #eef2f7; min-width: 20px; width: 20px; }
+.col-toggle { border: 1px solid transparent; background: transparent; color: inherit; padding: 2px 5px; border-radius: 4px; font: inherit; cursor: pointer; }
+.col-toggle-symbol::before { content: "−"; color: #666; margin-right: 4px; }
+.col-toggle[aria-pressed="false"] { min-width: 18px; width: 18px; padding: 1px 0; }
+.col-toggle[aria-pressed="false"] .col-toggle-symbol::before { content: "+"; margin-right: 0; }
+.col-toggle[aria-pressed="false"] .col-toggle-label { display: none; }
+.col-toggle[aria-pressed="true"] { background: #e7f0ff; border-color: #6b9bd6; color: #174a86; }
+.col-toggle[aria-pressed="false"] { background: #fff; border-color: #bbb; color: #555; }
+#tab-unified .matrix-groups > th { background: var(--panel-bg, #fff); }
+#tab-unified .matrix-groups .col-toggle[aria-pressed="true"] { display: block; width: 100%; background: transparent; border-color: transparent; color: #596575; font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; line-height: 1.2; text-align: left; }
+#tab-unified .matrix-groups .col-toggle[aria-pressed="true"] .col-toggle-symbol { display: none; }
+:root[data-theme="dark"] #tab-unified .matrix-groups .col-toggle-label { color: #a5b0bd; }
+.col-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+/* Keep the column-control hint anchored to the label instead of using the browser's
+   native `title` popup, which floats from the bottom of the whole header cell. */
+.col-toggle[data-tooltip] { position: relative; }
+.col-toggle[data-tooltip]::after {
+  content: attr(data-tooltip); position: absolute; left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%); visibility: hidden; opacity: 0; pointer-events: none;
+  z-index: 4000; padding: 4px 7px; border-radius: 4px; background: #1f2937; color: #e5e7eb;
+  font: 11px -apple-system, system-ui, sans-serif; line-height: 1.2; white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.28);
+}
+.col-toggle[data-tooltip]:hover::after,
+.col-toggle[data-tooltip]:focus-visible::after { visibility: visible; opacity: 1; }
+.col-toggle[data-tooltip]::after { content: none; }
+.column-control-tooltip { white-space: nowrap; min-width: 0; width: max-content; }
+.col-placeholder { min-width: 20px; width: 20px; padding: 0; background: #f8fafc; }
+.col-hidden { display: none; }
+table.glossary { margin-top: 0.5em; }
+table.glossary td.sub { white-space: nowrap; font-weight: bold; }
+table.glossary tr.category td { background: #eef; font-family: -apple-system, system-ui, sans-serif; font-weight: bold; }
+.info-panel { border: 1px solid #d0d7de; background: #f8fafc; padding: 12px 14px; margin: 1em 0; border-radius: 6px; max-width: 1200px; }
+.info-panel h2 { margin: 0 0 0.35em 0; font-size: 18px; }
+.info-panel h3 { margin: 0.9em 0 0.35em 0; font-size: 14px; color: #174a86; }
+.info-panel p { margin: 0 0 0.8em 0; font-size: 13px; color: #333; }
+.info-panel ul { margin: 0.35em 0 0 1.2em; padding: 0; font-size: 12px; color: #333; }
+.info-panel li { margin: 0.18em 0; }
+.flow-grid { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)); gap: 8px; }
+.flow-step { position: relative; border: 1px solid #ccd6e0; background: #fff; padding: 8px 10px; border-radius: 4px; font-size: 12px; color: #333; }
+.flow-step-title { font-weight: 700; color: #174a86; margin-bottom: 3px; }
+.flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); color: #667085; font-weight: 700; }
+@media (max-width: 900px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .flow-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -12px; transform: translateX(50%); }
+}
+
+/* JS-managed hover tooltip on cells (replaces native title= for cells).
+ * 750ms delay on appear; 750ms grace period before hiding after the cursor leaves.
+ * `td.parser` participates so parser metadata tooltips use the same styling
+ * as data-cell tooltips. */
+td.cell, td.parser { position: relative; }
+:is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:hover,
+:is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:focus-within { z-index: 2000; }
+.ttip {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 3000;
+    background: #1f2937;
+    color: #e5e7eb;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    /* Ceiling only — `width: max-content` below means a popup that needs less stays
+       narrow. 32px each side matches the `margin` gutter the placement JS clamps to,
+       so on a small screen the popup may grow to the full window minus that padding.
+       (The JS re-sets this inline per-open against the live viewport.) */
+    /* Border-box so the cap counts the 10px side padding. With content-box the popup
+       rendered 20px WIDER than its own max-width, spilling into the viewport gutter —
+       and, once pinned (`overflow: auto`), that overflow added a horizontal scrollbar
+       that made a pinned popup 15px taller than the same popup on hover. */
+    box-sizing: border-box;
+    max-width: calc(100vw - 64px);
+    min-width: 280px;
+    width: max-content;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    text-align: left;
+    pointer-events: auto;
+    white-space: normal;
+    /* No opacity fade. `place()` shows the popup by clearing the inline opacity it
+       used while measuring, so a transition made it ramp 0 -> 1 — and a TRANSLUCENT
+       dark popup over a light page reads washed-out white before it settles to its
+       real color. That flash is what the delay was meant to avoid, not add. The popup
+       is already held back 750ms, so it does not also need to fade in. */
+}
+.ttip-visible {
+    visibility: visible;
+    opacity: 1;
+}
+/* cursor:pointer marks the cell as tappable so iOS/iPadOS Safari fires the `click`
+   event for tap-to-pin (it withholds click on non-interactive elements otherwise). */
+td.cell, td.parser { cursor: pointer; }
+/* Tap-to-pin (touch / mobile): a pinned tooltip stays open until ✕ or an outside
+   tap. Give it room for the close button and let it scroll if it's tall. */
+/* Pinning must not RESIZE the popup — only add the close button. The 26px top
+   padding this used to add made a pinned popup 18px taller than the same popup on
+   hover, so clicking a cell visibly shifted every row down. The room for the button
+   is reserved horizontally instead, on the head, where a wide popup has space to
+   spare and the geometry does not move. */
+.ttip-pinned { max-height: 97vh; overflow: auto; }
+body.ttip-pin-mode::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.18);
+    z-index: 2999;
+    pointer-events: none;
+}
+/* Always reserved, pinned or not, so the two states are the same box. Border-box
+   because the head also carries `min-width: 100%`: under content-box that resolves to
+   100% PLUS this padding, which overflows the popup and (once pinned) adds the very
+   horizontal scrollbar this section exists to avoid.
+   `.ttip-casedesc` gets the same reservation because a popup only has a `.ttip-head`
+   when the model carries `head`; without one the description renders as `.ttip-casedesc`
+   instead, and a popup with NEITHER (an n/a stub — only `na_note` / `reasons`) has no
+   first-line element at all, so the pinned ✕ is given a top gutter to sit in. */
+.ttip-head, .ttip-casedesc { padding-right: 28px; box-sizing: border-box; }
+.ttip-pinned:not(:has(.ttip-head)):not(:has(.ttip-casedesc)) { padding-top: 26px; }
+.ttip-close {
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.16);
+    color: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    z-index: 1;
+}
+.ttip-close:hover { background: rgba(255,255,255,0.30); }
+.ttip-pinned .ttip-close { display: block; }
+.ttip a { color: #bfdbfe; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 1px; display: inline; }
+.ttip a:hover { color: #dbeafe; background: transparent; }
+.ttip-head { font-weight: bold; margin-bottom: 4px; color: #fbbf24; }
+.case-schema { display: inline; }
+.ttip:has(.case-schema[open]) {
+    min-width: min(720px, max(240px, calc(100vw - 64px)));
+    overflow: auto;
+}
+.case-schema-toggle {
+    display: inline-block;
+    list-style: none;
+    margin-left: 7px;
+    padding: 1px 5px;
+    border: 1px solid #64748b;
+    border-radius: 10px;
+    background: transparent;
+    color: #bfdbfe;
+    font: 600 10px/1.4 -apple-system, system-ui, sans-serif;
+    cursor: pointer;
+    vertical-align: 1px;
+}
+.case-schema-toggle::-webkit-details-marker { display: none; }
+.case-schema-toggle:hover, .case-schema[open] > summary { background: #1e293b; }
+.case-schema-content { margin: 5px 0 7px; font-weight: 400; }
+.case-schema-json {
+    margin: 2px 0 5px;
+    padding: 6px;
+    max-height: 45vh;
+    overflow: auto;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    background: #0b1220;
+    color: #e5e7eb;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 11px/1.4 ui-monospace, monospace;
+}
+.schema-variant-label { margin: 5px 0 2px; color: #93c5fd; font: 600 10px/1.4 -apple-system, system-ui, sans-serif; }
+:root[data-theme="light"] .case-schema-toggle { color: #1d4ed8; }
+:root[data-theme="light"] .case-schema-toggle:hover,
+:root[data-theme="light"] .case-schema[open] > summary { background: #eaf2ff; }
+:root[data-theme="light"] .case-schema-json { border-color: #cbd5e1; background: #f8fafc; color: #1f2937; }
+:root[data-theme="light"] .schema-variant-label { color: #1d4ed8; }
+/* Inline description after the popup id: prose, so sans-serif (mono is for the code/id),
+   normal weight, and the normal tooltip text color — not the loud section blue. */
+.ttip-head-desc { font-family: -apple-system, system-ui, sans-serif; font-weight: normal; color: #e5e7eb; }
+:root[data-theme="light"] .ttip-head-desc { color: #1f2937; }
+/* Parser configuration knobs, one per line under the description. Each value is a
+   literal the harness passed to the parser, so the whole line is mono; the bullets sit
+   tight against the description they qualify. */
+.ttip-config { margin: 4px 0 0 0; padding: 0 0 0 16px; list-style: disc; }
+.ttip-config li { margin: 1px 0; }
+.ttip-config code { font-family: ui-monospace, monospace; color: #a5d6ff; }
+/* The gloss is prose about the value, so sans-serif and dimmer than the value itself. */
+.ttip-config-why { font-family: -apple-system, system-ui, sans-serif; color: #9aa4b2; }
+:root[data-theme="light"] .ttip-config-why { color: #57606a; }
+/* The value set is reference material, so dimmer than the gloss; the values inside
+   it are literals and stay mono. */
+.ttip-config-vals { font-family: -apple-system, system-ui, sans-serif; color: #7d8590; }
+.ttip-config-vals code { font-family: ui-monospace, monospace; color: #8fa8c0; }
+:root[data-theme="light"] .ttip-config-vals { color: #6e7781; }
+:root[data-theme="light"] .ttip-config-vals code { color: #4c5560; }
+:root[data-theme="light"] .ttip-config code { color: #0550ae; }
+.ttip-section { font-weight: bold; margin-top: 6px; color: #93c5fd; }
+.ttip-leak { color: #ff6b6b; font-weight: 700; }
+.ttip-pre { margin: 2px 0 0 0; white-space: pre-wrap; word-break: break-word; font-family: inherit; color: #e5e7eb; }
+/* Per-chunk emit chart: input | Dynamo Rust | vLLM Rust | vLLM Python | SGLang, one row per chunk. */
+/* Size to CONTENT, capped at the popup width.
+ *
+ * This used to be `width: 100%` + `table-layout: fixed` so that every candidate
+ * column came out the SAME width (auto layout sized each to its own content, which
+ * made the REF and compare columns differ and was hard to scan). The cost was that
+ * the chart always consumed the full popup no matter how little it held: a chart of
+ * mostly `–` cells rendered just as wide as one full of arguments, so the popup was
+ * mostly empty space.
+ *
+ * Auto layout lets a narrow chart BE narrow, and `width: max-content` lets it grow
+ * to the width at which every cell fits on ONE line. There is deliberately NO
+ * per-column `max-width`: an emitted `tool_call=get_weather args='{"city":"Paris"}'`
+ * is a single logical line and should read as one, so the only thing that may force
+ * a wrap is genuinely running out of window — the popup's viewport cap, applied via
+ * `max-width: 100%` below. Cells are `white-space: pre-wrap`, so max-content is
+ * exactly "the longest line, unwrapped".
+ *
+ * The `min-width` floor keeps a column of one-character `–` cells wide enough to
+ * scan next to its neighbours. */
+.ttip-chunks { border-collapse: collapse; margin: 3px 0 0 0; font-size: 11px; width: max-content; max-width: 100%; table-layout: auto; }
+/* No per-column min/max width: `equalizeColumns()` in conformance.js measures each
+ * column's max-content and pins ALL columns to the widest, so they come out equal at
+ * the width where the longest line fits. These rules are only the pre-measure
+ * fallback (and what a no-JS render gets). */
+/* pre-wrap so runs of spaces in emitted text render faithfully — HTML collapsing
+   made a whitespace-only divergence (e.g. a double vs single trailing space)
+   invisible: two cells LOOKED identical while their compare signatures differed. */
+/* `word-break` is required under the fixed layout above: a column no longer widens for
+ * its content, and an emitted `args='{"name":"get_weather",...}'` has no spaces to wrap
+ * at, so without this it would overflow its cell. */
+.ttip-chunks th, .ttip-chunks td { border: 1px solid #475569; padding: 2px 5px; text-align: left; vertical-align: top; white-space: pre-wrap; word-break: break-word; }
+.ttip-chunks th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+.ttip-chunks td { color: #e5e7eb; }
+.ttip-chunks td.cin { color: #cbd5e1; word-break: break-word; }
+.ttip-chunks tr.ttip-final td { border-top: 2px solid #64748b; background: #0b1220; }
+.ttip-chunks tr.ttip-final td.cin { color: #93c5fd; }
+/* A candidate's assembled cell whose output diverges from the golden oracle: red
+   background (mirrors the matrix red-on-diff rule so the details view agrees). */
+.ttip-chunks tr.ttip-final td.cand-diverge { background: #4a1113; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td.cand-diverge { background: #fce8e6; }
+/* Baseline column (Dynamo Rust batch): a fixed reference left of the stream columns,
+   set off with a thicker right border and a tinted background. */
+.ttip-chunks th.cbase-h { background: #1e293b; color: #fbbf24; border-right: 2px solid #64748b; }
+.ttip-chunks td.cbase { background: #0b1220; border-right: 2px solid #64748b; word-break: break-word; vertical-align: bottom; }
+.ttip-chunks .fr { color: #f59e0b; }
+
+/* Per-column GRAMMAR popup: hovering a sub-case header shows that one test case in
+ * every family's grammar, so the envelope differences are readable side by side. The
+ * `th` needs position:relative because `.ttip` is absolutely positioned against it,
+ * and the popup is wider than a data cell's since it lists ~20 families at once.
+ * These rules come AFTER the .ttip-chunks widths above so the narrower family column
+ * wins (same specificity, later source order). */
+th.case-sub, th.trow-case { position: relative; cursor: pointer; }
+/* Transposed view: the case moves to a ROW header but carries the same popup.
+ * No `min-width`: this popup used to be pinned at 62em whether or not it had 62em
+ * of content, which is the same wasted-space problem the chunk chart had. It is
+ * `width: max-content` like every other popup, so it sizes to its grammar table. */
+th.trow-case .ttip { font-weight: 400; text-align: left; }
+th.case-sub .ttip { font-weight: 400; text-align: left; }
+/* Same sizing rule as the chunk chart: grow to the width where each row fits on ONE
+ * line, then stop. `table-layout: fixed` + `width: 100%` made every column take an
+ * equal share of a popup that was itself pinned at 62em, so a short grammar row was
+ * padded out to full width while a long one wrapped anyway. Auto layout + max-content
+ * sizes each column to its content and lets the popup shrink; the viewport cap on
+ * `.ttip` is the only thing that forces a wrap. The model column keeps a min-width so
+ * long family names ("Qwen 3 Coder / Nemotron V3") wrap in a readable column rather
+ * than stretching the table. */
+.ttip-grammar { table-layout: auto; width: max-content; max-width: 100%; }
+.ttip-grammar thead th:first-child, .ttip-grammar td.grf { min-width: 10em; }
+.ttip-grammar td.grf { color: #93c5fd; font-weight: 600; white-space: normal; word-break: break-word; }
+/* Parser family under the model name: distinct models can share one grammar
+ * (DeepSeek V3 / V3.1 / V3.2), so both facts have to be visible. */
+.ttip-grammar td.grf .grfam { display: block; color: #64748b; font-weight: 400; font-size: 10px; }
+.ttip-grammar td.gri { color: #e5e7eb; }
+.ttip-grammar tr.gr-na td.gri { color: #94a3b8; font-style: italic; }
+.ttip-grammar td.gro { color: #e5e7eb; border-left: 2px solid #64748b; }
+/* Chunk seam in the stream popup: the input column shows the JOINED stream (so
+ * colors resolve across boundaries), which otherwise hides where each chunk ended. */
+.gr-chunk-sep { display: inline-block; margin: 0 1px; font-size: 0.85em; line-height: 1;
+                color: #7c8899; opacity: 0.55; vertical-align: baseline; user-select: none; }
+.ttip-unavail { margin-top: 3px; color: #94a3b8; font-style: normal; font-size: 11px; }
+/* Paired-tag palette: each distinct tag name gets a unique color (cycles
+ * if more names than colors). Orphans get the red-background treatment. */
+.tt-c0 { color: #34d399; }
+.tt-c1 { color: #60a5fa; }
+.tt-c2 { color: #fbbf24; }
+.tt-c3 { color: #f472b6; }
+.tt-c4 { color: #a78bfa; }
+.tt-c5 { color: #fb923c; }
+.tt-c6 { color: #22d3ee; }
+.tt-c7 { color: #f87171; }
+.tt-orphan { background: #7f1d1d; color: #fecaca; padding: 0 2px; border-radius: 2px; }
+/* Unified popup: non-mono caption under the golden output in the input column. */
+.golden-out-cap { font-family: -apple-system, system-ui, sans-serif; font-size: 11px;
+  font-weight: 600; color: #9aa4b2; }
+.tt-ns { color: #6b7280; }  /* MiniMax `]<]minimax[>[` namespace token: muted decoration */
+.tt-h { padding: 0 1px; border-radius: 2px; }
+.tt-h-token { font-weight: 700; }
+.tt-h-start { color: #fbbf24; }
+.tt-h-channel { color: #60a5fa; }
+.tt-h-constrain { color: #a78bfa; }
+.tt-h-message { color: #34d399; }
+.tt-h-call { color: #fb923c; }
+.tt-h-stop { color: #f87171; }
+.tt-h-other { color: #22d3ee; }
+
+/* Linked view (what the page renders): MARKERS get a BACKGROUND in their pair color
+ * (open/close match; distinct pairs differ, so markers are told apart). An unmatched /
+ * error marker gets a bright red bg. The hues mirror the paired-tag and harmony palettes
+ * above. Marker text stays the default color; box-decoration-break keeps the bg intact
+ * if a marker wraps. */
+.tt-mbg { border-radius: 3px; padding: 0 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tt-mbg-c0 { background: rgba(52, 211, 153, 0.34); }
+.tt-mbg-c1 { background: rgba(96, 165, 250, 0.36); }
+.tt-mbg-c2 { background: rgba(251, 191, 36, 0.34); }
+.tt-mbg-c3 { background: rgba(244, 114, 182, 0.34); }
+.tt-mbg-c4 { background: rgba(167, 139, 250, 0.38); }
+.tt-mbg-c5 { background: rgba(251, 146, 60, 0.34); }
+.tt-mbg-c6 { background: rgba(34, 211, 238, 0.30); }
+.tt-mbg-c7 { background: rgba(163, 230, 53, 0.30); }
+.tt-mbg-orphan { background: #dc2626; color: #fff; }  /* unmatched / error marker: bright red bg */
+/* INJECTED marker: present in the parser's output but never in its input, so it was
+ * added deliberately rather than leaked through. minimax_append_think exists to prepend
+ * a synthetic `<think>`; painting that the same alarming red as a genuine unmatched
+ * marker claimed a bug where the fixture documents intended behavior. Violet, not red. */
+.tt-mbg-injected { background: rgba(139, 92, 246, 0.45); color: #f5f3ff; }
+.tt-mbg-ns { background: rgba(107, 114, 128, 0.45); }
+.tt-mbg-h-start { background: rgba(251, 191, 36, 0.34); }
+.tt-mbg-h-channel { background: rgba(96, 165, 250, 0.36); }
+.tt-mbg-h-constrain { background: rgba(167, 139, 250, 0.38); }
+.tt-mbg-h-message { background: rgba(52, 211, 153, 0.34); }
+.tt-mbg-h-call { background: rgba(251, 146, 60, 0.34); }
+.tt-mbg-h-stop { background: rgba(248, 113, 113, 0.34); }
+.tt-mbg-h-other { background: rgba(34, 211, 238, 0.30); }
+
+/* User text: a per-word FOREGROUND color keyed by the word through the shared per-tooltip
+ * context, so the SAME word renders the same color everywhere (input, outputs, chunks);
+ * adjacent distinct words alternate as the 8-hue palette cycles. */
+.tt-fg0 { color: #34d399; }
+.tt-fg1 { color: #60a5fa; }
+.tt-fg2 { color: #fbbf24; }
+.tt-fg3 { color: #f472b6; }
+.tt-fg4 { color: #a78bfa; }
+.tt-fg5 { color: #fb923c; }
+.tt-fg6 { color: #22d3ee; }
+.tt-fg7 { color: #a3e635; }
+
+/* Whitespace INSIDE a matched string is payload, not layout: vLLM Rust emits
+ * `"location":" NYC "` where Dynamo emits `"location":"NYC"`, and a bare space renders
+ * identically either way. Give that whitespace a background in ITS OWN word's hue, so
+ * the leading/trailing spaces are visible and obviously belong to the same string. */
+.tt-ws { border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.tt-ws0 { background: rgba(52, 211, 153, 0.34); }
+.tt-ws1 { background: rgba(96, 165, 250, 0.36); }
+.tt-ws2 { background: rgba(251, 191, 36, 0.34); }
+.tt-ws3 { background: rgba(244, 114, 182, 0.34); }
+.tt-ws4 { background: rgba(167, 139, 250, 0.38); }
+.tt-ws5 { background: rgba(251, 146, 60, 0.34); }
+.tt-ws6 { background: rgba(34, 211, 238, 0.30); }
+.tt-ws7 { background: rgba(163, 230, 53, 0.30); }
+/* Whitespace belonging to no matched string — e.g. the separator between two markers.
+ * Neutral grey rather than a hue, because it is part of the format, not of a value. */
+.tt-wsp { background: rgba(148, 163, 184, 0.22); border-radius: 2px;
+          box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+
+/* ---- Transpose view (DIS-2280) ----
+   A client-side transposed mirror of the conformance table: models become
+   columns (names rotated CCW 90°, bottom-up, to save horizontal space) and
+   test cases become rows. The transposed <table> is built in JS by cloning the
+   server-rendered cells, so every data cell keeps its data-cmp payload and the
+   compare engine (applyCtl) recolors it for free — the mirror lives in the same
+   panel, so applyCtl's cell query already covers it. */
+.transpose-table { display: none; }
+/* The Unified loading shell stays visible while a requested transpose mirror is
+   built; switch to the mirror after the model becomes ready. */
+html.transpose-pending body:not(.transpose-mode) .tab-panel.active table[data-parity-table]:not([data-transpose-table]) { display: none; }
+body.transpose-mode .tab-panel.active[data-has-model] table[data-parity-table]:not([data-transpose-table]) { display: none; }
+body.transpose-mode .tab-panel.active .transpose-table { display: table; }
+/* Bottom-up vertical model headers (rotated CCW). Keep the container horizontal
+   and rotate each line independently; otherwise the model and family spans share
+   one vertical writing-mode box and the shorter line cannot bottom-align itself. */
+.transpose-table th.tcol-model {
+  background: #f5f5f5;
+  text-align: center;
+  padding: 6px 2px 0.5em;
+  vertical-align: bottom;
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 12px;
+  position: relative;
+}
+.transpose-table .tcol-model-inner { display: inline-block; vertical-align: bottom; }
+.transpose-table th.tcol-model .tcol-model-label {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  vertical-align: bottom;
+}
+.transpose-table .tcol-model-line,
+.transpose-table .tcol-model-name,
+.transpose-table .tcol-model-family {
+  writing-mode: sideways-lr;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1;
+}
+.transpose-table .tcol-model-name { font-weight: 600; }
+/* No forced color: the cloned parser markup keeps its own styling (the parser-
+   source link stays clickable, the parser-base text stays muted). */
+.transpose-table .tcol-model-family { font-size: 11px; font-family: ui-monospace, monospace; }
+.transpose-table .tcol-model-family a { color: inherit; text-decoration: none; }
+.transpose-table .tcol-model-family a:hover { text-decoration: underline; }
+/* Width is view-dependent: Overview shows only a color block, so narrow the model
+   columns hard; Details shows the compare marker text, so let each column
+   shrink-wrap to its content (make the marker in-flow, click-anchor out of flow). */
+body.view-overview .transpose-table td.cell,
+body.view-overview .transpose-table th.tcol-model { width: 30px; min-width: 30px; max-width: 30px; }
+/* Transposed DETAILS keeps the marker in normal flow (`position: static` below),
+   so unlike the upright table the marker text really does drive column width.
+   `max-width: none` then let one long marker (e.g. `VPB?SRB?`) stretch its whole
+   column and, with a column per engine, the table far past the viewport. Cap it:
+   `width: auto` still shrink-wraps short columns, the cap just stops the long
+   ones, and the marker ellipsizes rather than forcing the table wider. */
+body.view-details .transpose-table td.cell,
+body.view-details .transpose-table th.tcol-model { width: auto; min-width: 22px; max-width: 40px; }
+/* NO `overflow: hidden` on the cell: `.ttip` is a CHILD of td.cell, so clipping
+   the cell clips the hover popup itself — the width cap below belongs on the
+   marker span, which is the only thing that needs truncating. */
+body.view-details .transpose-table td.cell { padding: 3px 1px; }
+body.view-details .transpose-table td.cell .marker-text {
+  display: inline-block; max-width: 38px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+body.view-details .transpose-table td.cell .cell-marker,
+body.view-details .transpose-table td.cell .cmp-marker { position: static; }
+body.view-details .transpose-table td.cell > a { position: absolute; inset: 0; }
+.transpose-table th.tcorner-case,
+.transpose-table th.tsection-col { background: #f5f5f5; vertical-align: bottom; }
+.transpose-table th.tsection-col { font-family: -apple-system, system-ui, sans-serif; font-size: 12px; }
+.transpose-table th.trow-case { white-space: nowrap; text-align: left; font-weight: 600; }
+.transpose-table th.trow-case a { color: inherit; text-decoration: none; }
+.transpose-table th.trow-case a:hover { background: #ffd; }
+.transpose-table tr.section td { background: #eef; font-weight: bold; padding-right: 0.5ch; }
+/* Column-header note for candidates whose capture has no per-chunk timing (e.g. the
+ * v1 jail bursts at end-of-call); their per-chunk cells stay em-dashes. */
+.ttip .ttip-note { color: #9aa4b2; font-weight: 400; font-size: 11px; white-space: normal; }
+
+/* Fresh-load state: the server-rendered pinned colors are NOT the compare model the
+ * page settles on — showing them first reads as a false green that then flips.
+ * Until the first applyCtl pass, cells render neutral and a loading note shows;
+ * conformance.js removes body.cmp-loading when the compare model has been applied. */
+body.cmp-loading td.cell { background: #eef0f3 !important; }
+body.cmp-loading td.cell .cmp-marker, body.cmp-loading td.cell .cell-marker { visibility: hidden; }
+.cmp-loading-note { display: none; }
+body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; right: 12px;
+  background: #fff7e0; border: 1px solid #e5c765; color: #7a5d00; padding: 4px 10px;
+  border-radius: 4px; font: 12px ui-monospace, monospace; z-index: 99; }
+
+/* Whitespace markers in popup OUTPUT strings (↵ ␍ ⇥ ·): rendered as small
+   highlighted chips — a steel-blue background block against the dark tooltip
+   (#0b1220..#1e293b) makes every space/tab/return unmistakable, the way diff
+   tools highlight whitespace. user-select:none keeps the marks out of copied
+   text. */
+.ttip .wsmk {
+  background: #2f4f7a;
+  color: #d6e6ff;
+  border-radius: 2px;
+  padding: 0 1px;
+  user-select: none;
+}
+
+/* Popup output field labels + their quotes (reasoning_text, normal_text,
+   input_text, calls, args, name — one convention): the blue input-text color.
+   Fixture `explanation:` notes are secondary -> gray. */
+.ttip .fldl { color: #9ca3af; }
+.ttip .expl { color: #9ca3af; }
+
+/* ---- Theme (light / dark) -------------------------------------------------
+ * The page rendered light while every popup rendered dark, so one document showed two
+ * conflicting surfaces. `data-theme` on <html> now drives both. Light is the default so
+ * the page keeps the appearance it has always had; dark restyles the PAGE to meet the
+ * popups, and light restyles the POPUPS to meet the page. The tooltip's marker/word
+ * palettes are translucent or mid-tone, so they read on either surface unchanged. */
+.theme-toggle { border: 1px solid #d0d7de; background: #fff; border-radius: 6px;
+  padding: 5px 9px; font-size: 13px; line-height: 1; cursor: pointer; color: #444; }
+.theme-toggle:hover { background: #f1f3f5; }
+
+/* Light page + light popups. */
+:root[data-theme="light"] .ttip { background: #ffffff; color: #1f2937; }
+:root[data-theme="light"] .ttip-head { color: #92400e; }
+/* `.ttip-pre` forces a light-gray text color for the dark popup; on the white
+   light-theme popup that reads as faint gray, so restore the normal dark text. */
+:root[data-theme="light"] .ttip-pre { color: #1f2937; }
+:root[data-theme="light"] .ttip-chunks th { background: #eef2f7; color: #1d4ed8; }
+:root[data-theme="light"] .ttip-chunks td { color: #1f2937; }
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td {
+  border-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td { background: #eef2f7; }
+:root[data-theme="light"] .ttip-chunks td.cin { color: #334155; }
+:root[data-theme="light"] .ttip-grammar td.grf { color: #1d4ed8; }
+:root[data-theme="light"] .ttip a, :root[data-theme="light"] td.cell .ttip a { color: #1d4ed8; }
+
+/* Dark page + dark popups (the popups are already dark; restyle the page to match). */
+:root[data-theme="dark"] body { background: #0f172a; color: #e5e7eb; }
+:root[data-theme="dark"] th, :root[data-theme="dark"] td { border-color: #334155; }
+:root[data-theme="dark"] th { background: #1e293b; color: #cbd5e1; }
+:root[data-theme="dark"] [data-parity-table] > tbody > tr:not(.section) > td.model,
+:root[data-theme="dark"] [data-parity-table] > tbody > tr:not(.section) > td.parser,
+:root[data-theme="dark"] .transpose-table > tbody > tr:not(.section) > th.trow-case {
+  background: #0f172a;
+}
+:root[data-theme="dark"] th.case-group.case-band-0 { background: #1a2436; }
+:root[data-theme="dark"] th.case-group.case-band-1 { background: #0f172a; }
+:root[data-theme="dark"] .transpose-table > thead > tr.transpose-models > th { background: #0f172a; }
+:root[data-theme="dark"] th.case-sub.case-band-0,
+:root[data-theme="dark"] td.cell.case-band-0 { background: #16202f; }
+:root[data-theme="dark"] th.case-sub.case-band-1,
+:root[data-theme="dark"] td.cell.case-band-1 { background: #0f172a; }
+:root[data-theme="dark"] tr.section td { background: #1e293b; color: #e5e7eb; }
+:root[data-theme="dark"] td.cell.ok { color: #4ade80; }
+:root[data-theme="dark"] td.cell.na { color: #64748b; background: #1b2536; }
+:root[data-theme="dark"] td.cell.donly { color: #94a3b8; background: #1b2536; }
+:root[data-theme="dark"] td.cell.missing { color: #d6b370; background: #1b2536; }
+:root[data-theme="dark"] td.cell.research,
+:root[data-theme="dark"] td.cell.leak,
+:root[data-theme="dark"] td.cell.err { color: #f87171; }
+:root[data-theme="dark"] td.cell.todo { color: #fbbf24; }
+:root[data-theme="dark"] td.cell.documented { color: #cbd5e1; }
+:root[data-theme="dark"] td.cell a:hover, :root[data-theme="dark"] th a:hover { background: #334155; }
+:root[data-theme="dark"] .cmpctl, :root[data-theme="dark"] .radio-group {
+  background: #1e293b; border-color: #334155; }
+:root[data-theme="dark"] .cmprow-label { color: #cbd5e1; }
+:root[data-theme="dark"] .cmprow.is-ref { background: #1d3557; }
+:root[data-theme="dark"] .cmprow.is-ref .cmprow-label { color: #93c5fd; }
+:root[data-theme="dark"] .cmprow-label .cand-batch { color: #fca5a5; }
+:root[data-theme="dark"] .cmprow-label .cand-stream { color: #86efac; }
+:root[data-theme="dark"] .cmp-reset, :root[data-theme="dark"] .theme-toggle {
+  background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .cmp-reset:hover, :root[data-theme="dark"] .theme-toggle:hover {
+  background: #334155; }
+:root[data-theme="dark"] .toolbar-desc { background: #3a2f00; border-color: #7a6100; color: #f5e6a8; }
+:root[data-theme="dark"] .legend-note { border-left-color: #334155; }
+:root[data-theme="dark"] .generated, :root[data-theme="dark"] .versions { color: #94a3b8; }
+
+/* ---- Light-mode popup legibility ------------------------------------------
+ * The popup palettes were chosen against a near-black surface. Dropped onto white they
+ * lose almost all contrast: the pale-green/amber/cyan word hues wash out, the grey field
+ * labels fade, and the panel itself has no visible edge against the page. Override the
+ * few things that are actually background-dependent; the dark theme keeps its originals. */
+:root[data-theme="light"] .ttip {
+  border: 1px solid #94a3b8;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.22);
+}
+/* Same 8 hues, darkened to hold contrast on white (WCAG AA for body text). */
+:root[data-theme="light"] .tt-fg0 { color: #047857; }
+:root[data-theme="light"] .tt-fg1 { color: #1d4ed8; }
+:root[data-theme="light"] .tt-fg2 { color: #b45309; }
+:root[data-theme="light"] .tt-fg3 { color: #be185d; }
+:root[data-theme="light"] .tt-fg4 { color: #6d28d9; }
+:root[data-theme="light"] .tt-fg5 { color: #c2410c; }
+:root[data-theme="light"] .tt-fg6 { color: #0e7490; }
+:root[data-theme="light"] .tt-fg7 { color: #4d7c0f; }
+/* Field labels (`input_text='`, `calls=`) are chrome, but at #9ca3af they vanished. */
+:root[data-theme="light"] .ttip .fldl { color: #64748b; }
+:root[data-theme="light"] .ttip .parser-base { color: #64748b; }
+:root[data-theme="light"] .ttip .expl { color: #475569; }
+/* Marker backgrounds are translucent, so on white they become pale tints — the marker
+ * TEXT must go dark or it disappears into them. */
+:root[data-theme="light"] .tt-mbg { color: #111827; }
+:root[data-theme="light"] .tt-mbg-orphan { background: #b91c1c; color: #fff; }
+:root[data-theme="light"] .tt-mbg-injected { background: rgba(139, 92, 246, 0.30); color: #4c1d95; }
+/* Whitespace chips need a touch more presence on white to stay visible at all. */
+:root[data-theme="light"] .tt-wsp { background: rgba(100, 116, 139, 0.28); }
+/* The dark popup sat borderless on a dark page — same missing-edge problem the light
+ * theme had, just less obvious. Give it a rim too. */
+:root[data-theme="dark"] .ttip { border: 1px solid #475569; }
+
+/* ---- Surface elevation -----------------------------------------------------
+ * A border alone was a weak separator. Rank the surfaces by BRIGHTNESS instead, so the
+ * popup reads as floating above the page rather than pasted onto it: in light mode the
+ * page steps down to grey and the popup is the only pure white; in dark mode that
+ * inverts — the page is the darkest thing and the popup is lifted above it.
+ * The edge is layered rather than one line: an inner hairline, a contrasting 1px ring,
+ * then a soft drop shadow — three shades, so it separates on any background under it. */
+:root[data-theme="light"] body { background: var(--page-bg, #f6f7f9); color: var(--ink, #111827); }
+:root[data-theme="light"] th.case-sub.case-band-1,
+:root[data-theme="light"] td.cell.case-band-1,
+:root[data-theme="light"] th.case-group.case-band-1 { background: #f7f9fb; }
+:root[data-theme="light"] .ttip {
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0 0 1px #64748b, 0 10px 28px rgba(15, 23, 42, 0.30);
+}
+:root[data-theme="dark"] body { background: var(--page-bg, #0d1014); color: var(--ink, #e8edf3); }
+:root[data-theme="dark"] .ttip {
+  background: #232f42;
+  border: 1px solid #64748b;
+  box-shadow: 0 0 0 1px #0b1220, 0 10px 28px rgba(0, 0, 0, 0.65);
+}
+
+/* ---- Inner table chrome ----------------------------------------------------
+ * The popup's own separation is now carried by the surface ranking and the layered
+ * edge, so the table INSIDE it no longer needs to shout. The `assembled` / baseline
+ * rows were #0b1220 — near-black against a #232f42 popup — which read as a hard dark
+ * box floating inside the panel rather than as a section of the same table. Step them
+ * one notch from the popup instead of all the way to black, and lighten the grid and
+ * the 2px dividers to match. */
+:root[data-theme="dark"] .ttip-chunks th, :root[data-theme="dark"] .ttip-chunks td {
+  border-color: #3a4659; }
+:root[data-theme="dark"] .ttip-chunks th { background: #2b3950; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td {
+  background: #1d2839; border-top-color: #48566b; }
+:root[data-theme="dark"] .ttip-chunks td.cbase { background: #1d2839; border-right-color: #48566b; }
+:root[data-theme="dark"] .ttip-chunks th.cbase-h { background: #2b3950; border-right-color: #48566b; }
+:root[data-theme="dark"] .ttip-grammar td.gro { border-left-color: #48566b; }
+
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td {
+  border-color: #e2e8f0; }
+:root[data-theme="light"] .ttip-chunks th { background: #f1f5f9; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td {
+  background: #f6f8fa; border-top-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks td.cbase { background: #f6f8fa; border-right-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-chunks th.cbase-h { background: #f1f5f9; border-right-color: #cbd5e1; }
+:root[data-theme="light"] .ttip-grammar td.gro { border-left-color: #cbd5e1; }
+:root[data-theme="light"] .gr-chunk-sep { color: #9aa7b6; }
+
+/* Rounder tab shoulders — 4px read as almost square against the panel below. */
+.tab-button { border-radius: 10px 10px 0 0; padding: 6px 12px; }
+/* Word hues carry the input->output correspondence, so they are the thing being read;
+ * bold makes a short value like `NYC` hold its own against the marker backgrounds. */
+.tt-fg { font-weight: 600; }
+/* Tabs follow the theme too (they were light-only chrome). */
+:root[data-theme="dark"] .tabs { border-bottom-color: #334155; }
+:root[data-theme="dark"] .tab-button { background: #1b2536; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .tab-button.active { background: #232f42; color: #f1f5f9; }
+:root[data-theme="dark"] .tab-button .w-batch { color: #fca5a5; }
+:root[data-theme="dark"] .tab-button .w-stream { color: #86efac; }
+
+/* ---- Neutral popup chrome + dark-mode cells --------------------------------
+ * The popup's title row and assembled/baseline boxes were slate-tinted, which read as a
+ * second accent colour competing with the marker/word hues that carry the actual meaning.
+ * Make that chrome neutral grey in both themes so colour in the popup only ever means
+ * data. */
+:root[data-theme="light"] .ttip-chunks th { background: #f0f0f0; color: #333; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td { background: #f6f6f6; }
+:root[data-theme="light"] .ttip-chunks td.cbase { background: #f6f6f6; }
+:root[data-theme="light"] .ttip-chunks th.cbase-h { background: #f0f0f0; }
+:root[data-theme="light"] .ttip-chunks th, :root[data-theme="light"] .ttip-chunks td { border-color: #e0e0e0; }
+:root[data-theme="light"] .ttip-grammar td.grf { color: #333; }
+:root[data-theme="light"] .ttip-chunks tr.ttip-final td.cin { color: #333; }
+:root[data-theme="dark"] .ttip-chunks th { background: #33383f; color: #d4d4d4; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td { background: #262a30; }
+:root[data-theme="dark"] .ttip-chunks td.cbase { background: #262a30; }
+:root[data-theme="dark"] .ttip-chunks th.cbase-h { background: #33383f; }
+:root[data-theme="dark"] .ttip-chunks th, :root[data-theme="dark"] .ttip-chunks td { border-color: #3f444b; }
+:root[data-theme="dark"] .ttip-grammar td.grf { color: #d4d4d4; }
+:root[data-theme="dark"] .ttip-chunks tr.ttip-final td.cin { color: #d4d4d4; }
+
+/* The compare classes carry `!important` and were light-only, so in dark mode every
+ * n/a / no-base / base-only cell stayed a bright grey block. */
+:root[data-theme="dark"] td.cell.cmp-na { background: #232a36 !important; }
+:root[data-theme="dark"] td.cell.cmp-nobase { background: #1a212c !important; }
+:root[data-theme="dark"] td.cell.cmp-donly { background: #2a323f !important; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-na { color: #232a36; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-nobase { color: #1a212c; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-donly { color: #2a323f; }
+
+/* The pressed tab was only ~#232f42 vs #1b2536 — nearly invisible. Give it the panel's
+ * own surface, a brighter rim, and drop the bottom border so it merges with the panel. */
+:root[data-theme="dark"] .tab-button.active {
+  background: #232f42; color: #ffffff; border-color: #7c8ba1;
+  box-shadow: inset 0 2px 0 #60a5fa;
+}
+
+/* Detailed / Transpose were light-only chrome: a #f8fafc pill with dark text sitting on
+ * a dark page, and the borderless Detailed label at #8a8f98 nearly vanished. */
+:root[data-theme="dark"] .checkbox-option {
+  background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:root[data-theme="dark"] .checkbox-option.cmp-detailed { background: none; color: #94a3b8; }
+:root[data-theme="dark"] .checkbox-option input { accent-color: #60a5fa; }
+:root[data-theme="dark"] .cmphd-ref, :root[data-theme="dark"] .cmphd-cmp { color: #94a3b8; }
+:root[data-theme="dark"] .cmpcol + .cmpcol { border-left-color: #334155; }
+:root[data-theme="dark"] .cmprow.cmphd { border-bottom-color: #334155; }
+:root[data-theme="dark"] .cmprow-ref .star { color: #4b5563; }
+:root[data-theme="dark"] .radio-group-label { color: #cbd5e1; }
+:root[data-theme="dark"] .legend, :root[data-theme="dark"] .stats { color: #cbd5e1; }
+/* Case description under a cell popup's title — same role as the column popup's. */
+.ttip-casedesc { font-weight: 400; margin: 0 0 4px; opacity: 0.9; }
+
+/* Case-descriptions glossary: its category bands are a light `#eef` that was never
+ * themed, so in dark mode they rendered as bright strips with washed-out text. */
+:root[data-theme="dark"] table.glossary tr.category td { background: #26314a; color: #e5e7eb; }
+:root[data-theme="dark"] table.glossary td { color: #cbd5e1; }
+:root[data-theme="dark"] table.glossary td.sub { color: #f1f5f9; }
+:root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3 { color: #f1f5f9; }
+:root[data-theme="dark"] a { color: #93c5fd; }
+:root[data-theme="dark"] .legend-note { color: #cbd5e1; }
+
+/* Dark-mode compare colors: #76b884 / #db7777 were picked for a white page and glare on
+ * a dark one. Same hues, dropped in luminance so the grid reads without shouting. */
+/* Dark theme verdict colors. These were dark enough that a green cell read as
+   near-black against the page and the green/red distinction only showed up on close
+   inspection. Lifted well above the surface luminance; the marker text flips dark so it
+   still carries on the brighter fill. */
+:root[data-theme="dark"] td.cell.cmp-eq { background: #4fc27d !important; color: #08240f; }
+:root[data-theme="dark"] td.cell.cmp-leak { background: #f5736f !important; color: #2b0606; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-eq { color: #4fc27d; }
+:root[data-theme="dark"] body.view-overview td.cell.cmp-leak { color: #f5736f; }
+:root[data-theme="dark"] td.cell.ok { color: #5aa06e; }
+:root[data-theme="dark"] td.cell.research,
+:root[data-theme="dark"] td.cell.leak,
+:root[data-theme="dark"] td.cell.err { color: #d08585; }
+
+/* ---- Popup typography: code is mono, commentary is not ----
+ * `.ttip` sets a monospace base because most of what a popup shows IS code —
+ * the parser input markup, emitted args, the per-chunk table. But the prose
+ * around it (case description, `explanation:`, n/a notes, section labels) was
+ * inheriting that same constant-width font, which reads badly for natural
+ * language. Restore the body font for the prose only; payload stays mono so
+ * markup and runs of whitespace still line up. */
+.ttip-section,
+.ttip-casedesc,
+.ttip-reason,
+.ttip-ref,
+.ttip-note,
+.ttip-pre,
+.expl {
+  font-family: -apple-system, system-ui, sans-serif;
+}
+/* Cap the PROSE measure so a long sentence wraps instead of stretching the popup.
+ * The popup is `width: max-content`, which takes the widest child — so one
+ * unwrapped explanatory line (the case description, or the "vLLM diverges too:
+ * ..." footnote) set the popup's width and left the chart floating in a sea of
+ * empty space, even after the chart itself was made to shrink to content. An
+ * element's max-content contribution is clamped by its own max-width, so bounding
+ * the prose hands the width decision back to the chart. ~100 characters is also
+ * about the limit of a comfortable reading measure.
+ *
+ * `.ttip-ref` is excluded below: it is a short `white-space: nowrap` label, not
+ * prose, and must not wrap. */
+.ttip-section,
+.ttip-casedesc,
+.ttip-reason,
+.ttip-note,
+.ttip-pre,
+.expl {
+  max-width: 100ch;
+  /* ...and fill whatever width the popup settles at. The cap alone bounds the
+     INTRINSIC contribution, which is what hands the width decision to the chart —
+     but it also wrapped this prose at 100ch inside a much wider popup, leaving a
+     visible gutter to its right (the "vLLM diverges too" footnote under a 5-column
+     chart was the worst case). A percentage min-width is indeterminate during
+     intrinsic sizing, so the cap still decides the popup's width; once that width is
+     resolved, min-width makes the prose use all of it. See `.ttip-head` below for the
+     measured before/after. */
+  min-width: 100%;
+}
+/* The head carries the case id + an inline description, and needs BOTH halves of the
+ * rule above: capped so it can't stretch the popup, but filling whatever width the
+ * popup ends up at so the description isn't wrapped early against dead space.
+ *
+ * `max-width` alone (the prose rule) gives the first half only: the chart sets the
+ * popup width, the head stops at 100ch, and a wide chart leaves a visible gap to the
+ * right of the description (measured: 1112px popup, 722px head, 370px of nothing).
+ * Dropping the cap gives the second half only: the head becomes the widest child and
+ * drags the popup out to the description's own length (1556px), which is the bug the
+ * cap was written to prevent.
+ *
+ * `min-width: 100%` separates the two. A percentage min-width is indeterminate during
+ * intrinsic sizing, so the head still contributes only `min(max-content, 100ch)` and
+ * the chart keeps deciding the width; once that width is resolved, min-width makes the
+ * head fill it. Chart popups wrap at the popup edge (gap 0), prose-only popups keep the
+ * ~100ch reading measure. */
+.ttip-head { white-space: normal; max-width: 100ch; min-width: 100%; }
+/* ...and the payload opts back in. `.ttip-code` is the parser input markup, `.ttip-tree`
+ * the box-drawing shared-implementation tree; both only read correctly when the glyphs
+ * line up in a column. `.ttip-code` sits INSIDE a `.ttip-pre`, so it has to win. */
+.ttip-code,
+.ttip-tree {
+  font-family: ui-monospace, monospace;
+}
+
+/* Case-description glossary: the ID column is an identifier (mono, inherited from the
+ * `table` base), the description beside it is a sentence and reads as one. */
+table.glossary td.gloss-desc { font-family: -apple-system, system-ui, sans-serif; }
+
+.case-schema-indicator { display: none; margin-left: 0.25em; color: #8a8f98; font: 0.72em ui-monospace, monospace; }
+body.view-details .case-schema-indicator { display: inline; }
+:root[data-theme="dark"] .case-schema-indicator { color: #94a3b8; }
+
+
+/* Comparison cards and matrix tokens match the resolved report's viewer style. */
+:root {
+  --page-bg: #f6f7f9; --panel-bg: #fff; --panel-alt: #f1f3f6; --ink: #111827;
+  --ink-muted: #596575; --ink-soft: #8a94a3; --line: #e2e6eb; --line-strong: #cfd5dc;
+  --card-shadow: 0 1px 2px rgba(16,24,40,.05),0 4px 16px rgba(16,24,40,.06);
+  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: #f0a92a;
+  --status-leak: #e0484b; --status-error: #9b4fd6; --status-expected: #7353ba;
+  --status-unsupported: repeating-linear-gradient(135deg,#e7eaee 0 3px,#f4f5f7 3px 6px);
+  --status-missing: #fff;
+}
+:root[data-theme="dark"] {
+  --page-bg: #0d1014; --panel-bg: #151a20; --panel-alt: #1b2128; --ink: #e8edf3;
+  --ink-muted: #a5b0bd; --ink-soft: #788391; --line: #262d36; --line-strong: #38414d;
+  --card-shadow: 0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: #d9952a;
+  --status-leak: #d9474a; --status-error: #a465dc; --status-expected: #8768d0;
+  --status-unsupported: repeating-linear-gradient(135deg,#232a33 0 3px,#1a1f26 3px 6px);
+  --status-missing: #151a20;
+}
+[data-engine="dynamo"], [data-picker-engine-choice="dynamo"] { --comparison-color: #76b900; }
+[data-engine="sglang"], [data-picker-engine-choice="sglang"] { --comparison-color: #d9661f; }
+[data-engine="vllm"], [data-picker-engine-choice="vllm"] { --comparison-color: #2f6fe4; }
+.capture-slots { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 14px; }
+.capture-slot-controls { display: flex; width: auto; min-width: 0; flex: 1 1 auto; gap: 10px; }
+.tabs-right.capture-slot-actions { flex: 0 0 auto; margin-left: 0; white-space: nowrap; }
+.capture-slot { position: relative; display: flex; min-width: 0; flex: 1 1 0; align-items: center; justify-content: space-between; gap: 8px; min-height: 56px; box-sizing: border-box; padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
+.capture-slot::before { position: absolute; top: 0; bottom: 0; left: 0; width: 5px; border-radius: 12px 0 0 12px; background: var(--comparison-color, #94a3b8); content: ""; }
+.capture-slot-engine-trigger { display: inline-flex; min-width: 0; flex: 0 1 auto; align-items: center; gap: 8px; padding: 3px; border: 0; background: transparent; color: var(--comparison-color, var(--ink)); font: inherit; font-weight: 600; cursor: pointer; }
+.capture-slot-engine-trigger:focus-visible,
+.capture-slot-select:focus-visible { outline: 3px solid #94bffb; outline-offset: 2px; }
+.capture-slot-badge { display: none; }
+.capture-slot[data-engine="dynamo"] .capture-slot-badge,
+.capture-slot[data-engine="sglang"] .capture-slot-badge,
+.capture-slot[data-engine="vllm"] .capture-slot-badge { display: inline-grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border-radius: 10px; background: var(--comparison-color); color: #fff; font-size: 17px; font-weight: 700; }
+.capture-slot[data-engine="none"] .capture-slot-badge { display: inline-grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-alt); color: var(--ink-muted); font-size: 16px; }
+.capture-slot-engine { overflow: hidden; color: inherit; font-size: 16px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.capture-slot-capture-control { position: relative; width: auto; min-width: 0; flex: 1 1 50%; text-align: left; }
+.capture-slot-select { position: absolute; z-index: 3; inset: 0; width: 100%; max-width: 100%; height: 100%; min-width: 0; box-sizing: border-box; padding: 0; border: 0; background: transparent; color: transparent; font: inherit; font-size: 14px; }
+.capture-slot-select option { color: var(--ink); }
+.capture-slot-selected-label { position: relative; z-index: 2; display: block; min-height: 36px; box-sizing: border-box; padding: 7px 28px 7px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel-alt); color: var(--ink); font-size: 14px; line-height: 1.25; text-align: left; white-space: normal; overflow-wrap: anywhere; pointer-events: none; }
+.tab-panel#tab-unified > .cmpctl { display: none; }
+.capture-slots-notice { flex: 0 0 100%; margin: 0 0 -4px; padding: 6px 9px; border: 1px solid #c9a34a; border-radius: 5px; color: #594716; font-size: 12px; }
+.comparison-picker { width: 620px; position: fixed; inset: auto; margin: 0; padding: 16px; border: 1px solid var(--line-strong, #cfd5dc); border-radius: 12px; background: var(--panel-bg, #fff); color: var(--ink, #111827); box-sizing: border-box; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow: auto; }
+.comparison-picker::backdrop { background: rgba(10,14,20,.35); }
+.comparison-picker h2 { margin: 0 0 12px; font-size: 20px; }
+.picker-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.picker-choices button { min-width: 0; padding: 9px 12px; border: 1px solid #cfd5dc; border-radius: 6px; background: var(--panel-alt, #f1f3f6); color: var(--ink, #111827); font: inherit; font-size: 16px; line-height: 1.25; text-align: center; cursor: pointer; }
+.comparison-picker .picker-choices button[data-picker-engine-choice]:not([data-picker-engine-choice="none"]) { background: var(--comparison-color); border-color: var(--comparison-color); color: #fff; }
+.picker-choices button[aria-current="true"] { border-color: #2670c9; box-shadow: inset 0 0 0 1px #2670c9; }
+.comparison-picker button:focus-visible { outline: 2px solid #2670c9; outline-offset: 2px; }
+:root[data-theme="dark"] .capture-slot-select,
+:root[data-theme="dark"] .comparison-picker,
+:root[data-theme="dark"] .picker-choices button { background: var(--panel-alt); border-color: var(--line); color: var(--ink); }
+:root[data-theme="dark"] .capture-slot[data-engine="none"]::before { background: var(--line-strong); }
+:root[data-theme="dark"] .capture-slots-notice { color: #e8d29a; border-color: #80692c; }
+@media (max-width: 700px) {
+  .capture-slots { align-items: stretch; flex-wrap: wrap; flex-direction: column; gap: 8px; }
+  .capture-slot-controls { display: grid; width: 100%; grid-template-columns: 1fr; gap: 8px; }
+  .tabs-right.capture-slot-actions { align-self: flex-end; }
+  .capture-slot { align-items: stretch; flex-direction: column; }
+  .capture-slot-engine { font-size: 16px; }
+  .capture-slot-capture-control { width: 100%; flex: 0 0 auto; }
+}
+@media (max-width: 480px) {
+  .picker-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Unified capture matrix: light grid, compact labels, and one rounded segment per output. */
+#tab-unified {
+  --status-pass: #3fa34d; --status-documented: #7fa8e8; --status-diverge: #f0a92a;
+  --status-leak: #e0484b; --status-error: #9b4fd6; --status-expected: #7353ba;
+  --status-unsupported: repeating-linear-gradient(135deg,#cbd2dc 0 3px,#f4f5f7 3px 6px);
+  --status-missing: #fff;
+  --status-blocked: #64748b;
+}
+:root[data-theme="dark"] #tab-unified {
+  --status-pass: #3f9e4c; --status-documented: #5b86c9; --status-diverge: #d9952a;
+  --status-leak: #d9474a; --status-error: #a465dc; --status-expected: #8768d0;
+  --status-unsupported: repeating-linear-gradient(135deg,#465267 0 3px,#1a1f26 3px 6px);
+  --status-missing: #151a20;
+  --status-blocked: #94a3b8;
+}
+#tab-unified .status-pass { background: var(--status-pass); }
+#tab-unified .status-documented { background: var(--status-documented); }
+#tab-unified .status-diverge { background: var(--status-diverge); }
+#tab-unified .status-leak { background: var(--status-leak); }
+#tab-unified .status-error { background: var(--status-error); }
+#tab-unified .status-expected { background: var(--status-expected); }
+#tab-unified .status-unsupported { background: var(--status-unsupported); }
+#tab-unified .status-missing { background: var(--status-missing); }
+#tab-unified .status-blocked { background: var(--status-blocked); }
+#tab-unified .status-uncompared { background: #94a3b8; }
+#tab-unified table[data-parity-table] { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); box-shadow: var(--card-shadow); font-size: 11px; line-height: 1.45; }
+#tab-unified table[data-parity-table] > thead > tr.matrix-groups > th,
+#tab-unified table[data-parity-table] > thead > tr.matrix-labels > th { background: var(--panel-bg); color: var(--ink-muted); border: 0; }
+#tab-unified table[data-parity-table] > thead > tr.matrix-groups > th { position: sticky; top: 0; height: 50px; padding: 0 7px; border-bottom: 1px solid var(--line); background: var(--panel-bg); color: var(--ink-muted); font-size: 11px; text-align: left; vertical-align: middle; white-space: normal; }
+#tab-unified table[data-parity-table] > thead > tr.matrix-groups > th[data-col-control-group="model"] { left: 0; z-index: 8; min-width: 220px; padding: 5px 10px; border-right: 1px solid var(--line-strong); color: var(--ink); text-align: left; vertical-align: bottom; }
+#tab-unified table[data-parity-table] > thead > tr.matrix-groups > th.case-group { border-left: 1px solid var(--line); }
+#tab-unified table[data-parity-table] > thead > tr.matrix-groups > th.case-group .col-toggle-label { display: inline-block; max-width: 180px; max-height: 39px; overflow: hidden; line-height: 13px; white-space: normal; }
+#tab-unified table[data-parity-table] th.case-sub { position: sticky; top: var(--sticky-top-row-height, 50px); height: 27px; max-width: 60px; overflow: visible; padding: 0; border: 0; border-bottom: 1px solid var(--line-strong); color: var(--ink-soft); text-align: center; font: 10px ui-monospace, monospace; }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td { height: 27px; border: 0; border-bottom: 1px solid var(--line); }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.model { position: sticky; left: 0; z-index: 3; width: 220px; min-width: 220px; max-width: 220px; padding: 3px 10px; border-right: 1px solid var(--line-strong); background: var(--panel-bg); color: var(--ink); text-align: left; font-weight: 700; }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.model .grfam { display: block; max-width: 205px; overflow: hidden; color: var(--ink-soft); font: 10px ui-monospace, monospace; text-overflow: ellipsis; white-space: nowrap; }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.parser { background: var(--panel-bg); }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.cell { width: 30px; min-width: 30px; padding: 1px; border-left: 0; border-right: 0; background: var(--panel-bg); cursor: pointer; }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.cell.case-group-start { border-left: 1px solid var(--line-strong); }
+#tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.cell.status-missing { box-shadow: inset 0 0 0 1px var(--line-strong); }
+#tab-unified td.cell:has(.matrix-segments) { padding: 1px; background: transparent !important; box-shadow: none; text-align: center; }
+#tab-unified table[data-parity-table] th.case-sub.case-group-start { border-left: 1px solid var(--line-strong); }
+:root[data-theme="dark"] #tab-unified table[data-parity-table] { background: var(--panel-bg); }
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > thead > tr.matrix-groups > th,
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > thead > tr.matrix-labels > th { background: var(--panel-bg); color: var(--ink-muted); border-color: var(--line); }
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.model,
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.parser { background: var(--panel-bg); color: var(--ink); }
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.cell { background: var(--panel-bg); }
+:root[data-theme="dark"] #tab-unified table[data-parity-table] > tbody > tr:not(.section) > td.cell.case-group-start,
+:root[data-theme="dark"] #tab-unified table[data-parity-table] th.case-sub.case-group-start { border-left-color: var(--line-strong); }
+#tab-unified .transpose-table td.cell { border-left: 0; border-right: 0; }
+#tab-unified .matrix-segments { display: flex; gap: 1px; width: 27px; height: 25px; margin-inline: auto; overflow: hidden; border-radius: 4px; vertical-align: middle; }
+#tab-unified .matrix-status { display: block; flex: 1 1 0; min-width: 2px; height: 100%; }
+#tab-unified .capture-legend { max-width: 1200px; line-height: 1.4; }
+#tab-unified .capture-legend ul { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0; list-style: none; }
+#tab-unified .capture-legend li { display: flex; align-items: center; gap: 6px; }
+#tab-unified .capture-legend .matrix-segments { width: 20px; height: 16px; }
+#tab-unified [data-ttip-click="pin"]:not(.ttip-open) { box-shadow: none; }

@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"edcf83b44d75f1de194083466056ae5783966f2bda1d29e4d4e3e88367fa7eec","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: harmony

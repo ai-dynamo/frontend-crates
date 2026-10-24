@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"556038f474a37c946c2a5ec68ca427c90c991be40b8f69ccbef3636335ad2a32","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: pythonic

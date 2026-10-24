@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"34cf0c9e3dcc6173173117350a05c0090036555a1fb68afb538c81806495bc71","surface":"batch","version":"0.26.0"}
 schema_version: 1
 surface: batch
 family: glm47

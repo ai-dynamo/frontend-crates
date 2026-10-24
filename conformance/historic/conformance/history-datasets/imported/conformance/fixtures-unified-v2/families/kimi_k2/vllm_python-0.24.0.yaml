@@ -1,0 +1,331 @@
+parent: vllm_python-0.23.0
+execution: 47c9c59c3da61d204c9cc573e2b27ad7244d9ab78b21091d743577daf347f997
+changes:
+  guided_json_after_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_marker_inside_argument:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '[{"name": "log", "arguments": {"note": "'
+        - kind: text
+          text: '"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '[{"name": "log", "arguments": {"note": "'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '"}}]'
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use <|tool_calls_section_begin|> next
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll use '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_narrated_prefix_inside_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call <|tool_call_begin|>functions.get_weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll call '
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: functions.get_weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_native_markup_only:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: null
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{"city": "Paris"}'
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_orphan_reason_close_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_prose_before_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. <think>checking
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <|tool_call_begin|>functions.<think>secret
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: functions.
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: secret
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</think>{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  prefilled_reasoning_with_guided_json:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_33:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "é🙂<par{value}"}<|tool_call_end|> after'
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: functions.f:0
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_argument_begin|>
+        - expected:
+          - kind: reasoning
+            text: '{"x": "é🙂'
+        - expected:
+          - kind: reasoning
+            text: <par{value}"}<|tool_call_end|>
+        - expected:
+          - kind: reasoning
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_40:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'before <|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "<think>quoted'
+        - kind: text
+          text: '"}<|tool_call_end|> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_begin|>
+        - expected:
+          - kind: reasoning
+            text: functions.f:0
+        - expected:
+          - kind: reasoning
+            text: <|tool_call_argument_begin|>
+        - expected:
+          - kind: reasoning
+            text: '{"x": "'
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: text
+            text: '"}'
+        - expected:
+          - kind: text
+            text: <|tool_call_end|>
+        - expected:
+          - kind: text
+            text: ' after'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []

@@ -126,6 +126,13 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
     env["CARGO_TARGET_DIR"] = str(target_dir)
     env["RUSTFLAGS"] = " ".join(f"--cfg {flag}" for flag in flags)
     _cargo("cargo", ["generate-lockfile", "--manifest-path", str(manifest)], work_dir=work, log=work / "lock.log", env=env)
+    # Some published releases no longer compile with newer semver-compatible
+    # dependencies. Freeze reviewed transitive versions in the target inventory;
+    # both that inventory and the resulting lock are bound into the receipt.
+    for package, version in target.get("dependency_pins", {}).items():
+        _cargo("cargo", ["update", "--manifest-path", str(manifest), "--package", package,
+                         "--precise", version], work_dir=work,
+               log=work / f"pin-{package}.log", env=env)
     lock = tomllib.loads((work / "Cargo.lock").read_text())
     for package_name, version in (("dynamo-parsers-v2", target["version"]), ("dynamo-parsers", target["reasoning_version"])):
         matches = [package for package in lock["package"] if package["name"] == package_name and package["version"] == version]

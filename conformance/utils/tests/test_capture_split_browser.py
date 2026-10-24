@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Real Chromium qualification for standalone current and external-history reports."""
+"""Real Chromium qualification for standalone latest and bundled-history reports."""
 import gzip
 import hashlib
 import json
@@ -13,6 +13,7 @@ import pytest
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from browser_helpers import raw_view_download
+from viewer_test_support import historical_source_bytes
 from test_browser_viewer import _driver, _ready, _server, _choose_engine
 import capture_sources
 import unified_history
@@ -81,11 +82,8 @@ def test_latest_html_alone_compares_and_downloads_without_external_requests(publ
             server.server_close()
 
 
-def test_full_history_selection_urls_and_original_downloads(history_source):
-    configured = os.environ.get("CONFORMANCE_HISTORY_SITE")
-    if not configured:
-        pytest.skip("full historical report qualification requires CONFORMANCE_HISTORY_SITE")
-    site = Path(configured).resolve(strict=True)
+def test_full_history_selection_urls_and_original_downloads(history_source, historical_published_viewer):
+    site = historical_published_viewer
     catalog = json.loads(gzip.decompress((site / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
     assert catalog["capture_generation"]["mode"] == "history"
     server, requests = _server(root=site)
@@ -125,13 +123,16 @@ def test_full_history_selection_urls_and_original_downloads(history_source):
                      if row["family"] == "qwen3" and row["implementation"] == "dynamo_v2"),
                     key=lambda row: unified_history._capture_release_sort_key(row["version"]))
         assert unified_history._capture_release_sort_key(older["version"]) < unified_history._capture_release_sort_key(current["version"])
-        member_path = older["path"].removeprefix(capture_sources.STORE + "/")
-        original = next(member for archive in inventory["files"] for member in archive.get("members", [])
-                        if archive["path"].startswith(capture_sources.STORE + "/") and member["path"] == member_path)
+        original = historical_source_bytes(history_source, older["path"])
+        current_original = historical_source_bytes(history_source, current["source"])
+        checkout = Path(__file__).resolve().parents[3]
+        selection = json.loads((checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
+        latest_payload = (checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[1]
+        assert hashlib.sha256(latest_payload).hexdigest() == selection["payload_sha256"]
         for path, expected, size in ((legacy["path"], legacy["sha256"], legacy["size"]),
                                      (supplemental["path"], supplemental["sha256"], supplemental["size"]),
-                                     (older["path"], original["sha256"], original["size"]),
-                                     (current["source"], current["sha256"], current["size"])):
+                                     (older["path"], hashlib.sha256(original).hexdigest(), len(original)),
+                                     (current["source"], hashlib.sha256(current_original).hexdigest(), len(current_original))):
             driver.get(url + "?" + urlencode({"raw": path}))
             WebDriverWait(driver, 45).until(lambda page: page.find_elements("css selector", "#viewer > a[download]"))
             download = raw_view_download(driver)

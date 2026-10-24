@@ -1,0 +1,84 @@
+parent: dynamo_v2-0.7.5
+execution: 3fbe02a8ea3c0fb299c2d9f6ff01fec25464c4d0c477dce5fd9e26d88be4cb0e
+changes:
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+            complete: true
+        - expected: []
+  glm_ref_object:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            payload:
+              x: 1
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"payload":{"x":1}}'
+            complete: true
+        - expected: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+            complete: true
+        - expected: []
+  schema_ref_union_anyOf_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":-7}'
+            complete: true
+        - expected: []
+  schema_ref_union_oneOf_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: -7
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":-7}'
+            complete: true
+        - expected: []

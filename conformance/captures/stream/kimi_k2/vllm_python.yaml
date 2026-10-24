@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"9a4806b443612a77c99c20982ce2f9bac4f6f7c6b33e72fdffbb1ec87646054c","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: kimi_k2

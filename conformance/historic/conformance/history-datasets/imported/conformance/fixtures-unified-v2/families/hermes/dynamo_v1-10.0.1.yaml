@@ -1,0 +1,41 @@
+parent: dynamo_v1-10.0.0
+execution: 5b0d0a7c1d2e61e35ccf8412b87a408698fd4a2d340f905c8a44665bbc60325d
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: UNIFIED.v1_split-parallel_tool_calls
+    stimulus:
+      inline:
+        input: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              location:
+                type: string
+        - name: get_time
+          parameters:
+            type: object
+            properties:
+              timezone:
+                type: string
+        chunks:
+        - delta_text: '<tool_call>{"name": "get_weather", "arguments": {"location": "NYC"}}</tool_call><tool_call>{"name": "get_time", "arguments": {"timezone": "EST"}}</tool_call>'
+      semantic_sha256: 8e5a1ef45e649cb33a5229ab218d2667256755cb9dc5d2f4965a0ca29eb15a58
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST
+        chunks: []

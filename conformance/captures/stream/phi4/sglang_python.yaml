@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"1a228995777b1d6f2ef0a90642e6c28e42684ae774d2d594dfcd169d8c57ecec","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: phi4

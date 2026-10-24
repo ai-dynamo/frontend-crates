@@ -1,0 +1,746 @@
+schema_version: 1
+family: qwen3
+implementation: sglang_python_batch
+version: 0.5.8
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.8
+      source_sha256: aa59ece19eb67c1753265ae55393a52754b9f78a8e4d86796efaccf94445a2dd
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: 66278a3c40778adfb2c3d516aaef81149c26ee3ad0a7ec3acb8a251b57456b62
+cases:
+- arg_marker_in_string
+- glm_ref_encoded_targets
+- glm_ref_json_looking_strings
+- glm_ref_object
+- glm_ref_scalar_types
+- narrated_calls
+- prefilled_reasoning_truncated
+- reason_after_tool
+- reason_between_calls
+- reason_interleaved
+- reason_tool_reason_tool_reason
+- reason_tool_text_reason_tool
+- schema_const_array_allof
+- schema_const_array_bare
+- schema_const_array_ref
+- schema_const_array_typed
+- schema_const_boolean_allof
+- schema_const_boolean_bare
+- schema_const_boolean_ref
+- schema_const_boolean_typed
+- schema_const_entity_allof
+- schema_const_entity_bare
+- schema_const_entity_ref
+- schema_const_entity_typed
+- schema_const_number_allof
+- schema_const_number_bare
+- schema_const_number_ref
+- schema_const_number_typed
+- schema_const_object_allof
+- schema_const_object_bare
+- schema_const_object_ref
+- schema_const_object_typed
+- schema_const_quoted_allof
+- schema_const_quoted_bare
+- schema_const_quoted_ref
+- schema_const_quoted_typed
+- schema_const_space_allof
+- schema_const_space_bare
+- schema_const_space_ref
+- schema_const_space_typed
+- schema_enum_string
+- schema_escaped_ref_const
+- schema_integer_const_ambiguous
+- schema_intersection_anyof
+- schema_intersection_oneof
+- schema_object_const_union
+- schema_percent_ref_const
+- schema_ref_union_anyof_integer
+- schema_ref_union_oneof_integer
+- schema_union_anyof_array_reverse_typed
+- schema_union_anyof_array_typed
+- schema_union_anyof_boolean_reverse_typed
+- schema_union_anyof_boolean_typed
+- schema_union_anyof_integer_reverse_typed
+- schema_union_anyof_integer_typed
+- schema_union_anyof_number_reverse_typed
+- schema_union_anyof_number_typed
+- schema_union_anyof_object_reverse_typed
+- schema_union_anyof_object_typed
+- schema_union_oneof_array_reverse_typed
+- schema_union_oneof_array_typed
+- schema_union_oneof_boolean_reverse_typed
+- schema_union_oneof_boolean_typed
+- schema_union_oneof_integer_reverse_typed
+- schema_union_oneof_integer_typed
+- schema_union_oneof_number_reverse_typed
+- schema_union_oneof_number_typed
+- schema_union_oneof_object_reverse_typed
+- schema_union_oneof_object_typed
+- text_between_calls
+- text_reason_tool_text_reason_tool
+- text_sandwich
+- tool_no_close
+- trailing_text_after_tool
+- truncated_tool_eof
+- two_calls
+defaults: {}
+exceptions:
+  arg_marker_in_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: run
+        arguments:
+          cmd: 'git log '
+  glm_ref_encoded_targets:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          space: '42'
+          utf8_plus: '42'
+          pointer: '42'
+  glm_ref_json_looking_strings:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          object_text: '{"x":1}'
+          array_text: '[1,2]'
+          quoted_text: '"hello"'
+          inline_text: '{"x":1}'
+  glm_ref_object:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          payload: '{"x":1}'
+  glm_ref_scalar_types:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: capture_payload
+        arguments:
+          count: '42'
+          ratio: '3.5'
+          flag: 'true'
+          narrowed: 42
+  narrated_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  prefilled_reasoning_truncated:
+    batch_final:
+      reasoning_text: analyzing data
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Par
+  reason_after_tool:
+    batch_final:
+      reasoning_text: Look it up.
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_between_calls:
+    batch_final:
+      reasoning_text: '<tool_call>
+
+        <function=f>
+
+        <parameter=x>
+
+        1
+
+        </parameter>
+
+        </function>
+
+        </tool_call>mid'
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  reason_interleaved:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_tool_reason_tool_reason:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  schema_const_array_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_const_boolean_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_const_entity_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_entity_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '&lt;'
+  schema_const_number_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_const_object_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_const_quoted_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_quoted_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_const_space_allof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '  spaced  '
+  schema_const_space_bare:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '  spaced  '
+  schema_const_space_ref:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '  spaced  '
+  schema_const_space_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '  spaced  '
+  schema_enum_string:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_escaped_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '"hello"'
+  schema_integer_const_ambiguous:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_intersection_anyof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_intersection_oneof:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_object_const_union:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_percent_ref_const:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_ref_union_anyof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '-7'
+  schema_ref_union_oneof_integer:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '-7'
+  schema_union_anyof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_union_anyof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_union_anyof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_union_anyof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_union_anyof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_union_anyof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_union_anyof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '3.5'
+  schema_union_anyof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '3.5'
+  schema_union_anyof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_union_anyof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_union_oneof_array_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_union_oneof_array_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '[1,2]'
+  schema_union_oneof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_union_oneof_boolean_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: 'true'
+  schema_union_oneof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_union_oneof_integer_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '42'
+  schema_union_oneof_number_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '3.5'
+  schema_union_oneof_number_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '3.5'
+  schema_union_oneof_object_reverse_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  schema_union_oneof_object_typed:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: schema_probe
+        arguments:
+          value: '{"x":1}'
+  text_between_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: Sure. check A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_sandwich:
+    batch_final:
+      reasoning_text: ''
+      normal_text: 'Before. '
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  tool_no_close:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  trailing_text_after_tool:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  truncated_tool_eof:
+    batch_final:
+      reasoning_text: ok
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Par
+  two_calls:
+    batch_final:
+      reasoning_text: ''
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'

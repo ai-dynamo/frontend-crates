@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"c03a397b04fa6190f59b1b096121c6ada44d24c8a97ae83dc21a4859efea0fe5","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: qwen25

@@ -1,0 +1,26 @@
+parent: vllm_rust-0.29.0
+execution: b675d921aa9740e760f8b2c4760e3464e636cdc2fff84800a3d4fe54476f12b6
+changes:
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: firstsecond
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: second
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []

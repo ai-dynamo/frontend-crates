@@ -1,0 +1,153 @@
+parent: dynamo_v1-1.1.1
+execution: 3410e296c0113cae2531342fd5877f4746ed56dca24b3ef5aea9a54f6d0c4dc1
+changes:
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking the forecast
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.Now answer.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: literal
+        - kind: text
+          text: before
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check Acheck B
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''

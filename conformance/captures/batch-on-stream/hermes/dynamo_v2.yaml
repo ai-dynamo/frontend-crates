@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"eb1dc8ca29c22d27882b88c3bef390ad9782c9b00f159af8ad2f7563a51dde44","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: hermes

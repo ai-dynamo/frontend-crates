@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"e349526895472a5308f98db700996a64c5be1165da1b081f1cb78d623e2768d7","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: nemotron_deci

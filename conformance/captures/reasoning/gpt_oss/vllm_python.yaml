@@ -1,3 +1,4 @@
+capture_selection: {"family":"gpt_oss","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"6eb9121ef3fb31c765bec6e2e84d434a827aa710cbff4586600891d7c29f06ea","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: gpt_oss

@@ -1,3 +1,4 @@
+capture_selection: {"family":"inkling","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"8696bb8aa20551c3996b636d1a57b51639e6b26fbe8b7207f189a2c7b62aa13d","surface":"stream","version":"0.24.0"}
 schema_version: 1
 surface: stream
 family: inkling

@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"13bfc803aa5d76ca8b3bca943c09bd8dc6cf76506cdf553f55ca44d8ce30eddc","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: pythonic

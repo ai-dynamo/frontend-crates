@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"832f6fd9df2b6995715bee19a9ef015961ed151616d4cd1f78114dc542b71477","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: deepseek_v4

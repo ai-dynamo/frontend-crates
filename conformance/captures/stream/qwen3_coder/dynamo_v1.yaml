@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"aadde84de0edeb861da139fe9bae36636415b22ee2f237785b47cde4aefd5fa9","surface":"stream","version":"9.1.0"}
 schema_version: 1
 surface: stream
 family: qwen3_coder

@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"4a915944f21e8e7fdd153cbcfc29590d5e49a30b4ebfb186d2081a89ff0e7287","surface":"batch-on-stream","version":"0.7.24"}
 schema_version: 1
 surface: batch-on-stream
 family: glm47

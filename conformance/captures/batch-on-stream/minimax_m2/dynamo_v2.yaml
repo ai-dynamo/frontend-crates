@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m2","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"2e22f9c08129b0cbd4b601c92a4332aa0f7611767d319a14ab7aec2a63518efa","surface":"batch-on-stream","version":"0.7.24"}
 schema_version: 1
 surface: batch-on-stream
 family: minimax_m2

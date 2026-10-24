@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"6a66e3bf6e524bbf7e8cf9340cdbc4bcfe076b61bcb80eff9ea8787e0f8d9fb5","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: pythonic

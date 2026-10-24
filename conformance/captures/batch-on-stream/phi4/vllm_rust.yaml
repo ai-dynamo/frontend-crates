@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"267310715ceb1a587152855c3e37478d619211368a64bd89f86ba3a1d6c2d97b","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: phi4

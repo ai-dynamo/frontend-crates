@@ -1087,11 +1087,10 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
-        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
-         show the old parser behavior. Regenerate:\n  \
-         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
-         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
-         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        "{} of {checked} latest recorded Dynamo cases differ from the live parser. \
+         Verify the parser against authored inputs/GOLDEN and run latest parser tests. \
+         If the intended output changed, request an administrator update of the affected latest YAML; \
+         contributors do not recapture historical versions.\n\n{}",
         stale.len(),
         stale.join("\n\n"),
     );

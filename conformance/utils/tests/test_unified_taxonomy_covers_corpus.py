@@ -1071,6 +1071,16 @@ def retained_unified_snapshots(store, *, families=None, source_root=None, resour
         [row for row in resources
          if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
          and (families is None or row["family"] in families)], profile="exhaustive")
+    if (root.parent.parent / "conformance/history-datasets.json").is_file():
+        resolved = unified_history.load_store(root)
+        for resource in resources:
+            history = resolved.histories[resource["family"], resource["implementation"]]
+            capture_id = f"{resource['implementation']}-{resource['version']}"
+            records = history.resolve(capture_id)
+            members = history.snapshot_members[capture_id]
+            yield resource, {"schema_version": 2, "records": {
+                case: {"value": value, "member": members[case]} for case, value in records.items()}}
+        return
     selected = [_store_resource(row) for row in resources]
     with unified_history._store_read_lock(root):
         for resource, data in unified_archives.read_sources(root, selected):

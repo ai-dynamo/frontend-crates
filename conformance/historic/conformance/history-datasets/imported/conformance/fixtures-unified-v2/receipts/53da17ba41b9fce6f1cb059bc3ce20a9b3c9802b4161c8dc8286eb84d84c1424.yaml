@@ -1,0 +1,5 @@
+adapter_sha256: 9de0a900316cc6ba3af670fadfa2dcd8dd3c9a5b6c28910604257fc5be075a77
+implementation: vllm_rust
+job_sha256: 32e57cf0a337d5191de7de03ebdbd5e01160cb9a6e183e9fc7c05578fa0ed3a3
+source_sha256: 664bd1b7626aecda5f914d95a3d2a700ea297e74171bac289520c671b2935b00
+version: 0.25.1

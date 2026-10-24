@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"fc3e679c0d65d870b928a580e940f78fe8a8c54c8247acbf29ed65e69c9a0e82","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: qwen3_coder

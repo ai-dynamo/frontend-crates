@@ -373,12 +373,18 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     conformance_filter = next(step["with"]["filters"] for step in jobs["changes"]["steps"]
                               if step.get("id") == "filter")
     assert "- '.gitattributes'" in conformance_filter
-    assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-full-v1"
+    assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-latest-v2"
     identity_step = next(step for step in jobs["pages-build"]["steps"] if step.get("id") == "identity")
     assert "--publication-policy \"$CONFORMANCE_PUBLICATION_POLICY\"" in identity_step["run"]
     catalog_step = next(step for step in jobs["pages-build"]["steps"]
                         if step.get("name") == "Generate source catalog inputs")
     assert "-r conformance/utils/publication-requirements.in" in catalog_step["run"]
+    restore = next(step for step in jobs["pages-build"]["steps"] if step.get("name") == "Restore compatible family conversion fragments")
+    assert jobs["pages-build"]["steps"].index(restore) < jobs["pages-build"]["steps"].index(catalog_step)
+    assert "--include-history" in catalog_step["run"]
+    assert "--include-history" in identity_step["run"]
+    assert "${{ github.ref }}" in restore["with"]["key"]
+
     assert jobs["conformance-fixtures"]["needs"] == "changes"
     assert jobs["rust"].get("needs") is None
     required = set(jobs["conformance-table"]["needs"])

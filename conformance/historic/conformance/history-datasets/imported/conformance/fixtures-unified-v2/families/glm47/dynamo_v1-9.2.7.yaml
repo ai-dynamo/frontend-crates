@@ -1,0 +1,35 @@
+parent: dynamo_v1-9.2.6
+execution: 287582ed3d84e56254394e80232a83f3ed18d83104c2156f50976c4082d30a20
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: --oneline</arg_value>
+          arguments: {}
+  glm47_parameterless_call_shape_inside_argument:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        - kind: tool_call
+          name: after</arg_value>
+          arguments: {}
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check '
+        - kind: tool_call
+          name: that.
+          arguments: {}

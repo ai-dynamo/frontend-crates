@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3_2","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"a6ba1a18c1da49655a25701b1c028abc463472bb2252e529376b8ffb4c5f84ee","surface":"batch","version":"0.5.14"}
 schema_version: 1
 surface: batch
 family: deepseek_v3_2

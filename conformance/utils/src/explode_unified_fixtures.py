@@ -283,7 +283,7 @@ def append_authored_inputs():
                     "display_id": display_id, "historical_ids": [],
                     "request": row["request"], "golden": row["golden"],
                 }
-    owner = unified_history.mutate_authored_store if (REPO / capture_sources.CURRENT).is_file() else unified_history._mutate_store
+    owner = unified_history.mutate_authored_store if capture_sources.is_current(REPO) else unified_history._mutate_store
     return owner(CONF / "fixtures-unified-v2", append)
 
 

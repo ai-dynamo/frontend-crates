@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"4b45936e5eed094652c960c05042fc98d7238d6d3f0367b78fe724e7c775682e","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: phi4

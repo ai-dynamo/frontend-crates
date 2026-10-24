@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony_text","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"745399e005411de034707bf337c5fd55cb636863f58d517d4384ec6dd2e142cf","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: harmony_text

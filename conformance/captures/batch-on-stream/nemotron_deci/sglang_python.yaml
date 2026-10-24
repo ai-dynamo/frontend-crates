@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"81eb49bae6de59f3eca26d51a60f96336b309778f0545bcaf37156497b380463","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_deci

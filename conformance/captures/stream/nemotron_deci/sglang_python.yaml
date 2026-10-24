@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"5117d8d6bc56941dd2f94d6820d74f1a06afd01b5ff2c7040de45cf39c15685c","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: nemotron_deci

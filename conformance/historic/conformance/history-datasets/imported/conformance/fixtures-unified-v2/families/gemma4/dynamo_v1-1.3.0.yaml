@@ -1,0 +1,195 @@
+parent: dynamo_v1-1.2.1
+execution: 1fbeca172b69fd4126b140224ecac37b124960352060ab416ffb473efc96eb17
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: 'git log '
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled: []
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled: []
+  orphan_close_after_prose:
+    observation:
+      value:
+        assembled: []
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: analyzing data
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.Now answer.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: 'Logging now:'
+        - kind: tool_call
+          name: log
+          arguments:
+            note: ''
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: AB
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check Acheck B
+        - kind: text
+          text: Sure.
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Before.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled: []
+  tool_markup_only_emits_nothing:
+    observation:
+      value:
+        assembled: []
+  tool_no_close:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'first
+
+            second'
+        - kind: text
+          text: done
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thoughtsecond thought
+        - kind: text
+          text: interlude done

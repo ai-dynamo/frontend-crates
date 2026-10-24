@@ -4,6 +4,8 @@ import datetime
 import json
 import subprocess
 import sys
+
+import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -41,3 +43,19 @@ def test_typed_json_negative_controls():
 
 def test_selected_json_resources_and_integrity_retry():
     subprocess.run(["node", "conformance/viewer/json_resources.test.js"], cwd=ROOT, capture_output=True, check=True)
+
+
+@pytest.mark.parametrize("value", [None, True, False, 12345678901234567890, -0.0, 1.5, float("inf"),
+    "scalar", b"\x00\xff", datetime.date(2026, 10, 23),
+    datetime.datetime(2026, 10, 23, tzinfo=datetime.timezone.utc),
+    {"missing_vs_null": None, 3: [True, "3", {}]}])
+def test_native_fragment_codec_roundtrip(value):
+    assert viewer_codec.typed_equal(viewer_codec.decode_typed(viewer_codec.encode_typed(value)), value)
+
+
+@pytest.mark.parametrize("value", [[], ["null", 0], ["bool", 1], ["str", None], ["int", "bad"],
+    ["binary", "%%%"], ["unknown", 1], ["object", [[1]]],
+    ["object", [[["str", "same"], ["null"]], [["str", "same"], ["null"]]]]])
+def test_native_fragment_codec_rejects_invalid_values(value):
+    with pytest.raises(ValueError):
+        viewer_codec.decode_typed(value)

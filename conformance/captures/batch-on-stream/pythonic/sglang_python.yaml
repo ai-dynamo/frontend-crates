@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"b2badfc91181904e2cc234f05d31dd9a4ec56b0476f996e5a0170fb47f097b61","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: pythonic

@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"481ab01c57da3b34ea15c7059d905cf130f9f49dddf5af36f0a0da36433788b5","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: glm47

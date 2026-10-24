@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m3","implementation":"dynamo_v2","lineage":[],"mode":"stream","payload_sha256":"573b4d071ce38bf66e358ea96cf3ec8893b88f624b76f3ccbc393f2044497af5","surface":"stream","version":"0.7.33"}
 schema_version: 1
 surface: stream
 family: minimax_m3

@@ -1,0 +1,365 @@
+parent: vllm_python-0.28.0
+execution: c4765f2c824b1b6f4ea895c77f04fcefb4781a7f6632c40770411e8da6fab960
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments: '{"x": " <think>quoted <|tool_calls_section_begin|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x": " '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: quoted
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <|tool_calls_section_begin|>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: ' '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_gt_in_argument_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "a > b"}}]<|tool_calls_section_end|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use
+        - kind: text
+          text: '<|tool_calls_section_begin|> next[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: I'll use
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_nameless_element_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {}}]<|tool_calls_section_end|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_schema_error_not_a_call_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>{"unexpected": "shape"}<|tool_calls_section_end|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_syntax_error_wrapped:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": <|tool_calls_section_end|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_tool_open_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_wrapped_in_tool_markup:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '<|tool_calls_section_begin|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]<|tool_calls_section_end|>'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|tool_calls_section_begin|> { example }" stays visible. {"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<|tool_calls_section_begin|> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: '{"x":"unfinished'
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: é
+        - kind: tool_call
+          name: echo
+          arguments:
+            value: Café
+        chunks:
+        - expected:
+          - kind: text
+            text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.bad:0<|tool_call_argument_begin|>{"x":"unfinished<|tool_call_end|><|tool_calls_section_end|><|tool_calls_section_begin|><|tool_call_begin|>functions.echo:1<|tool_call_argument_begin|>{"value": "é"}<|tool_call_end|><|tool_calls_section_end|>'
+          - kind: tool_call
+            name: echo
+            arguments: '{"value": "Café"}'
+        - expected: []
+  native_quoted_control_in_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<|tool_calls_section_begin|>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quote_contraction_response:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <|tool_calls_section_begin|> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected: []
+        - expected: []
+  native_single_quoted_word_control:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <|tool_calls_section_begin|> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected: []
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal then a call
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then a call'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: reconsider
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now:'
+        - kind: tool_call
+          name: log
+          arguments:
+            note: <think>reconsider
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'Logging now:'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: '{"note": "'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: <think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: reconsider
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: </think>
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '"'
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__1_2:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <|tool_calls_section_begin|><|tool_call_begin|>functions.:17<|tool_call_argument_begin|>{}<|tool_call_end|><|tool_calls_section_end|>
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  tool_block_never_closed_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <|tool_calls_section_begin|>still thinking about it
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []

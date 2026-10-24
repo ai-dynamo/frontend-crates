@@ -1,0 +1,11 @@
+parent: dynamo_v1-8.1.0
+execution: fe4875c7124d5ac49aa07fa9648ae840fd77012759ce09b0c51dff87b32fb2ed
+changes:
+  arg_marker_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log <|tool_call_end|> --oneline

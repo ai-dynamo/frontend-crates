@@ -1,0 +1,5 @@
+adapter_sha256: 59a70421be31eeff191152464ff14e3b0c20a8d1ea27247a0ded9dcef3e43217
+implementation: sglang_python_batch
+job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
+source_sha256: 5061a331d4674341e4eaf6462b27e6597257a6869bd4cf39393940e8cbce9a8e
+version: 0.5.14

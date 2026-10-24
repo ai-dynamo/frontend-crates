@@ -1,0 +1,31 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+const protectedPath = path => path.startsWith('conformance/captures/') || path.startsWith('conformance/historic/') || ['conformance/historic-baseline.json', 'conformance/fixtures-manifest.json'].includes(path) || (/^conformance\/fixtures(?:-unified-v2|-beam)?\//.test(path) && !path.endsWith('/inputs_and_golden.yaml'));
+
+async function check({github, context, core}) {
+  const {owner, repo} = context.repo;
+  const number = context.payload.pull_request.number;
+  const {data: pr} = await github.rest.pulls.get({owner, repo, pull_number: number});
+  const files = await github.paginate(github.rest.pulls.listFiles, {owner, repo, pull_number: number, per_page: 100});
+  const recorded = files.some(f => protectedPath(f.filename) || (f.previous_filename && protectedPath(f.previous_filename)));
+  // GitHub caps file listings at 3,000; observed capture edits still require approval.
+  if (!recorded && pr.changed_files !== files.length) throw new Error('Incomplete PR file inventory');
+  if (!recorded) return;
+  const reviews = await github.paginate(github.rest.pulls.listReviews, {owner, repo, pull_number: number, per_page: 100});
+  const decisions = new Map();
+  for (const review of reviews) {
+    if (['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) decisions.set(review.user.login, review);
+  }
+  for (const [username, review] of decisions) {
+    if (review.state !== 'APPROVED' || review.commit_id !== pr.head.sha) continue;
+    const {data} = await github.rest.repos.getCollaboratorPermissionLevel({owner, repo, username});
+    if (data.permission === 'admin') {
+      const {data: current} = await github.rest.pulls.get({owner, repo, pull_number: number});
+      if (current.head.sha !== pr.head.sha) throw new Error('PR head changed during approval check');
+      core.info(`Capture evidence approved by repository administrator ${username} at ${pr.head.sha}`);
+      return;
+    }
+  }
+  throw new Error(`Recorded captures/history require a repository administrator approval of current head ${pr.head.sha}. Edit parsers and authored inputs/GOLDEN as ordinary contributor files.`);
+}
+module.exports = {check, protectedPath};

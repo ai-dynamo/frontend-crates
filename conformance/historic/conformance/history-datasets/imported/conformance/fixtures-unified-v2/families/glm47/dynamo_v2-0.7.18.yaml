@@ -1,0 +1,9 @@
+parent: dynamo_v2-0.7.17
+execution: 1fbca31df1ae55ffceb4bd53bb85f7e462e02e1ba9ad592799ff98d766cbfbff
+changes:
+  local_schema_id_preserves_type:
+    case_key: UNIFIED.7-16
+  nullable_reference_alias_literals:
+    case_key: UNIFIED.7-15
+  unused_reference_graph_parameter_types:
+    case_key: UNIFIED.7-14

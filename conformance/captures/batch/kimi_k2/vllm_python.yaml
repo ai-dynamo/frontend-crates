@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"b4049ac78328ca4bfc91bee7db16057e897e4b567f131c060eafe844fc57fdf2","surface":"batch","version":"0.26.0"}
 schema_version: 1
 surface: batch
 family: kimi_k2

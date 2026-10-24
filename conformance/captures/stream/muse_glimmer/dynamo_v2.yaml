@@ -1,3 +1,4 @@
+capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"stream","payload_sha256":"a7a504c27ec05b35c1f219655504740d2684b260bf91317646cb2f12ad7e621d","surface":"stream","version":"0.7.33"}
 schema_version: 1
 surface: stream
 family: muse_glimmer

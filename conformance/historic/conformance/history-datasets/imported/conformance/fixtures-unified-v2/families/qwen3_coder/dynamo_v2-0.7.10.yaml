@@ -1,0 +1,275 @@
+parent: dynamo_v2-0.7.9
+execution: 8de3f8149e7791ef34ee0a095e9db121145cdadb2b35d696794688d5f5f2e07f
+changes:
+  arg_string_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_enum:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_sibling_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_union:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_untyped_branch:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+  schema_const_entity_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_entity_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '&lt;'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"&lt;"}'
+            complete: true
+        - expected: []
+  schema_const_null_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_null_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"null"}'
+            complete: true
+        - expected: []
+  schema_const_space_allof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_bare:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  schema_const_space_typed:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: '  spaced  '
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: schema_probe
+            arguments: '{"value":"  spaced  "}'
+            complete: true
+        - expected: []
+  unused_reference_graph_parameter_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            flag: false
+            text: 'null'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"flag":false,"text":"null"}'
+            complete: true
+        - expected: []

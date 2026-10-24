@@ -1,0 +1,261 @@
+parent: dynamo_v2-0.7.15
+execution: a3f798ff0487a8acb51126aaa52f62e332565b9a18e99d54b9c0d9c2d26ae37d
+changes:
+  guided_quoted_reasoning_closer_named:
+    case_key: UNIFIED.34-8
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't </think> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: </think> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    case_key: UNIFIED.34-9
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't </think> marker' stays quoted.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: </think> marker' stays quoted.
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    case_key: UNIFIED.35-3
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<｜DSML｜ calls> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    case_key: UNIFIED.35-4
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: '<｜DSML｜ calls> { example }" stays visible. '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    case_key: malformed_json_then_two_valid_calls
+  native_quoted_control_in_reasoning:
+    case_key: UNIFIED.40-5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls>" marker is part of the explanation.
+        - expected: []
+  native_quoted_control_in_response:
+    case_key: UNIFIED.8-6
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>" marker is part of the explanation.
+        - expected: []
+  native_quoted_control_then_call:
+    case_key: UNIFIED.8-8
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>" marker is part of the explanation.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+        - expected: []
+  native_quoted_incomplete_header:
+    case_key: UNIFIED.8-10
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal `<｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">` header is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal `
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">` header is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    case_key: UNIFIED.40-6
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ calls> marker' stays quoted.
+        - expected: []
+  native_single_quote_contraction_response:
+    case_key: UNIFIED.8-11
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls> marker' stays quoted.
+        - expected: []
+  native_single_quoted_word_control:
+    case_key: UNIFIED.8-7
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The literal 'example <｜DSML｜ calls> marker' is part of the explanation.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'The literal ''example '
+        - expected: []
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls> marker' is part of the explanation.
+        - expected: []
+  native_unmatched_quote_then_call:
+    case_key: UNIFIED.8-9
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: He said "maybe
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: He said "maybe
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            complete: true

@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"4184ac9211e5fcd60282ea010d1a13e4a8638e04dab02eee0d388f2015ad0c76","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: qwen3

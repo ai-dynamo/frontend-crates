@@ -1,0 +1,19 @@
+parent: dynamo_v1-10.0.1
+execution: 4347152b2ded5f9bf75b6aec70d6af93b18b5a452ae2c71896cbd6ddf88fee57
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 5d693d7eb4c05c625ccbeddcb5b8a148f0a68346e631a44d5ae052a0ee843235
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST

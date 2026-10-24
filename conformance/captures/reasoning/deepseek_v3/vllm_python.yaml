@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"d6784af984f10b882d2420a1e5c141db682f4dd78c0903005a22ee28e716e7ca","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: deepseek_v3

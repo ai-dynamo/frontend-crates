@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"220af437ad4859a272205e2017c9de9b79c533f2b151ef70538f0508431307de","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: mistral

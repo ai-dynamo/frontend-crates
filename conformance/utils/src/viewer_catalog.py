@@ -517,25 +517,24 @@ def _index_unified_families(store: unified_history.Store, candidates: list[dict]
             ]
 
 
-def _native_catalog_document_index(unified_root: Path, *, generation=None, workers=None):
+def _native_catalog_document_index(unified_root: Path, *, generation=None, workers=None, conversion_context=None):
     root = unified_root.resolve().parents[1]
+    if conversion_context is not None:
+        (root / "conformance/catalog-conversion-context.json").write_bytes(capture_sources.encoded(conversion_context))
     identities = {
         path.relative_to(unified_root).as_posix(): unified_archives._stat_identity(path.stat())
         for path in unified_root.rglob("*") if path.is_file()
     }
     workers = generation_workers.requested_workers() if workers is None else workers
-    configured = os.environ.get("CONFORMANCE_PUBLISHER")
-    if configured:
-        binary = Path(configured).resolve(strict=True)
-    else:
-        build_root = Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target"))
-        binary = build_root / "release/conformance-publish"
-        subprocess.run(["cargo", "build", "--locked", "--release", "-p", "conformance-publisher"],
-                       cwd=ROOT, check=True)
+    binary = capture_sources.publisher_binary(ROOT)
     with tempfile.TemporaryDirectory(prefix="unified-index-") as temporary:
         output = Path(temporary) / "index.json"
-        subprocess.run([str(binary), "--root", str(root), "--output", str(output),
-                        "--index-unified", "--workers", str(workers)], check=True)
+        command = [str(binary), "--root", str(root), "--output", str(output),
+                   "--index-unified", "--workers", str(workers)]
+        cache = os.environ.get("CONFORMANCE_CONVERSION_CACHE")
+        if cache:
+            command.extend(["--cache-dir", cache])
+        subprocess.run(command, check=True)
         result = json.loads(output.read_bytes())
     current = {
         path.relative_to(unified_root).as_posix(): unified_archives._stat_identity(path.stat())
@@ -549,6 +548,7 @@ def _native_catalog_document_index(unified_root: Path, *, generation=None, worke
     for row in result["snapshots"]:
         row = dict(row)
         identity = (row.pop("family"), row.pop("implementation"))
+        row["runtime_version"] = row["version"]
         row["version"] = unified_history._capture_release_sort_key(row["version"])
         snapshots.setdefault(identity, []).append(row)
     for rows in snapshots.values():
@@ -581,26 +581,9 @@ def _catalog_document_index(unified_root: Path, *, generation=None) -> tuple[lis
                 version = match["runtime_version"]
                 if document.get("schema_version") == 2:
                     records = document.get("records") or {}
-                    codes = {case: _snapshot_observation_code(record["value"])
-                             for case, record in records.items()}
-                    routes = {
-                        record["value"].get("document", {}).get("record_metadata", {}).get("parser_path")
-                        or record["value"].get("observation", {}).get("value", {}).get("parser_path")
-                        or record["value"].get("document", {}).get("parser_path")
-                        for record in records.values()
-                    }
                     snapshots.setdefault((parts[1], implementation), []).append({
                         "version": unified_history._capture_release_sort_key(version),
-                        "codes": codes,
-                        "has_results": any(any(state in record["value"]["observation"] for state in ("value", "error"))
-                                            for record in records.values()),
-                        "native": "unified" in routes and "split" not in routes,
-                        "route_recorded": any(
-                            "parser_path" in scope
-                            for record in records.values()
-                            for scope in (record["value"].get("document", {}).get("record_metadata", {}),
-                                          record["value"].get("observation", {}).get("value", {}),
-                                          record["value"].get("document", {}))),
+                        **_record_snapshot_metadata({case: record["value"] for case, record in records.items()}),
                     })
                 indexed["execution"] = document.get("execution")
                 if "receipts" in document:
@@ -622,6 +605,68 @@ def _catalog_document_index(unified_root: Path, *, generation=None) -> tuple[lis
             row.update(_snapshot_code_summary(row.pop("codes"), families[family]))
         rows.sort(key=lambda row: row["version"])
     return inventory, documents, {"families": families, "snapshots": snapshots}
+
+
+def _record_snapshot_metadata(records: dict) -> dict:
+    routes = {record.get("document", {}).get("record_metadata", {}).get("parser_path")
+              or record.get("observation", {}).get("value", {}).get("parser_path")
+              or record.get("document", {}).get("parser_path") for record in records.values()}
+    return {"codes": {case: _snapshot_observation_code(record) for case, record in records.items()},
+            "has_results": any(any(state in record["observation"] for state in ("value", "error"))
+                               for record in records.values()),
+            "native": "unified" in routes and "split" not in routes,
+            "route_recorded": any("parser_path" in scope for record in records.values()
+                                  for scope in (record.get("document", {}).get("record_metadata", {}),
+                                                record.get("observation", {}).get("value", {}),
+                                                record.get("document", {})))}
+
+
+def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, source_metadata: dict, *, generation=None) -> list[dict]:
+    declaration = root / "conformance/history-datasets.json"
+    if not declaration.is_file():
+        return []
+    datasets = json.loads(declaration.read_bytes())
+    selected = {row["path"]: row for row in unified}
+    updates = {row["path"]: row for row in unified if row["implementation"]}
+    update_snapshots = copy.deepcopy(metadata["snapshots"])
+    snapshots = {}
+    seen = set()
+    result = []
+    for dataset in datasets:
+        identity, prefix = dataset["id"], capture_sources.relative(dataset["root"])
+        if identity in seen:
+            raise ValueError("duplicate historical dataset identity")
+        seen.add(identity)
+        dataset_root = root / prefix
+        store_root = dataset_root / capture_sources.STORE
+        inventory, documents, indexed = _native_catalog_document_index(store_root, generation=generation,
+            conversion_context={"dataset": identity, "metadata": source_metadata})
+        resources = _unified_records(dataset_root, store_root, inventory=inventory, document_index=documents)
+        for resource in resources:
+            resource.update(dataset=identity, dataset_root=prefix)
+            if resource["kind"] != "inputs-and-golden":
+                selected[resource["path"]] = resource
+        # Native indexing uses the same pre-envelope conversion cache as final
+        # assembly, resolving each dataset against its own authored evidence.
+        for (family, implementation), rows in indexed["snapshots"].items():
+            for row in rows:
+                snapshots[family, implementation, row["version"]] = row
+        result.append({**dataset, "resources": resources, "checkpoints": [
+            {"family": family, "implementation": implementation,
+             "version": row["runtime_version"], "fragment": row["fragment"], "capture": row["capture"]}
+            for (family, implementation), rows in indexed["snapshots"].items() for row in rows]})
+    metadata["snapshots"] = {}
+    for (family, implementation, _version), row in snapshots.items():
+        metadata["snapshots"].setdefault((family, implementation), []).append(row)
+    for rows in metadata["snapshots"].values():
+        rows.sort(key=lambda row: row["version"])
+    for identity, rows in update_snapshots.items():
+        combined = {row["version"]: row for row in metadata["snapshots"].get(identity, [])}
+        combined.update({row["version"]: row for row in rows})
+        metadata["snapshots"][identity] = [combined[version] for version in sorted(combined)]
+    selected.update(updates)
+    unified[:] = [selected[name] for name in sorted(selected)]
+    return result
 
 
 def _snapshot_observation_code(value: dict) -> str | None:
@@ -727,12 +772,14 @@ def _retained_candidates(catalog: dict, *, overlay: bool) -> list[dict]:
     return candidates
 
 
-def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: Path | None = None, manifest: Path | None = None, generation: CatalogGeneration | None = None, unified_only: bool = False) -> dict[str, Any]:
+def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: Path | None = None, manifest: Path | None = None, generation: CatalogGeneration | None = None, unified_only: bool = False,
+                  include_history: bool = False, history_source: Path | None = None) -> dict[str, Any]:
     root = Path(root).resolve()
-    if (root / capture_sources.CURRENT).is_file() and fixtures is None and unified is None and manifest is None:
+    if capture_sources.is_current(root) and fixtures is None and unified is None and manifest is None:
         with tempfile.TemporaryDirectory(prefix="current-catalog-") as temporary:
             view = Path(temporary)
-            capture_sources.prepare(root, view, publisher=os.environ.get("CONFORMANCE_PUBLISHER"))
+            capture_sources.prepare(root, view, publisher=os.environ.get("CONFORMANCE_PUBLISHER"),
+                                    include_history=include_history, history_source=history_source)
             return json.loads((view / "conformance/viewer-catalog.json").read_bytes())
     if generation is not None and generation.root != root:
         raise ValueError("catalog generation lease belongs to another root")
@@ -748,18 +795,21 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
                           and unified_history.CAPTURE_DIRECTORY_RE.fullmatch(Path(resource["path"]).stem)), None)
     snapshot_format = bool(first_history and document_index[first_history["path"]].get("schema_version") == 2)
     store = None
-    if inventory and not snapshot_format:
+    if inventory and not snapshot_format and not (root / capture_sources.DATASETS).is_file():
         store = generation.validated_store(unified_root) if generation is not None else unified_history.load_store(unified_root)
     unified = _unified_records(root, unified_root, inventory=inventory, document_index=document_index)
     source_metadata = _source_metadata(root)
+    datasets = _history_dataset_sources(root, unified, snapshot_metadata, source_metadata, generation=generation)
+    if datasets:
+        snapshot_format = True
     implementations = source_metadata["implementations"]
     candidates = []
     for archive in (() if retained is not None else archives):
         path = archive["path"]
-        match = re.search(r"/fixtures-(batch-v1|stream-v1)/([^/]+)\.tar\.gz$", path)
+        match = re.search(r"/fixtures-(batch-v1|stream-v1|batch-on-stream-v1)/([^/]+)\.tar\.gz$", path)
         reasoning = re.search(r"/reasoning/fixtures-v1/([^/]+)\.tar\.gz$", path)
         if match:
-            mode = "batch" if match.group(1) == "batch-v1" else "stream"
+            mode = {"batch-v1": "batch", "stream-v1": "stream", "batch-on-stream-v1": "batch-on-stream"}[match.group(1)]
             filename = match.group(2)
         elif reasoning:
             mode = "reasoning"
@@ -839,6 +889,8 @@ def build_catalog(root: Path = ROOT, *, fixtures: Path | None = None, unified: P
         },
         "metadata": source_metadata,
     }
+    if datasets:
+        catalog["sources"]["history_datasets"] = datasets
     generation_path = root / "conformance/capture-generation.json"
     if generation_path.is_file():
         generation = json.loads(generation_path.read_bytes())
@@ -954,18 +1006,21 @@ def catalog_generation(root: Path = ROOT, *, read_only: bool = False):
 def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check: bool = False,
                     fixtures: Path | None = None, unified: Path | None = None,
                     manifest: Path | None = None, generation: CatalogGeneration | None = None,
-                    unified_only: bool = False) -> bool:
+                    unified_only: bool = False, include_history: bool = False,
+                    history_source: Path | None = None) -> bool:
     """Check under a reader lease; install updates under exclusive ownership."""
     root = Path(root).resolve()
     if generation is None:
         with catalog_generation(root, read_only=check) as generation:
             return refresh_catalog(root, destination=destination, check=check, fixtures=fixtures,
-                                   unified=unified, manifest=manifest, generation=generation, unified_only=unified_only)
+                                   unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
+                                   include_history=include_history, history_source=history_source)
     if not generation.active or generation.root != root or generation.owner != threading.get_ident():
         raise ValueError("catalog generation lease is inactive or belongs to another root/thread")
     if generation.read_only and not check:
         raise ValueError("catalog updates require a writer lease")
-    catalog = build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest, generation=generation, unified_only=unified_only)
+    catalog = build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
+                            include_history=include_history, history_source=history_source)
     generation.validate_inventories()
     document = json.dumps(catalog, ensure_ascii=False, indent=2) + "\n"
     destination = destination or root / "conformance/viewer-catalog.json"
@@ -1008,11 +1063,16 @@ def main() -> int:
     mode.add_argument("--check", action="store_true", help="fail if the generated catalog is stale")
     mode.add_argument("--output", type=Path, help="write catalog to this path (default: generated catalog)")
     generation_workers.add_worker_argument(parser)
+    parser.add_argument("--include-history", action="store_true")
+    parser.add_argument("--history-source", type=Path)
     args = parser.parse_args()
+    if args.history_source is not None and not args.include_history:
+        parser.error("--history-source requires --include-history")
     root = args.root.resolve()
     destination = args.output or root / "conformance/viewer-catalog.json"
     with generation_workers.worker_policy(args.workers):
-        current = refresh_catalog(root, destination=destination, check=args.check, unified_only=args.unified_only)
+        current = refresh_catalog(root, destination=destination, check=args.check, unified_only=args.unified_only,
+                                  include_history=args.include_history, history_source=args.history_source)
     label = destination.relative_to(root).as_posix() if destination.is_relative_to(root) else str(destination)
     if not current:
         print(f"viewer catalog is stale: {label}", file=sys.stderr)

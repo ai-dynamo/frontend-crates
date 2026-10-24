@@ -1,0 +1,13 @@
+parent: dynamo_v1-1.3.0
+execution: 1a0c9c4fdc1444bcef8e621d1257f2feac8b2bcc5bf8bb81700fd4d4d0af3cad
+changes:
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled: []

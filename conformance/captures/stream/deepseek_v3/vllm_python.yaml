@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v3","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"20966e3714d241057bdfe4dae61674fc35a73e85baed3dc41d8d49eac4663f5b","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: deepseek_v3

@@ -1,0 +1,14 @@
+parent: dynamo_v2-0.1.21
+execution: 5cd02844352592c331a1bfc41012e7cd19b1851dd0520ae8d984ce8a3d760dd5
+changes:
+  text_only:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The answer is 42, no tools needed.
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42, no tools needed.

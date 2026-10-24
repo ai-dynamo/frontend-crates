@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m3","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"d76c6af54d9ed2d0829ba0895edbab0989ee6e15d11e8e0567259c8073044b27","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: minimax_m3

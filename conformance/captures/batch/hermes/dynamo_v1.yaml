@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"bea614918078467fea6b54f7e579fef12bd4c199b1c68c1d20b5fbc736b1fa6d","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: hermes

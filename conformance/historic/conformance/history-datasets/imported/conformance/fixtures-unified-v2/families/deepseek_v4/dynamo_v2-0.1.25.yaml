@@ -1,0 +1,85 @@
+parent: dynamo_v2-0.1.24
+execution: c22e0f9c1573daddf57f2c1f7335406cf2e27f49441b77c366a8ce55f5c99680
+changes:
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think>'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected: []
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think> Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []

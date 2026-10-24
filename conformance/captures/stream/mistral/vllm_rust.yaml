@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"093f479ced2b6dfae6c630ce3b9a78bf7fa578a5717d2e8eb0895325a2482763","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: mistral

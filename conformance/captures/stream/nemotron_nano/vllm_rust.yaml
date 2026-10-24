@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_nano","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"d4df4cbbcdc2ad699e701451416085d759ed98d13c167da42605b85379f5cce3","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: nemotron_nano

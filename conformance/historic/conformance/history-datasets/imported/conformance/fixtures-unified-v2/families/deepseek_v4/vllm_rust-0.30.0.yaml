@@ -1,0 +1,271 @@
+parent: vllm_rust-0.29.0
+execution: 7030fad967f14e242b4654901ff3e3377781316bc206be000deca1380da775f0
+changes:
+  dsml_bare_invoke_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check the weather.
+
+
+              '
+        - expected:
+          - kind: text
+            text: '
+
+
+              <｜DSML｜invoke name="get_weather">'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              <｜DSML｜parameter name="location" string="true">'
+        - expected:
+          - kind: text
+            text: NYC
+        - expected:
+          - kind: text
+            text: </｜DSML｜parameter>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              </｜DSML｜invoke>'
+        - expected: []
+  dsml_bare_invoke_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            <｜DSML｜invoke name="get_weather">
+
+            <｜DSML｜parameter name="location" string="true">NYC</｜DSML｜parameter>
+
+            </｜DSML｜invoke>'
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected:
+          - kind: text
+            text: '
+
+
+              <｜DSML｜invoke name="get_weather">'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              <｜DSML｜parameter name="location" string="true">'
+        - expected:
+          - kind: text
+            text: NYC
+        - expected:
+          - kind: text
+            text: </｜DSML｜parameter>
+        - expected: []
+        - expected:
+          - kind: text
+            text: '
+
+              </｜DSML｜invoke>'
+        - expected: []
+  dsml_empty_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"location":"NYC"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_reasoning_then_separator:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"location":"NYC"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_separator_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check the weather.
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check the weather.
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"location":"NYC"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_separator_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: I will check the weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"location":"NYC"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+  dsml_whitespace_content_separator:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '
+
+
+            '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: '
+
+
+              '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"location":"NYC"}'
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: firstsecond
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: second
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []

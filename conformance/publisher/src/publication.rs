@@ -56,6 +56,65 @@ fn capture_inventory(
     catalog: &Value,
     budget: &MemoryBudget,
 ) -> Result<BTreeSet<String>> {
+    if let Some(datasets) = catalog["sources"]["history_datasets"].as_array() {
+        let mut plain = catalog.clone();
+        plain["sources"]
+            .as_object_mut()
+            .unwrap()
+            .remove("history_datasets");
+        plain["sources"]["unified"] = json!(
+            catalog["sources"]["unified"]
+                .as_array()
+                .context("missing unified inventory")?
+                .iter()
+                .filter(|row| row["dataset_root"].is_null())
+                .collect::<Vec<_>>()
+        );
+        let mut inventory = capture_inventory(root, &plain, budget)?
+            .into_iter()
+            .map(|name| format!("{STORE}/{name}"))
+            .collect::<BTreeSet<_>>();
+        let mut roots = BTreeSet::new();
+        for dataset in datasets {
+            let prefix = dataset["root"].as_str().context("missing dataset root")?;
+            source::relative(prefix)?;
+            ensure!(roots.insert(prefix), "duplicate dataset root");
+            let mut resources = dataset["resources"]
+                .as_array()
+                .context("missing dataset inventory")?
+                .clone();
+            for resource in &mut resources {
+                ensure!(
+                    resource["dataset_root"] == prefix && resource["dataset"] == dataset["id"],
+                    "dataset source scope mismatch"
+                );
+                resource
+                    .as_object_mut()
+                    .context("invalid dataset resource")?
+                    .remove("dataset_root");
+            }
+            plain["sources"]["unified"] = json!(resources);
+            inventory.extend(
+                capture_inventory(&root.join(prefix), &plain, budget)?
+                    .into_iter()
+                    .map(|name| format!("{prefix}/{STORE}/{name}")),
+            );
+        }
+        for selected in catalog["sources"]["unified"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|r| !r["dataset_root"].is_null())
+        {
+            ensure!(
+                datasets.iter().any(|dataset| dataset["resources"]
+                    .as_array()
+                    .is_some_and(|resources| resources.contains(selected))),
+                "selected source is outside its dataset inventory"
+            );
+        }
+        return Ok(inventory);
+    }
     let inventory = source::inventory(&root.join(STORE))?;
     let expected = catalog["sources"]["unified"]
         .as_array()
@@ -793,19 +852,28 @@ pub fn publish(options: Options) -> Result<()> {
 }
 
 pub fn publish_mode(
-    mut options: Options,
+    options: Options,
     include_history: bool,
     history_source: Option<&Path>,
 ) -> Result<()> {
+    publish_mode_cached(options, include_history, history_source, None)
+}
+
+pub fn publish_mode_cached(
+    mut options: Options,
+    include_history: bool,
+    history_source: Option<&Path>,
+    cache: Option<&Path>,
+) -> Result<()> {
+    let cache = cache
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| options.root.join("build/conformance-cache"));
+    let cache = absolute(&cache)?;
     ensure!(
         include_history || history_source.is_none(),
         "--history-source requires --include-history"
     );
-    if options
-        .root
-        .join("conformance/capture-current.json")
-        .is_file()
-    {
+    if options.root.join("conformance/captures").is_dir() {
         ensure!(
             !options.data_only,
             "split capture publication requires a separate output directory"
@@ -825,7 +893,8 @@ pub fn publish_mode(
             .arg("--prepare")
             .arg(temporary.path())
             .arg("--publisher")
-            .arg(std::env::current_exe()?);
+            .arg(std::env::current_exe()?)
+            .env("CONFORMANCE_CONVERSION_CACHE", &cache);
         if include_history {
             command.arg("--include-history");
         }
@@ -841,17 +910,18 @@ pub fn publish_mode(
         let installation = std::env::var_os("CONFORMANCE_ESBUILD_ROOT")
             .map(PathBuf::from)
             .unwrap_or(options.root.join("conformance/viewer"));
+        let installation = absolute(&installation)?;
         options.root = temporary.path().to_path_buf();
-        return publish_prepared(options, Some(&installation));
+        return publish_prepared(options, Some(&installation), &cache);
     }
     ensure!(
         !include_history,
         "history mode requires a split capture checkout"
     );
-    publish_prepared(options, None)
+    publish_prepared(options, None, &cache)
 }
 
-fn publish_prepared(options: Options, installation: Option<&Path>) -> Result<()> {
+fn publish_prepared(options: Options, installation: Option<&Path>, cache: &Path) -> Result<()> {
     let _archives = source::archive_session();
     let started = PhaseClock::now()?;
     ensure!(
@@ -989,7 +1059,7 @@ fn publish_prepared(options: Options, installation: Option<&Path>) -> Result<()>
     let result = (|| -> Result<()> {
         let phase = PhaseClock::now()?;
         let resolved = pool.install(|| {
-            pipeline::snapshots(
+            pipeline::snapshots_cached(
                 &root,
                 &stage,
                 &catalog,
@@ -999,6 +1069,7 @@ fn publish_prepared(options: Options, installation: Option<&Path>) -> Result<()>
                 } else {
                     pipeline::SnapshotEncoding::CanonicalSpool
                 },
+                Some(cache),
             )
         })?;
         statistics(

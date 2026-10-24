@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_nano","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"208f1a68c9c96563f3d2ffc7c830687a19477469256211acdb671145f1cb0082","surface":"batch","version":"0.23.0"}
 schema_version: 1
 surface: batch
 family: nemotron_nano

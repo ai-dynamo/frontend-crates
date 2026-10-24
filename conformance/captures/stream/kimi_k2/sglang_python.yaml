@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"565c25c1c8d2c01c7b773fee1f433693274c0949b42b0d1a04775205f51ba02a","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: kimi_k2

@@ -39,6 +39,7 @@ fn index_version_archive(
     root: &Path,
     name: &str,
     budget: &MemoryBudget,
+    cache: Option<&Path>,
 ) -> Result<Vec<IndexedDocument>> {
     let (descriptor, directory, archive_reservation) = admit_version_archive(root, name, budget)?;
     let members = source::inventory(directory.path())?
@@ -67,7 +68,7 @@ fn index_version_archive(
         let resource =
             json!({"path":member,"sha256":sha256(&bytes),"size":bytes.len(),"archive":archive});
         let (indexed, family, snapshot) =
-            document(&member, &bytes).with_context(|| member.clone())?;
+            document_cached(&member, &bytes, cache).with_context(|| member.clone())?;
         resources.push((member, resource, indexed, family, snapshot));
     }
     Ok(resources)
@@ -93,6 +94,47 @@ fn observation_code(value: &Node) -> Result<Value> {
         .map_or(Value::Null, |code| json!(code)))
 }
 
+pub(crate) fn record_summary(records: &Node) -> Result<Value> {
+    let mut codes = serde_json::Map::new();
+    let mut has_results = false;
+    let mut unified = false;
+    let mut split = false;
+    let mut route_recorded = false;
+    for (case, wrapped) in records.mapping()? {
+        let value = wrapped.field("value")?;
+        let observation = value.field("observation")?;
+        codes.insert(case.string()?.to_string(), observation_code(value)?);
+        has_results |= observation.get("value").is_some() || observation.get("error").is_some();
+        let document = value.field("document")?;
+        route_recorded |= document
+            .get("record_metadata")
+            .and_then(|n| n.get("parser_path"))
+            .is_some()
+            || observation
+                .get("value")
+                .and_then(|n| n.get("parser_path"))
+                .is_some()
+            || document.get("parser_path").is_some();
+        let route = document
+            .get("record_metadata")
+            .and_then(|n| n.get("parser_path"))
+            .filter(|n| crate::history::truthy(n))
+            .or_else(|| {
+                observation
+                    .get("value")
+                    .and_then(|n| n.get("parser_path"))
+                    .filter(|n| crate::history::truthy(n))
+            })
+            .or_else(|| document.get("parser_path"));
+        unified |= route == Some(&Node::Str("unified".into()));
+        split |= route == Some(&Node::Str("split".into()));
+    }
+    Ok(
+        json!({"codes":codes,"has_results":has_results,"native":unified && !split,
+        "route_recorded":route_recorded,"historical_evidence":0}),
+    )
+}
+
 fn document(name: &str, bytes: &[u8]) -> Result<(Value, Option<Value>, Option<Value>)> {
     let node = yaml::load_str(std::str::from_utf8(bytes)?)?;
     node.mapping()?;
@@ -114,58 +156,151 @@ fn document(name: &str, bytes: &[u8]) -> Result<(Value, Option<Value>, Option<Va
         let stem = file.strip_suffix(".yaml").context("non YAML source")?;
         let (implementation, version) = stem.split_once('-').context("invalid capture identity")?;
         Release::parse(version)?;
-        ensure!(
-            node.get("schema_version") == Some(&Node::Int(2.into())),
-            "permanent evidence requires complete snapshots: {name}"
-        );
-        let mut codes = serde_json::Map::new();
-        let mut has_results = false;
-        let mut unified = false;
-        let mut split = false;
-        let mut route_recorded = false;
-        for (case, wrapped) in node.field("records")?.mapping()? {
-            let value = wrapped.field("value")?;
-            let observation = value.field("observation")?;
-            codes.insert(case.string()?.to_string(), observation_code(value)?);
-            has_results |= observation.get("value").is_some() || observation.get("error").is_some();
-            let document = value.field("document")?;
-            route_recorded |= document
-                .get("record_metadata")
-                .and_then(|n| n.get("parser_path"))
-                .is_some()
-                || observation
-                    .get("value")
-                    .and_then(|n| n.get("parser_path"))
-                    .is_some()
-                || document.get("parser_path").is_some();
-            let route = document
-                .get("record_metadata")
-                .and_then(|n| n.get("parser_path"))
-                .filter(|n| crate::history::truthy(n))
-                .or_else(|| {
-                    observation
-                        .get("value")
-                        .and_then(|n| n.get("parser_path"))
-                        .filter(|n| crate::history::truthy(n))
-                })
-                .or_else(|| document.get("parser_path"));
-            unified |= route == Some(&Node::Str("unified".into()));
-            split |= route == Some(&Node::Str("split".into()));
+        if node.get("schema_version") != Some(&Node::Int(2.into())) {
+            indexed["execution"] = node
+                .get("execution")
+                .map(Node::string)
+                .transpose()?
+                .map_or(Value::Null, |reference| json!(reference));
+            return Ok((indexed, None, None));
         }
-        indexed["execution"] = Value::Null;
-        snapshot = Some(
-            json!({"family":family,"implementation":implementation,"version":version,
-            "codes":codes,"has_results":has_results,"native":unified && !split,"route_recorded":route_recorded,"historical_evidence":node.get("historical_evidence").map(Node::array).transpose()?.map_or(0, |items| items.len())}),
+        let mut summary = record_summary(node.field("records")?)?;
+        summary["family"] = json!(family);
+        summary["implementation"] = json!(implementation);
+        summary["version"] = json!(version);
+        summary["historical_evidence"] = json!(
+            node.get("historical_evidence")
+                .map(Node::array)
+                .transpose()?
+                .map_or(0, |items| items.len())
         );
-    } else {
-        anyhow::bail!("retired metadata sidecar in permanent store: {name}");
+        indexed["execution"] = Value::Null;
+        snapshot = Some(summary);
+    } else if let ["executions", _] = parts.as_slice() {
+        indexed["receipts"] = json!(
+            node.get("receipts")
+                .map(Node::mapping)
+                .transpose()?
+                .unwrap_or(&[])
+                .iter()
+                .map(|(key, _)| key.string())
+                .collect::<Result<Vec<_>>>()?
+        );
+    } else if !matches!(parts.as_slice(), ["receipts", _]) {
+        anyhow::bail!("unknown metadata in store: {name}");
     }
     Ok((indexed, family, snapshot))
+}
+
+pub(crate) fn valid_summary(
+    summary: &Value,
+    family: &str,
+    implementation: &str,
+    version: &str,
+) -> bool {
+    summary.is_object()
+        && summary["family"] == family
+        && summary["implementation"] == implementation
+        && summary["version"] == version
+        && summary["codes"].as_object().is_some_and(|codes| {
+            codes
+                .values()
+                .all(|code| code.is_null() || code.is_string())
+        })
+        && ["has_results", "native", "route_recorded"]
+            .iter()
+            .all(|key| summary[key].is_boolean())
+        && summary["historical_evidence"].is_u64()
+}
+
+fn string_list(value: &Value) -> bool {
+    value
+        .as_array()
+        .is_some_and(|items| items.iter().all(Value::is_string))
+}
+
+fn valid_document(name: &str, result: &(Value, Option<Value>, Option<Value>)) -> bool {
+    let (indexed, family, snapshot) = result;
+    if !indexed.is_object()
+        || !indexed
+            .get("schema_version")
+            .is_some_and(|version| version.is_null() || version.is_i64() || version.is_u64())
+    {
+        return false;
+    }
+    match name.split('/').collect::<Vec<_>>().as_slice() {
+        ["families", name, "inputs_and_golden.yaml"] => {
+            snapshot.is_none()
+                && family.as_ref().is_some_and(|family| {
+                    family.is_object()
+                        && family["family"] == *name
+                        && string_list(&family["active_cases"])
+                        && family["active_cases"] == indexed["active_cases"]
+                })
+        }
+        ["families", name, file] => {
+            let Some((implementation, version)) = file
+                .strip_suffix(".yaml")
+                .and_then(|stem| stem.split_once('-'))
+            else {
+                return false;
+            };
+            family.is_none()
+                && Release::parse(version).is_ok()
+                && indexed
+                    .get("execution")
+                    .is_some_and(|execution| execution.is_null() || execution.is_string())
+                && if indexed["schema_version"] == 2 {
+                    snapshot.as_ref().is_some_and(|summary| {
+                        valid_summary(summary, name, implementation, version)
+                    })
+                } else {
+                    snapshot.is_none()
+                }
+        }
+        ["executions", _] => {
+            family.is_none() && snapshot.is_none() && string_list(&indexed["receipts"])
+        }
+        ["receipts", _] => family.is_none() && snapshot.is_none(),
+        _ => false,
+    }
+}
+
+fn document_cached(
+    name: &str,
+    bytes: &[u8],
+    cache: Option<&Path>,
+) -> Result<(Value, Option<Value>, Option<Value>)> {
+    let key = sha256(&crate::codec::json_bytes(&json!([
+        "catalog-v1",
+        name,
+        sha256(bytes),
+        include_str!("catalog.rs"),
+        include_str!("yaml.rs"),
+        include_str!("source.rs"),
+        include_str!("history.rs")
+    ]))?);
+    if let Some(payload) =
+        cache.and_then(|directory| crate::conversion_cache::read(directory, &key))
+        && let Ok(result) = serde_json::from_value(payload)
+        && valid_document(name, &result)
+    {
+        return Ok(result);
+    }
+    let result = document(name, bytes)?;
+    if let Some(directory) = cache {
+        crate::conversion_cache::write(directory, &key, &serde_json::to_value(&result)?)?;
+    }
+    Ok(result)
 }
 
 /// Admit each archive once, decode members in the existing bounded worker pool,
 /// and return only inventory and selector metadata in deterministic path order.
 pub fn index(root: &Path, workers: &str) -> Result<Value> {
+    index_cached(root, workers, None)
+}
+
+pub fn index_cached(root: &Path, workers: &str, cache: Option<&Path>) -> Result<Value> {
     let root = root.canonicalize()?;
     let _session = source::archive_session();
     let policy = Policy::detect(workers)?;
@@ -182,7 +317,7 @@ pub fn index(root: &Path, workers: &str) -> Result<Value> {
                 let source_name = format!("{STORE}/{name}");
                 let mut resources = Vec::new();
                 if name.starts_with("versions/") && name.ends_with(".tar.gz") {
-                    resources.extend(index_version_archive(&root, name, &budget)?);
+                    resources.extend(index_version_archive(&root, name, &budget, cache)?);
                 } else {
                     let _reservation = budget.reserve(
                         source::source_size(&root, &source_name)?
@@ -193,7 +328,7 @@ pub fn index(root: &Path, workers: &str) -> Result<Value> {
                     let bytes = source::read(&root, &source_name)?;
                     let resource = json!({"path":name,"sha256":sha256(&bytes),"size":bytes.len()});
                     let (indexed, family, snapshot) =
-                        document(name, &bytes).with_context(|| name.clone())?;
+                        document_cached(name, &bytes, cache).with_context(|| name.clone())?;
                     resources.push((name.to_string(), resource, indexed, family, snapshot));
                 }
                 Ok(resources)
@@ -226,6 +361,109 @@ pub fn index(root: &Path, workers: &str) -> Result<Value> {
         if let Some(snapshot) = snapshot {
             snapshots.push(snapshot);
         }
+    }
+    let context_path = root.join("conformance/catalog-conversion-context.json");
+    if snapshots.is_empty() && context_path.is_file() {
+        let context: Value = serde_json::from_slice(&source::read(
+            &root,
+            "conformance/catalog-conversion-context.json",
+        )?)?;
+        let mut resources = Vec::new();
+        for resource in &inventory {
+            let name = resource["path"].as_str().context("missing source name")?;
+            let parts = name.split('/').collect::<Vec<_>>();
+            let mut row = resource.clone();
+            row["path"] = json!(format!("{STORE}/{name}"));
+            row["family"] = Value::Null;
+            row["implementation"] = Value::Null;
+            row["version"] = Value::Null;
+            row["kind"] = json!(if parts[0] == "executions" {
+                "execution"
+            } else {
+                "receipt"
+            });
+            if parts[0] == "families" {
+                row["family"] = json!(parts[1]);
+                if parts[2] == "inputs_and_golden.yaml" {
+                    row["kind"] = json!("inputs-and-golden");
+                } else {
+                    let (implementation, version) = parts[2]
+                        .strip_suffix(".yaml")
+                        .context("invalid capture extension")?
+                        .split_once('-')
+                        .context("invalid capture name")?;
+                    row["kind"] = json!("history");
+                    row["implementation"] = json!(implementation);
+                    row["version"] = json!(version);
+                }
+            }
+            for key in ["execution", "receipts"] {
+                if !documents[name][key].is_null() {
+                    row[key] = documents[name][key].clone();
+                }
+            }
+            if let Some(archive) = row.get_mut("archive") {
+                archive["path"] = json!(format!(
+                    "{STORE}/{}",
+                    archive["path"].as_str().context("invalid archive path")?
+                ));
+            }
+            if let Some(dataset) = context["dataset"].as_str() {
+                row["dataset"] = json!(dataset);
+            }
+            resources.push(row);
+        }
+        let index = resources
+            .iter()
+            .map(|r| (r["path"].as_str().unwrap().to_string(), r))
+            .collect::<BTreeMap<_, _>>();
+        let temporary = tempfile::tempdir()?;
+        let directory = cache.unwrap_or(temporary.path());
+        let groups = policy.pool()?.install(|| {
+            families
+                .keys()
+                .collect::<Vec<_>>()
+                .par_iter()
+                .map(|name| -> Result<Vec<Value>> {
+                    let family = resources
+                        .iter()
+                        .filter(|r| r["family"] == name.as_str())
+                        .collect::<Vec<_>>();
+                    let reserved = crate::pipeline::family_source_bytes(&family, &index)?
+                        .checked_mul(64)
+                        .context("catalog conversion reservation overflow")?
+                        .max(16 * 1024 * 1024);
+                    let _reservation = budget.reserve(reserved)?;
+                    let key = crate::pipeline::family_cache_key(&family, &index, &context, name)?;
+                    let mut converted = crate::pipeline::converted_family(
+                        &root,
+                        &family,
+                        &index,
+                        &context,
+                        name,
+                        reserved,
+                        crate::pipeline::FamilyCache {
+                            directory,
+                            key: &key,
+                            reuse: true,
+                        },
+                    )?;
+                    Ok(converted["snapshots"]
+                        .take()
+                        .as_array()
+                        .context("missing converted checkpoints")?
+                        .iter()
+                        .map(|row| {
+                            let mut summary = row["summary"].clone();
+                            summary["fragment"] = row["fragment"].clone();
+                            summary["capture"] = row["capture"].clone();
+                            summary
+                        })
+                        .collect())
+                })
+                .collect::<Result<Vec<_>>>()
+        })?;
+        snapshots.extend(groups.into_iter().flatten());
     }
     let evidence = snapshots
         .iter()
@@ -277,6 +515,43 @@ fn compact_codes(snapshot: &mut Value, families: &serde_json::Map<String, Value>
 mod tests {
     use super::*;
     use std::{sync::mpsc, time::Duration};
+
+    #[test]
+    fn authenticated_malformed_document_metadata_is_a_cache_miss() -> Result<()> {
+        for (name, bytes) in [
+            (
+                "families/sample/inputs_and_golden.yaml",
+                "cases: {alpha: {lifecycle: active}}\n",
+            ),
+            (
+                "families/sample/dynamo_v2-0.1.0.yaml",
+                "schema_version: 2\nrecords: {}\n",
+            ),
+            ("executions/manifest.yaml", "receipts: {}\n"),
+        ] {
+            let cache = tempfile::tempdir()?;
+            let expected = document_cached(name, bytes.as_bytes(), Some(cache.path()))?;
+            let file = fs::read_dir(cache.path())?
+                .next()
+                .context("missing cache")??
+                .path();
+            let key = file.file_stem().unwrap().to_str().unwrap();
+            for malformed in [
+                json!([{}, true, null]),
+                json!([{"schema_version":null,"active_cases":[false]}, {"family":"sample","active_cases":[false]}, null]),
+                json!([{"schema_version":null,"active_cases":[]}, {"family":"other","active_cases":[]}, null]),
+                json!([{"schema_version":2,"execution":null}, null, {}]),
+                json!([{"schema_version":null,"receipts":[false]}, null, null]),
+            ] {
+                crate::conversion_cache::write(cache.path(), key, &malformed)?;
+                assert_eq!(
+                    document_cached(name, bytes.as_bytes(), Some(cache.path()))?,
+                    expected
+                );
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn explicit_route_presence_includes_null_and_empty() -> Result<()> {
@@ -476,6 +751,7 @@ mod tests {
                 &root,
                 "versions/dynamo-0.1.0.tar.gz",
                 &budget,
+                None,
             ));
         });
         let documents = receiver

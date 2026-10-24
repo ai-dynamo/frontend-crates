@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"940e9507d1eda12309adf39b75551331c775b2febdee5590bdac255388aaba6c","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: mistral

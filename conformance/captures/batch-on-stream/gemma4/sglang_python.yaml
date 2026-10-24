@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"0a2f242511789b4f498f0b6cce09230da568970b5cba8ae7655c0bd66292d016","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: gemma4

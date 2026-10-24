@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"cd4b2c185aa241c4c68f8446242a77925e04637f957104964c0b490cf8600b76","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: mistral

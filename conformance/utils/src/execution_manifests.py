@@ -12,6 +12,8 @@ CHECKPOINT_FIELDS = {"provenance", "document", "document_overrides"}
 
 
 def source_reference(value, directory):
+    if isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value):
+        return f"{directory}/{value}.yaml"
     if not isinstance(value, str) or re.fullmatch(rf"{directory}/[A-Za-z0-9][A-Za-z0-9_.+-]*\.yaml", value) is None:
         raise ValueError(f"invalid {directory} filename reference: {value!r}")
     return value
@@ -154,7 +156,10 @@ def expand(manifest, *, family, implementation, version, receipt_documents=None)
         if not isinstance(proof, dict) or set(proof) != {"receipt", "requests"} or not isinstance(proof["requests"], dict):
             raise ValueError("invalid execution proof fields")
         reference = proof["receipt"]
-        digest = source_reference(reference, "receipts")
+        if isinstance(reference, str) and re.fullmatch(r"receipt:[0-9a-f]{64}", reference):
+            reference = reference.removeprefix("receipt:")
+        source_reference(reference, "receipts")
+        digest = reference
         if digest not in memberships or receipt_documents is None or digest not in receipt_documents:
             raise ValueError("execution proof receipt body or membership is missing")
         observed[digest] = set(proof["requests"])
@@ -162,9 +167,13 @@ def expand(manifest, *, family, implementation, version, receipt_documents=None)
     for case, value in metadata.items():
         for owner, key in _receipt_slots(value):
             reference = owner[key]
-            if not isinstance(reference, str) or not reference.startswith("receipts/"):
+            legacy_receipt = isinstance(reference, str) and re.fullmatch(r"receipt:[0-9a-f]{64}", reference)
+            if not isinstance(reference, str) or not (reference.startswith("receipts/") or legacy_receipt):
                 continue
-            digest = source_reference(reference, "receipts")
+            if legacy_receipt:
+                reference = reference.removeprefix("receipt:")
+            source_reference(reference, "receipts")
+            digest = reference
             if digest not in memberships or receipt_documents is None or digest not in receipt_documents:
                 raise ValueError("execution receipt body or membership is missing")
             observed.setdefault(digest, set()).add(case)

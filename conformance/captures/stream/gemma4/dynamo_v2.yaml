@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[],"mode":"stream","payload_sha256":"3fe1fc1c98175c80d82ad8abaa7dd576f095d45a1cda15dc5e5794f2789187aa","surface":"stream","version":"0.7.33"}
 schema_version: 1
 surface: stream
 family: gemma4

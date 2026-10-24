@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"stream","payload_sha256":"6a91661b19c2ece48fb762476bfa3e1666158d1c304f8c588b4b35c0fa3d5633","surface":"stream","version":"0.7.33"}
 schema_version: 1
 surface: stream
 family: glm47

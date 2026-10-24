@@ -1,0 +1,111 @@
+schema_version: 1
+family: gemma4
+implementation: sglang_python_batch
+version: 0.5.13
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.13
+      source_sha256: e2ef706b281642aa83d3f07bf0338b9aa990ddaae92159bdc7029bcde7722d75
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: bacb0f90b1209a6867df42fcac0fe4e0e89a05fcfcf43fe904e6757e4f80e511
+cases:
+- content_then_reason
+- content_then_reason_then_tool
+- deepseek_v41_mixed_control_text_in_string
+- reason_between_calls
+- reason_markup_in_arg
+- reason_markup_in_arg_with_text
+- text_reason_tool_text_reason_tool
+- tool_in_reason_with_text
+- two_adjacent_reason_spans
+- two_reason_spans
+defaults: {}
+exceptions:
+  content_then_reason:
+    batch_final:
+      reasoning_text: 'Hello there. <|channel>thought
+
+        let me recall'
+      normal_text: The capital is Paris.
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: 'Sure, one sec. <|channel>thought
+
+        checking the forecast'
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    batch_final:
+      reasoning_text: '<|tool_call>call:f{x:<|"|> <|channel>thought
+
+        quoted'
+      normal_text: " <|tool_call> <tool_call|> &amp; \"x\"\\\n <|\"|>}<tool_call|>"
+      calls: []
+  reason_between_calls:
+    batch_final:
+      reasoning_text: '<|tool_call>call:f{x:<|"|>1<|"|>}<tool_call|><|channel>thought
+
+        mid'
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  reason_markup_in_arg:
+    batch_final:
+      reasoning_text: '<|tool_call>call:log{note:<|"|><|channel>thought
+
+        reconsider'
+      normal_text: <|"|>}<tool_call|>
+      calls: []
+  reason_markup_in_arg_with_text:
+    batch_final:
+      reasoning_text: 'Logging now: <|tool_call>call:log{note:<|"|><|channel>thought
+
+        reconsider'
+      normal_text: <|"|>}<tool_call|> done.
+      calls: []
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: 'Sure. <|channel>thought
+
+        check A'
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  tool_in_reason_with_text:
+    batch_final:
+      reasoning_text: 'Sure. <|channel>thought
+
+        I should check. <|tool_call>call:get_weather{city:<|"|>Paris<|"|>}<tool_call|> now answer'
+      normal_text: ' Here you go.'
+      calls: []
+  two_adjacent_reason_spans:
+    batch_final:
+      reasoning_text: first
+      normal_text: '<|channel>thought
+
+
+        second<channel|>done'
+      calls: []
+  two_reason_spans:
+    batch_final:
+      reasoning_text: first thought
+      normal_text: 'interlude <|channel>thought
+
+        second thought<channel|>done'
+      calls: []

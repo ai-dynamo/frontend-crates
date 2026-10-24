@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"7b2fe5471d84382e637b2d623201258d5aa2d056619bf72790ece69efb1a2087","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: llama3_json

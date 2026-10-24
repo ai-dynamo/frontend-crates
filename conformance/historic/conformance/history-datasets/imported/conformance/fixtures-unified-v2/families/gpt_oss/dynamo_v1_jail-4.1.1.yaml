@@ -1,0 +1,9 @@
+parent: dynamo_v1_jail-4.1.0
+execution: f0f11557ed0a55c72b2ac65b8c0cd09a8f4894e1efd5da226c4ec55d6b65a472
+changes:
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer

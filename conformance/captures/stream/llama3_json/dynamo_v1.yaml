@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"2d3647f35e5a291834c72698146f93950c4aa4f91f492228051eace722039a10","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: llama3_json

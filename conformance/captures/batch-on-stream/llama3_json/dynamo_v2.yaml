@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"28c2b2acdd6ff346472118168f6fd1a7910df39c2bb24c0397736713bf2b3350","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: llama3_json

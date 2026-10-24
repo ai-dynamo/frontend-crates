@@ -1,17 +1,34 @@
-schema_version: 2
-provenance:
-  status: legacy
-  captured_with:
-    vllm_rust: 0.31.0
+capture_selection: {"family":"llama3_json","implementation":"vllm_rust","lineage":[{"family":"llama3_json","implementation":"vllm_rust","kind":"history","path":"conformance/fixtures-unified-v2/families/llama3_json/vllm_rust-0.31.0.yaml","version":"0.31.0"}],"mode":"unified","payload_sha256":"2cc4d83d14673b07a7c752dce992368a9a0965d53eabc72e029b5dc5291faf5d","source":"conformance/fixtures-unified-v2/families/llama3_json/vllm_rust-0.31.0.yaml","surface":"unified","version":"0.31.0"}
 document:
   mode: unified
+provenance:
+  captured_with:
+    vllm_rust: 0.31.0
+  status: legacy
 records:
   arg_json_null:
     value:
       case_key: arg_json_null
       stimulus:
-        ref: current
         semantic_sha256: cd2b394222e110d9ce7dcaf535bac4fef603f61e874e70ed2c84e8c0ad5ac0c7
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type:
+                  - string
+                  - 'null'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -34,8 +51,25 @@ records:
     value:
       case_key: arg_json_null_anyof
       stimulus:
-        ref: current
         semantic_sha256: 976146e8e6ee36e6eb2b39781e7f6b52de49a89fea3192aa5ffde3a64352dfea
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -58,8 +92,25 @@ records:
     value:
       case_key: arg_json_null_const
       stimulus:
-        ref: current
         semantic_sha256: 90f5ac73eab1510ddef2826c31b2333d16b9966ea61658c9d4f2af0e2ccb864c
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  anyOf:
+                  - const: null
+                  - type: string
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -82,8 +133,24 @@ records:
     value:
       case_key: arg_json_null_nullable
       stimulus:
-        ref: current
         semantic_sha256: aaec11a23580abf4ab3ebf21310bf888953d54214a30202e2487b972e69083cb
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                  nullable: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -106,8 +173,25 @@ records:
     value:
       case_key: arg_json_null_oneof
       stimulus:
-        ref: current
         semantic_sha256: f46183e54b1ec7ca41be6a6421c48ede7082ba845c40b176496a29db5ebae64c
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  oneOf:
+                  - type: string
+                  - type: 'null'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -130,8 +214,23 @@ records:
     value:
       case_key: arg_string_null
       stimulus:
-        ref: current
         semantic_sha256: 999714d531b65e6f70408d57543959020c7c2cdbedf27b7a03c90e11e3850464
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -154,8 +253,25 @@ records:
     value:
       case_key: arg_string_null_const
       stimulus:
-        ref: current
         semantic_sha256: 1c565233e488d708f1436656a0a3c49388f4fe280a12efc873e52cb21cba87a3
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  anyOf:
+                  - const: 'null'
+                  - type: integer
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -178,8 +294,26 @@ records:
     value:
       case_key: arg_string_null_enum
       stimulus:
-        ref: current
         semantic_sha256: e2082c8a4cd9fc9ea14d2de473f32a1aa36a16b05ee79a1dc3c26a3559e8c69a
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                  enum:
+                  - 'null'
+                  - null
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -202,8 +336,26 @@ records:
     value:
       case_key: arg_string_null_sibling_anyof
       stimulus:
-        ref: current
         semantic_sha256: 7580f524c59e02313c67f7ac97c02ede5981162625fa4258f92250a0d41acd6b
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                  anyOf:
+                  - type: string
+                  - type: 'null'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -226,8 +378,28 @@ records:
     value:
       case_key: arg_string_null_sibling_oneof
       stimulus:
-        ref: current
         semantic_sha256: 1e8912b8cb04586bbbc55424c7939c4837a1c39b0f7f79bc652bb038137596a4
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type:
+                  - string
+                  - 'null'
+                  oneOf:
+                  - type: string
+                  - type: integer
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -250,8 +422,25 @@ records:
     value:
       case_key: arg_string_null_union
       stimulus:
-        ref: current
         semantic_sha256: e7c9d661839dc8c5c04bf1971b2357a389b2a1ba62c027e58415846335e0da95
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  anyOf:
+                  - type: string
+                  - type: integer
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -274,8 +463,26 @@ records:
     value:
       case_key: arg_string_null_untyped_branch
       stimulus:
-        ref: current
         semantic_sha256: b8ec41aa4d4ee452661209c66eeebfa8a3e9e483513c02c39df6a7d426015d8c
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+                  anyOf:
+                  - minLength: 1
+                  - type: 'null'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -298,8 +505,59 @@ records:
     value:
       case_key: arg_unicode
       stimulus:
-        ref: current
         semantic_sha256: 4bd6a1c6e2575a49c8c23a692ce69fdd9742b1a81d98159afb8f3fc7bd8c59b2
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"São Paulo 東京"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"São Paulo 東京"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -322,8 +580,59 @@ records:
     value:
       case_key: empty_args
       stimulus:
-        ref: current
         semantic_sha256: 359a2971bb0beaf03a5b1f2bc32eb250db75f7eb140a809d33cfbee28923f53d
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -346,8 +655,34 @@ records:
     value:
       case_key: glm_ref_encoded_targets
       stimulus:
-        ref: current
         semantic_sha256: a09d71073bf6d764ab7617b5143e9c5437f9cea8c1a88fa2187fe7fdbc4886d7
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"space":42,"utf8_plus":42,"pointer":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                postal code:
+                  type: integer
+                café+:
+                  type: integer
+                a/b~c:
+                  type: integer
+              properties:
+                space:
+                  $ref: '#/$defs/postal%20code'
+                utf8_plus:
+                  $ref: '#/$defs/caf%c3%a9+'
+                pointer:
+                  $ref: '#/$defs/a%7E1b%7E0c'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"space":42,"utf8_plus":42,"pointer":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -370,8 +705,32 @@ records:
     value:
       case_key: glm_ref_json_looking_strings
       stimulus:
-        ref: current
         semantic_sha256: 5fcaf475c32b9d062b3043ce0ac64f4830cbff2d214e1a44f1f36eb35c4996a0
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                Text:
+                  type: string
+              properties:
+                object_text:
+                  $ref: '#/$defs/Text'
+                array_text:
+                  $ref: '#/$defs/Text'
+                quoted_text:
+                  $ref: '#/$defs/Text'
+                inline_text:
+                  type: string
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -394,8 +753,29 @@ records:
     value:
       case_key: glm_ref_object
       stimulus:
-        ref: current
         semantic_sha256: 0dac9ac80f5bb2bee04295707d2fb2f08b01a2a7ad352181e49ea8817cf800f7
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"payload":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                Payload:
+                  type: object
+                  properties:
+                    x:
+                      type: integer
+              properties:
+                payload:
+                  $ref: '#/$defs/Payload'
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"payload":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -418,8 +798,41 @@ records:
     value:
       case_key: glm_ref_scalar_types
       stimulus:
-        ref: current
         semantic_sha256: 5153e57daaf77e7bd2579bb2efbaa92d0f7f795020e2bd9b3ab94cfeb4ae7940
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"count":42,"ratio":3.5,"flag":true,"narrowed":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                Integer:
+                  type: integer
+                Number:
+                  type: number
+                Boolean:
+                  type: boolean
+                Scalar:
+                  type:
+                  - string
+                  - integer
+              properties:
+                count:
+                  $ref: '#/$defs/Integer'
+                ratio:
+                  $ref: '#/$defs/Number'
+                flag:
+                  $ref: '#/$defs/Boolean'
+                narrowed:
+                  $ref: '#/$defs/Scalar'
+                  type: integer
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"count":42,"ratio":3.5,"flag":true,"narrowed":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -442,8 +855,59 @@ records:
     value:
       case_key: guided_json_array_argument
       stimulus:
-        ref: current
         semantic_sha256: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+        inline:
+          input: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '[{"name": "sum_values", "arguments": {"values": [2, 3, 5]}}]'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -466,8 +930,59 @@ records:
     value:
       case_key: guided_json_escaped_string_args
       stimulus:
-        ref: current
         semantic_sha256: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+        inline:
+          input: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: run
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -490,8 +1005,59 @@ records:
     value:
       case_key: guided_json_invalid_call
       stimulus:
-        ref: current
         semantic_sha256: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+        inline:
+          input: '{"unexpected": "shape"}'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '{"unexpected": "shape"}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -514,8 +1080,59 @@ records:
     value:
       case_key: guided_json_list_with_broken_element
       stimulus:
-        ref: current
         semantic_sha256: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+        inline:
+          input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -538,8 +1155,59 @@ records:
     value:
       case_key: guided_json_malformed_json
       stimulus:
-        ref: current
         semantic_sha256: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+        inline:
+          input: '{"name": "get_weather", "arguments": {"city": "Par'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '{"name": "get_weather", "arguments": {"city": "Par'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -562,8 +1230,59 @@ records:
     value:
       case_key: guided_json_named_tool
       stimulus:
-        ref: current
         semantic_sha256: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+        inline:
+          input: '{"city": "Paris"}'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: get_weather
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '{"city": "Paris"}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -586,8 +1305,59 @@ records:
     value:
       case_key: guided_json_partial_calls
       stimulus:
-        ref: current
         semantic_sha256: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+        inline:
+          input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -610,8 +1380,59 @@ records:
     value:
       case_key: guided_json_required_tool
       stimulus:
-        ref: current
         semantic_sha256: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+        inline:
+          input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -634,8 +1455,59 @@ records:
     value:
       case_key: guided_json_two_calls
       stimulus:
-        ref: current
         semantic_sha256: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+        inline:
+          input: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+          init:
+            starting_state: None
+            tool_output_mode: GuidedJson
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -658,8 +1530,24 @@ records:
     value:
       case_key: local_schema_id_preserves_type
       stimulus:
-        ref: current
         semantic_sha256: 2bd547bc6d44cb9076c9a41c618a724688b21ff1e687b0c96bbffa664c9d8ac7
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"count":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              properties:
+                count:
+                  type: integer
+                  $id: https://example.com/count
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"count":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -682,8 +1570,59 @@ records:
     value:
       case_key: malformed_json_then_two_valid_calls
       stimulus:
-        ref: current
         semantic_sha256: fc5ee3e646ccb4c94d2a03cd3892f47349ae54d4443c30dbc6060a1de2b8a3f6
+        inline:
+          input: '<|python_tag|>{"name":"get_weather","arguments":{"city": }}<|python_tag|>{"name":"get_weather","arguments":{"city":"Tokyo"}}<|python_tag|>{"name":"get_weather","arguments":{"city":"Berlin"}}'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: '<|python_tag|>{"name":"get_weather","arguments":{"city": }}<|python_tag|>{"name":"get_weather","arguments":{"city":"Tokyo"}}<|python_tag|>{"name":"get_weather","arguments":{"city":"Berlin"}}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -706,8 +1645,59 @@ records:
     value:
       case_key: narrated_calls
       stimulus:
-        ref: current
         semantic_sha256: d5d183b36fc31178412b718d8d6a3f29705d4e56e53a6b64a8c37e7eba1607a6
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}} then I'll run <|python_tag|>{"name":"f","arguments":{"x":"1"}} and <|python_tag|>{"name":"g","arguments":{"y":"2"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}} then I'll run <|python_tag|>{"name":"f","arguments":{"x":"1"}} and <|python_tag|>{"name":"g","arguments":{"y":"2"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -730,8 +1720,39 @@ records:
     value:
       case_key: nullable_reference_alias_literals
       stimulus:
-        ref: current
         semantic_sha256: 17d683f8531059ede36af9a68b010437837a1370f8826c01169392316611356d
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"const_text":"null","enum_text":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                ConstAlias:
+                  $ref: '#/$defs/ConstText'
+                EnumAlias:
+                  $ref: '#/$defs/EnumText'
+                ConstText:
+                  type: string
+                  const: 'null'
+                EnumText:
+                  type: string
+                  enum:
+                  - 'null'
+              properties:
+                const_text:
+                  $ref: '#/$defs/ConstAlias'
+                  nullable: true
+                enum_text:
+                  $ref: '#/$defs/EnumAlias'
+                  nullable: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"const_text":"null","enum_text":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -754,8 +1775,29 @@ records:
     value:
       case_key: schema_const_array_allof
       stimulus:
-        ref: current
         semantic_sha256: f54e5ee28e69bd1384412cb551ceefff3f90fe7bfa387037813bbdb4445b09af
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '[1,2]'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -778,8 +1820,27 @@ records:
     value:
       case_key: schema_const_array_bare
       stimulus:
-        ref: current
         semantic_sha256: 245b0f06b85298da63badced85736b01238c8ca0e9eed87af0b12d56c7624fe9
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '[1,2]'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -802,8 +1863,30 @@ records:
     value:
       case_key: schema_const_array_ref
       stimulus:
-        ref: current
         semantic_sha256: ced498c84bc8f7da06c28ed9d172b3d0826785c03537f6b5c059467b06cf7613
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '[1,2]'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -826,8 +1909,28 @@ records:
     value:
       case_key: schema_const_array_typed
       stimulus:
-        ref: current
         semantic_sha256: cac7a22c9c07f70310ddeff48587e8687299257126daa8764ad1f03b46caa428
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '[1,2]'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"[1,2]"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -850,8 +1953,29 @@ records:
     value:
       case_key: schema_const_boolean_allof
       stimulus:
-        ref: current
         semantic_sha256: 9ba8aeec1c4c8ba2b35f86b34cafde65fed3f5a76b32cb0806b83d6db03cd58a
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: 'true'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -874,8 +1998,27 @@ records:
     value:
       case_key: schema_const_boolean_bare
       stimulus:
-        ref: current
         semantic_sha256: 764efb00095ac4c42975beabb80ace8b609d8f6fc78d963978c15c99935cb034
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: 'true'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -898,8 +2041,30 @@ records:
     value:
       case_key: schema_const_boolean_ref
       stimulus:
-        ref: current
         semantic_sha256: 829cee6b6efa23a8b4ea145837b0fd232b2e8fbb8ef1947f62fe90e3afeace25
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: 'true'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -922,8 +2087,28 @@ records:
     value:
       case_key: schema_const_boolean_typed
       stimulus:
-        ref: current
         semantic_sha256: 6cc5d34274e1830f9b7e891580a4e944e81eb917431adee6d0be891d881e7c08
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: 'true'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"true"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -946,8 +2131,29 @@ records:
     value:
       case_key: schema_const_entity_allof
       stimulus:
-        ref: current
         semantic_sha256: 6b1d53df1d11180a95dfea9a4a6e9ab82d893f712c33eb2f3c511667cfdcee2d
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '&lt;'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -970,8 +2176,27 @@ records:
     value:
       case_key: schema_const_entity_bare
       stimulus:
-        ref: current
         semantic_sha256: 872cda5c114354b35255adc9c521f568cd83b907e7103b6e04a64a1cb04382e3
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '&lt;'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -994,8 +2219,30 @@ records:
     value:
       case_key: schema_const_entity_ref
       stimulus:
-        ref: current
         semantic_sha256: 08b18788716bad210ede17452a3b938f0ada37c5b31040f9398b98cd4a9032a0
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '&lt;'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1018,8 +2265,28 @@ records:
     value:
       case_key: schema_const_entity_typed
       stimulus:
-        ref: current
         semantic_sha256: 5f49ea1d0e89281d38b42565e03fb49e57bb548b7ce056615ffadfdf71dd6ba3
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '&lt;'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"&lt;"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1042,8 +2309,29 @@ records:
     value:
       case_key: schema_const_null_allof
       stimulus:
-        ref: current
         semantic_sha256: caad13e756548bf196f707d8c480e172ac8aaebd292e5d128fca3d3fd647c862
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: 'null'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1066,8 +2354,27 @@ records:
     value:
       case_key: schema_const_null_bare
       stimulus:
-        ref: current
         semantic_sha256: 8d298ee8a522c1ac0f9d7e35c77e026fb30d37970e1439cef672e786846d0b3c
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1090,8 +2397,30 @@ records:
     value:
       case_key: schema_const_null_ref
       stimulus:
-        ref: current
         semantic_sha256: 470fa91e6b1a58310fbddcec604a2f14fb65917a417891986edf01b7f34619ab
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: 'null'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1114,8 +2443,28 @@ records:
     value:
       case_key: schema_const_null_typed
       stimulus:
-        ref: current
         semantic_sha256: cd45968183d2d60980a88f443ff8cf60b56f9dd6ca69ee9f5607532b6858e902
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1138,8 +2487,29 @@ records:
     value:
       case_key: schema_const_number_allof
       stimulus:
-        ref: current
         semantic_sha256: 9e696b9f040571643d7aa3ff2d47cce681d25a3348e39dc218fc854a99cdeee7
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '42'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1162,8 +2532,27 @@ records:
     value:
       case_key: schema_const_number_bare
       stimulus:
-        ref: current
         semantic_sha256: a5b85c8d90a49c5f7747ec212142373f18fe0b6323eb6fc517bc72f0df1f903f
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '42'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1186,8 +2575,30 @@ records:
     value:
       case_key: schema_const_number_ref
       stimulus:
-        ref: current
         semantic_sha256: dc6d3721a87e7cb24790caa577669859cc2a7e2f759de624fdc33ce705b22b90
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '42'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1210,8 +2621,28 @@ records:
     value:
       case_key: schema_const_number_typed
       stimulus:
-        ref: current
         semantic_sha256: 5c6bb94c49a53d5f7f375aaa305f0d407a40c456c145e33cfd649afccf60f629
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '42'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1234,8 +2665,29 @@ records:
     value:
       case_key: schema_const_object_allof
       stimulus:
-        ref: current
         semantic_sha256: 9993a92b7c17972677dceeaecf87d16d53751e28e4747bfd5ad4e8e63ede5826
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '{"x":1}'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1258,8 +2710,27 @@ records:
     value:
       case_key: schema_const_object_bare
       stimulus:
-        ref: current
         semantic_sha256: 7e9e3dc27bf6180f811538cffb12b30cc1059f7e211c5cd202b0dcac177502d1
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '{"x":1}'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1282,8 +2753,30 @@ records:
     value:
       case_key: schema_const_object_ref
       stimulus:
-        ref: current
         semantic_sha256: ed14a0e66005561dd2f20c5b6aa4d40e7533070545744e5a047af5e626bbaf01
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '{"x":1}'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1306,8 +2799,28 @@ records:
     value:
       case_key: schema_const_object_typed
       stimulus:
-        ref: current
         semantic_sha256: dd42ef627349f576e75f2332bc8178d1e0e560996d49392280e508c3e3c0b0f2
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '{"x":1}'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1330,8 +2843,29 @@ records:
     value:
       case_key: schema_const_plain_allof
       stimulus:
-        ref: current
         semantic_sha256: 719378d615763c45cbbede48cf3f713bf30fcfdac0df63933a5d91ed61a5c871
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: auto
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1354,8 +2888,27 @@ records:
     value:
       case_key: schema_const_plain_bare
       stimulus:
-        ref: current
         semantic_sha256: 08818547217ad94a6fde3179b32f84905b96ceb912d6500e24e2b34ecd1ef63d
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1378,8 +2931,30 @@ records:
     value:
       case_key: schema_const_plain_ref
       stimulus:
-        ref: current
         semantic_sha256: aff6325a51b3165ded1fd80bec14d922f9b9eff53ae60b7d0ad11fc1e3b75050
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: auto
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1402,8 +2977,28 @@ records:
     value:
       case_key: schema_const_plain_typed
       stimulus:
-        ref: current
         semantic_sha256: 216e3c8695c1d20650d1d4056d7d4746107271c17af61ef7022b9046225abf3c
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1426,8 +3021,29 @@ records:
     value:
       case_key: schema_const_quoted_allof
       stimulus:
-        ref: current
         semantic_sha256: 98a6d6cadd0093000801284e216e8f9c59ba0f6981099389f4fbfb5e7d1929ee
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '"hello"'
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1450,8 +3066,27 @@ records:
     value:
       case_key: schema_const_quoted_bare
       stimulus:
-        ref: current
         semantic_sha256: e8a93fb980fe0cfacfeaf3aaac44df18c47338a9bb9442bc6073b9bda99b85ca
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '"hello"'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1474,8 +3109,30 @@ records:
     value:
       case_key: schema_const_quoted_ref
       stimulus:
-        ref: current
         semantic_sha256: 1f16e2cdf68d446941be52cb65f686270b3e0138a3c0937289639372c09caeee
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '"hello"'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1498,8 +3155,28 @@ records:
     value:
       case_key: schema_const_quoted_typed
       stimulus:
-        ref: current
         semantic_sha256: b1e0caa48c4dcc74a0c1a10ff1df3569ac610f72492a125b540bf68a248f21bc
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '"hello"'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1522,8 +3199,29 @@ records:
     value:
       case_key: schema_const_space_allof
       stimulus:
-        ref: current
         semantic_sha256: 2308707b4155a36a6944149c16d0fe7a982d2d3faaf02d5c609237fe98c71662
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: '  spaced  '
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1546,8 +3244,27 @@ records:
     value:
       case_key: schema_const_space_bare
       stimulus:
-        ref: current
         semantic_sha256: de3b8f02570a5786fa7886805d9551cdb002d13020426abd27b8078d1d24f506
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: '  spaced  '
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1570,8 +3287,30 @@ records:
     value:
       case_key: schema_const_space_ref
       stimulus:
-        ref: current
         semantic_sha256: 2cd0b020e8f9ab623799747aef9afcbc487cc2cc5040ca1095e9172e0e233bf2
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: '  spaced  '
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1594,8 +3333,28 @@ records:
     value:
       case_key: schema_const_space_typed
       stimulus:
-        ref: current
         semantic_sha256: 224e4ed720660dd2fd01de6887944d35b995fc69fa2375ac56d5d2d495c51b8c
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: '  spaced  '
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"  spaced  "}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1618,8 +3377,29 @@ records:
     value:
       case_key: schema_const_unicode_allof
       stimulus:
-        ref: current
         semantic_sha256: e20e88675e93bcb56cf1bbad6bf3b11f544e6daf099f54479ca66bf12d85aecf
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - const: café
+                  - minLength: 0
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1642,8 +3422,27 @@ records:
     value:
       case_key: schema_const_unicode_bare
       stimulus:
-        ref: current
         semantic_sha256: f29badfcde5d0832b6c10325e4e8157e1f51cb49a677a7725d04709cfc3a63c8
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  const: café
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1666,8 +3465,30 @@ records:
     value:
       case_key: schema_const_unicode_ref
       stimulus:
-        ref: current
         semantic_sha256: 81f4aa52ccce86c30835252abfbae53ef67318d81c903420e2e4c4dad98f6c3f
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Literal'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Literal:
+                  const: café
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1690,8 +3511,28 @@ records:
     value:
       case_key: schema_const_unicode_typed
       stimulus:
-        ref: current
         semantic_sha256: 61696ac395700a06edbea508e279886080a53b010b129fcdcedf72cb246e7d92
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  const: café
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"café"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1714,8 +3555,27 @@ records:
     value:
       case_key: schema_declared_array
       stimulus:
-        ref: current
         semantic_sha256: 8c7913410d3adc624adc324f8a023e228c0e89d067396bdc5c65a4eda2096055
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: array
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1738,8 +3598,27 @@ records:
     value:
       case_key: schema_declared_boolean
       stimulus:
-        ref: current
         semantic_sha256: fa61fadeef8dd2f0b913eda274b265885c9a99dcd005780cb6d2eead30b79309
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: boolean
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1762,8 +3641,27 @@ records:
     value:
       case_key: schema_declared_integer
       stimulus:
-        ref: current
         semantic_sha256: 69ba908293ea423e3e872c8043e1d1b9bf5ee70da84ef765306cdad42cfcff65
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1786,8 +3684,27 @@ records:
     value:
       case_key: schema_declared_null
       stimulus:
-        ref: current
         semantic_sha256: c2f8cf24e35edc0eb1ffa3f1561b1c7fd37b8f6032e028c9eda85102d6372251
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1810,8 +3727,27 @@ records:
     value:
       case_key: schema_declared_number
       stimulus:
-        ref: current
         semantic_sha256: aa23c1a1875ec827a139b1b18087093926a17612635f059448631b5600a2a0fd
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: number
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1834,8 +3770,27 @@ records:
     value:
       case_key: schema_declared_object
       stimulus:
-        ref: current
         semantic_sha256: 251194516211f27ecad89df0aa8ebfdfbaf733e550a08d46d9e95df57abac993
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1858,8 +3813,27 @@ records:
     value:
       case_key: schema_declared_string
       stimulus:
-        ref: current
         semantic_sha256: 927cc38668d989787e31d26cf3cfc8c2e61d934025aee1a84340d49b986d2cf7
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"plain"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"plain"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1882,8 +3856,30 @@ records:
     value:
       case_key: schema_enum_integer
       stimulus:
-        ref: current
         semantic_sha256: 2a48f0efb45dfb01925112c369728560b9a347a8148c842fe5a92730f9c43408
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: integer
+                  enum:
+                  - 7
+                  - 42
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1906,8 +3902,30 @@ records:
     value:
       case_key: schema_enum_string
       stimulus:
-        ref: current
         semantic_sha256: 80788edcf8a888959bcbcd66870f75e1b2cd121633860882cb85ebf438f07552
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  enum:
+                  - auto
+                  - '42'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1930,8 +3948,30 @@ records:
     value:
       case_key: schema_escaped_ref_const
       stimulus:
-        ref: current
         semantic_sha256: 949d63d68b0d3cf863cdd9eea4f8fdc6665f1d730a36f2dd823ba7a02deec975
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/A~1B~0C'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                A/B~C:
+                  const: '"hello"'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"\"hello\""}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1954,8 +3994,28 @@ records:
     value:
       case_key: schema_id_direct_integer
       stimulus:
-        ref: current
         semantic_sha256: e602f192efdf57905a6dc149b03a48496feb5ea7a56d8217890a7ce995eb5568
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $id: https://example.test/schema
+                  type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -1978,8 +4038,29 @@ records:
     value:
       case_key: schema_integer_const_ambiguous
       stimulus:
-        ref: current
         semantic_sha256: 725fc7bf8956030997543a15d405b38ef24661bcff5a26b53189c39a01b26f04
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: '42'
+                  - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2002,8 +4083,31 @@ records:
     value:
       case_key: schema_intersection_anyOf
       stimulus:
-        ref: current
         semantic_sha256: b3495ba9373a577d392f55a837cb07a903512604eceff544d163fabfa0f2ebb7
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - type: integer
+                  - anyOf:
+                    - const: auto
+                    - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2026,8 +4130,31 @@ records:
     value:
       case_key: schema_intersection_oneOf
       stimulus:
-        ref: current
         semantic_sha256: c9402d3d86334aa8eb8c5d747c2fc10f6314354ef46a9166205ffdfbd10212f3
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  allOf:
+                  - type: integer
+                  - oneOf:
+                    - const: auto
+                    - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2050,8 +4177,29 @@ records:
     value:
       case_key: schema_null_union_ambiguous
       stimulus:
-        ref: current
         semantic_sha256: 24743af82021649e0139d5656b5dba8bb39511840e3ba39f53f34ff928d458c3
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: 'null'
+                  - type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2074,8 +4222,28 @@ records:
     value:
       case_key: schema_nullable_string
       stimulus:
-        ref: current
         semantic_sha256: d628b748f3b66d4f8fc599de29e4461d66e689f47d14c2fa67dc3e32058e7065
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type: string
+                  nullable: true
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2098,8 +4266,29 @@ records:
     value:
       case_key: schema_object_const_union
       stimulus:
-        ref: current
         semantic_sha256: 1bb6bd9fde2b0cbd1dde0dd9714c98281559ff87edfef7b2050c6892d6d01d79
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: '{"x":1}'
+                  - type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"{\"x\":1}"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2122,8 +4311,30 @@ records:
     value:
       case_key: schema_percent_ref_const
       stimulus:
-        ref: current
         semantic_sha256: c35105d3fedbeb299b115db5463942bfb44d7a3bd173475177ba10ffed6216da
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Caf%C3%A9'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Café:
+                  const: '42'
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2146,8 +4357,33 @@ records:
     value:
       case_key: schema_ref_sibling_integer
       stimulus:
-        ref: current
         semantic_sha256: cec50ecf2ad78fb8001448743089c422f3cbcce73a124647ac9076804c9eacbf
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Choice'
+                  type: integer
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Choice:
+                  anyOf:
+                  - const: auto
+                  - type: integer
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2170,8 +4406,34 @@ records:
     value:
       case_key: schema_ref_union_anyOf_integer
       stimulus:
-        ref: current
         semantic_sha256: 5a33f61c0f365c48658ba2efb77d2b3951e8aa0d7e2ae674f3d854e0052246b6
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":-7}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Alias'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Alias:
+                  $ref: '#/$defs/Choice'
+                Choice:
+                  anyOf:
+                  - const: auto
+                  - type: integer
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":-7}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2194,8 +4456,34 @@ records:
     value:
       case_key: schema_ref_union_anyOf_string
       stimulus:
-        ref: current
         semantic_sha256: d511dbde432e3449e49b973841b32842290f1e601cfe59ee5f4c155725e36a6e
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Alias'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Alias:
+                  $ref: '#/$defs/Choice'
+                Choice:
+                  anyOf:
+                  - const: auto
+                  - type: integer
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2218,8 +4506,34 @@ records:
     value:
       case_key: schema_ref_union_oneOf_integer
       stimulus:
-        ref: current
         semantic_sha256: 2f30806d4ee03c34ca08c4a6413da978c95a66298041834e2de54d655f4fb15a
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":-7}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Alias'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Alias:
+                  $ref: '#/$defs/Choice'
+                Choice:
+                  oneOf:
+                  - const: auto
+                  - type: integer
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":-7}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2242,8 +4556,34 @@ records:
     value:
       case_key: schema_ref_union_oneOf_string
       stimulus:
-        ref: current
         semantic_sha256: 791b2b554a7f2fb97582b915b8c8a1178c04c7848c64fd8b9fe7404980e17e87
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  $ref: '#/$defs/Alias'
+              required:
+              - value
+              additionalProperties: false
+              $defs:
+                Alias:
+                  $ref: '#/$defs/Choice'
+                Choice:
+                  oneOf:
+                  - const: auto
+                  - type: integer
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2266,8 +4606,29 @@ records:
     value:
       case_key: schema_type_array_integer_null
       stimulus:
-        ref: current
         semantic_sha256: f47b6b23ee67c32d5586077f13ef40983e85c772502d236d3b29573a041b14ac
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type:
+                  - integer
+                  - 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2290,8 +4651,29 @@ records:
     value:
       case_key: schema_type_array_integer_null_null
       stimulus:
-        ref: current
         semantic_sha256: 0a7c6cee3803c8a63decee0513be37214c4886d2211d3c71b78fc174142a8596
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type:
+                  - integer
+                  - 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2314,8 +4696,29 @@ records:
     value:
       case_key: schema_type_array_string_integer
       stimulus:
-        ref: current
         semantic_sha256: e636107eb727de208f7eec993a3d450a8959dda2b0a3a7e05e381b076cc578f4
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  type:
+                  - string
+                  - integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"42"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2338,8 +4741,29 @@ records:
     value:
       case_key: schema_union_anyOf_array_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: d3f4891de49a85b71e8aacadeeed12d5af05163b68477663484f63aec0b70be1
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: array
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2362,8 +4786,29 @@ records:
     value:
       case_key: schema_union_anyOf_array_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 72b69e76ce4801da8ce7afdb63fcd2949a725c6c5bdafc8209193a6f55ae3376
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: array
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2386,8 +4831,29 @@ records:
     value:
       case_key: schema_union_anyOf_array_string
       stimulus:
-        ref: current
         semantic_sha256: 9bf85e14156d87070aaae823619d472e4b27e7addf69edf85dfb287792bdbdb8
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: array
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2410,8 +4876,29 @@ records:
     value:
       case_key: schema_union_anyOf_array_typed
       stimulus:
-        ref: current
         semantic_sha256: afa648b8c8715cc370c83d553c2af002cc840cbda900da7ce9fdad5eb7724f5a
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: array
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2434,8 +4921,29 @@ records:
     value:
       case_key: schema_union_anyOf_boolean_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 66032a881dc432854bd381e76de4741c1511682fa2e8a3100c61b4390c4bfbb2
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: boolean
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2458,8 +4966,29 @@ records:
     value:
       case_key: schema_union_anyOf_boolean_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: a65a1865d0bac1e30ff8916399b34480fe2f19e3fc2237110b7e5f54c49f03ce
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: boolean
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2482,8 +5011,29 @@ records:
     value:
       case_key: schema_union_anyOf_boolean_string
       stimulus:
-        ref: current
         semantic_sha256: 9ebfe1becc348dbf5912126480d5597eb90bbf143bb35e162166bf65f836b28a
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: boolean
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2506,8 +5056,29 @@ records:
     value:
       case_key: schema_union_anyOf_boolean_typed
       stimulus:
-        ref: current
         semantic_sha256: d178850de4722a1558a176b3715d2474f9230882e239e08ee5f9749325c54ff5
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: boolean
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2530,8 +5101,29 @@ records:
     value:
       case_key: schema_union_anyOf_integer_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: d7a75f6ad0895fc9d34053fcda562fcccf9f34a3143978c2350084fa9f246572
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: integer
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2554,8 +5146,29 @@ records:
     value:
       case_key: schema_union_anyOf_integer_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 82024e3e61623df3e77c0d8a0916a752674e1a0b2e50c43be0582c865ec96838
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: integer
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2578,8 +5191,29 @@ records:
     value:
       case_key: schema_union_anyOf_integer_string
       stimulus:
-        ref: current
         semantic_sha256: 138a38b900759add56dd55473ace630c509c3184fb1f6957fe9840c02984fbcf
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2602,8 +5236,29 @@ records:
     value:
       case_key: schema_union_anyOf_integer_typed
       stimulus:
-        ref: current
         semantic_sha256: cc8734ae4d3cd8696e2d3dcc12da303bfb728408dadb6a2ce58dd25c7b5f5a30
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2626,8 +5281,29 @@ records:
     value:
       case_key: schema_union_anyOf_null_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 5fa8edd83028de7a273ec87b2107dc024fc366bb3e5493fefde2aabe0f908fd0
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: 'null'
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2650,8 +5326,29 @@ records:
     value:
       case_key: schema_union_anyOf_null_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: b07f4a6aa0ad53d0d57530d6287c65c939ea09aad888ad0b679101fee8b653e6
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: 'null'
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2674,8 +5371,29 @@ records:
     value:
       case_key: schema_union_anyOf_null_string
       stimulus:
-        ref: current
         semantic_sha256: d9006e68b6b39b9ee1d6488716c1a3199ff2ea832db4c224831d1487bc1d2fe2
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2698,8 +5416,29 @@ records:
     value:
       case_key: schema_union_anyOf_null_typed
       stimulus:
-        ref: current
         semantic_sha256: 96f798db4067d871947e21e4b6845908b650fe7f069e428c3eb4fd2d990f905f
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2722,8 +5461,29 @@ records:
     value:
       case_key: schema_union_anyOf_number_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 204176775932bae16ce2863a379ea2b01990c119c9b6cc1f55e2c03c35d8a427
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: number
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2746,8 +5506,29 @@ records:
     value:
       case_key: schema_union_anyOf_number_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 2912b07095f8d50a6c530e86811fcbc526d7f20533b5ee4650ea5e97657e8174
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: number
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2770,8 +5551,29 @@ records:
     value:
       case_key: schema_union_anyOf_number_string
       stimulus:
-        ref: current
         semantic_sha256: 6db595b6f9d2c5567dc76419cc4b1c48615ef453fc6a9dee08eedbe3cbbf7524
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: number
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2794,8 +5596,29 @@ records:
     value:
       case_key: schema_union_anyOf_number_typed
       stimulus:
-        ref: current
         semantic_sha256: 464bc1d2000a67a9762a19fe6b54d8224d193a45ba62da9df0854d43ca53d529
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: number
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2818,8 +5641,29 @@ records:
     value:
       case_key: schema_union_anyOf_object_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 1d6008dda6148199ea23d88b5829b1c07c574f4c5d8c7fd9f38514888587baf5
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: object
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2842,8 +5686,29 @@ records:
     value:
       case_key: schema_union_anyOf_object_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 13a26c0f966f6d82c698bf7940f5d8bffed35075bd7f3229d7ac9cee00e3603c
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - type: object
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2866,8 +5731,29 @@ records:
     value:
       case_key: schema_union_anyOf_object_string
       stimulus:
-        ref: current
         semantic_sha256: 3df94bc27c3506d44437afa0ffe94f542068452629ccca7be0f3a87b60202f33
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2890,8 +5776,29 @@ records:
     value:
       case_key: schema_union_anyOf_object_typed
       stimulus:
-        ref: current
         semantic_sha256: ca3e093f822c13c33a652eff1b7c19252fdf1ee522f4809caf89a67961fcd9d2
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  anyOf:
+                  - const: auto
+                  - type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2914,8 +5821,29 @@ records:
     value:
       case_key: schema_union_oneOf_array_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: fe554ef9082003ffb863fbd57b813a40b32e0c8ff35152ce607e798e082d70a4
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: array
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2938,8 +5866,29 @@ records:
     value:
       case_key: schema_union_oneOf_array_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 4c9a93add78a448d3d8c39b1f148182bee9abb49f7f3ef1c668065367d5a35ca
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: array
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2962,8 +5911,29 @@ records:
     value:
       case_key: schema_union_oneOf_array_string
       stimulus:
-        ref: current
         semantic_sha256: fa1e82a212773b594330ed35ffc076d2a1bf1aed3ef5b0f5eba723a095eefb7e
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: array
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -2986,8 +5956,29 @@ records:
     value:
       case_key: schema_union_oneOf_array_typed
       stimulus:
-        ref: current
         semantic_sha256: 18ec92a7acf3c04994f0185cca213f11470dae7bcd47edd7cc29f9435215a96e
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: array
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":[1,2]}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3010,8 +6001,29 @@ records:
     value:
       case_key: schema_union_oneOf_boolean_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 7c171c64b5bc0d6ec973c4ebf8c1f66d0d1cd98fa7a76c2d3d271be9ba5a1485
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: boolean
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3034,8 +6046,29 @@ records:
     value:
       case_key: schema_union_oneOf_boolean_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 42d556eed6a8c1667ef34eaa37f0a49a43f64b4c48ba34576f22745cdcb5bf2f
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: boolean
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3058,8 +6091,29 @@ records:
     value:
       case_key: schema_union_oneOf_boolean_string
       stimulus:
-        ref: current
         semantic_sha256: bc3be718813c114a51c3443878bb8eb1970dba222c12f2651f538f1df8a54e87
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: boolean
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3082,8 +6136,29 @@ records:
     value:
       case_key: schema_union_oneOf_boolean_typed
       stimulus:
-        ref: current
         semantic_sha256: 12003d6a0675b4cfd9897c313c66103aa454ea7d3e0f1ac5b5cb17ba2db626c4
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: boolean
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":true}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3106,8 +6181,29 @@ records:
     value:
       case_key: schema_union_oneOf_integer_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: e0c2764af1f7c0aa32a2ed6b66383307812a1e6ef0124085958c0476bf8593de
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: integer
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3130,8 +6226,29 @@ records:
     value:
       case_key: schema_union_oneOf_integer_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 379162065d729c2de32d703e7a0449c07b85e0adbb335cb25f9915595298574a
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: integer
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3154,8 +6271,29 @@ records:
     value:
       case_key: schema_union_oneOf_integer_string
       stimulus:
-        ref: current
         semantic_sha256: 0192bf585b9925da72fe5d3dddeb6e1074a0d483db8da6b4b06e6184f0386b8c
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3178,8 +6316,29 @@ records:
     value:
       case_key: schema_union_oneOf_integer_typed
       stimulus:
-        ref: current
         semantic_sha256: 64011d410326112f6899964a4059270ed4f38b294650942458446237b51d79fc
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: integer
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":42}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3202,8 +6361,29 @@ records:
     value:
       case_key: schema_union_oneOf_null_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: f3df64d22a6e42faf4b4dd13caa86f26aec3858696a7f783528b015c0a20ffa6
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: 'null'
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3226,8 +6406,29 @@ records:
     value:
       case_key: schema_union_oneOf_null_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: bcc541fa8407962011513a6cff3a70806e6f97f15d1de983779befab7a7c4d97
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: 'null'
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3250,8 +6451,29 @@ records:
     value:
       case_key: schema_union_oneOf_null_string
       stimulus:
-        ref: current
         semantic_sha256: 2f928544896e934c797ceb15d1b66e6072d57cf0649c8da04e8c422819e8b3ae
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3274,8 +6496,29 @@ records:
     value:
       case_key: schema_union_oneOf_null_typed
       stimulus:
-        ref: current
         semantic_sha256: 5a23ea49ea140e6f96f0b399819449ff9e38d0b73dc730e1e19bbf690f9b6893
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: 'null'
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":null}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3298,8 +6541,29 @@ records:
     value:
       case_key: schema_union_oneOf_number_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 5697d66ea49a90477bc1a83d6eae8d95bd9736216710b60a80ae150997a8b396
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: number
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3322,8 +6586,29 @@ records:
     value:
       case_key: schema_union_oneOf_number_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: 43d15cd2bb610b7a1d5e8827b090b2698bac05c0c568929557ae7d31a3269eec
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: number
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3346,8 +6631,29 @@ records:
     value:
       case_key: schema_union_oneOf_number_string
       stimulus:
-        ref: current
         semantic_sha256: 5c3956eb165a7f28eb652515bb9d1b1df4203788781e3e4341ebc6e82b23c74f
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: number
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3370,8 +6676,29 @@ records:
     value:
       case_key: schema_union_oneOf_number_typed
       stimulus:
-        ref: current
         semantic_sha256: c6179b1267a19f2f09dd9655bee01066c94c1cc983599a947186aca0bce4b426
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: number
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":3.5}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3394,8 +6721,29 @@ records:
     value:
       case_key: schema_union_oneOf_object_reverse_string
       stimulus:
-        ref: current
         semantic_sha256: 6cc3b1b70a19ab00d43a48053f8a49c5fd9987b8b6b1bbc8539cf0764d74a195
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: object
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3418,8 +6766,29 @@ records:
     value:
       case_key: schema_union_oneOf_object_reverse_typed
       stimulus:
-        ref: current
         semantic_sha256: e8f6bdc9b3ff88d6813f541d361336337d00fefc2bddc0030190285e1a40356d
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - type: object
+                  - const: auto
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3442,8 +6811,29 @@ records:
     value:
       case_key: schema_union_oneOf_object_string
       stimulus:
-        ref: current
         semantic_sha256: aa8f2d25a146939bd2bd5ecfd5524574ba97bc9d35ba5d7d03ab451f7c89b374
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":"auto"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3466,8 +6856,29 @@ records:
     value:
       case_key: schema_union_oneOf_object_typed
       stimulus:
-        ref: current
         semantic_sha256: e05c25d49a635aeebcf1ad219096dccd196088d8e7fa44d0b7ab55511c04aaa4
+        inline:
+          input: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: schema_probe
+            parameters:
+              type: object
+              properties:
+                value:
+                  oneOf:
+                  - const: auto
+                  - type: object
+              required:
+              - value
+              additionalProperties: false
+            strict: true
+          chunks:
+          - delta_text: <|python_tag|>{"name":"schema_probe","arguments":{"value":{"x":1}}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3490,8 +6901,59 @@ records:
     value:
       case_key: text_before_tool
       stimulus:
-        ref: current
         semantic_sha256: 8cd7c255a92066c440500317fd64dee398eb4230d9c0dc375ad8e251fe8e5cf8
+        inline:
+          input: 'On it: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: 'On it: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3514,8 +6976,59 @@ records:
     value:
       case_key: text_between_calls
       stimulus:
-        ref: current
         semantic_sha256: 6596db2e06f5dd783337cf2cb5781ba86f51e439612916e68756319873b7202e
+        inline:
+          input: <|python_tag|>{"name":"f","arguments":{"x":"1"}} then <|python_tag|>{"name":"g","arguments":{"y":"2"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"f","arguments":{"x":"1"}} then <|python_tag|>{"name":"g","arguments":{"y":"2"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3538,8 +7051,59 @@ records:
     value:
       case_key: text_only
       stimulus:
-        ref: current
         semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+        inline:
+          input: The answer is 42, no tools needed.
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: The answer is 42, no tools needed.
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3562,8 +7126,59 @@ records:
     value:
       case_key: text_sandwich
       stimulus:
-        ref: current
         semantic_sha256: b333adf79d7c935d2dc151b7a467a42c278883c56b97c1361955f981506e2cab
+        inline:
+          input: Before. <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}} After.
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: Before. <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}} After.
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3586,8 +7201,59 @@ records:
     value:
       case_key: tool_only
       stimulus:
-        ref: current
         semantic_sha256: ba90b53c3f847ed6881f815f00cf56745d4a66b3b40a8f59eee9bf2a0da916cb
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3610,8 +7276,59 @@ records:
     value:
       case_key: trailing_text_after_tool
       stimulus:
-        ref: current
         semantic_sha256: 6e27dcf4c9dc5412b0822356238c76e63deb3468d251b93aedbf45ed1f02e1fb
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}The forecast shows clear skies for the rest of the week.
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}The forecast shows clear skies for the rest of the week.
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3634,8 +7351,59 @@ records:
     value:
       case_key: truncated_tool_eof
       stimulus:
-        ref: current
         semantic_sha256: 490e120a4179af0843d97e5e7a3845d363f9253b711d8505bce05cd4fbd59a6f
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3658,8 +7426,59 @@ records:
     value:
       case_key: two_calls
       stimulus:
-        ref: current
         semantic_sha256: 7857b31c5e66e20d99fb808431b3463f32c8ae3eddc0f941fc78a1b5431d7eb8
+        inline:
+          input: <|python_tag|>{"name":"f","arguments":{"x":"1"}}<|python_tag|>{"name":"g","arguments":{"y":"2"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"f","arguments":{"x":"1"}}<|python_tag|>{"name":"g","arguments":{"y":"2"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3682,8 +7501,59 @@ records:
     value:
       case_key: two_calls_same_name
       stimulus:
-        ref: current
         semantic_sha256: 07962fc24110b978dc52587031f4542e070db5ed9400a6786d72fd0fe82065b5
+        inline:
+          input: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}<|python_tag|>{"name":"get_weather","arguments":{"city":"Tokyo"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                city:
+                  type: string
+          - name: f
+            parameters:
+              type: object
+              properties:
+                x:
+                  type: string
+          - name: g
+            parameters:
+              type: object
+              properties:
+                y:
+                  type: string
+          - name: run
+            parameters:
+              type: object
+              properties:
+                cmd:
+                  type: string
+          - name: log
+            parameters:
+              type: object
+              properties:
+                note:
+                  type: string
+          - name: sum_values
+            parameters:
+              type: object
+              properties:
+                values:
+                  type: array
+                  items:
+                    type: number
+          - name: functions.
+            parameters:
+              type: object
+              properties: {}
+          chunks:
+          - delta_text: <|python_tag|>{"name":"get_weather","arguments":{"city":"Paris"}}<|python_tag|>{"name":"get_weather","arguments":{"city":"Tokyo"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3706,8 +7576,68 @@ records:
     value:
       case_key: unused_reference_graph_parameter_types
       stimulus:
-        ref: current
         semantic_sha256: 649abb4979754b6c5006532cc8e307627e6e55cc0384fbacc32dd92754ae3f3e
+        inline:
+          input: <|python_tag|>{"name":"capture_payload","arguments":{"count":42,"flag":false,"text":"null"}}
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: capture_payload
+            parameters:
+              type: object
+              $defs:
+                N0:
+                  allOf:
+                  - $ref: '#/$defs/N1'
+                  - $ref: '#/$defs/N1'
+                  - $ref: '#/$defs/N1'
+                  - $ref: '#/$defs/N1'
+                N1:
+                  allOf:
+                  - $ref: '#/$defs/N2'
+                  - $ref: '#/$defs/N2'
+                  - $ref: '#/$defs/N2'
+                  - $ref: '#/$defs/N2'
+                N2:
+                  allOf:
+                  - $ref: '#/$defs/N3'
+                  - $ref: '#/$defs/N3'
+                  - $ref: '#/$defs/N3'
+                  - $ref: '#/$defs/N3'
+                N3:
+                  allOf:
+                  - $ref: '#/$defs/N4'
+                  - $ref: '#/$defs/N4'
+                  - $ref: '#/$defs/N4'
+                  - $ref: '#/$defs/N4'
+                N4:
+                  allOf:
+                  - $ref: '#/$defs/N5'
+                  - $ref: '#/$defs/N5'
+                  - $ref: '#/$defs/N5'
+                  - $ref: '#/$defs/N5'
+                N5:
+                  allOf:
+                  - $ref: '#/$defs/N6'
+                  - $ref: '#/$defs/N6'
+                  - $ref: '#/$defs/N6'
+                  - $ref: '#/$defs/N6'
+                N6:
+                  type: string
+              properties:
+                a:
+                  $ref: '#/$defs/N0'
+                count:
+                  type: integer
+                flag:
+                  type: boolean
+                text:
+                  type: string
+          chunks:
+          - delta_text: <|python_tag|>{"name":"capture_payload","arguments":{"count":42,"flag":false,"text":"null"}}
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3730,8 +7660,29 @@ records:
     value:
       case_key: v1_split_parallel_tool_calls
       stimulus:
-        ref: current
         semantic_sha256: 11af85353155ce32203b56f320b6084a42129964bd4126c6468b9138f0604147
+        inline:
+          input: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
+          init:
+            starting_state: None
+            tool_output_mode: Native
+            named_tool: null
+          finish_reason: stop
+          tools:
+          - name: get_weather
+            parameters:
+              type: object
+              properties:
+                location:
+                  type: string
+          - name: get_time
+            parameters:
+              type: object
+              properties:
+                timezone:
+                  type: string
+          chunks:
+          - delta_text: '<|python_tag|>{"name": "get_weather", "arguments": {"location": "NYC"}};{"name": "get_time", "arguments": {"timezone": "EST"}}'
       observation:
         unavailable:
           code: vllm_rust_parser_not_registered
@@ -3750,3 +7701,4 @@ records:
             source_sha256: 1a3e417147cac95b3f16f0ced2f0d132307bbff051c031f6ad624bd1895a40bd
             version: 0.31.0
     member: conformance/fixtures-unified-v2/families/llama3_json/vllm_rust-0.31.0.yaml
+schema_version: 2

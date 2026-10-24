@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"17759d64fbd75fdf383e020ea92371b716f44321827100cc016cc4d61c6e992a","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: qwen3_coder

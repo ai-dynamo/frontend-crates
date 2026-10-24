@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Independent qualification against the explicitly supplied preserved dataset."""
+"""Independent qualification against bundled or explicitly supplied preserved evidence."""
 import hashlib
 import json
 from pathlib import Path
@@ -8,6 +8,7 @@ import subprocess
 import tarfile
 
 import capture_sources
+import migrate_capture_sources
 from fixture_corpus import load_corpus, version_key
 import resolve_fixtures
 import resolve_reasoning_fixtures
@@ -22,19 +23,41 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_preserved_history_matches_committed_baseline(history_source):
-    pin = json.loads(capture_sources.read(ROOT, capture_sources.PIN))
-    inventory = capture_sources.verify(history_source, pin)
+    pin = capture_sources.history_pin(ROOT, history_source)
+    capture_sources.verify(history_source, pin)
+    inventory = json.loads(capture_sources.read(history_source, capture_sources.INVENTORY))
     retained = {row["path"] for row in inventory["files"]}
-    committed = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", pin["source_revision"],
-                                         "conformance/fixtures", "conformance/fixtures-unified-v2", "conformance/fixtures-beam"],
-                                        cwd=ROOT, text=True).splitlines()
-    assert set(committed) <= retained, sorted(set(committed) - retained)
+    migration_path = history_source / "evidence/history-migration.json"
+    identities = []
+    inventory_by_path = {row["path"]: row for row in inventory["files"]}
+    if migration_path.is_file():
+        migration = json.loads(migration_path.read_bytes())
+        old_inventory = json.loads((history_source / "evidence/complete-history-inventory.json").read_bytes())
+        replaced = set(migration["replaced_archives"])
+        for row in old_inventory["files"]:
+            if row["path"] not in replaced:
+                identities.append((row, migration["frozen_revision"], row["path"]))
+        assert len(replaced) == 401
+        for dataset in migration["datasets"]:
+            committed = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", dataset["revision"],
+                                                 capture_sources.STORE], cwd=ROOT, text=True).splitlines()
+            for name in committed:
+                physical = f"{dataset['root']}/{name}"
+                row = inventory_by_path[physical]
+                identities.append((row, dataset["revision"], name))
+    else:
+        committed = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", pin["source_revision"],
+                                             "conformance/fixtures", "conformance/fixtures-unified-v2", "conformance/fixtures-beam"],
+                                            cwd=ROOT, text=True).splitlines()
+        assert set(committed) <= retained, sorted(set(committed) - retained)
+        identities = [(row, pin["source_revision"], row["path"]) for row in inventory["files"]]
+    assert {row["path"] for row, _revision, _source in identities} <= retained
     process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=ROOT,
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     lfs_objects = 0
     try:
-        for row in inventory["files"]:
-            process.stdin.write(f"{pin['source_revision']}:{row['path']}\n".encode())
+        for row, revision, source in identities:
+            process.stdin.write(f"{revision}:{source}\n".encode())
             process.stdin.flush()
             header = process.stdout.readline().decode().strip().split()
             assert len(header) == 3 and header[1] == "blob", row["path"]
@@ -65,33 +88,36 @@ def test_preserved_history_matches_committed_baseline(history_source):
     print(f"preservation passed: {len(inventory['files'])} committed files ({lfs_objects} LFS identities), {members} archive members")
 
 
-def test_current_unified_is_byte_exact_per_family_latest(history_source):
-    selected = {}
-
-    def retain(name, data, archive):
-        identity = unified_history.source_identity(name)
-        if identity["kind"] == "inputs-and-golden":
-            assert capture_sources.read(ROOT, capture_sources.STORE + "/" + name) == data
-            return
-        if identity["kind"] != "history":
-            return
-        key = identity["family"], identity["implementation"]
-        order = unified_history._capture_release_sort_key(identity["version"])
-        if key not in selected or selected[key][0] < order:
-            selected[key] = order, name, data
-
-    unified_archives.inventory(history_source / capture_sources.STORE, member_callback=retain)
+def test_current_unified_preserves_resolved_latest_records(history_source):
     current = [row for row in capture_sources.current(ROOT)["captures"] if row["surface"] == "unified"]
-    assert {(row["family"], row["implementation"]) for row in current} == set(selected)
-    records = 0
-    for row in current:
-        assert Path(row["path"]).stem == row["implementation"]
-        _order, name, original = selected[row["family"], row["implementation"]]
-        assert row["source"] == capture_sources.STORE + "/" + name
-        assert capture_sources.read(ROOT, row["path"]) == original
-        snapshot = yaml.safe_load(original)
-        records += len(snapshot["records"])
-    print(f"current Unified preservation passed: {len(current)} byte-exact snapshots, {records} complete records")
+    with capture_sources.history_view(ROOT, history_source) as view:
+        if (view / capture_sources.DATASETS).is_file():
+            store = unified_history.load_store(view / capture_sources.STORE)
+            for row in current:
+                history = store.histories[row["family"], row["implementation"]]
+                selected = f"{row['implementation']}-{row['version']}"
+                snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+                assert typed_equal({case: record["value"] for case, record in snapshot["records"].items()}, history.resolve(selected))
+                header, payload = capture_sources.read(ROOT, row["path"]).split(b"\n", 1)
+                assert json.loads(header.removeprefix(b"capture_selection: "))["payload_sha256"] == hashlib.sha256(payload).hexdigest()
+            print(f"current Unified preservation passed: {len(current)} independently bound snapshots")
+            return
+        selected = {}
+        def retain(name, data, archive):
+            identity = unified_history.source_identity(name)
+            if identity["kind"] != "history":
+                return
+            key = identity["family"], identity["implementation"]
+            order = unified_history._capture_release_sort_key(identity["version"])
+            if key not in selected or selected[key][0] < order:
+                selected[key] = order, name, data
+        unified_archives.inventory(view / capture_sources.STORE, member_callback=retain)
+        for row in current:
+            original = yaml.safe_load(selected[row["family"], row["implementation"]][2])
+            authored = yaml.safe_load(capture_sources.read(view, f"{capture_sources.STORE}/families/{row['family']}/inputs_and_golden.yaml"))
+            snapshot = yaml.safe_load(capture_sources.read(ROOT, row["path"]))
+            snapshot.pop(capture_sources.SELECTION, None)
+            assert typed_equal(capture_sources.independent_snapshot(original, authored), snapshot)
 
 
 def test_current_legacy_matches_existing_resolvers(history_source, tmp_path):
@@ -168,3 +194,25 @@ def test_current_legacy_matches_existing_resolvers(history_source, tmp_path):
         documents += len(snapshot["documents"])
         cases += sum(len(doc["cases"]) for doc in snapshot["documents"].values())
     print(f"current legacy parity passed: {len(current)} snapshots, {documents} documents, {cases} complete case records")
+
+
+def test_frozen_interpretation_delta_preserves_union_fields_and_requests():
+    request = {"input": "original"}
+    first = {"value": {"stimulus": {"inline": request, "semantic_sha256": "digest"},
+                       "observation": {"value": {}}, "document": {"producer": "older", "missing": None}},
+             "member": "old.yaml", "suppress_inherited_from": True}
+    original = {"value": {"stimulus": {"ref": "current", "semantic_sha256": "digest"},
+                          "observation": {"value": {}}, "document": {"producer": "different", "null": None}},
+                "member": "retained.yaml"}
+    records = {"same": first, "deleted": first}
+    frozen = {"schema_version": 2, "provenance": {"version": "old"},
+              "execution_proof": {"receipt": {"opaque": b"bytes"}},
+              "records": {"same": original, "added": original}}
+    authored = {"cases": {key: {"request": request} for key in ("same", "added")}}
+    delta = migrate_capture_sources.interpretation_delta(records, frozen, authored)
+    restored = migrate_capture_sources.restore_interpretation(records, delta)
+    assert typed_equal(restored, frozen)
+    assert records["same"]["value"]["stimulus"] == {"inline": request, "semantic_sha256": "digest"}
+    assert "deleted" not in restored["records"]
+    assert "missing" not in restored["records"]["same"]["value"]["document"]
+    assert restored["records"]["same"]["value"]["document"]["null"] is None

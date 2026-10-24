@@ -1,0 +1,955 @@
+schema_version: 1
+family: deepseek_v41
+implementation: vllm_python_batch
+version: 0.20.0
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.20.0
+      source_sha256: f7a8dfc6d2877fc2ae1308f556283a3884bc4c5bd9a8a700711c1c10a772a983
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: 20592e19bd7376df23a27da34ebd9e4ec397646e0fd3ed9d682817531989d1c1
+cases:
+- arg_json_null_anyof
+- arg_json_null_const
+- arg_json_null_nullable
+- arg_json_null_oneof
+- arg_marker_in_string
+- arg_string_null
+- arg_string_null_const
+- arg_string_null_enum
+- arg_string_null_sibling_anyof
+- arg_string_null_sibling_oneof
+- arg_string_null_union
+- arg_string_null_untyped_branch
+- arg_unicode
+- content_then_reason
+- content_then_reason_then_tool
+- deepseek_v41_json_invocation_body
+- dsml_bare_invoke_four_lf
+- dsml_bare_invoke_two_lf
+- dsml_empty_content_separator
+- dsml_no_separator
+- dsml_reasoning_then_separator
+- dsml_separator_four_lf
+- dsml_separator_two_lf
+- dsml_whitespace_content_separator
+- empty_args
+- glm_ref_encoded_targets
+- glm_ref_json_looking_strings
+- glm_ref_object
+- glm_ref_scalar_types
+- local_schema_id_preserves_type
+- malformed_json_then_two_valid_calls
+- narrated_calls
+- nullable_reference_alias_literals
+- orphan_close_after_prose
+- qwen_string_null
+- reason_between_calls
+- reason_markup_in_arg
+- reason_markup_in_arg_with_text
+- retired__7_3
+- schema_const_array_allof
+- schema_const_array_bare
+- schema_const_array_ref
+- schema_const_array_typed
+- schema_const_boolean_allof
+- schema_const_boolean_bare
+- schema_const_boolean_ref
+- schema_const_boolean_typed
+- schema_const_entity_allof
+- schema_const_entity_bare
+- schema_const_entity_ref
+- schema_const_entity_typed
+- schema_const_null_allof
+- schema_const_null_bare
+- schema_const_null_ref
+- schema_const_null_typed
+- schema_const_number_allof
+- schema_const_number_bare
+- schema_const_number_ref
+- schema_const_number_typed
+- schema_const_object_allof
+- schema_const_object_bare
+- schema_const_object_ref
+- schema_const_object_typed
+- schema_const_plain_allof
+- schema_const_plain_bare
+- schema_const_plain_ref
+- schema_const_plain_typed
+- schema_const_quoted_allof
+- schema_const_quoted_bare
+- schema_const_quoted_ref
+- schema_const_quoted_typed
+- schema_const_space_allof
+- schema_const_space_bare
+- schema_const_space_ref
+- schema_const_space_typed
+- schema_const_unicode_allof
+- schema_const_unicode_bare
+- schema_const_unicode_ref
+- schema_const_unicode_typed
+- schema_declared_array
+- schema_declared_boolean
+- schema_declared_integer
+- schema_declared_null
+- schema_declared_number
+- schema_declared_object
+- schema_declared_string
+- schema_enum_integer
+- schema_enum_string
+- schema_escaped_ref_const
+- schema_id_direct_integer
+- schema_integer_const_ambiguous
+- schema_intersection_anyof
+- schema_intersection_oneof
+- schema_null_union_ambiguous
+- schema_nullable_string
+- schema_object_const_union
+- schema_percent_ref_const
+- schema_ref_sibling_integer
+- schema_ref_union_anyof_integer
+- schema_ref_union_anyof_string
+- schema_ref_union_oneof_integer
+- schema_ref_union_oneof_string
+- schema_type_array_integer_null
+- schema_type_array_integer_null_null
+- schema_type_array_string_integer
+- schema_union_anyof_array_reverse_string
+- schema_union_anyof_array_reverse_typed
+- schema_union_anyof_array_string
+- schema_union_anyof_array_typed
+- schema_union_anyof_boolean_reverse_string
+- schema_union_anyof_boolean_reverse_typed
+- schema_union_anyof_boolean_string
+- schema_union_anyof_boolean_typed
+- schema_union_anyof_integer_reverse_string
+- schema_union_anyof_integer_reverse_typed
+- schema_union_anyof_integer_string
+- schema_union_anyof_integer_typed
+- schema_union_anyof_null_reverse_string
+- schema_union_anyof_null_reverse_typed
+- schema_union_anyof_null_string
+- schema_union_anyof_null_typed
+- schema_union_anyof_number_reverse_string
+- schema_union_anyof_number_reverse_typed
+- schema_union_anyof_number_string
+- schema_union_anyof_number_typed
+- schema_union_anyof_object_reverse_string
+- schema_union_anyof_object_reverse_typed
+- schema_union_anyof_object_string
+- schema_union_anyof_object_typed
+- schema_union_oneof_array_reverse_string
+- schema_union_oneof_array_reverse_typed
+- schema_union_oneof_array_string
+- schema_union_oneof_array_typed
+- schema_union_oneof_boolean_reverse_string
+- schema_union_oneof_boolean_reverse_typed
+- schema_union_oneof_boolean_string
+- schema_union_oneof_boolean_typed
+- schema_union_oneof_integer_reverse_string
+- schema_union_oneof_integer_reverse_typed
+- schema_union_oneof_integer_string
+- schema_union_oneof_integer_typed
+- schema_union_oneof_null_reverse_string
+- schema_union_oneof_null_reverse_typed
+- schema_union_oneof_null_string
+- schema_union_oneof_null_typed
+- schema_union_oneof_number_reverse_string
+- schema_union_oneof_number_reverse_typed
+- schema_union_oneof_number_string
+- schema_union_oneof_number_typed
+- schema_union_oneof_object_reverse_string
+- schema_union_oneof_object_reverse_typed
+- schema_union_oneof_object_string
+- schema_union_oneof_object_typed
+- text_before_tool
+- text_between_calls
+- text_only
+- text_reason_tool_text_reason_tool
+- text_sandwich
+- tool_block_never_closed_then_text
+- tool_in_reason
+- tool_in_reason_with_text
+- tool_markup_only_emits_nothing
+- tool_no_close
+- tool_only
+- trailing_text_after_tool
+- truncated_tool_eof
+- two_adjacent_reason_spans
+- two_calls
+- two_calls_same_name
+- unused_reference_graph_parameter_types
+defaults:
+  batch_final:
+    calls: []
+exceptions:
+  arg_json_null_anyof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_json_null_const:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_json_null_nullable:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_json_null_oneof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_marker_in_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="run"><｜DSML｜ parameter name="cmd" string="true">git log </｜DSML｜ invoke> --oneline</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_const:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_enum:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_sibling_anyof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_sibling_oneof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_union:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_string_null_untyped_branch:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  arg_unicode:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">São Paulo 東京</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  content_then_reason:
+    batch_final:
+      reasoning_text: let me recall
+      normal_text: The capital is Paris.
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: checking the forecast
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+  deepseek_v41_json_invocation_body:
+    batch_final:
+      reasoning_text: "<｜DSML｜ calls>\n<｜DSML｜ invoke name=\"inspect\">\n{\"value\": \" café \U0001F408 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \\\"x\\\"\\n\", \"nested\": {\"values\": [true, 42, -1250]}}\n</｜DSML｜ invoke>\n<｜DSML｜ invoke name=\"done\">{}</｜DSML｜ invoke>\n</｜DSML｜ calls>"
+      normal_text: ''
+  dsml_bare_invoke_four_lf:
+    batch_final:
+      reasoning_text: 'I will check the weather.
+
+
+
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>'
+      normal_text: ''
+  dsml_bare_invoke_two_lf:
+    batch_final:
+      reasoning_text: 'I will check the weather.
+
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>'
+      normal_text: ''
+  dsml_empty_content_separator:
+    batch_final:
+      reasoning_text: '
+
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      normal_text: ''
+  dsml_no_separator:
+    batch_final:
+      reasoning_text: 'I will check the weather.<｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      normal_text: ''
+  dsml_reasoning_then_separator:
+    batch_final:
+      reasoning_text: Check weather.
+      normal_text: '
+
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+  dsml_separator_four_lf:
+    batch_final:
+      reasoning_text: 'I will check the weather.
+
+
+
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      normal_text: ''
+  dsml_separator_two_lf:
+    batch_final:
+      reasoning_text: 'I will check the weather.
+
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      normal_text: ''
+  dsml_whitespace_content_separator:
+    batch_final:
+      reasoning_text: '
+
+
+
+
+        <｜DSML｜ calls>
+
+        <｜DSML｜ invoke name="get_weather">
+
+        <｜DSML｜ parameter name="location" string="true">NYC</｜DSML｜ parameter>
+
+        </｜DSML｜ invoke>
+
+        </｜DSML｜ calls>'
+      normal_text: ''
+  empty_args:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  glm_ref_encoded_targets:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="space" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="utf8_plus" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="pointer" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  glm_ref_json_looking_strings:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="object_text" string="true">{"x":1}</｜DSML｜ parameter><｜DSML｜ parameter name="array_text" string="true">[1,2]</｜DSML｜ parameter><｜DSML｜ parameter name="quoted_text" string="true">"hello"</｜DSML｜ parameter><｜DSML｜ parameter name="inline_text" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  glm_ref_object:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="payload" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  glm_ref_scalar_types:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="ratio" string="false">3.5</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">true</｜DSML｜ parameter><｜DSML｜ parameter name="narrowed" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  local_schema_id_preserves_type:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  malformed_json_then_two_valid_calls:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="bad"><｜DSML｜ parameter name="value" string="false">{"x":"unfinished</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="value" string="true">é</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="value" string="true">Café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  narrated_calls:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> then I'll run <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  nullable_reference_alias_literals:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="const_text" string="true">null</｜DSML｜ parameter><｜DSML｜ parameter name="enum_text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  orphan_close_after_prose:
+    batch_final:
+      reasoning_text: I will check that. </｜DSML｜ calls>
+      normal_text: ''
+  qwen_string_null:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  reason_between_calls:
+    batch_final:
+      reasoning_text: mid
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+  reason_markup_in_arg:
+    batch_final:
+      reasoning_text: reconsider
+      normal_text: </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+  reason_markup_in_arg_with_text:
+    batch_final:
+      reasoning_text: reconsider
+      normal_text: </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> done.
+  retired__7_3:
+    batch_final:
+      reasoning_text: quoted
+      normal_text: " <｜DSML｜ calls> </｜DSML｜ calls> </｜DSML｜ invoke> &amp; \"x\"\\\n </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
+  schema_const_array_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_array_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_array_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_array_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_boolean_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_boolean_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_boolean_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_boolean_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_entity_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">&lt;</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_entity_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">&lt;</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_entity_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">&lt;</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_entity_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">&lt;</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_null_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_null_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_null_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_null_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_number_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_number_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_number_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_number_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_object_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_object_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_object_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_object_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_plain_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_plain_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_plain_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_plain_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_quoted_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_quoted_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_quoted_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_quoted_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_space_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">  spaced  </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_space_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">  spaced  </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_space_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">  spaced  </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_space_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">  spaced  </｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_unicode_allof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_unicode_bare:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_unicode_ref:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_const_unicode_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">café</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_array:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_boolean:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_null:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_number:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_object:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_declared_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">plain</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_enum_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_enum_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_escaped_ref_const:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">"hello"</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_id_direct_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_integer_const_ambiguous:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_intersection_anyof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_intersection_oneof:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_null_union_ambiguous:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_nullable_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_object_const_union:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_percent_ref_const:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_ref_sibling_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_ref_union_anyof_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">-7</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_ref_union_anyof_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_ref_union_oneof_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">-7</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_ref_union_oneof_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_type_array_integer_null:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_type_array_integer_null_null:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_type_array_string_integer:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_array_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_array_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_array_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_array_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_boolean_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_boolean_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_integer_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_integer_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_integer_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_null_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_null_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_null_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_null_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_number_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_number_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_number_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_number_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_object_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_object_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_object_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_anyof_object_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_array_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_array_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_array_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_array_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">[1,2]</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_boolean_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_boolean_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_boolean_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_boolean_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">true</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_integer_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_integer_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_integer_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_integer_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">42</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_null_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_null_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_null_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_null_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_number_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_number_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_number_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_number_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">3.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_object_reverse_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_object_reverse_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_object_string:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="true">auto</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  schema_union_oneof_object_typed:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="schema_probe"><｜DSML｜ parameter name="value" string="false">{"x":1}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  text_before_tool:
+    batch_final:
+      reasoning_text: 'On it: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>'
+      normal_text: ''
+  text_between_calls:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> then <｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  text_only:
+    batch_final:
+      reasoning_text: The answer is 42, no tools needed.
+      normal_text: ''
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: check A
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> and <think>check B</think><｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+  text_sandwich:
+    batch_final:
+      reasoning_text: Before. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> After.
+      normal_text: ''
+  tool_block_never_closed_then_text:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls>still thinking about it
+      normal_text: ''
+  tool_in_reason:
+    batch_final:
+      reasoning_text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
+      normal_text: ''
+  tool_in_reason_with_text:
+    batch_final:
+      reasoning_text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer
+      normal_text: ' Here you go.'
+  tool_markup_only_emits_nothing:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls></｜DSML｜ calls>
+      normal_text: ''
+  tool_no_close:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter>
+      normal_text: ''
+  tool_only:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  trailing_text_after_tool:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>The forecast shows clear skies for the rest of the week.
+      normal_text: ''
+  truncated_tool_eof:
+    batch_final:
+      reasoning_text: ok
+      normal_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Par
+  two_adjacent_reason_spans:
+    batch_final:
+      reasoning_text: first
+      normal_text: '<think>
+
+        second</think>done'
+  two_calls:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  two_calls_same_name:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Tokyo</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''
+  unused_reference_graph_parameter_types:
+    batch_final:
+      reasoning_text: <｜DSML｜ calls><｜DSML｜ invoke name="capture_payload"><｜DSML｜ parameter name="count" string="false">42</｜DSML｜ parameter><｜DSML｜ parameter name="flag" string="false">false</｜DSML｜ parameter><｜DSML｜ parameter name="text" string="true">null</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      normal_text: ''

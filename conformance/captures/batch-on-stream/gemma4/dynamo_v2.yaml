@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"fb872f5687f06dad2fb7df3025ee66da477128f706bf759484906b6c646c7160","surface":"batch-on-stream","version":"0.7.24"}
 schema_version: 1
 surface: batch-on-stream
 family: gemma4

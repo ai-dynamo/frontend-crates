@@ -1,0 +1,1631 @@
+execution: 2e9ce086b624c62072fe3d5eb13dbd754b4876512163061e027e5b49fb40097d
+changes:
+  arg_json_null:
+    case_key: arg_json_null
+    stimulus:
+      ref: current
+      semantic_sha256: 31e7a035a225168e27c8d25133b8028f6592fd0b10feca017896cd7016628c8f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_json_null_anyof:
+    case_key: arg_json_null_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 88237fb0746750662dd0ed08a2e0c0f6846ec00204b5faadc1a01bfb8892e40a
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_json_null_const:
+    case_key: arg_json_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 628c6e5857a4cde1cb32b89cba152a7a4f984e2274029e34e8b4e8450ae640c8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_json_null_nullable:
+    case_key: arg_json_null_nullable
+    stimulus:
+      ref: current
+      semantic_sha256: c18c2f593dd887dc97f53b3b4222b1f4550fbe54cb6f2303e512d9f3e1438335
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_json_null_oneof:
+    case_key: arg_json_null_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: b1ec0536e333ca2ee013b03f0f3c3fe408a15fb5c4fe9cbff6b29c1f4e265907
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null:
+    case_key: arg_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: f4e6e69dd1be53837b6c39d7fbe59fc9e976ffe4cdc3e8b240d67c3d1779e6e0
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_const:
+    case_key: arg_string_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: ce8a946f09cc3687d7d3efeec9421f3540875c5b4e1301b5d05b33cb7a34300f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_enum:
+    case_key: arg_string_null_enum
+    stimulus:
+      ref: current
+      semantic_sha256: 7c1ad51def41c1d9e1500cf7c8ef35d85e492162780c87f472c837cbf737bc8a
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_sibling_anyof:
+    case_key: arg_string_null_sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 70e2873e38bfc766eab23b203858b18ddcf81fc91250a7cfc5b074334c4110c7
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_sibling_oneof:
+    case_key: arg_string_null_sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 3d838f4fa5cb656b5203349e4edccb1eef5e02ebc1b0e81a1a13d054d8d9aea3
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_union:
+    case_key: arg_string_null_union
+    stimulus:
+      ref: current
+      semantic_sha256: 2d2143002853d49e8a3ef71f698439c6068c9032a8cb785de78ea15cc4130de6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_string_null_untyped_branch:
+    case_key: arg_string_null_untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: 04270ff4552cd06bb6929c7bdc007051c19103a79487f6853f4789e2a30b153e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  arg_unicode:
+    case_key: arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: f0ba4e6a2e325be64a390d6527790514ab8f2dd1210d8dda67ee93d22022512f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  content_then_reason:
+    case_key: content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 2cd85bdb356eddb880cef6b229b38164dc8f603cd9a0b8be0f64e4af3575cd15
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: c9f1d8759e10fb1f50ce61c1cdc059da6a8c95356610e1c251dff8efe47174d3
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  empty_args:
+    case_key: empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: 54c9dba57e47ce15173e91bbd7cc56777a8dec51969e58cf120323e9fac06cee
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  glm_ref_encoded_targets:
+    case_key: glm_ref_encoded_targets
+    stimulus:
+      ref: current
+      semantic_sha256: 72add45b526cedd253526601ce93c224e6f9778e2fe15c4c7d71c3c9af15b8c1
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  glm_ref_json_looking_strings:
+    case_key: glm_ref_json_looking_strings
+    stimulus:
+      ref: current
+      semantic_sha256: 939da078728ff0011439ed1b8161549da71103f2df58969f649e16a264fd4846
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  glm_ref_object:
+    case_key: glm_ref_object
+    stimulus:
+      ref: current
+      semantic_sha256: fda490b9de330633a9c7461fe51e19ebf95130fab70884816c0f70fbb0e27b06
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  glm_ref_scalar_types:
+    case_key: glm_ref_scalar_types
+    stimulus:
+      ref: current
+      semantic_sha256: 1ad67d06843c2ea2c31d8e00464c7388d1d4abdc4628cad432016af7e59a66d8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_array_argument:
+    case_key: guided_json_array_argument
+    stimulus:
+      ref: current
+      semantic_sha256: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_escaped_string_args:
+    case_key: guided_json_escaped_string_args
+    stimulus:
+      ref: current
+      semantic_sha256: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_invalid_call:
+    case_key: guided_json_invalid_call
+    stimulus:
+      ref: current
+      semantic_sha256: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_list_with_broken_element:
+    case_key: guided_json_list_with_broken_element
+    stimulus:
+      ref: current
+      semantic_sha256: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_malformed_json:
+    case_key: guided_json_malformed_json
+    stimulus:
+      ref: current
+      semantic_sha256: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_named_tool:
+    case_key: guided_json_named_tool
+    stimulus:
+      ref: current
+      semantic_sha256: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_partial_calls:
+    case_key: guided_json_partial_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_required_tool:
+    case_key: guided_json_required_tool
+    stimulus:
+      ref: current
+      semantic_sha256: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  guided_json_two_calls:
+    case_key: guided_json_two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  interstitial_text:
+    case_key: interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: 151012c7e0eb4484951d0b9ab54c0704891dd1cad371cfd0b4fd2b115f1485da
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  local_schema_id_preserves_type:
+    case_key: local_schema_id_preserves_type
+    stimulus:
+      ref: current
+      semantic_sha256: 670ebf4871a45943832f1b93608223a6b27ecdf298d1d04603329a1264abfccf
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  narrated_calls:
+    case_key: narrated_calls
+    stimulus:
+      ref: current
+      semantic_sha256: d9cf84738fdf7f6fda613a85d014dce83bffdf52d5b1a56c20e485642e254bac
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  nullable_reference_alias_literals:
+    case_key: nullable_reference_alias_literals
+    stimulus:
+      ref: current
+      semantic_sha256: 16cb16ccd96186029205c959889238a0bf05bfa92b1ca4bc95b200920b155c37
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_redundant_opener:
+    case_key: prefilled_reasoning_redundant_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 6d041bf091f165120368ce500686f6dbfe371eb98708463f7d01ac437f4d1ee2
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_then_text:
+    case_key: prefilled_reasoning_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 730aa56b99495f5203081371ffcd8e2a04b7db5077a88e8a1d9f300a0471f4d6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_then_text_then_tool:
+    case_key: prefilled_reasoning_then_text_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: b62f94a67e78eff1c10a7c336d6e20f8ee88ea208f54925ba4cfa6482d3b1c2b
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_truncated:
+    case_key: prefilled_reasoning_truncated
+    stimulus:
+      ref: current
+      semantic_sha256: f7d7250319a8e8fc52503fa400a2ab710d57038cbf4407be70d7ceaeff9d407c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_with_guided_json:
+    case_key: prefilled_reasoning_with_guided_json
+    stimulus:
+      ref: current
+      semantic_sha256: 84808f9e34bb1f04f493c7f75dc6e0c226442ea15c8eb189a4ce7ba4359fb7ee
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_reasoning_with_tool:
+    case_key: prefilled_reasoning_with_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 74c7dbe7d81ab2976ca5d0bfe2f6b3821a8d60e9207562b71efe1d8eb408a929
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  prefilled_response_reasoning_markers_literal:
+    case_key: prefilled_response_reasoning_markers_literal
+    stimulus:
+      ref: current
+      semantic_sha256: aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_after_tool:
+    case_key: reason_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 96150858740b66465a919b5c6df83bccc1d11a69e8bceeab3fdb3cb079440a44
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_between_calls:
+    case_key: reason_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 46bccf58360dbe88e66af59d41824b3454162f09e6628151666bae8d4d28bbc2
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_interleaved:
+    case_key: reason_interleaved
+    stimulus:
+      ref: current
+      semantic_sha256: 1b403386f0520c671fe1fc9de4dd88dc29df8fd99990d847b8bed70e4db44424
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_markup_in_arg:
+    case_key: reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: f5276703b0dc3a0312c3a02159839b7277c261448edf8bd9dfe1b80f937d0806
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_markup_in_arg_with_text:
+    case_key: reason_markup_in_arg_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 600b6a16a8d4f72ff439464ff54218e03d66d5b8434eab7dc60d57f0d251d0f8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_only:
+    case_key: reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: f5b33d886dd243e5f8d4fc10d84047b1787187c711264e6258809a4cf044bd44
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_then_content:
+    case_key: reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: 60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_then_tool:
+    case_key: reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 7ba8b5f09605952a61910a8627621c00466e67310a6183ad679ef3d63871e3c4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    stimulus:
+      ref: current
+      semantic_sha256: a1dea31f6b7cbb5d3e6cb87e2b825be5ebb59e8dd94dc747fd4e996d23e8aac0
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: b3bbb7d7802ab9b7e32ae6044045dca847e85ad18ff658d1541baa9707f91b17
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  reason_unterminated:
+    case_key: reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: 6724cf0ef35e8e04572ad568a85bdfc710abf1af7f5096838d80368759df451e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_array_allof:
+    case_key: schema_const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 981f5986c049defc7e3a7b1874984d85a8a79d3354e6069860cffb61fa7cf4ae
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_array_bare:
+    case_key: schema_const_array_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f586f590bd23dd27d300ca2668af360532992453d30ec0cfcb64723829341581
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_array_ref:
+    case_key: schema_const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: fed5d0157ed3de30143dd4d5f5bea7fa98b1b46f3050c85b38be0288a800a185
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_array_typed:
+    case_key: schema_const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: af01d6bedb144b0b202da09aca19856915ead1e4171c9dd43fd08fcdb36eff30
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_boolean_allof:
+    case_key: schema_const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: e2a85c18470c1114d0d11cac76fc21ccd64b178aecf79b71b46c9587ff415efd
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_boolean_bare:
+    case_key: schema_const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: c311534609ca0505a5a779641281acb8d398b0a585f7ab1e54780fcf519adf76
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_boolean_ref:
+    case_key: schema_const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 92956c021f52e8159c99f18f9e1e86a547cf966e575eb09783526f528dcdbd4a
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_boolean_typed:
+    case_key: schema_const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 43de9d7dc377fea373ac4d668e3fbe89a3c4af758a6af53a7299b16489ef1c14
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_entity_allof:
+    case_key: schema_const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 2a500367913cf085a7e90d660a504124524042d8c2bc56ffcdc2718e0606d3fb
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_entity_bare:
+    case_key: schema_const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 870671b0ad3c94c36ff9758e8be5e73b5f94e31d03714480ae37214f5b5e9164
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_entity_ref:
+    case_key: schema_const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: df85d09f1cb72e9596e1775268abc8fab6980da53c842f63a29b9aa02957d710
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_entity_typed:
+    case_key: schema_const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b4308766486a57b8bc8d6b556822b2652bafc69099e1f81fe39f2fb8b3c3f6d4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_null_allof:
+    case_key: schema_const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 13acfe8a3da94a2bd7fc5b051853a82ac6651597ab8689b50d1584d8c255ec03
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_null_bare:
+    case_key: schema_const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 03951375c91ed7c1f5581e7c0b2f922e96e7ed442dd08c4c49fe48c45b4b6e8e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_null_ref:
+    case_key: schema_const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 808aaa1f39cb6d9613980e2cafc3dd750b19da1df7fa986b8d81ec002fadf19c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_null_typed:
+    case_key: schema_const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 773df641a6cd75ca960790a0febaa6a9161beb2f4c7aa195684c1c04f9ccd113
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_number_allof:
+    case_key: schema_const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 257d1352e52eff25b242a243db3842ebf26fa9912e4a0e2e4676425dfc6ae623
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_number_bare:
+    case_key: schema_const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f9ea18cf94ddf3ffe8d5a19a1515860c148f458eccafba34911b5423f30bf5b1
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_number_ref:
+    case_key: schema_const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 7e4206549198962b5da7d469fe1a762888707545663d09574b696d258810683f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_number_typed:
+    case_key: schema_const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: c9431699ad3f2a6457d0afb74e3083149182144ab82eaaf448caa0bd8f8c20ec
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_object_allof:
+    case_key: schema_const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: d86aa5552e03377b82ead7ab1189dcce8fe4c67c127c44dd29d7e26f080505f8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_object_bare:
+    case_key: schema_const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: ec64d6c66d04ec8b4187533f96fcddfe4dabf9cacd5ac51f3eb6b5cc8d17f4bc
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_object_ref:
+    case_key: schema_const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 77226da30016fc0e267076301e12e26c73d3def815f21d157aece71a144a0f75
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_object_typed:
+    case_key: schema_const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 19557295decab6f55cdfa8fbaf8425a65b1f9fbb16b3e0b5dadc8bfc4eb3c374
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_plain_allof:
+    case_key: schema_const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: cfdba7f811eeee89a1c13703de4e0812ce079607b59e4dfbf6cc7adf8d2071e1
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_plain_bare:
+    case_key: schema_const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 51084e8bfc2e6f9d2bf49a550bbc3334219bb2cd82e1c4bb7e4084515775cf2e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_plain_ref:
+    case_key: schema_const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 93104609f9577f0c513da88ec70e8bb0644567610c825e1db67e10af0815d589
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_plain_typed:
+    case_key: schema_const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8073e65c1ff5331390cae337f70431e9c6ed534abbf0102ed19b3a6fef7715a8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_quoted_allof:
+    case_key: schema_const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 235bb0299b266c96eb8c430cdbcfdc314da9d7f28c15bcd45c96d02292b2684e
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_quoted_bare:
+    case_key: schema_const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: e4913317beb276b38d5a8695ee8296df351505385efc8211aac519e38df25cef
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_quoted_ref:
+    case_key: schema_const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: c7e9f42be0403633e53da9ab3373d15e6850c9087d83387e1817231e1ddcf6fc
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_quoted_typed:
+    case_key: schema_const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f06aab88b87f7fb859cb91c54b9f020cb87125685c50b66e901350cb62f3d83b
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_space_allof:
+    case_key: schema_const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: ec1ee4e9bd5cfd3eedacc0e9cb0fafe11cbf673bf9d083271f6c2b33a2fbc6c2
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_space_bare:
+    case_key: schema_const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: f7e7ce155079a519cadec10f5fbd030188270dfdfcebf1d667b9f69dc9143258
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_space_ref:
+    case_key: schema_const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 3361172f3b250010586abb194733ea03593331094895c2f176500df03bf4cef6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_space_typed:
+    case_key: schema_const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1c81c21eb18715a982bf3dcf576cf66dddfcec821082975e1d3e540cb9818050
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_unicode_allof:
+    case_key: schema_const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 349768b13964bc7e72eaa62d9638bce328ddfce7ae8ef048ce4b002ce5ad27b6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_unicode_bare:
+    case_key: schema_const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 3b178e99df632cc2ee4b7a9d0982d36ac95830386c7abd088783575f2c5f9c64
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_unicode_ref:
+    case_key: schema_const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8ffba4d9a4c7ed6d50879ae210daab5c2ad170039b114c95f5ce7abed4b7e734
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_const_unicode_typed:
+    case_key: schema_const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 69c0ada53de57ccc9b88662d0682c6b0de4a25f72afeb1cc0724854ec279518f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_array:
+    case_key: schema_declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: 1a324790d3b2229326b0d18b11e2fd38b42cc27b01041947f56328d64f01d77d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_boolean:
+    case_key: schema_declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: 1e56fabafcd3f047376461a03461f41414ea1a09d51989f7e405baa9755ed566
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_integer:
+    case_key: schema_declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 0b6854edfea3967ecfeab66e41fcd28460d13f21fd4ccf00eef12119438fa6e5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_null:
+    case_key: schema_declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: ed39ad355a3dc803c8568c50f8ff8b8ae598b6356b01db16f1eca9c6b1700807
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_number:
+    case_key: schema_declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: 470f8df6f48ffacbdc0c05d18712d37eaf34ca971849300a7b5de4365ded9d23
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_object:
+    case_key: schema_declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 29cc5402c7679b47c701a4c97699c140d6a9c4d919a185b0e9b58317f3340234
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_declared_string:
+    case_key: schema_declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: ee1d2f14cad364c0d1cbe3d3387deb0ba6fc5a952bc0885079f4e6222b13431d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_enum_integer:
+    case_key: schema_enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 9d44aab184bb0410f69051f8851a66415bf8d7251862c52cc5e4dbfb57fdbdd9
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_enum_string:
+    case_key: schema_enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: df16b738d8c4350985fd072b66e1b939a869ccdc035dceefebcf257e41174537
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_escaped_ref_const:
+    case_key: schema_escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 47a850ce019713a4426f9bf305e0b9e28a00edcd6cdf757e16d4ca4f9587c6bf
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_id_direct_integer:
+    case_key: schema_id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 550b200b1a793932bc7069bdd81d71910e7dc9b657fe3f866dbde41cc35c409c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_integer_const_ambiguous:
+    case_key: schema_integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 845306a833835c040efa4e17c788f46b657b3236f3852edc308d77de31ef2525
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_intersection_anyOf:
+    case_key: schema_intersection_anyOf
+    stimulus:
+      ref: current
+      semantic_sha256: 2e51949a7fd0e783e6a6806f42c0b06e2123c061c89d133544da4f24643aa7d8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_intersection_oneOf:
+    case_key: schema_intersection_oneOf
+    stimulus:
+      ref: current
+      semantic_sha256: d23097aa47b811d014a942959734b1e2520f01bbe7080b2a6e6069771d81e8e2
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_null_union_ambiguous:
+    case_key: schema_null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 622dd4d3abdd8c936c58233604652dfa12ffb4d987f4815eed67816b38c35f30
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_nullable_string:
+    case_key: schema_nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1ffc466c8c8d1db643631ba790e7a6f422906c9c50cfb2d73b0a68eca1c886ef
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_object_const_union:
+    case_key: schema_object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 3eff471ea5129ef6ee75b879fd203b0d111370d831d87526b9892a0e93bdf985
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_percent_ref_const:
+    case_key: schema_percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: bc297cb252cfc3aa3c9fd58f1aa270207383709403dc01ffb436b699f9b9e456
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_ref_sibling_integer:
+    case_key: schema_ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 449dd87e8083ff577c31bdfcfb9a1df030795f9072db40c375d98c7111b5f753
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_ref_union_anyOf_integer:
+    case_key: schema_ref_union_anyOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 746429348926df172dda3e4784bc18813d0c95bc252b19ee2acc4b3c934f6616
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_ref_union_anyOf_string:
+    case_key: schema_ref_union_anyOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: c55cad44c148f6a128f79d1688c1089b117d094f53a03d19a9af3b45e75609a3
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_ref_union_oneOf_integer:
+    case_key: schema_ref_union_oneOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 63d7864c55072dea1193a329e34eeab3301dc9637d276776dec6686f69d1ee99
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_ref_union_oneOf_string:
+    case_key: schema_ref_union_oneOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 128320dbb27b26fa24c9b27d11a3ac88f844e27e1d0017891d63817112b365c5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_type_array_integer_null:
+    case_key: schema_type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: 0ca244ac383edba1f8301459d5fcf3cf6e5ea238d0fb6fc8e55af43237b3c2fa
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_type_array_integer_null_null:
+    case_key: schema_type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: 54d50b200c8491f152d9f2dd227edc6e6669d0b541c80c9b62a4c2588a3b84e4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_type_array_string_integer:
+    case_key: schema_type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: f66daf2e736e74d2720d1f7639bac5805c087361ab9653d2dd79eda6647c1d88
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_array_reverse_string:
+    case_key: schema_union_anyOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9593d1de00d2f0a1067248fbc48abd3c69e4ef1d29020218933f8373dfe51b22
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_array_reverse_typed:
+    case_key: schema_union_anyOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 562083f42259521d7724c621fcc5a89225a5fd29f3a8272178ee36876b3e0e51
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_array_string:
+    case_key: schema_union_anyOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 611ea843c71f813270eff5080c5935a1c70814ddf1ff89796e558c45320ae814
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_array_typed:
+    case_key: schema_union_anyOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6a08afb1b3a65c9099c9ac6a74b53ea2188d5c32ba643949b49711f26d78eed6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_boolean_reverse_string:
+    case_key: schema_union_anyOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 26b0b4b87e7269ad4dcb58fb00c2c03c12c19118db7dbcb4ceabd3258a3a969c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_boolean_reverse_typed:
+    case_key: schema_union_anyOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d7c3e2d4ace556f20785dd5bed941d75dd25e148b731ee4c9b502d2583211d4b
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_boolean_string:
+    case_key: schema_union_anyOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: ce392c5a83d0c13e924ad26deddff0953b382a3187e83f27bdd3ba263ff98008
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_boolean_typed:
+    case_key: schema_union_anyOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4d20a5bb3bab56bdfedc640141c18ab11908a1d9981fdb08b837895dc9422166
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_integer_reverse_string:
+    case_key: schema_union_anyOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: e88543025d11ac1acc49dcea40df38496fef5131d65eed31d6347a92cf4a7d0f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_integer_reverse_typed:
+    case_key: schema_union_anyOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 35d72c6d576cfcb848ad3c4f164c96b21b477fcd4796d0e3061551a605b7b2cc
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_integer_string:
+    case_key: schema_union_anyOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 7ea1922f3ee7721c17997748ca0956085c68395398ca869b59fce25adab7005d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_integer_typed:
+    case_key: schema_union_anyOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e1770e1efc4a134f872c72586acf0a32d410e06f83195a170925852f9d763972
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_null_reverse_string:
+    case_key: schema_union_anyOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 8cf240c940841e573b35bb61e2c526c674830024cd9ebb29a2bcd34566186e30
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_null_reverse_typed:
+    case_key: schema_union_anyOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0625a66d2b513247f357d9b8a99cb547bfdcb6f6ec951277d1270f0a0cee5911
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_null_string:
+    case_key: schema_union_anyOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: c79239e132bb75e22cea3424570c2a19a238c3db4fae3c1f89810e24b8e09cb8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_null_typed:
+    case_key: schema_union_anyOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8d7ec019bac6a91eb994a80108b25b9368622638561014812b4c780f06faef96
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_number_reverse_string:
+    case_key: schema_union_anyOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 009ab7e5813c3eca2344bcfc9e2e70f8c9ed4a57bb06e628b75e4071c9e3031b
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_number_reverse_typed:
+    case_key: schema_union_anyOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7d335fdbbd01200b150690eb8c713b88413dadc338ffd9d5e84e354a2e10d0ac
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_number_string:
+    case_key: schema_union_anyOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: d65f9e0af97df435e64346154b9a57deebc5fa1f121783f82b513a30c150e797
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_number_typed:
+    case_key: schema_union_anyOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f78302590a0b8d6c3656ef0f406a935c711101ca703d6d2b72a8e56e197c03e8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_object_reverse_string:
+    case_key: schema_union_anyOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9d9f4ff817318838246781bd46dca201494f5c5ba42caa502d889c024c2dbe93
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_object_reverse_typed:
+    case_key: schema_union_anyOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 56d88b5225a72edca99e6f3e53e27e8cfd348b836975accef5b01eb48bb2a7c8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_object_string:
+    case_key: schema_union_anyOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 85492fb0355729aaf634125874024ded82a0f4cb0429ef764f4d34e8dbdd7d66
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_anyOf_object_typed:
+    case_key: schema_union_anyOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b06ef7968f1a5e7b40882dca81d0951e5adfe8dec6de7c378d7f9e0c245f8eca
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_array_reverse_string:
+    case_key: schema_union_oneOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 591cb864dc36fd71153c8f0fb5673fd056c819346f717957a568b9e89b756c96
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_array_reverse_typed:
+    case_key: schema_union_oneOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2e1d750dd94900af2680fc210ca99d997d7c49caf9febd43468dc400e6c8fea0
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_array_string:
+    case_key: schema_union_oneOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 806bc44da9b1b65c0ca366f2c6ee548496b036773534a9f4b0248a8d50825bd9
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_array_typed:
+    case_key: schema_union_oneOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f90d082273d4f9d7f4b77c34d1d928cece5455b941671c7e745c4bac32120aec
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_boolean_reverse_string:
+    case_key: schema_union_oneOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: de28459632995e5210ac3e414c9fbf16578d75561c0f54cf47f2270933faa40b
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_boolean_reverse_typed:
+    case_key: schema_union_oneOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 68f4a2927bac99f53d63a1411bddfeb3238866e6bbe95c122ea9710c8c7acc7d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_boolean_string:
+    case_key: schema_union_oneOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9aaa5d5564fbddb9a79cb401f794179239e285ec86aaef03e641e45e618c3a05
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_boolean_typed:
+    case_key: schema_union_oneOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 73d09c893124f141d5e3258d5099271ad72c79d86631e94fc5502237c0abe4cb
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_integer_reverse_string:
+    case_key: schema_union_oneOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1615ab23e97396132b64eb7426acf9d274b70a9f29aa5819f58f55906d9fec0c
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_integer_reverse_typed:
+    case_key: schema_union_oneOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a439491626b189feb3eda00686168116186ae6a7a4b0d7a5cd0605cc7b07b4ac
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_integer_string:
+    case_key: schema_union_oneOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 28e37f3dd83d5c699938ec1eedbaa3937dd9900206bf03c712bca98294581069
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_integer_typed:
+    case_key: schema_union_oneOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: eeffef7b3970b6a24ee50411dae9ae99c0bcbaf81807ddceba092d677794aadc
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_null_reverse_string:
+    case_key: schema_union_oneOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 131fabe5aaaad0da5e5ff4b30e4c051da0d63401e8087aaf94f8e5ad878374d5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_null_reverse_typed:
+    case_key: schema_union_oneOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 005f19ae9bb8203e367c958a5b2b62933c3afe00202733ac5633a8a1dde05a5d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_null_string:
+    case_key: schema_union_oneOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 5a30c25ac6b336dd5ed06ee6cc878c40c78fb9a91db9cbbf9b6676551f041b44
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_null_typed:
+    case_key: schema_union_oneOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: da2ffe46eed84f9745b549685d5e2c9a6e82cc0f12cef1c7c55f8999a863f267
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_number_reverse_string:
+    case_key: schema_union_oneOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: c8dba272b10d83c2d3c4d89054cbe5f2dc7f1378479e5a6e6b4eab85b0aa9dc2
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_number_reverse_typed:
+    case_key: schema_union_oneOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 61c7ddceb4b5ef74b305dc177c5414a439f87a1ea26274d43d6e7e5ee3e60dd6
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_number_string:
+    case_key: schema_union_oneOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0f1d8e1ceb9b104e99fbba75f80f7a29ccdabc2620a21325028f83a7647e7d78
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_number_typed:
+    case_key: schema_union_oneOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f3ae2297a20cee9dd4255a00c18c505b6b847c1f6e1800493d67674d55b926f4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_object_reverse_string:
+    case_key: schema_union_oneOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: c38e244429f4840d14faf29162bf372cafdaf823142dae0daefb2eb86b24d9e5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_object_reverse_typed:
+    case_key: schema_union_oneOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 324cc0ecf00cd39586084c1a3847e4ba2b1af9dbd32327b81a5472f64ec451ad
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_object_string:
+    case_key: schema_union_oneOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: d4cd9697b101294ee1bccf741662b1d4d6f978553a54bcc3aec705430b8340ad
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  schema_union_oneOf_object_typed:
+    case_key: schema_union_oneOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 80172c18c27d3921826231c47e6148edfafc4f8d975fa4e358d986acc4bda0d4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  text_before_tool:
+    case_key: text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: de9f7774c8a0dd2c25c132c196c4da930be48a66c2527069864bbc06aca82189
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  text_between_calls:
+    case_key: text_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 0b3bd3b7e8519400bb20bd4dcb46b3164c9b2a7900a31631b0a72be5fa936974
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  text_only:
+    case_key: text_only
+    stimulus:
+      ref: current
+      semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 458da09e0573f9cba96b0e82cf836469de3289afa442674ae0abf89bf83b1fe4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  text_sandwich:
+    case_key: text_sandwich
+    stimulus:
+      ref: current
+      semantic_sha256: 23b4b505467f3610cc64d245cb3496fa7791b2a5c8156e79f31ec2fc47c33773
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  tool_in_reason:
+    case_key: tool_in_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 5f72f2e74e2e5ad6957b0cfbb62b472c2ca9c724c4db10c4f59d6b8caa0258aa
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  tool_in_reason_with_text:
+    case_key: tool_in_reason_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: b8ab222f15fbc97d7473c5007a6185b2b3682372291b506db705332bbcf6abd7
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  tool_only:
+    case_key: tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: ca96e6cbae21eae1120431a0e4e28b52a508a7259749fb6cbe5e75c23690cd68
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 51bdf40dd83effa5f23e472c6089d71352c450f71272a225a0e82db48e0a032a
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: fc59cdfebeb0c59946a28931880438084fc63c489bed105d5f747a18cf2e161d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  two_adjacent_reason_spans:
+    case_key: two_adjacent_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: c7824768284c274c8515956bc1bfc1a0dade0bd5d3709041fa45cc428b90abbe
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  two_calls:
+    case_key: two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 675f36c689fc2f4f264ed87b6595825839d8f2e808e71ac7bb7114b775911e16
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: 49ef13bd389b872c040921009a8d705c5b32fcf411f3d17c14e8ca77c7ad991d
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  two_reason_spans:
+    case_key: two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  unused_reference_graph_parameter_types:
+    case_key: unused_reference_graph_parameter_types
+    stimulus:
+      ref: current
+      semantic_sha256: ed0e7cb351bc2bdb4d19623b1a377b7a9e6c92a86a0f44d15f7b79d11e06cd3f
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 3c56adc54cb8d4865a9c1cce1d27b3d6d219baa7e0f2b4bd54ec39235821bd53
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for qwen3_coder at 0.25.0.

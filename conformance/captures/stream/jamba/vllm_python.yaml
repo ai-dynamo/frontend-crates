@@ -1,3 +1,4 @@
+capture_selection: {"family":"jamba","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"ec6d657495636617a74c30c3abc319deb33cb5d1d97c4bdfe2e90d4d346ebf98","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: jamba

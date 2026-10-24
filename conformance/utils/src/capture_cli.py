@@ -114,11 +114,26 @@ def main(argv=None):
     db = sub.add_parser("dynamo-batch-on-stream")
     db.add_argument("--output", required=True)
 
+    publication = sub.add_parser("publish", help="archive a complete snapshot and update its latest family YAML")
+    publication.add_argument("--capture", required=True)
+    publication.add_argument("--family", required=True)
+    publication.add_argument("--implementation", required=True)
+    publication.add_argument("--version", required=True)
+    publication.add_argument("--mode", default="unified", choices=("unified", "stream", "batch", "batch-on-stream", "reasoning"))
+    publication.add_argument("--history-source")
+
     sub.add_parser("token-ids")
 
     args = ap.parse_args(argv)
 
-    if args.cmd == "stream":
+    if args.cmd == "publish":
+        command = [sys.executable, os.path.join(os.path.dirname(DRIVER), "publish_current_capture.py"), "--root", ROOT,
+                   "--capture", args.capture, "--family", args.family, "--implementation", args.implementation,
+                   "--version", args.version, "--mode", args.mode]
+        if args.history_source:
+            command += ["--history-source", args.history_source]
+        _run(command, dry)
+    elif args.cmd == "stream":
         _driver("stream", args, dry, extra=["--dynamo-todo", args.dynamo_todo])
     elif args.cmd == "batch-on-stream":
         dynamo_v2_json = args.dynamo_v2_json

@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"49365cc14bb1ee4e07dcc329cd722fd001b5e2fe861cc70833cb523d08c9c8ec","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: harmony

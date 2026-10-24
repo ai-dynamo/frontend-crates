@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"6b1cb6e011ab52d8893680618b15a00fabd0090443fa942ad15afa8cfd2de118","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_deci

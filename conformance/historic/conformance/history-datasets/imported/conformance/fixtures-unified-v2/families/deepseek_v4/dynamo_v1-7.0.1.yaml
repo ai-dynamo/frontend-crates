@@ -1,0 +1,37 @@
+parent: dynamo_v1-7.0.0
+execution: 13d786fdfc4573d53d7f230c4a1b8f8800648080f1973503a1764b57b10c70f2
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: text
+          text: 'Sure. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris

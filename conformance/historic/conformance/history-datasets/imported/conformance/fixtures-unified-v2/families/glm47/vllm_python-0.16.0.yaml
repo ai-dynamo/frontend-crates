@@ -1,0 +1,23 @@
+parent: vllm_python-0.15.1
+execution: be7d530fc04c2465eaabefae5a208966f9c545cea59cc49288af5a095b764d63
+changes:
+  guided_json_bare_tool_header_recovers_inside_a_thought:
+    observation:
+      unavailable:
+        code: peer_termination_unsupported
+        detail: Published parser capture supports serving stop/length termination only
+  guided_json_quoted_bare_header_after_payload:
+    observation:
+      unavailable:
+        code: peer_termination_unsupported
+        detail: Published parser capture supports serving stop/length termination only
+  guided_json_quoted_bare_header_in_answer:
+    observation:
+      unavailable:
+        code: peer_termination_unsupported
+        detail: Published parser capture supports serving stop/length termination only
+  guided_json_unterminated_reasoning_then_wrapped_payload:
+    observation:
+      unavailable:
+        code: peer_termination_unsupported
+        detail: Published parser capture supports serving stop/length termination only

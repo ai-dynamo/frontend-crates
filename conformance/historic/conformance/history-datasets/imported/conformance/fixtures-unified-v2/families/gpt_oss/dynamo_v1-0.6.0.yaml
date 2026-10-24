@@ -1,0 +1,31 @@
+parent: dynamo_v1-0.5.1
+execution: 1611d17b27e2bcae0a308a9b1d02487d83f9ee74e7d07adc97aa2f3938a4b850
+changes:
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: text
+          text: '{"city": "Paris"}'
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'On it: '
+        - kind: text
+          text: '{"city": "Paris"}'
+  text_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The answer is 42, no tools needed.

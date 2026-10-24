@@ -1,0 +1,1640 @@
+execution: 15d783bd8de4e8299d07c7a3bdf4ec1fc6e7526d280400f5277cf49eca606f3b
+changes:
+  arg_json_null:
+    case_key: arg_json_null
+    stimulus:
+      ref: current
+      semantic_sha256: fd9571a3928f3d6da853002971efaef8f12662479641670635814a6e5e22a832
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_json_null_anyof:
+    case_key: arg_json_null_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: de92863ac54f4efc8094144ecda438859a85226235500ebe012ff2ceb4b3aeed
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_json_null_const:
+    case_key: arg_json_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 74d386affcc73f36c320d196566a64d426080cbb793de827c67169b0015db052
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_json_null_nullable:
+    case_key: arg_json_null_nullable
+    stimulus:
+      ref: current
+      semantic_sha256: 3004dc43bb7b977ac52e0048f15cc056c60703027021242b45b1a77f48e77ddb
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_json_null_oneof:
+    case_key: arg_json_null_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 37ab5fac40810633af51fa769fe1b6a539a9607ba9f54f27a08353b4c83f1b40
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null:
+    case_key: arg_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: bf7e74ff605ec4e6c59432c49e09c3f08c77c248d53e5f44e4b3cdbd5b0c086e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_const:
+    case_key: arg_string_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 2dbc8f6f7ea2ea7443006a66214fdb0c53dce8158b4c43a5c484885f5230b6e3
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_enum:
+    case_key: arg_string_null_enum
+    stimulus:
+      ref: current
+      semantic_sha256: df07054d5ef7ae2aa8db0de302f31920e567e5cc55013766d08acdb9cf333073
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_sibling_anyof:
+    case_key: arg_string_null_sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: 8f4d6e90d83203cdadc45263ef8e93564a2f33049e7765d2fa7eb70e230680de
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_sibling_oneof:
+    case_key: arg_string_null_sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: b21cc769f28d613b5e63554f92ab9dd78f772f7f6d4a24b33c59173f7e8e5523
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_union:
+    case_key: arg_string_null_union
+    stimulus:
+      ref: current
+      semantic_sha256: 66fc02b9965fa91c37710787e8b8054417fed35df3d98f43241a88d737345b01
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_string_null_untyped_branch:
+    case_key: arg_string_null_untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: 8d653aa88608c59eb05274c181c526d2d2029f540b8d2ae817a1be5e5c52fade
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  arg_unicode:
+    case_key: arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: e605c3966873ed028d361b45021b348e955ffe3e0f3cfdeab1831307fe0b94bc
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  content_then_reason:
+    case_key: content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 2cd85bdb356eddb880cef6b229b38164dc8f603cd9a0b8be0f64e4af3575cd15
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 24e477d4376d79a906c0af373071470bf42eb8854766fe225072609ec869bd31
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  empty_args:
+    case_key: empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: c9d71dda78ffe03b32f3ed3b57b771571aa36c05399b7443ca574ba518776ee6
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  glm_ref_encoded_targets:
+    case_key: glm_ref_encoded_targets
+    stimulus:
+      ref: current
+      semantic_sha256: 4faa826e4268e56e1d3770d88389b7d84468f65be07b4fefb372b62e15244fdb
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  glm_ref_json_looking_strings:
+    case_key: glm_ref_json_looking_strings
+    stimulus:
+      ref: current
+      semantic_sha256: 9c34d0aaada792f086fc4f5368f91c3a4955c054b6f506056b07042e4acc3007
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  glm_ref_object:
+    case_key: glm_ref_object
+    stimulus:
+      ref: current
+      semantic_sha256: b2c5a80c9616cb43f5e43af608257c8bebf50a4e8acd3aac342ae4b6b4256d40
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  glm_ref_scalar_types:
+    case_key: glm_ref_scalar_types
+    stimulus:
+      ref: current
+      semantic_sha256: 93036bca088ec96a4c62b1d30bcb2b67ca6900efa1592279092e1ff70805742a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_array_argument:
+    case_key: guided_json_array_argument
+    stimulus:
+      ref: current
+      semantic_sha256: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_escaped_string_args:
+    case_key: guided_json_escaped_string_args
+    stimulus:
+      ref: current
+      semantic_sha256: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_invalid_call:
+    case_key: guided_json_invalid_call
+    stimulus:
+      ref: current
+      semantic_sha256: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_list_with_broken_element:
+    case_key: guided_json_list_with_broken_element
+    stimulus:
+      ref: current
+      semantic_sha256: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_malformed_json:
+    case_key: guided_json_malformed_json
+    stimulus:
+      ref: current
+      semantic_sha256: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_named_tool:
+    case_key: guided_json_named_tool
+    stimulus:
+      ref: current
+      semantic_sha256: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_partial_calls:
+    case_key: guided_json_partial_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_required_tool:
+    case_key: guided_json_required_tool
+    stimulus:
+      ref: current
+      semantic_sha256: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  guided_json_two_calls:
+    case_key: guided_json_two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  interstitial_text:
+    case_key: interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: c154c1146683e6b105eaea622729190d3edfe39203f5df1ead5bcf70ec6def97
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  local_schema_id_preserves_type:
+    case_key: local_schema_id_preserves_type
+    stimulus:
+      ref: current
+      semantic_sha256: d631589713346b73769e95d9ee21d4bc8c0db78f1002a6f08c69686dd6630ed3
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  malformed_json_then_two_valid_calls:
+    case_key: malformed_json_then_two_valid_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 43b6fd5287a4ddc8916258f44492b136827fd8836f56c05ca4e1851812c3679b
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  narrated_calls:
+    case_key: narrated_calls
+    stimulus:
+      ref: current
+      semantic_sha256: b5ed22474fde94cec396871d4680b82722839405d0995d74ee611a7de6f34acd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  nullable_reference_alias_literals:
+    case_key: nullable_reference_alias_literals
+    stimulus:
+      ref: current
+      semantic_sha256: d05bf02c144f3c1d77d2dd26e7456bc0bd05cac67e85b16c855a09818ad3c637
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_redundant_opener:
+    case_key: prefilled_reasoning_redundant_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 6d041bf091f165120368ce500686f6dbfe371eb98708463f7d01ac437f4d1ee2
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_then_text:
+    case_key: prefilled_reasoning_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 730aa56b99495f5203081371ffcd8e2a04b7db5077a88e8a1d9f300a0471f4d6
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_then_text_then_tool:
+    case_key: prefilled_reasoning_then_text_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 44e4d4528555a5e6f5a24df18e11654a73cc0139ca4f57795e682277508bc1cd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_truncated:
+    case_key: prefilled_reasoning_truncated
+    stimulus:
+      ref: current
+      semantic_sha256: 53268097cb553e4e1483c6c6c0bbaac073c1638f14d1cd3f732ff9f1a976afd9
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_with_guided_json:
+    case_key: prefilled_reasoning_with_guided_json
+    stimulus:
+      ref: current
+      semantic_sha256: 84808f9e34bb1f04f493c7f75dc6e0c226442ea15c8eb189a4ce7ba4359fb7ee
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_reasoning_with_tool:
+    case_key: prefilled_reasoning_with_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 7c41321cd80d400d5031718c2bb72c1854c490bd3f53e896f049d0b28885db7f
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  prefilled_response_reasoning_markers_literal:
+    case_key: prefilled_response_reasoning_markers_literal
+    stimulus:
+      ref: current
+      semantic_sha256: aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_after_tool:
+    case_key: reason_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 9ed3f4a17c8b1dd876025a6cd382d21b8d7b2441eab4c37555887495f2610e28
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_between_calls:
+    case_key: reason_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 873b000931822416ee05ac6b3099328daf63b1123c28882c582735c901ed8416
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_interleaved:
+    case_key: reason_interleaved
+    stimulus:
+      ref: current
+      semantic_sha256: 019550864bdfeedc21eaf98d20e380ac37ad40dde5e45c656d8c20231234ac78
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_markup_in_arg:
+    case_key: reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: 161b6b6af35f806de8ca6ce1e307cb920b359211e5891ce07c964dcf8172ee12
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_markup_in_arg_with_text:
+    case_key: reason_markup_in_arg_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 0b384e9265c9a0da99732074fe9fe1178c296c3bd0d03f46f9a24339a40c009e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_only:
+    case_key: reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: f5b33d886dd243e5f8d4fc10d84047b1787187c711264e6258809a4cf044bd44
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_then_content:
+    case_key: reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: 60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_then_tool:
+    case_key: reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 59218ab78db830af490ea91adfc00fe0a316afdd2085b1eb18cd7875845fba71
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    stimulus:
+      ref: current
+      semantic_sha256: d4323f67b7189a63426000a95e266c1e208b64f9f24fdc144ede07726c5f2956
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 6cfce545425fa85febee541a60bd123045b863938644b5ebd06cb3a48bc95eb3
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  reason_unterminated:
+    case_key: reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: 6724cf0ef35e8e04572ad568a85bdfc710abf1af7f5096838d80368759df451e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_array_allof:
+    case_key: schema_const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 81e39e74ffc35f3fb634af21be739c9db2eed7809231c42f0f2bccecc87c76e2
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_array_bare:
+    case_key: schema_const_array_bare
+    stimulus:
+      ref: current
+      semantic_sha256: a9b037e5bb9d22d36594606b37222a55a53fdcc9c445bd6da6bd84b46f411993
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_array_ref:
+    case_key: schema_const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 6e50d403a3a72a451c67d1573e4a1309cbaf57590a0b05250720babfe099a4df
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_array_typed:
+    case_key: schema_const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6eac60a00b94aaf5fce2f0dc25d8fabf55308d6a1c4e64234a70c57ccd76fb40
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_boolean_allof:
+    case_key: schema_const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 46a4e3bd7d83c24cf4fc091f45e9ba01e93fb06925ae1cb97da4de5dab559d5c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_boolean_bare:
+    case_key: schema_const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 0eec3c4fe764df353ef556791de351b6445e2dc77b88e5f06c7b6723080dda76
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_boolean_ref:
+    case_key: schema_const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: cf52835cfc1e39feb5cc49f30cd22e647e81b32435570747e18eca300e5a7359
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_boolean_typed:
+    case_key: schema_const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f046629f0fe7f8b066506cd3a95a6bf891fe46525f3b8c95b403c7f31f97e200
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_entity_allof:
+    case_key: schema_const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 6d71a3fcf0c8b2bb68fd08ab2b71e5c668c2b6a60ef094c131b9881b0bde1f1d
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_entity_bare:
+    case_key: schema_const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 0e6834f2dac35116c20dfb64ff732ab0f0889931d2d182bffdd09f7ab22fda9c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_entity_ref:
+    case_key: schema_const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 166a4a83153066412726f079b7a68b58049ff8a414f0d10d877552e1b3642c01
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_entity_typed:
+    case_key: schema_const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8bfc4a3f6696c2f7d2897bccc05a886aa099ea92e207795d062da8665be924cb
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_null_allof:
+    case_key: schema_const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 5067bc1046face1cae568fb8f8fbd7082f4f308d8f57f8fa5ec8f3616a131aad
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_null_bare:
+    case_key: schema_const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 41ca971bc3fde8e9cdc2bc9e6d64aa38bb1a2b80e5259d7dd5fac5fed945e1e0
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_null_ref:
+    case_key: schema_const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 100241e22b382d3aeddf37301926c3f3db9504af0569208e19d5789498fc9393
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_null_typed:
+    case_key: schema_const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6b90853d37a389a773acca204001780c5e131a8e056e57bca596d7b05c1907a4
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_number_allof:
+    case_key: schema_const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: c911ff68c20d974b303bfb7962161d12aae73f814d775813c85c1ab1cdde0bbe
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_number_bare:
+    case_key: schema_const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 6e2972bbd097b87598fe9c3f311e793da52f7b2cc034bdf42abe11bfe24c7e7e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_number_ref:
+    case_key: schema_const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: c1eabab8971ec05c067eb6acce61c152976b0a87c8b4bbb4cf265d74628f9c23
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_number_typed:
+    case_key: schema_const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 80ddd76f5982aa9717d12b910007122dc90ad0d3d7220bee869de13ad62fd21e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_object_allof:
+    case_key: schema_const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 42185f11cc068b9c9cec2054f9cf3c3daaf08eef19cc056cbba790cd0805cd05
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_object_bare:
+    case_key: schema_const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 75c54d005262c7f124aa62978047da6937d655c50943057cda1f15f2784c8252
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_object_ref:
+    case_key: schema_const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 5385e1010752d341b4fd736067a268abe7fb9ff402c62d1f3e528b88827c9a74
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_object_typed:
+    case_key: schema_const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 110b98594f16debad3742bc0a67bce0ba23b7f75cd9ebd1245db9ac61d0b4e72
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_plain_allof:
+    case_key: schema_const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 5e5e98892d70065dd893c08719280b9fa3e15cfcd98d560711dfa99e2c4943d0
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_plain_bare:
+    case_key: schema_const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 0af583de1f722e159c60d48a3358d63e63fdfa9ca41b9ed8b365ebac7a2deea0
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_plain_ref:
+    case_key: schema_const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 705e8d2aef332d9d0b3e344e0e172a82277921bc9ea19b48e7654acc5bf3ee97
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_plain_typed:
+    case_key: schema_const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3635efb0ef5fc219739fc4032a5de1b2ef68bb6ef500943e952c67e11b11a794
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_quoted_allof:
+    case_key: schema_const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: c95161fbd5da1f31ed5d887175b987be53a5bac1952982eb9b272fe5ebd3be71
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_quoted_bare:
+    case_key: schema_const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 14da8d3446a26e8afa09d780b93611c1b8fa23785cf98349dcdb9914c9374912
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_quoted_ref:
+    case_key: schema_const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 384af7ffa86e9d9db397b1c73b8643865417189dbbc0fa7c92828a766c50c7c8
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_quoted_typed:
+    case_key: schema_const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 813cdc792ec5197bce1425294ba5d335c6a975f02b515914af67c2c0c9c35bbb
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_space_allof:
+    case_key: schema_const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 8ea01b4b8a7f9f0a6442858537a255f9356b4dbbdc34d6c551abbc7074b70bd0
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_space_bare:
+    case_key: schema_const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: eeacee928bb07d01c2a9f5280d3806973f1626d166b79e74cbe9d66bd55102a4
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_space_ref:
+    case_key: schema_const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: d35f9ed573eaddb1ad3946ecd421f2f88e4427f90943b6d6215d0ecbb5c8c809
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_space_typed:
+    case_key: schema_const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3c1d6f65f642e00e17ba2c1f8240b75d2d653a13ac72bff885eae2c58ccbbac4
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_unicode_allof:
+    case_key: schema_const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 5d4c15514b0e0d915cd181e22dd2fe5ff67ce4165ec380cb47d0057555516b68
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_unicode_bare:
+    case_key: schema_const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 7583cac0179f32264b14ab6c230ffd1dd274b7287ec7369944217aece90d839d
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_unicode_ref:
+    case_key: schema_const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 06075f133d3c41d34213feb1075a06c6cc1b4b3d028a5691372811c6395fc812
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_const_unicode_typed:
+    case_key: schema_const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 53d58424567b34e20243d4cd1d001c3838bc298a7b6a93ffc4bc71e3cda54ef8
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_array:
+    case_key: schema_declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: 70ab54ba48a493fda987352f37669b9691f436c1539b1fba214802d0efd7772a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_boolean:
+    case_key: schema_declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: ae3000e86d398868ab78ab619678aa75d19c31eef45e418e420c772457666550
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_integer:
+    case_key: schema_declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: a38d54d1d19ec2630d0cb32f9c3b9ec7e81f21e7c6f093143be0e30c7eb0014a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_null:
+    case_key: schema_declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: cf4d9bd9762e468eb14edb82e9ccad57c3d4cb36222aa5ee24c01da36e25e788
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_number:
+    case_key: schema_declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: 007b18c8a67d1f1a00dd22e349dbe6a0e03be5b1e2e40724cd82b2ccd53dfe98
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_object:
+    case_key: schema_declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 3a6d97737c1901808f30835f21b0facfd1d94f049b77e31762dd940b92a95431
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_declared_string:
+    case_key: schema_declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: b7612a9a67a9e65281c028c9154490e1876ea4edb38003019e0d77c99057ef98
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_enum_integer:
+    case_key: schema_enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: fbbf73bbc9995f3f45da89888a94fb60085aff58ee8f40451e500c4f5f6f0bbd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_enum_string:
+    case_key: schema_enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: 22d9373de7c06d93e9e958eadecfcd6fdc6dac198028143a302bc61697bd0b9d
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_escaped_ref_const:
+    case_key: schema_escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: d55cb9001ff39a9a41b7023dc852e56744b455420d780ac3afd345b5b3c29399
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_id_direct_integer:
+    case_key: schema_id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 4313d98eee1f82ed10db64dd8e6362ddd53e5aa4a0ae026072e2412c9928a307
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_integer_const_ambiguous:
+    case_key: schema_integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: b11ffaad12fe66164f7cccf1e1a902e140413de2224712b0d86f7991f6d9c617
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_intersection_anyOf:
+    case_key: schema_intersection_anyOf
+    stimulus:
+      ref: current
+      semantic_sha256: db8891d74108a95f63e63796b5cb302b86b1882a24026f94bcad716ed45cd84b
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_intersection_oneOf:
+    case_key: schema_intersection_oneOf
+    stimulus:
+      ref: current
+      semantic_sha256: 4c7fefa04a68ea64c8e7e27c062e143599e0fb5396012f0897eec795a1c9a345
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_null_union_ambiguous:
+    case_key: schema_null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: a2af9bf52b31eae031e73614e28115222324c7a818e41e0a5eefcc0dee44a185
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_nullable_string:
+    case_key: schema_nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: 76b6bb3deeb03c6846c67a2ef4bab9fb8c3efa437b4c67742688318f7e4b7503
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_object_const_union:
+    case_key: schema_object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 70d318b6c2aa003975eb940b7aa1ac59d751ce75fa3f09046b73be674d5386f6
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_percent_ref_const:
+    case_key: schema_percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: cbb5fea5497cf86d2e611c90023fec3030c95b313fb7dea150355965360549a5
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_ref_sibling_integer:
+    case_key: schema_ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 15822b263be0832f89b019cd997ba346b21619f0c194b80bad0fc5efe8324d31
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_ref_union_anyOf_integer:
+    case_key: schema_ref_union_anyOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 7e9c79904c9b147509e73657cb1e9621e998b4f668f58ed992c6c1ad8ed1e553
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_ref_union_anyOf_string:
+    case_key: schema_ref_union_anyOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: ab3b7dff02b6d73296b11e4d9297962cf2caa9d75e1b2441d419344f8dc2fd42
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_ref_union_oneOf_integer:
+    case_key: schema_ref_union_oneOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: c576d04cd53e6cf1b289ad7b84048094edf37ce7f7f83b5ea603973a18007e46
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_ref_union_oneOf_string:
+    case_key: schema_ref_union_oneOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 8f0078a35d6d895ddcb0fe303616c27d946dc92cb3d6dc3d2b3c15e242f4bda5
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_type_array_integer_null:
+    case_key: schema_type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: 672eb1f6b0193ec353c74a40fba956c7dfff8f9d3b62e400ec8d23156d413778
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_type_array_integer_null_null:
+    case_key: schema_type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: 4057af041eca5a2d1acbeb2f3679c993c118db8eee3d2aed89989921362cb6f5
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_type_array_string_integer:
+    case_key: schema_type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 5e0fc9df65a7e67340f0bdea74d70bf212a8ca2ec8b0e0c942234b43e45df6b1
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_array_reverse_string:
+    case_key: schema_union_anyOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: f50ae772722d8f01fd619928a7f3b54a5db829da4e32d6068b0190a7426af7f7
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_array_reverse_typed:
+    case_key: schema_union_anyOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2222f0f01644d0f4fcede2c392727a4e8e646a6619d59398681d325bbac3ea8d
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_array_string:
+    case_key: schema_union_anyOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 3343b056c2700be86ee3cc942c84d3519c9eff13f2aff3df90b2d64e123bf89f
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_array_typed:
+    case_key: schema_union_anyOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 26c8febebd59f503c2cf29fd7fc6721f7d3dab6ab639e6370ebb3ff399e7f2d9
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_boolean_reverse_string:
+    case_key: schema_union_anyOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 691decb2213758dec8657e63904660c9719c2107837fd49b1f516b162c7c543f
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_boolean_reverse_typed:
+    case_key: schema_union_anyOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 05a127e9a7fb4b95ade07f1fec1dbae2300c6c3fde18651cb2b11ffc4a3c50bc
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_boolean_string:
+    case_key: schema_union_anyOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: feb257c7b05c219c83506a9cc6f7d534843b58ed0481811a73bf27cd064917cd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_boolean_typed:
+    case_key: schema_union_anyOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: bb3cbdd29fe4bbbd2b01ecdf3502e2ed93dc30c1e0be81e3e719603a947e476b
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_integer_reverse_string:
+    case_key: schema_union_anyOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 8e60eecb3138ef8415405a4d44f2338f12113f3ffe51f2325a57a2fffe58c93a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_integer_reverse_typed:
+    case_key: schema_union_anyOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 56af8a28d2bdd4c0a4bc985b5c9d3b0c0892712b15d4a748f6ff244b39894197
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_integer_string:
+    case_key: schema_union_anyOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 7e34c2a11dd8fc8f16c7748218a9c1fc647c32331ea517bad37e525dc07d209e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_integer_typed:
+    case_key: schema_union_anyOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 4d7d4c27cdb0bd52ff6390f447aee57245f33380d4861b74eb5d639d67ff24dd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_null_reverse_string:
+    case_key: schema_union_anyOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: bf3e0fbdbd779ec6900cd3704f6455591d9c6c771aa735059c3ca6ccb6a75857
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_null_reverse_typed:
+    case_key: schema_union_anyOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 6e16112aab19aab6851e8aa9cbc755f3e6719c6b2352a5728236282e69cb7a2b
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_null_string:
+    case_key: schema_union_anyOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: d2a9efcc9e782063c73e574cbccb7ed0de3ea26feeee570e07d350e09de00a0a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_null_typed:
+    case_key: schema_union_anyOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0f54679c2ec00c41bb7537d96ff487b0e2a244c7ce1e4ab650768acd3269e8d5
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_number_reverse_string:
+    case_key: schema_union_anyOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: e3751c3ac9214cc6db724f85b9651fa83b7c8649d42970b4cdf0d4238da44b1a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_number_reverse_typed:
+    case_key: schema_union_anyOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 279b60f0f7425b6eab594bd17374c3453c2c0406db524c6b4401530c1be83e89
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_number_string:
+    case_key: schema_union_anyOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: c2bcbb2adf5d4edcdc01344a324c7d5a72d00285342affb6a8af3811382f8018
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_number_typed:
+    case_key: schema_union_anyOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e5bca6c9a3cff8bb7f16a4661d599332c1ec967a5bc3bdb28a2478fc4085f30c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_object_reverse_string:
+    case_key: schema_union_anyOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: a57f9da28cce6febc54c33e5682a1386f0d2aae02043ddd6de799e33397f5384
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_object_reverse_typed:
+    case_key: schema_union_anyOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 351e30b986bc463760f33616a970e0ef201b43a9edaee253032182c7bea99304
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_object_string:
+    case_key: schema_union_anyOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 38125e465383c1c7b7bfc65e46749ae35348c9a12f019bf50044793489fc1502
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_anyOf_object_typed:
+    case_key: schema_union_anyOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f8f283d6940a6d2f77408380442811aa76f48f9892b3f13b53721cff6e235507
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_array_reverse_string:
+    case_key: schema_union_oneOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 921f98c620e560e77f430e2ef34df774c97a20b71944bf9760a410da51e303a0
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_array_reverse_typed:
+    case_key: schema_union_oneOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: bff4cf819e4403e82c09d0fb85e80f00dcc24e5420c2250b0f5d09d545565917
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_array_string:
+    case_key: schema_union_oneOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: cf99d49cb9b9b1356b8cab2a1a541b44b6b98b915ea043da0c7304cf022127b3
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_array_typed:
+    case_key: schema_union_oneOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 135d603fd4af27974240910b3847fa8f8803f54575bf39be84d673e58bee3c7f
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_boolean_reverse_string:
+    case_key: schema_union_oneOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 26093dbc205671404eca76ae0521126ccf2e87f15ca9698c973988ddc505bb0e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_boolean_reverse_typed:
+    case_key: schema_union_oneOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 2bb221fe393aab27a6689e4c9d003d3926dd7eaa54e6844270b00d826a48bcda
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_boolean_string:
+    case_key: schema_union_oneOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: 374710bcedc33ec4c83abe0bab2f7ede8a77fd226fef18b11e49d1dd1dc7e528
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_boolean_typed:
+    case_key: schema_union_oneOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d799c25460c64651e11a4317b45a844e720a6258858022abd9eebd2f67d0e505
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_integer_reverse_string:
+    case_key: schema_union_oneOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0ec9d2a9f969a5204cd9cd17c73c7d8fea4800877f6647e3835d689330391971
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_integer_reverse_typed:
+    case_key: schema_union_oneOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 57a7f442746035194bc2c842a4b97dd1ac6c9d44cb46253cd00551036825ad17
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_integer_string:
+    case_key: schema_union_oneOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: f3836318158d73f6901b49d14ecfba049e5008c455db9554063b7159a261ee02
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_integer_typed:
+    case_key: schema_union_oneOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f606d356f0891ebde80feef7846e3ee1e8a27f625b3731d616373c42fba07ad1
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_null_reverse_string:
+    case_key: schema_union_oneOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: e86ad5dc422cddb760b8a556212d750e84c08cc910b7841241cc3d99dc1578ad
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_null_reverse_typed:
+    case_key: schema_union_oneOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b7235906d984bb22d7d050470c8e762bc39071ee445dc4d676c44a72ff272d82
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_null_string:
+    case_key: schema_union_oneOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: abd9f35307fc260e31f130a8c9e3bd92146077610dfc270013d020659f12b682
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_null_typed:
+    case_key: schema_union_oneOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7ead05994b95bf572173fc56fe38155d97446e18c882a8745350853d5f9dee26
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_number_reverse_string:
+    case_key: schema_union_oneOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9d3cbdbedc3b76cf0d8967d1cc3a59a77ed91a2b092d4120e4dbfc8a2661d150
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_number_reverse_typed:
+    case_key: schema_union_oneOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3d0b0b81f1d210882fb830b5a9572dfbeabaced836055c6ec36ed07ed001becd
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_number_string:
+    case_key: schema_union_oneOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 8092ed4d36cc9e50300d23130ce6f1d559dfb22b3241c18cde49a0f3ffb1497e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_number_typed:
+    case_key: schema_union_oneOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d039be4485e9f0cbf063f2075a836f2d2791e742aeb89c6bc1287411c2770e07
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_object_reverse_string:
+    case_key: schema_union_oneOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: a43352d69cc548be52036c891653959243810dde59841db3273c6992a6b32f3a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_object_reverse_typed:
+    case_key: schema_union_oneOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 25c1f3bc4227840bbcf86b8296cc215d8becdcdcef2fa3dfc83e05e4e1c29211
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_object_string:
+    case_key: schema_union_oneOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: 7f4ab244c980fa0da43e715f2ea9d170abc69b26eb59020dd1078d91511070e2
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  schema_union_oneOf_object_typed:
+    case_key: schema_union_oneOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a901335698d5482394e82c0dfd1f13a50db5b039715dc608a38db86f8ae52706
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  text_before_tool:
+    case_key: text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 2675c056812d85f65b5f450142a2068cf829b45cf4ce225cef04e55c7b581d22
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  text_between_calls:
+    case_key: text_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 1a82c5e1928ee4a701051075550e8da9b9574b43e8d324c17357e86fe21a7fe3
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  text_only:
+    case_key: text_only
+    stimulus:
+      ref: current
+      semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: b69b8e5806112083a80e28bd9808d275fa79c2cd2064e08c4474c583e2170c28
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  text_sandwich:
+    case_key: text_sandwich
+    stimulus:
+      ref: current
+      semantic_sha256: 6f501c4ad5baa89c9b1211208900f242796cd776fb17f20916c1e2c5f2832cde
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  tool_in_reason:
+    case_key: tool_in_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 198d00b7579aa6f111df07939fa438b3506667cc6fc17df6b0db80ed42e7d506
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  tool_in_reason_with_text:
+    case_key: tool_in_reason_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 5a5cd0e9b4473abd00e779a1240b5a046d922ce2e0aaf9532ca61f2f9c145c3a
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  tool_only:
+    case_key: tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: 4a773febe38f4b868aa113964e38af1234a8fa893445da3f04ffcdf132ce59f8
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: bf59962916a6a258c9a2af2fc9e9d97f0cc053c65707bbdabd4d210e3590aa0c
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: 3e8b4ec0eaa05b529457aed1b7f80ddbc2e2431aeb36b3be83863b7d7316de8e
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  two_adjacent_reason_spans:
+    case_key: two_adjacent_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: c7824768284c274c8515956bc1bfc1a0dade0bd5d3709041fa45cc428b90abbe
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  two_calls:
+    case_key: two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 154935b55e0baf9757801d984a9b6ab45c93be160f8364be28bb611fc14c49e4
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: 71f12902e24da58cc7f6bd37af9eb02f2a95bc1d2aa9a32ccfb4744660f5e1ee
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  two_reason_spans:
+    case_key: two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  unused_reference_graph_parameter_types:
+    case_key: unused_reference_graph_parameter_types
+    stimulus:
+      ref: current
+      semantic_sha256: 25e3762ea93658ebd52e58d72fa165736c4c0260fdc9a4b38ade45f4e85408f2
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: c6f9bfd7071180aa5941a0f8970cc3e38c3ec40c616243cc647489aa1478e7bb
+    observation:
+      unavailable:
+        code: unsupported_capture_mode
+        detail: This published crate does not expose a JailedStream parser

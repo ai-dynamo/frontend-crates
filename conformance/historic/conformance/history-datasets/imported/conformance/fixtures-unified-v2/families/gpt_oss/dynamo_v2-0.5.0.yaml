@@ -1,0 +1,49 @@
+parent: dynamo_v2-0.4.1
+execution: d0896621422a6c206e11e2f729ef3e8662a14e6a4a79ccabc7471f52c79759f2
+changes:
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: 'On it: '
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected:
+          - kind: text
+            text: 'On it: '

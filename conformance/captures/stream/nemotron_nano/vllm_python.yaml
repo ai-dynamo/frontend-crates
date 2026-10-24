@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_nano","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"0d630c32d962646a0ce070fea9810607ea1326efdd0a1b9cd7c145c0f5a02724","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: nemotron_nano

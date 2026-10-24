@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"1b8c3f8bc301b01eef07d01cb7220e5e9532f5de283e41fc4621b3da03c2aef9","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: phi4

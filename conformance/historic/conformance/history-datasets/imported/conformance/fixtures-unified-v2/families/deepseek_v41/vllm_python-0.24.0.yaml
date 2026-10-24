@@ -1,0 +1,327 @@
+parent: vllm_python-0.23.0
+execution: 3d596a6c7db145082b30571837d4af18d803d9548d6c78f6395125f191160fa9
+changes:
+  guided_json_after_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_marker_inside_argument:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '[{"name": "log", "arguments": {"note": "'
+        - kind: text
+          text: '"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: '[{"name": "log", "arguments": {"note": "'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '"}}]'
+        - expected: []
+  guided_json_narrated_invoke_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll use <｜DSML｜ invoke name=" next
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll use '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name=" next
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_narrated_prefix_inside_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I'll call <｜DSML｜ invoke name="get_weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I''ll call '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="get_weather
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_orphan_reason_close_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_prose_before_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_json_stray_prefix_before_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: secret
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="<think>
+        - expected:
+          - kind: reasoning
+            text: secret
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</think>{"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '{"city": "Paris"}'
+        - expected: []
+  guided_quoted_reasoning_closer_required:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'The literal ''doesn''t '
+        - kind: text
+          text: ' marker'' stays quoted.</think>{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: 'The literal ''doesn''t '
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' marker'' stays quoted.'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. {"city": "Paris"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"city": "Paris"}'
+        - expected: []
+  guided_response_quoted_control_braces_required:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'The literal "<｜DSML｜ calls> { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        chunks:
+        - expected:
+          - kind: text
+            text: The literal "
+        - expected:
+          - kind: text
+            text: <｜DSML｜ calls>
+        - expected:
+          - kind: text
+            text: ' { example }" stays visible. {"name": "get_weather", "arguments": {"city": "Paris"}}'
+        - expected: []
+  prefilled_reasoning_with_guided_json:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking weather
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking weather
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_33:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">é🙂<par{value}</｜DSML｜ parameter></｜DSML｜ invoke> after
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected:
+          - kind: reasoning
+            text: é🙂
+        - expected:
+          - kind: reasoning
+            text: <par{value}</｜DSML｜ parameter>
+        - expected:
+          - kind: reasoning
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: reasoning
+            text: ' after'
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__31_40:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: before <｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true"><think>quoted
+        - kind: text
+          text: '</｜DSML｜ parameter></｜DSML｜ invoke> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'before '
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ invoke name="f">
+        - expected:
+          - kind: reasoning
+            text: <｜DSML｜ parameter name="x" string="true">
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: quoted
+        - expected: []
+        - expected:
+          - kind: text
+            text: </｜DSML｜ parameter>
+        - expected:
+          - kind: text
+            text: </｜DSML｜ invoke>
+        - expected:
+          - kind: text
+            text: ' after'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__50_1:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I mean <think>self literal</think><｜DSML｜ invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I mean '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: self literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: '<｜DSML｜ invoke name="[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []

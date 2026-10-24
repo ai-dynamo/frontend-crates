@@ -1,0 +1,281 @@
+provenance:
+  status: legacy
+  captured_with:
+    dynamo_v2: 0.3.2
+document:
+  mode: unified
+changes:
+  retired__4_c:
+    case_key: UNIFIED.4.c
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__4_d:
+    case_key: UNIFIED.4.d
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'for example, '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'for example, '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__4_e:
+    case_key: UNIFIED.4.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will call: you tomorrow'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: NYC
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will call: you tomorrow'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"NYC"}'
+  retired__4_f:
+    case_key: UNIFIED.4.f
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: NYC
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"NYC"}'
+  retired__50_a:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: output
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: output
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+        - expected: []
+  retired__50_b:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+        - expected: []
+  retired__50_c:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": "git log"}}]'
+        - expected: []
+  retired__51_a:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Working on it... '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Working on it... '
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  retired__51_b:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  gemma4_guided_response_extra_body_opener:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.3.2
+      capture_origin:
+        crate_version: 0.3.2
+        source_sha256: cfe2386719f0c6e0910a6477d2ed732a0c0633d64c820f29b07a1607627d3639
+        git_commit: c4b8f391e83af58781b024894b79620acd323389
+      inherited_from: null

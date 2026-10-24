@@ -1,0 +1,1614 @@
+parent: sglang_python-0.5.14
+execution: 7c116ad30790b037dac63244b796b3ee33ccdb0529f3457aab3a21666bd305ea
+changes:
+  arg_marker_in_string:
+    case_key: arg_marker_in_string
+    stimulus:
+      ref: current
+      semantic_sha256: 6ef3c5f5dd7bd17aa724da7a8155463bb7a135cf539141994ad275f37af97047
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log </tool_call> --oneline
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"cmd": "git log </tool_call> --oneline"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_unicode:
+    case_key: arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: c7f30330389062c3b6e15f0119819a566f1dd2dd92b22f7b465d60e9b61de81a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: São Paulo 東京
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "São Paulo 東京"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  content_then_reason:
+    case_key: content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 4cb62c6f034291462b47693bf74f4f4b064de5859dca56a48a3566a20c1c2824
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+        - kind: reasoning
+          text: let me recall
+        - kind: text
+          text: The capital is Paris.
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Hello there. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me recall
+        - expected: []
+        - expected:
+          - kind: text
+            text: The capital is Paris.
+        - expected: []
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: ff7a73a2830cb6b36104a4e4932a9a6727fce1b3b429a696318f8f6a27f5d158
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+        - kind: reasoning
+          text: checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking the forecast
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  empty_args:
+    case_key: empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: 78b8f175b138134f0071c41c2b3fd48cdc3f4ebdf31f7af04e43e67dad3849fb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  interstitial_text:
+    case_key: interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: 03f882a894bd1864a4625c377d54e46aeeb17f551a298a6df65ebf26ef192f64
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Here you go: '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  narrated_calls:
+    case_key: narrated_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 3fa7f92abd572ef9beccfae37a74e60bce2d1e9804fbd29885ed58070418ab14
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' then I''ll run '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then I''ll run '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  orphan_close_after_prose:
+    case_key: orphan_close_after_prose
+    stimulus:
+      ref: current
+      semantic_sha256: 7f903163d8e6a1a2572c1c3d77e35833514bc0d40d55ec5a193fb2753a0f3e6c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'I will check that. '
+        chunks:
+        - expected:
+          - kind: text
+            text: 'I will check that. '
+        - expected: []
+        - expected: []
+  reason_after_tool:
+    case_key: reason_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 8b223d96f644f064e9383480c84557ff06848351526a4cfe1fdae7c539bc1b3b
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: <think>Now answer.</think>It's 18C.
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: Now answer.
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: It's 18C.
+        - expected: []
+  reason_between_calls:
+    case_key: reason_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 371c4435da1837a2e33cbe3bf7aee2e1f42b544f0cd4901c2cf9fef7a308cddb
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: reasoning
+          text: mid
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: mid
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_interleaved:
+    case_key: reason_interleaved
+    stimulus:
+      ref: current
+      semantic_sha256: c923b4c0627dcc92868ab25fcd987eeb958e4f511505fc92d312340bac65ccdd
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: <think>B</think>
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_markup_in_arg:
+    case_key: reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: fe1a47b58fda4269da50ec142f86cf63401745bb5d7613165d34e5b25ec61662
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: log
+          arguments: {}
+        - kind: reasoning
+          text: reconsider
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"note": ""'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_markup_in_arg_with_text:
+    case_key: reason_markup_in_arg_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 03097ee1ae5fbeb044b1db8ff8e1db9c7c9c8d44db00da22098a4371fd8e0496
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Logging now: '
+        - kind: tool_call
+          name: log
+          arguments: {}
+        - kind: reasoning
+          text: reconsider
+        - kind: text
+          text: ' done.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Logging now: '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: log
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: reconsider
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"note": ""'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' done.'
+        - expected: []
+  reason_only:
+    case_key: reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: b8a7739742b7042d11c8d44d9d48829dadd1d6d4a88714c62d4ca58570e45ed5
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: just thinking, no answer
+        - expected: []
+        - expected: []
+  reason_then_content:
+    case_key: reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: 1d265326d010d8b480499269e4a6c9d37589d7b90f257fecbe845e9f9ae9a947
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+        - kind: text
+          text: The answer is 42.
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: let me think
+        - expected: []
+        - expected:
+          - kind: text
+            text: The answer is 42.
+        - expected: []
+  reason_then_tool:
+    case_key: reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 7f0564089390feba46a30f7b69730acdf961f5fc5bbe7612f5bff69666b69b99
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    stimulus:
+      ref: current
+      semantic_sha256: cf9c1b22d2c9fcfe2d19ea5549ff69cc9b617b153a5bebd898835752317b802c
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: <think>B</think>
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        - kind: text
+          text: <think>C</think>
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: C
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 4fcad97de18d23903dbd2291e3755198534b9aadc3aebf82a895ad4028a8891f
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: working on it<think>B</think>
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: working on it
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  reason_unterminated:
+    case_key: reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: 6681944af0bc996378ee85b771af8f34380668a46a7e49aa2f35612175318c08
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: thinking but stream ends
+        - expected: []
+  text_before_tool:
+    case_key: text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 2d61fe60e36bda56e1c603ad552157e67ae56706d96e1daf1acc851933cdd13c
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: 'On it: '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  text_between_calls:
+    case_key: text_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 52d3f4c938377e5133ea26b6ae04147e0937c894b45cdba32fb4b1e9fbbd8d3f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' then '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  text_only:
+    case_key: text_only
+    stimulus:
+      ref: current
+      semantic_sha256: 2fd89b5b8b7a5a342c2b1ee8b663acc321faa55d2e8e160ada2594862a779838
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: The answer is 42, no tools needed.
+        chunks:
+        - expected:
+          - kind: text
+            text: The answer is 42, no tools needed.
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: c4d8557e9f298ba59c85407b63328d596261de69c7ad34fcf24228ccf633dfcd
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: check A
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: text
+          text: ' and <think>check B</think>'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: check A
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' and '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: check B
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  text_sandwich:
+    case_key: text_sandwich
+    stimulus:
+      ref: current
+      semantic_sha256: 3e9855f0ee621219cc3866796c19d9c72d1482421c93ff292141e0f8d5a3a866
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' After.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Before. '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' After.'
+        - expected: []
+  tool_in_reason:
+    case_key: tool_in_reason
+    stimulus:
+      ref: current
+      semantic_sha256: cbeda6ab910445ef97515203a0181c59f33de3a5473e7384d1b84143ef459aa1
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think>'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+  tool_in_reason_with_text:
+    case_key: tool_in_reason_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 5072f525dea84cbbbd597671dbecf7d2d1c1938d2f69490d1733eadefc353729
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+        - kind: reasoning
+          text: 'I should check. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: ' now answer</think> Here you go.'
+        chunks:
+        - expected:
+          - kind: text
+            text: 'Sure. '
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: 'I should check. '
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: ' now answer'
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: ' Here you go.'
+        - expected: []
+  tool_no_close:
+    case_key: tool_no_close
+    stimulus:
+      ref: current
+      semantic_sha256: b748296172438389eeacdd7d8a87514f8dfc262bdfb016e9891a4bfea0c90328
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+  tool_only:
+    case_key: tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: bd56f49d2a09b70f64ee59065b5fec05f8978ff8b7fd205bb165e06f7488503a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 16da1877452fc3c1e9965d82a0645bb4144ccb0caecfd5d441af4621608a5acf
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: text
+          text: The forecast shows clear skies for the rest of the week.
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: The forecast shows clear skies for the rest of the week.
+        - expected: []
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: 6f91338020ee187bbe6358b8bb32a3b90d0839184b7838b6b1365365519aab4d
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ok
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: ok
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  two_calls:
+    case_key: two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 0c2914b8dd2bd096c335c1be22e6609f460a59b57468cf1ef1380f37d56fdeb1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"x": "1"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"y": "2"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: cfb4914ec93d6e90247719d046dee2f4f9daa08b31dbbab7341ef330149bc1f1
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Tokyo
+        chunks:
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Paris"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '{'
+          - kind: tool_call
+            name: null
+            arguments: '"city": "Tokyo"'
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: null
+            arguments: '}'
+        - expected: []
+        - expected: []
+        - expected: []
+  two_reason_spans:
+    case_key: two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 146922888215906a77df4f335b4b49c0d2e34e8f9e062482be0182882ddbcc35
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+        - kind: text
+          text: interlude <think>second thought</think>done
+        chunks:
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: first thought
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'interlude '
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: second thought
+        - expected:
+          - kind: text
+            text: </think>
+        - expected:
+          - kind: text
+            text: done
+        - expected: []

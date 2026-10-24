@@ -1,3 +1,4 @@
+capture_selection: {"family":"inkling","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"b4989cba9508bb0eee60a6f1f17865c23c3a634baf5130a9d138b89ef0d6ff92","surface":"batch","version":"0.24.0"}
 schema_version: 1
 surface: batch
 family: inkling

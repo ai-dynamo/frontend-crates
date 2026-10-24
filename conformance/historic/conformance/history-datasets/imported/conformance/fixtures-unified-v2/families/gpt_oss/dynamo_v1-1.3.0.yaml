@@ -1,0 +1,27 @@
+parent: dynamo_v1-1.2.1
+execution: c74a957ed10a39b9767ac60a6e7e683e92aa346d2cb5df6cb86ca2a271e81563
+changes:
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_only:
+    observation:
+      value:
+        assembled: []

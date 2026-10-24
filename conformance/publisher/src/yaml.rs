@@ -172,6 +172,57 @@ impl Node {
         }
     }
 
+    pub fn from_typed(value: &Value) -> Result<Self> {
+        use base64::{Engine, engine::general_purpose::STANDARD};
+        let row = value.as_array().context("typed node is not an array")?;
+        let tag = row
+            .first()
+            .and_then(Value::as_str)
+            .context("typed tag missing")?;
+        if tag == "null" {
+            ensure!(row.len() == 1, "invalid null");
+            return Ok(Self::Null);
+        }
+        ensure!(row.len() == 2, "invalid typed arity");
+        let payload = &row[1];
+        let text = || payload.as_str().context("invalid typed scalar");
+        Ok(match tag {
+            "bool" => Self::Bool(payload.as_bool().context("invalid bool")?),
+            "int" => Self::Int(text()?.parse()?),
+            "float" => Self::Float(match text()? {
+                "nan" => f64::NAN,
+                "inf" => f64::INFINITY,
+                "-inf" => f64::NEG_INFINITY,
+                other => other.parse()?,
+            }),
+            "str" => Self::Str(text()?.into()),
+            "date" => Self::Date(text()?.into()),
+            "datetime" => Self::DateTime(text()?.into()),
+            "binary" => Self::Binary(STANDARD.decode(text()?)?),
+            "array" => Self::Array(
+                payload
+                    .as_array()
+                    .context("invalid array")?
+                    .iter()
+                    .map(Self::from_typed)
+                    .collect::<Result<_>>()?,
+            ),
+            "object" => Self::Map(
+                payload
+                    .as_array()
+                    .context("invalid object")?
+                    .iter()
+                    .map(|entry| {
+                        let pair = entry.as_array().context("invalid entry")?;
+                        ensure!(pair.len() == 2, "invalid entry arity");
+                        Ok((Self::from_typed(&pair[0])?, Self::from_typed(&pair[1])?))
+                    })
+                    .collect::<Result<_>>()?,
+            ),
+            _ => bail!("invalid typed tag"),
+        })
+    }
+
     /// Borrow a mapping without coercing its keys.
     pub fn mapping(&self) -> Result<&[(Node, Node)]> {
         match self {
@@ -498,6 +549,19 @@ pub fn load(path: &Path) -> Result<Node> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn typed_cache_roundtrip_preserves_keys_null_and_scalar_types() -> anyhow::Result<()> {
+        let source = super::load_str(
+            "null_value: null\nbool: true\nint: 9999999999999999999999999\nfloat: -0.0\ntext: string\ndate: 2026-10-23\ndatetime: 2026-10-23T12:34:56Z\narray: [1, true, null]\nmap: {1: int-key, '1': string-key}\nnan: .nan\ninf: .inf\n",
+        )?;
+        for source in [source, super::Node::Binary(vec![0, 1, 255])] {
+            let typed = source.typed();
+            assert_eq!(typed, super::Node::from_typed(&typed)?.typed());
+        }
+        assert!(super::Node::from_typed(&serde_json::json!(["object", [["bad"]]])).is_err());
+        Ok(())
+    }
+
     use super::*;
     use serde_json::json;
 

@@ -1,3 +1,4 @@
+capture_selection: {"family":"minimax_m2","implementation":"sglang_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"5f84128edad6b14264bcd952c7f5880571abe7d7ea9db3a1806a7165d3c8394c","surface":"batch-on-stream","version":"0.5.14"}
 schema_version: 1
 surface: batch-on-stream
 family: minimax_m2

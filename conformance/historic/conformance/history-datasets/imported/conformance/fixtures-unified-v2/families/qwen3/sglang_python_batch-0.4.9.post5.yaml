@@ -1,0 +1,123 @@
+parent: sglang_python_batch-0.4.9.post4
+execution: 965ed92e895a1230d3ef8817076410f44b3840e8b35a45ad4c60987691519aa5
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Hello there. let me recall
+        - kind: text
+          text: The capital is Paris.
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure, one sec. checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: "<tool_call>\n<function=f>\n<parameter=x>\n quoted"
+        - kind: text
+          text: "<tool_call> </tool_call> </function> &amp; \"x\"\\\n \n</parameter>\n</function>\n</tool_call>"
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<tool_call>
+
+            <function=f>
+
+            <parameter=x>
+
+            1
+
+            </parameter>
+
+            </function>
+
+            </tool_call>mid'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: 2
+  reason_markup_in_arg:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '<tool_call>
+
+            <function=log>
+
+            <parameter=note>
+
+            reconsider'
+        - kind: text
+          text: '</parameter>
+
+            </function>
+
+            </tool_call>'
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Logging now: <tool_call>
+
+            <function=log>
+
+            <parameter=note>
+
+            reconsider'
+        - kind: text
+          text: '</parameter>
+
+            </function>
+
+            </tool_call> done.'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure. check A
+        - kind: text
+          text: ' and check B</think>'
+        - kind: tool_call
+          name: f
+          arguments:
+            x: 1
+        - kind: tool_call
+          name: g
+          arguments:
+            y: 2
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Sure. I should check. <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call> now answer'
+        - kind: text
+          text: Here you go.

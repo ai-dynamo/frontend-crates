@@ -1,0 +1,246 @@
+parent: dynamo_v2-0.2.0
+execution: 6edc28c8667f177400f94b392e4769d923c0920d7f4a439c1ad1fc0139c62ba1
+changes:
+  guided_json_array_argument:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: sum_values
+          arguments:
+            values:
+            - 2
+            - 3
+            - 5
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: sum_values
+            arguments: '{"values": [2, 3, 5]}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_escaped_string_args:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: echo "雪" > C:\tmp\a.txt
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "echo \"雪\" > C:\\tmp\\a.txt"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_invalid_call:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"unexpected": "shape"}'
+        chunks:
+        - expected:
+          - kind: text
+            text: '{"unexpected": "shape"}'
+        - expected: []
+  guided_json_list_with_broken_element:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"name": "run", "arguments": {"cmd": ]'
+  guided_json_malformed_json:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{"name": "get_weather", "arguments": {"city": "Par'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: '{"name": "get_weather", "arguments": {"city": "Par'
+  guided_json_named_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_partial_calls:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        chunks:
+        - expected:
+          - kind: text
+            text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}, {"arguments": {"city": "Tokyo"}}]'
+        - expected: []
+  guided_json_required_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  guided_json_two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: run
+          arguments:
+            cmd: git log
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+          - kind: tool_call
+            name: run
+            arguments: '{"cmd": "git log"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: text
+            text: done
+        - expected: []
+  prefilled_reasoning_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: text
+            text: done
+        - expected: []
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: text
+            text: done
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+  prefilled_reasoning_with_guided_json:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_reasoning_with_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: checking
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  prefilled_response_reasoning_markers_literal:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal</think>
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>literal</think>
+        - expected: []

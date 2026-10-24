@@ -1,0 +1,29 @@
+parent: vllm_python_batch-0.10.1.1
+execution: 32fc5618a55b7b78f5c35ec50ca907aacf2c5daf5d6de8d675fc71b4820932a4
+changes:
+  schema_declared_array:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value:
+            - 1
+            - 2
+  schema_type_array_integer_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42
+  schema_type_array_string_integer:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: schema_probe
+          arguments:
+            value: 42

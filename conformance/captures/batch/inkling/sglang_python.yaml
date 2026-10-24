@@ -1,3 +1,4 @@
+capture_selection: {"family":"inkling","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"bbffab60f64d0d50d5254a4d41923fe113c0957337cc50da2eabc24f26912e50","surface":"batch","version":"0.5.14"}
 schema_version: 1
 surface: batch
 family: inkling

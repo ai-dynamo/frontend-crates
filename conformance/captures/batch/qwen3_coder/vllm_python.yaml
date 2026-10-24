@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"0633a0fc880e427f26308d915b4dc79230065fe989a7bacbca62ae1143bac02f","surface":"batch","version":"0.26.0"}
 schema_version: 1
 surface: batch
 family: qwen3_coder

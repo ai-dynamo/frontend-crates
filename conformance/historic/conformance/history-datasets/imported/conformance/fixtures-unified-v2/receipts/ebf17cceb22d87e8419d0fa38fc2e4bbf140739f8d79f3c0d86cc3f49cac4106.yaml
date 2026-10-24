@@ -1,0 +1,14 @@
+adapter_sha256: 4d0f361f121385a475e92e168dd93004a5661a5719efac37a727e60e8c74ebae
+artifact_sha256: 760269db3d9611e12e524681df1bca0977d5d2f5fcb4481cc34d33efc4ae7ff5
+extracted_package_sha256: 4c957ecba55d175647d1727df2339fcc7a3852f545331014507523c301bad9d5
+implementation: vllm_python
+job_sha256: 74ff495eef7b00d4bfe74da3eb016d6c1d6d5dcd8e69d2e8cd8f5c3bedf0e5c1
+parser_apis:
+  combined: parser.parser_manager
+  protocol: entrypoints.openai.chat_completion.protocol
+  reasoning: reasoning
+  tools: tool_parsers
+results_sha256: 52fb05ee96dc5ca81a79dfc2ab84eac5675b75d6128a4a914e61e256e9bdadc5
+source_sha256: a059e8e00a6678bd6e6dc03e5df72b3832763735ee9f52c4a244a5c8391aa98f
+status: executed
+version: 0.23.0

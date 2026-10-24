@@ -1,0 +1,49 @@
+parent: dynamo_v1_jail-4.1.0
+execution: 78855d19fddf2d39e24f335fa23443f2f54ebbfc8f61705e8988260e5cfc551e
+changes:
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: literal
+        - kind: text
+          text: beforeafter
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_unterminated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: Before.  After.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Paris]<]minimax[>[</city>]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking

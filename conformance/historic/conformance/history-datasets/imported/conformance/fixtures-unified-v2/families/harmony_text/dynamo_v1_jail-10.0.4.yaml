@@ -1,0 +1,180 @@
+parent: dynamo_v1_jail-10.0.3
+execution: f449db10c0ed2f8c92baa4f0adaacca7d11e599041ee7d127078c135a6d10761
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Hello there. '
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure, one sec. '
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments: '{"city": }'
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: done
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+  reason_interleaved:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: before
+  reason_then_content:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: let me think
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: A
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'On it: '
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Sure. '
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'Before. '
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: before
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check
+  two_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+  two_calls_same_name:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  two_reason_spans:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: first thought
+  v1_split_parallel_tool_calls:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_time
+          arguments:
+            timezone: EST

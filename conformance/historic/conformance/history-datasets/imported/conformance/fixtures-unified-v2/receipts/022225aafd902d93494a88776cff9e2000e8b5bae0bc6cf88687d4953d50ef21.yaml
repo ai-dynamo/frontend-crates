@@ -1,0 +1,14 @@
+adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+artifact_sha256: 2fffd856a25d3defa38a539150fccf9126959ce4c6781c1c5a76d5da7216af59
+extracted_package_sha256: 301d44d0c8551a77c4ef09793018e5552cadd38c2aa315b0c51458c944d3fde0
+implementation: vllm_python
+job_sha256: e9fb7d8233101d0f9ac8cf8d350f5f4dac9b6c265032126d3091f7990ae49d29
+parser_apis:
+  combined: null
+  protocol: entrypoints.openai.protocol
+  reasoning: null
+  tools: entrypoints.openai.tool_parsers
+results_sha256: dd44a9f4478aac2a8b1584780fcb0724f6d6e580eaa25b8745ba463bf2953166
+source_sha256: 490cba7e738a35fb3e27ad090317d7eb89b38f55abd09b785b829ce5cba0c622
+status: capability_inspection
+version: 0.6.2

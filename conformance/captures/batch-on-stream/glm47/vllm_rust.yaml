@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"74fe04831739e4760991c73a67f3fea23d617c3dc475bf1451621e7a92f88376","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: glm47

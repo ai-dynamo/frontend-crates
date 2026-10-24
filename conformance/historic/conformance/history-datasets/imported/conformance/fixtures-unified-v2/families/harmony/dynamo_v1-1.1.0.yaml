@@ -1,0 +1,25 @@
+parent: dynamo_v1-1.0.2
+execution: 05b299003c092fc4655580393891b3375397f8c79bdf71ea43c590c95bd34eda
+changes:
+  prefilled_reasoning_redundant_opener:
+    observation:
+      value:
+        assembled: []
+  prefilled_reasoning_then_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: done
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      value:
+        assembled: []
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled: []
+  prefilled_reasoning_with_tool:
+    observation:
+      value:
+        assembled: []

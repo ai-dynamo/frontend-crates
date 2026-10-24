@@ -1,0 +1,11 @@
+parent: dynamo_v1-1.1.1
+execution: 31e85d0fbce1760d61cb2dbb1dae0a9f252f3938dfbdf49056a98f280e12d399
+changes:
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''

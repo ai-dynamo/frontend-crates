@@ -1,0 +1,276 @@
+parent: dynamo_v2-0.7.22
+execution: 3cea9bed6be63c42f8b765d089acebf92beb30e9f3aeb127b81cda8975993617
+changes:
+  content_then_reason:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Hello there. '
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure, one sec. '
+  interstitial_text:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: a
+        - expected: []
+  malformed_json_then_two_valid_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city": }'
+            complete: true
+        - expected: []
+  narrated_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  reason_after_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Look it up.
+        - expected: []
+  reason_between_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected: []
+  reason_interleaved:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+  reason_markup_in_arg_with_text:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: before
+  reason_then_content:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: let me think
+        - expected: []
+  reason_then_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: Check weather.
+        - expected: []
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+  reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: A
+        - expected: []
+  text_before_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'On it: '
+  text_between_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected: []
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Sure. '
+  text_sandwich:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'Before. '
+  tool_in_reason:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: <|channel|>commentary to=functions.get_weather <|constrain|>json<|message|>{"city":"Paris"}
+        - expected: []
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected: []
+        - expected:
+          - kind: text
+            text: before
+  trailing_text_after_tool:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  two_adjacent_reason_spans:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: check
+        - expected: []
+  two_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected: []
+  two_calls_same_name:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"city":"Paris"}'
+            complete: true
+        - expected: []
+  two_reason_spans:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: reasoning
+            text: first thought
+        - expected: []
+  v1_split_parallel_tool_calls:
+    observation:
+      value:
+        assembled: []
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: get_time
+            arguments: ''
+            complete: false
+          - kind: tool_call
+            name: null
+            arguments: '{"timezone":"EST"}'
+            complete: true
+        - expected: []

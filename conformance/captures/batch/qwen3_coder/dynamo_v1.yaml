@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"75f3dc1dc9dc650e91ef6deb87513eedb6cd035691c6143648e33c8482d34190","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: qwen3_coder

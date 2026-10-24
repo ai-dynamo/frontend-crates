@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"f34753819b1e55bbf30c206fe1fd64b514c038a6b83af79da174794cc3750e08","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: harmony

@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k25","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"ab3abccb8726b136acf0f142453e8d92dadabdd145208a4293b48328e3a6c32c","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: kimi_k25

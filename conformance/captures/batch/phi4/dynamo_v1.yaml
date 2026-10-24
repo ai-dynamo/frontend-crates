@@ -1,3 +1,4 @@
+capture_selection: {"family":"phi4","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"0842a5f960dbe6050116f08c7bcabc6c233205c0ecb4c315943bef4de6d74698","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: phi4

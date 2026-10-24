@@ -1,0 +1,21 @@
+parent: dynamo_v1-1.1.1
+execution: aae2e9049d9c0c33f5d86017f3776df6d60b3bc8d4dee24004e869bd656d9135
+changes:
+  prefilled_reasoning_truncated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''
+  truncated_tool_eof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: ''

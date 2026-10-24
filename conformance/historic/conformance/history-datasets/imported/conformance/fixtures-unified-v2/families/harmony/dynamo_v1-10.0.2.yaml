@@ -1,0 +1,11 @@
+parent: dynamo_v1-10.0.1
+execution: 8cdb0c143d56ba45f3c0cb604efb5151b3d9babd2d11bd82e67e69a1c254d23f
+changes:
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 6f6e9fba8622690e2c07895214d26829c484ef463b0f7efd383c4c92562d252c
+    observation:
+      value:
+        assembled: []

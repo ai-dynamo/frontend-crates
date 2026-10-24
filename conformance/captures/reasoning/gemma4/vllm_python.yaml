@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"89116577e2e407fc5491c1bb06e58e6cd16643b1b321a617847716c986ff9316","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: gemma4

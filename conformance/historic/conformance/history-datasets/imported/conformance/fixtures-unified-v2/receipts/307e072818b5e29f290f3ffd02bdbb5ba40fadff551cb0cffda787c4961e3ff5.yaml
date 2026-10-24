@@ -1,0 +1,13 @@
+adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+artifact_sha256: c4d526aaf36845c76861e4ade7ae67f6b7d3c5e511cb01d1fe23762ebebd5b0d
+extracted_package_sha256: f12fa13b75ab93ddb6c46b4c3fd7f39f256db22cd5e21d572c8d4a01e14390c6
+implementation: sglang_python
+job_sha256: 0eca7027a9bbafc80e9591a4472072e5fea32c55ee206a8f20e017605c7e1a00
+parser_apis:
+  protocol: null
+  reasoning: null
+  tools: null
+results_sha256: 61dfd73dd661473fed4c26333eceb3e41848bf4f024b9453ae2968e130b62e3f
+source_sha256: dc827c6f9b731e94da3d3ed06027c0bcc1cc2adaf7e594464be25d7915b38069
+status: capability_inspection
+version: 0.1.13

@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"857141cc48fc7d7cea53d113a4fa6382c858326270a0df69410f145a2f1ab98a","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: harmony

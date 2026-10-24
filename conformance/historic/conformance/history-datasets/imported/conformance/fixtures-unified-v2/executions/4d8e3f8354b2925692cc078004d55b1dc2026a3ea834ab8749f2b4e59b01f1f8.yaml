@@ -1,0 +1,143 @@
+schema_version: 1
+family: glm47
+implementation: sglang_python_batch
+version: 0.5.13
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.13
+      source_sha256: e2ef706b281642aa83d3f07bf0338b9aa990ddaae92159bdc7029bcde7722d75
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: ea607d8a1adb44e86b3b9587fae986b7c578ee8b24957f650031163bed6901ed
+cases:
+- content_then_reason
+- content_then_reason_then_tool
+- deepseek_v41_mixed_control_text_in_string
+- native_single_quote_contraction_reasoning
+- reason_after_tool
+- reason_between_calls
+- reason_interleaved
+- reason_markup_in_arg
+- reason_markup_in_arg_with_text
+- reason_tool_reason_tool_reason
+- reason_tool_text_reason_tool
+- text_reason_tool_text_reason_tool
+- tool_in_reason_with_text
+- two_adjacent_reason_spans
+- two_reason_spans
+defaults: {}
+exceptions:
+  content_then_reason:
+    batch_final:
+      reasoning_text: Hello there. <think>let me recall
+      normal_text: The capital is Paris.
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: Sure, one sec. <think>checking the forecast
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    batch_final:
+      reasoning_text: <tool_call>f<arg_key>x</arg_key><arg_value> <think>quoted
+      normal_text: " <tool_call> </tool_call> &amp; \"x\"\\\n </arg_value></tool_call>"
+      calls: []
+  native_single_quote_contraction_reasoning:
+    batch_final:
+      reasoning_text: 'The literal ''doesn''t '
+      normal_text: <tool_call> marker' stays quoted.
+      calls: []
+  reason_after_tool:
+    batch_final:
+      reasoning_text: Look it up.
+      normal_text: <think>Now answer.</think>It's 18C.
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  reason_between_calls:
+    batch_final:
+      reasoning_text: <tool_call>f<arg_key>x</arg_key><arg_value>1</arg_value></tool_call><think>mid
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  reason_interleaved:
+    batch_final:
+      reasoning_text: A
+      normal_text: <think>B</think>
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_markup_in_arg:
+    batch_final:
+      reasoning_text: <tool_call>log<arg_key>note</arg_key><arg_value><think>reconsider
+      normal_text: </arg_value></tool_call>
+      calls: []
+  reason_markup_in_arg_with_text:
+    batch_final:
+      reasoning_text: 'Logging now: <tool_call>log<arg_key>note</arg_key><arg_value><think>reconsider'
+      normal_text: </arg_value></tool_call> done.
+      calls: []
+  reason_tool_reason_tool_reason:
+    batch_final:
+      reasoning_text: A
+      normal_text: <think>B</think><think>C</think>
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: A
+      normal_text: working on it<think>B</think>
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: Sure. <think>check A
+      normal_text: and <think>check B</think>
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  tool_in_reason_with_text:
+    batch_final:
+      reasoning_text: Sure. <think>I should check. <tool_call>get_weather<arg_key>city</arg_key><arg_value>Paris</arg_value></tool_call> now answer
+      normal_text: ' Here you go.'
+      calls: []
+  two_adjacent_reason_spans:
+    batch_final:
+      reasoning_text: first
+      normal_text: '<think>
+
+        second</think>done'
+      calls: []
+  two_reason_spans:
+    batch_final:
+      reasoning_text: first thought
+      normal_text: interlude <think>second thought</think>done
+      calls: []

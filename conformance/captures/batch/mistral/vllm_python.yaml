@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"vllm_python","lineage":[],"mode":"batch","payload_sha256":"0bb7c009eabcbc8759b8335a19b258f06d10ff70886e97650f435100e2526a4d","surface":"batch","version":"0.24.0"}
 schema_version: 1
 surface: batch
 family: mistral

@@ -1,0 +1,126 @@
+schema_version: 1
+family: gemma4
+implementation: vllm_python_batch
+version: 0.19.1
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.19.1
+      source_sha256: 99753c27874c63aa057c523f5cf1cabe0b98dc27ad7f2659b67b28a5585ee741
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: bacb0f90b1209a6867df42fcac0fe4e0e89a05fcfcf43fe904e6757e4f80e511
+cases:
+- arg_json_null_anyof
+- arg_json_null_const
+- arg_json_null_nullable
+- arg_json_null_oneof
+- malformed_json_then_two_valid_calls
+- qwen_string_null
+- schema_declared_null
+- schema_null_union_ambiguous
+- schema_nullable_string
+- schema_type_array_integer_null_null
+- schema_union_anyof_null_reverse_typed
+- schema_union_anyof_null_typed
+- schema_union_oneof_null_reverse_typed
+- schema_union_oneof_null_typed
+defaults:
+  batch_final:
+    reasoning_text: ''
+    normal_text: ''
+exceptions:
+  arg_json_null_anyof:
+    batch_final:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_const:
+    batch_final:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_nullable:
+    batch_final:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  arg_json_null_oneof:
+    batch_final:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  malformed_json_then_two_valid_calls:
+    batch_final:
+      calls:
+      - name: bad
+        arguments:
+          value:
+            x: unfinished}
+      - name: echo
+        arguments:
+          value: é
+      - name: echo
+        arguments:
+          value: Café
+  qwen_string_null:
+    batch_final:
+      calls:
+      - name: get_weather
+        arguments:
+          city: null
+  schema_declared_null:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_null_union_ambiguous:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_nullable_string:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_type_array_integer_null_null:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_anyof_null_reverse_typed:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_anyof_null_typed:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_oneof_null_reverse_typed:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null
+  schema_union_oneof_null_typed:
+    batch_final:
+      calls:
+      - name: schema_probe
+        arguments:
+          value: null

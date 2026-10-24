@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"53b44740867d23245c19e06f9790def6ff109db17d360c3eb2b013f2f5cbf9e2","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: kimi_k2

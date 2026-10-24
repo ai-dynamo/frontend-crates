@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"sglang_python","lineage":[],"mode":"reasoning","payload_sha256":"b63ffdd7859f11511408f6a6d93115dd70c464ad146bbc2096224b0cd989bd26","surface":"reasoning","version":"0.5.14"}
 schema_version: 1
 surface: reasoning
 family: nemotron_deci

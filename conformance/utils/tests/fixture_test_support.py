@@ -19,17 +19,18 @@ from native_publication import fixture_catalog
 REPO = Path(__file__).resolve().parents[3]
 
 
-def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *, mode, metadata=None):
+def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *, mode, metadata=None,
+                                 retained_history_only=False):
     """Exercise both source modes against the same tiny, verified synthetic dataset."""
     tools = Path(capture_sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "yaml_fast.py"):
+    for name in ("capture_sources.py", "ci_publication_cache.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
         target = root / "conformance/utils/src" / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(tools / name, target)
     (root / "index.html").write_bytes(b"<head></head><body></body>")
     (root / "conformance/CONFORMANCE_v2.html").write_bytes(b'<a href="../">Viewer</a>')
     (root / "conformance/fixtures-manifest.json").write_bytes(b'{"shards":[]}\n')
-    source_files = [path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()]
+    subprocess.run(["git", "init", str(root)], check=True, capture_output=True)
     original_run = subprocess.run
     view.mkdir()
 
@@ -44,25 +45,30 @@ def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *,
             manifest_bytes = manifest_path.read_bytes()
             manifest = json.loads(manifest_bytes)
             archives = viewer_catalog._archive_records(manifest, view)
-            fixture_catalog(view, {"capture_generation": generation,
+            catalog = fixture_catalog(view, {"capture_generation": generation,
                 "metadata": copy.deepcopy(metadata or {"unified_capture_policy": {"dynamo_v2": {"mode": "stream"}}}),
                 "sources": {"archives": archives, "lineage": generation["lineage"], "candidates": [
                     {"mode": "unified", "implementation": "dynamo_v2", "version": version,
                      "capture_families": ["gemma4"], "native_unified_families": ["gemma4"],
                      "has_captured_results": True} for version in versions]}})
+            if (view / capture_sources.DATASETS).is_file():
+                _inventory, _documents, indexed = viewer_catalog._native_catalog_document_index(view / capture_sources.STORE)
+                catalog["sources"]["history_datasets"] = viewer_catalog._history_dataset_sources(
+                    view, catalog["sources"]["unified"], indexed, catalog["metadata"])
+                (view / "conformance/viewer-catalog.json").write_bytes(capture_sources.encoded(catalog))
             manifest["shards"] = [row for row in manifest["shards"] if row.get("format") != "unified-history"]
             manifest_path.write_bytes(capture_sources.encoded(manifest))
             return SimpleNamespace(returncode=0)
         return original_run(command, **kwargs)
 
     with monkeypatch.context() as patch:
-        # Only the synthetic code root's file enumeration and catalog metadata are
-        # supplied by this fixture; pin admission and native publication stay real.
-        patch.setattr(subprocess, "check_output", lambda *_args, **_kwargs: "\0".join(source_files).encode())
+        # Supply synthetic catalog metadata; source discovery and admission stay real.
         patch.setattr(subprocess, "run", build_catalog)
         patch.delenv("CONFORMANCE_DOCUMENT_LOCK", raising=False)
+        patch.setenv("CONFORMANCE_CONVERSION_CACHE", str(root / "build/conformance-cache"))
         capture_sources.prepare(root, view, include_history=mode == "history",
-                                history_source=history if mode == "history" else None, publisher=str(publisher))
+                                history_source=history if mode == "history" else None, publisher=str(publisher),
+                                retained_history_only=retained_history_only)
 
 
 def configure_extractor_root(root, monkeypatch, *, manifest_path=None):

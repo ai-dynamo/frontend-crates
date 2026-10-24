@@ -1,0 +1,30 @@
+schema_version: 1
+family: kimi_k2
+implementation: sglang_python_batch
+version: 0.5.10
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.10
+      source_sha256: 6128202fd7266c7066c13d2d0727bbbc233cbd9b26a23582ca968f0bdae98c6f
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: 211110044ba9bd5f5050c94c2c3af0d708cae4f487939bca2c62fb6c65dd0b76
+cases:
+- native_quoted_control_in_reasoning
+- native_single_quote_contraction_reasoning
+defaults:
+  batch_final:
+    calls: []
+exceptions:
+  native_quoted_control_in_reasoning:
+    batch_final:
+      reasoning_text: The literal "
+      normal_text: <|tool_calls_section_begin|>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    batch_final:
+      reasoning_text: The literal 'doesn't
+      normal_text: <|tool_calls_section_begin|> marker' stays quoted.

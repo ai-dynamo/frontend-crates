@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"b46497c1010d3cdbf9761bee470badce0ea18be4adad597cb1e32119d4b1c7b6","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: hermes

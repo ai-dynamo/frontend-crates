@@ -236,7 +236,7 @@ def test_filename_references_read_yaml_edits_without_renaming(tmp_path):
 
 
 @pytest.mark.parametrize("reference", ["../outside.yaml", "executions/../outside.yaml", "executions/nested/file.yaml",
-                                       "receipts/file.yaml", "executions/file.json", "a" * 64])
+                                       "receipts/file.yaml", "executions/file.json", "A" * 64, "a" * 63])
 def test_execution_references_require_a_filename_in_the_owning_directory(reference):
     with pytest.raises(ValueError, match="filename reference"):
         execution_manifests.source_reference(reference, "executions")
@@ -534,3 +534,19 @@ def test_ordinary_unsupported_capture_does_not_claim_execution_proof(tmp_path):
     import_capture_groups(store, {implementation: rows}, compact_executions=True)
     checkpoint = unified_history.load_store(store).histories[("gemma4", implementation)].captures[f"{implementation}-0.1.0"]
     assert "execution_proof" not in checkpoint
+
+
+def test_original_hash_references_expand_without_rewriting_sparse_bytes():
+    digest = "a" * 64
+    manifest = {"schema_version": 1, "family": "sample", "implementation": "dynamo_v2", "version": "1.0.0",
+                "checkpoint": {"provenance": {}, "document": {}, "document_overrides": {}},
+                "cases": ["case"], "defaults": {"verified_recapture": {"provenance": "receipt:" + digest}, "capture_provenance": "receipt:x"},
+                "exceptions": {}, "receipts": {digest: ["case"]}}
+    before = copy.deepcopy(manifest)
+    receipt = {"version": "1.0.0", "missing_vs_null": None}
+    restored = execution_manifests.expand(manifest, family="sample", implementation="dynamo_v2", version="1.0.0", receipt_documents={digest: receipt})
+    assert restored["metadata_changes"]["case"] == {"verified_recapture": {"provenance": receipt}, "capture_provenance": "receipt:x"}
+    assert manifest == before
+    assert execution_manifests.source_reference(digest, "executions") == "executions/" + digest + ".yaml"
+    with pytest.raises(ValueError, match="missing"):
+        execution_manifests.expand(manifest, family="sample", implementation="dynamo_v2", version="1.0.0", receipt_documents={})

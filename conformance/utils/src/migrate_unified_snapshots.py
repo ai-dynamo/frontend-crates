@@ -87,19 +87,7 @@ def convert(source: Path, destination: Path, spool: Path) -> dict:
                 def write_snapshot(history, capture_id, records):
                     nonlocal capture_count, record_count
                     capture = history.captures[capture_id]
-                    capture_document = {
-                        "schema_version": 2,
-                        "provenance": capture["provenance"],
-                        "document": capture["document"],
-                        "records": {},
-                    }
-                    for case_id, value in records.items():
-                        source_member = history.snapshot_members[capture_id][case_id]
-                        capture_document["records"][case_id] = {"value": value, "member": source_member}
-                        if case_id in history.snapshot_suppressed_inheritance.get(capture_id, set()):
-                            capture_document["records"][case_id]["suppress_inherited_from"] = True
-                    if "execution_proof" in capture:
-                        capture_document["execution_proof"] = capture["execution_proof"]
+                    capture_document = history.complete_snapshot(capture_id, records=records)
                     member = f"families/{family.name}/{capture_id}.yaml"
                     identity = (family.name, history.implementation, capture["runtime_version"])
                     if identity in captures:

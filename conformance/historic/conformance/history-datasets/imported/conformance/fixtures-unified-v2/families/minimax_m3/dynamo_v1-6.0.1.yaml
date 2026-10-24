@@ -1,0 +1,41 @@
+parent: dynamo_v1-6.0.0
+execution: a369368c6fc0e8a9b7e01ebe6dbeaf6d0d4a46c4632674af48ebe6df7e910b52
+changes:
+  text_before_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'On it: '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  text_sandwich:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'Before. '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  tool_in_reason_with_text:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: before
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris

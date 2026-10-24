@@ -10,10 +10,14 @@ import json
 from pathlib import Path
 
 
-def snapshot(root: Path) -> dict:
+def snapshot(root: Path, *, include_history: bool = False) -> dict:
     conformance = root / "conformance"
     evidence = {}
-    for directory in sorted(path for path in conformance.glob("fixtures*") if path.is_dir()):
+    directories = [path for path in conformance.glob("fixtures*") if path.is_dir()]
+    directories.extend(conformance / name for name in ("captures", "inputs") if (conformance / name).is_dir())
+    if include_history:
+        directories.append(conformance / "historic")
+    for directory in sorted(directories):
         if directory.is_symlink():
             raise ValueError(f"evidence must not contain links: {directory}")
         for path in sorted(directory.rglob("*")):
@@ -22,7 +26,7 @@ def snapshot(root: Path) -> dict:
             if path.is_file():
                 with path.open("rb") as source:
                     evidence[path.relative_to(root).as_posix()] = hashlib.file_digest(source, "sha256").hexdigest()
-    yaml_paths = sorted(path.relative_to(root).as_posix() for path in conformance.rglob("*.yaml") if path.is_file())
+    yaml_paths = sorted(path.relative_to(root).as_posix() for directory in directories for path in directory.rglob("*.yaml") if path.is_file())
     return {"evidence": evidence, "yaml_paths": yaml_paths}
 
 
@@ -31,8 +35,9 @@ def main() -> int:
     parser.add_argument("operation", choices=("snapshot", "check"))
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument("--inventory", type=Path, required=True)
+    parser.add_argument("--include-history", action="store_true")
     args = parser.parse_args()
-    current = snapshot(args.root.resolve())
+    current = snapshot(args.root.resolve(), include_history=args.include_history)
     if args.operation == "snapshot":
         args.inventory.write_text(json.dumps(current, sort_keys=True) + "\n")
         return 0

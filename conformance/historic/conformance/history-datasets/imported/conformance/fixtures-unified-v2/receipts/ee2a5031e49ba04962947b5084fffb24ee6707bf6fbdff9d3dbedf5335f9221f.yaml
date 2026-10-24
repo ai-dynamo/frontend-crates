@@ -1,0 +1,8 @@
+adapter_sha256: f0b8eb91c607cb5ef8e38be6d023cf0b1f2359d4a872a2bc8c64f6957fcac12e
+job_sha256: 5db7fcc308446e96683aff318fe82fbf472bd89a77e4a966be3e4a70749f90a1
+source_files:
+  python/sglang/srt/function_call/function_call_parser.py: 5daea0c687ca503921289d891a6ec5721612d5df3a1e69f2296da81aa9cbe7d7
+  python/sglang/srt/parser/reasoning_parser.py: 6e2518a9952af1cf96469d213b800f37363e5c7522e05dcfee625f4f1abad76f
+source_sha256: 1e34697413e06d407770ab0f68d8f13cff9a4c3964ba634033f567fda361d6ec
+upstream_commit: 49e384ce9d304648e9959666ecb8ce8cd98d0deb
+version: 0.5.14

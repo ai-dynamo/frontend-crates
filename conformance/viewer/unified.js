@@ -156,7 +156,7 @@ async function validateExecutionProof(proof, inputDocument, provenance, implemen
 export async function validateUnifiedSnapshot(snapshot, inputDocument, resource) {
   const { path, implementation, version } = resource;
   const fields = ['schema_version', 'provenance', 'document', 'records'];
-  keys(snapshot, fields, [...fields, 'execution_proof', 'historical_evidence'], path);
+  keys(snapshot, fields, [...fields, 'execution_proof', 'historical_evidence', 'capture_selection'], path);
   if (snapshot.schema_version !== 2n && snapshot.schema_version !== 2) throw new Error(`${path} invalid Unified snapshot schema`);
   if (typeof version !== 'string' || !unifiedCaptureVersionPattern.test(version)) throw new Error(`${path} invalid Unified capture version`);
   const provenance = mapping(snapshot.provenance, `${path}.provenance`);

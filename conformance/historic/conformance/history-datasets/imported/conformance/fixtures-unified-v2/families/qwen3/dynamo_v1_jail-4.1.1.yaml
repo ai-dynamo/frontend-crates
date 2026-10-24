@@ -1,0 +1,59 @@
+parent: dynamo_v1_jail-4.1.0
+execution: 2d37059b868d69cf09f5ec35ed81e5e648da379e4b38baafc6771db86608ff24
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<tool_call>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <tool_call> marker' stays quoted.
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_unterminated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: 'I should check. <tool_call>
+
+            <function=get_weather>
+
+            <parameter=city>
+
+            Paris
+
+            </parameter>
+
+            </function>
+
+            </tool_call> now answer'

@@ -1,0 +1,11 @@
+parent: sglang_python_batch-0.5.15.post1
+execution: 21383b6f1c99a034e9245c9aa873a007b293cadd2547f65f4582eeca88152df8
+changes:
+  deepseek_v41_mixed_control_text_in_string:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: <tool_call>f<arg_key>x</arg_key><arg_value> <think>quoted
+        - kind: text
+          text: "&amp; \"x\"\\\n </arg_value></tool_call>"

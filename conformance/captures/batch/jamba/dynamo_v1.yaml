@@ -1,3 +1,4 @@
+capture_selection: {"family":"jamba","implementation":"dynamo_v1","lineage":[],"mode":"batch","payload_sha256":"b638e59b53148991b1085a53a6c34e2e1ce56a57e1b1473948b58be631395d6c","surface":"batch","version":"10.0.1"}
 schema_version: 1
 surface: batch
 family: jamba

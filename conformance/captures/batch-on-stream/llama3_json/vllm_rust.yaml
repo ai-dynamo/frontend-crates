@@ -1,3 +1,4 @@
+capture_selection: {"family":"llama3_json","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"4fd4662f03e18bb34d93d268ef5607ae446e46b464074d98e5143addeb6b25de","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: llama3_json

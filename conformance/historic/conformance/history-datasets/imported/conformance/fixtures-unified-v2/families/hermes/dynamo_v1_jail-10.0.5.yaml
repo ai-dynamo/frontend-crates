@@ -1,0 +1,51 @@
+parent: dynamo_v1_jail-10.0.4
+execution: c8c4784b1926acf8fb92ca9e3a9aa1dcc713850ff73782071ee00c4c11bafc72
+changes:
+  narrated_calls:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: ' then I''ll run  and '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: ' then '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  text_reason_tool_text_reason_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: check Acheck B
+        - kind: text
+          text: 'Sure.  and '
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'

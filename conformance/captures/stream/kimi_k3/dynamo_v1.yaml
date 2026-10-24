@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k3","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"70ce6023324f65129d42e22362fb8d694f5e246981e4738effe0717dbe167d86","surface":"stream","version":"9.1.0"}
 schema_version: 1
 surface: stream
 family: kimi_k3

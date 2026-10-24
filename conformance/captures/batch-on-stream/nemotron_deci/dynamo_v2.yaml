@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"742f44cc1b63b51b0cf470f283d8ce5e07ff211c083c7f659bf03952f32bb374","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_deci

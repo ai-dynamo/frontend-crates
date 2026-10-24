@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 """
-Materialize local current captures or explicitly pinned external history.
+Materialize local latest captures or verified bundled history.
 
 Default extraction uses authored inputs and generic current YAML only. Historical
-extraction requires --include-history and --history-source, verifies the external
-inventory pin, and uses retained format readers without network access.
+extraction uses --include-history, verifies baseline and added evidence, and uses
+retained format readers without network access.
 
 Cache location (fixed, same contract as the old HF downloader):
   ${XDG_CACHE_HOME:-~/.cache}/dynamo/conformance-fixtures/
@@ -441,7 +441,7 @@ def current_materialization_identity():
 
 
 def _extract(args, *, legacy_only=False, current=True):
-    if current and (ROOT / capture_sources.CURRENT).is_file():
+    if current and capture_sources.is_current(ROOT):
         document = capture_sources.current(ROOT)
         authored = current_materialization_identity()
         fid = capture_sources.digest(capture_sources.encoded({"current": document, "authored": authored, "format": 2, "legacy_only": legacy_only}))
@@ -455,7 +455,7 @@ def _extract(args, *, legacy_only=False, current=True):
             if selected is None or args.full_refresh:
                 temporary = cache_root / f".current-{fid}-{secrets.token_hex(8)}"
                 temporary.mkdir()
-                capture_sources.materialize_legacy(ROOT, temporary)
+                capture_sources.materialize_legacy(ROOT, temporary, document=document, authored=authored)
                 if not legacy_only:
                     unified_history.materialize_store(HISTORY_DIR, temporary / "unified")
                 if capture_sources.current(ROOT) != document:
@@ -581,9 +581,7 @@ def extract_snapshot(args, *, legacy_only=False):
 def extract_history(args, source, *, legacy_only=False):
     global MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR
     source = Path(source).resolve()
-    pin = json.loads(capture_sources.read(ROOT, capture_sources.PIN))
-    with unified_history._store_read_lock(source / capture_sources.STORE):
-        capture_sources.verify(source, pin)
+    with capture_sources.history_view(ROOT, source) as source:
         original = MANIFEST_PATH, FIXTURES_DIR, HISTORY_DIR
         try:
             MANIFEST_PATH = source / "conformance/fixtures-manifest.json"
@@ -610,8 +608,7 @@ def main():
     if args.history_source is not None and not args.include_history:
         ap.error("--history-source requires --include-history")
     if args.include_history:
-        if args.history_source is None:
-            ap.error("--include-history requires --history-source")
+        args.history_source = args.history_source or ROOT / capture_sources.HISTORIC
         extract_history(args, args.history_source, legacy_only=args.legacy_only)
     else:
         extract_snapshot(args, legacy_only=args.legacy_only)

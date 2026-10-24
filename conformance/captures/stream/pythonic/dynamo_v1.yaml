@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"614694204841f178f5fa4e70b7053812a33ed33d61ebb4d309cdefb5ef571f85","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: pythonic

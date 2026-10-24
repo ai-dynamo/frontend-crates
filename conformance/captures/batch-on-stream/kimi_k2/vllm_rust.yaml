@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"7cacdf9db11d8d67ef52f263de869772e2a4282a841318d73d0caf747c952834","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: kimi_k2

@@ -1,0 +1,6 @@
+adapter_sha256: cd6d892e6662e54a5c2cbc4092275e10719c3727ce593b8a351fa1852fe8d116
+git_commit: 13d1c33ecba86be227afe0612aecb248c3baae86
+implementation: dynamo_v1
+job_sha256: af78555cec88d1510002ddd86fed033795d320671cb6fa2ca9d377b07d8ec58b
+source_sha256: aedc2cc2376c35d3bc998f6ec326271703cd19a61ef18ad7e1d21dbde3eeb638
+version: 9.2.6

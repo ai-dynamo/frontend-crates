@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"vllm_python","lineage":[],"mode":"reasoning","payload_sha256":"32741cb497ed5909e88236c109c5cee8a4029aed602e7fc01e7980e76b88cf1e","surface":"reasoning","version":"0.24.0"}
 schema_version: 1
 surface: reasoning
 family: nemotron_deci

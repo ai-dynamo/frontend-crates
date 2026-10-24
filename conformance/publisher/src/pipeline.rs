@@ -221,48 +221,51 @@ fn selections(catalog: &Value) -> Result<Vec<Selection>> {
     Ok(selections.into_values().collect())
 }
 
-#[cfg(test)]
-fn family_source_bytes(resources: &[&Value], index: &BTreeMap<String, &Value>) -> Result<u64> {
-    let mut paths = resources
-        .iter()
-        .map(|r| r["path"].as_str().context("missing family source path"))
-        .collect::<Result<BTreeSet<_>>>()?;
-    for resource in resources {
-        if let Some(digest) = resource["execution"].as_str() {
+fn family_sources<'a>(
+    resources: &[&'a Value],
+    index: &BTreeMap<String, &'a Value>,
+) -> Result<BTreeMap<String, &'a Value>> {
+    let mut pending = resources.to_vec();
+    let mut sources = BTreeMap::new();
+    while let Some(resource) = pending.pop() {
+        let path = resource["path"]
+            .as_str()
+            .context("missing family source path")?;
+        if sources.contains_key(path) {
+            continue;
+        }
+        if let Some(reference) = resource["execution"].as_str() {
             let path = format!(
                 "{STORE}/{}",
-                crate::history::source_reference(digest, "executions")?
+                crate::history::source_path(reference, "executions")?
             );
-            let manifest = index.get(&path).context("execution is not indexed")?;
-            paths.insert(
-                manifest["path"]
-                    .as_str()
-                    .context("missing execution path")?,
-            );
-            for digest in manifest["receipts"]
-                .as_array()
-                .context("missing receipt inventory")?
-            {
-                let path = format!(
-                    "{STORE}/{}",
-                    crate::history::source_reference(
-                        digest.as_str().context("invalid receipt reference")?,
-                        "receipts"
-                    )?
-                );
-                let receipt = index.get(&path).context("receipt is not indexed")?;
-                paths.insert(receipt["path"].as_str().context("missing receipt path")?);
-            }
+            pending.push(*index.get(&path).context("execution is not indexed")?);
         }
+        for reference in resource["receipts"].as_array().into_iter().flatten() {
+            let path = format!(
+                "{STORE}/{}",
+                crate::history::source_path(
+                    reference.as_str().context("invalid receipt reference")?,
+                    "receipts"
+                )?
+            );
+            pending.push(*index.get(&path).context("receipt is not indexed")?);
+        }
+        sources.insert(path.to_string(), resource);
     }
-    paths.into_iter().try_fold(0u64, |sum, path| {
-        sum.checked_add(
-            index[path]["size"]
-                .as_u64()
-                .context("missing resource size")?,
-        )
-        .context("family dependency size overflow")
-    })
+    Ok(sources)
+}
+
+pub(crate) fn family_source_bytes(
+    resources: &[&Value],
+    index: &BTreeMap<String, &Value>,
+) -> Result<u64> {
+    family_sources(resources, index)?
+        .values()
+        .try_fold(0u64, |sum, resource| {
+            sum.checked_add(resource["size"].as_u64().context("missing resource size")?)
+                .context("family dependency size overflow")
+        })
 }
 
 fn source_fingerprint(resources: &[Value]) -> Result<String> {
@@ -273,10 +276,215 @@ fn source_fingerprint(resources: &[Value]) -> Result<String> {
         .map(|resource| {
             let mut resource = resource.clone();
             resource.as_object_mut().unwrap().remove("archive");
+            resource.as_object_mut().unwrap().remove("dataset_root");
             resource
         })
         .collect::<Vec<_>>();
     Ok(sha256(&json_bytes(&json!({"resources":logical}))?))
+}
+
+fn append_history_snapshots(
+    snapshots: &mut Vec<Value>,
+    history: &crate::history::History,
+    directory: &Path,
+    family_key: &str,
+    family: &str,
+    authored: &Node,
+) -> Result<()> {
+    let mut cursor = crate::history::Cursor::default();
+    for (position, capture) in history.captures.iter().enumerate() {
+        cursor.apply(history, position)?;
+        let key = sha256(&json_bytes(&json!([
+            family_key,
+            history.implementation,
+            capture.version
+        ]))?);
+        let mut records = cursor.records(history, &capture.version)?;
+        source::bind_record_requests(&mut records, authored)?;
+        let mut summary = crate::catalog::record_summary(&records)?;
+        summary["family"] = json!(family);
+        summary["implementation"] = json!(history.implementation);
+        summary["version"] = json!(capture.version);
+        crate::conversion_cache::write(directory, &key, &records.typed())?;
+        let mut metadata = json!({"runtime_version":capture.version,
+            "provenance":capture.document.field("provenance")?.typed(),
+            "document":capture.document.field("document")?.typed()});
+        for field in ["execution_proof", "historical_evidence"] {
+            if let Some(value) = capture.document.get(field) {
+                metadata[field] = value.typed();
+            }
+        }
+        snapshots.push(json!({"implementation":history.implementation,
+            "version":capture.version, "fragment":key, "summary":summary,
+            "capture":metadata}));
+    }
+    Ok(())
+}
+
+pub(crate) fn family_cache_key(
+    resources: &[&Value],
+    index: &BTreeMap<String, &Value>,
+    catalog: &Value,
+    family: &str,
+) -> Result<String> {
+    let dependencies = family_sources(resources, index)?
+        .into_iter()
+        .map(|(path, resource)| {
+            let mut logical = resource.clone();
+            let object = logical
+                .as_object_mut()
+                .context("invalid family dependency")?;
+            object.remove("archive");
+            object.remove("dataset_root");
+            Ok((path, logical))
+        })
+        .collect::<Result<BTreeMap<_, _>>>()?;
+    Ok(sha256(&json_bytes(
+        &json!({"schema":1, "family":family, "sources":dependencies,
+        "aliases":catalog["metadata"]["unified_aliases"],
+        "policy":catalog["metadata"]["unified_capture_policy"],
+        "code":[include_str!("pipeline.rs"), include_str!("source.rs"), include_str!("yaml.rs"),
+                include_str!("history.rs"), include_str!("codec.rs"), include_str!("catalog.rs"),
+                include_str!("conversion_cache.rs")]}),
+    )?))
+}
+
+fn read_family_cache(directory: &Path, key: &str, family: &str, aliases: &Value) -> Option<Value> {
+    let payload = crate::conversion_cache::read(directory, key)?;
+    let authored = Node::from_typed(&payload["authored"]).ok()?;
+    source::family(&authored, family, aliases).ok()?;
+    let mut identities = BTreeSet::new();
+    for row in payload["snapshots"].as_array()? {
+        let implementation = row["implementation"].as_str()?;
+        let version = row["version"].as_str()?;
+        if !identities.insert((row["dataset"].as_str(), implementation, version))
+            || !crate::catalog::valid_summary(&row["summary"], family, implementation, version)
+            || row["capture"]["runtime_version"] != version
+        {
+            return None;
+        }
+        let records = crate::conversion_cache::read(directory, row["fragment"].as_str()?)?;
+        let mut snapshot = Node::map();
+        snapshot.set("schema_version", Node::Int(2.into())).ok()?;
+        for field in [
+            "provenance",
+            "document",
+            "execution_proof",
+            "historical_evidence",
+        ] {
+            if let Some(value) = row["capture"].get(field) {
+                snapshot.set(field, Node::from_typed(value).ok()?).ok()?;
+            }
+        }
+        snapshot
+            .set("records", Node::from_typed(&records).ok()?)
+            .ok()?;
+        source::resolved_snapshot(&snapshot, &authored, family, implementation, version).ok()?;
+    }
+    Some(payload)
+}
+
+pub(crate) struct FamilyCache<'a> {
+    pub directory: &'a Path,
+    pub key: &'a str,
+    pub reuse: bool,
+}
+
+pub(crate) fn converted_family(
+    root: &Path,
+    resources: &[&Value],
+    index: &BTreeMap<String, &Value>,
+    catalog: &Value,
+    name: &str,
+    reserved: u64,
+    cache: FamilyCache<'_>,
+) -> Result<Value> {
+    let FamilyCache {
+        directory,
+        key,
+        reuse,
+    } = cache;
+    if reuse
+        && let Some(payload) = read_family_cache(
+            directory,
+            key,
+            name,
+            &catalog["metadata"]["unified_aliases"],
+        )
+    {
+        for resource in family_sources(resources, index)?.values() {
+            source::verified(root, resource)?;
+        }
+        return Ok(payload);
+    }
+    eprintln!("source conversion: {name} miss");
+    let mut snapshots = Vec::new();
+    let input = resources
+        .iter()
+        .find(|r| r["kind"] == "inputs-and-golden")
+        .context("dataset has no authored family")?;
+    let bytes = source::verified(root, input)?;
+    let authored = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+    source::family(&authored, name, &catalog["metadata"]["unified_aliases"])?;
+    let mut implementations = BTreeMap::<String, Vec<&Value>>::new();
+    for resource in resources {
+        if let Some(implementation) = resource["implementation"].as_str() {
+            implementations
+                .entry(implementation.into())
+                .or_default()
+                .push(resource);
+        }
+    }
+    for (implementation, resources) in implementations {
+        let batch =
+            catalog["metadata"]["unified_capture_policy"][&implementation]["mode"] == "batch";
+        let first = source::verified(root, resources[0])?;
+        let complete = yaml::load_str(std::str::from_utf8(&first)?)?.get("schema_version")
+            == Some(&Node::Int(2.into()));
+        drop(first);
+        if complete {
+            for resource in resources {
+                let history = source::load_history(
+                    root,
+                    &authored,
+                    name,
+                    &implementation,
+                    &[resource],
+                    batch,
+                    source::HistoryAdmission {
+                        limit: reserved,
+                        index,
+                    },
+                )?;
+                append_history_snapshots(
+                    &mut snapshots,
+                    &history,
+                    directory,
+                    key,
+                    name,
+                    &authored,
+                )?;
+            }
+        } else {
+            let history = source::load_history(
+                root,
+                &authored,
+                name,
+                &implementation,
+                &resources,
+                batch,
+                source::HistoryAdmission {
+                    limit: reserved,
+                    index,
+                },
+            )?;
+            append_history_snapshots(&mut snapshots, &history, directory, key, name, &authored)?;
+        }
+    }
+
+    let payload = json!({"authored":authored.typed(), "snapshots":snapshots});
+    crate::conversion_cache::write(directory, key, &payload)?;
+    Ok(payload)
 }
 
 /// Resolve independent families concurrently, never parallelizing a history cursor.
@@ -287,13 +495,24 @@ pub fn snapshots(
     budget: &MemoryBudget,
     encoding: SnapshotEncoding,
 ) -> Result<Value> {
+    snapshots_cached(root, stage, catalog, budget, encoding, None)
+}
+
+pub fn snapshots_cached(
+    root: &Path,
+    stage: &Path,
+    catalog: &Value,
+    budget: &MemoryBudget,
+    encoding: SnapshotEncoding,
+    cache: Option<&Path>,
+) -> Result<Value> {
     let original = catalog["sources"]["unified"]
         .as_array()
         .context("missing Unified sources")?;
     if original.is_empty() {
         return Ok(catalog.clone());
     }
-    let fingerprint = source_fingerprint(original)?;
+    let fingerprint = source_fingerprint(&source::original_sources(catalog)?)?;
     let selected = selections(catalog)?;
     let mut families = BTreeMap::<String, Vec<&Value>>::new();
     for resource in original {
@@ -304,14 +523,11 @@ pub fn snapshots(
                 .push(resource);
         }
     }
-    let index = original
-        .iter()
-        .chain(
-            catalog["sources"]["lineage"]
-                .as_array()
-                .into_iter()
-                .flatten(),
-        )
+    let index = catalog["sources"]["lineage"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .chain(original.iter())
         .map(|r| {
             Ok((
                 r["path"]
@@ -325,18 +541,65 @@ pub fn snapshots(
     let parts = stage.join(".native-parts");
     fs::create_dir(&parts)?;
     let timings = Timings::default();
+    let fragment_directory = cache
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| parts.join("conversion"));
     let per_family = families
         .par_iter()
         .map(|(name, resources)| -> Result<Value> {
-            // Complete snapshots are independent. Reserve for the largest live
-            // snapshot rather than the sum of every checkpoint in this family.
-            let source_bytes = resources
-                .iter()
-                .map(|r| r["size"].as_u64().context("missing source size"))
-                .collect::<Result<Vec<_>>>()?
-                .into_iter()
-                .max()
-                .unwrap_or(0);
+            // Fragments are spooled before selection so a family's full release
+            // history never needs to coexist as typed JSON in memory.
+            let units = if let Some(datasets) = catalog["sources"]["history_datasets"].as_array() {
+                let mut units = datasets
+                    .iter()
+                    .map(|dataset| -> Result<_> {
+                        let all = dataset["resources"]
+                            .as_array()
+                            .context("missing dataset sources")?;
+                        let scoped = all
+                            .iter()
+                            .map(|r| {
+                                Ok((
+                                    r["path"]
+                                        .as_str()
+                                        .context("missing dataset path")?
+                                        .to_string(),
+                                    r,
+                                ))
+                            })
+                            .collect::<Result<BTreeMap<_, _>>>()?;
+                        let family = all
+                            .iter()
+                            .filter(|r| r["family"] == name.as_str())
+                            .collect::<Vec<_>>();
+                        Ok((
+                            dataset["id"]
+                                .as_str()
+                                .context("missing dataset identity")?
+                                .to_string(),
+                            family,
+                            scoped,
+                        ))
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                units.push((
+                    String::new(),
+                    resources
+                        .iter()
+                        .copied()
+                        .filter(|r| r["dataset_root"].is_null())
+                        .collect(),
+                    index.clone(),
+                ));
+                units
+            } else {
+                vec![(String::new(), resources.clone(), index.clone())]
+            };
+            let source_bytes = units.iter().try_fold(0u64, |total, (_, family, scoped)| {
+                total
+                    .checked_add(family_source_bytes(family, scoped)?)
+                    .context("dataset reservation overflow")
+            })?;
             let reserved = source_bytes
                 .checked_mul(64)
                 .context("family reservation overflow")?
@@ -351,10 +614,104 @@ pub fn snapshots(
                     == format!("{STORE}/families/{name}/inputs_and_golden.yaml"),
                 "family path mismatch"
             );
-            let bytes = source::verified(root, authored_resource)?;
-            let authored = yaml::load_str(std::str::from_utf8(&bytes)?)?;
-            source::family(&authored, name, &catalog["metadata"]["unified_aliases"])
-                .with_context(|| name.clone())?;
+            let unit_keys = units
+                .iter()
+                .map(|(id, family, scoped)| {
+                    Ok(json!([
+                        id,
+                        family_cache_key(family, scoped, catalog, name)?
+                    ]))
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let cache_key = sha256(&json_bytes(&json!([
+                authored_resource["sha256"],
+                unit_keys
+            ]))?);
+            let cached = if matches!(encoding, SnapshotEncoding::ValidateOnly) {
+                None
+            } else {
+                cache
+                    .and_then(|directory| {
+                        read_family_cache(
+                            directory,
+                            &cache_key,
+                            name,
+                            &catalog["metadata"]["unified_aliases"],
+                        )
+                    })
+                    .filter(|payload| {
+                        payload["snapshots"]
+                            .as_array()
+                            .is_some_and(|rows| rows.iter().all(|row| row["dataset"].is_string()))
+                    })
+            };
+            let payload = if let Some(payload) = cached {
+                for (_, family, scoped) in &units {
+                    for resource in family_sources(family, scoped)?.values() {
+                        source::verified(root, resource)?;
+                    }
+                }
+                eprintln!("family conversion: {name} hit");
+                payload
+            } else {
+                eprintln!("family conversion: {name} miss");
+                let bytes = source::verified(root, authored_resource)?;
+                let mut authored = yaml::load_str(std::str::from_utf8(&bytes)?)?;
+                source::family(&authored, name, &catalog["metadata"]["unified_aliases"])?;
+                let mut retained_cases = authored.field("cases")?.clone();
+                let mut snapshots = Vec::new();
+                for (dataset, family, scoped) in &units {
+                    if family.is_empty() {
+                        continue;
+                    }
+                    let key = family_cache_key(family, scoped, catalog, name)?;
+                    let mut unit = converted_family(
+                        root,
+                        family,
+                        scoped,
+                        catalog,
+                        name,
+                        reserved,
+                        FamilyCache {
+                            directory: &fragment_directory,
+                            key: &key,
+                            reuse: !matches!(encoding, SnapshotEncoding::ValidateOnly),
+                        },
+                    )?;
+                    let retained = Node::from_typed(&unit["authored"])?;
+                    for (id, case) in retained.field("cases")?.mapping()? {
+                        if retained_cases.get(id.string()?).is_none() {
+                            let mut retired = case.clone();
+                            retired.set("lifecycle", Node::Str("retired".into()))?;
+                            retired.set("display_id", Node::Null)?;
+                            retired.set("historical_ids", Node::Array(Vec::new()))?;
+                            retained_cases.set(id.string()?, retired)?;
+                        }
+                    }
+                    for mut row in unit["snapshots"]
+                        .take()
+                        .as_array()
+                        .context("missing dataset fragments")?
+                        .iter()
+                        .cloned()
+                    {
+                        row["dataset"] = json!(dataset);
+                        snapshots.push(row);
+                    }
+                }
+                authored.set("cases", retained_cases)?;
+                source::family(&authored, name, &catalog["metadata"]["unified_aliases"])?;
+                let payload = json!({"authored":authored.typed(), "snapshots":snapshots});
+                if !matches!(encoding, SnapshotEncoding::ValidateOnly)
+                    && let Some(directory) = cache
+                {
+                    crate::conversion_cache::write(directory, &cache_key, &payload)?;
+                }
+                payload
+            };
+            if matches!(encoding, SnapshotEncoding::ValidateOnly) {
+                return Ok(Value::Null);
+            }
             let input_descriptor = descriptor(
                 &format!("conformance/viewer-data/{name}/inputs-and-golden.json.gz"),
                 "inputs-and-golden",
@@ -364,136 +721,91 @@ pub fn snapshots(
                 &fingerprint,
                 catalog,
             );
-            let input = if matches!(encoding, SnapshotEncoding::ValidateOnly) {
-                Value::Null
-            } else {
-                bundle(
-                    stage,
-                    input_descriptor,
-                    authored.typed(),
-                    None,
-                    encoding,
-                    &timings,
-                )?
-            };
-            let mut implementations = BTreeMap::<String, Vec<&Value>>::new();
-            for resource in resources {
-                if let Some(implementation) = resource["implementation"].as_str() {
-                    implementations
-                        .entry(implementation.to_string())
-                        .or_default()
-                        .push(resource);
+            let input = bundle(
+                stage,
+                input_descriptor,
+                payload["authored"].clone(),
+                None,
+                encoding,
+                &timings,
+            )?;
+            let snapshots = payload["snapshots"]
+                .as_array()
+                .context("missing cached snapshots")?;
+            for selection in &selected {
+                if selection
+                    .scope
+                    .as_ref()
+                    .is_some_and(|scope| !scope.contains(name))
+                {
+                    continue;
                 }
-            }
-            for (implementation, resources) in implementations {
-                let mut ordered = resources
+                // Select the owning dataset only after each sparse timeline has
+                // resolved independently. Interleaving their checkpoints changes inheritance.
+                let route = resources
                     .iter()
-                    .map(|resource| {
+                    .filter(|row| row["implementation"] == selection.implementation)
+                    .map(|row| {
                         Ok((
                             Release::parse(
-                                resource["version"]
-                                    .as_str()
-                                    .context("missing capture version")?,
+                                row["version"].as_str().context("missing route version")?,
                             )?,
-                            *resource,
+                            row,
                         ))
                     })
-                    .collect::<Result<Vec<_>>>()?;
-                ordered.sort_by(|a, b| a.0.cmp(&b.0));
-                for pair in ordered.windows(2) {
-                    ensure!(pair[0].0 != pair[1].0, "duplicate capture release");
-                }
-                for (position, (release, resource)) in ordered.iter().enumerate() {
-                    let version = resource["version"].as_str().context("missing version")?;
-                    let member = resource["path"].as_str().context("missing capture path")?;
-                    ensure!(
-                        member
-                            == format!("{STORE}/families/{name}/{implementation}-{version}.yaml"),
-                        "capture path identity mismatch"
-                    );
-                    let clock = Instant::now();
-                    let bytes = source::verified(root, resource)?;
-                    elapsed(&timings.read, clock);
-                    let clock = Instant::now();
-                    let raw = yaml::load_str(std::str::from_utf8(&bytes)?)?;
-                    elapsed(&timings.yaml, clock);
-                    let clock = Instant::now();
-                    let records =
-                        source::resolved_snapshot(&raw, &authored, name, &implementation, version)
-                            .with_context(|| member.to_string())?;
-                    for (_, wrapped) in records.mapping()? {
-                        let producer = wrapped.field("member")?.string()?;
-                        let origin = index
-                            .get(producer)
-                            .context("snapshot producer is outside inventory")?;
-                        ensure!(
-                            origin["kind"] == "history"
-                                && origin["family"] == *name
-                                && origin["implementation"] == implementation
-                                && Release::parse(
-                                    origin["version"]
-                                        .as_str()
-                                        .context("missing producer version")?
-                                )? <= *release,
-                            "snapshot producer identity mismatch"
-                        );
-                    }
-                    if catalog["metadata"]["unified_capture_policy"][&implementation]["mode"]
-                        == "batch"
-                    {
-                        source::batch_records(records)?;
-                    }
-                    elapsed(&timings.validation, clock);
-                    if matches!(encoding, SnapshotEncoding::ValidateOnly) {
-                        continue;
-                    }
-                    let following = ordered.get(position + 1).map(|(release, _)| release);
-                    let consumers = selected
-                        .iter()
-                        .filter(|selection| {
-                            selection.implementation == implementation
-                                && selection.release >= *release
-                                && following.is_none_or(|next| selection.release < *next)
-                                && selection
-                                    .scope
-                                    .as_ref()
-                                    .is_none_or(|scope| scope.contains(name))
-                        })
-                        .collect::<Vec<_>>();
-                    if consumers.is_empty() {
-                        continue;
-                    }
-                    for selection in consumers {
-                        let clock = Instant::now();
-                        let projected = crate::history::selected_snapshot(
-                            records,
-                            version,
-                            &selection.version,
-                        )?;
-                        let part = Value::Object(serde_json::Map::from_iter([
-                            ("value".into(), projected.typed()),
-                            ("metadata".into(), metadata(&projected)?.typed()),
-                        ]));
-                        elapsed(&timings.preparation, clock);
-                        let clock = Instant::now();
-                        let bytes = json_bytes(&part)?;
-                        elapsed(&timings.encoding, clock);
-                        let clock = Instant::now();
-                        write(
-                            stage,
-                            &format!(
-                                ".native-parts/{implementation}-{}/{name}.json",
-                                selection.version
-                            ),
-                            &bytes,
-                        )?;
-                        elapsed(&timings.writes, clock);
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .filter(|(release, _)| *release <= selection.release)
+                    .max_by(|a, b| a.0.cmp(&b.0));
+                let Some((_, route)) = route else {
+                    continue;
+                };
+                let dataset = route["dataset"].as_str().unwrap_or("");
+                let checkpoint = snapshots
+                    .iter()
+                    .find(|row| {
+                        row["implementation"] == selection.implementation
+                            && row["version"] == route["version"]
+                            && row["dataset"] == dataset
+                    })
+                    .context("selected checkpoint has no resolved dataset fragment")?;
+                let fragment = checkpoint["fragment"]
+                    .as_str()
+                    .context("missing fragment identity")?;
+                let records = crate::conversion_cache::read(&fragment_directory, fragment)
+                    .context("conversion fragment changed during assembly")?;
+                let records = Node::from_typed(&records)?;
+                let mut projected = crate::history::selected_snapshot(
+                    &records,
+                    checkpoint["version"].as_str().unwrap(),
+                    &selection.version,
+                )?;
+                if !dataset.is_empty()
+                    && let Node::Map(records) = projected.to_mut()
+                {
+                    for (_, wrapped) in records {
+                        let member =
+                            source::dataset_member(dataset, wrapped.field("member")?.string()?)?;
+                        wrapped.set("member", Node::Str(member))?;
                     }
                 }
+                let part =
+                    json!({"value":projected.typed(), "metadata":metadata(&projected)?.typed()});
+                write(
+                    stage,
+                    &format!(
+                        ".native-parts/{}-{}/{name}.json",
+                        selection.implementation, selection.version
+                    ),
+                    &json_bytes(&part)?,
+                )?;
             }
             Ok(input)
         })
         .collect::<Result<Vec<_>>>()?;
+    if cache.is_none() && fragment_directory.exists() {
+        fs::remove_dir_all(&fragment_directory)?;
+    }
     if matches!(encoding, SnapshotEncoding::ValidateOnly) {
         timings.report();
         fs::remove_dir(&parts)?;
@@ -589,8 +901,17 @@ pub fn snapshots(
     });
     let mut result = catalog.clone();
     result["source_revision"] = catalog["revision"].clone();
-    result["sources"]["original_unified"] = json!(original);
+    result["sources"]["original_unified"] = json!(
+        source::original_sources(catalog)?
+            .into_iter()
+            .filter(|resource| resource["kind"].as_str().is_some())
+            .collect::<Vec<_>>()
+    );
     result["sources"]["unified"] = json!(resources);
+    result["sources"]
+        .as_object_mut()
+        .unwrap()
+        .remove("history_datasets");
     result.as_object_mut().unwrap().remove("revision");
     result["revision"] = json!(sha256(&json_bytes(&result)?));
     fs::remove_dir_all(parts)?;
@@ -698,6 +1019,47 @@ pub fn projection(catalog: &Value) -> Result<Value> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn family_cache_identity_excludes_selection_renderer_and_container_changes()
+    -> anyhow::Result<()> {
+        let resource = serde_json::json!({"path":"families/one/dynamo_v2-1.0.0.yaml", "family":"one", "size":1, "sha256":"a"});
+        let other = serde_json::json!({"path":"families/two/dynamo_v2-1.0.0.yaml", "family":"two", "size":1, "sha256":"b"});
+        let resources = vec![&resource];
+        let index = [("one".to_string(), &resource), ("two".to_string(), &other)]
+            .into_iter()
+            .collect();
+        let mut catalog =
+            serde_json::json!({"metadata":{"unified_capture_policy":{},"unified_aliases":{}}});
+        let first = super::family_cache_key(&resources, &index, &catalog, "one")?;
+        catalog["revision"] = serde_json::json!("new-commit-and-time");
+        catalog["sources"]["candidates"] =
+            serde_json::json!([{"implementation":"dynamo_v2","version":"2.0.0"}]);
+        catalog["metadata"]["source_hashes"]["renderer"] = serde_json::json!("changed");
+        assert_eq!(
+            first,
+            super::family_cache_key(&resources, &index, &catalog, "one")?
+        );
+        let mut moved = resource.clone();
+        moved["archive"] = serde_json::json!({"path":"relocated.tar.gz","sha256":"container"});
+        let moved_index = [("one".to_string(), &moved)].into_iter().collect();
+        assert_eq!(
+            first,
+            super::family_cache_key(&[&moved], &moved_index, &catalog, "one")?
+        );
+        moved["sha256"] = serde_json::json!("changed YAML");
+        let changed_index = [("one".to_string(), &moved)].into_iter().collect();
+        assert_ne!(
+            first,
+            super::family_cache_key(&[&moved], &changed_index, &catalog, "one")?
+        );
+        catalog["metadata"]["unified_capture_policy"]["new"] = serde_json::json!("policy");
+        assert_ne!(
+            first,
+            super::family_cache_key(&resources, &index, &catalog, "one")?
+        );
+        Ok(())
+    }
+
     use super::*;
     #[test]
     fn source_identity_depends_on_yaml_bytes_not_archive_encoding() -> Result<()> {

@@ -1,3 +1,4 @@
+capture_selection: {"family":"kimi_k2","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"bb9f8ae36d2b6fa352c9bf514415d52e1c76d9380732a1dcd8dd762bdabb85db","surface":"batch-on-stream","version":"0.7.24"}
 schema_version: 1
 surface: batch-on-stream
 family: kimi_k2

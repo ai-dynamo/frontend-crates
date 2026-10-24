@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_nano","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"aa8771738a4c7bdca8051625332e48b9cf4f23dddee87e61980ff70319f80e7e","surface":"batch-on-stream","version":"Dynamo parser v2"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_nano

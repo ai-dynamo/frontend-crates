@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"8a1d520c0290c77a48f3c2281f975fc781a53b04c14ed9869d7dcd12b8e4946e","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: hermes

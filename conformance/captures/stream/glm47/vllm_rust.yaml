@@ -1,3 +1,4 @@
+capture_selection: {"family":"glm47","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"fb26793f4c5abbfed692549cfab5338722e8f62db82f6196b343789299071128","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: glm47

@@ -1,0 +1,75 @@
+parent: vllm_rust-0.25.1
+execution: 6b74f6b74f77c52838831df91c9699fa0d50a82011cedc0a1a0cdfcf2d20b179
+changes:
+  arg_json_null_anyof:
+    case_key: UNIFIED.7-4.anyof
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_json_null_const:
+    case_key: UNIFIED.7-4.const
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_json_null_nullable:
+    case_key: UNIFIED.7-4.nullable
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_json_null_oneof:
+    case_key: UNIFIED.7-4.oneof
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null:
+    case_key: UNIFIED.7-5
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_const:
+    case_key: UNIFIED.7-5.const
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_enum:
+    case_key: UNIFIED.7-5.enum
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_sibling_anyof:
+    case_key: UNIFIED.7-5.sibling_anyof
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_sibling_oneof:
+    case_key: UNIFIED.7-5.sibling_oneof
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_union:
+    case_key: UNIFIED.7-5.union
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  arg_string_null_untyped_branch:
+    case_key: UNIFIED.7-5.untyped_branch
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.
+  qwen_string_null:
+    case_key: UNIFIED.7-4
+    observation:
+      unavailable:
+        code: vllm_rust_parser_not_registered
+        detail: No vLLM Rust Unified parser is registered for deepseek_v41 at 0.26.0.

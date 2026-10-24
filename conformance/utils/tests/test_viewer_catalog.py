@@ -618,3 +618,14 @@ def test_v2_native_path_precedence_and_removal():
     candidates = [{"mode": "unified", "implementation": "dynamo_v2", "version": version} for version in captures]
     viewer_catalog._index_unified_families(store, candidates)
     assert [item["native_unified_families"] for item in candidates] == [["A"], [], [], ["A"]]
+
+
+def test_new_batch_on_stream_evidence_uses_the_legacy_candidate_owner(tmp_path, monkeypatch):
+    _fixture_root(tmp_path, monkeypatch)
+    paths = [f"conformance/fixtures/additions/checksum/toolcalling/fixtures-{mode}/vllm_python-2.0.0.tar.gz"
+             for mode in ("batch-on-stream-v1", "stream-v1")]
+    monkeypatch.setattr(viewer_catalog, "_archive_records", lambda *_args: [{"path": path} for path in paths])
+    monkeypatch.setattr(viewer_catalog, "_source_metadata", lambda _root: {"implementations": [{"key": "vllm_python"}], "unified_capture_policy": {}})
+    catalog = viewer_catalog.build_catalog(tmp_path)
+    selected = {(row["mode"], row["version"]) for row in catalog["sources"]["candidates"]}
+    assert selected == {("batch-on-stream", "2.0.0"), ("stream", "2.0.0")}

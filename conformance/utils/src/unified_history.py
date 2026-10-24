@@ -14,7 +14,8 @@ import re
 import shutil
 import tempfile
 import warnings
-from collections.abc import Callable
+from collections import ChainMap
+from collections.abc import Callable, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -34,7 +35,7 @@ import fixture_disposition
 import execution_manifests
 import unified_archives
 import generation_workers
-from viewer_codec import canonical_typed, typed_equal
+from viewer_codec import canonical_typed, decode_typed, typed_equal
 
 
 FAMILY_DOCUMENT_NAME = "inputs_and_golden.yaml"
@@ -328,6 +329,25 @@ class History:
             raise ValueError(f"unknown capture in {self.directory}: {capture_id}")
         return next(self.iter_resolved_snapshots({capture_id}, view_capture_id=view_capture_id))[1]
 
+    def complete_snapshot(self, capture_id: str, *, records: dict | None = None,
+                          source_member: str | None = None) -> dict:
+        if records is None:
+            records = next(self.iter_resolved_snapshots({capture_id}, include_members=True))[1]
+        capture = self.captures[capture_id]
+        members = self.snapshot_members[capture_id] if source_member is None else {}
+        suppressed = self.snapshot_suppressed_inheritance.get(capture_id, set())
+        document = {"schema_version": 2, "provenance": copy.deepcopy(capture["provenance"]),
+                    "document": copy.deepcopy(capture["document"]), "records": {}}
+        for case, value in records.items():
+            document["records"][case] = {
+                "value": copy.deepcopy(value), "member": source_member or members[case],
+                **({"suppress_inherited_from": True} if case in suppressed else {}),
+            }
+        for field in ("execution_proof", "historical_evidence"):
+            if field in capture:
+                document[field] = copy.deepcopy(capture[field])
+        return document
+
     def _apply_capture(self, state: dict, current: str) -> None:
         capture = self.captures[current]
         for case_id, change in capture["changes"].items():
@@ -428,10 +448,11 @@ class History:
                 if capture_ids is None or current in capture_ids:
                     records = copy.deepcopy(self.resolved_snapshots[current])
                     if view_capture_id and view_capture_id != current:
+                        suppressed = self.snapshot_suppressed_inheritance.get(current, set())
                         for case_id, record in records.items():
                             document = record["document"]
                             document.get("record_metadata", {}).pop("verified_recapture", None)
-                            if case_id not in self.snapshot_suppressed_inheritance.get(current, set()):
+                            if case_id not in suppressed:
                                 document.setdefault("inherited_from", self.captures[current]["runtime_version"])
                     yield current, records
             return
@@ -780,7 +801,7 @@ def _validate_complete_snapshot(path: Path, snapshot: dict, family: Family,
                                 implementation: str, version: str) -> None:
     where = str(path)
     _require_keys(snapshot, {"schema_version", "provenance", "document", "records"},
-                  {"schema_version", "provenance", "document", "records", "execution_proof", "historical_evidence"}, where)
+                  {"schema_version", "provenance", "document", "records", "execution_proof", "historical_evidence", "capture_selection"}, where)
     if type(snapshot["schema_version"]) is not int or snapshot["schema_version"] != 2:
         raise ValueError(f"invalid Unified snapshot schema: {where}")
     provenance = _validate_capture_provenance(snapshot["provenance"], path, implementation, version)
@@ -889,6 +910,7 @@ def _validate_history(
     resolved_snapshots: dict[str, dict] | None = None,
     snapshot_members: dict[str, dict[str, str]] | None = None,
     snapshot_suppressed_inheritance: dict[str, set[str]] | None = None,
+    external_captures: set[str] | None = None,
 ) -> History:
     where = family.path.parent
     if not captures:
@@ -902,7 +924,7 @@ def _validate_history(
                 source_name = Path(member).name.removesuffix(".yaml")
                 source = CAPTURE_DIRECTORY_RE.fullmatch(source_name)
                 if (source is None or source["implementation"] != implementation
-                        or source_name not in captures
+                        or source_name not in captures and source_name not in (external_captures or set())
                         or _capture_release_sort_key(source["runtime_version"])
                         > _capture_release_sort_key(capture["runtime_version"])):
                     raise ValueError(f"snapshot source member is unavailable or too new: {capture_paths[capture_id]}:{case_id}")
@@ -931,7 +953,7 @@ def _canonical_store_root(root: Path) -> Path:
     return Path(root).resolve(strict=False)
 
 
-def _load_family(item, snapshot_callback=None):
+def _load_family(item, snapshot_callback=None, *, external_captures=None):
     root, family = item
     grouped: dict[tuple[str, str], dict[str, dict]] = {}
     grouped_paths: dict[tuple[str, str], dict[str, Path]] = {}
@@ -1021,6 +1043,7 @@ def _load_family(item, snapshot_callback=None):
             {capture_id: resolved_snapshots[capture_id] for capture_id in snapshot_ids},
             {capture_id: snapshot_members[capture_id] for capture_id in snapshot_ids},
             {capture_id: snapshot_suppressed_inheritance[capture_id] for capture_id in snapshot_ids},
+            external_captures=external_captures,
         )
     return family.name, histories, family_capture_owners, resources
 
@@ -1142,13 +1165,102 @@ def mutate_authored_store(root: Path, mutate: Callable[[Store], Any]) -> list[Pa
 def load_store(root: Path) -> Store:
     root = _canonical_store_root(root)
     checkout = root.parent.parent
-    if (checkout / capture_sources.CURRENT).is_file():
+    if capture_sources.is_current(checkout):
         document = capture_sources.current(checkout)
         implementations = sorted({row["implementation"] for row in document["captures"] if row["surface"] == "unified"})
         store, _ = selected_materialization_store(root, [f"latest:{implementation}" for implementation in implementations])
         return store
+    if (checkout / capture_sources.DATASETS).is_file():
+        return _routed_history_store(root)
     with _store_read_lock(root):
         return _load_store_unlocked(root)
+
+
+class _FragmentMapping(Mapping):
+    """Decode one validated checkpoint at a time instead of expanding the corpus."""
+
+    def __init__(self, directory: Path, checkpoints: dict, field: str):
+        self.directory = directory
+        self.checkpoints = checkpoints
+        self.field = field
+
+    def __len__(self):
+        return len(self.checkpoints)
+
+    def __iter__(self):
+        return iter(self.checkpoints)
+
+    def __getitem__(self, capture_id):
+        row = self.checkpoints[capture_id]
+        key = row["fragment"]
+        if re.fullmatch(r"[0-9a-f]{64}", key) is None:
+            raise ValueError("invalid history fragment identity")
+        path = self.directory / f"{key}.json"
+        if path.is_symlink():
+            raise ValueError("history fragment must be a regular file")
+        entry = json.loads(path.read_bytes())
+        payload = entry["payload"]
+        encoded = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        if entry["identity"] != key or entry["sha256"] != hashlib.sha256(encoded).hexdigest():
+            raise ValueError("history fragment hash mismatch")
+        records = decode_typed(payload)
+        if self.field == "records":
+            return {case: wrapped["value"] for case, wrapped in records.items()}
+        if self.field == "suppressed":
+            return {case for case, wrapped in records.items() if wrapped.get("suppress_inherited_from")}
+        return {case: f"conformance/history-datasets/{row['dataset']}/{wrapped['member']}"
+                for case, wrapped in records.items()}
+
+
+def _routed_history_store(root: Path) -> Store:
+    checkout = root.parent.parent
+    catalog = json.loads((checkout / "conformance/viewer-catalog.json").read_bytes())
+    cache = Path(json.loads((checkout / "conformance/history-reader-cache.json").read_bytes())["directory"])
+    families = _load_families_unlocked(root)
+    checkpoints = {}
+    for dataset in catalog["sources"]["history_datasets"]:
+        retained = _load_families_unlocked(checkout / dataset["root"] / capture_sources.STORE)
+        for name, family in retained.items():
+            current = families[name]
+            for case_id, case in family.cases.items():
+                if case_id not in current.cases:
+                    current.cases[case_id] = {**copy.deepcopy(case), "lifecycle": "retired", "display_id": None, "historical_ids": []}
+        for row in dataset["checkpoints"]:
+            capture_id = f"{row['implementation']}-{row['version']}"
+            checkpoints.setdefault((row["family"], row["implementation"]), {})[capture_id] = {**row, "dataset": dataset["id"]}
+    histories = {}
+    for (family, implementation), rows in checkpoints.items():
+        captures = {identity: {
+            "runtime_version": row["version"],
+            "provenance": decode_typed(row["capture"]["provenance"]),
+            "document": decode_typed(row["capture"]["document"]),
+            "changes": {}, "metadata_changes": {}, "document_overrides": {},
+            **{field: decode_typed(row["capture"][field]) for field in ("execution_proof", "historical_evidence")
+               if field in row["capture"]},
+        } for identity, row in rows.items()}
+        paths = {identity: checkout / f"conformance/history-datasets/{row['dataset']}/{capture_sources.STORE}/families/{family}/{identity}.yaml"
+                 for identity, row in rows.items()}
+        histories[family, implementation] = History(families[family], implementation, captures,
+            families[family].path.parent, paths, _FragmentMapping(cache, rows, "records"),
+            _FragmentMapping(cache, rows, "members"), _FragmentMapping(cache, rows, "suppressed"))
+    # Administratively added complete checkpoints take precedence at their exact identity.
+    for family in families.values():
+        if any(path.name != FAMILY_DOCUMENT_NAME for path in family.path.parent.iterdir()):
+            external = {capture_id for (name, _), history in histories.items() if name == family.name
+                        for capture_id in history.captures}
+            _, updates, _, _ = _load_family((root, family), external_captures=external)
+            for identity, update in updates.items():
+                history = histories.get(identity)
+                if history is None:
+                    histories[identity] = update
+                    continue
+                # ChainMap retains lazy fragments without copying every snapshot.
+                history.captures.update(update.captures)
+                history.capture_paths.update(update.capture_paths)
+                history.resolved_snapshots = ChainMap(update.resolved_snapshots, history.resolved_snapshots)
+                history.snapshot_members = ChainMap(update.snapshot_members, history.snapshot_members)
+                history.snapshot_suppressed_inheritance = ChainMap(update.snapshot_suppressed_inheritance, history.snapshot_suppressed_inheritance)
+    return Store(root, families, histories)
 
 
 def _store_inventory_unlocked(root: Path) -> list[dict]:
@@ -1195,24 +1307,8 @@ def _store_documents(store: Store, *, compact_executions: bool | None = None) ->
     for history in store.histories.values():
         if history.resolved_snapshots:
             for capture_id in history.ordered_capture_ids():
-                capture = history.captures[capture_id]
-                document = {
-                    "schema_version": 2,
-                    "provenance": copy.deepcopy(capture["provenance"]),
-                    "document": copy.deepcopy(capture["document"]),
-                    "records": {
-                        case_id: {
-                            "value": copy.deepcopy(value),
-                            "member": history.snapshot_members[capture_id][case_id],
-                            **({"suppress_inherited_from": True} if case_id in history.snapshot_suppressed_inheritance.get(capture_id, set()) else {}),
-                        }
-                        for case_id, value in history.resolved_snapshots[capture_id].items()
-                    },
-                }
-                for key in ("execution_proof", "historical_evidence"):
-                    if key in capture:
-                        document[key] = copy.deepcopy(capture[key])
-                documents[history.capture_path(capture_id)] = document
+                documents[history.capture_path(capture_id)] = history.complete_snapshot(
+                    capture_id, records=history.resolved_snapshots[capture_id])
             continue
         previous = None
         for capture_id in history.ordered_capture_ids():
@@ -1772,11 +1868,33 @@ def source_identity(relative: str) -> dict:
 def selected_materialization_store(root: Path, captures: list[str]) -> tuple[Store, dict[str, str]]:
     """Inventory each archive once, retaining and decoding only selected members."""
     checkout = root.parent.parent
-    if (checkout / capture_sources.CURRENT).is_file():
+    if capture_sources.is_current(checkout):
         if any(not capture.startswith("latest:") for capture in captures):
             raise ValueError("frozen-version fixtures require an explicit pinned history source")
-        with capture_sources.unified_view(checkout) as view:
-            return selected_materialization_store(view, captures)
+        requested = {capture.removeprefix("latest:") for capture in captures}
+        if len(requested) != len(captures):
+            raise ValueError("request one selected version per implementation")
+        current = capture_sources.current(checkout)
+        rows = [row for row in current["captures"] if row["surface"] == "unified" and row["implementation"] in requested]
+        targets = {}
+        for implementation in requested:
+            versions = [row["version"] for row in rows if row["implementation"] == implementation]
+            if not versions:
+                raise ValueError(f"no captures for {implementation}")
+            targets[implementation] = max(versions, key=_capture_release_sort_key)
+        resources, source_data = [], {}
+        for name, data in capture_sources.authored_sources(checkout):
+            source_data[name.removeprefix(capture_sources.STORE + "/")] = data
+            resources.append({**source_identity(name.removeprefix(capture_sources.STORE + "/")), "path": name})
+        for row in rows:
+            name = row["source"]
+            source_data[name.removeprefix(capture_sources.STORE + "/")] = capture_sources.checked_bytes(checkout, row)
+            resources.append({**source_identity(name.removeprefix(capture_sources.STORE + "/")), "path": name})
+        store = selected_store(root, resources, targets, source_data=source_data,
+                               preselected=True, lineage=current["lineage"])
+        if capture_sources.current(checkout) != current:
+            raise ValueError("current capture changed during direct fixture read")
+        return store, targets
     requested = {}
     for capture in captures:
         if capture.startswith("latest:"):
@@ -1789,6 +1907,16 @@ def selected_materialization_store(root: Path, captures: list[str]) -> tuple[Sto
         if implementation in requested:
             raise ValueError("request one selected version per implementation")
         requested[implementation] = version
+    if (checkout / capture_sources.DATASETS).is_file():
+        store = _routed_history_store(root)
+        targets = {}
+        for implementation, version in requested.items():
+            versions = [capture["runtime_version"] for (family, impl), history in store.histories.items()
+                        if impl == implementation for capture in history.captures.values()]
+            if not versions:
+                raise ValueError(f"no captures for {implementation}")
+            targets[implementation] = version or max(versions, key=_capture_release_sort_key)
+        return store, targets
     retained = {}
     selected = {}
     latest = {}
@@ -1830,15 +1958,19 @@ def selected_materialization_store(root: Path, captures: list[str]) -> tuple[Sto
     return store, targets
 
 
-def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *, source_data: dict[str, bytes] | None = None) -> Store:
+def selected_store(root: Path, resources: list[dict], targets: dict[str, str], *, source_data: dict[str, bytes] | None = None,
+                   preselected: bool = False, lineage: list[dict] | None = None) -> Store:
     """Read complete selected checkpoints without loading historical dependencies."""
     prefix = "conformance/fixtures-unified-v2/"
     source_index = {resource["path"]: resource for resource in resources}
+    source_index.update({row["path"]: row for row in lineage or []})
     lineage_path = root / "lineage.json"
     if lineage_path.is_file():
         source_index.update({row["path"]: row for row in json.loads(lineage_path.read_bytes())})
     chosen = [resource for resource in resources if resource["kind"] == "inputs-and-golden"]
-    for implementation, version in targets.items():
+    if preselected:
+        chosen.extend(resource for resource in resources if resource["kind"] == "history")
+    for implementation, version in (() if preselected else targets.items()):
         families = {}
         for resource in resources:
             if resource.get("implementation") != implementation:
@@ -2943,8 +3075,9 @@ def _preserve_historical_stimulus(
     documents: dict[Path, dict],
 ) -> None:
     raise ValueError(
-        "Unified test inputs are immutable after capture; changing "
-        f"{family_name}/{case_id} requires recapturing and updating every prior semantic version"
+        f"Authored input {family_name}/{case_id} differs from the recorded request. "
+        "Run latest parser tests with the updated input; ask a repository administrator "
+        "to update the affected latest capture when a new measurement is needed."
     )
 
 
@@ -3227,9 +3360,14 @@ def main(argv: list[str] | None = None) -> None:
     )
     args = parser.parse_args(argv)
     if args.history_source is not None:
-        pin = json.loads(capture_sources.read(args.store.resolve().parent.parent, capture_sources.PIN))
-        capture_sources.verify(args.history_source, pin)
-        args.store = args.history_source / capture_sources.STORE
+        checkout = args.store.resolve().parent.parent
+        with capture_sources.history_view(checkout, args.history_source) as view:
+            arguments = list(argv if argv is not None else sys.argv[1:])
+            index = arguments.index("--history-source")
+            del arguments[index:index + 2]
+            index = arguments.index("--store")
+            arguments[index + 1] = str(view / capture_sources.STORE)
+            return main(arguments)
     if args.archive_versions:
         print(json.dumps(archive_versions(args.store)))
     elif args.migrate_descriptive_ids:

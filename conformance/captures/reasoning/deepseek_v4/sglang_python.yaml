@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v4","implementation":"sglang_python","lineage":[],"mode":"reasoning","payload_sha256":"869043d15135a1f60af700523b139a7fc012e8b5bd7125c575b8a22174e84012","surface":"reasoning","version":"0.5.14"}
 schema_version: 1
 surface: reasoning
 family: deepseek_v4

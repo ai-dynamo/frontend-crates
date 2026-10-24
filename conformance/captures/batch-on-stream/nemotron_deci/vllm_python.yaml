@@ -1,3 +1,4 @@
+capture_selection: {"family":"nemotron_deci","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"7b661a8f21f52cd32582858fb877c754c32e0107fc061a277cb725ebd77d721a","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: nemotron_deci

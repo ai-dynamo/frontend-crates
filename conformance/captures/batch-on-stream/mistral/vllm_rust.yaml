@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"vllm_rust","lineage":[],"mode":"batch-on-stream","payload_sha256":"e912cd0049f89b1829666880f4eae3b7f1bbfd428991b21a8a184433c2051fa0","surface":"batch-on-stream","version":"v0.23.0 78743ab5bffd381e88f97e1c8ba20473b0ae6d75"}
 schema_version: 1
 surface: batch-on-stream
 family: mistral

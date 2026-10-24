@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"fb0796728bd19adf07c3d0710fb04af08f504ab71c796bc77c70e4cf81e27c0d","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: qwen3_coder

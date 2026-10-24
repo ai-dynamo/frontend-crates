@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"8c8ab519582731cd870f08bf3b8a64b2bb356d6f49ee147c3b636f219ae65b4c","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: qwen25

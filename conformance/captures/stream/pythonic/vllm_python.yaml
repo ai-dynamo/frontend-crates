@@ -1,3 +1,4 @@
+capture_selection: {"family":"pythonic","implementation":"vllm_python","lineage":[],"mode":"stream","payload_sha256":"4db9ffc21ddd68e05fffb63a07a89c1852d47952768e2cebe5b3a84508346c01","surface":"stream","version":"0.23.0"}
 schema_version: 1
 surface: stream
 family: pythonic

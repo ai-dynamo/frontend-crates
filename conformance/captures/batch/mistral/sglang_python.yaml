@@ -1,3 +1,4 @@
+capture_selection: {"family":"mistral","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"33de8fb45e1deb8ef270e4cfc61c1298b09a0d24942aff025fc7359936515028","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: mistral

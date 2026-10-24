@@ -1,0 +1,325 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.7.7
+    git_commit: da34ba9aeaffd8c92a61b9697dfbec4c8ebf4f85
+    source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+document:
+  mode: unified
+changes:
+  arg_json_null:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_anyof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_const:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_nullable:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_oneof:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-4.ref
+    stimulus:
+      ref: current
+      semantic_sha256: 21ea667d0468b4d5b7f456cf930d3255458b813b30eb04f53df076a052410784
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-5.ref
+    stimulus:
+      ref: current
+      semantic_sha256: 9a96c2d0f8a9fddaada0b350c2c3d757529d281c043c06b7882ee3e33f2b83b4
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+metadata_changes: {}
+document_overrides:
+  guided_json_native_parameter_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  guided_json_native_parameter_object_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  guided_json_native_parameter_string_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  guided_json_noncall_before_native_array_before_payload:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  guided_response_native_wrapper_whitespace_before_prose:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  structured_response_after_reasoning:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+      inherited_from: null
+  three_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.7
+      capture_origin:
+        crate_version: 0.7.7
+        source_sha256: d58250b790bf849bc12c60f771a5d499d25487e578c23795ed97deaa6b656b38
+        git_commit: b88097c4239016edf0f91d8bac2ea1236441cfc1
+      inherited_from: null

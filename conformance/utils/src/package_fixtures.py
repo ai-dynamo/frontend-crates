@@ -904,11 +904,10 @@ def main():
     )
     generation_workers.add_worker_argument(ap)
     args = ap.parse_args()
-    if (ROOT / capture_sources.CURRENT).is_file():
+    if capture_sources.is_current(ROOT):
         if not args.unified_only or args.stream_only or args.prune or args.dry_run:
             ap.error("split capture packaging supports --unified-only; legacy archive maintenance requires an explicit historical checkout")
-        if args.history_source is None:
-            ap.error("split capture packaging requires --history-source or CONFORMANCE_HISTORY_SOURCE")
+        args.history_source = args.history_source or ROOT / capture_sources.HISTORIC
         print(json.dumps(publish_current_capture.publish_loose(ROOT, Path(args.history_source).resolve(), ROOT / "conformance/unified")))
         return
     if args.stream_only and args.unified_only:

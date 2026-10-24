@@ -1,3 +1,4 @@
+capture_selection: {"family":"jamba","implementation":"sglang_python","lineage":[],"mode":"batch","payload_sha256":"76d9a8e6288de8660c7478b5204a60a3c05927507ad1a450b630cf2d45a114a0","surface":"batch","version":"0.5.12.post1"}
 schema_version: 1
 surface: batch
 family: jamba

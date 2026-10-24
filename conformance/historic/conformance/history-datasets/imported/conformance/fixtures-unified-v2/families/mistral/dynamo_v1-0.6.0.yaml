@@ -1,0 +1,55 @@
+parent: dynamo_v1-0.5.1
+execution: 44a0bcb6fcef6168de7b1378504a1afc48ad3f6b5f9cdc847acb0cff3ee5a8f2
+changes:
+  content_then_reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Sure, one sec. checking the forecast
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  interstitial_text:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: a
+        - kind: text
+          text: 'Here you go:'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_after_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Look it up.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+  reason_between_calls:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: '[TOOL_CALLS][{"name":"f","arguments":{"x":"1"}}][/TOOL_CALLS]mid'
+        - kind: tool_call
+          name: g
+          arguments:
+            y: '2'
+  reason_then_tool:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: Check weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris

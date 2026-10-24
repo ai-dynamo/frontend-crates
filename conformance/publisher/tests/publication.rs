@@ -464,6 +464,19 @@ fn prepared_python_journal_rolls_back_and_committed_journal_keeps_new_generation
     Ok(())
 }
 
+fn capture_json(root: &Path, version: &str) -> Result<Value> {
+    let catalog: Value = serde_json::from_slice(&fs::read(
+        root.join("conformance/viewer-resolved-catalog.json"),
+    )?)?;
+    let resource = catalog["sources"]["unified"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["kind"] == "resolved-capture" && r["version"] == version)
+        .context("missing capture")?;
+    compressed_json(root, resource["path"].as_str().unwrap())
+}
+
 #[test]
 fn complete_snapshots_scope_metadata_without_mutating_or_expanding_sources() -> Result<()> {
     let sandbox = Sandbox::new()?;
@@ -474,7 +487,7 @@ fn complete_snapshots_scope_metadata_without_mutating_or_expanding_sources() -> 
     put(&root, &authored_path, authored)?;
     let member = format!("{}/families/sample/dynamo_v2-0.1.0.yaml", source::STORE);
     let capture = format!(
-        "schema_version: 2\nprovenance: {{status: legacy, captured_with: {{dynamo_v2: '0.1.0'}}}}\ndocument: {{}}\nrecords:\n  id:\n    member: {member}\n    value:\n      case_key: UNIFIED.1\n      stimulus: {{ref: current}}\n      observation: {{value: {{assembled: []}}}}\n      document: {{captured_with: {{dynamo_v2: '0.1.0'}}, record_metadata: {{retained: null, verified_recapture: {{receipt: checkpoint}}}}}}\n"
+        "schema_version: 2\nprovenance: {{status: legacy, captured_with: {{dynamo_v2: '0.1.0'}}}}\ndocument: {{}}\nrecords:\n  id:\n    member: {member}\n    value:\n      case_key: UNIFIED.1\n      stimulus: {{ref: current}}\n      observation: {{value: {{assembled: []}}}}\n      document: {{captured_with: {{dynamo_v2: '0.1.0'}}, record_metadata: {{retained: null, verified_recapture: {{result: {{capture_observation: {{value: {{assembled: []}}}}}}, provenance: {{version: '0.1.0'}}}}}}}}\n"
     );
     put(&root, &member, capture.as_bytes())?;
     let mut catalog: Value =
@@ -513,7 +526,7 @@ fn complete_snapshots_scope_metadata_without_mutating_or_expanding_sources() -> 
         true
     );
     let mut outputs = Vec::new();
-    for workers in ["1", "4"] {
+    for (iteration, workers) in ["1", "4"].into_iter().enumerate() {
         let output = root.clone();
         let result = run(&root, &output, &["--workers", workers, "--data-only"])?;
         assert!(
@@ -524,6 +537,15 @@ fn complete_snapshots_scope_metadata_without_mutating_or_expanding_sources() -> 
         let resolved: Value = serde_json::from_slice(&fs::read(
             output.join("conformance/viewer-resolved-catalog.json"),
         )?)?;
+        let diagnostics = String::from_utf8_lossy(&result.stderr);
+        assert!(
+            diagnostics.contains(if iteration == 0 {
+                "family conversion: sample miss"
+            } else {
+                "family conversion: sample hit"
+            }),
+            "{diagnostics}"
+        );
         let bundle_path = |version: &str| -> Result<&str> {
             resolved["sources"]["unified"]
                 .as_array()
@@ -547,9 +569,346 @@ fn complete_snapshots_scope_metadata_without_mutating_or_expanding_sources() -> 
         outputs.push((first, later));
     }
     assert_eq!(outputs[0], outputs[1]);
+    catalog["sources"]["candidates"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"implementation":"dynamo_v2","mode":"unified","version":"0.1.2"}));
+    catalog.as_object_mut().unwrap().remove("revision");
+    catalog["revision"] = json!(codec::sha256(&serde_json::to_vec(&sorted(&catalog))?));
+    put(
+        &root,
+        "conformance/viewer-catalog.json",
+        &json_bytes(&catalog)?,
+    )?;
+    put(
+        &root,
+        "conformance/viewer-unified-catalog.json",
+        &json_bytes(&pipeline::projection(&catalog)?)?,
+    )?;
+    let changed_selection = run(&root, &root, &["--data-only"])?;
+    assert!(
+        changed_selection.status.success(),
+        "{}",
+        String::from_utf8_lossy(&changed_selection.stderr)
+    );
+    assert!(
+        String::from_utf8_lossy(&changed_selection.stderr)
+            .contains("family conversion: sample hit")
+    );
+    let later = capture_json(&root, "0.1.2")?;
+    assert!(!serde_json::to_string(&later)?.contains("verified_recapture"));
+    let cache = root.join("build/conformance-cache");
+    for corrupt in [
+        "corrupt",
+        "[]",
+        "true",
+        "42",
+        "\"text\"",
+        "null",
+        "{}",
+        "{\"payload\":null}",
+    ] {
+        for file in fs::read_dir(&cache)? {
+            fs::write(file?.path(), corrupt)?;
+        }
+        let recovered = run(&root, &root, &["--data-only"])?;
+        assert!(
+            recovered.status.success(),
+            "{corrupt}: {}",
+            String::from_utf8_lossy(&recovered.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&recovered.stderr).contains("family conversion: sample miss")
+        );
+        assert_eq!(later, capture_json(&root, "0.1.2")?);
+    }
+    for fault in ["authored", "records", "capture", "summary"] {
+        for file in fs::read_dir(&cache)? {
+            let path = file?.path();
+            let mut entry: Value = serde_json::from_slice(&fs::read(&path)?)?;
+            let payload = &mut entry["payload"];
+            if fault == "records" && payload.is_array() {
+                *payload = json!(["null"]);
+            } else if payload.get("authored").is_some() {
+                if fault == "authored" {
+                    payload["authored"] = json!(["null"]);
+                } else {
+                    for row in payload["snapshots"].as_array_mut().unwrap() {
+                        if fault == "capture" {
+                            row["capture"]["provenance"] = json!(["null"]);
+                        }
+                        if fault == "summary" {
+                            row["summary"]["historical_evidence"] = Value::Null;
+                        }
+                    }
+                }
+            }
+            entry["sha256"] = json!(codec::sha256(&json_bytes(&entry["payload"])?));
+            fs::write(path, json_bytes(&entry)?)?;
+        }
+        let recovered = run(&root, &root, &["--data-only"])?;
+        assert!(
+            recovered.status.success(),
+            "{fault}: {}",
+            String::from_utf8_lossy(&recovered.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&recovered.stderr).contains("family conversion: sample miss")
+        );
+        assert_eq!(later, capture_json(&root, "0.1.2")?);
+        let resolved: Value = serde_json::from_slice(&fs::read(
+            root.join("conformance/viewer-resolved-catalog.json"),
+        )?)?;
+        let inputs = resolved["sources"]["unified"]
+            .as_array()
+            .context("missing sources")?
+            .iter()
+            .find(|row| row["kind"] == "inputs-and-golden")
+            .context("missing inputs")?;
+        assert_ne!(
+            compressed_json(
+                &root,
+                inputs["path"].as_str().context("missing input path")?
+            )?["value"],
+            json!(["null"])
+        );
+    }
+
     // The publication lock is adjacent to conformance, never in the evidence tree.
     assert_eq!(before, source::inventory(&root.join(source::STORE))?);
     assert_eq!(fs::read(root.join(&member))?, capture.as_bytes());
     assert_eq!(fs::read(root.join(&authored_path))?, authored);
+    Ok(())
+}
+
+#[test]
+fn one_changed_or_deleted_family_reuses_the_other_family() -> Result<()> {
+    let sandbox = Sandbox::new()?;
+    let root = sandbox.0.join("source");
+    fixture(&root)?;
+    let path = format!("{}/families/other/inputs_and_golden.yaml", source::STORE);
+    let authored =
+        b"input_document: {family: other}\ngolden_document: {family: other}\ncases: {}\n";
+    put(&root, &path, authored)?;
+    let mut catalog: Value =
+        serde_json::from_slice(&fs::read(root.join("conformance/viewer-catalog.json"))?)?;
+    catalog["sources"]["unified"].as_array_mut().unwrap().push(json!({"path":path,"sha256":codec::sha256(authored),"size":authored.len(),"kind":"inputs-and-golden","family":"other","implementation":null,"version":null}));
+    catalog["sources"]["lineage"] = json!([{
+        "path":format!("{}/families/sample/dynamo_v2-0.0.1.yaml",source::STORE),
+        "kind":"history","family":"sample","implementation":"dynamo_v2","version":"0.0.1",
+        "size":1,"sha256":"0".repeat(64)
+    }]);
+    let install = |catalog: &mut Value| -> Result<()> {
+        catalog.as_object_mut().unwrap().remove("revision");
+        catalog["revision"] = json!(codec::sha256(&serde_json::to_vec(&sorted(catalog))?));
+        put(
+            &root,
+            "conformance/viewer-catalog.json",
+            &json_bytes(catalog)?,
+        )?;
+        put(
+            &root,
+            "conformance/viewer-unified-catalog.json",
+            &json_bytes(&pipeline::projection(catalog)?)?,
+        )
+    };
+    install(&mut catalog)?;
+    for (expected, state) in [(2, "miss"), (2, "hit")] {
+        let output = run(&root, &root, &["--data-only"])?;
+        let diagnostics = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "{diagnostics}");
+        assert_eq!(
+            diagnostics
+                .lines()
+                .filter(|line| line.starts_with("family conversion:") && line.ends_with(state))
+                .count(),
+            expected
+        );
+    }
+    // Presentation and unselected evidence must not change conversion identity.
+    catalog["metadata"]["source_hashes"]["renderer"] = json!("presentation-change");
+    put(&root, "conformance/historic/history-only.json", b"{}\n")?;
+    install(&mut catalog)?;
+    let presentation = run(&root, &root, &["--data-only"])?;
+    let diagnostics = String::from_utf8_lossy(&presentation.stderr);
+    assert!(presentation.status.success(), "{diagnostics}");
+    assert!(diagnostics.contains("family conversion: sample hit"));
+    assert!(diagnostics.contains("family conversion: other hit"));
+    let changed = [authored.as_slice(), b"# changed authored source\n"].concat();
+    put(&root, &path, &changed)?;
+    catalog["sources"]["unified"][1]["sha256"] = json!(codec::sha256(&changed));
+    catalog["sources"]["unified"][1]["size"] = json!(changed.len());
+    install(&mut catalog)?;
+    let changed = run(&root, &root, &["--data-only"])?;
+    let diagnostics = String::from_utf8_lossy(&changed.stderr);
+    assert!(changed.status.success(), "{diagnostics}");
+    assert!(diagnostics.contains("family conversion: sample hit"));
+    assert!(diagnostics.contains("family conversion: other miss"));
+    catalog["sources"]["unified"].as_array_mut().unwrap().pop();
+    fs::remove_file(root.join(&path))?;
+    fs::remove_dir(root.join(source::STORE).join("families/other"))?;
+    install(&mut catalog)?;
+    let deleted = run(&root, &root, &["--data-only"])?;
+    let diagnostics = String::from_utf8_lossy(&deleted.stderr);
+    assert!(deleted.status.success(), "{diagnostics}");
+    assert!(diagnostics.contains("family conversion: sample hit"));
+    assert!(!diagnostics.contains("family conversion: other"));
+    Ok(())
+}
+
+#[test]
+fn independent_sparse_datasets_resolve_before_release_precedence() -> Result<()> {
+    let sandbox = Sandbox::new()?;
+    let root = sandbox.0.join("source");
+    fixture(&root)?;
+    let input_path = format!("{}/families/sample/inputs_and_golden.yaml", source::STORE);
+    let authored = b"input_document: {family: sample}\ngolden_document: {family: sample}\ncases:\n  id:\n    lifecycle: active\n    scenario: sample\n    description: sample\n    policy: []\n    display_id: UNIFIED.1\n    historical_ids: []\n    request: {input: sample, init: {}, finish_reason: stop, tools: [], chunks: []}\n    golden: {assembled: []}\n";
+    put(&root, &input_path, authored)?;
+    let input = json!({"path":input_path,"sha256":codec::sha256(authored),"size":authored.len(),"kind":"inputs-and-golden","family":"sample","implementation":null,"version":null});
+    let mut selected = std::collections::BTreeMap::new();
+    selected.insert(input_path.clone(), input.clone());
+    let mut datasets = Vec::new();
+    for (dataset, second) in [("imported", "0.1.1"), ("base", "0.1.2")] {
+        let prefix = format!("conformance/history-datasets/{dataset}");
+        let scoped_authored = String::from_utf8(authored.to_vec())?
+            .replace("input: sample", &format!("input: {dataset}-unique-request"));
+        put(&root.join(&prefix), &input_path, scoped_authored.as_bytes())?;
+        let mut scoped_input = input.clone();
+        scoped_input["sha256"] = json!(codec::sha256(scoped_authored.as_bytes()));
+        scoped_input["size"] = json!(scoped_authored.len());
+        scoped_input["dataset"] = json!(dataset);
+        scoped_input["dataset_root"] = json!(prefix);
+        let mut resources = vec![scoped_input];
+        for version in ["0.1.0", second] {
+            let path = format!("{}/families/sample/dynamo_v2-{version}.yaml", source::STORE);
+            let (parent, changes, owner) = if version == "0.1.0" {
+                (
+                    String::new(),
+                    "{id: {case_key: UNIFIED.1, stimulus: {ref: current}, observation: {value: {assembled: []}}}}",
+                    dataset.to_string(),
+                )
+            } else {
+                (
+                    "parent: dynamo_v2-0.1.0\n".into(),
+                    "{}",
+                    format!("{dataset}-later"),
+                )
+            };
+            let capture = format!(
+                "{parent}provenance: {{status: legacy, captured_with: {{dynamo_v2: '{version}'}}}}\ndocument: {{}}\nchanges: {changes}\nmetadata_changes: {{id: {{owner: '{owner}'}}}}\ndocument_overrides: {{}}\n"
+            );
+            put(&root.join(&prefix), &path, capture.as_bytes())?;
+            let resource = json!({"path":path,"size":capture.len(),"sha256":codec::sha256(capture.as_bytes()),"kind":"history","family":"sample","implementation":"dynamo_v2","version":version,"dataset":dataset,"dataset_root":prefix});
+            selected.insert(path, resource.clone());
+            resources.push(resource);
+        }
+        datasets.push(json!({"id":dataset,"root":prefix,"resources":resources}));
+    }
+    let mut catalog: Value =
+        serde_json::from_slice(&fs::read(root.join("conformance/viewer-catalog.json"))?)?;
+    catalog["sources"]["unified"] = json!(selected.into_values().collect::<Vec<_>>());
+    catalog["sources"]["history_datasets"] = json!(datasets);
+    catalog["sources"]["candidates"] = json!(
+        ["0.1.0", "0.1.1", "0.1.2"]
+            .into_iter()
+            .map(|version| json!({"implementation":"dynamo_v2","mode":"unified","version":version}))
+            .collect::<Vec<_>>()
+    );
+    catalog["metadata"]["unified_capture_policy"] = json!({"dynamo_v2":{"mode":"stream"}});
+    let install = |catalog: &mut Value| -> Result<()> {
+        catalog.as_object_mut().unwrap().remove("revision");
+        catalog["revision"] = json!(codec::sha256(&serde_json::to_vec(&sorted(catalog))?));
+        put(
+            &root,
+            "conformance/viewer-catalog.json",
+            &json_bytes(catalog)?,
+        )?;
+        put(
+            &root,
+            "conformance/viewer-unified-catalog.json",
+            &json_bytes(&pipeline::projection(catalog)?)?,
+        )
+    };
+    install(&mut catalog)?;
+    let mut outputs = Vec::new();
+    for state in ["miss", "hit"] {
+        let output = run(&root, &root, &["--data-only"])?;
+        let diagnostics = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "{diagnostics}");
+        assert!(diagnostics.contains(&format!("family conversion: sample {state}")));
+        let first = serde_json::to_string(&capture_json(&root, "0.1.0")?)?;
+        let imported = serde_json::to_string(&capture_json(&root, "0.1.1")?)?;
+        let base = serde_json::to_string(&capture_json(&root, "0.1.2")?)?;
+        assert!(first.contains("base"));
+        assert!(!first.contains("imported"));
+        assert!(imported.contains("imported-later"));
+        assert!(imported.contains("imported-unique-request"));
+        assert!(base.contains("base-later"));
+        assert!(base.contains("base-unique-request"));
+        assert!(!base.contains("imported"));
+        outputs.push((first, imported, base));
+    }
+    assert_eq!(outputs[0], outputs[1]);
+    let prior_fingerprint = capture_json(&root, "0.1.1")?["source_fingerprint"].clone();
+    let dependency = &mut catalog["sources"]["history_datasets"][0]["resources"][1];
+    let dependency_path = root
+        .join(dependency["dataset_root"].as_str().unwrap())
+        .join(dependency["path"].as_str().unwrap());
+    let changed = fs::read_to_string(&dependency_path)?
+        .replace("assembled: []", "assembled: [{kind: text, text: changed}]");
+    fs::write(&dependency_path, &changed)?;
+    dependency["size"] = json!(changed.len());
+    dependency["sha256"] = json!(codec::sha256(changed.as_bytes()));
+    install(&mut catalog)?;
+    let changed = run(&root, &root, &["--data-only"])?;
+    assert!(
+        changed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&changed.stderr)
+    );
+    let changed_capture = capture_json(&root, "0.1.1")?;
+    assert!(serde_json::to_string(&changed_capture)?.contains("changed"));
+    assert_ne!(
+        prior_fingerprint, changed_capture["source_fingerprint"],
+        "an inherited dataset dependency must invalidate the global envelope fingerprint"
+    );
+    let empty = b"input_document: {family: sample}\ngolden_document: {family: sample}\ncases: {}\n";
+    put(&root, &input_path, empty)?;
+    let input = catalog["sources"]["unified"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|row| row["kind"] == "inputs-and-golden")
+        .context("missing shared input")?;
+    input["size"] = json!(empty.len());
+    input["sha256"] = json!(codec::sha256(empty));
+    install(&mut catalog)?;
+    let output = run(&root, &root, &["--data-only"])?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let resolved: Value = serde_json::from_slice(&fs::read(
+        root.join("conformance/viewer-resolved-catalog.json"),
+    )?)?;
+    let input_path = resolved["sources"]["unified"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["kind"] == "inputs-and-golden")
+        .context("missing generated input")?["path"]
+        .as_str()
+        .context("missing generated input path")?;
+    let inputs = compressed_json(&root, input_path)?;
+    let inputs = conformance_publisher::yaml::Node::from_typed(&inputs["value"])?;
+    let retained = inputs.field("cases")?.field("id")?;
+    assert_eq!(retained.field("lifecycle")?.string()?, "retired");
+    assert_eq!(
+        retained.field("display_id")?,
+        &conformance_publisher::yaml::Node::Null
+    );
+    assert_eq!(retained.field("historical_ids")?.array()?.len(), 0);
+    assert!(serde_json::to_string(&capture_json(&root, "0.1.2")?)?.contains("base-unique-request"));
     Ok(())
 }

@@ -1,3 +1,4 @@
+capture_selection: {"family":"harmony","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"7039245b3879c83c88cbdce788ce4d8c88536565c56d21ec9bedf0351c3741f0","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: harmony

@@ -1,3 +1,4 @@
+capture_selection: {"family":"gemma4","implementation":"vllm_rust","lineage":[],"mode":"stream","payload_sha256":"64828fde6d0d5f4003e9fb536718e9988c38419dbcd06296eabf86074eccac2c","surface":"stream","version":"0.26.0"}
 schema_version: 1
 surface: stream
 family: gemma4

@@ -170,12 +170,13 @@ def test_native_publication_prefix_switch_raw_downloads_and_legacy_routes(histor
         resource = next(item for item in originals if item["kind"] == "history")
         probes = [(authored["path"], (ROOT / authored["path"]).read_bytes()),
                   (resource["path"], historical_source_bytes(history_source, resource["path"]))]
-        # Execution proofs and historical manifests now travel inside snapshots.
-        for version, field in (("0.4.10.post1", b"execution_proof:"), ("0.4.9.post4", b"historical_evidence:")):
-            resource = next(item for item in originals if item["family"] == "qwen3"
-                            and item["implementation"] == "sglang_python_batch" and item["version"] == version)
+        # Sparse originals retain manifests and receipts as separate downloads.
+        for kind in ("execution", "receipt"):
+            resource = next(item for item in inventory["files"]
+                            if item["path"].startswith("conformance/history-datasets/")
+                            and f"/{kind}s/" in item["path"])
             data = historical_source_bytes(history_source, resource["path"])
-            assert re.search(rb"\n\s*" + field, data)
+            assert hashlib.sha256(data).hexdigest() == resource["sha256"]
             probes.append((resource["path"], data))
         archive = next(row for row in inventory["files"]
                        if row["path"].startswith("conformance/fixtures/toolcalling/") and "members" in row)

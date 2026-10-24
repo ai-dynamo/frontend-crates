@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"08cc8f29173dee4d9466df4cdeaec39fdfd6ee45e50e457890bcf79b27b106cd","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: hermes

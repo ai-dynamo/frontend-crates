@@ -1,3 +1,4 @@
+capture_selection: {"family":"hermes","implementation":"sglang_python","lineage":[],"mode":"stream","payload_sha256":"29eff51e1467b69d990c8907aeb9701fa2d7c162626eb7d53f82df6e3190c1f3","surface":"stream","version":"0.5.12.post1"}
 schema_version: 1
 surface: stream
 family: hermes

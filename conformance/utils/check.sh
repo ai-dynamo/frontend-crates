@@ -19,6 +19,9 @@
 #            failure; pass --allow-peer-failures (alias --best-effort-peers) to keep
 #            the old behavior of reporting peer failures without failing the command.
 
+usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit "${1:-2}"; }
+if [ "${1:-}" = --help ] || [ "${1:-}" = -h ]; then usage 0; fi
+
 DRY=0; args=()
 while [ $# -gt 0 ]; do case "$1" in --dry-run|--dryrun) DRY=1; shift;; *) args+=("$1"); shift;; esac; done
 set -- ${args+"${args[@]}"}
@@ -43,7 +46,6 @@ else
   source "$(dirname "$0")/src/_common.sh"
 fi
 
-usage() { echo "usage: conformance/utils/check.sh <dynamo|vllm|sglang|coverage|status|ci|all> [batch|stream|all] [--container N|--pip]" >&2; exit 2; }
 
 run_dynamo() {  # $1 = batch|stream|all ; returns non-zero if any target fails
   local targets=() rc=0
@@ -101,10 +103,10 @@ run_ci() {  # the conformance-data CI gate; fail-fast, also runnable locally
     fixtures|core)
       local scope=publication
       if [ "$shard" = fixtures ]; then scope=fixtures; fi
-      python3 -m pytest "$UTILS/tests" -q --conformance-scope "$scope" --ignore="$UTILS/tests/test_browser_smoke.py" --ignore="$UTILS/tests/test_browser_viewer.py" --ignore="$UTILS/tests/test_native_publication_browser.py" --ignore="$UTILS/tests/test_capture_split_browser.py" --deselect="conformance/utils/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" --deselect="conformance/utils/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" --deselect="conformance/utils/tests/test_model.py::test_shared_javascript_matrix_contracts" --deselect="conformance/utils/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column"
+      python3 -m pytest "$UTILS/tests" -q --conformance-scope "$scope" --ignore="$UTILS/tests/test_browser_smoke.py" --ignore="$UTILS/tests/test_browser_viewer.py" --ignore="$UTILS/tests/test_native_publication_browser.py" --ignore="$UTILS/tests/test_capture_split_browser.py" --deselect="conformance/utils/tests/test_viewer_snapshot_parity.py::test_bundled_history_json_snapshots_match_original_yaml" --deselect="conformance/utils/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" --deselect="conformance/utils/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" --deselect="conformance/utils/tests/test_model.py::test_shared_javascript_matrix_contracts" --deselect="conformance/utils/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column"
       ;;
     qualification)
-      python3 -m pytest "$UTILS/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" "$UTILS/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" "$UTILS/tests/test_model.py::test_shared_javascript_matrix_contracts" "$UTILS/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column" -vv -rP --durations=25
+      python3 -m pytest "$UTILS/tests/test_viewer_snapshot_parity.py::test_bundled_history_json_snapshots_match_original_yaml" "$UTILS/tests/test_viewer_snapshot_parity.py::test_full_corpus_json_snapshots_match_python_and_javascript_resolution" "$UTILS/tests/test_unified_taxonomy_covers_corpus.py::test_reference_backfills_require_request_bound_version_receipts" "$UTILS/tests/test_model.py::test_shared_javascript_matrix_contracts" "$UTILS/tests/test_structural_response_case.py::test_structural_request_is_bound_in_every_retained_dynamo_column" -vv -rP --durations=25
       ;;
     native-browser) python3 -m pytest "$UTILS/tests/test_native_publication_browser.py" "$UTILS/tests/test_capture_split_browser.py" -vv --durations=25 ;;
     browser) python3 -m pytest "$UTILS/tests/test_browser_smoke.py" -k 'not first_visible_matrix_matches_transpose_url and not schema_popup_opens_and_fits_across_themes_viewports_and_transpose and not popup_headings_include_compact_references' -vv --durations=25 ;;

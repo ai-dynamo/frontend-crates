@@ -142,7 +142,8 @@ def test_unified_only_packaging_rejects_archive_changes_and_pruning(tmp_path, mo
         package_fixtures._validate_candidate_package(changed, conformance / "fixtures", conformance / "fixtures-unified-v2", retained_manifest=manifest)
 
 
-def test_regeneration_dispatches_only_unified_fixture_owners(tmp_path):
+@pytest.mark.parametrize("explicit_history", [False, True])
+def test_regeneration_dispatches_only_unified_fixture_owners(tmp_path, explicit_history):
     tools = tmp_path / "commands"
     tools.mkdir()
     log = tmp_path / "commands.jsonl"
@@ -161,11 +162,8 @@ if any('extract_fixtures.py' in value for value in sys.argv):
         path.chmod(0o755)
     environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ}
     environment.update(PATH=str(tools) + os.pathsep + environment["PATH"], TMPDIR=str(tmp_path), REGEN_COMMAND_LOG=str(log))
-    rejected = subprocess.run(["bash", "conformance/utils/regenerate_unified.sh"], cwd=ROOT, env=environment, capture_output=True, text=True)
-    assert rejected.returncode != 0
-    assert "CONFORMANCE_HISTORY_SOURCE" in rejected.stderr
-    assert not log.exists(), "missing history must fail before capture mutations"
-    environment["CONFORMANCE_HISTORY_SOURCE"] = str(tmp_path / "explicit-history")
+    if explicit_history:
+        environment["CONFORMANCE_HISTORY_SOURCE"] = str(tmp_path / "explicit-history")
     result = subprocess.run(["bash", "conformance/utils/regenerate_unified.sh"], cwd=ROOT, env=environment, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout + result.stderr
     commands = [json.loads(line) for line in log.read_text().splitlines()]

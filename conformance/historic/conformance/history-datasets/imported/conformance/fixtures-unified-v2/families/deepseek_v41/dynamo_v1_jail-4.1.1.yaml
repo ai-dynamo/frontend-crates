@@ -1,0 +1,41 @@
+parent: dynamo_v1_jail-4.1.0
+execution: a8d6b64624856138c988584558e24c016e89b8c38ae145b8c62061825796336d
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal "<｜DSML｜ calls>" marker is part of the explanation.
+  native_single_quote_contraction_reasoning:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: The literal 'doesn't <｜DSML｜ calls> marker' stays quoted.
+  reason_only:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: just thinking, no answer
+  reason_tool_reason_tool_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: ABC
+        - kind: text
+          text: <｜DSML｜ calls><｜DSML｜ invoke name="f"><｜DSML｜ parameter name="x" string="true">1</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls><｜DSML｜ calls><｜DSML｜ invoke name="g"><｜DSML｜ parameter name="y" string="true">2</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+  reason_unterminated:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: thinking but stream ends
+  tool_in_reason:
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: I should check. <｜DSML｜ calls><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls> now answer

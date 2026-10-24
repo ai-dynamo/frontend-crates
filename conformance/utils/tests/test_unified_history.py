@@ -3,7 +3,9 @@
 """Coverage for canonical Unified capture checkpoints."""
 
 import copy
+from collections.abc import Mapping
 from dataclasses import replace
+from contextlib import contextmanager
 import hashlib
 import json
 import shutil
@@ -19,8 +21,47 @@ import viewer_catalog
 import unified_history
 import unified_archives
 import migrate_unified_snapshots
+import migrate_capture_sources
+import publish_current_capture
+import capture_sources
 from capture_stimulus import normalize_unavailable, select_peer_observation
 from viewer_codec import encode_typed
+
+
+@pytest.mark.parametrize("case_count", [1, 8])
+@pytest.mark.parametrize("derived", [False, True])
+def test_lazy_inheritance_metadata_is_loaded_once_per_snapshot(tmp_path, case_count, derived):
+    class CountingFragments(Mapping):
+        reads = 0
+
+        def __getitem__(self, key):
+            assert key == "dynamo_v2-0.1.0"
+            self.reads += 1
+            return {"case-0"}
+
+        def __iter__(self):
+            return iter(["dynamo_v2-0.1.0"])
+
+        def __len__(self):
+            return 1
+
+    capture = "dynamo_v2-0.1.0"
+    records = {f"case-{index}": {"document": {"record_metadata": {"verified_recapture": {"result": {}}}}}
+               for index in range(case_count)}
+    suppressed = CountingFragments()
+    history = unified_history.History(
+        unified_history.Family("sample", {}, tmp_path / "inputs_and_golden.yaml"),
+        "dynamo_v2", {capture: {"runtime_version": "0.1.0"}}, tmp_path, {},
+        {capture: records}, {}, suppressed)
+    resolved = history.resolve(capture, view_capture_id="dynamo_v2-0.2.0" if derived else capture)
+    assert suppressed.reads == int(derived)
+    for case, record in resolved.items():
+        assert ("verified_recapture" in record["document"]["record_metadata"]) == (not derived)
+        assert ("inherited_from" in record["document"]) == (derived and case != "case-0")
+        if derived and case != "case-0":
+            assert record["document"]["inherited_from"] == "0.1.0"
+        assert "verified_recapture" in records[case]["document"]["record_metadata"]
+        assert "inherited_from" not in records[case]["document"]
 
 
 def _request(text: str = "hello") -> dict:
@@ -1711,7 +1752,7 @@ def test_schema_v3_ignores_generated_oracle_directories_but_rejects_malformed_ca
         unified_history.update_store_from_loose(root, loose, complete_snapshot=True)
 
 
-def test_history_rejects_input_changes_without_recapturing_prior_versions(tmp_path):
+def test_history_request_rewrite_directs_contributors_to_latest_tests(tmp_path):
     root = _store(tmp_path / "store")
     loose = tmp_path / "loose"
     unified_history.materialize_store(root, loose)
@@ -1720,7 +1761,7 @@ def test_history_rejects_input_changes_without_recapturing_prior_versions(tmp_pa
     document["cases"]["UNIFIED.1-1"]["input"] = "changed request"
     input_path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="requires recapturing and updating every prior semantic version"):
+    with pytest.raises(ValueError, match="Run latest parser tests.*repository administrator"):
         unified_history.sync_current_corpus(root, loose, complete_snapshot=True)
 
 
@@ -1986,3 +2027,71 @@ def test_retained_kimi_proof_covers_deduplicated_observation_origins(history_sou
     snapshot['execution_proof']['requests'].pop(next(iter(snapshot['execution_proof']['requests'])))
     with pytest.raises(ValueError, match='proof request membership mismatch'):
         unified_history._validate_complete_snapshot(root / member, snapshot, family, 'sglang_python_batch', '0.5.18')
+
+
+def test_routed_sparse_history_keeps_requests_precedence_and_lazy_fragments(tmp_path, monkeypatch):
+    checkout = tmp_path / "checkout"
+    root = _store(checkout / "conformance/fixtures-unified-v2")
+    original = unified_history.load_store(root)
+    authored = root / "families/gemma4/inputs_and_golden.yaml"
+    authored_bytes = authored.read_bytes()
+    for path in authored.parent.glob("dynamo*.yaml"):
+        path.unlink()
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    datasets = []
+    for dataset, version in [("imported", "0.5.0"), ("imported", "0.5.2"), ("base", "0.5.0")]:
+        prefix = f"conformance/history-datasets/{dataset}"
+        retained = checkout / prefix / "conformance/fixtures-unified-v2/families/gemma4/inputs_and_golden.yaml"
+        retained.parent.mkdir(parents=True, exist_ok=True)
+        retained.write_bytes(authored_bytes)
+        history = original.histories["gemma4", "dynamo_v2"]
+        capture_id = f"dynamo_v2-{version}"
+        records = history.resolve(capture_id)
+        records["text_only"]["stimulus"] = {"inline": _request(dataset)}
+        wrapped = {case: {"value": record, "member": f"conformance/fixtures-unified-v2/families/gemma4/{capture_id}.yaml"}
+                   for case, record in records.items()}
+        payload = encode_typed(wrapped)
+        key = hashlib.sha256((dataset + version).encode()).hexdigest()
+        data = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        (cache / f"{key}.json").write_text(json.dumps({"identity": key, "sha256": hashlib.sha256(data).hexdigest(), "payload": payload}))
+        descriptor = next((row for row in datasets if row["id"] == dataset), None)
+        if descriptor is None:
+            descriptor = {"id": dataset, "root": prefix, "checkpoints": []}
+            datasets.append(descriptor)
+        capture = history.captures[capture_id]
+        descriptor["checkpoints"].append({"family": "gemma4", "implementation": "dynamo_v2", "version": version,
+            "fragment": key, "capture": {field: encode_typed(capture[field]) for field in ("provenance", "document")}})
+    (checkout / "conformance/history-datasets.json").write_text(json.dumps([{key: row[key] for key in ("id", "root")} for row in datasets]))
+    (checkout / "conformance/viewer-catalog.json").write_text(json.dumps({"sources": {"history_datasets": datasets}}))
+    (checkout / "conformance/history-reader-cache.json").write_text(json.dumps({"directory": str(cache)}))
+    store = unified_history.load_store(root)
+    history = store.histories["gemma4", "dynamo_v2"]
+    assert history.resolve("dynamo_v2-0.5.0")["text_only"]["stimulus"]["inline"]["input"] == "base"
+    assert history.resolve("dynamo_v2-0.5.2")["text_only"]["stimulus"]["inline"]["input"] == "imported"
+    assert "/base/" in history.snapshot_members["dynamo_v2-0.5.0"]["text_only"]
+    selected, targets = unified_history.selected_materialization_store(root, ["dynamo_v2-0.5.1"])
+    assert targets == {"dynamo_v2": "0.5.1"}
+    assert set(selected.histories) == set(store.histories)
+    @contextmanager
+    def retained_view(_root, _history):
+        yield checkout
+
+    monkeypatch.setattr(capture_sources, "history_view", retained_view)
+    monkeypatch.setattr(capture_sources, "verify", lambda *_: {"files": []})
+    monkeypatch.setattr(capture_sources, "history_pin", lambda *_: {})
+    monkeypatch.setattr(migrate_capture_sources, "convert", lambda *_args, **_kwargs: {"rows": []})
+    retained_history = tmp_path / "history"
+    (retained_history / capture_sources.DATASETS).parent.mkdir(parents=True)
+    (retained_history / capture_sources.DATASETS).write_bytes(capture_sources.encoded([]))
+    publish_current_capture.reconcile(checkout, retained_history)
+    current = capture_sources.current(checkout)["captures"][0]
+    latest = unified_history.load_yaml(checkout / current["path"])
+    assert current["version"] == "0.5.2"
+    assert latest["records"]["text_only"]["member"] == current["source"]
+    assert latest["records"]["text_only"]["value"]["stimulus"]["inline"]["input"] == "imported"
+    # Corruption is detected at demand time, including after a successful read.
+    row = datasets[-1]["checkpoints"][0]
+    (cache / (row["fragment"] + ".json")).write_text('{}')
+    with pytest.raises((ValueError, KeyError)):
+        history.resolve("dynamo_v2-0.5.0")

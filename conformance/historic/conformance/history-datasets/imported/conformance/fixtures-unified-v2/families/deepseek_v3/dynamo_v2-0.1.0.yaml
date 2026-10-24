@@ -1,0 +1,1640 @@
+execution: 64a02f8f3799ab67fafcd026ecf4ffe72ca4143687fbfc53abf5eba44db2e1f6
+changes:
+  arg_json_null:
+    case_key: arg_json_null
+    stimulus:
+      ref: current
+      semantic_sha256: 7f8d737c3c60185398b74ab6abd93c3ab344cfc11ffefbceee10867da563487d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_json_null_anyof:
+    case_key: arg_json_null_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: de1fa1b82deba3d63ec189d16a973bdf2ab80d63ce6e04aaacdd0358bb131aef
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_json_null_const:
+    case_key: arg_json_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: bfd7574c28bab09fd08d3e905919541586f9db509a22157757c3a903b1aa929c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_json_null_nullable:
+    case_key: arg_json_null_nullable
+    stimulus:
+      ref: current
+      semantic_sha256: e7ef1cfb705cc3853864226db43834c9c787375e21e77358d1e0087a8fa26b30
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_json_null_oneof:
+    case_key: arg_json_null_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: c47ec8fc5f95b7a074a34b8af978ef0a94cacb81c46bbafd713d550d07e3658a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null:
+    case_key: arg_string_null
+    stimulus:
+      ref: current
+      semantic_sha256: 0bd150846d0d9738b42388b1993e82d68b6bb95e0604893466a9be8b28cef2bf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_const:
+    case_key: arg_string_null_const
+    stimulus:
+      ref: current
+      semantic_sha256: 037adbe5cd2521ee6c365db50f1dbebcc94958fad8a318750d16fe39709d987f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_enum:
+    case_key: arg_string_null_enum
+    stimulus:
+      ref: current
+      semantic_sha256: 39ccbf311bad1562eb5935f5ee26b400a10424fc1a37298458bdeb16f2e239b5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_sibling_anyof:
+    case_key: arg_string_null_sibling_anyof
+    stimulus:
+      ref: current
+      semantic_sha256: fe4909d62afef53f3d4645e45e8486e70f85dcad35eb4da5ebf7b99bccd78d24
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_sibling_oneof:
+    case_key: arg_string_null_sibling_oneof
+    stimulus:
+      ref: current
+      semantic_sha256: 73d9f0625210246ad89f5cd95acd3b69f2bcd7e2f0503874b422bc0f461906a6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_union:
+    case_key: arg_string_null_union
+    stimulus:
+      ref: current
+      semantic_sha256: 150cbc936b9d62029943b89d914d78f1d96fb21aa6ac787923378cab0859df75
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_string_null_untyped_branch:
+    case_key: arg_string_null_untyped_branch
+    stimulus:
+      ref: current
+      semantic_sha256: bcbd6f30ef6ffe13fb56cda4eb19624506e761b2d00b548322bd1f89adaed5f3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  arg_unicode:
+    case_key: arg_unicode
+    stimulus:
+      ref: current
+      semantic_sha256: 4cefc66f3bd04bdacd3ded29b1c11df1e3857a724ecf999876c4bd1bc5e88f4d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  content_then_reason:
+    case_key: content_then_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 2cd85bdb356eddb880cef6b229b38164dc8f603cd9a0b8be0f64e4af3575cd15
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  content_then_reason_then_tool:
+    case_key: content_then_reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 74c4dd83383f1b8d81c603f6d61d481073b920cf0b3cd47d3b93d165dcadab87
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  empty_args:
+    case_key: empty_args
+    stimulus:
+      ref: current
+      semantic_sha256: 2362884b70f4a219abcf2bd4397a76300649527f67286704504aa5689923ad58
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  glm_ref_encoded_targets:
+    case_key: glm_ref_encoded_targets
+    stimulus:
+      ref: current
+      semantic_sha256: 11ae45dff2009e11656e4d8813e5fe143f4727cc45c7c1906bfa99106d3c33d7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  glm_ref_json_looking_strings:
+    case_key: glm_ref_json_looking_strings
+    stimulus:
+      ref: current
+      semantic_sha256: cce6a9f8801b940df479836cc7771332888f6a1fb069c9eae4aac1e515a0f4f5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  glm_ref_object:
+    case_key: glm_ref_object
+    stimulus:
+      ref: current
+      semantic_sha256: ab404a12336540786dff7a057002e5fa86016c4899aa9f6d78f4ce0c616c12f4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  glm_ref_scalar_types:
+    case_key: glm_ref_scalar_types
+    stimulus:
+      ref: current
+      semantic_sha256: 9be084bb178b6bee25afce53ddb1c009dadb4401fc3383628c54544e5793f55e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  guided_json_array_argument:
+    case_key: guided_json_array_argument
+    stimulus:
+      ref: current
+      semantic_sha256: de8173f5fbb5da72126d27a7fa041786e6ca35d08f5bb18f2c95508698d65c9c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_escaped_string_args:
+    case_key: guided_json_escaped_string_args
+    stimulus:
+      ref: current
+      semantic_sha256: 17c26a67a4be86572772f8f6c50b78710da70818db4d75552335129b23b6d67c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_invalid_call:
+    case_key: guided_json_invalid_call
+    stimulus:
+      ref: current
+      semantic_sha256: b8f358982d911462542828959309f3ffe3f0ba2564f183e5a3d507495095a256
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_list_with_broken_element:
+    case_key: guided_json_list_with_broken_element
+    stimulus:
+      ref: current
+      semantic_sha256: cd1ab02e2e5eb89e8d71bb1532992e26217627bda444c0d3e4d6248470cbd5fd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_malformed_json:
+    case_key: guided_json_malformed_json
+    stimulus:
+      ref: current
+      semantic_sha256: 58ea44ef615fa7a4e14ff8a22f82729b1f0410c581cae5784bd4b4bd8a529127
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_named_tool:
+    case_key: guided_json_named_tool
+    stimulus:
+      ref: current
+      semantic_sha256: ccf38680ecc0d391186451b25eafc45d8f589b1fcf3fb856ce299e69d9cb2b6f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_partial_calls:
+    case_key: guided_json_partial_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 9219ddbef46839d70e61c00f1f7d98565b383a1c16b29aa6d8ecca675e2dd118
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_required_tool:
+    case_key: guided_json_required_tool
+    stimulus:
+      ref: current
+      semantic_sha256: a1636d4bf47e65569295b8a2f7c9219c472d093039aaa25db27d9c4920c0f31e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  guided_json_two_calls:
+    case_key: guided_json_two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 82a1ace742ac0a4a60c03b397d55b5cf8fb6928bd7489f634b3d9d53b9be8c62
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  interstitial_text:
+    case_key: interstitial_text
+    stimulus:
+      ref: current
+      semantic_sha256: 32c92ee9e10bc29721c1f1e1a20c3f0173d35657a5e2b0991f7871eb4b083284
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  local_schema_id_preserves_type:
+    case_key: local_schema_id_preserves_type
+    stimulus:
+      ref: current
+      semantic_sha256: 2008345c4ff9acb5ee8c833f672dd0ae01e702ff74ee8fabf503c98433d4f2d2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  malformed_json_then_two_valid_calls:
+    case_key: malformed_json_then_two_valid_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 6f0e07ea6ced4b509f36ebb9f8b06926414725562ec120ff718661360db84743
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  narrated_calls:
+    case_key: narrated_calls
+    stimulus:
+      ref: current
+      semantic_sha256: a1958887c72d9772885e0dabb4d3cc3773f10204cfb55eed02a37073f58cd6ee
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  nullable_reference_alias_literals:
+    case_key: nullable_reference_alias_literals
+    stimulus:
+      ref: current
+      semantic_sha256: d74da4571b28dc6aebd69a266f2969f370e98a7c281aa65582ac9d788b066045
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  prefilled_reasoning_redundant_opener:
+    case_key: prefilled_reasoning_redundant_opener
+    stimulus:
+      ref: current
+      semantic_sha256: 6d041bf091f165120368ce500686f6dbfe371eb98708463f7d01ac437f4d1ee2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_reasoning_then_text:
+    case_key: prefilled_reasoning_then_text
+    stimulus:
+      ref: current
+      semantic_sha256: 730aa56b99495f5203081371ffcd8e2a04b7db5077a88e8a1d9f300a0471f4d6
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_reasoning_then_text_then_tool:
+    case_key: prefilled_reasoning_then_text_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 3f9f6ee3603fa608ec065a76adb4488a491b71e43f2790c441fb097b504cb81a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_reasoning_truncated:
+    case_key: prefilled_reasoning_truncated
+    stimulus:
+      ref: current
+      semantic_sha256: fc4ebb8e36e8ad5772cdfc28740e7f55ec3e914d2254965b566046bb37b16ce8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_reasoning_with_guided_json:
+    case_key: prefilled_reasoning_with_guided_json
+    stimulus:
+      ref: current
+      semantic_sha256: 84808f9e34bb1f04f493c7f75dc6e0c226442ea15c8eb189a4ce7ba4359fb7ee
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_reasoning_with_tool:
+    case_key: prefilled_reasoning_with_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 0fd0722ceabc2942c2439d2e0c25952d473e917324a406e0ddfa7ba1457ac313
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  prefilled_response_reasoning_markers_literal:
+    case_key: prefilled_response_reasoning_markers_literal
+    stimulus:
+      ref: current
+      semantic_sha256: aa89396f861a30a46a73aabca15e306880c3de068cf21e46fd2b1ab65d551ff5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: split capture cannot apply the requested initialization
+  reason_after_tool:
+    case_key: reason_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 75b7542363822bc5fd7a5e5aaca16967162048d33bbce1f8f60648dc048a0be4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_between_calls:
+    case_key: reason_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 6dcde1930dfdf7bea712752ddc6c17702e0a4ee47082d2fbc5961c22ed2eab99
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_interleaved:
+    case_key: reason_interleaved
+    stimulus:
+      ref: current
+      semantic_sha256: c72970edf111dfc3066fb493a5ff4c57e14976c42a48d08f58ebda6567ae3dab
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_markup_in_arg:
+    case_key: reason_markup_in_arg
+    stimulus:
+      ref: current
+      semantic_sha256: d6606cb7ae832370687c88faef846bbd701c696696b412892e883278366cb0eb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_markup_in_arg_with_text:
+    case_key: reason_markup_in_arg_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 401db03d81df1e240ddafe45e838e95903eb544971c0726d285e9a06bfa23e8d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_only:
+    case_key: reason_only
+    stimulus:
+      ref: current
+      semantic_sha256: f5b33d886dd243e5f8d4fc10d84047b1787187c711264e6258809a4cf044bd44
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_then_content:
+    case_key: reason_then_content
+    stimulus:
+      ref: current
+      semantic_sha256: 60f20bdda8c4f2c4520a888a0fc9dd08f5f68530ab98d5ebc1366cafa953ba62
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_then_tool:
+    case_key: reason_then_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 0507798df5b0d7966406e2befbc267f13ae7a6c0840a047d3660faf3188190b9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_tool_reason_tool_reason:
+    case_key: reason_tool_reason_tool_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 973102f305a9fa278cbfc56290ec64954ea1a15d766fc8025257e313a6c81725
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_tool_text_reason_tool:
+    case_key: reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 0e8789a4e768e04f204ab3d399aae182e0b6ec621ded18d231a2d4ae4270cdf1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  reason_unterminated:
+    case_key: reason_unterminated
+    stimulus:
+      ref: current
+      semantic_sha256: 6724cf0ef35e8e04572ad568a85bdfc710abf1af7f5096838d80368759df451e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_array_allof:
+    case_key: schema_const_array_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 66333b6ca55c85843e1a93792ca84cd30cc10a50ae62a938ef72fd0abbe78687
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_array_bare:
+    case_key: schema_const_array_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 9dabd30ef4a3c0cb13c7fadf3dfbe89328c00221f5d6ed9fba74e6ebe425bdb1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_array_ref:
+    case_key: schema_const_array_ref
+    stimulus:
+      ref: current
+      semantic_sha256: e9ae8197a554031cc30bd719ce3c5059a95e50767fb8ddd7e850ba7176561dd9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_array_typed:
+    case_key: schema_const_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a5f9b8574c6a02e00becc9f6d925c60b2e25c41f4d733d1e48d083ad403f83dc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_boolean_allof:
+    case_key: schema_const_boolean_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 0c48e15c06edd74c289169c10058714ee2345b87c6c1b15f55c3a9c5831e1490
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_boolean_bare:
+    case_key: schema_const_boolean_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 8ce8da52e78b9306466d63857b87f445c45f8cc219b37771d546edcc0f84e103
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_boolean_ref:
+    case_key: schema_const_boolean_ref
+    stimulus:
+      ref: current
+      semantic_sha256: a9d86b1540499956117086e174197fcee7641b13847a37b9bfaade7a6749a851
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_boolean_typed:
+    case_key: schema_const_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5be6a1e619481e143065fabb48e1a77f6085aaadfe66a486ca16354db32da319
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_entity_allof:
+    case_key: schema_const_entity_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 4e519665d48132b1abdc006dd23420cfb374c78b9d720c29b6841829fbd88331
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_entity_bare:
+    case_key: schema_const_entity_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 1ff57e2d901f0d66d8d9a3e04d9468c8750e6f12066abf6f9807c8e96f11b480
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_entity_ref:
+    case_key: schema_const_entity_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 5179eead08646702731855431321eef07a8534f231e8710196d6f82fc126c521
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_entity_typed:
+    case_key: schema_const_entity_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 64ffc113df9157eaa8a2e63d3a3e690230b3fb50551e6747f84b965d97faf7dc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_null_allof:
+    case_key: schema_const_null_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 7925dedeeb980f93dda880909c4fdbf4c2d176bfdf02a7b4b4d2fa0c8b13b27f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_null_bare:
+    case_key: schema_const_null_bare
+    stimulus:
+      ref: current
+      semantic_sha256: dfc896202923c9f04d4e5e587ed2583b7f0fdc777718d42d1fdc86f17288a8f8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_null_ref:
+    case_key: schema_const_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 9dabb47c2a72cdc082e8d61c4b0ee63a3cc129a5e7a76791b43e2a1c7aec541e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_null_typed:
+    case_key: schema_const_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8df29786658e0a7a44ec1a614fdad46ee9def9326017c02e74ab806a76ec79cf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_number_allof:
+    case_key: schema_const_number_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 28d25ce156169b4089facd5dea60cfb7c6780fcb909958fff7a19f328fc15353
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_number_bare:
+    case_key: schema_const_number_bare
+    stimulus:
+      ref: current
+      semantic_sha256: b48ba94f6d4e5b703d85a178a5b05a0031208c27e13110b4115b03776dae624d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_number_ref:
+    case_key: schema_const_number_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 43f57914941a51af2089bcf1f90b42f9cf6aba796d0d92f9981d899e1b7ea0a2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_number_typed:
+    case_key: schema_const_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8e5bc63ff42c3e29c6b391765a0a07d38f66799aef267dd814840e3761b5a432
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_object_allof:
+    case_key: schema_const_object_allof
+    stimulus:
+      ref: current
+      semantic_sha256: f737e6ec526aa782dd1bade8651348030dda5c6fd1b43e16d55cf5283583d310
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_object_bare:
+    case_key: schema_const_object_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 437bb59b50027f51b5fb0758a72a848f8eb07db43b7d460f605fdab1b2001dea
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_object_ref:
+    case_key: schema_const_object_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 6328b05a650dade6a76cdf9d413c19101ae4d12190b4cd4d38cd9e0e7221671f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_object_typed:
+    case_key: schema_const_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1c3ab688f8294c1806575f5ce01f7e7506eeaee02783ee9c781e2927c8ff0d7f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_plain_allof:
+    case_key: schema_const_plain_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 5b52e0e8561b17760a46fa44a81a287d75d42fb2f89edb967c1af6ef78b61d1f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_plain_bare:
+    case_key: schema_const_plain_bare
+    stimulus:
+      ref: current
+      semantic_sha256: e21e58690c4d0876f6478398589a73319d2330521ca2b42b26a80651a7246b7a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_plain_ref:
+    case_key: schema_const_plain_ref
+    stimulus:
+      ref: current
+      semantic_sha256: f9e4223c1bf6f48a0873e8c5deb9da7a0ebd4ede83f23f466472b114d7fa21ee
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_plain_typed:
+    case_key: schema_const_plain_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3bf8d0dde76023f2ae02a86c06550e1df7bc67f6ffe4fbfe8cc008c705968527
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_quoted_allof:
+    case_key: schema_const_quoted_allof
+    stimulus:
+      ref: current
+      semantic_sha256: adb9e62edadbd31421bbd9674da0933ed510b40c5bdfd7625ff3dd82ec523504
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_quoted_bare:
+    case_key: schema_const_quoted_bare
+    stimulus:
+      ref: current
+      semantic_sha256: ddefe162a27fa20aa80f67907c97b84a14b3a7cd6e56bdd15cc0b66ad7212c24
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_quoted_ref:
+    case_key: schema_const_quoted_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 9f77675337d218c9e8570467d5ef8a730ac5cc88b4d227eae3b4c44814cd6831
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_quoted_typed:
+    case_key: schema_const_quoted_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 203a58575b4df114ec8b864456a61e4e718cce583c73bf6ff8ca545bb55b1dcb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_space_allof:
+    case_key: schema_const_space_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 51ca7862189b8ed3a2ce5dbc5b49507735abfa4c93e43979ebdade54a2d04cbf
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_space_bare:
+    case_key: schema_const_space_bare
+    stimulus:
+      ref: current
+      semantic_sha256: 6c994234b88da90516c863db347e291eb87ae7182a71d0ba7181fc6a4f5e2341
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_space_ref:
+    case_key: schema_const_space_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 0ad619b5b282c41af1810abe83d9dd32b4008867948ed98120de605ce332d46f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_space_typed:
+    case_key: schema_const_space_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ea97f28d77e850ddbcc9b4dd807f8bd878cb65aa7f48005dea206f686fdb4c73
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_unicode_allof:
+    case_key: schema_const_unicode_allof
+    stimulus:
+      ref: current
+      semantic_sha256: 21c098758c6758f6053876ab1540756e6ada14ea514894b01bfc889670e967dc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_unicode_bare:
+    case_key: schema_const_unicode_bare
+    stimulus:
+      ref: current
+      semantic_sha256: c080bb378772c9950f33d389edbe8c1c60003d91f40fefaa12d27bdaee14bae5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_unicode_ref:
+    case_key: schema_const_unicode_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 588185511e08f8faa74d19bfde3be133db58e6f6cee47c49bfaeedef5a62bb16
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_const_unicode_typed:
+    case_key: schema_const_unicode_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8f9fb3de42ea8ce2bf5c1b8be3b3c6b1ab443d7d7c0e1c91aa95dcd6ee35761e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_array:
+    case_key: schema_declared_array
+    stimulus:
+      ref: current
+      semantic_sha256: e8162e371509f7c77fe2760d1dc0ed4c92fdd5dd41cb664a4ca439395f90fab2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_boolean:
+    case_key: schema_declared_boolean
+    stimulus:
+      ref: current
+      semantic_sha256: a241b30afac4e4ddd60a38ef9dcb38e62634be3bd917b8742acdb99766f7370c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_integer:
+    case_key: schema_declared_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 513636380250349bfd8fd39658ea86e9f7aa132994fa70742329dd4b6c469c74
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_null:
+    case_key: schema_declared_null
+    stimulus:
+      ref: current
+      semantic_sha256: 6234761219c53a2bed1828631cc9fe234b6e61ca19219c201f2877cdfa0892ea
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_number:
+    case_key: schema_declared_number
+    stimulus:
+      ref: current
+      semantic_sha256: f2c9db886f0ac6e99fd0974c7c5af13add61ea12d3c74ad59c99a18c7382942a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_object:
+    case_key: schema_declared_object
+    stimulus:
+      ref: current
+      semantic_sha256: 2ae8da5af850a047d19446c2f1b5275f3e0312b289885a32e151fdf85f2fd90a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_declared_string:
+    case_key: schema_declared_string
+    stimulus:
+      ref: current
+      semantic_sha256: 191f95f4067e7a08a9d3ae26049cecc7eddfae25010f4b223760672a117670e5
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_enum_integer:
+    case_key: schema_enum_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 8378cded4327250482741dce04ba110a76085f18fbbcbf0cef11bd2c40ef4c37
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_enum_string:
+    case_key: schema_enum_string
+    stimulus:
+      ref: current
+      semantic_sha256: 523dd223e3c624b729ac32d09ad9ded63b3a01bdfacbf4355d4e554d93657d22
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_escaped_ref_const:
+    case_key: schema_escaped_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: 3a7fe61b044fc2008f1ddd5ca91ec042c976df08b523c3ae3054c0317c851380
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_id_direct_integer:
+    case_key: schema_id_direct_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 5e7fe12c230d826b46c63f51a2703ff3a9c6c536148e6bbf465c78c418d85500
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_integer_const_ambiguous:
+    case_key: schema_integer_const_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: d4326488351a058f85fc33d9fe358771e4dbb65bf2d94823925aefb57b9229bd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_intersection_anyOf:
+    case_key: schema_intersection_anyOf
+    stimulus:
+      ref: current
+      semantic_sha256: aa3e9b677168ac21dcb8b0b68e114c853ad0c8d996b614783803e609facf3b19
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_intersection_oneOf:
+    case_key: schema_intersection_oneOf
+    stimulus:
+      ref: current
+      semantic_sha256: d11149ebd6683c7cdbeb0c196c0625ea275487d7b0055cc775d42169e5340079
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_null_union_ambiguous:
+    case_key: schema_null_union_ambiguous
+    stimulus:
+      ref: current
+      semantic_sha256: 578983c72bdee090256dbd2eb383a6dcc796ae2145b68a9af46075ff12d14c28
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_nullable_string:
+    case_key: schema_nullable_string
+    stimulus:
+      ref: current
+      semantic_sha256: d43ebed638cbbf30bfc5e72c097b1703ae1aaac4a64f57bce60f8b351f1af2bb
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_object_const_union:
+    case_key: schema_object_const_union
+    stimulus:
+      ref: current
+      semantic_sha256: 7f5f37813ce594e2f69ddb343735648db32542894e26d71629bc6576144429e2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_percent_ref_const:
+    case_key: schema_percent_ref_const
+    stimulus:
+      ref: current
+      semantic_sha256: e92bcde1bd22581b1572d65ada8566c006a815d3039f6478da75787081012cd8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_ref_sibling_integer:
+    case_key: schema_ref_sibling_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 2cf4cae03744aab0e67e3d5d54a8cb092d008bd7295e748df265bd554a4ab519
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_ref_union_anyOf_integer:
+    case_key: schema_ref_union_anyOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 2390ce309e4007a5c6d975a5126c337373f3b30893172096b464a0b67c1e1a14
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_ref_union_anyOf_string:
+    case_key: schema_ref_union_anyOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 4191b71b786a8858e70fc91d5d2b7616514149af28621eb70df2f2fc9165b8a9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_ref_union_oneOf_integer:
+    case_key: schema_ref_union_oneOf_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 7c2072f6563e0d628a693b3f65f48925c521262bb833d30a19a0dca425efe117
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_ref_union_oneOf_string:
+    case_key: schema_ref_union_oneOf_string
+    stimulus:
+      ref: current
+      semantic_sha256: 65d463aacb378b06f5c52f934ee7d50567d9ae26cf9fe282a123657d597ba474
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_type_array_integer_null:
+    case_key: schema_type_array_integer_null
+    stimulus:
+      ref: current
+      semantic_sha256: 96c85f7d7e6cbe4191d9a9f6359f92f4ed32c7b6366dd7a46f6f086a91732b4e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_type_array_integer_null_null:
+    case_key: schema_type_array_integer_null_null
+    stimulus:
+      ref: current
+      semantic_sha256: cc2e4fe2bf0c502cf44600887a8f0adc855e8cf6f5e40fc1bec0570e47e97ad2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_type_array_string_integer:
+    case_key: schema_type_array_string_integer
+    stimulus:
+      ref: current
+      semantic_sha256: 9d4fe7ad79f06081cd76cc00c66ac1bfa15f86c8664b3fc8f2aa72526b7bb255
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_array_reverse_string:
+    case_key: schema_union_anyOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 55fe27e49992a9ac42a935d6594ffde8297cbc34cce0042c297105ed603530a0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_array_reverse_typed:
+    case_key: schema_union_anyOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1497f0e71ba22814b4af4b23286d7c10794b01d6f6e802f52caeacf8e8c7bfb3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_array_string:
+    case_key: schema_union_anyOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 3fd27eeafdd249749bed3224dae01922d2115e0237bf98525c541f4243242aff
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_array_typed:
+    case_key: schema_union_anyOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e31817324e1a88901e5d539fc9d5903ecdb23fc709d72b917d1bb0e7effb48f1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_boolean_reverse_string:
+    case_key: schema_union_anyOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9e7678c05db1877be82c441349712e909bcc0b651b231f5d047b4d48c0e14e38
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_boolean_reverse_typed:
+    case_key: schema_union_anyOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: ea13f56e46764006d39967b82df8ca3010adf5600abe2f387c6951833a081e24
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_boolean_string:
+    case_key: schema_union_anyOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: c2660f1497d5a0729836dea652f1ee51d9efd3345618ec767ca9bfb4968323e1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_boolean_typed:
+    case_key: schema_union_anyOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 8336e3b514aa98a2318660c3f3bc55382f3e27da4eb88c4484b4d8bcb928ef98
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_integer_reverse_string:
+    case_key: schema_union_anyOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 73b399c9d4831cb238c71586acb28b4e1bd1d121fc2defd719a69ebe453b1ee4
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_integer_reverse_typed:
+    case_key: schema_union_anyOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: a547843ee56107f43e27afc6c734ca133456405762f2fbbd390a7bd839524276
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_integer_string:
+    case_key: schema_union_anyOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1299b9dd4c23bfc3aba2db1c2502e514650cfeec954fe1c3d02f692e917dc7cd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_integer_typed:
+    case_key: schema_union_anyOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: e826660619315f8153b37e0b1f37e1a17eb1ab9a22cc4a96d1865642d357d3e9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_null_reverse_string:
+    case_key: schema_union_anyOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0546b3826667b770be6ce4c2b2d319b86f8c0891b4f329e51c1c429e8af54d9b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_null_reverse_typed:
+    case_key: schema_union_anyOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 9cfce63a6f3296424f4c2555bb1a789404eeaeb7a3b158d5942f0562f256c6b2
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_null_string:
+    case_key: schema_union_anyOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: a5f8a3674b30a32eaa71c276ed22539b75bbe550eb360d82a90a2a72ffc7b485
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_null_typed:
+    case_key: schema_union_anyOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 15f51a489422517a711fd727c53cab9769150c4ba3721bf1aec697e29d8f787b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_number_reverse_string:
+    case_key: schema_union_anyOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 9d182d06478f04a162c9aaf0f56d306b7e4f5349a17e49b505b489a7f86eb46c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_number_reverse_typed:
+    case_key: schema_union_anyOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 06f60505664ebd8bb4f328b94a35262b37e46ae7516a6fa58d5bb7d5767776be
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_number_string:
+    case_key: schema_union_anyOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 04883abf17900fbbec0501155b36a6c6898bcf37bcccecf9a96c4aa5f98d8f21
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_number_typed:
+    case_key: schema_union_anyOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: f1d2bde629c5e7bf01687751b36bea48795f3be6be3c4dc8c0dbcd0eaa89898a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_object_reverse_string:
+    case_key: schema_union_anyOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: d59fb3c1007712efc2f4c5f941745065b193d5cd88147cbf123b657c3349b2da
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_object_reverse_typed:
+    case_key: schema_union_anyOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 74cdd740d96e36e86c2203b1e5b5c607433c4bc0b4050b0dd3e8f66a55e48cba
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_object_string:
+    case_key: schema_union_anyOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: bd125d20a3a42d05fd27c9a268b8c63e116cacfcfc6f0345451f4bcd80b0e1c9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_anyOf_object_typed:
+    case_key: schema_union_anyOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 3703b6fb4170dae326bf852b6eb46f63b7e9434200d8d2390898bcb64da233ba
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_array_reverse_string:
+    case_key: schema_union_oneOf_array_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 4bd1e0dce9dc87b766d67658d44e1d19781bb746af2c72a5ba2bf1fb8c914862
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_array_reverse_typed:
+    case_key: schema_union_oneOf_array_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 9abeaebbbd21ed63a51df1a525aab127a0a895626b4a186222a941d8d9562730
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_array_string:
+    case_key: schema_union_oneOf_array_string
+    stimulus:
+      ref: current
+      semantic_sha256: 22a22417eeb66eca14eee7248b02f247001af3f4eb1ed0ce7197b4dd4636042f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_array_typed:
+    case_key: schema_union_oneOf_array_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0cdc23748670703f8a77517a3ddb4e4d4db7faf47aa6f55354adacdd7488c203
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_boolean_reverse_string:
+    case_key: schema_union_oneOf_boolean_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: b68e3f7bee3de1a564ab37c45a0bd04c5a9be130182eed363011acc3afbd22f1
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_boolean_reverse_typed:
+    case_key: schema_union_oneOf_boolean_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5cbdc39b22b30669af25e05bd73423ded39677b1a2195a630361073d23191abc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_boolean_string:
+    case_key: schema_union_oneOf_boolean_string
+    stimulus:
+      ref: current
+      semantic_sha256: f8bb768c3f8056f68b3de589287c101d69c28732c649a943dbc2a750fb6d0c5a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_boolean_typed:
+    case_key: schema_union_oneOf_boolean_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1c776445b36edeec0090f7a64f13a5a56b7f9e8dbe78cf596fe8770809d7d789
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_integer_reverse_string:
+    case_key: schema_union_oneOf_integer_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 488ae4c60ec19564e6b3bc5780f694fba981acf650a0e4625866ae311864e4c9
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_integer_reverse_typed:
+    case_key: schema_union_oneOf_integer_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 58d6fc009a0b167b33a2536ed6a5e6c030a493297f9f46e3c09cdacd37005152
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_integer_string:
+    case_key: schema_union_oneOf_integer_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1b2eeccd14b7efaa09d1eb175809ebdc478cb28b285fc4b7bfd01e576972dcbe
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_integer_typed:
+    case_key: schema_union_oneOf_integer_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 1b6acbf0d0a98355e547bb33cb8e4c330f1fbd29b8d4567200ed6a1efbbc3f9a
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_null_reverse_string:
+    case_key: schema_union_oneOf_null_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 0321407b5198a1bc973348ce91a4f678f07b0e7e5e79b9688046294943ea9877
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_null_reverse_typed:
+    case_key: schema_union_oneOf_null_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: b6d03b9adc2f19d8194618f84108a5e4c2bf4cab63d6f6c064a984a5b5958ff8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_null_string:
+    case_key: schema_union_oneOf_null_string
+    stimulus:
+      ref: current
+      semantic_sha256: 492ada2a0ec9d2bfe2d5a77e036d163347df2c658f2b130055f751482513882b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_null_typed:
+    case_key: schema_union_oneOf_null_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 293d37def11b72f54fd5b1c2eacced35afcbc36bd573508d1b05cc72b555271d
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_number_reverse_string:
+    case_key: schema_union_oneOf_number_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: dbaf030dc747c87554d3ef25bccc995eae4fc8f4b95fcfd11d72d8afb7dfe73b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_number_reverse_typed:
+    case_key: schema_union_oneOf_number_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 5e7321e2486ec22de91aa12a50735e9ad4fa01a0c401ecefcabd416f1e944493
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_number_string:
+    case_key: schema_union_oneOf_number_string
+    stimulus:
+      ref: current
+      semantic_sha256: 95193396d30bd0d0ceb3a05d132b46c579595df23389c3792535b5c00776e6e7
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_number_typed:
+    case_key: schema_union_oneOf_number_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 0049e577bb230ac9c3210e8d3b2cb5f3bd54bb7bda0c56d97c75057b730c14dd
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_object_reverse_string:
+    case_key: schema_union_oneOf_object_reverse_string
+    stimulus:
+      ref: current
+      semantic_sha256: 04bb122f373a16b6b294bec00db0b1f7d44a4dfca4ee227e721300e2de17cb38
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_object_reverse_typed:
+    case_key: schema_union_oneOf_object_reverse_typed
+    stimulus:
+      ref: current
+      semantic_sha256: 7b979e39ca3cb341eb1682e59ac6d1a3db4f0c3e16f12f211d45b79ae0941eaa
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_object_string:
+    case_key: schema_union_oneOf_object_string
+    stimulus:
+      ref: current
+      semantic_sha256: e2cabcc1eacab4018eb83fae05153978d6e36432089564f8e3991b47f3b58d0e
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  schema_union_oneOf_object_typed:
+    case_key: schema_union_oneOf_object_typed
+    stimulus:
+      ref: current
+      semantic_sha256: d4f4d0530edd6a541e0686d82bfab34b6ab32b5621b1de118fadb197dcd5ad8c
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  text_before_tool:
+    case_key: text_before_tool
+    stimulus:
+      ref: current
+      semantic_sha256: deb066eeb0be081985b054b57ff82a4e2728f2f769ca979d35367b877d0c8296
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  text_between_calls:
+    case_key: text_between_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 7e2398f3207a906c5217e0d27e68ecfa07661615545b1cfbba6c81910c7da123
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  text_only:
+    case_key: text_only
+    stimulus:
+      ref: current
+      semantic_sha256: ebf74a9bbc6e03be68501450ba28057ef1820a3033e7e597b5ee4a97049d0be8
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  text_reason_tool_text_reason_tool:
+    case_key: text_reason_tool_text_reason_tool
+    stimulus:
+      ref: current
+      semantic_sha256: d0ca6457c1f66e303d6e63f567c1b5661e540c66c6b7e691f8c94fcd454fb6d3
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  text_sandwich:
+    case_key: text_sandwich
+    stimulus:
+      ref: current
+      semantic_sha256: 59de50828f9a2c7a339c9b9293507b77e0a14f6940970ff2eb9efdaeb49ae90f
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  tool_in_reason:
+    case_key: tool_in_reason
+    stimulus:
+      ref: current
+      semantic_sha256: 0f4c4bc2e1a9f4c6142eae9adecb52bda230dbb82e795e456f7a4716c311dac0
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  tool_in_reason_with_text:
+    case_key: tool_in_reason_with_text
+    stimulus:
+      ref: current
+      semantic_sha256: 308b0ff4950d5e651c5d8471b91b276e58bb1e8b2c64bb7b17bab2ce2f193fbc
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  tool_only:
+    case_key: tool_only
+    stimulus:
+      ref: current
+      semantic_sha256: 170c60909b1ff799e6bad9f642cda89086e81feec52060f8a021752f4ebb6f70
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  trailing_text_after_tool:
+    case_key: trailing_text_after_tool
+    stimulus:
+      ref: current
+      semantic_sha256: 7c5d13cf774b54261e75f0c87430bc918311ea0f5a098b02d424abca599cae8b
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  truncated_tool_eof:
+    case_key: truncated_tool_eof
+    stimulus:
+      ref: current
+      semantic_sha256: becab8154da18abfe0891b157c318f91b1c9a034ea116ca2a4b8fb19f4d5e629
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  two_adjacent_reason_spans:
+    case_key: two_adjacent_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: c7824768284c274c8515956bc1bfc1a0dade0bd5d3709041fa45cc428b90abbe
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  two_calls:
+    case_key: two_calls
+    stimulus:
+      ref: current
+      semantic_sha256: eb44e7c44feaa02d56efc833f393360247b25db7e8b484fede1f2c7c75380a91
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  two_calls_same_name:
+    case_key: two_calls_same_name
+    stimulus:
+      ref: current
+      semantic_sha256: e74f871f4ac6e12c0679ee8c00ef90c56c8433d4a080d9ceb71fb2514ba25531
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  two_reason_spans:
+    case_key: two_reason_spans
+    stimulus:
+      ref: current
+      semantic_sha256: 0a05c3da908d1742c577f36f50413d64dac980cd87595b31e4edb0c036525d19
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  unused_reference_graph_parameter_types:
+    case_key: unused_reference_graph_parameter_types
+    stimulus:
+      ref: current
+      semantic_sha256: 78b33a6a58576a8a397efc649dfe6dca15f3901fc5259576ebc0aa849f830c47
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3
+  v1_split_parallel_tool_calls:
+    case_key: v1_split_parallel_tool_calls
+    stimulus:
+      ref: current
+      semantic_sha256: 992f71abd3257135106ecd895949ce27a791c5a99d20b21dd35c808df6a53f48
+    observation:
+      unavailable:
+        code: unsupported_family
+        detail: no registered split pipeline deepseek_v3 + deepseek_v3

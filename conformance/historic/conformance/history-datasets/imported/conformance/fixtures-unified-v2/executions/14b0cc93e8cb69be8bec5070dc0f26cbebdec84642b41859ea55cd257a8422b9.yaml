@@ -1,0 +1,98 @@
+schema_version: 1
+family: kimi_k2
+implementation: sglang_python_batch
+version: 0.5.13
+checkpoint:
+  document:
+    mode: unified
+  document_overrides: {}
+  provenance:
+    status: captured
+    origin:
+      crate_version: 0.5.13
+      source_sha256: e2ef706b281642aa83d3f07bf0338b9aa990ddaae92159bdc7029bcde7722d75
+      adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+      job_sha256: 211110044ba9bd5f5050c94c2c3af0d708cae4f487939bca2c62fb6c65dd0b76
+cases:
+- content_then_reason
+- content_then_reason_then_tool
+- deepseek_v41_mixed_control_text_in_string
+- native_single_quote_contraction_reasoning
+- reason_between_calls
+- reason_markup_in_arg
+- reason_markup_in_arg_with_text
+- text_reason_tool_text_reason_tool
+- tool_in_reason_with_text
+- two_adjacent_reason_spans
+- two_reason_spans
+defaults: {}
+exceptions:
+  content_then_reason:
+    batch_final:
+      reasoning_text: Hello there. <think>let me recall
+      normal_text: The capital is Paris.
+      calls: []
+  content_then_reason_then_tool:
+    batch_final:
+      reasoning_text: Sure, one sec. <think>checking the forecast
+      normal_text: ''
+      calls:
+      - name: get_weather
+        arguments:
+          city: Paris
+  deepseek_v41_mixed_control_text_in_string:
+    batch_final:
+      reasoning_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": " <think>quoted'
+      normal_text: ' <|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|> &amp; \"x\"\\\n "}<|tool_call_end|><|tool_calls_section_end|>'
+      calls: []
+  native_single_quote_contraction_reasoning:
+    batch_final:
+      reasoning_text: 'The literal ''doesn''t '
+      normal_text: <|tool_calls_section_begin|> marker' stays quoted.
+      calls: []
+  reason_between_calls:
+    batch_final:
+      reasoning_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.f:0<|tool_call_argument_begin|>{"x": "1"}<|tool_call_end|><|tool_calls_section_end|><think>mid'
+      normal_text: ''
+      calls:
+      - name: g
+        arguments:
+          y: '2'
+  reason_markup_in_arg:
+    batch_final:
+      reasoning_text: '<|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider'
+      normal_text: '"}<|tool_call_end|><|tool_calls_section_end|>'
+      calls: []
+  reason_markup_in_arg_with_text:
+    batch_final:
+      reasoning_text: 'Logging now: <|tool_calls_section_begin|><|tool_call_begin|>functions.log:0<|tool_call_argument_begin|>{"note": "<think>reconsider'
+      normal_text: '"}<|tool_call_end|><|tool_calls_section_end|> done.'
+      calls: []
+  text_reason_tool_text_reason_tool:
+    batch_final:
+      reasoning_text: Sure. <think>check A
+      normal_text: ''
+      calls:
+      - name: f
+        arguments:
+          x: '1'
+      - name: g
+        arguments:
+          y: '2'
+  tool_in_reason_with_text:
+    batch_final:
+      reasoning_text: 'Sure. <think>I should check. <|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|>{"city": "Paris"}<|tool_call_end|><|tool_calls_section_end|> now answer'
+      normal_text: ' Here you go.'
+      calls: []
+  two_adjacent_reason_spans:
+    batch_final:
+      reasoning_text: first
+      normal_text: '<think>
+
+        second</think>done'
+      calls: []
+  two_reason_spans:
+    batch_final:
+      reasoning_text: first thought
+      normal_text: interlude <think>second thought</think>done
+      calls: []

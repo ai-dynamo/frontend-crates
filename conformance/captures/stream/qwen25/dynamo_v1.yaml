@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen25","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"cd4657007b406da2f58b5647a0704c1ffe9d19ba65cd86407468e5e5a490abbf","surface":"stream","version":"3.0.0"}
 schema_version: 1
 surface: stream
 family: qwen25

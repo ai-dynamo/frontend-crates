@@ -1,0 +1,38 @@
+parent: sglang_python_batch-0.5.13.post1
+execution: 47232f880fb037d8eb2380830eb1df0cdf60dc84d8b812a46578d07314cd5569
+changes:
+  native_quoted_control_in_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  native_single_quote_contraction_reasoning:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_redundant_opener:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_then_text:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_then_text_then_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_truncated:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason
+  prefilled_reasoning_with_tool:
+    observation:
+      unavailable:
+        code: unsupported_request_mode
+        detail: Legacy batch API cannot apply this authored initialization or finish reason

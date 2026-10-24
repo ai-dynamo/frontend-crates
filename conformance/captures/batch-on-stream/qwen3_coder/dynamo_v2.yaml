@@ -1,3 +1,4 @@
+capture_selection: {"family":"qwen3_coder","implementation":"dynamo_v2","lineage":[],"mode":"batch-on-stream","payload_sha256":"ab14e02a706b1f3c2e63d4c4a0a9a8d2519284823947ccdfccb5e255f56d75c4","surface":"batch-on-stream","version":"0.7.24"}
 schema_version: 1
 surface: batch-on-stream
 family: qwen3_coder

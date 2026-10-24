@@ -1,0 +1,23 @@
+parent: dynamo_v1-1.3.0
+execution: 051ee5c60efa52efa6f8753cf2fa795bba5135d4a9f9203bdfc2d6aa0939e701
+changes:
+  dsml_bare_invoke_four_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC
+  dsml_bare_invoke_two_lf:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: I will check the weather.
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            location: NYC

@@ -1,3 +1,4 @@
+capture_selection: {"family":"deepseek_v4","implementation":"dynamo_v1","lineage":[],"mode":"stream","payload_sha256":"160dd97e1eebf2e5f052d54c872208922ff492e0c54cd49642bbebc83bef5cd2","surface":"stream","version":"9.1.0"}
 schema_version: 1
 surface: stream
 family: deepseek_v4

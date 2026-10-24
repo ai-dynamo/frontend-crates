@@ -1,3 +1,4 @@
+capture_selection: {"family":"jamba","implementation":"vllm_python","lineage":[],"mode":"batch-on-stream","payload_sha256":"85e51975244bca5d226883ac55e59762b8ff3297cf72bebc93154b016d127b3a","surface":"batch-on-stream","version":"0.26.0"}
 schema_version: 1
 surface: batch-on-stream
 family: jamba

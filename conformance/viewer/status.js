@@ -183,7 +183,7 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const root = resolve(options.root);
     let split = true;
     try {
-      await access(resolve(root, 'conformance/capture-current.json'));
+      await access(resolve(root, 'conformance/captures'));
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       split = false;

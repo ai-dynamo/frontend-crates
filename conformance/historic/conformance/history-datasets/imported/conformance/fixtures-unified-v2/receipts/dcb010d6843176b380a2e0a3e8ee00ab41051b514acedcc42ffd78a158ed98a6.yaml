@@ -1,0 +1,13 @@
+adapter_sha256: d8c2e4a7cac4cb0d003a3cdd54cb2b1b099ddaff544c5c647abd0162fee4a8d0
+artifact_sha256: 1e80fa8f442766575bf05d736a9e45eaa5769f4c509679191f4f4040d17e1752
+extracted_package_sha256: c304a2820804b22ffafa8f863ef4d2499b8e28f87969ea7d3a407f9c6f3966f5
+implementation: sglang_python
+job_sha256: e9fb7d8233101d0f9ac8cf8d350f5f4dac9b6c265032126d3091f7990ae49d29
+parser_apis:
+  protocol: srt.openai_api.protocol
+  reasoning: null
+  tools: null
+results_sha256: c3df9fe6942315361603ddf9bcb77d7594379934c8e6b1603ef2354d6e89acb3
+source_sha256: 200bb7f7f70701722ce69fafecd9276973b254be11e78666ae13cedecfbf3c8d
+status: capability_inspection
+version: 0.3.5.post2
