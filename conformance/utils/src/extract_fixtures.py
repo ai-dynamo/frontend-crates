@@ -608,7 +608,7 @@ def main():
     if args.history_source is not None and not args.include_history:
         ap.error("--history-source requires --include-history")
     if args.include_history:
-        args.history_source = args.history_source or ROOT / capture_sources.HISTORIC
+        args.history_source = args.history_source or capture_sources.default_history(ROOT)
         extract_history(args, args.history_source, legacy_only=args.legacy_only)
     else:
         extract_snapshot(args, legacy_only=args.legacy_only)

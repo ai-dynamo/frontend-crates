@@ -285,8 +285,15 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
     unified_parser_generations["deepseek_v41"] = {
         "generation": "v2", "label": "v2", "native_unified_v2": True,
     }
+    retained_scenarios = {case["scenario"] for _name, data in capture_sources.authored_sources(root)
+                          for case in yaml.safe_load(data)["cases"].values()}
+    # Optional legacy imports are not a prerequisite for reading the retained
+    # authored corpus. Ordinary native scenarios retain their completeness gate.
+    split_scenarios = [scenario for scenario in gen_unified_golden.V1_SPLIT_SCENARIOS
+                       if scenario in retained_scenarios]
     unified_scenarios = [scenario for scenario in unified_taxonomy.UNIFIED_TAX
-                         if gen_unified_golden.scenario_families(scenario)]
+                         if gen_unified_golden.scenario_families(scenario)
+                         and (scenario not in gen_unified_golden.V1_SPLIT_SCENARIOS or scenario in split_scenarios)]
     unified_marker_families = {
         family: unified_taxonomy.marker_family(family)
         for family in sorted({*parser_declarations.get("families", {}), *parser_declarations.get("unified", {})})
@@ -348,7 +355,7 @@ def _source_metadata(root: Path = ROOT) -> dict[str, Any]:
             "shared_tools": unified_tools(),
             "parser_generations": unified_parser_generations,
             "authored_scenarios": unified_scenarios,
-            "v1_split_scenarios": list(gen_unified_golden.V1_SPLIT_SCENARIOS),
+            "v1_split_scenarios": split_scenarios,
             "scenario_families": {scenario: sorted(gen_unified_golden.scenario_families(scenario)) for scenario in unified_scenarios},
             "marker_families": unified_marker_families,
         },

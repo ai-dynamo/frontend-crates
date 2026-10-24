@@ -7,13 +7,45 @@ use anyhow::{Result, ensure};
 use flate2::{Compression, GzBuilder, bufread::GzDecoder};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::io::{Read, Write};
+use std::{
+    collections::BTreeMap,
+    io::{Read, Write},
+};
 
 /// Compact UTF-8 JSON always ends in exactly one terminal newline.
 pub fn json_bytes(value: &Value) -> Result<Vec<u8>> {
     let mut bytes = serde_json::to_vec(value)?;
     bytes.push(b'\n');
     Ok(bytes)
+}
+
+/// Stable identity bytes ignore JSON object insertion order and escape Unicode.
+pub fn canonical_json_bytes(value: &Value) -> Result<Vec<u8>> {
+    fn sorted(value: &Value) -> Value {
+        match value {
+            Value::Object(map) => Value::Object(
+                map.iter()
+                    .map(|(k, v)| (k.clone(), sorted(v)))
+                    .collect::<BTreeMap<_, _>>()
+                    .into_iter()
+                    .collect(),
+            ),
+            Value::Array(values) => Value::Array(values.iter().map(sorted).collect()),
+            other => other.clone(),
+        }
+    }
+    let text = serde_json::to_string(&sorted(value))?;
+    let mut escaped = String::new();
+    for ch in text.chars() {
+        if ch.is_ascii() {
+            escaped.push(ch);
+        } else {
+            for unit in ch.encode_utf16(&mut [0; 2]) {
+                escaped.push_str(&format!("\\u{unit:04x}"));
+            }
+        }
+    }
+    Ok(escaped.into_bytes())
 }
 
 /// Hash the exact bytes represented by a resource descriptor.

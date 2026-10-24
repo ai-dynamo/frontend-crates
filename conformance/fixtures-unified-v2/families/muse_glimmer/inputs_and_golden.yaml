@@ -3556,7 +3556,11 @@ cases:
     - UNIFIED.31-33
     - UNIFIED.34-10
     request:
-      input: "<|start|>assistant to=self<|message|>before <atem:invoke name=\"f\">\n<atem:parameter name=\"x\">é\U0001F642<par{value}</atem:parameter>\n</atem:invoke> after<|eom|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      input: '<|start|>assistant to=self<|message|>before <atem:invoke name="f">
+
+        <atem:parameter name="x">é🙂<par{value}</atem:parameter>
+
+        </atem:invoke> after<|eom|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -3615,7 +3619,7 @@ cases:
 
           '
       - delta_text: <atem:parameter name="x">
-      - delta_text: "é\U0001F642"
+      - delta_text: é🙂
       - delta_text: <par{value}</atem:parameter>
       - delta_text: '
 

@@ -1,9 +1,0 @@
-parent: dynamo_v1-2.1.0
-execution: 5e614f78d2f0c86ea84267269cceb47efce4ee40bf3fe879da9a32bb6b1cff3d
-changes:
-  prefilled_reasoning_truncated:
-    observation:
-      value:
-        assembled:
-        - kind: reasoning
-          text: checking

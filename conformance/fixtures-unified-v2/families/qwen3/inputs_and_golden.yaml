@@ -3672,7 +3672,15 @@ cases:
     - UNIFIED.31-33
     - UNIFIED.34-10
     request:
-      input: "<think>before <function=f>\n<parameter=x>\né\U0001F642<par{value}\n</parameter>\n</function> after</think>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      input: '<think>before <function=f>
+
+        <parameter=x>
+
+        é🙂<par{value}
+
+        </parameter>
+
+        </function> after</think>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -3729,7 +3737,9 @@ cases:
 
           '
       - delta_text: <parameter=x>
-      - delta_text: "\né\U0001F642"
+      - delta_text: '
+
+          é🙂'
       - delta_text: '<par{value}
 
           </parameter>'
@@ -18643,7 +18653,10 @@ cases:
     display_id: UNIFIED.36-structured_response_after_reasoning
     historical_ids: []
     request:
-      input: "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\"}"
+      input: 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+        {"location":"London","temperature":12,"conditions":"cloudy"}'
       init:
         starting_state: Reasoning
         tool_output_mode: Native
@@ -18667,15 +18680,30 @@ cases:
             - conditions
             additionalProperties: false
           rejected:
-          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n[]"
-          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":"
-          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"Tokyo\",\"temperature\":12,\"conditions\":\"cloudy\"}"
-          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\"}"
-          - "Check London météo\U0001F642 before answering; this is prose, not JSON.</think>\n\n{\"location\":\"London\",\"temperature\":12,\"conditions\":\"cloudy\",\"analysis\":\"leaked\"}"
+          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+            []'
+          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+            {"location":'
+          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+            {"location":"Tokyo","temperature":12,"conditions":"cloudy"}'
+          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+            {"location":"London"}'
+          - 'Check London météo🙂 before answering; this is prose, not JSON.</think>
+
+
+            {"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}'
       finish_reason: stop
       tools: []
       chunks:
-      - delta_text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+      - delta_text: Check London météo🙂 before answering; this is prose, not JSON.
       - delta_text: </think>
       - delta_text: '
 
@@ -18685,7 +18713,7 @@ cases:
     golden:
       assembled:
       - kind: reasoning
-        text: "Check London météo\U0001F642 before answering; this is prose, not JSON."
+        text: Check London météo🙂 before answering; this is prose, not JSON.
       - kind: text
         text: '
 

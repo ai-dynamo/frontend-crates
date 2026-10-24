@@ -83,7 +83,7 @@ These schemas describe retained non-Unified evidence. New families use the Unifi
 
 ## Capture maintenance
 
-Recorded observations and historical backfills are administrator work. Use the shared [admin workflow](../../README.md#admin-capture-updates-and-historical-backfills); contributors do not refresh these archives when editing a parser.
+Keep these archives unchanged. No backfill is needed for [the latest-capture change](../../../docs/CONFORMANCE-LATEST-PLAN.md); historical maintenance and versioned v2 removal are deferred to later PRs.
 
 ## Conformance Tests
 

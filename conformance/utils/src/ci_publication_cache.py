@@ -26,6 +26,7 @@ PARSER_REGISTRATIONS = frozenset({
     "parsers/v1/src/tool_calling/parsers.rs",
 })
 GENERATED_CATALOGS = frozenset({
+    "conformance/CONFORMANCE_v2.html",
     "conformance/CONFORMANCE_v2.json",
     "conformance/viewer-catalog.json",
     "conformance/viewer-unified-catalog.json",
@@ -49,6 +50,12 @@ def input_identity(path):
 
 
 def is_publication_input(name):
+    if name.startswith("conformance/fixtures/"):
+        return False
+    if name.startswith("conformance/fixtures-unified-v2/"):
+        # Historical bytes participate only in the explicit history identity.
+        path = Path(name)
+        return path.suffix == ".yaml" and "-" not in path.stem
     if name in {".gitattributes", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "index.html"}:
         return True
     if name in PARSER_REGISTRATIONS:
@@ -91,7 +98,7 @@ def cache_key(root, publication_policy, *, include_history=False, history_source
         raise ValueError("--history-source requires --include-history")
     history = None
     if include_history:
-        history_source = history_source or root / "conformance/historic"
+        history_source = history_source or root
         history = json.loads(subprocess.check_output([
             "python3", str(root / "conformance/utils/src/capture_sources.py"), "--root", str(root),
             "--verify-history", str(history_source)], text=True))
@@ -148,16 +155,22 @@ def stamp(directory, revision):
     publication["generated_revision"] = generated_revision or old_revision
     publication["revision"] = revision
     encoded = json.dumps(publication, separators=(",", ":"), ensure_ascii=False)
-    index_path = directory / "index.html"
-    index = index_path.read_text()
     pattern = re.compile(r'(<script type="application/json" id="conformance-publication">)(.*?)(</script>)', re.DOTALL)
-    matches = list(pattern.finditer(index))
-    if len(matches) != 1 or json.loads(matches[0].group(2)) != json.loads(publication_path.read_bytes()):
-        raise ValueError("index publication metadata does not match the publication file")
     embedded = encoded.replace("<", "\\u003c")
-    updated_index = pattern.sub(lambda match: f"{match.group(1)}{embedded}{match.group(3)}", index, count=1)
+    pages = {}
+    for path in (directory / "index.html", directory / "conformance/CONFORMANCE_v2.html"):
+        if not path.is_file() and path.name != "index.html":
+            continue
+        page = path.read_text()
+        matches = list(pattern.finditer(page))
+        if not matches and path.name != "index.html":
+            continue  # Compatibility with cached redirect-only reports.
+        if len(matches) != 1 or json.loads(matches[0].group(2)) != json.loads(publication_path.read_bytes()):
+            raise ValueError("index publication metadata does not match the publication file")
+        pages[path] = pattern.sub(lambda match: f"{match.group(1)}{embedded}{match.group(3)}", page, count=1)
     publication_path.write_text(encoded)
-    index_path.write_text(updated_index)
+    for path, page in pages.items():
+        path.write_text(page)
 
 
 def main():

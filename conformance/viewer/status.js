@@ -183,7 +183,10 @@ export async function runStatus(options, output = console.log, errorOutput = con
     const root = resolve(options.root);
     let split = true;
     try {
-      await access(resolve(root, 'conformance/captures'));
+      const resolver = resolve(root, 'conformance/utils/src/capture_sources.py');
+      await access(resolver);
+      const result = await execFileAsync(process.env.CONFORMANCE_PYTHON || 'python3', [resolver, '--root', root, '--has-latest']);
+      split = JSON.parse(result.stdout);
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       split = false;

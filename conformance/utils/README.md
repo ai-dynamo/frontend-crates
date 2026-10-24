@@ -1,6 +1,6 @@
 # Conformance/Utils
 
-Latest YAML lives under `conformance/captures/<surface>/<family>/` with generic implementation filenames. Authored requests/GOLDEN stay local. Each capture carries selected release and lineage metadata separately from inherited producer provenance. Historical evidence lives in bundled `conformance/historic/`; latest materialization and publication do not open it. Follow [local current captures and bundled history](../README.md#local-current-captures-and-bundled-history) for both report modes and capture publication.
+Latest YAML lives beside retained versioned captures at `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Each latest file seals its complete records and request bindings, with selection metadata separate from producer provenance. Latest generation and tests do not open historical captures or legacy archives. No backfill is needed; versioned v2 removal, historical moves, and compression are deferred to later PRs. Follow [the scope and acceptance plan](../../docs/CONFORMANCE-LATEST-PLAN.md) and [the report guide](../README.md#generate-the-latest-or-history-report).
 
 This directory contains parser checks, fixture tooling, and the catalog builder. Both publication modes use the existing Rust publisher and Unified viewer. Generated latest HTML is standalone; history reports carry their own on-demand data and original downloads. Historical format readers remain available for explicit qualification. They resolve independent sparse datasets against their retained authored requests, then read validated checkpoint fragments lazily from the conversion cache. `--cache-dir` selects the publisher cache; the local default is `build/conformance-cache/`. Global report envelopes and transport packs are rebuilt from those fragments when presentation or global metadata changes.
 
@@ -98,9 +98,9 @@ For viewer changes, run the shared JavaScript model tests and the maintained-vie
 
 ## 2. Update Code Or Fixtures
 
-Edit the parser and independently authored inputs/GOLDEN, then run the latest parser and fixture tests above. Latest YAML is discovered from versionless files under `captures/<mode>/<family>/`; normal tests do not sort historical releases or read bundled history. Generate the latest report after the final edit. Contributors do not backfill historical versions or rewrite recorded observations.
+Edit the parser and independently authored inputs/GOLDEN, then run the latest parser and fixture tests above. Latest YAML is discovered from versionless files under `fixtures-unified-v2/families/<family>/`; normal tests do not sort historical releases or read historical captures. Generate the latest report after the final edit. Contributors do not backfill historical versions or rewrite recorded observations.
 
-Capture maintenance and historical backfills belong to repository administrators. Use the existing transactional publisher described in [the conformance guide](../README.md#admin-capture-updates-and-historical-backfills).
+Capture maintenance and historical backfills belong to repository administrators. Use the existing transactional publisher described in [the scoped capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## 3. Inspect the Matrix
 
@@ -169,7 +169,7 @@ Python tooling under `src/` owns capture, packaging, storage validation, source 
 
 ## Local current fixtures and bundled history
 
-Local authored inputs and versionless latest capture YAML serve current parser tests. Selection headers replace the shared current index. `historic-baseline.json` fixes the bundled baseline inventory and original revision; independent immutable additions retain new evidence. Use `--include-history` for bundled historical fixture extraction, or add `--history-source /path/to/verified-history` for an alternate dataset. New captures use `capture.sh publish`; recovery and branch reconciliation share `publish_current_capture.py`.
+Local authored inputs and versionless latest capture YAML serve current parser tests. Selection headers replace the shared current index. Existing versioned v2 files and legacy archives remain unchanged at their current paths; their removal or relocation is deferred. Use `--include-history` for retained historical fixture extraction, or add `--history-source /path/to/verified-history` for an alternate dataset. In-place historical archival is read-only in this change; publication and backfill support for that retained layout is deferred to a later PR.
 
 ### Run conformance tests (fixtures extract transparently)
 
@@ -192,7 +192,7 @@ python3 conformance/utils/src/extract_fixtures.py --info
 
 ### Add or update authored Unified fixtures
 
-Register the family, author applicable scenarios and independent GOLDEN, regenerate authored YAML, and run latest tests. Generate the latest report with `conformance-publish --root . --output <site> --revision <full-commit-SHA>`. Add `--include-history` only for historical selection/comparison; `--history-source` selects alternate historical evidence. The local conversion cache defaults to `build/conformance-cache`, or use `--cache-dir <directory>`. Capture updates and historical backfills use the admin workflow in the conformance guide.
+Register the family, author applicable scenarios and independent GOLDEN, regenerate authored YAML, and run latest tests. Generate the latest report with `conformance-publish --root . --output <site> --revision <full-commit-SHA>`. Add `--include-history` only for historical selection/comparison; `--history-source` selects alternate historical evidence. The local conversion cache defaults to `build/conformance-cache`, or use `--cache-dir <directory>`. No historical backfill is required for this change; see the scoped capture plan.
 
 ## Notes
 

@@ -156,7 +156,7 @@ Rules:
 
 New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family in `conformance/utils/src/parser_families.yaml`, author applicable family-native scenarios and independent GOLDEN expectations in `conformance/utils/src/gen_unified_golden.py`, and document their contracts in `conformance/utils/lib/parsers/UNIFIED_CASES.md`. Preserve published IDs and expectations. New IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; existing numeric IDs retain their aliases.
 
-Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/captures/unified/<family>/<implementation>.yaml`. Contributors run latest tests and generate the latest report; administrators update recorded captures through the [admin workflow](../../conformance/README.md#admin-capture-updates-and-historical-backfills).
+Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests and generate the latest report; administrators update recorded captures through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 Retain archive-backed `TOOLCALLING.*` fixtures and their original observations as historical evidence. Their format below is for explicitly requested historical maintenance; normal Unified generation does not read those archives or derive GOLDEN from their results.
 
@@ -220,7 +220,7 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- -
 
 Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and recorded observations over HTTP. Missing recorded output requires an administrator capture update; it does not require contributors to capture historical versions. A live parser mismatch must be fixed or explained by a deliberate authored contract change. Do not hide it with `reason:`, `unavailable:`, stale HTML, or an unsupported GOLDEN edit.
 
-The legacy Harmony example documents retained historical fixtures. Recorded capture updates use the [admin workflow](../../conformance/README.md#admin-capture-updates-and-historical-backfills).
+The legacy Harmony example documents retained historical fixtures. Recorded capture updates use the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## Which Fixture Do I Edit?
 
@@ -268,7 +268,7 @@ Run this fixture-based check for committed YAML:
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 ```
 
-Generate and serve the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) after parser, authored input, or metadata changes. Capture updates and historical backfills use the [admin workflow](../../conformance/README.md#admin-capture-updates-and-historical-backfills).
+Generate and serve the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) after parser, authored input, or metadata changes. Capture updates and historical backfills use the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 Run the table and marker regression tests:
 

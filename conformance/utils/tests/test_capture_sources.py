@@ -75,13 +75,13 @@ def test_history_rejects_incorrect_or_incomplete_evidence(tmp_path, damage):
 
 
 def test_current_interpretation_never_opens_history(tmp_path, monkeypatch):
-    snapshot = "conformance/captures/unified/sample/dynamo_v2.yaml"
+    snapshot = "conformance/fixtures-unified-v2/families/sample/dynamo_v2.yaml"
     data = b"schema_version: 2\nrecords: {}\n"
     path = tmp_path / snapshot
     path.parent.mkdir(parents=True)
     path.write_bytes(data)
     authored = tmp_path / sources.STORE / "families/sample/inputs_and_golden.yaml"
-    authored.parent.mkdir(parents=True)
+    authored.parent.mkdir(parents=True, exist_ok=True)
     authored.write_bytes(b"cases: {}\n")
     row = {**sources.identity(snapshot, data), "source": sources.STORE + "/families/sample/dynamo_v2-1.0.0.yaml",
            "family": "sample", "implementation": "dynamo_v2", "version": "1.0.0", "surface": "unified", "mode": "unified"}
@@ -127,8 +127,8 @@ def split_evidence(tmp_path):
     resources = unified_archives.inventory(history / sources.STORE)
     resource = next(row for row in resources if row["path"].endswith("dynamo_v2-0.5.2.yaml"))
     data = unified_archives.read_source(history / sources.STORE, resource)
-    path = "conformance/captures/unified/gemma4/dynamo_v2.yaml"
-    (root / path).parent.mkdir(parents=True)
+    path = "conformance/fixtures-unified-v2/families/gemma4/dynamo_v2.yaml"
+    (root / path).parent.mkdir(parents=True, exist_ok=True)
     (root / path).write_bytes(data)
     row = {**sources.identity(path, data), "source": sources.STORE + "/" + resource["path"],
            "family": "gemma4", "implementation": "dynamo_v2", "version": "0.5.2", "mode": "unified", "surface": "unified"}
@@ -563,7 +563,7 @@ def test_publication_guard_rejects_added_capture_discovery(split_evidence, tmp_p
     data = (root / path).read_bytes().split(b"\n", 1)[1]
     row = {**document["captures"][0], "family": "another",
            "source": sources.STORE + "/families/another/dynamo_v2-0.5.2.yaml"}
-    target = root / "conformance/captures/unified/another/dynamo_v2.yaml"
+    target = root / "conformance/fixtures-unified-v2/families/another/dynamo_v2.yaml"
     target.parent.mkdir()
     target.write_bytes(sources.selected_bytes(data, row, []))
     with pytest.raises(ValueError, match="discovery changed"):
@@ -577,7 +577,7 @@ def test_independent_family_captures_publish_concurrently_without_shared_mutatio
     jobs = []
     for family in ("one", "two"):
         authored = root / "conformance/inputs/stream" / family / "case.yaml"
-        authored.parent.mkdir(parents=True)
+        authored.parent.mkdir(parents=True, exist_ok=True)
         authored.write_bytes(b"cases: {case: {model_text: hello}}\n")
         capture = tmp_path / (family + ".yaml")
         capture.write_text(unified_history.dump_yaml({"schema_version": 1, "surface": "stream", "family": family,
@@ -611,7 +611,7 @@ def test_retained_history_admin_view_ignores_mutable_latest(split_evidence, tmp_
     (history / sources.DATASETS).write_bytes(sources.encoded([{"id": "base", "root": prefix}]))
     (root / sources.PIN).write_bytes(sources.encoded(pin_history(history)))
     if damage == "pending-unrelated":
-        pending = root / "conformance/captures/unified/another/.capture-update-dynamo_v2.json"
+        pending = root / "conformance/fixtures-unified-v2/families/another/.capture-update-dynamo_v2.json"
         pending.parent.mkdir(parents=True)
         pending.write_bytes(b"{}\n")
     else:
@@ -678,7 +678,7 @@ def test_legacy_backfill_conflict_checks_older_baseline_release(tmp_path):
 def test_history_staging_rejects_conflicting_legacy_branch_additions(split_evidence, tmp_path):
     root, history, _capture, _path = split_evidence
     authored = root / "conformance/inputs/batch/demo/case.yaml"
-    authored.parent.mkdir(parents=True)
+    authored.parent.mkdir(parents=True, exist_ok=True)
     authored.write_bytes(b"family: demo\ncases: {one: {input: hello}}\n")
     branch = tmp_path / "branch"
     other_history = tmp_path / "other-history"
@@ -890,7 +890,7 @@ def test_legacy_publication_rejects_added_authored_document_before_finish(split_
     root, history, _capture, _path = split_evidence
     input_mode = "batch" if mode == "batch-on-stream" else mode
     authored = root / "conformance/inputs" / input_mode / "demo/case.yaml"
-    authored.parent.mkdir(parents=True)
+    authored.parent.mkdir(parents=True, exist_ok=True)
     authored.write_bytes(b"family: demo\ncases: {one: {input: hello}}\n")
     snapshot = {"schema_version": 1, "surface": mode, "family": "demo", "implementation": "vllm_python",
                 "version": "0.9.0", "source_records": [],
@@ -924,7 +924,7 @@ def test_current_extraction_rejects_transient_legacy_source_bytes(tmp_path, monk
     input_mode = "batch" if mode == "batch-on-stream" else mode
     authored_name = f"conformance/inputs/{input_mode}/demo/case.yaml"
     authored = root / authored_name
-    authored.parent.mkdir(parents=True)
+    authored.parent.mkdir(parents=True, exist_ok=True)
     authored.write_bytes(b"family: demo\ncases: {one: {input: original}}\n")
     capture_name = f"conformance/captures/{mode}/demo/vllm_python.yaml"
     capture = root / capture_name
@@ -1012,7 +1012,7 @@ def test_recovery_accepts_journal_completed_after_discovery(split_evidence, monk
         patch.setattr(publish_current_capture, "atomic_write", pause_after_journal)
         with pytest.raises(SystemExit, match="paused capture owner"):
             publish_current_capture.publish(root, history, capture, "gemma4", "dynamo_v2", "0.5.3")
-    journal = next((root / "conformance/captures").glob("*/*/.capture-update-*.json"))
+    journal = sources.pending_updates(root)[0]
     original_lock = publish_current_capture.capture_lock
     completed = False
 
@@ -1036,7 +1036,7 @@ def test_recovery_accepts_journal_completed_after_discovery(split_evidence, monk
 
 def test_latest_parser_store_reads_versionless_files_without_staging(split_evidence, monkeypatch):
     root, _history, _capture, _path = split_evidence
-    before = {path: path.read_bytes() for path in (root / "conformance/captures").rglob("*.yaml")}
+    before = {path: path.read_bytes() for path in (root / sources.STORE / "families").glob("*/*.yaml")}
     monkeypatch.setattr(sources, "unified_view", lambda *_: pytest.fail("latest parser staged versioned capture files"))
     monkeypatch.setattr(unified_archives, "inventory", lambda *_args, **_kwargs: pytest.fail("latest parser inventoried history"))
     monkeypatch.setattr(sources, "verify", lambda *_args: pytest.fail("latest parser verified history"))

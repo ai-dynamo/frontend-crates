@@ -30,7 +30,7 @@ import capture_sources
 
 @pytest.fixture(scope="session")
 def history_source():
-    configured = os.environ.get("CONFORMANCE_HISTORY_SOURCE", str(REPO / capture_sources.HISTORIC))
+    configured = os.environ.get("CONFORMANCE_HISTORY_SOURCE", str(capture_sources.default_history(REPO)))
     source = Path(configured).resolve(strict=True)
     pin = capture_sources.history_pin(REPO, source)
     capture_sources.verify(source, pin)

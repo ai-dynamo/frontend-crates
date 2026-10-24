@@ -13,13 +13,13 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 
 Contributors edit parsers and authored inputs/GOLDEN, run latest parser tests, and generate the latest report. Recorded observations and historical backfills are maintained by repository administrators; they are not a contributor prerequisite. Generated publication JSON stays outside Git.
 
-## Local current captures and bundled history
+## Latest captures and retained history
 
-Authored Unified requests and GOLDEN remain in `fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Authored legacy inputs remain in `inputs/<mode>/<family>/`. Latest observations live in 482 versionless family-level files at `captures/<surface>/<family>/<implementation>.yaml`. Each file carries a `capture_selection` header with its selected family, implementation, mode, release, logical source, payload checksum, and required observation lineage. Discovery replaces the shared capture index. Selection identity is separate from inherited producer provenance; an inherited observation was not executed again merely because its snapshot has a newer label.
+The implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Add 76 complete versionless latest files beside the existing captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`, across the 11 existing families. Batch and jail variants remain separate implementations. Authored requests and GOLDEN stay in each family's `inputs_and_golden.yaml`.
 
-`historic/` preserves original sparse historical YAML, archives, receipts, manifests, and interpretation evidence. Imported history and the original PR base remain separate datasets, each with its own authored requests and execution evidence. History is resolved within each dataset before release selection; the original base wins overlapping capture identities. Historical `ref: current` binds to that dataset's retained request. Complete latest snapshots seal those bindings inline. `historic-baseline.json` pins the byte inventory and original revision. `capture_sources.py` owns verification and maps physical storage to existing logical source references. Latest generation and tests do not read this directory.
+No backfill is needed. Keep all 634 existing versioned v2 capture files, all 11 authored input/GOLDEN files, and existing legacy archives unchanged at their original paths. Versioned v2 files will be removed in later PRs. Historical moves, archive expansion, and new compression are deferred. This PR does not rewrite branch history, and PR #470 stays in draft.
 
-New evidence goes into independent `historic/additions/<identity-hash>/` directories. Each directory contains a deterministic archive and an immutable descriptor named by its checksum. The archive is prepared first, then the complete directory is published with one rename. Generation derives the combined catalog, manifest, and digest privately. Contributors never update a global inventory, pin, or current index for a new capture.
+Each latest file contains complete records and sealed request bindings, so it needs no historical parent. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
 ### Generate the latest or history report
 
@@ -32,19 +32,15 @@ target/release/conformance-publish --root . --output ../reports/latest --revisio
 target/release/conformance-publish --root . --output ../reports/history --revision "$(git rev-parse HEAD)" --include-history
 ```
 
-Latest generation reads local authored inputs and latest YAML only. Its `index.html` embeds the data, styles, application, and worker needed to compare latest results and download YAML over `file://` or HTTP. History generation defaults to bundled `historic/`; `--history-source <directory>` selects an alternate verified dataset and requires `--include-history`. Historical payloads load on demand, with byte-exact original downloads retained in the generated site. The site works after the source directory becomes unavailable. Legacy historical tables remain outside the maintained Unified viewer.
+Default generation reads authored inputs and versionless latest YAML only. `--include-history` adds historical selections from the unchanged versioned YAML and legacy archives at their current paths. `--history-source <directory>` selects an alternate dataset and requires `--include-history`. Latest and history use the same HTML template and JavaScript; their generated catalogs determine which releases and comparisons are available. The local reader-facing report is `CONFORMANCE_v2.html` with its required JSON/assets.
 
-Publication verifies source bytes and the discovered latest-file set again before replacing a valid report. History mode also verifies its combined evidence identity. Latest staging and cache keys explicitly exclude `historic/**`; historical-only changes do not invalidate latest data caches. Generated HTML, catalogs, JSON, transport packs, and logs stay outside Git. The publisher uses `build/conformance-cache/` locally; `--cache-dir <directory>` selects a restored CI cache. Validated family fragments are cached before global envelopes and transport packaging. Unchanged families reuse conversion results across renderer, commit, timestamp, and storage-location changes. Missing or corrupt entries are rebuilt, and reports are replaced only after successful assembly. CI checks the complete publication cache before staging sources; PR and trusted publication caches use separate ref scopes.
+Reuse a valid complete-publication cache before source staging. On a miss, restore compatible converted fragments before assembly. Historical YAML conversion runs only for explicit history generation when matching JSON is missing, incompatible, or corrupt. Cache admission checks source and payload hashes. Conversion identities are independent of commit metadata, renderer changes, and physical relocation; final envelopes and presentation may be rebuilt. Generated JSON, HTML, assets, and caches stay outside Git.
 
-### Current parser tests and frozen qualification
+### Current parser tests and qualification
 
-Current native tests materialize local authored inputs and latest YAML through `ensure_unified_fixtures()` or `extract_fixtures.py`. They require neither a publisher build nor history access. Use `extract_fixtures.py --include-history` for bundled frozen fixtures, or supply `--history-source` for an alternate dataset. Frozen Unified selection uses `unified_history.py --history-source conformance/historic` with the selected `--capture`; it stages baseline and added evidence through the same resolver.
+Current native tests discover versionless latest files through the shared resolver and materialize only those complete snapshots plus authored inputs. They do not sort or open historical captures and require no network access. Use `extract_fixtures.py --include-history` for retained historical fixtures, or supply `--history-source` for an alternate dataset.
 
-Browser qualification uses latest publication by default. Pass `python3 -m pytest conformance/utils/tests --include-history` to collect bundled-history qualification explicitly. `CONFORMANCE_HISTORY_SOURCE` overrides the dataset, and `CONFORMANCE_HISTORY_SITE` can reuse a matching historical report. The CI workflow input `include-history` enables full historical publication and qualification, including Chromium selection, URL reload, comparison, and byte-exact downloads. Ordinary CI qualifies latest and isolated synthetic datasets.
-
-### Admin: capture updates and historical backfills
-
-Use `conformance/utils/capture.sh publish --help` for the existing maintenance command. Verify the parser release and source identity before recording results. The scoped lock and transactional publisher retain and validate immutable evidence under `historic/additions/` before replacing only the affected latest YAML. Older backfills leave latest unchanged; recovery and branch reconciliation use `publish_current_capture.py`. Capture selection identifies the selected release separately from the original observation producer. Recorded captures/history require a repository administrator approval of the current PR head through the `capture-admin-approval` check; authored inputs/GOLDEN remain ordinary contributor files. Configure that check as required in repository branch protection when deploying the workflow.
+Ordinary CI generates latest only. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
 
 ## Case applicability
 
@@ -70,14 +66,14 @@ Parser v1/v2 terminology, migration steps, and fixture ownership are documented 
 ```
 conformance/
 ├── fixtures-manifest.json                         # pins the active fixture snapshot (sha256 per shard)
-├── captures/<mode>/<family>/<implementation>.yaml  # complete latest observations
+├── fixtures-unified-v2/families/<family>/<implementation>.yaml # complete latest observations
 ├── fixtures-unified-v2/families/                    # authored inputs and GOLDEN
-├── historic/                                      # original sparse history and retained evidence
+├── fixtures-unified-v2/families/<family>/<implementation>-<version>.yaml # unchanged retained history
 ├── tests/*.rs                                     # Rust fixture tests (fixtures extracted from the store on first run)
 └── utils/                                         # catalog, check, and capture helpers
 ```
 
-`extract_fixtures.py` materializes latest YAML and authored inputs into `~/.cache/dynamo/conformance-fixtures/` for existing consumers. `--include-history` resolves the bundled sparse datasets and retained legacy archives explicitly. Materialized compatibility layout:
+`extract_fixtures.py` materializes latest YAML and authored inputs into `~/.cache/dynamo/conformance-fixtures/` for existing consumers. `--include-history` resolves the retained versioned YAML and legacy archives explicitly. Materialized compatibility layout:
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
@@ -86,9 +82,9 @@ toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Administrators maintain recorded observations and historical request bindings through the capture workflow; contributors do not recapture old versions. `dynamo_v1` and `dynamo_v2` remain separate implementations.
+**Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Administrators maintain recorded observations and historical request bindings through the capture workflow; no historical backfill is required in this PR. `dynamo_v1` and `dynamo_v2` remain separate implementations.
 
-Latest execution metadata and receipt bodies are inline in complete snapshots. Historical conversion follows each sparse dataset's original parents, execution manifests, and receipts, then caches resolved JSON fragments. Original YAML and evidence are never rewritten by generation or tests. Source catalog and published transport hashes continue to validate the bytes used by a publication.
+Latest execution metadata and receipt bodies are inline in complete snapshots. Historical conversion follows the unchanged sparse records and caches resolved JSON fragments. Original YAML and evidence are never rewritten by generation or tests. Source catalog and published transport hashes continue to validate the bytes used by a publication.
 
 ## End-to-end test cases (a separate surface, kept elsewhere)
 

@@ -339,7 +339,7 @@ pub(crate) fn family_cache_key(
             Ok((path, logical))
         })
         .collect::<Result<BTreeMap<_, _>>>()?;
-    Ok(sha256(&json_bytes(
+    Ok(sha256(&codec::canonical_json_bytes(
         &json!({"schema":1, "family":family, "sources":dependencies,
         "aliases":catalog["metadata"]["unified_aliases"],
         "policy":catalog["metadata"]["unified_capture_policy"],
@@ -1135,6 +1135,29 @@ mod tests {
         })();
         fs::remove_dir_all(stage)?;
         result
+    }
+
+    #[test]
+    fn conversion_identity_ignores_nested_object_insertion_order() -> Result<()> {
+        let first: Value = serde_json::from_str(
+            r#"{"path":"families/sample/inputs_and_golden.yaml","size":1,"sha256":"source","extra":{"a":1,"b":2}}"#,
+        )?;
+        let second: Value = serde_json::from_str(
+            r#"{"extra":{"b":2,"a":1},"sha256":"source","size":1,"path":"families/sample/inputs_and_golden.yaml"}"#,
+        )?;
+        let left: Value = serde_json::from_str(
+            r#"{"metadata":{"unified_aliases":{"owners":{},"canonical":{}},"unified_capture_policy":{"demo":{"mode":"stream","version":"1.0.0"}}}}"#,
+        )?;
+        let right: Value = serde_json::from_str(
+            r#"{"metadata":{"unified_capture_policy":{"demo":{"version":"1.0.0","mode":"stream"}},"unified_aliases":{"canonical":{},"owners":{}}}}"#,
+        )?;
+        assert_eq!(left, right);
+        assert_eq!(first, second);
+        assert_eq!(
+            family_cache_key(&[&first], &BTreeMap::new(), &left, "sample")?,
+            family_cache_key(&[&second], &BTreeMap::new(), &right, "sample")?
+        );
+        Ok(())
     }
 
     #[test]

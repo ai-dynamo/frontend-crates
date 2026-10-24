@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       include-history:
-        description: Publish bundled historical releases and comparison
+        description: Publish retained historical releases and comparison
         type: boolean
         default: false
 

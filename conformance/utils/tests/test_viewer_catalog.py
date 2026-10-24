@@ -37,6 +37,13 @@ def test_current_native_metadata_includes_gpt_and_active_structural_scenarios():
     assert set(structural) <= set(metadata["authored_scenarios"])
 
 
+def test_retained_authored_corpus_does_not_require_optional_legacy_backfill():
+    metadata = viewer_catalog._source_metadata()["unified_presentation"]
+    assert "v1_split_parallel_tool_calls" not in metadata["authored_scenarios"]
+    assert metadata["v1_split_scenarios"] == []
+    assert "tool_only" in metadata["authored_scenarios"]
+
+
 def test_catalog_cli_writes_generation_provenance_without_changing_check(tmp_path, monkeypatch):
     output = tmp_path / "catalog output.json"
     output.write_text(json.dumps({"revision": "catalog-revision"}))
@@ -318,7 +325,6 @@ def test_viewer_catalog_is_current_and_contains_only_resource_metadata():
     )
     assert result.returncode == 0, result.stderr
     catalog = json.loads((ROOT / "conformance/viewer-catalog.json").read_text())
-    manifest = json.loads((ROOT / "conformance/fixtures-manifest.json").read_text())
     assert catalog["schema"] == 1
     assert catalog["metadata"]["tabs"]
     assert catalog["metadata"]["unified_taxonomy"]
@@ -336,7 +342,7 @@ def test_viewer_catalog_is_current_and_contains_only_resource_metadata():
         source["family"] for source in catalog["sources"]["unified"]
         if source["kind"] == "inputs-and-golden"
     }
-    assert unified_families == set(parser_generations)
+    assert unified_families <= set(parser_generations)
     assert unified_families == {path.parent.name for path in
                                 (ROOT / "conformance/fixtures-unified-v2/families").glob("*/inputs_and_golden.yaml")}
     for family, generation in parser_generations.items():
@@ -353,8 +359,8 @@ def test_viewer_catalog_is_current_and_contains_only_resource_metadata():
     assert catalog["metadata"]["unified_aliases"]["owners"]
     revision = catalog.pop("revision")
     assert revision == hashlib.sha256(json.dumps(catalog, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    manifest_archives = {row["path"] for row in manifest["shards"] if row["path"].endswith(".tar.gz")}
-    assert {row["path"].removeprefix("conformance/fixtures/") for row in catalog["sources"]["archives"]} == manifest_archives
+    assert catalog["capture_generation"]["mode"] == "latest"
+    assert catalog["sources"]["archives"] == []
     forbidden = {"cells", "results", "comparison", "computed_status"}
 
     def walk(value):

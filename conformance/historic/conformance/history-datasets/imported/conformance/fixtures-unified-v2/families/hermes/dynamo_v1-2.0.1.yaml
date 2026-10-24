@@ -1,7 +1,0 @@
-parent: dynamo_v1-2.0.0
-execution: d1ab447c64f8b756eb189edac47045c6c5273d523a0d7caa1ad985713ba08cde
-changes:
-  malformed_json_then_two_valid_calls:
-    observation:
-      value:
-        assembled: []

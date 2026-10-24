@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
-family: gemma4
-mode: batch
-cases:
-  TOOLCALLING.batch.7-4.mixed_grep:
-    description: 'MiniMax M3 mixed grep null regression (PR #269).'
-    explanation: This probe exercises the MiniMax M3 native XML grammar and its v1 scalar coercion; it does not apply to this parser family.

@@ -9145,7 +9145,11 @@ cases:
     display_id: UNIFIED.34-guided_json_native_parameter_body_inside_reasoning
     historical_ids: []
     request:
-      input: "<|start|>assistant<|channel|>analysis<|message|>before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after<|end|>[{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}]"
+      input: '<|start|>assistant<|channel|>analysis<|message|>before <rfl:parameter name="x">
+
+        é🙂<par{value}
+
+        </rfl:parameter> after<|end|>[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
       init:
         starting_state: None
         tool_output_mode: GuidedJson
@@ -9202,7 +9206,9 @@ cases:
       - delta_text: <|message|>
       - delta_text: 'before '
       - delta_text: <rfl:parameter name="x">
-      - delta_text: "\né\U0001F642"
+      - delta_text: '
+
+          é🙂'
       - delta_text: '<par{value}
 
           </rfl:parameter>'
@@ -9213,7 +9219,11 @@ cases:
     golden:
       assembled:
       - kind: reasoning
-        text: "before <rfl:parameter name=\"x\">\né\U0001F642<par{value}\n</rfl:parameter> after"
+        text: 'before <rfl:parameter name="x">
+
+          é🙂<par{value}
+
+          </rfl:parameter> after'
       - kind: tool_call
         name: get_weather
         arguments:

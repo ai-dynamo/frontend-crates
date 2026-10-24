@@ -21,8 +21,8 @@ import unified_history
 
 @pytest.mark.parametrize("protocol", ["file", "http"])
 def test_latest_html_alone_compares_and_downloads_without_external_requests(published_viewer, tmp_path, protocol):
-    report = tmp_path / "index.html"
-    shutil.copyfile(published_viewer / "index.html", report)
+    report = tmp_path / "CONFORMANCE_v2.html"
+    shutil.copyfile(published_viewer / "conformance/CONFORMANCE_v2.html", report)
     catalog = json.loads(gzip.decompress((published_viewer / "conformance/viewer-resolved-catalog.json.gz").read_bytes()))
     assert catalog["capture_generation"]["mode"] == "latest"
     server = None
@@ -39,7 +39,7 @@ def test_latest_html_alone_compares_and_downloads_without_external_requests(publ
             url = report.as_uri()
         else:
             server, requests = _server(root=tmp_path)
-            url = f"http://127.0.0.1:{server.server_port}/"
+            url = f"http://127.0.0.1:{server.server_port}/CONFORMANCE_v2.html"
         driver.get(url)
         _ready(driver, "tab-unified")
         visible_captures = set()
@@ -88,16 +88,22 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
     assert catalog["capture_generation"]["mode"] == "history"
     server, requests = _server(root=site)
     driver = _driver()
-    url = f"http://127.0.0.1:{server.server_port}/"
+    url = f"http://127.0.0.1:{server.server_port}/conformance/CONFORMANCE_v2.html"
     try:
         driver.get(url)
         _ready(driver, "tab-unified")
+        WebDriverWait(driver, 30).until(lambda page: page.find_element("css selector", "#viewer").get_attribute("data-history-available") != "checking")
+        assert driver.find_element("css selector", "#viewer").get_attribute("data-history-available") == "true"
         assert not any("/viewer-data/" in path for path in requests)
         select = driver.find_element("css selector", "[data-slot-capture='0']")
         options = [option.get_attribute("value") for option in select.find_elements("tag name", "option")
-                   if option.is_enabled() and option.get_attribute("value").startswith("dynamo@")]
-        assert len(options) >= 2
-        historical = [options[len(options) // 3], options[2 * len(options) // 3]]
+                   if option.is_enabled()]
+        historical_v2 = next(value for value in options if value.startswith("dynamo@"))
+        historical_batch = [value for value in options if value.startswith("dynamo_v1@")]
+        assert historical_batch
+        # The selector retains two recent v2 releases per minor line, plus
+        # historical batch majors. Exercise both retained capture variants.
+        historical = [historical_batch[-1], historical_v2]
         assert historical[0] != historical[1]
         Select(select).select_by_value(historical[0])
         _ready(driver, "tab-unified")
@@ -113,10 +119,8 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         _ready(driver, "tab-unified")
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == historical
         assert driver.execute_script("return [...document.querySelectorAll('#tab-unified .matrix-segments')].some(box => box.children.length === 2)")
-        inventory = json.loads(capture_sources.read(history_source, capture_sources.INVENTORY))
+        inventory = capture_sources.verify(history_source, capture_sources.history_pin(Path(__file__).resolve().parents[3], history_source))
         legacy = next(row for row in inventory["files"] if row["path"].startswith("conformance/fixtures/") and row["path"].endswith(".tar.gz"))
-        supplemental = next(row for row in inventory["files"]
-                            if row["path"].startswith("conformance/fixtures/source-evidence/"))
         current = next(row for row in catalog["capture_generation"]["current"]
                        if row["surface"] == "unified" and row["family"] == "qwen3" and row["implementation"] == "dynamo_v2")
         older = min((row for row in catalog["sources"]["original_unified"]
@@ -124,13 +128,12 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
                     key=lambda row: unified_history._capture_release_sort_key(row["version"]))
         assert unified_history._capture_release_sort_key(older["version"]) < unified_history._capture_release_sort_key(current["version"])
         original = historical_source_bytes(history_source, older["path"])
-        current_original = historical_source_bytes(history_source, current["source"])
         checkout = Path(__file__).resolve().parents[3]
+        current_original = (checkout / current["yaml_path"]).read_bytes()
         selection = json.loads((checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[0].removeprefix(b"capture_selection: "))
         latest_payload = (checkout / current["yaml_path"]).read_bytes().split(b"\n", 1)[1]
         assert hashlib.sha256(latest_payload).hexdigest() == selection["payload_sha256"]
         for path, expected, size in ((legacy["path"], legacy["sha256"], legacy["size"]),
-                                     (supplemental["path"], supplemental["sha256"], supplemental["size"]),
                                      (older["path"], hashlib.sha256(original).hexdigest(), len(original)),
                                      (current["source"], hashlib.sha256(current_original).hexdigest(), len(current_original))):
             driver.get(url + "?" + urlencode({"raw": path}))

@@ -93,7 +93,12 @@ def inventory(root: Path, *, baseline_only: bool = False) -> dict:
 
 
 def history_pin(root: Path, history: Path | None = None) -> dict:
-    bundled = history is None or history.resolve() == (root / HISTORIC).resolve()
+    history = history or default_history(root)
+    if not (history / INVENTORY).is_file():
+        evidence = retained_inventory(history)
+        return {"schema": 2, "source_revision": evidence["source_revision"],
+                "inventory_sha256": digest(encoded(evidence))}
+    bundled = history.resolve() == default_history(root).resolve()
     if bundled and (root / PIN).is_file():
         return json.loads(read(root, PIN))
     history = history or root / HISTORIC
@@ -104,6 +109,11 @@ def history_pin(root: Path, history: Path | None = None) -> dict:
 
 def verify(root: Path, pin: dict | None = None) -> dict:
     root = root.absolute()
+    if not (root / INVENTORY).is_file():
+        evidence = retained_inventory(root)
+        if pin is not None and digest(encoded(evidence)) != pin["inventory_sha256"]:
+            raise ValueError("retained history changed during publication")
+        return evidence
     raw = read(root, INVENTORY)
     pin = pin or history_pin(root, root)
     if digest(raw) != pin["inventory_sha256"]:
@@ -143,8 +153,44 @@ def verify(root: Path, pin: dict | None = None) -> dict:
     return {**expected, "files": combined}
 
 
+def retained_inventory(root: Path) -> dict:
+    """Inventory existing history in place, without expanding or rewriting archives."""
+    paths = sorted(path for path in (root / STORE / "families").glob("*/*.yaml")
+                   if path.name == "inputs_and_golden.yaml" or "-" in path.stem)
+    paths.extend(sorted((root / "conformance/fixtures").rglob("*.tar.gz")))
+    paths.append(root / "conformance/fixtures-manifest.json")
+    rows = [identity(path.relative_to(root).as_posix(), read(root, path.relative_to(root).as_posix()))
+            for path in paths]
+    if not any("-" in Path(row["path"]).stem and row["path"].endswith(".yaml") for row in rows):
+        raise ValueError("no retained historical captures")
+    return {"schema": 2, "source_revision": "retained-paths", "files": sorted(rows, key=lambda row: row["path"])}
+
+
+def latest_unified_paths(root: Path):
+    """Discover latest files by name without opening any versioned capture."""
+    return sorted(path for path in (root / STORE / "families").glob("*/*.yaml")
+                  if path.stem != "inputs_and_golden" and "-" not in path.stem)
+
+
+def default_history(root: Path) -> Path:
+    if any("-" in path.stem for path in (root / STORE / "families").glob("*/*.yaml")):
+        return root
+    return root / HISTORIC
+
+
+def latest_path(mode: str, family: str, implementation: str) -> str:
+    if mode == "unified":
+        return f"{STORE}/families/{family}/{implementation}.yaml"
+    return f"conformance/captures/{mode}/{family}/{implementation}.yaml"
+
+
+def pending_updates(root: Path):
+    return sorted([*(root / STORE / "families").glob("*/.capture-update-*.json"),
+                   *(root / "conformance/captures").glob("*/*/.capture-update-*.json")])
+
+
 def is_current(root: Path) -> bool:
-    return (root / "conformance/captures").is_dir()
+    return bool(latest_unified_paths(root)) or any((root / "conformance/captures").glob("*/*/*.yaml"))
 
 
 def independent_snapshot(document: dict, authored: dict, *, source_member: str | None = None) -> dict:
@@ -174,10 +220,11 @@ def selected_bytes(data: bytes, row: dict, lineage: list[dict], *, authored: dic
 
 
 def current(root: Path) -> dict:
-    if list((root / "conformance/captures").glob("*/*/.capture-update-*.json")):
+    if pending_updates(root):
         raise ValueError("capture publication is pending; run publish_current_capture.py --recover")
     captures, lineage = [], {}
-    for path in sorted((root / "conformance/captures").glob("*/*/*.yaml")):
+    latest = latest_unified_paths(root)
+    for path in sorted([*latest, *(root / "conformance/captures").glob("*/*/*.yaml")]):
         if list(path.parent.glob(".capture-update-*.json")):
             raise ValueError("capture publication is pending; run publish_current_capture.py --recover")
         name = path.relative_to(root).as_posix()
@@ -193,7 +240,8 @@ def current(root: Path) -> dict:
             if previous != item:
                 raise ValueError("conflicting observation lineage")
         row = {**selection, **identity(name, data)}
-        if (row["surface"] != path.parent.parent.name or row["family"] != path.parent.name
+        surface = "unified" if path in latest else path.parent.parent.name
+        if (row["surface"] != surface or row["family"] != path.parent.name
                 or row["implementation"] != path.stem or row["mode"] != row["surface"]):
             raise ValueError(f"current capture identity mismatch: {name}")
         if row["surface"] == "unified":
@@ -290,15 +338,28 @@ def publication_inputs_digest(root: Path, *, include_history: bool, history_sour
     inputs.extend(identity(name, data) for name, data in authored_sources(root))
     controls = [identity(row["path"], read(root, row["path"])) for row in current(root)["captures"]]
     if include_history:
-        controls.append(identity("history-catalog", encoded(verify(history_source or root / HISTORIC))))
+        controls.append(identity("history-catalog", encoded(verify(history_source or default_history(root)))))
     # Rust preserves the parsed guard key order, then inserts inputs before controls.
     guard = json.loads(encoded({"inputs": inputs, "controls": controls}))
     value = {"inputs": guard["inputs"], "controls": guard["controls"]}
     return digest((json.dumps(value, separators=(",", ":"), ensure_ascii=False) + "\n").encode())
 
 
-def stage_history(root: Path, destination: Path, history: Path) -> dict:
+def stage_history(root: Path, destination: Path, history: Path, *, separate: bool = True) -> dict:
     evidence = verify(history, history_pin(root, history))
+    if evidence["schema"] == 2:
+        # Latest complete snapshots and historical sparse overlays have separate
+        # conversion owners; neither may become a parent of the other.
+        prefix = "conformance/history-datasets/retained" if separate else ""
+        for row in evidence["files"]:
+            name = row["path"]
+            target = destination / (prefix if name.startswith(STORE + "/") else "") / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(checked_bytes(history, row, label="retained history"))
+        if separate:
+            (destination / DATASETS).write_bytes(encoded([{"id": "retained", "root": prefix}]))
+        (destination / "conformance/history-source-identity.json").write_bytes(encoded(evidence))
+        return json.loads(read(history, "conformance/fixtures-manifest.json"))
     admitted = {row["path"]: row for row in evidence["files"]}
 
     def admitted_bytes(name):
@@ -383,7 +444,7 @@ def history_view(root: Path, history: Path):
         if (history / DATASETS).is_file():
             prepare(root, destination, include_history=True, history_source=history, retained_history_only=True)
         else:
-            stage_history(root, destination, history)
+            stage_history(root, destination, history, separate=False)
         yield destination
 
 
@@ -407,7 +468,7 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
         raise ValueError("retained history requires --include-history")
     # Admin recovery and disjoint publishers cannot depend on mutable latest YAML.
     document = {"captures": [], "lineage": []} if retained_history_only else current(root)
-    history_source = history_source or root / HISTORIC if include_history else None
+    history_source = history_source or default_history(root) if include_history else None
     pin = history_pin(root, history_source) if include_history else None
     if include_history:
         verify(history_source, pin)
@@ -431,6 +492,9 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
             raise ValueError("publication input changed during staging")
         inputs.append(identity(name, data))
     if include_history:
+        # Stage latest first; sparse retained history is a separate dataset.
+        if pin["schema"] == 2:
+            stage_unified(root, destination / STORE, document=document)
         manifest = stage_history(root, destination, history_source)
         # A historical `ref: current` names the authored document retained with
         # that evidence, not a request subsequently edited in this checkout.
@@ -441,7 +505,25 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
         copied_authored = stage_unified(root, destination / STORE, document=document)
         manifest = json.loads(read(destination, "conformance/fixtures-manifest.json"))
         manifest["shards"] = []
+    # The publisher emits this report from the shared index template. Keep an
+    # asset-graph anchor without consuming a previously generated local report.
+    (destination / "conformance/CONFORMANCE_v2.html").write_bytes(b"<!doctype html><head></head><body></body>\n")
     (destination / "conformance/fixtures-manifest.json").write_bytes(encoded(manifest))
+    if include_history and pin["schema"] == 2:
+        # The publication inventory describes the selected logical union, while
+        # the source guard below retains the unchanged physical evidence hashes.
+        resources = {row["path"].removeprefix(STORE + "/"): {"path": row["path"].removeprefix(STORE + "/"),
+                     "size": row["size"], "sha256": row["sha256"]}
+                     for row in verify(history_source, pin)["files"] if row["path"].startswith(STORE + "/")}
+        for path in (destination / STORE / "families").glob("*/*.yaml"):
+            name = path.relative_to(destination / STORE).as_posix()
+            resources[name] = identity(name, path.read_bytes())
+        rows = [resources[name] for name in sorted(resources)]
+        for shard in manifest["shards"]:
+            if shard.get("format") == "unified-history":
+                shard.update(sha256=digest(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()),
+                             size=sum(row["size"] for row in rows))
+        (destination / "conformance/fixtures-manifest.json").write_bytes(encoded(manifest))
     identities = current_identities(document)
     generation = {"mode": "history" if include_history else "latest", "current": identities,
                   "lineage": document["lineage"], "history_pin": pin}
@@ -540,10 +622,13 @@ def main() -> None:
     parser.add_argument("--publisher")
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--verify-prepared", action="store_true")
+    parser.add_argument("--has-latest", action="store_true")
     args = parser.parse_args()
     if args.history_source is not None and not args.include_history:
         parser.error("--history-source requires --include-history")
-    if args.stage_current_source is not None:
+    if args.has_latest:
+        print(json.dumps(is_current(args.root)))
+    elif args.stage_current_source is not None:
         stage_current_sources(args.root.resolve(), args.stage_current_source.resolve())
     elif args.prepare is not None:
         prepare(args.root.resolve(), args.prepare.resolve(), include_history=args.include_history,

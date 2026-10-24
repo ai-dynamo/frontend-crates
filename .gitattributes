@@ -7,7 +7,3 @@ conformance/fixtures-unified-v2/families/*/inputs_and_golden.yaml diff text ling
 conformance/fixtures-unified-v2/executions/*.yaml -diff -text linguist-generated=true
 conformance/fixtures-unified-v2/receipts/*.yaml -diff -text linguist-generated=true
 conformance/fixtures-unified-v2/versions/*.tar.gz binary linguist-generated=true
-
-# Bundled history uses ordinary Git and preserves original archive bytes.
-conformance/historic/** -filter -text
-conformance/historic/**/*.tar.gz binary

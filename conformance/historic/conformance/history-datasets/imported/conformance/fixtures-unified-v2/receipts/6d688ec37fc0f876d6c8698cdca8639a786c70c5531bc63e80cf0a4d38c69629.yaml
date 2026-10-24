@@ -1,5 +1,0 @@
-adapter_sha256: a0fe09ef6c5ec9fb3053917ee0a8de387bcd775d026993a792c4dfa11305cf88
-implementation: vllm_python
-job_sha256: 32e57cf0a337d5191de7de03ebdbd5e01160cb9a6e183e9fc7c05578fa0ed3a3
-source_sha256: f0c9dc81fa82dfe8a4775d735fe0dcbc7210faaf34715635572efb64a380c79e
-version: 0.26.0

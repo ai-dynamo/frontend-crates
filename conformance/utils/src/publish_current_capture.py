@@ -137,8 +137,9 @@ def finish(root, history, journal):
 
 def recover(root, history):
     recovered = False
-    for journal in sorted((root / "conformance/captures").glob("*/*/.capture-update-*.json")):
-        mode, family = journal.parent.parent.name, journal.parent.name
+    for journal in sources.pending_updates(root):
+        mode = "unified" if journal.parent.parent == root / sources.STORE / "families" else journal.parent.parent.name
+        family = journal.parent.name
         implementation = journal.name.removeprefix(".capture-update-").removesuffix(".json")
         with capture_lock(root, family, implementation, mode):
             if journal.exists():
@@ -178,6 +179,8 @@ def publish_loose(root: Path, history: Path, loose: Path) -> list[dict]:
 
 def publish(root: Path, history: Path, capture: Path, family: str, implementation: str, version: str,
             mode: str = "unified") -> dict:
+    if sources.history_pin(root, history)["schema"] == 2:
+        raise ValueError("retained history is read-only; historical archival and backfill are deferred to a later PR")
     for component in (family, implementation, mode, version):
         sources.relative(component)
         if "/" in component:
@@ -185,7 +188,7 @@ def publish(root: Path, history: Path, capture: Path, family: str, implementatio
     if mode != "unified" and mode not in sources.LEGACY_CORPORA:
         raise ValueError("unsupported capture mode")
     release_order(version, mode)
-    path = f"conformance/captures/{mode}/{family}/{implementation}.yaml"
+    path = sources.latest_path(mode, family, implementation)
     target = root / path
     journal = target.parent / f".capture-update-{implementation}.json"
     with capture_lock(root, family, implementation, mode):
@@ -394,7 +397,7 @@ def reconcile(root, history):
         descriptor, data = versions[newest]
         replacements.append((mode, family, implementation, descriptor, data))
     for mode, family, implementation, descriptor, data in replacements:
-        path = root / f"conformance/captures/{mode}/{family}/{implementation}.yaml"
+        path = root / sources.latest_path(mode, family, implementation)
         with capture_lock(root, family, implementation, mode):
             if list(path.parent.glob(".capture-update-*.json")):
                 raise ValueError("capture publication is pending; recover before reconciliation")

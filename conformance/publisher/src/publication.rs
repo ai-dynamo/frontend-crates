@@ -3,7 +3,7 @@
 
 //! Validated source generation, web-only assembly and transactional installation.
 use crate::{
-    codec::{json_bytes, sha256},
+    codec::{canonical_json_bytes as catalog_identity, json_bytes, sha256},
     pipeline,
     resources::{MemoryBudget, Policy},
     source::{self, STORE},
@@ -537,34 +537,6 @@ fn bundle_assets_with_installation(
     Ok(published)
 }
 
-fn catalog_identity(value: &Value) -> Result<Vec<u8>> {
-    fn sorted(value: &Value) -> Value {
-        match value {
-            Value::Object(map) => Value::Object(
-                map.iter()
-                    .map(|(k, v)| (k.clone(), sorted(v)))
-                    .collect::<BTreeMap<_, _>>()
-                    .into_iter()
-                    .collect(),
-            ),
-            Value::Array(values) => Value::Array(values.iter().map(sorted).collect()),
-            other => other.clone(),
-        }
-    }
-    let text = serde_json::to_string(&sorted(value))?;
-    let mut escaped = String::new();
-    for ch in text.chars() {
-        if ch.is_ascii() {
-            escaped.push(ch);
-        } else {
-            for unit in ch.encode_utf16(&mut [0; 2]) {
-                escaped.push_str(&format!("\\u{unit:04x}"));
-            }
-        }
-    }
-    Ok(escaped.into_bytes())
-}
-
 fn validate_catalog(catalog: &Value) -> Result<()> {
     ensure!(catalog["schema"] == 1, "unsupported catalog schema");
     let mut identity = catalog.clone();
@@ -873,7 +845,24 @@ pub fn publish_mode_cached(
         include_history || history_source.is_none(),
         "--history-source requires --include-history"
     );
-    if options.root.join("conformance/captures").is_dir() {
+    let resolver = options
+        .root
+        .join("conformance/utils/src/capture_sources.py");
+    let has_latest = if resolver.is_file() {
+        let result = Command::new(
+            std::env::var_os("CONFORMANCE_PYTHON").unwrap_or_else(|| "python3".into()),
+        )
+        .arg(&resolver)
+        .arg("--root")
+        .arg(&options.root)
+        .arg("--has-latest")
+        .output()?;
+        ensure!(result.status.success(), "latest capture discovery failed");
+        serde_json::from_slice::<bool>(&result.stdout)?
+    } else {
+        false
+    };
+    if has_latest {
         ensure!(
             !options.data_only,
             "split capture publication requires a separate output directory"
@@ -1141,7 +1130,16 @@ fn publish_prepared(options: Options, installation: Option<&Path>, cache: &Path)
                     .value,
             )?
             .replace('<', "\\u003c");
-            pipeline::write(&stage,"index.html",index.replacen("</head>",&format!("<script type=\"application/json\" id=\"conformance-publication\">{inline}</script><script type=\"application/json\" id=\"conformance-embedded\">{embedded}</script></head>"),1).as_bytes())?;
+            let page = index.replacen("</head>",&format!("<script type=\"application/json\" id=\"conformance-publication\">{inline}</script><script type=\"application/json\" id=\"conformance-embedded\">{embedded}</script></head>"),1);
+            pipeline::write(&stage, "index.html", page.as_bytes())?;
+            // Both entry points use the same page. History assets resolve from
+            // the site root when the report opens under conformance/.
+            pipeline::write(
+                &stage,
+                "conformance/CONFORMANCE_v2.html",
+                page.replacen("<head>", "<head><base href=\"../\">", 1)
+                    .as_bytes(),
+            )?;
             statistics(
                 phase,
                 "originals-assembly",

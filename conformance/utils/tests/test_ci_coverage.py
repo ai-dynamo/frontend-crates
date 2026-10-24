@@ -97,7 +97,7 @@ def test_cache_miss_hit_corruption_and_identity_invalidation(tmp_path):
 
 def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_path, monkeypatch):
     paths = [
-        "conformance/fixtures-unified-v2/versions/dynamo-0.7.18.tar.gz",
+        "conformance/fixtures-unified-v2/families/sample/dynamo_v2.yaml",
         "conformance/viewer/app.js",
         "conformance/utils/src/viewer_catalog.py",
         "conformance/utils/publication-requirements.in",
@@ -107,8 +107,11 @@ def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_pa
         "README.md",
         "conformance/utils/tests/test_ci_coverage.py",
         "conformance/viewer-catalog.json",
+        "conformance/CONFORMANCE_v2.html",
+        "conformance/fixtures-unified-v2/families/sample/dynamo_v2-0.8.0.yaml",
+        "conformance/fixtures/toolcalling/fixtures-stream-v1/dynamo_v2-0.7.18.tar.gz",
     ]
-    untracked = ["conformance/fixtures-unified-v2/families/sample/dynamo_v2-0.8.0.yaml"]
+    untracked = ["conformance/fixtures-unified-v2/families/other/dynamo_v2.yaml"]
     for path in paths:
         source = tmp_path / path
         source.parent.mkdir(parents=True, exist_ok=True)
@@ -194,6 +197,8 @@ def test_cache_stamp_updates_source_revision_without_rewriting_generation_proven
     (publication_root / "index.html").write_text(
         f'<head><script type="application/json" id="conformance-publication">{encoded}</script></head>'
     )
+    report_path = publication_root / "conformance/CONFORMANCE_v2.html"
+    report_path.write_bytes((publication_root / "index.html").read_bytes())
     payload_path = publication_root / "payload.bin"
     payload_path.write_bytes(b"\x00untouched published bytes\xff")
 
@@ -208,6 +213,7 @@ def test_cache_stamp_updates_source_revision_without_rewriting_generation_proven
 
     expected = json.loads((publication_root / "conformance/viewer-publication.json").read_bytes())
     assert expected == {**publication, "revision": revision}
+    assert report_path.read_bytes() == (publication_root / "index.html").read_bytes()
     assert payload_path.read_bytes() == b"\x00untouched published bytes\xff"
     assert expected["revision"] == revision
     assert expected["generated_revision"] == old_revision
