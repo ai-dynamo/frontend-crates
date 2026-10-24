@@ -123,6 +123,10 @@ The built-in Unified registry in `src/unified/mod.rs` contains `deepseek_v4`, `d
 
 DeepSeek V4.1 uses Unified family `deepseek_v41` for its distinct reasoning and JSON-body behavior. The legacy tool-only `deepseek_v4` selector also accepts spaced V4.1 DSML tags; that compatibility is not a replacement for the Unified V4.1 factory.
 
+## MiniMax M3
+
+MiniMax M3 uses Unified family `minimax_m3` for reasoning and tool calls. Native structural tags require schemas the backend can represent without excluding valid argument values. Schemas allowing unrestricted string arguments require fallback: Dynamo uses guided JSON for required or named tool choices, while unforced auto requests remain unconstrained. Guided JSON preserves the requested schema; argument validation remains the caller’s responsibility.
+
 ## Nemotron 3 Ultra
 
 Nemotron 3 Ultra 550B-A55B uses Unified family `nemotron_v3` (alias `nemotron3`), combining `nemotron_v3` reasoning with `qwen3_coder` XML tool calls. It shares the Qwen scanner, emitter, guided-prefix handling, and guided router. With no explicit starting state, output begins in reasoning; `Reasoning` preserves that channel and `Response` disables reasoning-marker interpretation. Reset retains the request configuration. Complete native calls are extracted even when `</think>` is omitted, and reasoning resumes after the call. Reasoning-looking markers inside argument values remain literal data. Older Deci/Ultra 253B formats use their existing separate families. This adds parser-library support only; serving integration is separate.

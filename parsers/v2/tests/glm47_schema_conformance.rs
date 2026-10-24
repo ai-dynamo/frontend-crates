@@ -34,6 +34,7 @@ fn build(tools: &[Tool], mode: StructuralTagSchemaMode) -> Value {
             schema_mode: mode,
             structured_output_schema: None,
             starts_in_reasoning: false,
+            allow_unprefilled_reasoning: false,
         })
         .unwrap()
         .unwrap()

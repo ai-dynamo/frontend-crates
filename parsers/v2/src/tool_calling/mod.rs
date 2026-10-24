@@ -27,7 +27,7 @@ mod registry;
 pub(crate) mod scan;
 pub mod traits;
 /// Vendored batch extraction copied from v1 so v2 is standalone (see module docs).
-mod v1core;
+pub(crate) mod v1core;
 
 // Vendored types that surface in the public streaming API.
 pub use v1core::{CalledFunctionStream, ToolCallResponseChunk, ToolCallType};

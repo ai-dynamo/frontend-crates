@@ -126,7 +126,7 @@ def _assert_golden_schemas(cases, tools):
                     continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
-                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam"}
+                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam", "minimax_m3"}
                     assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
                     continue
                 arguments = event["arguments"]

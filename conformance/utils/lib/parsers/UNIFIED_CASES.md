@@ -8,6 +8,12 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 ## Single-family case review
 
+MiniMax M3 joins the existing shared native and guided corpus in 0.8.0.
+Its argument-preservation and schema-coercion regressions are also exercised
+in `parsers/v2/tests/minimax_m3_unified.rs`, including every two-chunk split
+and one-character delivery. Those tests assert streaming progress before a
+call closes; assembled event parity alone cannot prove that timing contract.
+
 Always evaluate single-family tests against every registered family when adding, changing, or reviewing them, following the [case applicability policy](../../../README.md#case-applicability). If another family can express the behavior, add family-native inputs and authored expected outputs for every applicable family and use a shared section. Otherwise, explain the grammar or request-mode limitation and place the case in a named family-specific test section. Preserve published IDs, capture history, and older unmeasured results when changing section placement.
 
 The corpus guard checks every generic semantic case, independent of which family exposed the regression. A generic case must have native inputs in more than one registered family. Visual folding does not confer parent coverage: semantic variants must independently span families. Only explicit `CaseVariant.coverage_parent` aliases combine equivalent native requests or retained delivery variants; each retains its individual input, expectation, and captures. A standalone case with one family must gain applicable native inputs or move to a named family section. The rendered-model guard checks the resulting columns as well as the authored corpus.
@@ -71,7 +77,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The eleven native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
+The twelve native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, `minimax_m3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
 
 The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Muse Spark Open, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. GPT-OSS captures before v2 0.7.28 use v1 reasoning followed by the v2 Harmony tool parser and are labeled split; v2 0.7.28 and later use native UnifiedParser. The split Harmony path remains covered by whole-input and every-boundary comparisons against the same GOLDEN.
 
@@ -170,10 +176,11 @@ New Unified IDs use `UNIFIED.<group>-<description>`, for example `UNIFIED.7-arg_
 - **`12-tool_in_reason_with_text`** (`tool_in_reason_with_text`) 12-2 WITH visible narration before and after — text → reason → call → reason → text. Golden breaks out and keeps the surrounding text; engines leak the nested markup. Class LEAK.
 
 ### DeepSeek V4.1 applicability
-- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 276 of the 392 taxonomy cases for this family.
+- DeepSeek V4.1 uses the ordered Unified contract for native DSML calls, reasoning interleaving, guided JSON, prefilled states, and dotted tool names. The current corpus emits 276 of the 394 taxonomy cases for this family.
 - Generated cases include `30-guided_json_gt_in_argument_bare_opener`, the single-family `deepseek-json_invocation_body` case, applicable Guided Decoding cases in groups 31 through 35 (exclusions listed below), the marker-discriminating Response row `50-prefilled_response_reasoning_markers_literal`, and the 40-series cases `40-prefilled_reasoning_with_guided_json`, `40-native_quoted_control_in_reasoning`, and `40-native_single_quote_contraction_reasoning`, plus `41-prefilled_reasoning_redundant_opener` through `41-prefilled_reasoning_truncated`.
-- The 116 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
+- The 118 omitted cases require another family's framing or schema, or repeat a transition already covered for DeepSeek V4.1. Family applicability comes from `scenario_families()` and the serialized request. Family-specific grammars and schemas require explicit exclusions; Response-prefilled native object, array, and string ownership now cover each applicable native family. Prefilled rows that duplicate another state transition remain excluded for DeepSeek V4.1.
 
+- The two `minimax_m3-guided_native_after_prefilled_reasoning_*` rows cover M3 recovery and are scoped to its conversion.
 - `30-guided_json_gt_in_argument_bare_opener` retains the historical bare header with no tool name. `34-guided_json_narrated_invoke_in_reasoning` uses an unfinished DSML invoke header inside reasoning rather than a completed calls-block opener.
 
 <!-- TODO: Verify the historical aliases for the 14 cases deferred from PR #232 after the taxonomy merge: 1-2, 30-14, 31-31 through 31-40, and 50-1/2. Preserve their historical IDs. -->
@@ -573,3 +580,20 @@ Literal spellings supplied as ordinary tokens, rather than actual control-token
 IDs, have independent native Rust streaming coverage.
 
 GPT-OSS cases also cover channel-first and template tool headers, unknown and empty tools, control spellings inside argument strings, interrupted reasoning, invalid tool bodies followed by another call, and truncated messages at EOF or before resynchronization. Native arguments still stream before handoff; the legacy tool projection and the Unified parser share the runtime.
+
+The live M3 native-output/JSON-guidance mismatch adds
+`minimax_m3-guided_native_after_prefilled_reasoning_required` and
+`minimax_m3-guided_native_after_prefilled_reasoning_named`. These cases verify
+M3's native-call recovery after prompt-prefilled reasoning under required and
+named tool choice. Coverage is scoped to M3 for this conversion; existing
+families retain their authored cases and captures. The existing
+`32-guided_json_native_markup_only` input is unchanged; its M3 oracle requires
+the recovered native call. Separate M3 split tests cover early arguments,
+parallel indices, named-tool rejection, reset, and literal native headers
+inside JSON strings.
+
+The M3 Rust schema regressions include patterns adapted from OpenRouter's
+[tool-call format and realistic schema-fuzz datasets](https://github.com/OpenRouterTeam/benchmark-harness/tree/ccab6a7988c181f396331ae46474a8e7e18eaf80/src/benchmarks),
+licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+They replace benchmark prompts with authored native parser inputs and expected
+argument values.

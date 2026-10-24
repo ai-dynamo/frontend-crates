@@ -311,6 +311,20 @@ unified:
     tool_parser: kimi_k3
     golden_spec: kimi_k3.yaml
     leak_markers: ["<|open|>", "<|close|>", "<|sep|>", "<|end_of_msg|>"]
+  minimax_m3:
+    capture_pipelines:
+      vllm_python: ["minimax_m3", "minimax_m3"]
+      sglang_python: ["minimax-m3", "minimax-m3"]
+      dynamo_v1: ["minimax_m3", "minimax_m3"]
+    vllm_tokenizer_markers: ["<mm:think>", "</mm:think>", "]<]minimax[>["]
+    registry: minimax_m3
+    native: true
+    scenario_profile: native
+    reasoning_grammar: minimax_m3
+    reasoning_parser: minimax_m3
+    tool_parser: minimax_m3
+    golden_spec: minimax_m3.yaml
+    leak_markers: ["]<]minimax[>["]
   muse_glimmer:
     capture_pipelines:
       sglang_python: ["muse", "muse"]
@@ -497,19 +511,6 @@ unified:
       - minimax_m2
       - minimax_m2
     reasoning_grammar: think
-  minimax_m3:
-    registry: minimax_m3
-    native: false
-    scenario_profile: native
-    reasoning_parser: minimax_m3
-    tool_parser: minimax_m3
-    golden_spec: minimax_m3.yaml
-    leak_markers: []
-    capture_pipelines:
-      dynamo_v1:
-      - minimax_m3
-      - minimax_m3
-    reasoning_grammar: minimax_m3
   mistral:
     registry: mistral
     native: false
@@ -696,6 +697,7 @@ unified_display:
     qwen3: 'Family-specific tests: Qwen3 and Nemotron v3 XML'
     nemotron_v3: 'Single Family Test: Nemotron v3 default reasoning'
     kimi: 'Single Family Test: Kimi K3 XTML'
+    minimax_m3: 'Single Family Test: MiniMax M3 native recovery'
     muse: 'Single Family Test: Muse-specific'
     muse_spark: 'Single Family Test: Muse Spark message phases'
     gpt_oss: 'Single Family Test: GPT-OSS Harmony'

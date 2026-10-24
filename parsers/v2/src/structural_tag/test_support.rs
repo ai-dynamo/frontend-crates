@@ -61,6 +61,7 @@ pub(super) fn build(
             schema_mode,
             structured_output_schema: None,
             starts_in_reasoning,
+            allow_unprefilled_reasoning: false,
         },
     )
 }

@@ -168,6 +168,8 @@ UNIFIED_TAX = {
     "guided_json_wrapped_in_tool_markup": (32, "3"),
     "guided_json_orphan_tool_close_before_payload": (32, "4"),
     "guided_json_native_markup_only": (32, "5"),
+    "guided_native_after_prefilled_reasoning_required": ("minimax_m3", "1"),
+    "guided_native_after_prefilled_reasoning_named": ("minimax_m3", "2"),
     # Generated crossings (`_guided_product` in gen_unified_golden.py): payload
     # shape x surrounding grammar. The 31-12 through 31-20 rows are the quadrant that had ZERO
     # cases — markup present AND no call recoverable — where both the P2 recovery

@@ -82,6 +82,9 @@ pub struct StructuralTagContext<'a> {
     pub structured_output_schema: Option<&'a Value>,
     /// Whether generation starts inside a reasoning block opened by the prompt.
     pub starts_in_reasoning: bool,
+    /// Whether the model may open an initial reasoning block itself.
+    /// This is distinct from a prompt-prefilled block and from disabled reasoning.
+    pub allow_unprefilled_reasoning: bool,
 }
 
 #[cfg(test)]

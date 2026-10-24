@@ -101,6 +101,7 @@ GUIDED_FAMILIES = {f for f in FAMILIES if _MANIFEST[f].get("guided_tool_output",
 
 GRAMMAR_NOTE = {
     "beam": "Beam channel grammar (NOT Harmony): reasoning `<|start|>assistant<|channel|>analysis<|message|>...<|end|>`, visible `<|start|>assistant<|channel|>final<|message|>...<|return|>`, tool `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"KEY\">\\nVALUE\\n</rfl:parameter><|call|>` (a call dispatches only once `<|call|>`/`<|end|>` arrives; analysis closes only on `<|end|>`; one LF is stripped at each value edge).",
+    "minimax_m3": "reasoning `<mm:think>...</mm:think>`; namespace `]<]minimax[>[` before tool_call, invoke, and recursively named parameter tags.",
     "deepseek_v41": "prompt-prefilled reasoning ends at `</think>`; `<｜DSML｜ calls>` contains V4.1 invoke and parameter tags and ends the turn.",
     "deepseek_v4": "reasoning `<think>...</think>`, tool `<｜DSML｜tool_calls><｜DSML｜invoke name=\"NAME\"><｜DSML｜parameter name=\"KEY\" string=\"true\">VALUE</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜tool_calls>`.",
     "gemma4": "reasoning `<|channel>thought\\n...<channel|>`, tool `<|tool_call>call:NAME{key:<|\"|>value<|\"|>}<tool_call|>` (string values wrapped in `<|\"|>`; an embedded `<tool_call|>` inside a `<|\"|>` string is data, not the end marker).",
@@ -308,6 +309,9 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
     if fam == "gemma4":
         native_values = {key: value for key, value in arguments.items()}
         return f"<|tool_call>call:{name}{_gemma_value(native_values)}<tool_call|>"
+    if fam == "minimax_m3":
+        params = "".join(f"]<]minimax[>[<{key}>{value}]<]minimax[>[</{key}>" for key, value in raw.items())
+        return f']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="{name}">{params}]<]minimax[>[</invoke>]<]minimax[>[</tool_call>'
     if fam == "qwen3":
         params = "\n".join(
             f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw.items()
@@ -570,6 +574,8 @@ def control_tokens(fam):
 
     Returns `(reason_open, reason_close, tool_open, tool_close)`.
     """
+    if fam == "minimax_m3":
+        return "<mm:think>", "</mm:think>", "]<]minimax[>[<tool_call>", "]<]minimax[>[</tool_call>"
     if fam == "gpt_oss":
         return ("<|start|>assistant<|channel|>analysis<|message|>",
                 "<|end|>", "<|call|>", "<|call|>")
@@ -623,6 +629,7 @@ def guided_named_invoke_prefix(fam):
     return {
         # Beam routes on the recipient in the message header, before the channel marker.
         "beam": "<|start|>assistant to=get_weather",
+        "minimax_m3": ']<]minimax[>[<invoke name="get_weather"',
         "deepseek_v4": '<｜DSML｜invoke name="get_weather"',
         "deepseek_v41": '<｜DSML｜ invoke name="get_weather"',
         "gemma4": "call:get_weather",
@@ -769,12 +776,12 @@ CLEAN = [
      "Arbitrary visible prose AFTER the tool call (the point is it could be ANY content, so it must survive). Policy P1 (best-effort recovery) — trailing model text is preserved, not suppressed.",
      ["P1"], [("tool", "get_weather", "city", "Paris"),
               ("text", "The forecast shows clear skies for the rest of the week.")],
-     {"gemma4": M, "qwen3": M, "muse_glimmer": V_MUSE, "gpt_oss": M,
+     {"gemma4": M, "qwen3": M, "minimax_m3": M, "muse_glimmer": V_MUSE, "gpt_oss": M,
     "muse_spark": V_MUSE_SPARK,
       "beam": VLLM_UNCAPTURABLE["beam"],
       "kimi_k3": M,
       "kimi_k2": D("LOSS", "kimi config stays in a tool state and SUPPRESSES trailing text -> arbitrary content dropped; violates best-effort recovery (preserve visible prose, conformance/README.md:142)")},
-     {"gemma4": M, "qwen3": M,
+     {"gemma4": M, "qwen3": M, "minimax_m3": M,
       "beam": {"verdict": "match", "note": "the call ends at its own `<|call|>`; the following `final` message is ordinary content"},
       "muse_glimmer": {"verdict": "match", "note": "the tool channel closes at its own `<|eom|>`, so the following `to=user` message is ordinary content"},
       "kimi_k3": {"verdict": "match", "note": "K3 response framing preserves visible prose after the tools channel"},
@@ -864,6 +871,7 @@ _MIXED_CONTROL_STRINGS = {
             # Every Beam channel terminator, plus a header opener; only the parameter
             # closer is structural inside a value, so all of them stay data.
             "beam": "<|call|> <|end|> <|return|> <|start|>",
+            "minimax_m3": "]<]minimax[>[<tool_call> ]<]minimax[>[</tool_call> ]<]minimax[>[</invoke>",
         }.items()
     },
 }
@@ -2473,7 +2481,9 @@ EDGE += [
      {"finish_reason": "stop"},
      guided_surroundings(
          lambda fam: r_tool(fam, "get_weather", "city", "Paris", 0),
-         "native markup is stripped as one control-only turn, independent of chunking")),
+         "native markup is stripped as one control-only turn, independent of chunking",
+         lambda fam: ([{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}]
+                      if fam == "minimax_m3" else []))),
 
     # Missing reasoning terminator CROSSED with a guided wrapper. `31-7`
     # (`guided_json_wrapped_in_tool_markup`) already pins a wrapper around the payload
@@ -2495,6 +2505,22 @@ EDGE += [
          "unterminated thought ends at the wrapper; the wrapped payload still dispatches")),
 ]
 
+
+# M3 alone opts into native recovery after JSON guidance. Keep the live M3
+# regression in this conversion; existing families retain their authored corpus.
+for _named in [False, True]:
+    _reason = [{"kind":"reasoning","text":"Check."}]
+    EDGE.append((
+        "guided_native_after_prefilled_reasoning_" + ("named" if _named else "required"),
+        "M3 emits a native call after closing prompt-prefilled reasoning despite JSON guidance. The parser recovers the call and emits the reasoning exactly once.",
+        ["I6", "I7"], _reason + [{"kind":"tool_call","name":"get_weather","arguments":{"city":"Paris"}}],
+        {"starting_state":"Reasoning", "tool_output_mode":"GuidedJson", "named_tool":"get_weather" if _named else None},
+        {"finish_reason":"stop"},
+        OnlyFamilies({"minimax_m3": (
+            "Check.</mm:think>" + r_tool("minimax_m3", "get_weather", "city", "Paris", 0),
+            D("UNSUPPORTED", "vLLM base case does not use GuidedJson"), M,
+        )}),
+    ))
 
 # A control marker in a response that the prompt already opened is text, not structure.
 # Muse exercises this through its unframed recipient headers; marker-pair families use
@@ -3258,6 +3284,7 @@ _NATIVE_QUOTED_CONTROL = {
     "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
     "beam": "<|start|>assistant to=get_weather<|channel|>",
     "qwen3": "<tool_call>",
+    "minimax_m3": "]<]minimax[>[<tool_call>",
 }
 
 _NATIVE_QUOTED_CONTROL["muse_spark"] = _NATIVE_QUOTED_CONTROL["muse_glimmer"]
@@ -3677,6 +3704,42 @@ EDGE.append((
     _DSML_INIT,
     OnlyFamilies({f: (r_reason(f, "Check weather.") + "\n\n" + r_dsml_template_call(f), M, M) for f in _DSML_FAMILIES}),
 ))
+
+
+# Native M3 spellings for shared edge scenarios. These are authored alongside
+# the shared event oracle; no peer parser output is used to construct them.
+_M3_WEATHER = r_tool("minimax_m3", "get_weather", "city", "Paris", 0)
+_M3_TRUNCATED = ']<]minimax[>[<tool_call>]<]minimax[>[<invoke name="get_weather">]<]minimax[>[<city>Par'
+_M3_LITERAL_REASON = r_reason("minimax_m3", "reconsider")
+_M3_REASON_ARGUMENT = r_tool("minimax_m3", "log", "note", _M3_LITERAL_REASON, 0)
+_M3_NESTED_REASON = "<mm:think>I should check. " + _M3_WEATHER + " now answer</mm:think>"
+_M3_LITERAL_MARKER = "git log ]<]minimax[>[</tool_call> --oneline"
+_M3_MIXED_MARKERS = ' <mm:think>quoted</mm:think> ]<]minimax[>[<tool_call> ]<]minimax[>[</tool_call> ]<]minimax[>[</invoke> &amp; "x"\\\n '
+_M3_EDGE_INPUTS = {
+    "truncated_tool_eof": (r_reason("minimax_m3", "ok") + _M3_TRUNCATED,),
+    "reason_unterminated": ("<mm:think>thinking but stream ends",),
+    "arg_marker_in_string": (r_tool("minimax_m3", "run", "cmd", _M3_LITERAL_MARKER, 0), _M3_LITERAL_MARKER),
+    "orphan_close_after_prose": ("I will check that. ]<]minimax[>[</tool_call>",),
+    "empty_args": (r_tool_arguments("minimax_m3", "get_weather", {}, 0),),
+    "tool_no_close": (_M3_WEATHER.removesuffix("]<]minimax[>[</tool_call>"),),
+    "reason_markup_in_arg": (_M3_REASON_ARGUMENT, _M3_LITERAL_REASON),
+    "tool_in_reason": (_M3_NESTED_REASON,),
+    "reason_markup_in_arg_with_text": ("Logging now: " + _M3_REASON_ARGUMENT + " done.", _M3_LITERAL_REASON),
+    "tool_in_reason_with_text": ("Sure. " + _M3_NESTED_REASON + " Here you go.",),
+    "two_adjacent_reason_spans": (r_reason("minimax_m3", "first") + r_reason("minimax_m3", "\nsecond") + "done",),
+    "prefilled_reasoning_with_tool": ("checking weather</mm:think>" + _M3_WEATHER,),
+    "prefilled_reasoning_then_text_then_tool": ("weighing options</mm:think>Here's what I found: " + _M3_WEATHER,),
+    "prefilled_reasoning_then_text": ("no tool needed</mm:think>The answer is 42.",),
+    "prefilled_reasoning_redundant_opener": (r_reason("minimax_m3", "checking weather") + r_tool("minimax_m3", "get_weather", "city", "London", 0),),
+    "prefilled_reasoning_truncated": ("analyzing data</mm:think>" + _M3_TRUNCATED,),
+    "prefilled_response_reasoning_markers_literal": (r_reason("minimax_m3", "literal") + " then a call" + _M3_WEATHER, r_reason("minimax_m3", "literal") + " then a call"),
+    "deepseek_v41_mixed_control_text_in_string": (r_tool("minimax_m3", "f", "x", _M3_MIXED_MARKERS, 0), _M3_MIXED_MARKERS),
+}
+for _scenario in EDGE:
+    _per_family = _scenario[-2] if len(_scenario) == 8 else _scenario[-1]
+    if _scenario[0] in _M3_EDGE_INPUTS:
+        _input, *_rest = _M3_EDGE_INPUTS[_scenario[0]]
+        _per_family["minimax_m3"] = (_input, M, M, *_rest)
 
 
 DEFAULT_REASONING_CASES = [
@@ -4148,6 +4211,12 @@ def _build_cases(fam):
             "finish_reason": "stop",
         }
     cases.update(_build_edge_cases(fam, EDGE))
+    if fam == "minimax_m3":
+        cases[f"UNIFIED.guided_json_native_markup_only.{fam}"]["description"] = (
+            "M3 emits a complete native tool call despite JSON guidance. The parser "
+            "recovers the call at every stream split without leaking argument bodies "
+            "as visible text (`I6`)."
+        )
     if fam in ("gemma4", "deepseek_v41"):
         case = cases[f"UNIFIED.malformed_json_then_two_valid_calls.{fam}"]
         case["expect"]["dynamo_current"] = case["expect"]["dynamo"]

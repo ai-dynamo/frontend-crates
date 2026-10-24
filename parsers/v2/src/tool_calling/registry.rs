@@ -61,7 +61,7 @@ family_registry! {
         Some(&crate::structural_tag::builders::MUSE_SPARK)
     ),
     "minimax_m2"   => (MiniMaxM2ToolStreamParser::create, None),
-    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, None),
+    "minimax_m3"   => (MiniMaxM3ToolStreamParser::create, Some(&crate::structural_tag::builders::MINIMAX_M3)),
     "gemma4"       => (Gemma4ToolStreamParser::create, None),
     "glm47"        => (
         Glm47ToolStreamParser::create,
@@ -167,6 +167,7 @@ mod tests {
                     schema_mode: StructuralTagSchemaMode::Auto,
                     structured_output_schema: None,
                     starts_in_reasoning: false,
+                    allow_unprefilled_reasoning: false,
                 })
                 .unwrap_or_else(|error| panic!("{family} should build: {error}"))
                 .unwrap_or_else(|| panic!("{family} should need a structural tag"));
