@@ -58,6 +58,7 @@ pub fn get_tool_parser_map() -> &'static HashMap<&'static str, ToolCallConfig> {
         map.insert("deepseek_v3_1", ToolCallConfig::deepseek_v3_1());
         map.insert("deepseek_v3_2", ToolCallConfig::deepseek_v3_2());
         map.insert("deepseek_v4", ToolCallConfig::deepseek_v4());
+        map.insert("deepseek_v41", ToolCallConfig::deepseek_v41());
         map.insert("deepseek-v4", ToolCallConfig::deepseek_v4());
         map.insert("deepseekv4", ToolCallConfig::deepseek_v4());
         map.insert("qwen3_coder", ToolCallConfig::qwen3_coder());

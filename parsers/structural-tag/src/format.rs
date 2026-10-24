@@ -120,6 +120,9 @@ pub enum JsonSchemaStyle {
     MinimaxXml,
     /// DeepSeek DSML XML parameter format.
     DeepseekXml,
+    /// DeepSeek V4.1 space-prefixed DSML parameters with raw string values.
+    #[serde(rename = "deepseek_v4_1_xml")]
+    DeepseekV41Xml,
 }
 
 /// `json_schema` content format.
