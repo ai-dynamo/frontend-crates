@@ -20,7 +20,7 @@
 //! * [`WrappedBlockScanner`] — the whole drain loop for the five families
 //!   whose grammar is `BLOCK_START (INVOKE .. INVOKE_END)* BLOCK_END` with a
 //!   bare-invoke back-off: qwen3_coder, minimax_m2, minimax_m3, kimi_k2, gemma4.
-//!   Gemma uses [`InvokeScan`] to supply grammar-aware opener, end, and holdback
+//!   Gemma uses [`InvokeBoundary`] to supply grammar-aware opener, end, and holdback
 //!   decisions where static markers cannot distinguish structure from data.
 //!   dsml (incremental invoke-header state), glm47 (identifier-anchored bare
 //!   recovery) keep bespoke drains and share the primitives.
@@ -1218,6 +1218,7 @@ pub(crate) enum InvokeLatch {
 /// Grammar-aware overrides for locating invokes when marker-only scanning is
 /// insufficient.
 ///
+#[cfg(test)]
 #[derive(Clone, Copy)]
 pub(crate) struct InvokeScan {
     /// End of the invoke that begins at byte zero, just past its closer. `flush`
@@ -1240,6 +1241,7 @@ pub(crate) struct InvokeScan {
 /// Immutable family recipe for a request-local invoke boundary.
 #[derive(Clone, Copy)]
 pub(crate) enum InvokeBoundaryFactory {
+    #[cfg(test)]
     Stateless(InvokeScan),
     Custom(fn() -> Box<dyn InvokeBoundary>),
     /// Native XML boundaries with a separate guided-prefix grammar.
@@ -1262,12 +1264,14 @@ pub(crate) enum GuidedInvokePrefix {
 }
 
 impl InvokeBoundaryFactory {
+    #[cfg(test)]
     pub(crate) const fn stateless(stateless: InvokeScan) -> Self {
         Self::Stateless(stateless)
     }
 
     pub(crate) fn create(self) -> Box<dyn InvokeBoundary> {
         match self {
+            #[cfg(test)]
             Self::Stateless(scan) => Box::new(StatelessInvokeBoundary { scan }),
             Self::Custom(create) | Self::NativeOnly(create) => create(),
         }
@@ -1387,10 +1391,12 @@ pub(crate) trait InvokeBoundary: Send {
     }
 }
 
+#[cfg(test)]
 struct StatelessInvokeBoundary {
     scan: InvokeScan,
 }
 
+#[cfg(test)]
 impl InvokeBoundary for StatelessInvokeBoundary {
     fn end_append(
         &mut self,
@@ -1488,6 +1494,9 @@ pub(crate) struct ReasoningSpec {
 /// owned field is the ordinary way to do that — no `RefCell` needed, since
 /// parsing and the later lookup never run at the same time.
 pub(crate) trait InvokeEmitter {
+    /// Forget active argument progress while retaining identities already published.
+    fn abandon_invoke(&mut self) {}
+
     /// Emit an append-safe update while an invoke is still open. Families that
     /// cannot prove a fragment will survive their final typing leave this as a
     /// no-op and continue to emit only at the invoke close.
@@ -1854,8 +1863,28 @@ impl ProseControlState {
 fn find_first(text: &str, markers: &[String]) -> Option<(usize, usize)> {
     markers
         .iter()
-        .filter_map(|m| text.find(m.as_str()).map(|p| (p, m.len())))
+        .filter_map(|m| find_marker(text, m).map(|p| (p, m.len())))
         .min_by_key(|(p, _)| *p)
+}
+
+fn find_marker(text: &str, marker: &str) -> Option<usize> {
+    let found = text.find(marker);
+    #[cfg(test)]
+    crate::tool_calling::kimi_progress::count_work(
+        0,
+        found.map_or(text.len(), |at| at + marker.len()),
+    );
+    found
+}
+
+fn marker_search_prefix<'a>(text: &'a str, before: usize, markers: &[String]) -> &'a str {
+    let mut end = before
+        .saturating_add(markers.iter().map(String::len).max().unwrap_or(0))
+        .min(text.len());
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text[..end]
 }
 
 /// Same as [`find_first`], but a marker-looking byte sequence inside a
@@ -1875,6 +1904,8 @@ where
 {
     let mut quoted = JsonStringState::default();
     for (idx, c) in text.char_indices() {
+        #[cfg(test)]
+        crate::tool_calling::kimi_progress::count_work(0, c.len_utf8());
         if quoted.advance(c) {
             continue;
         }
@@ -2019,6 +2050,8 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     pending_parse_error: Option<DeferredParseError>,
     invoke_boundary: Option<Box<dyn InvokeBoundary>>,
     invoke_boundary_len: usize,
+    anchored_invoke: bool,
+    provisional_invoke: bool,
     envelope: Option<&'static ChannelEnvelope>,
     /// The guided reader's view of the envelope: the same header rules as fn hooks.
     guided_channel: Option<GuidedChannel>,
@@ -2075,6 +2108,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             header_slot: true,
             policy: ToolCallPolicy::default(),
             finish_at_eos: false,
+            anchored_invoke: false,
+            provisional_invoke: false,
         }
     }
 
@@ -2313,6 +2348,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         self.suppress_normal_text = false;
         self.next_index = 0;
         self.pending_parse_error = None;
+        self.provisional_invoke = false;
         self.emitter.reset();
         self.reset_invoke_boundary();
         self.env_mode = self.env_initial;
@@ -2382,7 +2418,16 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
     }
 
+    fn abandon_invoke(&mut self) {
+        if std::mem::take(&mut self.provisional_invoke) {
+            self.next_index += 1;
+        }
+        self.emitter.abandon_invoke();
+        self.reset_invoke_boundary();
+    }
+
     fn reset_invoke_boundary(&mut self) {
+        self.anchored_invoke = false;
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.reset();
         }
@@ -2411,10 +2456,10 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         }
         let invoke_start = &self.spec.invoke_start;
         let Some(boundary) = self.invoke_boundary.as_ref() else {
-            return text.find(invoke_start.as_str());
+            return find_marker(text, invoke_start);
         };
         let mut cursor = 0;
-        while let Some(relative) = text[cursor..].find(invoke_start.as_str()) {
+        while let Some(relative) = find_marker(&text[cursor..], invoke_start) {
             let at = cursor + relative;
             if (at > 0 || boundary.accepts_buffer_start(self.buffer_previous))
                 && boundary.opens(text, at)
@@ -2427,7 +2472,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     }
 
     fn active_invoke_start(&self) -> Option<usize> {
-        if self.block_is_invoke() {
+        if self.anchored_invoke || self.block_is_invoke() {
             Some(0)
         } else {
             self.find_invoke_start(&self.buffer)
@@ -2436,6 +2481,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
     /// Offset just past the closer of the invoke beginning at byte zero.
     fn invoke_end_at(&mut self, flush: bool) -> Option<usize> {
+        self.anchored_invoke = true;
         match self.invoke_boundary.as_mut() {
             Some(boundary) => {
                 let append = &self.buffer[self.invoke_boundary_len..];
@@ -3250,7 +3296,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             return self.drain_envelope(env, flush, out);
         }
         loop {
-            if !self.in_block {
+            if !self.in_block && !self.anchored_invoke {
                 let control = self.prose.classify(
                     &self.buffer,
                     self.spec
@@ -3318,10 +3364,19 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             if self.in_block {
                 let invoke_start = self.active_invoke_start();
 
+                // Only a block closer beginning before this invocation can win.
+                // Include enough suffix to recognize a closer crossing the bound.
+                let block_search = marker_search_prefix(
+                    &self.buffer,
+                    invoke_start.unwrap_or(self.buffer.len()),
+                    &self.spec.block_ends,
+                );
+
                 // Close the block once no more complete invokes precede its end.
-                if !self.block_is_invoke()
+                if !self.anchored_invoke
+                    && !self.block_is_invoke()
                     && let Some((end_pos, end_len)) =
-                        find_first(&self.buffer, &self.spec.block_ends)
+                        find_first(block_search, &self.spec.block_ends)
                 {
                     let invoke_before_end = invoke_start.is_some_and(|start| start < end_pos);
                     if !invoke_before_end {
@@ -3346,8 +3401,21 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream dropped incomplete block at EOF"
                         );
                         self.consume_buffer_prefix(self.buffer.len());
+                        self.abandon_invoke();
                         self.clear_uncommitted_block();
                         self.in_block = false;
+                    } else {
+                        // Noise before the next invocation belongs to the block,
+                        // but retaining it in the search buffer rescans it on every
+                        // append. Preserve partial markers and rejected candidates.
+                        let stable = self.buffer.len().saturating_sub(self.holdback_len());
+                        let keep_from = find_marker(&self.buffer, &self.spec.invoke_start)
+                            .unwrap_or(self.buffer.len());
+                        let consumed = stable.min(keep_from);
+                        if self.pending_parse_error.is_none() {
+                            self.uncommitted_block.push_str(&self.buffer[..consumed]);
+                        }
+                        self.consume_buffer_prefix(consumed);
                     }
                     break;
                 };
@@ -3364,8 +3432,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             .emitter
                             .parse_partial_invoke(&self.buffer, self.next_index)?
                     {
+                        self.provisional_invoke = true;
                         out.push_call(delta);
-                        continue;
+                        break;
                     }
                     if let Some(next_block) = self.resync_block_start(flush) {
                         tracing::warn!(
@@ -3374,7 +3443,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream skipped a malformed invoke and resumed at the next complete block"
                         );
                         self.consume_buffer_prefix(next_block);
-                        self.reset_invoke_boundary();
+                        self.abandon_invoke();
                         self.clear_uncommitted_block();
                         self.in_block = false;
                         self.suppress_normal_text = false;
@@ -3412,7 +3481,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped invoke with no evidence it ever closed before the block end"
                             );
                             self.consume_buffer_prefix(be_pos + be_len);
-                            self.reset_invoke_boundary();
+                            self.abandon_invoke();
                             self.clear_uncommitted_block();
                             self.in_block = false;
                             self.suppress_normal_text = false;
@@ -3424,6 +3493,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                             "stream dropped incomplete invoke at EOF"
                         );
                         self.consume_buffer_prefix(self.buffer.len());
+                        self.abandon_invoke();
                         self.clear_uncommitted_block();
                         self.in_block = false;
                     }
@@ -3450,7 +3520,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 // dropped call.
                 if self.spec.drop_invoke_crossing_block_end
                     && let Some((be_pos, be_len)) = find_first_outside_strings(
-                        &self.buffer,
+                        marker_search_prefix(&self.buffer, end, &self.spec.block_ends),
                         self.spec.block_ends.iter().map(String::as_str),
                     )
                     && be_pos < end
@@ -3460,6 +3530,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         "stream dropped invoke missing its close before the block end"
                     );
                     self.consume_buffer_prefix(be_pos + be_len);
+                    self.abandon_invoke();
                     self.clear_uncommitted_block();
                     self.in_block = false;
                     self.suppress_normal_text = false;
@@ -3473,6 +3544,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                 let emitted = self.parse_complete_invoke(&invoke, self.next_index)?;
                 self.consume_buffer_prefix(end);
                 self.reset_invoke_boundary();
+                let provisional = std::mem::take(&mut self.provisional_invoke);
+                self.emitter.abandon_invoke();
                 if let Some(deltas) = emitted {
                     let emitted_call = !deltas.is_empty();
                     for delta in deltas {
@@ -3484,6 +3557,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         self.suppress_normal_text = true;
                     }
                 } else {
+                    if provisional {
+                        self.next_index += 1;
+                    }
                     if self.pending_parse_error.is_none() {
                         self.uncommitted_block.push_str(&invoke);
                     }
@@ -3505,7 +3581,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             // NEVER leak into normal_text; when suppression is off, first emit
             // the natural text preceding it. Clear the latch either way (the
             // markup context has ended).
-            if let Some((pos, len)) = self.find_orphan_marker() {
+            if !self.anchored_invoke
+                && let Some((pos, len)) = self.find_orphan_marker()
+            {
                 let next_open = find_first(&self.buffer, &self.spec.block_starts)
                     .map(|(p, _)| p)
                     .into_iter()
@@ -3530,14 +3608,18 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
 
             // Block wins a tie with a bare invoke, preserving the pre-unified
             // tie-break.
-            let next_marker = earliest([
-                find_first(&self.buffer, &self.spec.block_starts)
-                    .map(|(pos, len)| (pos, Marker::Block(len))),
-                self.find_invoke_start(&self.buffer)
-                    .map(|pos| (pos, Marker::BareInvoke)),
-                self.find_reasoning_start(flush)
-                    .map(|(pos, len)| (pos, Marker::ReasoningStart(len))),
-            ]);
+            let next_marker = if self.anchored_invoke {
+                Some((0, Marker::BareInvoke))
+            } else {
+                earliest([
+                    find_first(&self.buffer, &self.spec.block_starts)
+                        .map(|(pos, len)| (pos, Marker::Block(len))),
+                    self.find_invoke_start(&self.buffer)
+                        .map(|pos| (pos, Marker::BareInvoke)),
+                    self.find_reasoning_start(flush)
+                        .map(|(pos, len)| (pos, Marker::ReasoningStart(len))),
+                ])
+            };
 
             let Some((start, marker)) = next_marker else {
                 // No marker present: emit buffered text, but hold back a trailing
@@ -3603,8 +3685,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 .emitter
                                 .parse_partial_invoke(&self.buffer, self.next_index)?
                         {
+                            self.provisional_invoke = true;
                             out.push_call(delta);
-                            continue;
+                            break;
                         }
                         if flush {
                             tracing::warn!(
@@ -3612,6 +3695,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                                 "stream dropped incomplete bare invoke at EOF"
                             );
                             self.consume_buffer_prefix(self.buffer.len());
+                            self.abandon_invoke();
                             self.clear_uncommitted_block();
                         }
                         break;
@@ -3622,6 +3706,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     self.consume_buffer_prefix(end);
                     self.clear_uncommitted_block();
                     self.reset_invoke_boundary();
+                    let provisional = std::mem::take(&mut self.provisional_invoke);
+                    self.emitter.abandon_invoke();
                     if let Some(deltas) = emitted {
                         tracing::warn!(
                             why = %format!("{}_bare_invoke_recovery", self.spec.family),
@@ -3635,6 +3721,8 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         self.clear_uncommitted_block();
                         self.suppress_normal_text =
                             self.spec.bare_recovery_latch == BareRecoveryLatch::Set;
+                    } else if provisional {
+                        self.next_index += 1;
                     } else if self.pending_parse_error.is_some() {
                         self.uncommitted_block.push_str(&invoke);
                     }

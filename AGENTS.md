@@ -8,3 +8,5 @@
 - Before reporting a UnifiedParser conversion complete, run `conformance/utils/check.sh status --model <family> --tab unified`. It must report zero red and zero empty current Dynamo cells. Also run the native parser tests, Unified golden parity, the live-vs-packaged-capture guard, and the v2 table-model tests. A generated loose feed, a parser unit test, or a red diagnostic capture is not completion.
 
 - Before adding conformance cases, inspect every registered family and author family-native inputs and expected outputs wherever the behavior applies. Explain grammar or mode exclusions; a bug found in one family does not justify family-only coverage. Use numeric Unified groups for shared behavior and named family sections for grammar-specific cases, preserve published IDs, and inventory every new conformance ID with its meaning and applicable families in the PR description.
+
+- Back-capture is useful but optional; no need to back-capture every historical version. Follow the [historical back-capture policy](conformance/README.md#historical-back-captures) and state which versions were actually run.

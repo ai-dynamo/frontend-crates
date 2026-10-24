@@ -447,10 +447,16 @@ unified_display:
     beam: 'Single Family Test: Beam-specific'
     dsml: 'DSML framing: DeepSeek V4 and V4.1 content-to-call separator'
   group_overrides:
+    kimi_native_k2_count_content_chunk7: kimi_k2
+    kimi_native_k2_count_content_chunk1024: kimi_k2
+    kimi_native_trailing_syntax_whitespace: kimi_k2
+    kimi_native_valid_object_trailing_garbage: kimi_k2
+    kimi_native_incompatible_string_recovery: kimi_k2
     xml_custom_type_double_quoted_object: qwen3
     xml_custom_type_single_quoted_object: qwen3
     guided_response_rejected_header_quote_ownership: deepseek_v4
   prefixes:
+    kimi: [kimi_k3, kimi_k3]
     deepseek: [deepseek_v41, ds41]
     deepseek_v4: [deepseek_v4, ds4]
     deepseek_v41: [deepseek_v41, ds41]

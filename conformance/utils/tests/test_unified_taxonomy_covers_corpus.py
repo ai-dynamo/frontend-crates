@@ -413,6 +413,30 @@ def test_every_rendered_config_key_exists_in_the_emitted_init() -> None:
         "every case would show that setting as unset"
     )
 
+def _scenario_behaviour_key(case: dict) -> str:
+    # common::unified_capture::input_chunks tokenizes markers when no schedule is authored.
+    chunks = case.get("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
+    return json.dumps(
+        {
+            "input": case["input"],
+            "input_chunks": chunks,
+            "init": case["init"],
+            "golden": case["golden"],
+            "tools": case.get("tools"),
+        },
+        sort_keys=True,
+    )
+
+
+def test_delivery_schedule_distinguishes_streaming_scenarios() -> None:
+    case = {"input": "a<marker>b", "init": {}, "golden": []}
+    whole = {**case, "input_chunks": [case["input"]]}
+    split = {**case, "input_chunks": ["a", "<marker>", "b"]}
+    assert _scenario_behaviour_key(case) == _scenario_behaviour_key(split)
+    assert _scenario_behaviour_key(case) != _scenario_behaviour_key(whole)
+    assert _scenario_behaviour_key(split) == _scenario_behaviour_key(dict(split))
+
+
 def test_no_two_scenarios_have_identical_behaviour() -> None:
     """Two names for one behaviour is worse than a gap.
 
@@ -428,19 +452,7 @@ def test_no_two_scenarios_have_identical_behaviour() -> None:
     for fam in FAMILIES:
         seen = defaultdict(list)
         for name, case in build_cases(fam).items():
-            seen[
-                json.dumps(
-                    {
-                        "input": case["input"],
-                        "init": case["init"],
-                        "golden": case["golden"],
-                        "tools": case.get("tools"),
-                        "input_chunks": case.get("input_chunks"),
-                        "finish_reason": case.get("finish_reason"),
-                    },
-                    sort_keys=True,
-                )
-            ].append(name)
+            seen[_scenario_behaviour_key(case)].append(name)
         dupes = {k: v for k, v in seen.items() if len(v) > 1}
         assert not dupes, f"{fam}: scenarios with identical behaviour: {list(dupes.values())}"
 
@@ -925,8 +937,8 @@ def test_unified_case_counts_match_the_generator():
         "gemma4": 127,
         "glm47": 125,
         "gpt_oss": 166,
-        "kimi_k2": 125,
-        "kimi_k3": 134,
+        "kimi_k2": 130,
+        "kimi_k3": 140,
         "muse_glimmer": 138,
         "muse_spark": 146,
         "nemotron_v3": 131,
@@ -953,7 +965,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 239 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
+    assert len(UNIFIED_TAX) == 250 + len(CONFORMANCE_CASES) + len(G.DOTTED_NAME_SCENARIOS) + len(PARALLEL_BOUNDARY_CASES)
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1590,10 +1602,15 @@ def _native_input_calls(family, raw):
         elif family == "gemma4":
             arguments, _ = _parse_gemma_value("{" + body)
         elif family == "kimi_k2":
-            start = len(body) - len(body.lstrip(" \t\r\n"))
-            arguments, _ = json.JSONDecoder().raw_decode(body, start)
+            try:
+                start = len(body) - len(body.lstrip(" \t\r\n"))
+                arguments, _ = json.JSONDecoder().raw_decode(body, start)
+            except json.JSONDecodeError:
+                arguments = {}
         else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
+            pattern = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                       r'<\|close\|>\s*argument\s*<\|sep\|>'
+                       r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))')
             for key, kind, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if kind == "string" else json.loads(value)
             if not arguments and re.match(r'<\|open\|>\s*json ', body):
@@ -1734,12 +1751,52 @@ def _assert_malformed_recovery(family, case):
     return echoes
 
 
+def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
+    if scenario == "kimi_native_incompatible_string_recovery":
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    else:
+        if "count_content_chunk" in scenario:
+            arguments = {"count": 7, "content": "q" * 4096}
+        elif scenario == "kimi_native_trailing_syntax_whitespace":
+            arguments = {}
+        elif scenario in {"kimi_native_valid_object_trailing_garbage", "kimi_native_incremental_interfield_whitespace"}:
+            arguments = {"count": 7, "content": "q"}
+        else:
+            assert scenario == "kimi_native_rejected_next_header_progress"
+            arguments = {"count": 7, "content": 'head<|close|>argument<|sep|> <|open|>argument gibberish<|sep|>' + "q" * 3072}
+        expected = [{"kind": "tool_call", "name": "write_file", "arguments": arguments}]
+    assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
+
+
+@pytest.mark.parametrize("family,scenario", [
+    (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
+    for family in G.scenario_families(name)
+])
+@pytest.mark.parametrize("mutation", ["empty", "name", "arguments"])
+def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
+    case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
+    _assert_input_carries_events(family, scenario, case)
+    if case["golden"]:
+        if mutation == "empty":
+            case["golden"] = []
+        elif mutation == "name":
+            case["golden"][0]["name"] = "invented"
+        else:
+            case["golden"][0]["arguments"] = {"count": 8, "content": "wrong"}
+    else:
+        case["golden"] = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
+    with pytest.raises(AssertionError):
+        _assert_input_carries_events(family, scenario, case)
+
+
 def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None:
     default_reasoning = bool(G.default_response_prefix(family))
     family = G.unified_grammar_family(family)
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
+    if scenario.startswith("kimi_native_"):
+        _assert_kimi_native_golden(scenario, case)
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
@@ -2163,6 +2220,21 @@ def test_schema_id_oracle_preserves_scalar_constraints_and_rejects_reference_sco
 def test_second_pass_reference_goldens_satisfy_the_authored_schema(family, scenario):
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     assert matches_schema(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
+
+
+def test_kimi_display_sections_match_their_applicable_family():
+    labels = taxonomy.display_case_labels(UNIFIED_TAX)
+    for scenario in UNIFIED_TAX:
+        group = taxonomy.display_tax(scenario)[0]
+        if group not in {"kimi", "kimi_k2"}:
+            continue
+        family = "kimi_k3" if group == "kimi" else "kimi_k2"
+        assert G.scenario_families(scenario) == frozenset({family}), scenario
+        assert labels[scenario]["label"].startswith(f"{family}-"), scenario
+        assert labels[scenario]["compact_prefix"] == family, scenario
+    for scenario in UNIFIED_TAX:
+        if scenario.startswith("kimi_native_"):
+            assert taxonomy.display_tax(scenario)[0] in {"kimi", "kimi_k2"}, scenario
 
 
 def test_display_ranks_follow_descriptions_without_changing_capture_ids():

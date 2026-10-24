@@ -158,14 +158,16 @@ def test_retained_stream_regression_captures_preserve_semantics(case_id, familie
             case = document["cases"].get(case_id)
             if case is None:
                 continue
-            complete = [
+            deltas = [
                 event
                 for chunk in case["chunks"]
                 for event in chunk.get("expected", [])
-                if event.get("complete") and "arguments" in event
+                if "arguments" in event
             ]
+            complete = [event for event in deltas if event.get("complete")]
             assert len(complete) == 1, (path, case_id)
-            captured_arguments = json.loads(complete[0]["arguments"])
+            assert all(event["index"] == complete[0]["index"] for event in deltas), (path, case_id)
+            captured_arguments = json.loads("".join(event["arguments"] for event in deltas))
             assert captured_arguments == arguments, (path, case_id)
             found[path.parent.name] = "".join(chunk.get("normal_text", "") for chunk in case["chunks"])
         if not found:

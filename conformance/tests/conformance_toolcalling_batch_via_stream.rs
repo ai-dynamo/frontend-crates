@@ -513,7 +513,13 @@ mod gate_tests {
     fn capture_version_and_family_must_match() {
         let mut capture = StreamCapture {
             family: "glm47".into(),
-            captured_with: BTreeMap::from([("dynamo_v2".into(), "0.7.24".into())]),
+            captured_with: BTreeMap::from([(
+                "dynamo_v2".into(),
+                common::BATCH_ON_STREAM_DYNAMO_V2_CAPTURE
+                    .strip_prefix("dynamo_v2-")
+                    .unwrap()
+                    .into(),
+            )]),
             cases: BTreeMap::new(),
         };
         assert!(capture_matches_version(&capture, "glm47").is_ok());

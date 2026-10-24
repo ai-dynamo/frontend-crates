@@ -13,7 +13,7 @@
 //! The streaming concerns (buffering, chunk-split marker safety, normal_text
 //! suppression, orphan-close stripping, EOF-truncation drop) live in the shared
 //! [`WrappedBlockScanner`], not here. Gemma 4 supplies only what its markers
-//! cannot express, through [`InvokeScan`]: `<tool_call|>` and `call:` both occur
+//! cannot express, through [`InvokeBoundary`]: `<tool_call|>` and `call:` both occur
 //! legitimately INSIDE a `<|"|>`-delimited string value, so where an invoke ends
 //! and whether a `call:` opens one are answered by the v1 balanced,
 //! string-aware scan rather than by `find`. One scanner, one boundary
@@ -1565,6 +1565,26 @@ mod tests {
         );
         assert_eq!(out.normal_text, "I will call: you tomorrow about the trip.");
         assert!(out.calls.is_empty());
+    }
+
+    #[test]
+    fn block_noise_retains_the_call_identifier_boundary_at_every_split() {
+        for (prefix, expected_calls) in [("x", 0), ("prefix", 0), (" ", 1), ("\n", 1)] {
+            let input = format!(
+                "<|tool_call>{prefix}call:get_weather{{location:<|\"|>NYC<|\"|>}}<tool_call|>"
+            );
+            let expected = parse_chunks(&weather_tools(), &[&input]).coalesce_calls();
+            assert_eq!(expected.calls.len(), expected_calls, "{prefix:?}");
+            for split in 0..=input.len() {
+                let actual = parse_chunks(&weather_tools(), &[&input[..split], &input[split..]])
+                    .coalesce_calls();
+                assert_eq!(
+                    actual.normal_text, expected.normal_text,
+                    "{prefix:?}/{split}"
+                );
+                assert_eq!(actual.calls, expected.calls, "{prefix:?}/{split}");
+            }
+        }
     }
 
     #[test]

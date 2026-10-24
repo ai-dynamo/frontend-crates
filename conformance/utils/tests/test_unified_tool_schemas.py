@@ -104,6 +104,14 @@ def _assert_golden_schemas(cases, tools):
                     # Published Harmony calls can exercise lexical parsing without schemas.
                     assert case_id.endswith(".gpt_oss")
                     continue
+                if case_id in {
+                    "UNIFIED.kimi_native_trailing_syntax_whitespace.kimi_k2",
+                    "UNIFIED.kimi_native_incompatible_string_recovery.kimi_k2",
+                }:
+                    # Malformed recovery is a completed raw call, projected to {}
+                    # by assembly; it does not satisfy a successful call's schema.
+                    assert event == {"kind": "tool_call", "name": "write_file", "arguments": {}}
+                    continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
                     family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
                     assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam"}

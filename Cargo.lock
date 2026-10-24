@@ -1209,7 +1209,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.8.0"
+version = "0.8.1"
 dependencies = [
  "anyhow",
  "dynamo-structural-tag",
