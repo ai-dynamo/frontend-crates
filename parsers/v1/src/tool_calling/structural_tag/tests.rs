@@ -908,7 +908,8 @@ fn deepseek_v41_registered_builder_enforces_schema_without_client_strict() {
         StructuralTagSchemaMode::Strict,
     );
     let tag = builder.build_tool_call_format(&c).unwrap().unwrap();
-    let outer = &tag["format"];
+    assert_eq!(tag["format"]["elements"][0]["value"], "\n\n");
+    let outer = &tag["format"]["elements"][1];
     assert_eq!(outer["triggers"][0], "<｜DSML｜ calls>");
     assert_eq!(outer["at_least_one"], true);
     let block = &outer["tags"][0];
@@ -949,4 +950,51 @@ fn deepseek_v41_named_choice_limits_tool_and_preserves_reasoning_boundary() {
     assert!(!encoded.contains("add_numbers"));
     assert!(encoded.contains("deepseek_v4_1_xml"));
     assert!(builder.build_tool_call_ban().unwrap().is_some());
+}
+
+#[test]
+fn deepseek_v41_auto_preserves_free_text_before_the_block() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::deepseek_v41();
+    let c = ctx(
+        &ToolChoice::Auto,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+    );
+    let tag = config
+        .structural_tag_builder
+        .as_ref()
+        .unwrap()
+        .build_tool_call_format(&c)
+        .unwrap()
+        .unwrap();
+    assert_eq!(tag["format"]["type"], "triggered_tags");
+    assert_eq!(tag["format"]["at_least_one"], false);
+    assert_eq!(tag["format"]["tags"][0]["begin"], "<｜DSML｜ calls>\n");
+}
+
+#[test]
+fn deepseek_v41_named_choice_preserves_checkpoint_block_prefix() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::deepseek_v41();
+    let choice = ToolChoice::Named("get_weather".to_string());
+    let c = ctx(&choice, &tools, None, StructuralTagSchemaMode::Strict);
+    let tag = config
+        .structural_tag_builder
+        .as_ref()
+        .unwrap()
+        .build_tool_call_format(&c)
+        .unwrap()
+        .unwrap();
+    assert_eq!(tag["format"]["elements"][0]["value"], "\n\n");
+    let outer = &tag["format"]["elements"][1];
+    assert_eq!(outer["at_least_one"], true);
+    assert_eq!(
+        outer["tags"][0]["content"]["tags"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
 }
