@@ -1,0 +1,15 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.1
+    git_commit: b55b6d90e91ce9a29e1cdb792522ca2c9d95d8ba
+    source_sha256: 75c2dd634500465e3c4153a3387d6174f75dbff66cf980f1e4ae8a1a37c5ce31
+document:
+  mode: unified
+changes: {}
+metadata_changes:
+  arg_json_null_ref: {}
+  arg_null_mixed_labels: {}
+  arg_string_null_ref: {}
+  gpt_oss_multiple_unknown_and_empty_tools: {}
+document_overrides: {}

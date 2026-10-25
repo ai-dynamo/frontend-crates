@@ -1968,7 +1968,7 @@ def _assert_cross_family_contract(corpus):
             if scenario == "gpt_oss_truncated_tool_resynchronizes_at_next_message":
                 following = [{"kind": "text", "text": "recovered"}]
                 assert events == ([{"kind": "tool_call", "name": "lookup", "arguments": {"q": "unfinished"}}]
-                                  if family == "muse_glimmer" else []) + following
+                                  if family in {"muse_glimmer", "muse_spark"} else []) + following
                 events = following
             if scenario == "gpt_oss_quoted_truncated_tool_then_final":
                 assert events == [{"kind": "text", "text": "Answer"}], (family, scenario, "missing recovered answer")
