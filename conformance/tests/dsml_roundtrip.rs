@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use dynamo_parsers::tool_calling::parsers::detect_and_parse_tool_call_with_recovery;
 use dynamo_parsers_v2::{
     UnifiedEvent, UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState, assemble,
     create_tool_parser_for_family, create_unified_parser_for_family,
@@ -42,29 +41,6 @@ fn tools() -> Vec<Value> {
         ),
         call("echo", json!({"text": "first\n\nsecond"})),
     ]
-}
-
-#[tokio::test]
-async fn v1_render_parse_render_preserves_dsml_bytes() {
-    for family in ["deepseek_v3_2", "deepseek_v4"] {
-        for content in ["", "Checking.", "Checking.\n\n", "\n\n", " \t"] {
-            for count in [1, 2] {
-                let original_calls = tools();
-                let generated = render(family, content, &original_calls[..count]);
-                let (calls, parsed_content) =
-                    detect_and_parse_tool_call_with_recovery(&generated, Some(family), None)
-                        .await
-                        .expect("parse generated turn");
-                assert_eq!(parsed_content.as_deref(), Some(content), "{family}");
-                let calls: Vec<_> = calls
-                    .into_iter()
-                    .map(|call| call_from_strings(&call.function.name, &call.function.arguments))
-                    .collect();
-                assert_eq!(calls.len(), count, "{family}");
-                assert_eq!(render(family, content, &calls), generated, "{family}");
-            }
-        }
-    }
 }
 
 fn call_from_strings(name: &str, arguments: &str) -> Value {

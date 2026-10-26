@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
-import itertools
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -17,7 +17,6 @@ import capture_unified_batch
 from capture_stimulus import batch_final_events, select_peer_observation, unavailable_result
 from capture_unified_batch import capture_cases
 from capture_unified_job import build_job
-from generate_conformance_table import _unified_capture_failure, _unified_classify
 from import_peer_unified import digest, import_capture
 from conformance.utils.tests.test_unified_history import _change, _request, _write_capture, _write_family
 
@@ -30,9 +29,8 @@ def test_batch_projection_retains_ordered_calls_but_cannot_claim_interleaving():
         {"name": "one", "arguments": {}}, {"name": "two", "arguments": "{malformed"}]}
     actual = batch_final_events(final)
     assert actual == events
-    for expected in itertools.permutations(events):
-        verdict = _unified_classify("gemma4", list(expected), actual)
-        assert (verdict == "MATCH") == (list(expected) == actual)
+    reversed_final = {**final, "calls": list(reversed(final["calls"]))}
+    assert batch_final_events(reversed_final) != actual
 
 
 def test_capture_accounts_for_every_request_without_default_substitution():
@@ -94,7 +92,7 @@ def test_batch_history_is_separate_sparse_bound_and_immutable(tmp_path):
         import_capture(store, job, capture, {**provenance, "version": "0.27.0"}, implementation="vllm_python_batch")
     changed = {**result, "assembled": []}
     capture.write_text(json.dumps({"version": "0.27.0", "provenance": {**provenance, "version": "0.27.0"}, "results": {"UNIFIED.text_only.gemma4": changed}}))
-    with pytest.raises(ValueError, match="assembly differs"):
+    with pytest.raises(ValueError, match="executed batch differs from final fields"):
         import_capture(store, job, capture, {**provenance, "version": "0.27.0"}, implementation="vllm_python_batch")
 
 
@@ -110,6 +108,7 @@ def test_jail_history_preserves_the_same_version_direct_batch_capture(tmp_path):
         result = {"capture_input": _request(), "batch_final": final, "assembled": batch_final_events(final)}
         provenance = {"implementation": implementation, "version": "10.0.1", "job_sha256": digest(job),
                       "source_sha256": "a" * 64, "adapter_sha256": "b" * 64}
+        provenance["results_sha256"] = hashlib.sha256(json.dumps({"UNIFIED.text_only.gemma4": result}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         capture.write_text(json.dumps({"version": "10.0.1", "provenance": provenance,
                                        "results": {"UNIFIED.text_only.gemma4": result}}))
         import_capture(store, job, capture, provenance, implementation=implementation)
@@ -145,12 +144,14 @@ def test_batch_adapter_correction_preserves_original_and_binds_new_producer(tmp_
     capture = tmp_path / "capture.json"
     request = _request()
     unavailable = unavailable_result("unsupported_request_mode", "old adapter", capture=request, observation=True)
+    provenance["results_sha256"] = hashlib.sha256(json.dumps({"UNIFIED.text_only.gemma4": unavailable}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     capture.write_text(json.dumps({"version": "10.0.1", "provenance": provenance, "results": {"UNIFIED.text_only.gemma4": unavailable}}))
     import_capture(store, job, capture, provenance, implementation="dynamo_v1")
     before = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")].resolve("dynamo_v1-10.0.1")["text_only"]
     new_provenance = {**provenance, "adapter_sha256": "c" * 64}
     final = {"reasoning_text": "", "normal_text": "hello", "calls": []}
     result = {"capture_input": request, "batch_final": final, "assembled": batch_final_events(final)}
+    new_provenance["results_sha256"] = hashlib.sha256(json.dumps({"UNIFIED.text_only.gemma4": result}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     capture.write_text(json.dumps({"version": "10.0.1", "provenance": new_provenance, "results": {"UNIFIED.text_only.gemma4": result}}))
     import_capture(store, job, capture, new_provenance, implementation="dynamo_v1")
     after = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")].resolve("dynamo_v1-10.0.1")["text_only"]
@@ -163,23 +164,11 @@ def test_batch_adapter_correction_preserves_original_and_binds_new_producer(tmp_
     assert selected["batch_final"] == final
     assert selected["producer_origin"]["adapter_sha256"] == "c" * 64
     assert import_capture(store, job, capture, new_provenance, implementation="dynamo_v1") == []
+    provenance["results_sha256"] = hashlib.sha256(json.dumps({"UNIFIED.text_only.gemma4": unavailable}, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     capture.write_text(json.dumps({"version": "10.0.1", "provenance": provenance, "results": {"UNIFIED.text_only.gemma4": unavailable}}))
     assert import_capture(store, job, capture, provenance, implementation="dynamo_v1") == []
     restored = unified_history.load_store(store).histories[("gemma4", "dynamo_v1")].resolve("dynamo_v1-10.0.1")["text_only"]
     assert restored == after
-
-
-@pytest.mark.parametrize("code", ["unsupported_family", "unsupported_request_mode", "source_unavailable", "vllm_rust_guided_json_unsupported"])
-@pytest.mark.parametrize("structured", [False, True])
-def test_failure_projection_retains_its_typed_status_at_every_reader_layer(code, structured):
-    payload = {"code": code, "detail": "cannot execute"}
-    record = {"unavailable": payload if structured else "cannot execute", "capture_observation": {"unavailable": payload}}
-    original = copy.deepcopy(record)
-    projected = _unified_capture_failure(record)
-    assert projected["unavailable"] == "cannot execute"
-    assert projected["unavailable_code"] == ("unsupported_request_mode" if code == "vllm_rust_guided_json_unsupported" else code)
-    assert _unified_capture_failure(projected) == projected
-    assert record == original
 
 
 def test_peer_batch_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):

@@ -9,12 +9,21 @@ on:
       - main
       - "pull-request/[0-9]+"
   workflow_dispatch:
+    inputs:
+      include-history:
+        description: Publish retained historical releases and comparison
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+env:
+  CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
+
 jobs:
-  # Parser and conformance changes activate the render, utility and browser jobs.
+  # The conformance jobs validate the maintained viewer and source resources and
+  # run only for conformance/parser changes.
   changes:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -23,9 +32,13 @@ jobs:
       pull-requests: read
     outputs:
       conformance: ${{ steps.filter.outputs.conformance }}
+      coverage: ${{ steps.coverage.outputs.profile }}
+      qualification_matrix: ${{ steps.qualification.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
 
       - name: Detect conformance/parser changes
         id: filter
@@ -35,7 +48,27 @@ jobs:
             conformance:
               - 'conformance/**'
               - 'parsers/**'
+              - '.gitattributes'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - 'index.html'
               - '.github/workflows/ci.yml'
+              - '.github/actions/conformance-*/**'
+
+      - name: Select fail-closed conformance coverage
+        id: coverage
+        run: |
+          git diff --name-status -z origin/main...HEAD > "$RUNNER_TEMP/conformance-paths"
+          profile=$(python3 conformance/utils/src/ci_coverage.py --changes "$RUNNER_TEMP/conformance-paths")
+          printf 'profile=%s\n' "$profile" >> "$GITHUB_OUTPUT"
+          printf 'Conformance coverage: %s\n' "$profile" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Select complete qualification matrix
+        id: qualification
+        run: |
+          matrix=$(python3 conformance/utils/src/verify_ci_selection.py --shard-matrix)
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
 
   rust:
     runs-on:
@@ -49,8 +82,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
-          # cargo test extracts them locally (extract_fixtures.py, stdlib-only).
+          # Current fixture YAML is local; cargo tests materialize it without
+          # a publisher build or history access.
           lfs: true
           # Release identity compares parser source with the release tag.
           fetch-depth: 0
@@ -62,6 +95,17 @@ jobs:
         uses: taiki-e/install-action@9114bf4d891761788c546334fd37538eae1bf8b3 # v2.87.16
         with:
           tool: cargo-deny@${{ env.CARGO_DENY_VERSION }},cargo-machete@${{ env.CARGO_MACHETE_VERSION }},cargo-nextest@${{ env.CARGO_NEXTEST_VERSION }}
+
+      - name: Cache workspace compilation
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-workspace-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-workspace-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
 
       - name: Check unused dependencies
         run: cargo machete
@@ -85,8 +129,7 @@ jobs:
       - name: Verify grammar checks under optimized Python
         run: PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
 
-      # video_decode loads libvpx at runtime for VP8/VP9 on the CPU; its tests
-      # decode with it (runners have no GPU, so NVDEC's tests are ignored).
+      # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
       - name: Install libvpx
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvpx9
 
@@ -108,23 +151,128 @@ jobs:
       - name: Verify crates are publishable
         run: cargo publish --workspace --dry-run --locked
 
-  # Render-smoke for the vendored conformance-table generator. Catches generator/fixture
-  # breakage. Python + pyyaml/jinja2 only — no engines (vLLM/SGLang conformance runs in
+  # Validate the maintained conformance viewer and its source resources.
+  # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in
   # dynamo's CI lanes; here the engine lanes are on-demand/local).
-  conformance-table:
+  pages-build:
     needs: changes
     if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
-    # Render cost scales with the number of peer version dirs: every <impl>-<version>
-    # is another compare candidate on every cell. main sat at ~8m24s of a 10m budget,
-    # so adding the vLLM 0.26.0 / vLLM Rust 0.24.0+0.26.0 captures timed the job out.
-    # Raised to match the `rust` lane's headroom. If this creeps toward 20m, the fix is
-    # to make the render cheaper (or shard it), not to raise the ceiling again.
     timeout-minutes: 20
-    permissions:
-      contents: read
-      pages: read
-      pull-requests: write
+    env:
+      CONFORMANCE_PUBLISHER: ${{ github.workspace }}/target/release/conformance-publish
+      # Bump when the publisher command or output policy changes.
+      CONFORMANCE_PUBLICATION_POLICY: native-latest-single-html-v3
+      CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
+    steps:
+      - name: Checkout publication sources
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+          fetch-depth: 0
+      - name: Configure publication output
+        run: |
+          printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'CONFORMANCE_CONVERSION_CACHE=%s/conversion-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Identify exact publication inputs and reader
+        id: identity
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")" >> "$GITHUB_OUTPUT"
+      - name: Restore exact publication cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ runner.temp }}/native-publication
+          key: ${{ runner.os }}-native-publication-v3-${{ github.ref }}-${{ steps.identity.outputs.key }}
+      - name: Admit cached publication or fall back to cold generation
+        id: cache
+        run: |
+          if python3 conformance/utils/src/ci_publication_cache.py check --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'; then
+            echo 'usable=true' >> "$GITHUB_OUTPUT"
+            mkdir -p "$CONFORMANCE_PUBLISHED_SITE" "$(dirname "$CONFORMANCE_PUBLISHER")"
+            tar -xf "$RUNNER_TEMP/native-publication/native-pages.tar" -C "$CONFORMANCE_PUBLISHED_SITE"
+            tar -xf "$RUNNER_TEMP/native-publication/source-catalogs.tar" -C "$GITHUB_WORKSPACE"
+            \cp -f "$RUNNER_TEMP/native-publication/conformance-publish" "$CONFORMANCE_PUBLISHER"
+            chmod u+x "$CONFORMANCE_PUBLISHER"
+          else
+            echo 'usable=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install locked production JavaScript bundler
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        uses: ./.github/actions/conformance-viewer-build
+      # The required Rust lane owns publisher unit/integration tests. The
+      # qualification jobs below exercise this release binary on the full store.
+      - name: Build native publisher
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        run: cargo build --locked --release -p conformance-publisher
+      - name: Snapshot permanent evidence and YAML paths
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          python3 conformance/utils/src/verify_publication_transport.py snapshot --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
+      - name: Restore compatible family conversion fragments
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: ${{ runner.temp }}/conversion-cache
+          key: ${{ runner.os }}-conversion-v1-${{ github.ref }}-${{ steps.identity.outputs.key }}
+          restore-keys: |
+            ${{ runner.os }}-conversion-v1-${{ github.ref }}-
+      - name: Generate source catalog inputs
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/publication-venv"
+          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
+          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
+      - name: Publish native site
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          "$CONFORMANCE_PUBLISHER" --root "$GITHUB_WORKSPACE" --output "$CONFORMANCE_PUBLISHED_SITE" --revision "$GITHUB_SHA" --cache-dir "$CONFORMANCE_CONVERSION_CACHE" "${history_args[@]}"
+      - name: Verify publication preserved evidence without per-case YAML expansion
+        if: ${{ steps.cache.outputs.usable != 'true' }}
+        run: |
+          history_args=()
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
+          python3 conformance/utils/src/verify_publication_transport.py check --inventory "$RUNNER_TEMP/source-generation-inventory.json" "${history_args[@]}"
+      - name: Bind publication metadata to this commit
+        run: >-
+          python3 conformance/utils/src/ci_publication_cache.py stamp
+          --directory "$CONFORMANCE_PUBLISHED_SITE"
+          --revision "$GITHUB_SHA"
+      - name: Package candidate site and matching binary
+        run: |
+          mkdir -p "$RUNNER_TEMP/native-publication"
+          tar -C "$CONFORMANCE_PUBLISHED_SITE" -cf "$RUNNER_TEMP/native-publication/native-pages.tar" .
+          test "$(stat -c %s "$RUNNER_TEMP/native-publication/native-pages.tar")" -lt 1000000000
+          if [[ "$CONFORMANCE_PUBLISHER" != "$RUNNER_TEMP/native-publication/conformance-publish" ]]; then
+            \cp -f "$CONFORMANCE_PUBLISHER" "$RUNNER_TEMP/native-publication/conformance-publish"
+          fi
+          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json
+      - name: Seal reusable publication payload
+        run: python3 conformance/utils/src/ci_publication_cache.py seal --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'
+      - name: Retain candidate inputs for independent qualification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-native-publication
+          path: ${{ runner.temp }}/native-publication/
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+  conformance-fixtures:
+    needs: changes
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -135,64 +283,320 @@ jobs:
           # The renderer needs release tags to distinguish releases from changed source.
           fetch-depth: 0
 
-      - name: Configure GitHub Pages
-        if: ${{ github.ref == 'refs/heads/main' }}
-        id: pages
-        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
-
-      # Rendering and utility tests use separate runners to stay within each job's budget.
-      - name: Conformance report and lint
-        env:
-          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+      - name: Build isolated-fixture publisher
+        run: cargo build --locked --release -p conformance-publisher
+      - name: Fixture-only checks (start alongside publication)
         run: |
           python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2
-          render_args=()
-          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            test -n "$PAGES_BASE_URL"
-            render_args=(
-              --github-repository "$GITHUB_REPOSITORY"
-              --github-revision "$GITHUB_SHA"
-              --fixture-base-url "${PAGES_BASE_URL%/}/fixtures/"
-            )
-          fi
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-render "${render_args[@]}"
-
-      - name: Upload conformance matrix
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          CONFORMANCE_SELECTION_DIR="$RUNNER_TEMP/baseline-selection" /tmp/pvenv/bin/python3 -m pytest conformance/utils/tests --collect-only -q > "$RUNNER_TEMP/test-inventory.log"
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=fixtures conformance/utils/check.sh ci
+      - name: Retain complete collection baseline
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: conformity-html
-          path: |
-            conformance/utils/CONFORMITY.html
-            conformance/utils/CONFORMITY.json
-          retention-days: 14
+          name: conformance-test-baseline
+          path: ${{ runner.temp }}/baseline-selection/*.json
+          if-no-files-found: error
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
 
-      - name: Prepare GitHub Pages artifact
+
+  conformance-core:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+      CONFORMANCE_COVERAGE: ${{ needs.changes.outputs.coverage }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
+          # the render + guard steps extract them locally on first use.
+          lfs: true
+          # The renderer needs release tags to distinguish releases from changed source.
+          fetch-depth: 0
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: Conformance core shard (catalog + lint + invariants)
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="-vv --numprocesses=4 --dist=loadfile --no-loadscope-reorder --durations=25" CONFORMANCE_CI_SHARD=core conformance/utils/check.sh ci
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-qualification:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.changes.outputs.qualification_matrix) }}
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+      CONFORMANCE_COVERAGE: ${{ needs.changes.outputs.coverage }}
+      CONFORMANCE_PARITY_SHARD: ${{ matrix.shard }}
+      CONFORMANCE_PARITY_SHARDS: ${{ strategy.job-total }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
+          # the render + guard steps extract them locally on first use.
+          lfs: true
+          # The renderer needs release tags to distinguish releases from changed source.
+          fetch-depth: 0
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: Independent source-to-JSON parity, matrix models, and historical receipts
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest pytest-xdist selenium
+          PATH="/tmp/pvenv/bin:$PATH" PYTEST_ADDOPTS="--numprocesses=3 --dist=loadfile" CONFORMANCE_CI_SHARD=qualification conformance/utils/check.sh ci
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-native-browser:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          # Fixture shards live in-repo under conformance/fixtures/ via git-lfs;
+          # the render + guard steps extract them locally on first use.
+          lfs: true
+          # The renderer needs release tags to distinguish releases from changed source.
+          fetch-depth: 0
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: Install bundler for isolated publication fixtures
+        uses: ./.github/actions/conformance-viewer-build
+
+      - name: Strict native publication browser and startup acceptance
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=native-browser conformance/utils/check.sh ci
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-browser:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0, 1]
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+      PYTEST_ADDOPTS: --conformance-group=${{ matrix.group }}/2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: Conformance browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=browser conformance/utils/check.sh ci
+
+  # This module's Selenium runs contend with the Node model-contract test under
+  # xdist, so keep it on a separate runner from the core and smoke shards.
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-viewer:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [0, 1, 2]
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+      PYTEST_ADDOPTS: --conformance-group=${{ matrix.group }}/3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: Install bundler for isolated publication fixtures
+        uses: ./.github/actions/conformance-viewer-build
+
+      - name: Conformance viewer browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=viewer conformance/utils/check.sh ci
+
+  # The first-visible-matrix tests each start an independent Chrome profile.
+  # Keep those initial-load checks on their own runner to bound the smoke shard.
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-first-matrix:
+    needs: [changes, pages-build]
+    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CONFORMANCE_SELECTION_DIR: /tmp/conformance-selection
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          lfs: true
+
+      - name: Restore candidate publication for qualification
+        uses: ./.github/actions/conformance-publication
+
+      - name: First visible matrix browser shard
+        run: |
+          python3 -m venv /tmp/pvenv
+          /tmp/pvenv/bin/pip install --quiet pyyaml pytest selenium
+          PATH="/tmp/pvenv/bin:$PATH" CONFORMANCE_CI_SHARD=first-matrix conformance/utils/check.sh ci
+
+  # Preserve one stable required status and publish only after every test shard passes.
+      - name: Retain collected test assignments
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: conformance-selection-${{ github.job }}-${{ strategy.job-index }}
+          path: /tmp/conformance-selection/*.json
+          if-no-files-found: error
+
+
+  conformance-table:
+    needs: [changes, rust, pages-build, conformance-fixtures, conformance-core, conformance-qualification, conformance-native-browser, conformance-browser, conformance-viewer, conformance-first-matrix]
+    if: ${{ always() && (needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: read
+      pull-requests: write
+    steps:
+      - name: Require all conformance shards
+        env:
+          RUST_RESULT: ${{ needs.rust.result }}
+          PAGES_RESULT: ${{ needs.pages-build.result }}
+          FIXTURES_RESULT: ${{ needs.conformance-fixtures.result }}
+          QUALIFICATION_RESULT: ${{ needs.conformance-qualification.result }}
+          NATIVE_BROWSER_RESULT: ${{ needs.conformance-native-browser.result }}
+          CORE_RESULT: ${{ needs.conformance-core.result }}
+          BROWSER_RESULT: ${{ needs.conformance-browser.result }}
+          VIEWER_RESULT: ${{ needs.conformance-viewer.result }}
+          FIRST_MATRIX_RESULT: ${{ needs.conformance-first-matrix.result }}
+        run: |
+          test "$RUST_RESULT" = success
+          test "$PAGES_RESULT" = success
+          test "$FIXTURES_RESULT" = success
+          test "$QUALIFICATION_RESULT" = success
+          test "$NATIVE_BROWSER_RESULT" = success
+          test "$CORE_RESULT" = success
+          test "$BROWSER_RESULT" = success
+          test "$VIEWER_RESULT" = success
+          test "$FIRST_MATRIX_RESULT" = success
+
+      - name: Checkout for complete test-selection accounting
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          sparse-checkout: conformance/utils/src/verify_ci_selection.py
+          sparse-checkout-cone-mode: false
+      - name: Download complete collection baseline
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: conformance-test-baseline
+          path: ${{ runner.temp }}/baseline-selection
+      - name: Download every test assignment
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: conformance-selection-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/assignments
+      - name: Account for every collected test before publication
+        run: |
+          python3 conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments"
+
+      - name: Download qualified Pages input after required checks
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: conformance-native-publication
+          path: ${{ runner.temp }}/native-publication
+      - name: Restore qualified Pages directory
         if: ${{ github.ref == 'refs/heads/main' }}
         run: |
-          set -euo pipefail
-          site="$RUNNER_TEMP/pages"
-          fixtures_root="$(python3 conformance/utils/src/extract_fixtures.py)"
-          mkdir -p "$site"
-          cp conformance/CONFORMANCE_v2.html "$site/index.html"
-          for relative in \
-            toolcalling/fixtures-batch-v1/inputs \
-            toolcalling/fixtures-stream-v1/inputs \
-            reasoning/fixtures-v1/inputs
-          do
-            test -d "$fixtures_root/$relative"
-            mkdir -p "$site/fixtures/$(dirname "$relative")"
-            cp -R "$fixtures_root/$relative" "$site/fixtures/$relative"
-          done
-          if find "$site" -type l -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain symbolic links" >&2
-            exit 1
-          fi
-          if find "$site" -type f -links +1 -print -quit | grep -q .; then
-            echo "GitHub Pages artifact must not contain hard links" >&2
-            exit 1
-          fi
-
+          mkdir -p "$RUNNER_TEMP/pages"
+          tar -xf "$RUNNER_TEMP/native-publication/native-pages.tar" -C "$RUNNER_TEMP/pages"
+      - name: Configure GitHub Pages
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - name: Upload GitHub Pages artifact
         if: ${{ github.ref == 'refs/heads/main' }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
@@ -206,60 +610,13 @@ jobs:
         run: |
           PR_NUMBER="${GITHUB_REF_NAME#pull-request/}"
           gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
             --edit-last --create-if-none \
-            --body "📊 **Conformance matrix** rendered — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
-  conformance-utils:
-    needs: [changes, conformance-table]
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Download conformance matrix
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: conformity-html
-          path: /tmp/conformance
-
-      - name: Run utility tests
-        env:
-          CONFORMANCE_REPORT_HTML: /tmp/conformance/CONFORMITY.html
-        run: |
-          python3 -m venv /tmp/pvenv
-          /tmp/pvenv/bin/pip install --quiet pyyaml jinja2 pytest
-          PATH="/tmp/pvenv/bin:$PATH" conformance/utils/check.sh ci-tests
-
-  conformance-browser:
-    needs: changes
-    if: ${{ needs.changes.outputs.conformance == 'true' || github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          lfs: true
-          fetch-depth: 0
-
-      - name: Install browser test dependencies
-        run: |
-          python3 -m venv /tmp/browser-venv
-          /tmp/browser-venv/bin/pip install --quiet pyyaml jinja2 pytest selenium
-          google-chrome --version
-          node --version
-
-      - name: Run comparison matrix browser regressions
-        run: PATH="/tmp/browser-venv/bin:$PATH" python3 -m pytest conformance/utils/tests/test_browser_comparison_layout.py conformance/utils/tests/test_browser_unified_only.py conformance/utils/tests/test_comparison_status.py -q
+            --body "📊 **Parser conformance viewer** validated — [view in CI summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
-    needs: [conformance-table, conformance-utils]
+    needs: conformance-table
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10

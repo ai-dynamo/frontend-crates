@@ -775,7 +775,7 @@ fn render_unified_conformance_html() {
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
     let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
-        let froot = common::ensure_fixtures().join("unified");
+        let froot = common::ensure_unified_fixtures().join("unified");
         let mut m = BTreeMap::new();
         // Shards key by TAXONOMY id (`UNIFIED.30-guided_json_named_tool`); the golden keys by SCENARIO
         // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
@@ -833,7 +833,7 @@ fn render_unified_conformance_html() {
     let mut dynamo_red = 0usize;
     let mut vllm_red = 0usize;
     let mut total = 0usize;
-    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    // Capture tooling consumes this feed; the viewer prefers resolved JSON even in a checkout.
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
@@ -1052,7 +1052,7 @@ fn render_unified_conformance_html() {
         }
     }
 
-    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // Machine-readable capture feed consumed by explode_unified_fixtures.py.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).
@@ -1160,7 +1160,7 @@ struct InputCase {
 /// This closes that gap: touch a parser, and the capture must be regenerated.
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
-    let root = common::ensure_fixtures().join("unified");
+    let root = common::ensure_unified_fixtures().join("unified");
     validate_committed_dynamo_capture(&root);
 }
 
@@ -1171,15 +1171,10 @@ fn validate_committed_dynamo_capture(root: &std::path::Path) {
             root.display()
         );
     }
-    // Select the parser identity before resolving its effective per-case owners.
-    // A release's sparse patches and a source's complete snapshot differ here.
-    let capture_dir = common::version_dirs_ascending_with_current(
-        root,
-        "dynamo_v2-",
-        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
-    )
-    .pop()
-    .expect("no committed dynamo_v2-<ver> capture dir");
+    // Advancing the parser build does not relabel retained evidence. Compare the
+    // newest recorded snapshot with this build and reject changed live outputs.
+    let capture_dir = common::latest_recorded_capture_dir(root, "dynamo_v2-")
+        .expect("no committed dynamo_v2-<ver> capture dir");
 
     validate_selected_dynamo_capture(root, &capture_dir);
 }
@@ -1229,6 +1224,11 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
                 meta.retain(|(family, _), previous| {
                     family != &doc.family || previous.scenario != case.scenario
                 });
+                // v1_split scenarios have committed Dynamo v1 captures and are
+                // intentionally absent from the current Dynamo v2 capture.
+                if case.scenario.starts_with("v1_split_") {
+                    continue;
+                }
                 meta.insert((doc.family.clone(), key), case);
             }
         }
@@ -1323,11 +1323,10 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
-        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
-         show the old parser behavior. Regenerate:\n  \
-         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
-         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
-         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        "{} of {checked} latest recorded Dynamo cases differ from the live parser. \
+         Verify the parser against authored inputs/GOLDEN and run latest parser tests. \
+         If the intended output changed, request an administrator update of the affected latest YAML; \
+         contributors do not recapture historical versions.\n\n{}",
         stale.len(),
         stale.join("\n\n"),
     );
@@ -1337,6 +1336,8 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 fn plain_capture_records_reach_live_guard() {
     let root = std::env::temp_dir().join(format!("dynamo-plain-capture-{}", std::process::id()));
     let base = root.join("dynamo_v2-0.6.0");
+    std::fs::create_dir_all(root.join("dynamo_v2-0.5.0")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-999.0.0+historical")).unwrap();
     let write = |directory: &std::path::Path, key: &str, doc: &Value| {
         std::fs::create_dir_all(directory.join("gemma4")).unwrap();
         std::fs::write(
@@ -1372,15 +1373,15 @@ fn plain_capture_records_reach_live_guard() {
     write(&base, "old", &captures["old"]);
     write(&base, "retained", &captures["retained"]);
     write(&base, "added", &captures["added"]);
-    validate_selected_dynamo_capture(&root, &base);
+    validate_committed_dynamo_capture(&root);
 
     std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
-    assert!(std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     write(&base, "old", &captures["old"]);
     let mut wrong = captures["added"].clone();
     wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
     write(&base, "added", &wrong);
-    let failure = std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base))
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("the live comparison must read the plain capture record");
     assert!(
         failure

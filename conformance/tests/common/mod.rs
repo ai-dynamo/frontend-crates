@@ -272,6 +272,8 @@ pub fn ensure_fixtures() -> PathBuf {
             "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
+            "--legacy-only",
+            "--include-history",
         ])
         .output()
         .expect("flock/python3 not found — ensure python3 is in PATH");
@@ -306,8 +308,7 @@ pub fn ensure_fixtures() -> PathBuf {
     // snapshot later reads in the SAME test see, even though extraction
     // itself is now race-free (`fixtures_identity`-keyed, atomically
     // published). Resolving to the immutable identity dir once, up front,
-    // matches the same fix `_common.sh` already applies for the identical
-    // reason (see its `FIXTURES_SNAP` comment) — one shared pattern, not two.
+    // keeps every later read bound to the same extraction generation.
     let stdout = String::from_utf8(output.stdout).expect("extract_fixtures.py stdout is not UTF-8");
     match resolve_snap_dir(&stdout) {
         Ok(snap_dir) => snap_dir,
@@ -323,6 +324,45 @@ pub fn ensure_fixtures() -> PathBuf {
             String::from_utf8_lossy(&output.stderr)
         ),
     }
+}
+
+/// Native parser checks consume authored inputs and only their two selected captures.
+pub fn ensure_unified_fixtures() -> PathBuf {
+    if let Ok(root) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
+        return PathBuf::from(root);
+    }
+    static SELECTED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SELECTED
+        .get_or_init(|| {
+            let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let root = std::env::temp_dir()
+                .join(format!("unified-selected-{}-{nonce}", std::process::id()));
+            let status = std::process::Command::new("python3")
+                .arg(manifest.join("utils/src/unified_history.py"))
+                .arg("--materialize")
+                .arg("--store")
+                .arg(manifest.join("fixtures-unified-v2"))
+                .arg("--output")
+                .arg(root.join("unified"))
+                .args([
+                    "--capture",
+                    "latest:dynamo_v2",
+                    "--capture",
+                    "latest:vllm_rust",
+                ])
+                .status()
+                .expect("python3 selected fixture materialization failed to start");
+            assert!(
+                status.success(),
+                "selected Unified fixture materialization failed"
+            );
+            root
+        })
+        .clone()
 }
 
 /// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,
@@ -462,10 +502,10 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current parser release checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.8.1";
+/// Current stream fixtures carry their own release identities, independent of the build.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-latest-recorded";
 
-// Batch-on-stream retains its own snapshot when the streaming capture advances.
+/// The retained batch-on-stream oracle predates the current stream captures.
 pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
 
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
@@ -521,6 +561,13 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.into_iter().map(|(_, p)| p).collect()
 }
 
+/// Consumer comparisons use recorded evidence, even when the parser build is newer.
+pub fn latest_recorded_capture_dir(root: &Path, prefix: &str) -> Option<PathBuf> {
+    version_dirs_ascending(root, prefix)
+        .into_iter()
+        .rfind(|path| !path.to_string_lossy().contains('+'))
+}
+
 /// The normal capture history plus one caller-selected current capture. `+tag`
 /// directories remain historical unless a test names the exact directory it needs.
 pub fn version_dirs_ascending_with_current(
@@ -537,7 +584,9 @@ fn version_dirs_with_identity_command(
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+    let current_dir = if current_dir == STREAM_DYNAMO_V2_CURRENT_CAPTURE {
+        latest_recorded_capture_dir(root, prefix).expect("no recorded stream release capture")
+    } else if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
         let output = command
             .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
@@ -718,7 +767,7 @@ mod capture_selector_tests {
         write_capture(&release, &recorded);
         assert_eq!(select(&captures, &clone, None).last(), Some(&release));
 
-        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        let stream = captures.join("dynamo_v2-0.7.33");
         std::fs::create_dir_all(&stream).unwrap();
         let stream_dirs = version_dirs_with_identity_command(
             &captures,
@@ -763,6 +812,8 @@ pub struct UnifiedFamily {
     /// Has a native UnifiedParser, versus being driven through the v1/v2 split path.
     #[serde(default)]
     pub native: bool,
+    #[serde(default)]
+    pub scenario_profile: Option<String>,
     pub reasoning_parser: String,
     pub tool_parser: String,
     pub golden_spec: String,

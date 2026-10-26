@@ -4,42 +4,35 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 cd "$ROOT"
 
+
 run() {
   printf '\n==> %s\n' "$*"
   "$@"
 }
 
-render_report() {
-  printf '\n==> bash conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html\n'
-  bash conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
-}
-
 run python3 conformance/utils/src/gen_unified_golden.py
-current_capture=$(python3 -c 'import tomllib; print("dynamo_v2-" + tomllib.load(open("parsers/v2/Cargo.toml", "rb"))["package"]["version"])')
+run python3 conformance/utils/src/explode_unified_fixtures.py --authored-inputs
+
+materialized_history=$(mktemp -d "${TMPDIR:-/tmp}/dynamo-unified-history.XXXXXX")
+trap '\rm -rf "$materialized_history"' EXIT
+export CONFORMANCE_FIXTURES_ROOT="$materialized_history"
+run python3 conformance/utils/src/unified_history.py --materialize --store conformance/fixtures-unified-v2 --output "$materialized_history/unified" --capture latest:dynamo_v2 --capture latest:vllm_rust
 
 if ! run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --exact render_unified_conformance_html --nocapture; then
-  render_report || true
   exit 1
 fi
 if ! run python3 conformance/utils/src/explode_unified_fixtures.py; then
-  render_report || true
   exit 1
 fi
-if ! run python3 conformance/utils/src/package_fixtures.py --unified-only --require-unified-capture-dir "$current_capture"; then
-  render_report || true
+if ! run python3 conformance/utils/src/package_fixtures.py --unified-only; then
   exit 1
 fi
-materialized_history=$(mktemp -d /tmp/dynamo-unified-history.XXXXXX)
-trap '\rm -rf "$materialized_history"' EXIT
-if ! run python3 conformance/utils/src/unified_history.py --materialize --store conformance/fixtures-unified-v2 --output "$materialized_history"; then
-  render_report || true
+run python3 conformance/utils/src/viewer_catalog.py --unified-only
+if ! run python3 conformance/utils/src/unified_history.py --materialize --store conformance/fixtures-unified-v2 --output "$materialized_history/unified" --capture latest:dynamo_v2 --capture latest:vllm_rust; then
   exit 1
 fi
-if ! run python3 conformance/utils/src/extract_fixtures.py --full-refresh; then
-  render_report || true
-  exit 1
-fi
-render_report
+run python3 conformance/utils/src/unified_history.py --validate --store conformance/fixtures-unified-v2
+run python3 conformance/utils/src/viewer_catalog.py --unified-only --check
 
 status=0
 run cargo test --locked -p dynamo-parsers-v2 --lib -- --nocapture || status=1
@@ -47,12 +40,10 @@ run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_schema_
 run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture || status=1
 run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture || status=1
 run python3 -m pytest -q \
-  conformance/utils/tests/test_model.py \
-  conformance/utils/tests/test_unified_taxonomy_covers_corpus.py \
-  conformance/utils/tests/test_unified_fixture_overlays.py || status=1
+  conformance/utils/tests/test_viewer_data.py \
+  conformance/utils/tests/test_unified_taxonomy_covers_corpus.py || status=1
 
 run python3 - <<'PY' || status=1
-import json
 from pathlib import Path
 
 import sys
@@ -60,31 +51,28 @@ import sys
 sys.path.insert(0, "conformance/utils/src")
 import gen_unified_golden as golden
 from dynamo_version import dynamo_v2_label
-from fixtures import _version_sort_key
-from unified_history import load_store
+from unified_history import load_store, _capture_release_sort_key
 from unified_taxonomy import numbered_id
-from validate_conformance_status import load_model, validate_unified_known_divergences
+from explode_unified_fixtures import _split_only_cases
+from fixture_disposition import canonical_unified_case_key
 
 root = Path("conformance/fixtures-unified-v2")
-current = json.loads(Path("conformance/CONFORMANCE_v2.json").read_text())
-expected = {
-    family: {
-        numbered_id(key[len("UNIFIED."):].rsplit(".", 1)[0])
-        for key in golden.build_cases(family)
-    }
-    for family in golden.FAMILIES
-}
-validate_unified_known_divergences(
-    load_model(Path("conformance/CONFORMANCE_v2.html")),
-    Path("conformance/unified-known-divergences.yaml"),
-    golden.FAMILIES,
-)
-
-current_version = dynamo_v2_label(Path.cwd())
 store = load_store(root)
+expected = {
+    family: {canonical_unified_case_key(family, key, row["scenario"])
+             for key, row in _split_only_cases(family, {"family": family, "cases": golden.build_cases(family)}).items()}
+    for family in store.families
+}
+for family in golden.scenario_families("v1_split_parallel_tool_calls"):
+    if family in store.families and any(
+        case["lifecycle"] == "active" and case["scenario"] == "v1_split_parallel_tool_calls"
+        for case in store.families[family].cases.values()
+    ):
+        expected[family].add(numbered_id("v1_split_parallel_tool_calls"))
+current_version = dynamo_v2_label(Path.cwd())
 for family, case_ids in expected.items():
     canonical = {
-        case["display_id"]
+        canonical_unified_case_key(family, case["display_id"], case["scenario"])
         for case in store.families[family].cases.values()
         if case["lifecycle"] == "active"
     }
@@ -92,16 +80,17 @@ for family, case_ids in expected.items():
     current_captures = [
         (capture_id, capture)
         for capture_id, capture in history.captures.items()
-        if _version_sort_key(capture["runtime_version"]) <= _version_sort_key(current_version)
+        if _capture_release_sort_key(capture["runtime_version"]) <= _capture_release_sort_key(current_version)
     ]
     if not current_captures:
         raise SystemExit(f"missing generated Unified capture at or before {current_version}/{family}")
     current_label, _capture = max(
         current_captures,
-        key=lambda item: _version_sort_key(item[1]["runtime_version"]),
+        key=lambda item: _capture_release_sort_key(item[1]["runtime_version"]),
     )
     captured = {
-        history.family.cases[case_id]["display_id"]
+        canonical_unified_case_key(family, history.family.cases[case_id]["display_id"],
+                                   history.family.cases[case_id]["scenario"])
         for case_id in history.resolve(current_label)
         if history.family.cases[case_id]["lifecycle"] == "active"
     }
@@ -114,24 +103,10 @@ for family, case_ids in expected.items():
                 f"missing={missing} extra={extra}"
             )
 
-seen_reports = set()
-for report in current["reports"]:
-    if report.get("tab") != "tab-unified":
-        continue
-    family = report["model"]
-    seen_reports.add(family)
-    if report["empty"]:
-        raise SystemExit(
-            f"Unified display has empty current-Dynamo cells for {family}: {report['empty']}"
-        )
-if seen_reports != set(golden.FAMILIES):
-    raise SystemExit(
-        f"Unified display families differ from the generator: "
-        f"missing={sorted(set(golden.FAMILIES) - seen_reports)} "
-        f"extra={sorted(seen_reports - set(golden.FAMILIES))}"
-    )
-
-print("Unified regeneration gate passed: generated YAML history and rendered JSON are current.")
+print("Unified source gate passed: generated YAML history and captures are current.")
 PY
+
+run node conformance/viewer/qualification.js status --tab unified \
+  --known-divergences conformance/unified-known-divergences.yaml --summary-only || status=1
 
 exit "$status"

@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Backfills preserve historical outputs and each peer's final-message contract."""
 
+from collections import Counter
+import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -11,10 +14,138 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import unified_history
+import import_peer_unified as importer
 from capture_stimulus import select_peer_observation
 from capture_unified_job import build_job
-from import_peer_unified import digest, import_capture, main
+from import_peer_unified import digest, import_capture, import_capture_groups, main
+from capture_stimulus import assemble_stream
 from conformance.utils.tests.test_unified_history import _add_backfill_case, _change, _request, _write_capture, _write_family
+
+
+def _receipted_jobs(store, root, implementation, mode, versions=("0.25.1", "0.26.0"), family="gemma4"):
+    root.mkdir(parents=True)
+    rows = []
+    for version in versions:
+        job = root / f"job-{version}.json"
+        job.write_text(json.dumps(build_job(store / "families", family, mode=mode)))
+        result = {"capture_input": _request(), "assembled": [{"kind": "text", "text": version}]}
+        if mode == "batch":
+            result["batch_final"] = {"reasoning_text": "", "normal_text": version, "calls": []}
+        else:
+            result["chunks"] = [[{"kind": "text", "text": version}]]
+        results = {f"UNIFIED.text_only.{family}": result}
+        provenance = {"implementation": implementation, "version": version, "source_sha256": "a" * 64,
+            "adapter_sha256": "b" * 64, "job_sha256": digest(job),
+            "results_sha256": hashlib.sha256(json.dumps(results, sort_keys=True, ensure_ascii=False).encode()).hexdigest()}
+        field = {"sglang_python": "sglang_version", "vllm_python": "vllm_version", "vllm_rust": "vllm_rust_version"}.get(implementation, "version")
+        capture = root / f"capture-{version}.json"
+        capture.write_text(json.dumps({field: version, "results": results, "provenance": provenance}))
+        rows.append((job, capture, provenance))
+    return rows
+
+
+def test_grouped_expected_jobs_are_owned_by_each_history_and_transaction(tmp_path, monkeypatch):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.24.0", {"text_only": _change("baseline")})
+    family = unified_history.load_yaml(store / "families/gemma4/inputs_and_golden.yaml")
+    family["input_document"]["family"] = "qwen3"
+    family["golden_document"]["family"] = "qwen3"
+    path = store / "families/qwen3/inputs_and_golden.yaml"
+    path.parent.mkdir()
+    path.write_text(unified_history.dump_yaml(family))
+    families = ("gemma4", "qwen3")
+    modes = {"dynamo_v1": "batch", "dynamo_v1_jail": "batch", "vllm_python_batch": "batch", "sglang_python_batch": "batch",
+             "dynamo_v2": "stream", "vllm_python": "unified", "sglang_python": "unified", "vllm_rust": "unified"}
+    groups = {implementation: [row for family in families
+                              for row in _receipted_jobs(store, tmp_path / implementation / family, implementation, mode, family=family)]
+              for implementation, mode in modes.items()}
+    calls = []
+    original = importer.build_job
+    def counted(root, family, *, mode):
+        calls.append((family, mode))
+        return original(root, family, mode=mode)
+    monkeypatch.setattr(importer, "build_job", counted)
+    for iteration in (1, 2):
+        import_capture_groups(store, groups)
+        assert Counter(calls) == Counter({(family, mode): count * iteration for family in families
+                                          for mode, count in (("batch", 4), ("stream", 1), ("unified", 3))})
+        loaded = unified_history.load_store(store)
+        for implementation in modes:
+            for family in families:
+                history = loaded.histories[(family, implementation)]
+                for version in ("0.25.1", "0.26.0"):
+                    current = history.resolve(f"{implementation}-{version}")["text_only"]
+                    record, metadata = unified_history.materialized_record(history.family.cases["text_only"], current)
+                    record.update(metadata.get("record_metadata", {}))
+                    selected = select_peer_observation(record, _request(), implementation=implementation, version=version)
+                    assert selected["assembled"] == [{"kind": "text", "text": version}]
+
+
+@pytest.mark.parametrize("altered_index", [0, 1])
+def test_grouped_job_cache_rejects_resealed_altered_requests(tmp_path, monkeypatch, altered_index):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.24.0", {"text_only": _change("baseline")})
+    rows = _receipted_jobs(store, tmp_path / "captures", "dynamo_v2", "stream")
+    job, capture, provenance = rows[altered_index]
+    request = copy.deepcopy(_request())
+    request["input"] = "changed"
+    request["chunks"] = [{"delta_text": "changed"}]
+    job_document = json.loads(job.read_text())
+    job_document["cases"][0].update(input="changed", chunks=["changed"], request=request)
+    job.write_text(json.dumps(job_document))
+    captured = json.loads(capture.read_text())
+    captured["results"]["UNIFIED.text_only.gemma4"]["capture_input"] = request
+    provenance.update(job_sha256=digest(job), results_sha256=hashlib.sha256(json.dumps(captured["results"], sort_keys=True, ensure_ascii=False).encode()).hexdigest())
+    captured["provenance"] = provenance
+    capture.write_text(json.dumps(captured))
+    before = {str(path.relative_to(store)): path.read_bytes() for path in store.rglob("*") if path.is_file()}
+    calls = []
+    original = importer.build_job
+    def counted(root, family, *, mode):
+        calls.append((family, mode))
+        return original(root, family, mode=mode)
+    monkeypatch.setattr(importer, "build_job", counted)
+    with pytest.raises(ValueError, match="capture job differs from the final candidate request corpus"):
+        import_capture_groups(store, {"dynamo_v2": rows})
+    assert calls == [("gemma4", "stream")]
+    assert {str(path.relative_to(store)): path.read_bytes() for path in store.rglob("*") if path.is_file()} == before
+
+
+def test_single_import_keeps_fresh_exact_job_validation(tmp_path, monkeypatch):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.24.0", {"text_only": _change("baseline")})
+    rows = _receipted_jobs(store, tmp_path / "captures", "dynamo_v2", "stream")
+    calls = []
+    original = importer.build_job
+    def counted(root, family, *, mode):
+        calls.append((family, mode))
+        return original(root, family, mode=mode)
+    monkeypatch.setattr(importer, "build_job", counted)
+    for job, capture, provenance in rows:
+        import_capture(store, job, capture, provenance, implementation="dynamo_v2")
+    assert calls == [("gemma4", "stream"), ("gemma4", "stream")]
+
+
+def test_peer_stream_assembly_coalesces_text_and_joins_tool_arguments_in_order():
+    chunks = [
+        [{"kind": "reasoning", "text": "think"}],
+        [
+            {"kind": "reasoning", "text": " more"},
+            {"kind": "tool_call", "name": "lookup", "arguments": '{"q":', "complete": False},
+        ],
+        [
+            {"kind": "tool_call", "arguments": '"x"}', "complete": True},
+            {"kind": "text", "text": "done"},
+        ],
+    ]
+    assert assemble_stream(chunks) == [
+        {"kind": "reasoning", "text": "think more"},
+        {"kind": "tool_call", "name": "lookup", "arguments": {"q": "x"}},
+        {"kind": "text", "text": "done"},
+    ]
 
 
 @pytest.mark.parametrize("implementation", ["vllm_python", "vllm_rust", "sglang_python"])
@@ -108,6 +239,71 @@ def test_backfill_retains_existing_bound_result_and_later_version(peer_capture):
     assert import_capture(store, job, capture, provenance, implementation=implementation, backfill_only=True) == []
     history = unified_history.load_store(store).histories[("gemma4", implementation)]
     assert {key: history.resolve(key) for key in history.ordered_capture_ids()} == snapshots
+
+
+@pytest.mark.parametrize("stale", [False, True])
+def test_grouped_import_binds_the_preserved_store_generation(peer_capture, stale):
+    store, job, capture, provenance, implementation = peer_capture
+    inventory = unified_history.store_inventory(store)
+    family = store / "families/gemma4/inputs_and_golden.yaml"
+    if stale:
+        family.write_bytes(family.read_bytes() + b"\n")
+    before = {str(path.relative_to(store)): path.read_bytes() for path in store.rglob("*") if path.is_file()}
+    groups = {implementation: [(job, capture, provenance)]}
+    if stale:
+        with pytest.raises(ValueError, match="store generation changed"):
+            import_capture_groups(store, groups, expected_inventory=inventory)
+        assert {str(path.relative_to(store)): path.read_bytes() for path in store.rglob("*") if path.is_file()} == before
+    else:
+        assert import_capture_groups(store, groups, expected_inventory=inventory)
+
+
+@pytest.mark.parametrize("implementation", ["sglang_python", "vllm_python", "vllm_rust", "dynamo_v2"])
+def test_receipted_stream_recapture_archives_prior_execution_without_rewriting_history(tmp_path, implementation):
+    store = tmp_path / "store"
+    _write_family(store)
+    _write_capture(store, "0.25.1", {"text_only": _change("historic")}, implementation=implementation)
+    job = tmp_path / "job.json"
+    job.write_text(json.dumps(build_job(store / "families", "gemma4", mode="stream" if implementation == "dynamo_v2" else "unified")))
+    capture = tmp_path / "capture.json"
+    key = {"sglang_python": "sglang_version", "vllm_python": "vllm_version", "vllm_rust": "vllm_rust_version"}.get(implementation, "version")
+    history = unified_history.load_store(store).histories[("gemma4", implementation)]
+    original = history.resolve(f"{implementation}-0.25.1")["text_only"]["observation"]
+    for text in ("first", "second"):
+        results = {"UNIFIED.text_only.gemma4": {"capture_input": _request(),
+            "chunks": [[{"kind": "text", "text": text}]], "assembled": [{"kind": "text", "text": text}]}}
+        provenance = {"implementation": implementation, "version": "0.25.1", "job_sha256": digest(job),
+            "source_sha256": "a" * 64, "adapter_sha256": "b" * 64,
+            "results_sha256": hashlib.sha256(json.dumps(results, sort_keys=True, ensure_ascii=False).encode()).hexdigest()}
+        capture.write_text(json.dumps({key: "0.25.1", "results": results, "provenance": provenance}))
+        import_capture(store, job, capture, provenance, implementation=implementation)
+        history = unified_history.load_store(store).histories[("gemma4", implementation)]
+        current = history.resolve(f"{implementation}-0.25.1")["text_only"]
+        assert current["observation"] == original
+        metadata = current["document"]["record_metadata"]
+        assert metadata["verified_recapture"]["resolution"] == "fresh_execution"
+        record, document = unified_history.materialized_record(history.family.cases["text_only"], current)
+        record.update(document["record_metadata"])
+        assert select_peer_observation(record, _request(), implementation=implementation, version="0.25.1")["assembled"][0]["text"] == text
+    assert metadata["verified_recaptures"][0]["result"]["assembled"][0]["text"] == "first"
+    altered_provenance = {**provenance, "source_sha256": "c" * 64}
+    with pytest.raises(ValueError, match="receipt differs from supplied provenance"):
+        import_capture(store, job, capture, altered_provenance, implementation=implementation)
+    results = {"UNIFIED.text_only.gemma4": {"capture_input": _request(), "unavailable": "No published parser API",
+        "capture_observation": {"unavailable": {"code": "unsupported_request_mode", "detail": "No published parser API"}}}}
+    provenance = {**provenance, "results_sha256": hashlib.sha256(json.dumps(results, sort_keys=True, ensure_ascii=False).encode()).hexdigest()}
+    capture.write_text(json.dumps({key: "0.25.1", "results": results, "provenance": provenance}))
+    import_capture(store, job, capture, provenance, implementation=implementation)
+    history = unified_history.load_store(store).histories[("gemma4", implementation)]
+    current = history.resolve(f"{implementation}-0.25.1")["text_only"]
+    assert current["observation"] == original
+    metadata = current["document"]["record_metadata"]
+    assert [archived["result"]["assembled"][0]["text"] for archived in metadata["verified_recaptures"]] == ["first", "second"]
+    assert metadata["verified_recapture"]["provenance"] == provenance
+    record, document = unified_history.materialized_record(history.family.cases["text_only"], current)
+    record.update(document["record_metadata"])
+    selected = select_peer_observation(record, _request(), implementation=implementation, version="0.25.1")
+    assert "remains unavailable" in selected["historical_capture_note"]
 
 
 def test_existing_older_backfill_preserves_later_provenance(peer_capture):

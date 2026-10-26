@@ -15,6 +15,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 import capture_dynamo_unified_batch as capture  # noqa: E402
+from impls import batch_capture_label
 
 
 def test_probe_job_uses_registered_gpt_oss_pipeline_without_changing_request() -> None:
@@ -92,12 +93,20 @@ def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, 
     )
     reviewed_lock = tmp_path / "reviewed.lock"
     reviewed_lock.write_text(lock_text)
+    published = tmp_path / "published"
+    (published / "src/tool_calling").mkdir(parents=True)
+    (published / "src/reasoning").mkdir()
+    (published / "src/tool_calling/parsers.rs").write_text("pub async fn detect_and_parse_tool_call_with_recovery; tools: Option<&[ToolDefinition]>")
+    (published / "src/tool_calling/mod.rs").write_text("ToolDefinition; pub strict:")
+    (published / "src/tool_calling/jail.rs").write_text("JailedStream")
+    (published / "src/reasoning/mod.rs").write_text("fn set_in_reasoning")
 
     def fake_run(args, *, cwd, env, capture_output, check):
         calls.append((args, cwd, env["CARGO_TARGET_DIR"]))
         if "generate-lockfile" in args or "metadata" in args:
             (cwd / "Cargo.lock").write_text(lock_text)
-            return CompletedProcess(args, 0, b"", b"")
+            metadata = {"packages": [{"name": "dynamo-parsers", "version": "10.0.1", "manifest_path": str(published / "Cargo.toml")}]}
+            return CompletedProcess(args, 0, json.dumps(metadata).encode() if "metadata" in args else b"", b"")
         return CompletedProcess(
             args,
             0,
@@ -117,7 +126,7 @@ def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, 
     receipt = capture.capture("10.0.1", job_path, output_path, work_dir, target_dir=target_dir,
                               lockfile=reviewed_lock if jail_buffer else None, jail_buffer=jail_buffer)
 
-    assert [call[2] for call in calls] == [str(target_dir), str(target_dir)]
+    assert [call[2] for call in calls] == [str(target_dir)] * 3
     assert receipt["job_sha256"] == capture._sha256(job_path.read_bytes())
     result = json.loads(output_path.read_text())["results"]["case"]
     assert result["capture_input"] == request
@@ -126,15 +135,13 @@ def test_capture_uses_the_requested_version_isolated_target_dir(tmp_path: Path, 
     assert ("--features" in calls[-1][0]) is jail_buffer
 
 
-def test_jail_refuses_releases_without_a_proved_protocol_dependency(tmp_path: Path) -> None:
-    lock = tmp_path / "reviewed.lock"
-    lock.write_text('version = 3\npackage = []\n')
-    with pytest.raises(ValueError, match="does not publish the JailedStream protocol"):
+def test_jail_requires_the_reviewed_exact_release_lockfile(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="requires the reviewed release lockfile"):
         capture.capture("3.0.0", tmp_path / "job.json", tmp_path / "output.json", tmp_path / "producer",
-                        lockfile=lock, jail_buffer=True)
+                        jail_buffer=True)
 
 
-@pytest.mark.parametrize("version", ["3.0.0", "9.2.13"])
+@pytest.mark.parametrize("version", ["9.2.13"])
 def test_jail_source_blockers_preserve_request_and_separate_identity(tmp_path: Path, version: str) -> None:
     job = tmp_path / "job.json"
     output = tmp_path / "result.json"
@@ -146,6 +153,12 @@ def test_jail_source_blockers_preserve_request_and_separate_identity(tmp_path: P
     assert receipt["status"] == "source_unavailable"
     assert result["results"]["case"]["capture_input"] == request
     assert "source_sha256" not in receipt
+
+
+def test_published_release_without_jail_api_is_not_a_missing_source(tmp_path: Path) -> None:
+    assert "source unavailable" not in batch_capture_label("dynamo_v1_jail", "3.0.0")
+    with pytest.raises(ValueError, match="no explicit source blocker"):
+        capture.source_unavailable("3.0.0", tmp_path / "job.json", tmp_path / "result.json", jail_buffer=True)
 
 
 def test_dynamo_adapter_identity_binds_registry_bytes(tmp_path, monkeypatch):

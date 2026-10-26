@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// Conformance matrix behavior (audit B7). Inlined at render by generate_conformance_table.py.
-(function () {
+// Maintained conformance matrix controller for asynchronously loaded tab models.
+window.initializeConformanceController = function (hooks = {}) {
   // Gutter kept between a popup and the viewport edge (2em at the 16px root size).
   // The tooltip is width:max-content and the widest ones run to the full cap below, so
   // without this they sit flush against the screen edge and read as clipped.
@@ -9,11 +9,13 @@
   let placeScheduled = false;
   const visibleTooltips = new Set();
   const showDelayMs = 750;
+  const columnShowDelayMs = 1000;
   const hideDelayMs = 750;
-  const columnButtons = Array.from(document.querySelectorAll('[data-col-toggle]'));
-  const columnKeys = Array.from(new Set(columnButtons.map(function (button) {
+  const columnHideDelayMs = 180;
+  let columnButtons = Array.from(document.querySelectorAll('[data-col-toggle]'));
+  let columnKeys = Array.from(new Set([...(hooks.columnKeys || []), ...columnButtons.map(function (button) {
     return button.dataset.colToggle;
-  })));
+  })]));
   const viewCheckboxes = Array.from(document.querySelectorAll('[data-view-detailed]'));
 
   // Compare-any-combination model (TC v1 batch tab): pick one Base and any number
@@ -24,8 +26,9 @@
   function activePanel() { return document.querySelector('.tab-panel.active'); }
   function panelCtl(panel) { return panel ? panel.querySelector('.cmpctl') : null; }
   // Reference = the single checked radio; Compare-with = every checked checkbox.
-  function ctlBase(ctl) { const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
+  function ctlBase(ctl) { if (hooks.engineSelection) return hooks.engineSelection.reference; const r = ctl && ctl.querySelector('input.cmp-ref:checked'); return r ? r.value : null; }
   function ctlShown(ctl) {
+    if (hooks.engineSelection) return hooks.engineSelection.selection().selected;
     return ctl ? Array.from(ctl.querySelectorAll('input.cmp-on:checked')).map(function (x) { return x.value; }) : [];
   }
   // The Reference parser can't compare to itself: disable (and flag) its own
@@ -135,6 +138,7 @@
     return shown.every(function (k) { return set.has(k); });
   }
   function updateCompareUrl(panel, ctl) {
+    if (hooks.engineSelection) return;
     const url = new URL(window.location.href);
     const pid = panel.id;
     const base = ctlBase(ctl);
@@ -152,6 +156,7 @@
     window.history.replaceState(null, '', url.toString());
   }
   function restoreCtlFromUrl(panel, ctl) {
+    if (hooks.engineSelection) return;
     const params = new URLSearchParams(window.location.search);
     const pid = panel.id;
     if (!params.has('base_' + pid) && !params.has('cmp_' + pid)) { return; }  // keep defaults
@@ -165,78 +170,6 @@
       cb.checked = cb.value !== base && inB.has(cb.value);
     });
   }
-  function tooltipCandidate(cell, key) {
-    function find(model) {
-      const candidate = ((model && model.candidates) || []).find(item => item.key === key);
-      if (candidate) return candidate;
-      for (const variant of (model && model.variants) || []) {
-        const nested = find(variant);
-        if (nested) return nested;
-      }
-      return null;
-    }
-    return find(cell && cell.tooltip);
-  }
-
-  function sourceMatches(key, impl) {
-    return typeof key === 'string' && typeof impl === 'string'
-      && (key === impl || key.startsWith(impl + '-') || key.startsWith(impl + '@'));
-  }
-
-  function captureIssue(cell, key) {
-    if (!cell || cell.kind === 'blank' || cell.kind === 'missing') return 'missing';
-    const entry = (cell.cmp || {})[key];
-    if (cell.variants && cell.variants.length) {
-      // An inapplicable parent is only a heading; its children own the results.
-      const applicable = cell.variants.filter(variant => variant.status !== 'na');
-      if (!applicable.length) return 'unsupported';
-      const issues = applicable.map(variant => captureIssue(variant, key));
-      if (entry && entry.err === 1) return issues.includes('error') ? 'error' : 'expected';
-      if (entry && entry.leak === 1) return 'leak';
-      if (!entry || entry.na === 1) {
-        return ['missing', 'blocked', 'unsupported', 'expected'].find(issue => issues.includes(issue)) || 'missing';
-      }
-      return issues.includes('expected') ? 'expected' : null;
-    }
-    const candidateTip = tooltipCandidate(cell, key);
-    const block = candidateTip && candidateTip.block;
-    if (!entry || entry.na === 1) {
-      const reason = String((block && block.unavailable) || '');
-      const code = block && (block.unavailable_code || (block.capture_observation && block.capture_observation.unavailable && block.capture_observation.unavailable.code));
-      if (code === 'missing_capture') return 'missing';
-      if (['unsupported_family', 'unsupported_request_mode', 'scenario_not_applicable', 'duplicate_scenario'].includes(code)) return 'unsupported';
-      if (code === 'source_unavailable' || /source unavailable|source blocked|historical source/i.test(reason)) return 'blocked';
-      return /\bno(?: [\w.-]+)* parser\b|\bnot (?:yet )?implemented\b|unsupported (?:family|request|mode)|cannot apply/i.test(reason) ? 'unsupported' : 'missing';
-    }
-    if (entry.err === 1 || (block && (block.exception || (block.error && typeof block.error === 'object')))) return 'error';
-    if (block && typeof block.error === 'string') return 'expected';
-    if (entry.leak === 1 || (candidateTip && candidateTip.leak)) return 'leak';
-    return null;
-  }
-
-  function outputStatus(tab, cell, candidate, reference) {
-    const issue = captureIssue(cell, candidate.key);
-    if (issue) return issue;
-    const entry = cell.cmp[candidate.key];
-    const oracleTab = tab.id === 'tab-unified';
-    const compareKey = oracleTab ? 'golden' : reference;
-    const compareEntry = (cell.cmp || {})[compareKey];
-    if (['missing', 'unsupported', 'error', 'expected'].includes(captureIssue(cell, compareKey))) return 'uncompared';
-    if (entry.sig === compareEntry.sig) return 'pass';
-    const intentional = ((cell.tooltip && cell.tooltip.reasons) || []).some(reason => {
-      if (reason.intentional !== true) return false;
-      const forward = sourceMatches(candidate.key, reason.impl) && sourceMatches(compareKey, reason.reference_impl)
-        && entry.sig === reason.candidate_sig && compareEntry.sig === reason.reference_sig;
-      const reverse = sourceMatches(compareKey, reason.impl) && sourceMatches(candidate.key, reason.reference_impl)
-        && compareEntry.sig === reason.candidate_sig && entry.sig === reason.reference_sig;
-      const block = (tooltipCandidate(cell, forward ? candidate.key : compareKey) || {}).block;
-      return (forward || reverse) && block && reason.reason === (block.explanation || block.reason);
-    });
-    if (intentional) return 'documented';
-    return 'diverge';
-  }
-
-  window.__conformanceOutputStatus = outputStatus;
   const segmentLabels = window.__conformanceSegmentLabels;
   function renderSegments(cell, keys) {
     const model = window.__conformanceTooltipModel && window.__conformanceTooltipModel(cell);
@@ -252,7 +185,7 @@
     }
     segments.replaceChildren();
     const labels = keys.map(key => {
-      const status = outputStatus({ id: 'tab-unified' }, data, { key }, 'golden');
+      const status = window.__conformanceCaptureOutcome(data, key, 'golden');
       const segment = document.createElement('i');
       segment.className = 'matrix-status status-' + status;
       segment.dataset.capture = key;
@@ -274,10 +207,10 @@
   }
   function applyCtl(panel) {
     const ctl = panelCtl(panel);
-    if (!ctl) { return; }
     const oracle = panel.id === 'tab-unified' && !!panel._comparisonSelection;
+    if (!ctl && !oracle) { return; }
     const base = oracle ? (panel._comparisonSelection.keys.length ? 'golden' : null) : ctlBase(ctl);
-    syncRefDisable(ctl, oracle ? null : base, oracle);
+    if (ctl) syncRefDisable(ctl, oracle ? null : base, oracle);
     const shown = (oracle ? panel._comparisonSelection.keys : ctlShown(ctl)).filter(function (k) { return k !== base; });
     const active = new Set((base ? [base] : []).concat(shown));
     const counts = { ok: 0, problem: 0, na: 0 };
@@ -285,7 +218,6 @@
     // Dynamo v2 parser), ni holds {label, families}. A cell whose family is not in
     // that list is "not implemented" — a different reason than case-level "not
     // applicable", and it wins.
-    const ni = base ? PARSER_NI[base] : null;
     // Cells carry data-cmp (compare payload) and, on the v2 page, data-family (for the
     // reference-aware "not implemented" note). The v1 parity page has data-cmp only, so
     // match either — otherwise v1 cells never get colored.
@@ -300,94 +232,12 @@
       cell.classList.remove('cmp-eq', 'cmp-leak', 'cmp-na', 'cmp-nobase', 'cmp-donly');
       const marker = cell.querySelector('.cmp-marker .marker-text');
       const fam = cell.getAttribute('data-family') || '';
-      if (base && ni && ni.families.indexOf(fam) === -1) {
-        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'x'; }
-        setWhy(cell, ni.label + ' is not yet implemented for family “' + fam + '”');
-        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
-      }
-      setWhy(cell, '');
-      const bd = base ? cmp[base] : null;
-      if (!base) {
-        cell.classList.add('cmp-nobase'); if (marker) { marker.textContent = ''; }
-        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
-      }
-      if (!bd || bd.na === 1) {
-        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
-        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
-      }
-      // Unavailable candidates (na) and candidates that ran-and-threw (err) never count
-      // toward the diff against a clean Reference; both are still shown in the tooltip.
-      const avail = shown.map(function (k) { return cmp[k]; })
-        .filter(function (o) { return o && o.na !== 1 && o.err !== 1; });
-      if (oracle && shown.every(key => !cmp[key] || cmp[key].na === 1)) {
-        cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
-        if (countThis) { counts.na++; } toggleCands(cell, active, base); return;
-      }
-      // ...but they must not be SILENT either. A compare candidate that has no data for
-      // this case (an older capture taken before the case existed) is not agreement, and
-      // folding it into "=" claims the two builds produced the same output when one of
-      // them never ran it. Counted separately so the glyph can say "no data" instead.
-      const naShown = shown.filter(function (k) {
-        return k !== base && cmp[k] && cmp[k].na === 1;
-      }).length;
-      // NΔ counts shown COMPARE engines that diverge from GOLDEN (the fixed reference),
-      // independent of which engine is starred. When there is no golden (other tabs), fall
-      // back to the selected reference. `avail` excludes the base (the starred REF).
-      const goldenSig = cmp.golden ? cmp.golden.sig : null;
-      const refSig = (goldenSig != null ? goldenSig : bd.sig);
-      // The Reference parser itself RAN and THREW (err=1). A selected Compare that PARSED
-      // (a real, non-error output) is a genuine disagreement with the failed Reference ->
-      // red (a delta), not grey n/a. If nothing parsed to disagree with (no Compares, or
-      // every Compare also threw / is unavailable), there is no delta -> neutral grey.
-      // Oracle-backed cells fail on a Reference error even with no Compare selected.
-      const redOnDiff = cell.getAttribute('data-red-on-diff') === '1';
-      if (bd.err === 1) {
-        if (redOnDiff) {
-          cell.classList.add('cmp-leak'); if (marker) { marker.textContent = '✗'; }
-          if (countThis) { counts.problem++; }
-        } else if (avail.length > 0) {
-          cell.classList.add('cmp-leak'); if (marker) { marker.textContent = String(avail.length) + 'Δ'; }
-          if (countThis) { counts.problem++; }
-        } else {
-          cell.classList.add('cmp-na'); if (marker) { marker.textContent = 'n/a'; }
-          if (countThis) { counts.na++; }
-        }
-        toggleCands(cell, active, base); return;
-      }
-      const diffs = avail.filter(function (o) { return o.sig !== refSig; }).length;
-      const oracleDiffs = oracle ? shown.filter(function (key) {
-        const output = cmp[key];
-        return output && output.na !== 1 && (output.err === 1 || output.leak === 1 || output.sig !== refSig);
-      }).length : 0;
-      const leak = bd.leak === 1;
-      // Unified tab (data-red-on-diff): GOLDEN is the fixed oracle, and the cell color
-      // reflects ONLY the REF — the starred engine (`base`, default Dynamo) — measured
-      // against golden. A red cell means the REF's own output diverges from golden. The
-      // Compare-with engines still surface their divergence count as NΔ, but never color
-      // the cell (a compare diverging is the compare's business, not the REF's). golden as
-      // REF never diverges from itself, so star an engine to evaluate it.
-      const refDiverges = redOnDiff && base !== 'golden' && goldenSig != null
-        && bd && bd.na !== 1 && bd.sig !== goldenSig;
-      const donly = avail.length === 0;
-      const leaked = oracle ? shown.some(key => cmp[key] && cmp[key].leak === 1) : leak;
-      // Marker: ✗ when the REF diverges (the red signal); otherwise NΔ = how many Compare
-      // engines diverge from golden (informational, stays green), "=" when all agree.
-      // "=" is only honest when every shown candidate actually produced output. When a
-      // selected compare candidate has no capture for this case, say so ("?") rather
-      // than reporting agreement it cannot support. A real divergence still wins.
-      const eqTxt = naShown > 0 ? '?' : '=';
-      let txt;
-      if (oracle) {
-        txt = oracleDiffs > 0 ? String(oracleDiffs) + 'Δ' : eqTxt;
-      } else if (redOnDiff) {
-        txt = refDiverges ? '✗' : (diffs > 0 ? String(diffs) + 'Δ' : eqTxt);
-      } else {
-        txt = donly ? '' : (diffs === 0 ? eqTxt : String(diffs) + 'Δ');
-      }
-      if (marker) { marker.textContent = (leaked ? '↯' : '') + txt; }
-      const problem = oracle ? oracleDiffs > 0 : redOnDiff ? refDiverges : leaked;
-      cell.classList.add(problem ? 'cmp-leak' : 'cmp-eq');
-      if (countThis) { if (problem) { counts.problem++; } else { counts.ok++; } }
+      const outcome = hooks.cellOutcome({ cmp, base, shown, family: fam,
+        parserNi: PARSER_NI, redOnDiff: cell.getAttribute('data-red-on-diff') === '1' });
+      cell.classList.add(outcome.className);
+      if (marker) marker.textContent = outcome.marker;
+      setWhy(cell, outcome.why);
+      if (countThis) counts[outcome.category]++;
       toggleCands(cell, active, base);
     });
     panel.querySelectorAll('[data-overview-count]').forEach(function (el) {
@@ -476,7 +326,7 @@
             r.checked = false;
             handleRefUncheck(ctl);
             const panel = ctl.closest('.tab-panel');
-            if (panel) { applyCtl(panel); }
+            if (panel) { applyCtl(panel); hooks.selectionChanged?.(panel); }
           }, 0);
         });
       });
@@ -486,7 +336,7 @@
         if (e.target.matches('input.cmp-ref')) { handleRefChange(ctl); }
         if (e.target.matches('input.cmp-ref, input.cmp-on')) {
           const panel = ctl.closest('.tab-panel');
-          if (panel) { applyCtl(panel); }
+          if (panel) { applyCtl(panel); hooks.selectionChanged?.(panel); }
         }
       });
     });
@@ -541,6 +391,7 @@
           cb.checked = false;
         });
         applyCtl(panel);
+        if (shouldUpdateUrl && panel.classList.contains('active')) hooks.selectionChanged?.(panel);
       });
     }
     document.querySelectorAll('.tab-panel').forEach(window.__conformanceUpdateLegend);
@@ -559,18 +410,19 @@
   document.querySelectorAll('[data-reset]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
-      const u = new URL(window.location.href); u.search = ''; u.hash = '';
+      const u = new URL(window.location.href);
+      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['slots_tab-unified', 'tab', 'ref', 'cmp', 'view', 'transpose', 'cols', 'show', 'hide', 'popup'].includes(key)) u.searchParams.delete(key);
       if (tab) { u.searchParams.set('tab', tab); }
       window.location.href = u.href;  // reload at defaults, same tab
     });
   });
 
   function defaultVisibleColumns() {
-    const visible = new Set();
+    const visible = new Set(hooks.columnKeys || []);
     columnButtons.forEach(function (button) {
       if (button.dataset.defaultVisible === 'true') {
         visible.add(button.dataset.colToggle);
-      }
+      } else visible.delete(button.dataset.colToggle);
     });
     return visible;
   }
@@ -724,17 +576,13 @@
   if (new URLSearchParams(window.location.search).has('cols')) {
     updateUrl(visibleColumns);
   }
-  columnButtons.forEach(function (button) {
-    button.addEventListener('click', function () {
-      const key = button.dataset.colToggle;
-      visibleColumns = new Set(visibleColumns);
-      if (visibleColumns.has(key)) {
-        visibleColumns.delete(key);
-      } else {
-        visibleColumns.add(key);
-      }
-      applyColumnState(visibleColumns, true);
-    });
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest('[data-col-toggle]');
+    if (!button) return;
+    const key = button.dataset.colToggle;
+    visibleColumns = new Set(visibleColumns);
+    if (visibleColumns.has(key)) visibleColumns.delete(key); else visibleColumns.add(key);
+    applyColumnState(visibleColumns, true);
   });
 
   const tabButtons = Array.from(document.querySelectorAll('.tab-button'));
@@ -835,6 +683,22 @@
     }
   }
 
+  function boundedPopupLeft(left, width) {
+    return Math.max(margin, Math.min(left, window.innerWidth - margin - width));
+  }
+
+  function placeCaseHint(cell) {
+    const anchor = cell.matches('[data-hover-hint]') ? cell : cell.querySelector('[data-hover-hint]');
+    if (!anchor) return;
+    const hint = getComputedStyle(anchor, '::after');
+    const width = parseFloat(hint.width);
+    const height = parseFloat(hint.height);
+    const box = anchor.getBoundingClientRect();
+    anchor.style.setProperty('--case-hint-left', (boundedPopupLeft(box.left, width) - box.left) + 'px');
+    // Keep the label outside the hand cursor, with a below-header fallback near the viewport top.
+    anchor.style.setProperty('--case-hint-top', (box.top >= height + margin + 12 ? -height - 12 : box.height + 24) + 'px');
+  }
+
   function place(cell) {
     const ttip = cell._ttip || cell.querySelector('.ttip');
     if (!ttip) return;
@@ -857,11 +721,19 @@
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
     if (cell.dataset.ttipClick === 'pin') {
-      ttip.style.maxWidth = (window.innerWidth * .97) + 'px';
-      ttip.style.maxHeight = (window.innerHeight * .97) + 'px';
+      ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
+      const controls = cell.closest('#tab-unified')?.querySelector('.capture-slots');
+      const requestedTop = controls ? controls.getBoundingClientRect().bottom + margin : margin;
+      const resized = ttip.style.height && ttip.style.height !== 'auto';
+      const controlsBottom = resized
+        ? requestedTop
+        : Math.max(margin, Math.min(requestedTop, Math.max(margin, window.innerHeight - 160 - margin)));
+      const availableHeight = Math.max(160, window.innerHeight - controlsBottom - margin);
+      ttip.style.maxHeight = (resized ? window.innerHeight * .97 : availableHeight) + 'px';
       const rect = ttip.getBoundingClientRect();
       ttip.style.left = ((window.innerWidth - rect.width) / 2 + window.scrollX) + 'px';
-      ttip.style.top = ((window.innerHeight - rect.height) / 2 + window.scrollY) + 'px';
+      const top = resized ? Math.min(controlsBottom, Math.max(margin, window.innerHeight - rect.height - margin)) : controlsBottom;
+      ttip.style.top = (top + window.scrollY) + 'px';
       ttip.style.visibility = '';
       ttip.style.opacity = '';
       return;
@@ -873,12 +745,8 @@
         Math.max(cellRect.top - margin, window.innerHeight - cellRect.bottom - margin))) + 'px'
       : '';
     const tipRect = ttip.getBoundingClientRect();
-    const vw = window.innerWidth, vh = window.innerHeight;
-    let shiftX = 0;
-    const overflowRight = (cellRect.left + tipRect.width) - (vw - margin);
-    if (overflowRight > 0) shiftX = -overflowRight;
-    const absLeft = cellRect.left + shiftX;
-    if (absLeft < margin) shiftX += (margin - absLeft);
+    const vh = window.innerHeight;
+    const shiftX = boundedPopupLeft(cellRect.left, tipRect.width) - cellRect.left;
     const placeAbove = cellRect.bottom + tipRect.height > vh - margin
       && cellRect.top - tipRect.height >= margin;
     let top = placeAbove ? cellRect.top - tipRect.height : cellRect.bottom;
@@ -903,6 +771,7 @@
     placeScheduled = true;
     window.requestAnimationFrame(function () {
       placeScheduled = false;
+      document.querySelectorAll('[data-hover-hint]:hover, [data-hover-hint]:focus-visible').forEach(placeCaseHint);
       visibleTooltips.forEach(function (ttip) {
         if (ttip.classList.contains('ttip-visible') && ttip._ttipOwner) {
           place(ttip._ttipOwner);
@@ -987,11 +856,28 @@
     }
     window.history.replaceState(null, '', url.toString());
   }
+  // "Inside a pinnable element" must mean EXACTLY the set `attachTooltip` wired, so ask
+  // for the mark `attachTooltip` itself leaves rather than re-listing the classes. A class
+  // list cannot express that set: the transpose headers are wired directly (see below) and
+  // never pass through WIRE_ON_LOAD, so every hand-written list drifted from it. Headers
+  // ended up pinnable but not counted as inside — a header click pinned it and the SAME
+  // click bubbled here and unpinned it, so the popup could never stay up.
+  const WIRED = '[data-ttip-wired]';
+  const pinsAtClickStart = new WeakMap();
+  // A cached Retry may restore a different owner before this click bubbles.
+  // Only the pin present at event entry belongs to the outside-click gesture.
+  const popupControls = '.capture-slots, .comparison-picker, [data-col-toggle], [data-transpose-toggle], [data-theme-toggle], [data-view-detailed]';
+  // A Retry handler may replace its own notice before this click bubbles. Retain
+  // the original control ownership instead of classifying its detached target.
+  document.addEventListener('click', event => {
+    pinsAtClickStart.set(event, { pin: pinnedCell, control: Boolean(event.target.closest(popupControls)) });
+  }, true);
   document.addEventListener('click', function (e) {
-    if (e.target.closest('.capture-slots, .comparison-picker')) return;
-    if (pinnedCell && !pinnedCell.contains(e.target) && !pinnedCell._ttip.contains(e.target)) { unpinCell(pinnedCell); }
+    const started = pinsAtClickStart.get(e);
+    if (started?.control) return;
+    // A click anywhere outside a pinnable element (and not on a pinned tooltip) closes the pin.
+    if (pinnedCell && pinnedCell === started?.pin && !e.target.closest(WIRED) && !e.target.closest('.ttip')) { unpinCell(pinnedCell); }
   });
-
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && pinnedCell && !document.querySelector('dialog[open]')) { event.preventDefault(); unpinCell(pinnedCell); }
   });
@@ -1004,6 +890,7 @@
       cell.dataset.ttipPortal = '1';
       cell.tabIndex = 0;
     }
+    if (!cell.dataset.popupKey && cell.dataset.colToggle) cell.dataset.popupKey = `control:${cell.dataset.colToggle}`;
     cell._ttip = ttip;
     ttip._ttipOwner = cell;
     // cloneNode copies the wired flag; guard so re-wiring a clone is a no-op and
@@ -1102,6 +989,8 @@
         if (ttip.classList.contains('ttip-pinned')) unpin(); else pin();
       }
     });
+    cell._ttipPin = pin;
+    cell._ttipDispose = function () { clearTimers(); unpin(); };
 
     function clearTimers() {
       if (showTimer !== null) {
@@ -1125,7 +1014,7 @@
         place(cell);
         ttip.classList.add('ttip-visible');
         isVisible = true;
-      }, showDelayMs);
+      }, cell.classList.contains('col-toggle') ? columnShowDelayMs : showDelayMs);
     }
 
     function scheduleHide() {
@@ -1152,17 +1041,7 @@
         visibleTooltips.delete(ttip);
         restoreTooltip();
         isVisible = false;
-      }, hideDelayMs);
-    }
-
-    function keepButtonTooltipOpen() {
-      if (!hoverAllowed()) return;
-      isActive = true;
-      clearTimers();
-      portalTooltip();
-      place(cell);
-      ttip.classList.add('ttip-visible');
-      isVisible = true;
+      }, cell.classList.contains('col-toggle') ? columnHideDelayMs : hideDelayMs);
     }
 
     function keepTooltipOpen() {
@@ -1205,6 +1084,7 @@
     // listeners unconditionally. Only non-click-only hosts may activate on hover or focus;
     // case hosts require explicit activation to avoid constructing popups during navigation.
     const onEnter = function () {
+      placeCaseHint(cell);
       if (!clickOnly && hoverAllowed() && !ttip.classList.contains('ttip-pinned')) { scheduleShow(); }
     };
     const onLeave = function () {
@@ -1222,6 +1102,7 @@
     cell.addEventListener('mouseenter', onEnter);
     cell.addEventListener('mouseleave', onLeave);
     cell.addEventListener('focusin', function () {
+      placeCaseHint(cell);
       if (!clickOnly && hoverAllowed()) {
         restoreTooltip();
         showFocusedTooltip();
@@ -1245,10 +1126,6 @@
     ttip.addEventListener('pointerleave', onLeave);
     ttip.addEventListener('mouseleave', onLeave);
 
-    if (cell.classList.contains('col-toggle')) {
-      cell.addEventListener('mouseenter', keepButtonTooltipOpen);
-      cell.addEventListener('pointerenter', keepButtonTooltipOpen);
-    }
   }
   window.__attachConformanceTooltip = attachTooltip;
   // The elements present at load. `th.case-sub` carries the per-column grammar popup (the
@@ -1268,7 +1145,7 @@
           && Boolean(candidate.closest('table[data-transpose-table]')) === transposed;
       });
     if (cell && cell._ttipPin) { cell._ttipPin(); }
-    else {
+    else if (!(panel && panel.id === 'tab-unified' && panel.dataset.loadState !== 'ready')) {
       const url = new URL(window.location.href);
       url.searchParams.delete('popup');
       window.history.replaceState(null, '', url.toString());
@@ -1279,6 +1156,7 @@
   tabButtons.forEach(function (button) {
     button.addEventListener('click', function () {
       activateTab(button.dataset.tabTarget, true);
+      hooks.tabChanged?.(button.dataset.tabTarget);
     });
   });
 
@@ -1304,6 +1182,15 @@
       url.searchParams.set('transpose', '1');
     }
     window.history.replaceState(null, '', url.toString());
+  }
+
+  function cloneTooltip(source) {
+    if (!source) return null;
+    const clone = source.cloneNode(true);
+    clone.classList.remove('ttip-visible', 'ttip-pinned');
+    clone.removeAttribute('data-ttip-wired');
+    clone.querySelectorAll('.ttip-close').forEach(button => { button.removeAttribute('data-ttip-close-wired'); });
+    return clone;
   }
 
   function buildTransposed(table) {
@@ -1335,6 +1222,7 @@
       if (!modelTd) return;
       models.push({
         name: modelTd.textContent.trim(),
+        popupKey: modelTd.dataset.popupKey,
         section: curSection,
         parserTd: row.querySelector('td.parser'),
         cells: Array.from(row.querySelectorAll('td.cell'))
@@ -1405,6 +1293,7 @@
     models.forEach(function (m) {
       const th = document.createElement('th');
       th.className = 'tcol-model';
+      th.dataset.popupKey = m.popupKey;
       const label = document.createElement('span');
       label.className = 'tcol-model-label';
       const nameSpan = document.createElement('span');
@@ -1434,9 +1323,7 @@
       // Same hover tooltip as the original parser cell.
       const srcTip = m.parserTd && (m.parserTd._ttip || m.parserTd.querySelector('.ttip'));
       if (srcTip) {
-        const tipClone = srcTip.cloneNode(true);
-        tipClone.removeAttribute('data-ttip-wired');
-        delete tipClone.dataset.ttipWired;
+        const tipClone = cloneTooltip(srcTip);
         th.appendChild(tipClone);
         attachTooltip(th);
       }
@@ -1465,6 +1352,7 @@
       if (group) { tr.setAttribute('data-col-hide-group', group); }
       const caseTh = document.createElement('th');
       caseTh.className = 'trow-case';
+      caseTh.dataset.popupKey = subTh.dataset.popupKey;
       const link = subTh.querySelector('a');
       caseTh.appendChild(link ? link.cloneNode(true) : document.createTextNode(subTh.textContent.trim()));
       // Carry the per-case grammar popup into the transposed view. Transposing turns the
@@ -1488,15 +1376,10 @@
         if (src) {
           const sourceTip = src._ttip || src.querySelector('.ttip');
           const clone = src.cloneNode(true);
-          const cloneTip = sourceTip && sourceTip.cloneNode(true);
+          const cloneTip = cloneTooltip(sourceTip);
           const embeddedTip = clone.querySelector('.ttip');
           if (cloneTip) {
             if (embeddedTip) embeddedTip.remove();
-            cloneTip.classList.remove('ttip-visible', 'ttip-pinned');
-            cloneTip.querySelectorAll('.ttip-close').forEach(function (button) {
-              button.removeAttribute('data-ttip-close-wired');
-              delete button.dataset.ttipCloseWired;
-            });
             clone.appendChild(cloneTip);
           }
           clone.classList.remove('col-hidden');
@@ -1559,4 +1442,472 @@
       applyTransposeMode(transposeToggle.checked, true);
     });
   }
-})();
+  function disposePanel(panel) {
+    const selected = pinnedCell?.closest('.tab-panel') === panel ? {
+      popupKey: pinnedCell.dataset.popupKey,
+      transposed: Boolean(pinnedCell.closest('[data-transpose-table]')),
+      width: pinnedCell._ttip.style.width, height: pinnedCell._ttip.style.height,
+      scrollTop: pinnedCell._ttip.scrollTop, scrollLeft: pinnedCell._ttip.scrollLeft,
+    } : null;
+    panel.querySelectorAll('[data-ttip-wired]').forEach(cell => cell._ttipDispose?.());
+    return selected;
+  }
+  function refreshPanel(panel) { applyCtl(panel); }
+  function updatePanel(panel, pin) {
+    columnButtons = Array.from(document.querySelectorAll('[data-col-toggle]'));
+    columnKeys = [...new Set([...(hooks.columnKeys || []), ...columnButtons.map(button => button.dataset.colToggle)])];
+    visibleColumns = readVisibleColumns();
+    panel.querySelectorAll(WIRE_ON_LOAD).forEach(attachTooltip);
+    applyColumnState(visibleColumns, false);
+    if (document.body.classList.contains('transpose-mode')) ensureTransposed(panel);
+    applyCtl(panel);
+    if (pin?.popupKey) {
+      const table = panel.querySelector(pin.transposed ? '[data-transpose-table]' : '[data-parity-table]');
+      const cell = [...(table?.querySelectorAll('[data-popup-key]') || [])].find(cell => cell.dataset.popupKey === pin.popupKey);
+      if (cell) {
+        window.__buildTooltip(cell);
+        cell._ttip.style.width = pin.width; cell._ttip.style.height = pin.height;
+        cell._ttipPin?.();
+        cell._ttip.scrollTop = pin.scrollTop;
+        cell._ttip.scrollLeft = pin.scrollLeft;
+      }
+    }
+    restorePinnedTooltip();
+    updateStickyOffsets();
+  }
+  return { refreshPanel, updatePanel, disposePanel, activePanel, refreshPopupLayout: repositionVisibleTooltips,
+    selection(panel) {
+      const ctl = panelCtl(panel), reference = ctlBase(ctl);
+      return hooks.engineSelection ? hooks.engineSelection.selection() : { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
+    },
+  };
+};
+
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}, { availableIdentities = null } = {}) {
+  const tab = page && page.tabs && page.tabs.find(item => item.id === 'tab-unified');
+  if (!tab || !panel) return null;
+
+  const engines = tab.comparison_slot_engines || ['dynamo', 'sglang', 'vllm'];
+  const engineNames = { dynamo: 'Dynamo', sglang: 'SGLang', vllm: 'vLLM' };
+  const engineLetters = { dynamo: 'D', sglang: 'S', vllm: 'V' };
+  const candidates = [];
+  const byKey = new Map();
+  const byIdentity = new Map();
+  let selectionTouched = false;
+  const engineName = engine => engine ? engineNames[engine] : 'None';
+  const engineOf = item => {
+    const impl = String(item.impl || item.key).toLowerCase();
+    return impl.startsWith('dynamo') ? 'dynamo' : impl.startsWith('sglang') ? 'sglang' : 'vllm';
+  };
+  // Catalog descriptors define availability before any selected history is loaded.
+  const available = [];
+  const languageOrder = tab.comparison_languages || [];
+  const languageRank = item => {
+    const rank = languageOrder.indexOf(item.language);
+    return rank < 0 ? languageOrder.length : rank;
+  };
+  const versionParts = item => String(item.version || '').match(/\d+|[A-Za-z]+/g) || [];
+  const compareVersions = (left, right) => {
+    const a = versionParts(left);
+    const b = versionParts(right);
+    for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
+      if (a[index] === undefined) return 1;
+      if (b[index] === undefined) return -1;
+      const leftNumber = /^\d+$/.test(a[index]);
+      const rightNumber = /^\d+$/.test(b[index]);
+      if (leftNumber && rightNumber) {
+        const difference = Number(b[index]) - Number(a[index]);
+        if (difference) return difference;
+      } else if (a[index] !== b[index]) {
+        return a[index] < b[index] ? 1 : -1;
+      }
+    }
+    return 0;
+  };
+  const compareCaptures = (left, right, engine) => {
+    const languageDifference = languageRank(left) - languageRank(right);
+    if (languageDifference) return languageDifference;
+    if (engine === 'dynamo') {
+      const leftGeneration = /^dynamo_v1(?:_|@)/.test(left.key) ? 1 : 2;
+      const rightGeneration = /^dynamo_v1(?:_|@)/.test(right.key) ? 1 : 2;
+      if (leftGeneration !== rightGeneration) return rightGeneration - leftGeneration;
+    }
+    return compareVersions(left, right)
+      || (left.key < right.key ? -1 : left.key > right.key ? 1 : 0);
+  };
+  const byEngine = new Map();
+  const setCandidates = items => {
+    candidates.splice(0, candidates.length, ...items.filter(item => item && item.key && item.impl !== 'golden'));
+    byKey.clear(); byIdentity.clear();
+    for (const item of candidates) {
+      byKey.set(item.key, item);
+      for (const identity of [item.key, item.source_id, item.identity].filter(Boolean)) byIdentity.set(identity, item.key);
+    }
+    available.splice(0, available.length, ...candidates.filter(item => {
+      const families = item.capture_families || item.native_unified_families;
+      return !item.source_blocker && item.has_captured_results !== false && (!families || families.length);
+    }));
+    for (const engine of engines) byEngine.set(engine, available.filter(item => engineOf(item) === engine)
+      .sort((left, right) => compareCaptures(left, right, engine)));
+  };
+  setCandidates(tab.candidates || []);
+  const isDynamoV2Choice = item => Boolean(item)
+    && (item.identity?.startsWith('dynamo_v2@') || item.key.startsWith('dynamo@'));
+  const captureChoices = engine => {
+    const choices = (byEngine.get(engine) || []).filter(item => !availableIdentities || availableIdentities.has(item.identity));
+    if (engine !== 'dynamo') return choices;
+    const versioned = choices.filter(item => /^dynamo_v1(?:_|@)/.test(item.key) || isDynamoV2Choice(item));
+    const latestByLine = new Map();
+    const recentByProducer = new Map();
+    for (const item of [...versioned].sort(compareVersions)) {
+      const isV2 = isDynamoV2Choice(item);
+      const producer = isV2 ? 'dynamo_v2' : item.key.split('@')[0];
+      const recent = recentByProducer.get(producer) || new Set();
+      if (recent.size < 2) recent.add(item.version);
+      recentByProducer.set(producer, recent);
+      const parts = versionParts(item);
+      const line = isV2 ? parts.slice(0, 2).join('.') : parts[0];
+      const key = producer + ':' + line;
+      if (!latestByLine.has(key)) latestByLine.set(key, item.version);
+    }
+    return choices.filter(item => {
+      const producer = item.key.split('@')[0];
+      const isV2 = isDynamoV2Choice(item);
+      if (!/^dynamo_v1(?:_|@)/.test(item.key) && !isV2) return true;
+      const parts = versionParts(item);
+      const line = isV2 ? parts.slice(0, 2).join('.') : parts[0];
+      const identity = isV2 ? 'dynamo_v2' : producer;
+      return recentByProducer.get(identity)?.has(item.version) || latestByLine.get(identity + ':' + line) === item.version;
+    });
+  };
+  const preferredByEngine = engines.map(engine => {
+    return captureChoices(engine)[0]?.key || null;
+  });
+  const preferred = [preferredByEngine[0], null, null];
+  const params = new URLSearchParams(window.__CONFORMANCE_INITIAL_SEARCH || window.location.search);
+  const slotsParam = 'slots_' + tab.id;
+  const initialTab = params.get('tab');
+  const legacyCandidates = new Map(Object.entries(page.legacy_candidate_identities || {}));
+  for (const item of page.tabs.find(item => item.id === initialTab)?.candidates || []) {
+    if (item.key && item.identity) legacyCandidates.set(item.key, item.identity);
+  }
+  const resolveSlotKey = key => {
+    if (!key || key === 'golden') return '';
+    if (byKey.has(key)) return key;
+    const identity = legacyCandidates.get(key) || key;
+    return byIdentity.get(identity) || byIdentity.get(key) || '';
+  };
+  const legacyTabs = [...new Set([initialTab, tab.id].filter(Boolean))];
+  const legacyBaseParam = legacyTabs.map(id => 'base_' + id).find(key => params.has(key));
+  const legacyCompareParam = legacyTabs.map(id => 'cmp_' + id).find(key => params.has(key));
+  const legacyRef = (legacyBaseParam && params.get(legacyBaseParam)) ?? params.get('ref');
+  const legacyCmp = (legacyCompareParam && params.get(legacyCompareParam)) ?? params.get('cmp');
+  const hasLegacy = Boolean(legacyBaseParam || legacyCompareParam || params.has('ref') || params.has('cmp'));
+  const legacySelection = hasLegacy
+    ? [(legacyBaseParam || params.has('ref')) ? legacyRef : preferred[0], ...(legacyCmp || '').split(',')]
+      .map(resolveSlotKey)
+    : null;
+  // Stream-tab links encode engine columns; other legacy comparisons preserve their authored order.
+  const legacy = initialTab === 'tab-toolcalling-streamv1' && legacySelection
+    ? legacySelection.reduce((slots, key) => {
+      if (!key) return slots;
+      const engineIndex = engines.indexOf(engineOf(byKey.get(key)));
+      const target = engineIndex >= 0 && !slots[engineIndex] ? engineIndex : slots.findIndex(slot => !slot);
+      if (target >= 0) slots[target] = key;
+      return slots;
+    }, [null, null, null])
+    : legacySelection;
+  const requested = params.has(slotsParam) ? (params.get(slotsParam) || '').split(',').map(key => key && key !== 'none' ? resolveSlotKey(key) : '') : legacy;
+  const initial = requested === null ? preferred : requested;
+  const overflow = initial.filter(Boolean).length > 3;
+  const slots = [null, null, null];
+  const slotEngines = [...engines];
+  // Restoration and updates share primary ownership and duplicate prevention.
+  function normalizeSlots() {
+    const seen = new Set();
+    slots.forEach((key, index) => {
+      let current = byKey.get(key);
+      const currentIsV2 = isDynamoV2Choice(current);
+      if (current && (/^dynamo_v1(?:_|@)/.test(current.key) || currentIsV2)
+        && !captureChoices('dynamo').includes(current)) {
+        const producer = currentIsV2 ? 'dynamo_v2' : current.key.split('@')[0];
+        const parts = versionParts(current);
+        const line = currentIsV2 ? parts.slice(0, 2).join('.') : parts[0];
+        const latest = captureChoices('dynamo').find(item => (currentIsV2 ? isDynamoV2Choice(item) : item.key.startsWith(producer + '@'))
+          && (currentIsV2
+            ? versionParts(item).slice(0, 2).join('.') === line
+            : versionParts(item)[0] === line));
+        if (latest) slots[index] = key = latest.key;
+        else {
+          slots[index] = key = '';
+          slotEngines[index] = engineOf(current);
+        }
+        current = byKey.get(key);
+      }
+      if (!current || !captureChoices(engineOf(current)).includes(current) || seen.has(key)) {
+        if (index === 0) {
+          slots[index] = preferred[0];
+          current = byKey.get(preferred[0]);
+        } else {
+          slots[index] = null;
+          slotEngines[index] = null;
+          if (current) slotEngines[index] = engineOf(current);
+          return;
+        }
+      }
+      seen.add(slots[index]);
+      slotEngines[index] = engineOf(current);
+    });
+  }
+  initial.slice(0, 3).forEach((key, index) => {
+    slots[index] = key || null;
+  });
+  normalizeSlots();
+
+  const selector = document.createElement('section');
+  selector.className = 'capture-slots';
+  selector.setAttribute('aria-label', 'Parser captures compared with GOLDEN');
+  if (overflow) {
+    const notice = document.createElement('p');
+    notice.className = 'capture-slots-notice';
+    notice.textContent = 'This link selected more than three captures. Showing the first three.';
+    selector.appendChild(notice);
+  }
+  const controls = document.createElement('div');
+  controls.className = 'capture-slot-controls';
+  const escapeHtml = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escapeAttr = value => escapeHtml(value).replace(/"/g, '&quot;');
+  const shortCaptureLabel = (capture, engine) => {
+    const label = String(capture && (capture.label || capture.version || capture.key) || 'None');
+    return label.startsWith(engineName(engine) + ' ') ? label.slice(engineName(engine).length + 1) : label;
+  };
+  const captureTitle = (capture, engine) => {
+    const label = String(capture && (capture.label || capture.version || capture.key) || 'None');
+    if (engine !== 'dynamo' || !capture || capture.parse_mode !== 'batch') return label;
+    if (capture.source_blocker) return capture.source_blocker;
+    return capture.key.startsWith('dynamo_v1_jail@')
+      ? 'Unified v2 batch corpus; produced through the Dynamo v1 Rust jail-buffer producer.'
+      : 'Unified v2 batch corpus; produced by the Dynamo v1 Rust parser using legacy batch APIs, without a jail buffer.';
+  };
+  function candidateOptions(engine, slot, selectedKey) {
+    if (!engine) return '';
+    const choices = captureChoices(engine);
+    return choices.map(item => {
+      const duplicate = slots.some((key, index) => index !== slot && key === item.key);
+      const label = shortCaptureLabel(item, engine);
+      return '<option value="' + item.key.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"'
+        + ' title="' + escapeAttr(captureTitle(item, engine)) + '"'
+        + (selectedKey === item.key ? ' selected' : '') + (duplicate || item.source_blocker ? ' disabled' : '') + '>'
+        + label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        + (duplicate ? ' — selected in another slot' : '') + '</option>';
+    }).join('');
+  }
+  controls.innerHTML = slots.map((_key, index) => {
+    const engine = slotEngines[index];
+    return '<div class="capture-slot" data-engine="' + (engine || 'none') + '">'
+      + '<button type="button" class="capture-slot-engine-trigger" data-slot-open="' + index + '"'
+      + ' aria-haspopup="dialog" aria-expanded="false" aria-controls="unified-capture-picker"'
+      + ' aria-label="Edit comparison slot ' + (index + 1) + ': ' + engineName(engine) + '">'
+      + '<span class="capture-slot-badge" data-slot-badge="' + index + '" aria-hidden="true">' + (engineLetters[engine] || '—') + '</span>'
+      + '<span class="capture-slot-engine" data-slot-engine="' + index + '">' + engineName(engine) + '</span></button>'
+      + '<div class="capture-slot-capture-control" data-slot-capture-control="' + index + '"></div></div>';
+  }).join('');
+  selector.appendChild(controls);
+  const actions = document.querySelector('.tabs-right');
+  if (actions) {
+    actions.classList.add('capture-slot-actions');
+    selector.appendChild(actions);
+  }
+  panel.insertBefore(selector, panel.querySelector('.cmpctl'));
+
+  const state = { slots, engines: slotEngines };
+  // Controls describe the requested captures. Only a completed model changes the
+  // displayed selection, which also owns cell colors, legend and lazy popups.
+  panel._comparisonSelection = { keys: [], reference: null };
+  function persist() {
+    const url = new URL(window.location.href);
+    const current = state.slots.map(key => key ? (byKey.get(key)?.identity || key) : 'none').join(',');
+    const isDefault = state.slots.every((key, index) => key === preferred[index]);
+    if (isDefault) url.searchParams.delete(slotsParam);
+    else url.searchParams.set(slotsParam, current);
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:base_|cmp_)/.test(key)) url.searchParams.delete(key);
+    }
+    url.searchParams.delete('ref');
+    url.searchParams.delete('cmp');
+    window.history.replaceState(null, '', url.toString());
+  }
+  function update(notify = true) {
+    normalizeSlots();
+    state.slots.forEach((key, index) => {
+      const capture = byKey.get(key);
+      const engine = state.engines[index];
+      const slot = controls.querySelector('.capture-slot:nth-child(' + (index + 1) + ')');
+      slot.dataset.engine = engine || 'none';
+      slot.querySelector('[data-slot-engine]').textContent = engineName(engine);
+      slot.querySelector('[data-slot-badge]').textContent = engineLetters[engine] || '—';
+      const captureControl = slot.querySelector('.capture-slot-capture-control');
+      if (engine) {
+        let captureSelect = captureControl.querySelector('[data-slot-capture]');
+        if (!captureSelect) {
+          captureSelect = document.createElement('select');
+          captureSelect.className = 'capture-slot-select';
+          captureSelect.dataset.slotCapture = index;
+          const selectedLabel = document.createElement('span');
+          selectedLabel.className = 'capture-slot-selected-label';
+          selectedLabel.setAttribute('aria-hidden', 'true');
+          captureControl.replaceChildren(captureSelect, selectedLabel);
+        }
+        captureSelect.innerHTML = candidateOptions(engine, index, key);
+        captureSelect.value = key || '';
+        captureControl.querySelector('.capture-slot-selected-label').textContent = shortCaptureLabel(capture, engine);
+        captureSelect.disabled = false;
+        captureSelect.setAttribute('aria-label', 'Choose capture for comparison slot '
+          + (index + 1) + ': ' + engineName(engine) + ', ' + shortCaptureLabel(capture, engine));
+      } else {
+        captureControl.replaceChildren();
+      }
+      slot.querySelector('[data-slot-open]').setAttribute('aria-label', 'Edit comparison slot ' + (index + 1) + ': ' + engineName(engine));
+    });
+    persist();
+    if (notify) onChange();
+  }
+  update();
+
+  const picker = document.createElement('dialog');
+  picker.className = 'comparison-picker';
+  picker.id = 'unified-capture-picker';
+  picker.setAttribute('aria-label', 'Choose comparison engine or capture');
+  document.body.appendChild(picker);
+  let activeSlot = 0;
+  let activeTrigger = null;
+  let skipPickerFocusRestore = false;
+  function positionPicker() {
+    if (!picker.open || !activeTrigger) return;
+    const anchor = activeTrigger.getBoundingClientRect();
+    const rect = picker.getBoundingClientRect();
+    const margin = 12;
+    const gap = 8;
+    let left = anchor.right + gap;
+    if (left + rect.width > window.innerWidth - margin) left = anchor.left - rect.width - gap;
+    picker.style.left = Math.max(margin, Math.min(left, window.innerWidth - rect.width - margin)) + 'px';
+    picker.style.top = Math.max(margin, Math.min(anchor.top, window.innerHeight - rect.height - margin)) + 'px';
+  }
+  function focusPicker(selector) {
+    if (picker.open) positionPicker();
+    window.requestAnimationFrame(() => {
+      positionPicker();
+      picker.querySelector(selector)?.focus();
+    });
+  }
+  function showEngineChoices() {
+    const choices = activeSlot === 0 ? engines : [...engines, 'none'];
+    picker.dataset.stage = 'engine';
+    picker.innerHTML = '<h2>Comparison slot ' + (activeSlot + 1) + '</h2>'
+      + '<div class="picker-choices" role="group" aria-label="Choose engine">'
+      + choices.map(engine => {
+        const selected = engine === (state.engines[activeSlot] || 'none');
+        return '<button type="button" data-picker-engine-choice="' + engine + '"'
+          + (selected ? ' aria-current="true"' : '') + '>'
+          + engineName(engine === 'none' ? null : engine) + '</button>';
+      }).join('') + '</div>';
+    focusPicker('[data-picker-engine-choice]');
+  }
+  function chooseEngine(engine) {
+    selectionTouched = true;
+    const choices = captureChoices(engine).filter(item =>
+      !state.slots.some((key, index) => index !== activeSlot && key === item.key));
+    const current = byKey.get(state.slots[activeSlot]);
+    const selected = current && engineOf(current) === engine && choices.some(item => item.key === current.key)
+      ? current
+      : choices.find(item => item.key === preferredByEngine[engines.indexOf(engine)]) || choices[0];
+    if (!selected) return;
+    state.engines[activeSlot] = engine;
+    state.slots[activeSlot] = selected.key;
+    update();
+    const captureSelect = controls.querySelector('[data-slot-capture="' + activeSlot + '"]');
+    skipPickerFocusRestore = true;
+    picker.close();
+    captureSelect.focus({ preventScroll: true });
+    if (typeof captureSelect.showPicker === 'function') captureSelect.showPicker();
+    else captureSelect.click();
+  }
+  function openPicker(slot, trigger) {
+    activeSlot = slot;
+    activeTrigger = trigger;
+    picker.dataset.slot = slot;
+    showEngineChoices();
+    trigger.setAttribute('aria-expanded', 'true');
+    picker.showModal();
+    window.requestAnimationFrame(positionPicker);
+  }
+  controls.addEventListener('click', event => {
+    const trigger = event.target.closest('[data-slot-open]');
+    if (trigger) openPicker(Number(trigger.dataset.slotOpen), trigger);
+  });
+  controls.addEventListener('change', event => {
+    if (!event.target.matches('[data-slot-capture]')) return;
+    const slot = Number(event.target.dataset.slotCapture);
+    const key = event.target.value || null;
+    if (key && state.slots.some((value, index) => index !== slot && value === key)) return;
+    selectionTouched = true;
+    state.slots[slot] = key;
+    update();
+  });
+  picker.addEventListener('click', event => {
+    if (event.target === picker) picker.close();
+    const engineButton = event.target.closest('[data-picker-engine-choice]');
+    if (engineButton) {
+      const engine = engineButton.dataset.pickerEngineChoice;
+      if (engine === 'none') {
+        selectionTouched = true;
+        state.engines[activeSlot] = null;
+        state.slots[activeSlot] = null;
+        update();
+        picker.close();
+      } else chooseEngine(engine);
+    }
+  });
+  picker.addEventListener('close', () => {
+    if (activeTrigger && activeTrigger.isConnected) {
+      activeTrigger.setAttribute('aria-expanded', 'false');
+      if (!skipPickerFocusRestore) activeTrigger.focus({ preventScroll: true });
+    }
+    skipPickerFocusRestore = false;
+  });
+  window.addEventListener('resize', positionPicker);
+  window.addEventListener('scroll', positionPicker, true);
+  return {
+    setCandidates,
+    setAvailableIdentities(identities, { notify = true } = {}) {
+      const previous = state.slots.join(',');
+      availableIdentities = identities;
+      // Discovery may finish after a user changes a slot. Preserve that choice;
+      // only an untouched initial historical URL can restore its deferred slots.
+      if (!selectionTouched) initial.slice(0, 3).forEach((key, index) => { state.slots[index] = key || null; });
+      update(false);
+      const changed = state.slots.join(',') !== previous;
+      if (changed && notify) onChange();
+      return changed;
+    },
+    selection() { return { reference: null, selected: state.slots.filter(Boolean) }; },
+    alternatives() {
+      const selected = state.slots.filter(Boolean);
+      const activeEngine = state.engines.find(Boolean) || engines[0];
+      const engineOrder = [activeEngine, ...engines.filter(engine => engine !== activeEngine)];
+      return engineOrder.flatMap(engine => captureChoices(engine).filter(item => !selected.includes(item.key)).map(item => {
+        const slot = state.slots.findIndex(key => key && engineOf(byKey.get(key)) === engine);
+        const index = slot >= 0 ? slot : state.slots.findIndex(key => !key);
+        if (index < 0) return null;
+        const next = [...state.slots]; next[index] = item.key;
+        return next.filter(Boolean);
+      })).filter(Boolean);
+    },
+    dispose() { selector.remove(); picker.remove(); window.removeEventListener('resize', positionPicker); window.removeEventListener('scroll', positionPicker, true); },
+  };
+};
+if (window.__CONFORMANCE_PAGE) {
+  window.mountConformanceCaptureSlots(window.__CONFORMANCE_PAGE, document.getElementById('tab-unified'));
+}

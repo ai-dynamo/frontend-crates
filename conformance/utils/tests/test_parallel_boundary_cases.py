@@ -32,24 +32,3 @@ def test_unified_parallel_boundaries_preserve_the_authored_stream_stimulus():
                 expected_chunks[0] = "</think>" + expected_chunks[0]
             assert case["input_chunks"] == expected_chunks
             assert case["input_chunks"][-1] == ""
-
-
-def test_staged_unified_generator_preserves_parallel_boundaries(tmp_path):
-    # Direct imports cannot detect a dependency omitted by the renderer's stage.
-    probe = """import json
-import gen_unified_golden as g
-print(json.dumps({f: {k: c for k, c in g.build_cases(f).items()
-                     if 'partial_header' in k} for f in g.FAMILIES}, sort_keys=True))
-"""
-    env = {key: os.environ[key] for key in (
-        "PATH", "HOME", "TMPDIR", "TMP", "TEMP", "DYN_SCRATCH_ROOT", "XDG_CACHE_HOME",
-    ) if key in os.environ}
-    env.update(STAGE=str(tmp_path / "stage"), STAGED_PYTHON=sys.executable,
-               STAGED_PROBE=probe, STAGED_COMMON=str(Path(__file__).parents[1] / "src/_common.sh"))
-    result = subprocess.run(
-        ["bash", "-c", 'source "$STAGED_COMMON" && _build_stage_base && cd "$STAGE/tests/parity" && "$STAGED_PYTHON" -c "$STAGED_PROBE"'],
-        env=env, capture_output=True, text=True, check=True,
-    )
-    expected = {family: {key: case for key, case in unified.build_cases(family).items()
-                         if "partial_header" in key} for family in unified.FAMILIES}
-    assert json.loads(result.stdout) == expected

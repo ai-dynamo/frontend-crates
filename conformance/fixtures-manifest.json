@@ -402,5 +402,6 @@
       "size": 62823040
     }
   ],
-  "inactive_shards": []
+  "inactive_shards": [],
+  "historical_catalog_sha256": "e8afd93032fbab666f9bf2b0db2756c211774f73530be0208b8b53f6b8e42fd6"
 }

@@ -5,9 +5,9 @@
 # (v1 = dynamo-parsers batch+jail, frozen and slated for removal; v2 =
 # dynamo-parsers-v2 streaming, the ultimate implementation).
 #
-# Applied at RENDER time (generate_conformance_table reads this via
-# FRONTEND_CRATES_ROOT), never written into the recorded capture YAMLs — so the
-# notes survive every capture re-record. The popup shows each note as a muted
+# Indexed by the catalog and applied by browser/Node models, never written into
+# recorded capture YAMLs, so the notes survive every capture re-record.
+# The popup shows each note as a muted
 # `explanation:` annotation on that candidate's column, and the cell loses its
 # `?` research-needed suffix.
 #

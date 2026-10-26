@@ -5,31 +5,42 @@ SPDX-License-Identifier: Apache-2.0
 
 # conformance
 
-Parser conformance fixtures, fixture-based Rust tests, and HTML renderers for frontend-crates.
+Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Unified viewer for frontend-crates. The checkout root `index.html` reads the compact Unified catalog and selected versioned YAML over HTTP. Publication generates gzip-compressed typed JSON inputs and resolved captures in the site output; YAML remains authoritative, and raw-source links retain original YAML bytes. The full catalog remains available to Node model checks and legacy raw archive links.
 
-## Unified storage contract: plain versioned YAML only
+## Active corpus and capture policy
 
-The intent of #257 is to remove code, duplicate captures, merge conflicts, and file-change noise. Unified conformance uses readable YAML named by implementation and semantic version, such as `families/glm47/dynamo_v2-0.7.0.yaml`. This migration applies only to Unified, for every family and engine. Older tool-calling stream, batch-on-stream, batch, and reasoning storage stays unchanged.
+`TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence; deprecated v1 conformance executors and tests are retired; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
 
-- No new Unified `*.patch*.yaml`, `.tar.gz` capture archives, `+source.<hash>`, `+sha<hash>`, or other hash/commit-qualified capture names. Do not add these formats to satisfy an old Unified reader or test.
-- One version identifies one checkpoint per family and implementation. A different source SHA alone does not justify a recapture, duplicate file, or manifest change. The first capture may keep its original source SHA inside the YAML as origin metadata; later SHAs do not change its identity.
-- New parser behavior requires a manually pinned, unpublished crate version before capture. Follow [Pin the release version before capture](#pin-the-release-version-before-capture).
-- Readers and HTML/JSON generators discover checkpoints by filename and semantic-version order. When a family has no changed output in a later version, carry its earlier captured output forward into that version's table cells. Do not duplicate YAML or leave those cells empty.
-- Keep inputs and GOLDEN separate from recorded outputs. Ask the user before modifying an authored input; an approved change requires recapturing every prior affected version. Never change GOLDEN to hide a parser failure.
-- Family-specific PRs add only that family's captures and required code. Do not bundle other families' YAML in an archive. Shared cases and non-GLM fixes from #234 belong to #241.
+Contributors edit parsers and authored inputs/GOLDEN, run latest parser tests, and generate the latest report. Recorded observations and historical backfills are maintained by repository administrators; they are not a contributor prerequisite. Generated publication JSON stays outside Git.
 
-The `v2` directory names describe the older streaming parser tests as well as Unified; they do not define the migration scope. Keep the existing archive readers and packagers for those older tests. A family conversion may update that family's stream capture in the existing format without migrating storage or repackaging other families. Retired Unified archives remain historical evidence; new Unified captures use only the YAML store.
+## Latest captures and retained history
 
-### Pin the release version before capture
+The implementation scope and acceptance checks are in [`../docs/CONFORMANCE-LATEST-PLAN.md`](../docs/CONFORMANCE-LATEST-PLAN.md). Add 77 complete versionless latest files beside the existing captures at `fixtures-unified-v2/families/<family>/<implementation>.yaml`, across 12 families, including Muse Spark. Batch and jail variants remain separate implementations. Authored requests and GOLDEN stay in each family's `inputs_and_golden.yaml`.
 
-When adding or converting a parser, or changing its captured behavior, manually pin the intended release version in the same PR before recording output. The invariant is `capture version == crate version == version published after merge`. An automatic bump after capture would break that equality.
+No backfill is needed. Keep all 689 existing versioned v2 capture files, all 12 authored input/GOLDEN files, and existing legacy archives unchanged at their original paths. Versioned v2 files will be removed in later PRs. Historical moves, archive expansion, and new compression are deferred.
 
-1. Fetch the current release tags and check published versions. Choose the next appropriate unpublished semantic version; a feature branch still carrying an old version does not make its new behavior part of that old release.
-2. Set the parser crate's `Cargo.toml` version explicitly. Update its dependent manifests, `Cargo.lock`, and the conformance manifest's crate version together. For Dynamo v2, this includes `parsers/v2/Cargo.toml`, `parsers/v2-py/Cargo.toml`, `conformance/Cargo.toml`, and `conformance/fixtures-manifest.json`.
-3. Build and capture from that pinned version. Keep the Unified YAML filename and origin version aligned with it, then run the capture validation and regenerate the report. Renaming an older capture without validating it against the pinned build is insufficient.
-4. Before merge, recheck that the pinned version is still unpublished. If another PR has released it, choose a new version and repeat the capture validation. After merge, verify the release tag and published crate use the captured version.
+Each latest file contains complete records and sealed request bindings, so it needs no historical parent. `capture_selection` identifies the latest selection separately from the producer provenance in each record. Local parser outputs are re-captured from current code. Peer outputs retain their recorded producer versions; selecting an older observation does not mean it was measured again.
 
-The release workflow honors this [manual version override](../RELEASING.md#manual-version-peg-fixture-synced-releases): it checks compatibility and publishes the explicitly pinned version without another automatic bump. For #234, GLM Unified and its pending release are both `0.7.0`; GLM Unified has no `0.6.x` captures. Unchanged families continue to inherit their existing captures.
+### Generate the latest or history report
+
+Build the Rust publisher and install the viewer's locked npm build dependency. Generate each report into its own output directory:
+
+```bash
+cargo build --locked --release -p conformance-publisher
+npm ci --prefix conformance/viewer
+target/release/conformance-publish --root . --output ../reports/latest --revision "$(git rev-parse HEAD)"
+target/release/conformance-publish --root . --output ../reports/history --revision "$(git rev-parse HEAD)" --include-history
+```
+
+Default generation reads authored inputs and versionless latest YAML only. `--include-history` adds historical selections from the unchanged versioned YAML and legacy archives at their current paths. `--history-source <directory>` selects an alternate dataset and requires `--include-history`. Latest and history use the same HTML template and JavaScript; their generated catalogs determine which releases and comparisons are available. Historical captures with recorded results remain selectable even when they used the Combined parser path; the current native family list bounds the displayed rows. Muse Spark message start/end events and commentary/final phases remain visible in both assembled output and per-chunk details. Default publication contains exactly one self-contained `index.html`, with no required JSON, JavaScript, CSS, fonts, or other files. Full history adds optional JSON sidecars beside the same HTML. Copy the default `index.html` to `conformance/CONFORMANCE_v2.html` to refresh the local reader-facing report; it can be moved or opened offline without companion files.
+
+Reuse a valid complete-publication cache before source staging. On a miss, restore compatible converted fragments before assembly. Historical YAML conversion runs only for explicit history generation when matching JSON is missing, incompatible, or corrupt. Cache admission checks source and payload hashes. Conversion identities are independent of commit metadata, renderer changes, and physical relocation; final envelopes and presentation may be rebuilt. Generated JSON, HTML, assets, and caches stay outside Git.
+
+### Current parser tests and qualification
+
+Current native tests discover versionless latest files through the shared resolver and materialize only those complete snapshots plus authored inputs. They do not sort or open historical captures and require no network access. Use `extract_fixtures.py --include-history` for retained historical fixtures, or supply `--history-source` for an alternate dataset.
+
+Ordinary CI generates latest only. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
 
 ## Case applicability
 
@@ -39,9 +50,9 @@ Before adding a conformance case, inspect every registered family. Always evalua
 
 ## Ownership
 
-New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy suites are retained for regression checks. Existing v1 captures remain available as historical comparisons in Unified.
+New conformance cases and captures are added only to Unified for the v2 parser. Do not add new v1 cases or v1 batch/jail captures. The default report displays only Unified; legacy conformance suites and renderers are retired. Existing v1 captures remain available as historical comparisons in Unified.
 
-Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, render outputs, and test commands.
+Parser v1/v2 terminology, migration steps, and fixture ownership are documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md). New streaming parser authors should also read [`../parsers/v2/README.md`](../parsers/v2/README.md); it explains the vLLM-shaped Rust parser contract, the v2 fixture schema, and the exact `conformance/toolcalling/*` files to add. This README covers conformance layout, browser resources, and test commands.
 
 ## Parser paths and modes (universal convention)
 
@@ -57,13 +68,14 @@ Parser v1/v2 terminology, migration steps, and fixture ownership are documented 
 ```
 conformance/
 ├── fixtures-manifest.json                         # pins the active fixture snapshot (sha256 per shard)
-├── fixtures/                                      # LFS-tracked shard tarballs for tool-calling/reasoning fixtures
-├── fixtures-unified-v2/                            # reviewable append-only YAML history for Unified captures
+├── fixtures-unified-v2/families/<family>/<implementation>.yaml # complete latest observations
+├── fixtures-unified-v2/families/                    # authored inputs and GOLDEN
+├── fixtures-unified-v2/families/<family>/<implementation>-<version>.yaml # unchanged retained history
 ├── tests/*.rs                                     # Rust fixture tests (fixtures extracted from the store on first run)
-└── utils/                                         # render, check, and record helpers
+└── utils/                                         # catalog, check, and capture helpers
 ```
 
-Tool-calling and reasoning archives remain under `conformance/fixtures/`, extracted into `~/.cache/dynamo/conformance-fixtures/`. Unified history uses reviewable YAML under `conformance/fixtures-unified-v2/`. `extract_fixtures.py` materializes both stores for existing consumers. Snapshot layout:
+`extract_fixtures.py` materializes latest YAML and authored inputs into `~/.cache/dynamo/conformance-fixtures/` for existing consumers. `--include-history` resolves the retained versioned YAML and legacy archives explicitly. Materialized compatibility layout:
 
 ```
 toolcalling/fixtures-batch-v1/<family>/           # v1 tool-calling batch cases
@@ -72,7 +84,9 @@ toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Unified capture history is append-only.** Each capture is one `<implementation>-<semantic-version>.yaml` checkpoint. Its first capture retains a compact source origin in YAML metadata; source SHA does not create another capture identity. A checkpoint records only changed case results; omitted cases inherit the prior observation, and existing historical checkpoints with `changes: {}` retain version/provenance without repeating results. Later release views carry unchanged family output forward from the newest checkpoint at or before that version. Re-running an unchanged checkpoint does not create a file or manifest change. Test inputs are immutable after capture: changing one requires recapturing and updating every prior semantic version. `dynamo_v1` and `dynamo_v2` have separate version histories and never fold together. The manifest-pinned snapshot, not whichever loose extracted directories happen to exist locally, determines what the chart shows.
+**Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Administrators maintain recorded observations and historical request bindings through the capture workflow; no historical backfill is required in this PR. `dynamo_v1` and `dynamo_v2` remain separate implementations.
+
+Latest execution metadata and receipt bodies are inline in complete snapshots. Historical conversion follows the unchanged sparse records and caches resolved JSON fragments. Original YAML and evidence are never rewritten by generation or tests. Source catalog and published transport hashes continue to validate the bytes used by a publication.
 
 ## End-to-end test cases (a separate surface, kept elsewhere)
 
@@ -84,11 +98,16 @@ The two surfaces answer different questions and neither replaces the other, so w
 
 Per-case tagging currently covers the UNIFIED surface only. The reasoning and tool-calling case docs below have no e2e tags yet — that mapping has not been worked out, and an untagged case means "not yet mapped", not "no e2e coverage".
 
-## Render Outputs
+## Browser Viewer
+
+The independent YAML reader is vendored as one ESM bundle from the exact `yaml@2.8.1` dependency pinned by the viewer lockfile. Run `npm ci --prefix conformance/viewer`, then `npm run vendor:yaml --prefix conformance/viewer` to reproduce it; retain its adjacent license. This reader supports development and independent qualification and is excluded from production HTML.
+
+
+Capture changes update the selectors and URL immediately. The displayed table, legend, and open popup keep showing the previous captures until the replacement is ready. Loading and failure messages leave those results usable; Retry repeats the requested selection. A successful replacement preserves filters, Vertical/Detailed state, scrolling, and an open popup when its case still exists.
 
 The report contains one Unified table in HTML and JSON; the Unified tab button is hidden, and links to removed tabs open this table. Three comparison slots remain above the original report. Clicking a slot first shows Dynamo, SGLang, and vLLM buttons (plus None for slots 2 and 3), then the selected engine's normal version selector. The version selector contains captures only; None belongs to the engine picker. Slot 1 always requires an engine and capture, defaulting to the latest Dynamo v2 Rust Unified parser. Slots 2 and 3 default to None and may select another distinct capture. Different versions or modes of the same engine can occupy separate slots. GOLDEN remains the fixed oracle. The original filters, transpose control, detailed table, and case popups stay in place.
 
-Clicking a D, S, or V engine badge opens its engine and capture picker. Changes apply immediately; there is no Done button. The picker stays beside its trigger, closes on Escape or outside click, and restores focus to the trigger. The selected captures feed the original Unified report table and its case-output popups. Rounded result boxes contain one equal-width segment per active capture in slot order; two active captures make two halves. None contributes no segment. Segment labels and popup outputs distinguish matches, disagreements, markup leaks, parser errors, unsupported requests or families, missing captures, and blocked producer sources. Scenario exclusions use a short family-specific not-applicable message; uncaptured outputs say “Result not yet captured”. The legend uses the same status labels and colors as the rounded cells in Overview, Detailed, and transposed views.
+Clicking a D, S, or V engine badge opens its engine and capture picker. Changes apply immediately; there is no Done button. The picker stays beside its trigger, closes on Escape or outside click, and restores focus to the trigger. The selected captures feed the original Unified report table and its case-output popups. Rounded result boxes contain one equal-width segment per active capture in slot order; two active captures make two halves. None contributes no segment. Segment labels and popup outputs distinguish matches, disagreements, markup leaks, parser errors, unsupported requests or families, missing captures, and blocked producer sources. Scenario exclusions use a short family-specific not-applicable message; uncaptured outputs say “Output not yet captured”. The legend uses the same status labels and colors as the rounded cells in Overview, Detailed, and transposed views.
 
 Cell clicks open a centered output popup; case-heading clicks pin the original input/output table across families. Small popups stay content-sized; larger popups grow to 97% of the available viewport width and height and scroll internally when needed. The URL records the clicked model, family, and case, so opening a shared link restores the same popup and comparison selections. Closing the popup removes that selection from the URL. Hover and keyboard focus do not open these popups. Enter or Space activates a focused case cell or heading. Click outside a popup to close it. The original lazy renderer retains folded variants, schemas, selected outputs, fixture links, and streaming chunks. Text-input popups retain their input chart and add a GOLDEN disclosure when an oracle is available. The detailed reference table remains behind its disclosure and keeps its horizontal orientation.
 
@@ -96,151 +115,72 @@ Category selections use stable group keys per tab. Shared URLs preserve ordered 
 
 The detailed reference table retains compact Unified `<group>-<number>` headings. Numbers start at 1 within each group in report order: behavior sections first, then alphabetical descriptions. DeepSeek V4 and V4.1 use `ds4` and `ds41` as compact prefixes. Popups retain full descriptive labels, compact references, canonical IDs, and grouped child-variant IDs. Display labels do not change stored case IDs or historical references.
 
-| Output | Command | Parser version | Fixture version |
-|---|---|---|---|
-| Unified comparison HTML and JSON | `conformance/utils/render_table_v2.sh` | Existing Unified parsers and historical reasoning + batch tool pipelines, with separate version/mode identities. | Only the family-scoped Unified inputs and GOLDEN appear in the report. Legacy corpora remain archive-backed regression inputs. The default output is `conformance/CONFORMANCE_v2.html` with a sibling JSON file; custom output paths remain supported. |
+Case-group headings align left with an 8px inset in both horizontal and transposed tables. Header and result popups show the full descriptive label followed by the compact reference in parentheses, with its number small and gray. Canonical IDs remain available on the popup heading hover; grouped child variants retain their own IDs.
+
+Generate the browser matrix with the [latest report command](#generate-the-latest-or-history-report), then serve that output directory and open `/index.html?tab=tab-unified`. Refreshing a source catalog alone does not regenerate the published report.
+
+Both publication modes emit byte-identical HTML for the same latest inputs and source-link revision. Default output retains only `index.html`; the publisher validates the embedded dependency graph, then discards duplicate transport files and the second HTML entry point before installation. History output retains its catalog, transport files, and canonical entry point. Cache restamping updates the standalone HTML directly without creating a metadata file. The HTML embeds CSS, JavaScript, worker, latest runtime catalog, current comparison data, and original latest YAML downloads. Opening the file locally needs no external reads. Over HTTP, the same HTML probes an optional publication sidecar after the initial matrix; a matching history publication exposes older selections and original historical downloads through on-demand JSON. Missing or mismatched sidecars leave latest results usable. Catalog upgrades cancel old selection generations and rebuild the current selection without replacing a newer user choice. Embedded and fetched data share hash, size, recipe, and worker validation; corrupt embedded data fails without a network fallback. Invocation paths, generation timestamps, original generation revision, and generation command remain in the sidecar so cache restamping preserves common HTML. `startup=external`, `startup=bootstrap` and `startup=inline` remain aliases for the same loader. `--data-only` is reserved for unsplit development fixtures and is rejected for the split checkout.
 
 ### Historical batch pipelines on Unified inputs
 
-Batch captures run reasoning extraction followed by batch tool extraction against the unchanged family-scoped Unified request. Dynamo v1 direct batch, Dynamo v1 batch + jail-buffer, vLLM Python batch, and SGLang Python batch use separate `dynamo_v1`, `dynamo_v1_jail`, `vllm_python_batch`, and `sglang_python_batch` YAML histories. The jail-buffer producer feeds each original chunk through the historical Dynamo v1 reasoning parser and `JailedStream`, then records the final fields; it does not rewrite or replace direct-batch history. Each checkpoint records source, adapter, and job identities; each observation is bound to the original input, initialization, tools, finish reason, and chunk schedule. Unchanged observations inherit through the existing sparse history. The GPT-OSS split-only family adds 159 active input/GOLDEN pairs for each Dynamo v1 batch identity; these are request-bound historical pipelines, not native Unified parser captures. Historical Unified observations and legacy archives remain unchanged.
+Batch captures run reasoning extraction followed by batch tool extraction against the unchanged family-scoped Unified request. Dynamo v1 direct batch, Dynamo v1 batch + jail-buffer, vLLM Python batch, and SGLang Python batch use separate `dynamo_v1`, `dynamo_v1_jail`, `vllm_python_batch`, and `sglang_python_batch` histories. Where the published crate exposes `JailedStream`, the jail-buffer producer feeds each original chunk through the historical Dynamo v1 reasoning parser and that jail, then records the final fields; it does not rewrite or replace direct-batch history. Each complete snapshot retains source, adapter, and job identities; each observation is bound to the original input, initialization, tools, finish reason, and chunk schedule. Unchanged results are copied with the original source member and provenance. The GPT-OSS split-only family adds 159 active input/GOLDEN pairs for each Dynamo v1 batch identity; these are request-bound historical pipelines, not native Unified parser captures. Historical Unified observations and legacy archives remain unchanged.
 
-| Engine | Historical versions |
+The frozen inventory in [`all-capture-inventory.yaml`](all-capture-inventory.yaml) accounts for these releases and modes. Each mode keeps its own execution receipts and history.
+
+| Engine and parser mode | Frozen version coverage |
 |---|---|
-| Dynamo v1 direct batch | 3.0.0, 5.0.1, 5.1.2, 5.1.3, 9.2.0, 9.2.1, 9.2.2, 9.2.4, 9.2.5, 9.2.6, 9.2.7, 9.2.9, 9.2.10, 10.0.1 captured; 9.2.13 source unavailable |
-| Dynamo v1 batch + jail-buffer | 5.0.1, 5.1.2, 5.1.3, 9.2.0, 9.2.1, 9.2.2, 9.2.4, 9.2.5, 9.2.6, 9.2.7, 9.2.9, 9.2.10, 10.0.1 captured; 3.0.0 has no published `JailedStream` and 9.2.13 source unavailable |
-| vLLM Python | 0.23.0, 0.24.0, 0.25.1, 0.26.0 |
-| SGLang Python | 0.5.14 |
+| Dynamo v1 direct batch | All 81 published stable releases. |
+| Dynamo v1 batch + jail-buffer | All 81 published stable releases; absent jail APIs are explicit unsupported capabilities. |
+| Dynamo v2 stream | All 67 published stable releases and the retained source labels `0.7.9` and `0.7.16`. |
+| vLLM Python batch and stream | All 99 published stable releases in each mode. |
+| SGLang Python batch and stream | All 150 published stable releases in each mode. |
+| vLLM Rust stream | All 99 release identities accounted for; absent Rust APIs are unsupported capabilities, and `0.0.1` has a source blocker. |
+
+The accounting covers 828 version/mode selections and 5,212 active family/case pairs across 27 families: 4,315,536 combinations in total. Successful execution records can still disagree with authored GOLDEN.
+
+| Outcome | Combinations | Meaning |
+|---|---:|---|
+| Executed | 786,345 | The pipeline returned a recorded output. |
+| Parser error | 550 | A parser invocation returned an error or panicked. |
+| Unsupported capability | 3,523,429 | The family, request mode, or parser API is unavailable. These rows do not count as executions. |
+| Source/build blocker | 5,212 | vLLM Rust `0.0.1` has no matching upstream release tag in the frozen refs; execution evidence is blocked. |
+| Missing evidence | 0 | No combination lacks a recorded outcome or explicit blocker. |
 
 Both direct batch and batch + jail-buffer observations project final reasoning text, visible content, and ordered tool calls into final events. Those events are compared to the original ordered GOLDEN. Lost reasoning/content/tool interleaving is a mismatch even when every final field retains its text. The matrix, case popups, and Detailed table use the same selected captures against GOLDEN. Popups show the actual final fields and label batch rows “Order/chunk not applicable for batch”; batch observations contain no synthetic chunk emissions. JSON includes per-capture accounting and mismatch counts. Considered counts active family/case pairs checked against a version; attempted counts pipeline invocations, including parser exceptions. Captured counts successful final observations; unsupported modes/families, source blockers, and missing captures are separate.
 
-The batch adapters execute native/default initialization with stop or length termination. Dynamo and SGLang also apply native Reasoning initialization through their public historical APIs. vLLM requests requiring an explicit initial reasoning state remain unsupported by this adapter. Verified adapter recaptures retain the original unsupported observations and bind the supplemental result to its producer receipt. Other authored request modes remain explicit unsupported-request observations. Missing registrations remain unsupported-family observations; parser exceptions retain their own observation code. Dynamo 9.2.13 remains source unavailable: crates.io returns 404 and no matching release tag or manifest-version history was found. Its comparison label and cells retain that blocker; it is not a certified release capture. For GPT-OSS, all 159 active pairs have request-bound final fields at the 14 available Dynamo v1 versions; 9.2.13 is explicitly source unavailable. The GPT-OSS peer batch histories have not been captured: 159 active pairs across vLLM 0.23.0, 0.24.0, 0.25.1, and 0.26.0 plus SGLang 0.5.14 leave 795 missing results. These omissions are outside the Dynamo v1 backfill; they indicate missing capture evidence, not unsupported parsers or requests.
+The batch adapters execute native/default initialization with stop or length termination. Dynamo and SGLang also apply native Reasoning initialization through their public historical APIs. vLLM requests requiring an explicit initial reasoning state remain unsupported by this adapter. Verified recaptures retain the original observations and bind supplemental results to their producer receipts. Missing registrations and unsupported request modes remain explicit unavailable observations; parser exceptions retain their own observation code. Published Dynamo v1 `3.0.0` is included in both batch modes. Its 5,212 jail-buffer results report `unsupported_capture_mode` because that crate has no public `JailedStream`; no jail parser execution is claimed. The nonpublished Dynamo v1 `9.2.13` direct-batch and jail-buffer observations remain retained historical source blockers outside the frozen denominator.
 
-`capture_unified_job.build_job(..., mode="batch")` preserves the complete request and GOLDEN. Dynamo v1 direct batch uses `legacy_batch_probe.rs`; batch + jail-buffer uses `legacy_jail_probe.rs` against the version-matched historical crate and records the producer identity in each checkpoint. Its CLI accepts `--mode batch --family <family> --output <job.json>` to write the same bound job. `capture_unified_batch.py --engine vllm|sglang --jobs <family-job-directory> --output <owned-output-directory>` runs inside the matching immutable engine environment. The Rust `legacy_batch_probe.rs` is compiled against a checksum-verified historical `dynamo-parsers` crate and receives the shared registry's reasoning/tool parser names. `import_peer_unified.py` validates the embedded producer receipt and imports all exact-job results through the existing transactional history owner. Package with `package_fixtures.py --unified-only`, extract the pinned snapshot, and regenerate `conformance/CONFORMANCE_v2.html` and its sibling JSON with `render_table_v2.sh`. Generated reports remain unstaged.
+`capture_unified_job.build_job(..., mode="batch")` preserves the complete request and GOLDEN. Dynamo v1 direct batch uses `legacy_batch_probe.rs`; batch + jail-buffer uses `legacy_jail_probe.rs` against the version-matched historical crate and records the producer identity in each checkpoint. Its CLI accepts `--mode batch --family <family> --output <job.json>` to write the same bound job. `capture_unified_batch.py --engine vllm|sglang --jobs <family-job-directory> --output <owned-output-directory>` runs inside the matching immutable engine environment. The Rust `legacy_batch_probe.rs` is compiled against a checksum-verified historical `dynamo-parsers` crate and receives the shared registry's reasoning/tool parser names. `import_peer_unified.py` validates the embedded producer receipt and imports all exact-job results through the existing transactional history owner. Package with `package_fixtures.py --unified-only`, then refresh the viewer catalog with `viewer_catalog.py --unified-only` and inspect the maintained browser page.
 
 ## Running the tests
 
-Use the repo's pinned toolchain (Rust 1.96.1 via rustup; a system `cargo` may be too old for the workspace):
+Use the pinned Rust toolchain and the Unified targets:
 
 ```bash
-# tool-calling batch parity, all families:
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcalling
-
-# same, but print fixture names and the per-run case count:
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test conformance_toolcalling -- --nocapture
-
-# as part of the whole workspace (what CI runs):
-cargo test --workspace
+cargo test --locked -p dynamo-parsers-v2 --lib
+conformance/utils/check.sh dynamo
+cargo test --locked -p dynamo-conformance-fixtures-v2
+node --test conformance/viewer/*.test.js
 ```
 
-The test package is named `dynamo-conformance-fixtures-v2` for historical compatibility, but the code ownership still follows the v1/v2 split.
-
-**Lifecycle:** the `dynamo-parsers` batch+jail implementation is interim; the `dynamo-parsers-v2` crate is the successor implementation and currently owns Unified. This implementation migration is independent of the corpus convention names above.
-
-| Test | Code under test | Fixtures | Notes |
-|---|---|---|---|
-| `conformance_toolcalling` | v1 batch parser in `parsers/src/tool_calling/` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) | Each `batch` case's `model_text` is fed through `detect_and_parse_tool_call_with_recovery(text, Some(family), tools)` and compared to `expected.dynamo_v1`. |
-| `conformance_toolcalling_batch_via_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | v1 batch fixtures (`toolcalling/fixtures-batch-v1/`) plus legacy streaming-v1 overlays (`toolcalling/fixtures-batch-on-stream-v1/`) | Feeds complete batch text into the non-Unified incremental parser and compares assembled calls to the batch-on-stream expectations. |
-| `conformance_toolcalling_stream` | Dynamo parser v2 in `parsers_v2/src/tool_calling/*` | Legacy stream fixtures (`toolcalling/fixtures-stream-v1/`) | Checks token-id or text streaming paths per chunk, then checks assembled calls. |
-
-The fixture `family` field is the parser name, the same value Dynamo's `parse_tool_calls_batch` binding takes for v1. Every fixture uses an explicit implementation key: `expected.dynamo_v1`, `expected.dynamo_v2`, `expected.vllm_rust`, `expected.vllm_python`, `expected.sglang_python`. Dynamo v1 and v2 are separate impls with separate version lineages (`dynamo_v1-3.0.0/`, `dynamo_v2-0.1.11/`) — exactly like the vLLM/SGLang runtime variants. Legacy spellings (`dynamo`, `dynamo_rust`, `vllm`, `sglang`) are still accepted on read via the alias table in `utils/src/impls.py`.
-
-Reasoning fixtures are rendered in the v2 HTML table; a Rust fixture harness for reasoning is still a follow-up.
-
-## Refreshing Legacy Fixtures (v1)
-
-Parser fixture sync from Dynamo is retired. Update v1 fixtures through normal frontend-crates PRs and run the renderer documented in [`../docs/PARSERS-V2-MIGRATION-PLAN.md`](../docs/PARSERS-V2-MIGRATION-PLAN.md#ownership).
-
-## Adding Streaming Parser V2 Fixtures
-
-Use [`../parsers/v2/README.md`](../parsers/v2/README.md#fixture-files-to-add) for the parser-side checklist. Keep the existing stream archive format and include only the affected family's changed captures. The Unified YAML migration does not change this workflow.
-
-The legacy streaming-v1 fixture schema is documented in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md). Capture and render commands are documented in [`utils/README.md`](utils/README.md).
+`unified_parity`, `unified_render`, and `unified_schema_roundtrip` exercise Unified v2. Beam, DSML, and guided-streaming tests retain their v2 contracts. The old batch, stream, batch-on-stream, Reasoning, interleave, and split-sweep targets are retired. Existing archives remain available as evidence; their generators and capture writers are retired. Dynamo v1 results measured against Unified requests remain comparison data.
 
 ## Fixture Workflows
 
-The commands below cover both the older archive-backed tests and Unified. Apply the plain-version YAML contract above to Unified only; do not migrate the other stores as part of a Unified change.
+The commands below cover Unified v2. Preserve archived evidence and historical readers; do not regenerate the retired corpus.
 
 **Title fixture/table-only PRs `chore(conformance):`, never `feat:`.** The repo is squash-merge only and GitHub is set to `squash_merge_commit_title: PR_TITLE` with a BLANK body, so the PR TITLE becomes the entire commit message on `main` — it is the only Conventional Commit that release-plz ever reads. The branch's own commit types are discarded, so retitling the PR is both necessary and sufficient. `feat:` proposes a MINOR version bump on every crate whose packaged contents changed ([`../RELEASING.md`](../RELEASING.md#bump-policy) has the full bump table); re-capturing fixtures or re-rendering the table is not a library feature and must not move a published version. Use `feat:` only when parser CODE under `parsers/` changed behaviour. Fixture-only work is outside every crate's packaged contents, so it proposes no bump.
 
-### 1. Capture a new vLLM/SGLang engine version (new peer shards)
+### Edit parsers and authored inputs/GOLDEN
 
-**The rule is ALL corpora, ALL families.** A new vLLM/SGLang version must retain captures for the archive-backed batch, legacy stream, legacy batch-on-stream, and reasoning regression corpora as well as Unified. The public report renders only Unified; retaining legacy archives preserves their regression coverage. Historical batch-on-Unified captures have their own implementation histories and do not replace those archived corpora.
-
-0. **Rebase onto `main` FIRST.** The conformance renderer + capture tooling change often (the whole page was rewritten in DIS-2434; the marker layer in #127). Capturing on a stale base means redoing the render/verify against a since-rewritten generator. Rebase, then capture.
-1. **Pin the version** in `utils/src/pyproject.stub.toml` (peer versions are read from there, never hardcoded). This repository owns the peer versions independently of Dynamo's runtime pins.
-2. **Bring up the engine containers at the new versions and extract the corpus** so the capture seeds are on disk. Parser capture needs NO GPU — it feeds stored model-text through the parser, not the model:
-   ```bash
-   docker run -d --name vllm-localdev   --entrypoint sleep <vllm-image>   infinity
-   docker run -d --name sglang-localdev --entrypoint sleep <sglang-image> infinity
-   python3 conformance/utils/src/extract_fixtures.py   # materialize inputs the capturers read
-   ```
-3. **Capture EVERY corpus** — one command per corpus × peer. Each writes a NEW `<impl>-<newver>/` version dir (append-only; see the rule above). Capturers read the version LIVE from the container's `vllm.__version__` / `sglang.__version__`, write only cases that DIVERGE from the lowest-version anchor, never touch existing dirs, and skip (never fabricate) cases a parser can't run in-container.
-
-   All peer captures run through one shared tool, `capture_peer_versions.py --corpus {batch,stream,reasoning} --impl {vllm_python,sglang_python,vllm_rust}` (omit `--impl` for all engines valid on that corpus; `vllm_rust` is stream-only):
-
-   | Legacy corpus | vLLM Python | vLLM Rust | SGLang |
-   |---|---|---|---|
-   | `TC legacy stream (v1 convention)` | `capture_peer_versions.py --corpus stream --impl vllm_python` | `capture_peer_versions.py --corpus stream --impl vllm_rust` ‡ | `capture_peer_versions.py --corpus stream --impl sglang_python` |
-   | `TC batch (v1)` | `capture_peer_versions.py --corpus batch --impl vllm_python` | — (no Rust batch parser) | `capture_peer_versions.py --corpus batch --impl sglang_python` |
-   | `TC legacy batch-on-stream (v1 convention)` | `recapture_batch_on_stream.py` (in-place, single-snapshot) | `recapture_batch_on_stream.py` | `recapture_batch_on_stream.py` |
-   | `Reasoning` | `capture_peer_versions.py --corpus reasoning --impl vllm_python` | — | `capture_peer_versions.py --corpus reasoning --impl sglang_python` |
-
-   ‡ vLLM Rust is source-only: set `VLLM_RUST_SOURCE=<vllm checkout at the tag>` (or pass `--vllm-rust-source`) first. In vLLM ≥ 0.25 the crate is `vllm-parser` at `rust/src/parser` (was `vllm-tool-parser` at `rust/src/tool-parser`), and `ToolParserOutput` is an ordered events list. A parser that moved to the native `unified::` interface between releases is marked unavailable via the `tool::` probe — expected, not a failure.
-4. **Publish:** use plain-version YAML for Unified. Keep the existing archive packaging for the other corpora.
-5. **Verify the new version in Unified and the retained regression corpora.** The generator discovers each `<impl>-<newver>/` dir as its own candidate. Run `render_table_v2.sh`, inspect the Unified engine picker, then run `python3 -m pytest conformance/utils/tests/` and `check.sh dynamo all`. Archived-corpus renderer tests use an explicit legacy fixture and continue to guard multi-version reasoning/tool coverage independently of the public report.
-
-### Unified peer comparisons and recapture provenance
-
-The three engine cards retain the original report layout and select among existing Dynamo Unified, vLLM Python, vLLM Rust, SGLang Python, and separate historical batch captures. Only slot 1 has a default: the latest Dynamo v2 Rust Unified parser. Slots 2 and 3 display None until selected. Batch observations retain final reasoning, visible content, and ordered calls; their rows say “Order/chunk not applicable for batch.”
-
-Each family stores its authored request and GOLDEN in `inputs_and_golden.yaml`. A version checkpoint stores changed stimulus, observation, and metadata fields; omitted fields inherit, and an explicit absent entry removes a case from that checkpoint. Inserting or backfilling an older version preserves every later resolved record, including provenance, unavailable explanations, and missing cases. Unchanged observations remain inherited rather than copied into every release.
-
-Peer jobs bind the family, input, initialization, tools, chunk schedule, and termination to the capture. `capture_unified_job.py` builds the family jobs; the capture caller freezes those jobs and the adapter bundle before running against the selected installed package or tagged Rust source. `import_peer_unified.py` validates the job and provenance before publishing a transaction. Its compatibility entry point is `import_sglang_unified.py`. A historical result whose request was not retained remains in YAML; a request-bound execution is stored separately as `verified_recapture`. The report uses that supplement and explains why its difference from the original does not prove a parser change. Adapter-unavailable vLLM results can also retain a separate recapture without replacing the original evidence.
-
-An unsupported request is an explicit unavailable result carrying the attempted request and a reason; it is not a successful empty parse. Parser errors retain the error and partial streaming evidence separately. Package the plain-version YAML with `package_fixtures.py`, extract the manifest-pinned snapshot with `extract_fixtures.py`, and run `conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html`. Inspect the sibling JSON and the Unified comparison controls, unavailable explanations, and divergent outputs. The generated HTML, JSON, and capture matrices are review artifacts, not source files to commit.
-
-### 2. Fix a Dynamo parser and refresh its expected outputs
-
-For each conformance fix, add a regression test column that shows red for the previous (before) version and green for the fixed (after) version in the rendered report. Capture both versions using the same input, tools, initialization, and chunk schedule, and compare both against the same authored GOLDEN. Preserve the delivery pattern that triggers the bug, including single-chunk input when chunking affects the failure.
-
-1. Fix the code under `parsers/v1/` or `parsers/v2/`.
-2. `cargo test --workspace` — if the fix changes output, the parity tests FAIL. That is the regression gate working: decide whether the diff is a bug in your fix or an intended behavior change.
-3. For an intended Unified change, use the plain-version YAML contract above. Keep the first capture's source origin in metadata; do not create another identity when its SHA changes. For the older tests, retain their existing capture format.
-4. Commit only the parser fix, affected family captures, and required manifest changes. CI must compare code against the recorded outputs; release publication is a separate workflow.
-
-### Unified parser hard gate
-
-Unified work is complete only when the selected current Dynamo column has **zero empty cells and zero red cells** for the affected family. This is a hard gate. `reason:`, `unavailable:`, a historical column, stale HTML, or changing GOLDEN to match broken output does not satisfy it.
-
-For a model-family conversion, collection is mandatory work, not a follow-up. Generate the family's Unified authored inputs and golden events, run the live Unified parser capture with its verified source identity, explode it, update the YAML history and manifest pin, extract the pinned snapshot, and render the canonical v2 report. The current capture node must exist in each affected family history before the row can be considered collected. Never generate `CONFORMANCE_unified.html`; `CONFORMANCE_v2.html` is the only HTML report for this workflow.
-
-Use this loop:
-
-1. **Write:** make the parser or capture change.
-2. **Read:** render `conformance/CONFORMANCE_v2.html`, open the Unified tab, and inspect every empty or red cell's popup. Compare its exact input, request initialization, chunks, GOLDEN events, and current Dynamo events.
-3. **Fix:** repair the owner of the discrepancy. An empty current cell is missing capture data. A red current cell is a parser mismatch unless the authored GOLDEN is demonstrably wrong.
-4. **Regenerate:** publish the current plain-version YAML and required manifest changes, then render the HTML again from the same worktree.
-5. **Re-read:** inspect the rendered Unified column again. Repeat until both counts are zero.
-
-`render_table_v2.sh` always writes `conformance/CONFORMANCE_v2.json` beside the HTML and prints the total empty/red count. The standard scoped gate is `conformance/utils/check.sh status --model qwen3 --tab unified`; it renders first, prints every empty or red case, and exits nonzero until the row is clear. Use the lower-level `validate_conformance_status.py` only to inspect an already-rendered file. Then run `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`. Do not report Unified work complete while either rendered count is nonzero.
-
-The complete current-family collection sequence is:
+Reproduce the behavior in a parser test, edit the shared parser owner, and run the latest tests below. Author expected GOLDEN independently of observed parser output. An output mismatch is a parser regression or a deliberate authored expectation change; historical recapture is not required to submit the parser fix.
 
 ```bash
-python3 conformance/utils/src/gen_unified_golden.py
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
-python3 conformance/utils/src/explode_unified_fixtures.py
-python3 conformance/utils/src/package_fixtures.py
-python3 conformance/utils/src/extract_fixtures.py --full-refresh
-conformance/utils/render_table_v2.sh --output conformance/CONFORMANCE_v2.html
-conformance/utils/check.sh status --model <family> --tab unified
-cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture
-python3 -m pytest conformance/utils/tests/test_model.py
+cargo test --locked -p dynamo-parsers-v2
+cargo test --locked -p dynamo-conformance-fixtures-v2
 ```
 
-Use `bash conformance/utils/regenerate_unified.sh` to run this sequence as one gate. It compiles and captures the live Unified parser, updates and re-extracts the YAML history, renders the JSON/HTML report, runs the consuming tests, and fails when the generator, current history, or rendered Unified cells disagree. The script renders JSON and HTML even when a later validation stage fails, so humans can inspect the current red or empty cells; a failed exit code means the report is diagnostic, not ready to publish.
-
-Do not substitute a loose harness feed for the package step. The v2 table reads the extracted packaged snapshot, so an un-packaged family cannot appear in its Unified tab.
+Use versionless YAML in `fixtures-unified-v2/families/<family>/` for recorded latest expectations. Contributors do not maintain historical versions. Request an administrator capture update when the latest recorded observation needs to advance. Generate and inspect the latest report after the final edit using [Generate the latest or history report](#generate-the-latest-or-history-report).
 
 ### Structural-tag request checks
 
@@ -248,64 +188,52 @@ Unified cases may carry `init.structural_tag` with a response `schema` and compl
 
 Install the pinned CPU verifier with `python3 -m pip install --no-deps -r conformance/utils/structural-tag-requirements.in`. Set `CONFORMANCE_GRAMMAR_PYTHON` to that interpreter when it differs from `python3`. The verifier loads XGrammar's native TVM-FFI binding and does not import torch or transformers. Rust CI installs this environment before running conformance. `UNIFIED.36-structured_response_after_reasoning` covers the available GPT-OSS, Qwen3, GLM and DeepSeek V4 builders.
 
-### 3. Version rule: one capture name per crate version
-
-Unified captures use plain crate versions, such as `dynamo_v2-0.6.1.yaml`. The first capture records its source SHA and Git commit as origin metadata. Later commits with the same version reuse that version; they do not create patch files or hash-qualified names. Readers select the version without inspecting source hashes or release tags, and carry unchanged family outputs forward from the latest capture at or before that version. Avoid changing existing test inputs; if an input must change, rerun and update every prior version affected by it. Crate publication follows [`../RELEASING.md`](../RELEASING.md#manual-version-peg-fixture-synced-releases).
-
-The Rust capture readers, cross-version capture harness, and live Unified guard now select plain semantic-version captures directly. They no longer use the JSON `--select-capture` inventory, `--select-source-snapshot`, or patch/source-snapshot overlays. Python report readers use `--format label`, and newly packaged Unified YAML uses semantic versions. The Unified peer controls and preservation rules above describe the backfilled vLLM and SGLang histories; older corpus formats keep their existing readers.
-
 ### 4. What CI actually checks (the regression gate)
 
-The `rust` CI job checks out the LFS store (`lfs: true`), extracts the manifest-pinned snapshot, and runs the parity tests — current parser code vs pinned expected YAML:
+The `rust` CI job materializes the local current YAML and authored inputs, then runs current parser code against those expectations. It does not retrieve history or build the report publisher first:
 
-- `conformance_toolcalling`: v1 code vs `expected.dynamo_v1` in the `dynamo_v1-<ver>/` dir of `fixtures-batch-v1`.
-- `conformance_toolcalling_stream`: v2 code vs `expected.dynamo_v2` folded from the LOWEST `dynamo_v2-<ver>/` dir — the v2 anchor. (The v1-jail reference lives in its own `dynamo_v1-3.0.0/` namespace and never enters the v2 fold. Overlay folding up to the pinned crate version is a follow-up; until then an intended v2 output change must be reflected in the anchor's expected blocks at re-capture.)
-- `conformance_toolcalling_batch_via_stream`: v2 code vs the `fixtures-batch-on-stream-v1` expectations.
+- `unified_parity`: ordered events, request initialization, stream/batch parity, reuse, and family applicability.
+- `unified_render`: native rendering and current capture agreement.
+- `unified_schema_roundtrip`: authored schema and request round trips.
 
-A parser change that alters output fails CI until the fixtures are re-captured and committed (workflow 2) — CI compares Dynamo against the pinned shard YAMLs, nothing else. The `conformance-table` CI job runs exactly one command, `conformance/utils/check.sh ci`, which re-renders both HTML pages from the same pinned store, runs the coverage/marker lint (section 8), and the chart-invariant guards. To add or change a conformance gate, edit `run_ci()` in `check.sh`; the workflow file stays untouched.
+Parser mismatches require a parser fix or a deliberate authored expectation change. Contributors request an administrator update when recorded latest observations need to advance. Rust and fixture checks start alongside latest publication. `pages-build` uploads the candidate site before qualification, and independent qualification jobs compare latest YAML with resolved JSON and exercise the current matrix. Historical receipt bindings and older-release comparisons run only when the workflow input `include-history` is enabled. Authored-only checks load family inputs without expanding history; publication and tests preserve recorded YAML.
 
-### 5. Maintain a legacy test case
+The `conformance-core` job checks the Unified catalog and publication-dependent utility tests. Smoke tests run in two independent browser groups; interactive viewer tests and popup regressions run in three groups. First-visible-matrix and strict native publication/browser acceptance run separately. Each browser group owns its fixtures and Chrome processes. Every conformance job has a 20-minute limit. The stable `conformance-table` status requires Rust, publication, fixture checks, all qualification shards, and all browser groups before deployment.
 
-A "case" is one scenario, either shared across applicable families or a Single Family Test. Use "Single Family Test" for a case currently exercised on one family, even when its behavior could be shared. This label describes test coverage, not parser capability. Move a case into shared coverage when another family is tested. Match the suite's existing labels: legacy Tool Calling groups use dot-letter suffixes such as `7.g` and `51.a`; Unified uses descriptive suffixes such as `7-arg_unicode` and `glm5-reference_type_intersection`, owned by `utils/src/unified_taxonomy.py`. Numeric and dotted Unified forms are historical aliases; internal scenario names, subgroup headings, and ordering stay separate from display IDs. A recorded case ID keeps its original meaning; display aliases may organize it without rewriting captures. For existing legacy cases that need maintenance, the storage and capture steps are:
+Qualification validates publication membership before partitioning comparison work and prints its selected resource paths. Ordinary CI qualifies latest data. For explicit history runs, `ci_coverage.py` selects `latest-two` only when every changed path belongs to its presentation allowlist; evidence, reader, schema, provenance, conversion, deleted, and unclassified changes use exhaustive historical coverage. Historical receipt and introduced-case membership checks remain exhaustive whenever history is requested. Test groups partition sorted collected node IDs through the shared collection owner.
 
-1. **Input.** Add the case to `toolcalling/fixtures-stream-v1/inputs/<family>/TOOLCALLING.streamv1.<N>.yaml` for each family it applies to — the shared per-chunk `delta_text` (schema in [`toolcalling/fixtures-stream-v1/README.md`](toolcalling/fixtures-stream-v1/README.md#fixture-schema)). Batch cases go under `toolcalling/fixtures-batch-v1/inputs/<family>/` instead.
-2. **Description.** Add a bullet to `utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` (or the batch/reasoning CASES.md) — the HTML "Case descriptions" section renders it, and the tooltip links to it.
-3. **Grouping (easy to miss).** Add the case id to its band in **`utils/src/fixtures.py`** `BATCH_SUB_CASE_GROUPS` (the streamv1 tab reuses the batch taxonomy). If you skip this, the column still renders but sorts to the FAR RIGHT as an "unknown" case instead of beside its `<num>.*` siblings. That list now lives in exactly one place, so a case is one edit. A new `<num>.<letter>` should ideally key on its parent `<num>`, not enumerate every letter.
-4. **Capture + package.** `refresh_dynamo_captures.py stream` records the Dynamo v2 output for the new case; `package_fixtures.py --stream-only` packages the stream inputs and captures. Peer engines (vLLM/SGLang) only cover the new case once re-captured against containers (workflow 1); until then the peer cells read `(no expectation)`.
+Native pack compression uses the publication worker pool with deterministic pack identities, dependency boundaries, and gzip level 9. The publication cache hashes publication inputs: permanent source bytes, the reader and publisher, authored inputs, publication configuration and policy, release tags, and toolchain identity. Unrelated source, test, and documentation changes can reuse a matching publication. Cache reuse updates the current source-link revision in JSON and embedded HTML; the original generation revision, command, time, catalog identities, and payload bytes remain unchanged. Cached archive and binary hashes are checked before reuse; missing or corrupt cache entries fall back to cold generation. Cache hits still run qualification and browser acceptance. Permanent capture YAML and authored YAML remain unchanged. Running `check.sh ci` locally without `CONFORMANCE_CI_SHARD` runs the full suite; the workflow owns CI grouping.
 
-### 6. Changing an existing authored test input
+### 5. Add or change an authored test case
 
-Ask the user before modifying an authored test input. Changing one affects every published checkpoint that uses it. After approval, recapture every affected version from its matching parser source, package the fixtures, extract the pinned snapshot, and regenerate the canonical report. Every newly published Dynamo v2 stream archive, appended case, or correction requires a receipt generated by `refresh_dynamo_captures.py stream --receipt <path>` from the matching parser source; packaging verifies the source fingerprint and exact input/result hashes. An existing archive may add a case only when the shared input archive adds that case ID. Corrections require `package_fixtures.py --stream-only --replace-stream-case <full-case-id>` for each approved case ID and the same receipt passed with `--stream-capture-receipt`. The validator checks that all other case results, capture metadata, archive members, and non-YAML members remain unchanged. Never label a newer parser capture as an older version. Do not add a duplicate capture, source-qualified name, or patch overlay for one version; the history must remain one semantic checkpoint per meaningful output change.
+Author family-native inputs and independent GOLDEN in `utils/src/gen_unified_golden.py`, reusing `schema_cases.native_call_wire` and stable IDs from `unified_taxonomy.py`. Preserve existing identities, describe grammar exclusions in `utils/lib/parsers/UNIFIED_CASES.md`, and update the coverage taxonomy. Generate authored YAML, run latest parser tests, then generate and inspect the latest report. Historical backfills are administrator work and are not required for contributor changes. A changed authored request does not rewrite the frozen request bound to an older observation.
 
-### 7. Classify a v1-batch vs v2-stream difference (`known-divergences.yaml`)
+### Classify a Unified parser difference
 
-`conformance_toolcalling_batch_via_stream` compares the v2 stream parser on batch text against v1's `expected.dynamo_v1`. v1 and v2 differ **by design** (v2 preserves surrounding/inter-call prose that v1 batch trims; v2 recovers bare calls v1 drops). When a case legitimately diverges, add it to `toolcalling/known-divergences.yaml` under `<family> → TOOLCALLING.batch.<case> → stream_vs_batch: <note>` (reuse the `*svb-surrounding-text` / `*svb-recovery` anchors). An entry with a note is an allowed, documented difference; a MISSING entry fails the test — so the file is also the audit trail of "v2 improved on v1 here." Do NOT add an entry to paper over an actual regression (v2 dropping text, leaking markup, corrupting args) — fix the parser instead.
-
-The gate also asserts exact calls and normal text against every executed case's pinned `fixtures-batch-on-stream-v1` v2 capture. A parity note cannot permit a different live result. Missing or wrong-version captures, changed output, empty notes, and stale or unvisited entries fail. Independent authored GOLDEN values remain the correctness oracle; pinned parser captures describe observed behavior.
+Authored GOLDEN remains the correctness oracle. Capture differences retain exact observations and provenance; they do not authorize changing GOLDEN to match the parser.
 
 A separately triaged, pre-existing v2 defect may be retained while a scoped change is reviewed, following the exact-output policy in `unified-known-divergences.yaml`. Use a distinct `baseline_defect` note starting with `FIXME (v2 defect):` and `baseline_defect_actual` containing the exact observed result as JSON. The gate checks both that observation and the pinned capture, reports the defect separately, and rejects changed or stale entries. The report keeps the differing outputs and FIXME diagnostic visible without the intended-difference badge. This records a deferred parser fix; it does not change a golden, bless the defective result, or permit a new regression.
 
-### 8. Coverage taxonomy: what "complete fixtures for a family" means (DIS-2442)
+### Unified applicability and preservation
 
-`conformance/case-taxonomy.yaml` is the machine-readable definition of complete coverage — every batch/stream/reasoning case group and sub-case, with per-case requiredness and applicability rules. It replaces the old implicit standard (the union of `description:` fields across ~20 families that reviewers had to reverse-engineer per PR).
+`utils/src/unified_taxonomy.py` owns published case IDs and display placement. The generator owns family-native scenarios; `test_unified_taxonomy_covers_corpus.py` checks ownership, applicability, emission, and reload. Unknown scenario names fail explicitly. Family markers stay in `parser_families.yaml` and feed the shared comparison model and colorizer.
 
-For Unified corpus changes, regeneration is part of the edit, not a final cleanup step. After every change to a generator, taxonomy, golden specification, fixture manifest, capture label, or coverage documentation, immediately run the generator, explode the loose captures, update `conformance/fixtures-unified-v2/`, refresh the manifest pin, render `CONFORMANCE_v2.json` and `CONFORMANCE_v2.html`, and run the consuming Rust/Python tests. Repeat that complete chain after the final edit. Before reporting or pushing, assert that all `inputs_and_golden.yaml` family documents and each Dynamo capture chain after resolving sparse checkpoints cover exactly the generator's case-ID set. Source tests against stale YAML or stale HTML do not validate the change.
+Native tests consume immutable latest snapshots. Historical readers preserve source identities independently of publication. Full historical packaging pins archive descriptors; Unified-only packaging preserves those pins. No historical rewrite is required for a contributor parser change.
 
-```bash
-# The authoring loop for a new family: the FAIL list is the fixture TODO list.
-conformance/utils/check.sh coverage --family <family>
+## Safe pruning of Unified history
 
-# Whole-corpus gate (what CI runs in the conformance-table job):
-conformance/utils/check.sh coverage
-```
+**Deleting a capture that appears in another snapshot's `member` breaks source identity. Keep the original capture available for every retained member reference.**
 
-Rules the lint enforces: a required case must exist as real input (`model_text`/`chunks`) or as a placeholder carrying an `explanation:` (silence fails; "not yet authored" placeholders warn — they are the acknowledged backfill list). A family registered in `parser_families.yaml` with no fixtures dir for a suite fails (the "ALL stream cases missing" class). Case IDs unknown to the taxonomy fail, so a PR that invents a new group/sub-case must extend `case-taxonomy.yaml` in the same PR. Pre-taxonomy gaps are grandfathered under `known_gaps:` — remove the ID when the fixture lands.
+Prune only from an immutable copy of the original store and its manifest. The original remains the comparison oracle throughout the operation. Choose retained versions separately for each implementation and mode: keep the newest Dynamo v1 release in each major for both direct-batch and jail-buffer histories, and keep the newest Dynamo v2 release in each major.minor line. For example, if v2 has 0.5.1, 0.5.6, and 0.5.99, keep 0.5.99 for the 0.5 minor line. Complete snapshots keep their resolved results without parent loads, but each retained record's `member` must still name an available original capture.
 
-The same command runs the marker-registration lint: each family declares its grammar tokens once in the `markers:` section of `parser_families.yaml` (`pairs` / `singletons` / `leak`), from which the `↯` leak regex (`markers.py`) and the popup token coloring (`utils/src/tables/markup.py`) are derived.
+1. Preserve an immutable original store and manifest.
+2. Choose retained versions separately for each implementation.
+3. Enumerate every retained snapshot's `records.*.member` value and keep each named source capture.
+4. Preserve observations, source provenance, request bindings, and inline receipt bodies.
+5. Remove only captures outside the retention policy and outside every retained `member` reference.
+6. Reload the pruned store and compare every retained record, provenance field, and member reference with the original.
+7. Regenerate packaging and catalogs; verify published data and raw-source links.
 
-### Invariants the tooling now enforces (so you don't have to remember)
+Do not rewrite complete snapshots into parent deltas as part of pruning.
 
-- **Renders/tests read the manifest-pinned snapshot dir directly**, not the shared `<cache>/toolcalling` symlink — sibling `frontend-crates*` checkouts pinning other snapshots used to race to repoint it, so a render could read a snapshot missing the newest version. Enforced in `utils/src/_common.sh`.
-- **`package_fixtures.py` recomputes the sha256 of every kept shard from disk**, never copying the prior manifest's value — a restored/re-pinned store file can no longer produce a manifest that lies about its content (which broke `extract_fixtures`' sha-verify).
-- **Fixture coverage is diffed against `case-taxonomy.yaml` in CI** (`check_family_coverage.py`, section 8) — a new family missing required case groups, a whole stream corpus, or an unexplained placeholder fails the conformance-table job before human review (the PR #120 gap classes).
-- **Family grammar tokens are declared once in `parser_families.yaml` `markers:`** — the leak detector and popup colorizer derive from it, and a family without a declaration fails the coverage lint (undeclared tokens used to render leaks as clean cells and every token as a red orphan).
+Latest publication reuses validated family JSON fragments before assembling final envelopes and transport packs. The local cache is `build/conformance-cache`; `--cache-dir <directory>` selects another location. Source and output hashes detect missing or corrupt entries, which are rebuilt. Viewer-only changes rebuild presentation and reuse converted data. CI restores family caches within each branch namespace and ordinary CI publishes latest only; the explicit `include-history` workflow input requests history.
