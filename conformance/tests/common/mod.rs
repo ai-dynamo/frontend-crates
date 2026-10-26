@@ -15,9 +15,132 @@ pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
 
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+pub fn canonical_argument_json(raw: &str) -> String {
+    match raw.as_bytes().first() {
+        Some(b'{') => {
+            let fields: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated object arguments");
+            let fields = fields
+                .into_iter()
+                .map(|(key, value)| {
+                    format!(
+                        "{}={}",
+                        serde_json::to_string(&key).expect("serialize object key"),
+                        canonical_argument_json(value.get()),
+                    )
+                })
+                .collect::<Vec<_>>();
+            format!("object:[{}]", fields.join(","))
+        }
+        Some(b'[') => {
+            let items: Vec<Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated array arguments");
+            let items = items
+                .iter()
+                .map(|item| canonical_argument_json(item.get()))
+                .collect::<Vec<_>>();
+            format!("array:[{}]", items.join(","))
+        }
+        Some(b'"') => {
+            let value: String = serde_json::from_str(raw).expect("validated string argument");
+            format!(
+                "string:{}",
+                serde_json::to_string(&value).expect("serialize string")
+            )
+        }
+        Some(b't') => "boolean:true".to_string(),
+        Some(b'f') => "boolean:false".to_string(),
+        Some(b'n') => "null".to_string(),
+        Some(b'-' | b'0'..=b'9') => canonical_argument_number(raw),
+        _ => unreachable!("RawValue only accepts JSON"),
+    }
+}
+
+fn canonical_argument_number(raw: &str) -> String {
+    let (negative, unsigned) = match raw.strip_prefix('-') {
+        Some(unsigned) => (true, unsigned),
+        None => (false, raw),
+    };
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => match exponent.parse::<i64>() {
+            Ok(exponent) => (mantissa, exponent),
+            Err(_) => return format!("number-token:{raw}"),
+        },
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let digits = format!("{whole}{fraction}");
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return "number:0".to_string();
+    }
+    let trailing_zeroes = digits.len() - digits.trim_end_matches('0').len();
+    let significant = digits.trim_end_matches('0');
+    let adjustment = match i64::try_from(trailing_zeroes)
+        .ok()
+        .zip(i64::try_from(fraction.len()).ok())
+        .and_then(|(trailing, fractional)| trailing.checked_sub(fractional))
+    {
+        Some(adjustment) => adjustment,
+        None => return format!("number-token:{raw}"),
+    };
+    let Some(exponent) = exponent.checked_add(adjustment) else {
+        return format!("number-token:{raw}");
+    };
+    format!(
+        "number:{}:{}:{exponent}",
+        if negative { "-" } else { "+" },
+        significant
+    )
+}
+
+pub fn json_values_equal<T: serde::Serialize>(left: &T, right: &T) -> bool {
+    let left = serde_json::to_string(left).expect("JSON comparison input");
+    let right = serde_json::to_string(right).expect("JSON comparison input");
+    canonical_argument_json(&left) == canonical_argument_json(&right)
+}
+
+#[derive(Debug)]
+pub struct EngineResult {
+    pub calls: Vec<(String, serde_json::Value)>,
+    pub normal_text: String,
+}
+
+impl PartialEq for EngineResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.normal_text == other.normal_text && json_values_equal(&self.calls, &other.calls)
+    }
+}
+
+impl Eq for EngineResult {}
+
+#[cfg(test)]
+mod json_comparison_tests {
+    #[test]
+    fn number_spelling_does_not_hide_value_type_or_order_changes() {
+        for (left, right, equal) in [
+            (r#"{"value":2.50}"#, r#"{"value":25e-1}"#, true),
+            (r#"{"value":42.0}"#, r#"{"value":42}"#, true),
+            (r#"{"value":2.5}"#, r#"{"value":"2.5"}"#, false),
+            (
+                r#"{"value":9007199254740992.5}"#,
+                r#"{"value":9007199254740992.0}"#,
+                false,
+            ),
+            (r#"{"value":1e-400}"#, r#"{"value":0}"#, false),
+            ("[1,2]", "[2,1]", false),
+        ] {
+            let left: serde_json::Value = serde_json::from_str(left).unwrap();
+            let right: serde_json::Value = serde_json::from_str(right).unwrap();
+            assert_eq!(super::json_values_equal(&left, &right), equal);
+        }
+    }
+}
 
 pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
     match arguments {

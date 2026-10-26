@@ -121,87 +121,8 @@ struct ArgumentJson(String);
 
 impl PartialEq for ArgumentJson {
     fn eq(&self, other: &Self) -> bool {
-        canonical_argument_json(&self.0) == canonical_argument_json(&other.0)
+        common::canonical_argument_json(&self.0) == common::canonical_argument_json(&other.0)
     }
-}
-
-fn canonical_argument_json(raw: &str) -> String {
-    match raw.as_bytes().first() {
-        Some(b'{') => {
-            let fields: BTreeMap<String, Box<serde_json::value::RawValue>> =
-                serde_json::from_str(raw).expect("validated object arguments");
-            let fields = fields
-                .into_iter()
-                .map(|(key, value)| {
-                    format!(
-                        "{}={}",
-                        serde_json::to_string(&key).expect("serialize object key"),
-                        canonical_argument_json(value.get()),
-                    )
-                })
-                .collect::<Vec<_>>();
-            format!("object:[{}]", fields.join(","))
-        }
-        Some(b'[') => {
-            let items: Vec<Box<serde_json::value::RawValue>> =
-                serde_json::from_str(raw).expect("validated array arguments");
-            let items = items
-                .iter()
-                .map(|item| canonical_argument_json(item.get()))
-                .collect::<Vec<_>>();
-            format!("array:[{}]", items.join(","))
-        }
-        Some(b'"') => {
-            let value: String = serde_json::from_str(raw).expect("validated string argument");
-            format!(
-                "string:{}",
-                serde_json::to_string(&value).expect("serialize string")
-            )
-        }
-        Some(b't') => "boolean:true".to_string(),
-        Some(b'f') => "boolean:false".to_string(),
-        Some(b'n') => "null".to_string(),
-        Some(b'-' | b'0'..=b'9') => canonical_argument_number(raw),
-        _ => unreachable!("RawValue only accepts JSON"),
-    }
-}
-
-fn canonical_argument_number(raw: &str) -> String {
-    let (negative, unsigned) = match raw.strip_prefix('-') {
-        Some(unsigned) => (true, unsigned),
-        None => (false, raw),
-    };
-    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
-        Some((mantissa, exponent)) => match exponent.parse::<i64>() {
-            Ok(exponent) => (mantissa, exponent),
-            Err(_) => return format!("number-token:{raw}"),
-        },
-        None => (unsigned, 0),
-    };
-    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
-    let digits = format!("{whole}{fraction}");
-    let digits = digits.trim_start_matches('0');
-    if digits.is_empty() {
-        return "number:0".to_string();
-    }
-    let trailing_zeroes = digits.len() - digits.trim_end_matches('0').len();
-    let significant = digits.trim_end_matches('0');
-    let adjustment = match i64::try_from(trailing_zeroes)
-        .ok()
-        .zip(i64::try_from(fraction.len()).ok())
-        .and_then(|(trailing, fractional)| trailing.checked_sub(fractional))
-    {
-        Some(adjustment) => adjustment,
-        None => return format!("number-token:{raw}"),
-    };
-    let Some(exponent) = exponent.checked_add(adjustment) else {
-        return format!("number-token:{raw}");
-    };
-    format!(
-        "number:{}:{}:{exponent}",
-        if negative { "-" } else { "+" },
-        significant
-    )
 }
 
 impl Serialize for ArgumentJson {
@@ -556,8 +477,8 @@ fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
                 .get(&0)
                 .unwrap_or_else(|| panic!("{id}: no raw tool arguments"));
             assert_eq!(
-                canonical_argument_json(actual),
-                canonical_argument_json(&expected),
+                common::canonical_argument_json(actual),
+                common::canonical_argument_json(&expected),
                 "{id}"
             );
             checked += 1;

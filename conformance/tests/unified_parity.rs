@@ -326,7 +326,10 @@ fn unified_parser_matches_the_golden_oracle() {
                     continue;
                 }
             }
-            if got.as_ref() != Ok(&case.golden) {
+            if !got
+                .as_ref()
+                .is_ok_and(|events| common::json_values_equal(events, &case.golden))
+            {
                 match divergences::expected(&known, &file.family, id, Check::Golden) {
                     Some(Expected::Golden(expected)) if render(&got) == expected.actual => {
                         observed.insert((file.family.clone(), id.clone()));

@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 mod common;
-use common::{collect_yaml, fixture_name};
+use common::{EngineResult, collect_yaml, fixture_name};
 
 use dynamo_parsers_v2::{
     HarmonyToolStreamParser, Tool, ToolCallDelta, ToolCallResponseChunk, ToolParseResult,
@@ -358,12 +358,6 @@ fn expected_assembled(case: &Case) -> EngineResult {
         })
         .collect();
     EngineResult { calls, normal_text }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct EngineResult {
-    calls: Vec<(String, Value)>,
-    normal_text: String,
 }
 
 fn assemble_emitted(chunks: &[EmittedDelta], normal_text: String) -> EngineResult {

@@ -190,7 +190,7 @@ async fn toolcalling_batch_parity() {
                 .map(|c| (c.name.clone(), c.arguments.clone()))
                 .collect();
 
-            let calls_ok = got == want;
+            let calls_ok = common::json_values_equal(&got, &want);
             let normal_ok = norm_text(got_normal.as_deref())
                 == norm_text(expected.dynamo_v1.normal_text.as_deref());
 

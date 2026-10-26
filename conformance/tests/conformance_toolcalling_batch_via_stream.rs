@@ -8,7 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 mod common;
-use common::{collect_yaml, fixture_name};
+use common::{EngineResult, collect_yaml, fixture_name};
 
 use dynamo_parsers_v2::{
     HarmonyToolStreamParser, Tool, ToolCallDelta, ToolParseResult, assemble_tool_calls,
@@ -327,12 +327,6 @@ fn toolcalling_batch_via_stream_parity() {
         failures.len(),
         failures.join("\n")
     );
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct EngineResult {
-    calls: Vec<(String, Value)>,
-    normal_text: String,
 }
 
 fn parse_stream_result(
