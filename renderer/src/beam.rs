@@ -75,7 +75,10 @@ pub fn builtin_tools_view<R: OAIChatLikeRequest + ?Sized>(
         bail!("`builtin_tools` must be an array of tool names or declarations");
     };
 
-    let mut tools = match request.tools().map(|tools| serde_json::to_value(&tools)) {
+    let mut tools = match request
+        .tools()
+        .map(|tools| crate::python::template_json(&tools))
+    {
         None | Some(Ok(Value::Null)) => Vec::new(),
         Some(Ok(Value::Array(tools))) => tools,
         Some(_) => bail!("`tools` must be an array"),
@@ -124,7 +127,7 @@ pub fn builtin_tools_view<R: OAIChatLikeRequest + ?Sized>(
     let tools_excluded = exclude_tools_when_tool_choice_none
         && request
             .tool_choice()
-            .and_then(|choice| serde_json::to_value(&choice).ok())
+            .and_then(|choice| crate::python::template_json(&choice).ok())
             .is_some_and(|choice| choice.as_str() == Some("none"));
     if tools_excluded {
         names.clear();

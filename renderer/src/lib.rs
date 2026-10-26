@@ -324,7 +324,7 @@ pub(crate) fn messages_to_json(req: &dyn OAIChatLikeRequest) -> Result<serde_jso
         // Custom API calls must become function calls even on this fast path.
         dynamo_protocols::types::chat_messages_for_function_template(messages)
     } else {
-        serde_json::to_value(req.messages())
+        crate::python::template_json(req.messages())
     }
     .context("Failed to convert messages to JSON")
 }

@@ -16,7 +16,7 @@ use serde_json::Value;
 /// Built directly or deserialized via [`processor_from_spec`], where the
 /// `family` key selects the variant.
 #[derive(Clone, Debug, serde::Deserialize)]
-#[serde(tag = "family", rename_all = "snake_case")]
+#[serde(try_from = "Value")]
 #[non_exhaustive]
 pub enum ProcessorSpec {
     QwenVl(QwenVlSpec),
@@ -25,6 +25,24 @@ pub enum ProcessorSpec {
     /// Metadata-only GLM-5.3-Flash image accounting and layout; pixel
     /// processing and video are unsupported.
     Glm5Next(Glm5NextSpec),
+}
+
+// serde's internally tagged enum buffer treats arbitrary-precision decimals
+// as maps before typed f32 fields can see them. Dispatch from Value instead,
+// preserving numbers until each family's own deserializer consumes them.
+impl TryFrom<Value> for ProcessorSpec {
+    type Error = serde_json::Error;
+
+    fn try_from(value: Value) -> std::result::Result<Self, Self::Error> {
+        match value.get("family").and_then(Value::as_str) {
+            Some("qwen_vl") => serde_json::from_value(value).map(Self::QwenVl),
+            Some("deepseek_v41") => serde_json::from_value(value).map(Self::DeepseekV41),
+            Some("glm5_next") => serde_json::from_value(value).map(Self::Glm5Next),
+            _ => Err(serde::de::Error::custom(
+                "unknown or missing processor family",
+            )),
+        }
+    }
 }
 
 /// Build a family processor from a typed spec. `Err` when the family

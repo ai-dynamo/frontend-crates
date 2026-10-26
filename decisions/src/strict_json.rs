@@ -67,5 +67,25 @@ impl<'de> Visitor<'de> for UniqueVisitor {
 }
 
 pub(crate) fn parse(bytes: &[u8]) -> Result<Value, serde_json::Error> {
-    serde_json::from_slice::<UniqueValue>(bytes).map(|v| v.0)
+    // The duplicate-key visitor validates structure only: arbitrary_precision
+    // represents decimals as synthetic maps to custom visitors. Let Value's
+    // own deserializer recover numbers after validation rather than exposing
+    // that implementation detail as request data.
+    serde_json::from_slice::<UniqueValue>(bytes)?;
+    serde_json::from_slice(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse;
+
+    #[test]
+    fn numbers_keep_their_types_and_duplicate_keys_stay_rejected() {
+        for text in ["1.25", "1e-7", "9007199254740993", "[1.25, {\"n\": 1e-7}]"] {
+            let expected: serde_json::Value = serde_json::from_str(text).unwrap();
+            assert_eq!(parse(text.as_bytes()).unwrap(), expected, "{text}");
+        }
+        assert!(parse(br#"{"n":1.25,"n":2.5}"#).is_err());
+        assert!(parse(br#"{"nested":{"n":1.25,"n":2.5}}"#).is_err());
+    }
 }

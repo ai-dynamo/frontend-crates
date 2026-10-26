@@ -82,7 +82,9 @@ pub fn may_be_fix_tool_schema(tools: serde_json::Value) -> Option<Value> {
             updated_tools.push(tool);
         }
     }
-    Some(Value::from_serialize(&updated_tools))
+    Some(crate::python::template_value(&serde_json::Value::Array(
+        updated_tools,
+    )))
 }
 
 /// Default media type conversions for multimodal content.
@@ -626,7 +628,10 @@ impl HfTokenizerConfigJsonFormatter {
         {
             // Only template-owned markers are controls. Markers in message/tool
             // data must survive Jinja unchanged and encode as ordinary text.
-            let mut tool_json = tools.as_ref().map(serde_json::to_value).transpose()?;
+            let mut tool_json = tools
+                .as_ref()
+                .map(crate::python::template_json)
+                .transpose()?;
             let collision_source = format!(
                 "{messages_for_template}{tool_json:?}{:?}{}",
                 req.chat_template_args(),
@@ -638,13 +643,13 @@ impl HfTokenizerConfigJsonFormatter {
             shield_harmony_literals(&mut messages_for_template, &placeholder, &mut literals);
             if let Some(value) = &mut tool_json {
                 shield_harmony_literals(value, &placeholder, &mut literals);
-                tools = Some(Value::from_serialize(value));
+                tools = Some(crate::python::template_value(value));
             }
         }
 
         let ctx = context! {
-            messages => messages_for_template,
-            tools => tools,
+            messages => crate::python::template_value(&messages_for_template),
+            tools => tools.as_ref().map(crate::python::template_json).transpose()?.as_ref().map(crate::python::template_value),
             bos_token => self.config.bos_tok(),
             eos_token => self.config.eos_tok(),
             unk_token => self.config.unk_tok(),
@@ -654,7 +659,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         // Merge any additional args into the context last so they take precedence
         let ctx = if let Some(args) = req.chat_template_args() {
-            let extra = Value::from_serialize(args);
+            let extra = crate::python::template_value(&serde_json::to_value(args)?);
             context! { ..ctx, ..extra }
         } else {
             ctx
@@ -2420,7 +2425,7 @@ NORMAL MODE
         let out = env
             .get_template("t")
             .unwrap()
-            .render(context! { messages => messages.as_array().unwrap() })
+            .render(context! { messages => crate::python::template_value(&messages) })
             .unwrap();
 
         // Should produce clean JSON without double-encoding, with Python
@@ -2453,7 +2458,7 @@ NORMAL MODE
         let out = env
             .get_template("t")
             .unwrap()
-            .render(context! { messages => messages.as_array().unwrap() })
+            .render(context! { messages => crate::python::template_value(&messages) })
             .unwrap();
 
         assert!(out == "a=1;b=x;" || out == "b=x;a=1;");
