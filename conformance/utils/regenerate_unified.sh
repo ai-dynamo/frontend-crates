@@ -15,6 +15,7 @@ render_report() {
 }
 
 run python3 conformance/utils/src/gen_unified_golden.py
+current_capture=$(python3 -c 'import tomllib; print("dynamo_v2-" + tomllib.load(open("parsers/v2/Cargo.toml", "rb"))["package"]["version"])')
 
 if ! run cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --exact render_unified_conformance_html --nocapture; then
   render_report || true
@@ -24,7 +25,7 @@ if ! run python3 conformance/utils/src/explode_unified_fixtures.py; then
   render_report || true
   exit 1
 fi
-if ! run python3 conformance/utils/src/package_fixtures.py; then
+if ! run python3 conformance/utils/src/package_fixtures.py --require-unified-capture-dir "$current_capture"; then
   render_report || true
   exit 1
 fi

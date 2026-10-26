@@ -95,6 +95,10 @@ enum Ev {
 impl PartialEq for Ev {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (Self::MessageStart { phase: left }, Self::MessageStart { phase: right }) => {
+                left == right
+            }
+            (Self::MessageEnd, Self::MessageEnd) => true,
             (Self::Reasoning { text: left }, Self::Reasoning { text: right })
             | (Self::Text { text: left }, Self::Text { text: right }) => left == right,
             (
@@ -205,9 +209,9 @@ impl Serialize for ArgumentJson {
     where
         S: Serializer,
     {
-        let raw = serde_json::value::RawValue::from_string(self.0.clone())
-            .map_err(serde::ser::Error::custom)?;
-        raw.serialize(serializer)
+        // YAML numbers pass through binary64 in the Python capture pipeline.
+        // Keep the complete JSON argument text so nested decimals stay exact.
+        serializer.serialize_str(&self.0)
     }
 }
 
@@ -216,9 +220,9 @@ impl<'de> Deserialize<'de> for ArgumentJson {
     where
         D: Deserializer<'de>,
     {
-        let value = serde_yaml::Value::deserialize(deserializer)?;
+        let value = serde_json::Value::deserialize(deserializer)?;
         let raw = match value {
-            serde_yaml::Value::String(encoded) => {
+            serde_json::Value::String(encoded) => {
                 if serde_json::value::RawValue::from_string(encoded.clone()).is_ok() {
                     encoded
                 } else {
@@ -675,6 +679,12 @@ fn nested_numeric_arguments_are_compared_without_binary64_rounding() {
     assert!(serialized.contains("9007199254740992.5"));
     assert!(serialized.contains("1e-400"));
     assert!(serialized.contains("9007199254740993"));
+    let decoded_json: Vec<Ev> =
+        serde_json::from_str(&serialized).expect("decode captured arguments");
+    assert_eq!(decoded_json, exact);
+    let yaml = common::json_to_yaml_value(&exact);
+    let decoded_yaml: Vec<Ev> = serde_yaml::from_value(yaml).expect("decode packaged arguments");
+    assert_eq!(decoded_yaml, exact);
     assert_eq!(
         raw_arguments(r#"{"number":4.2e1,"text":"42"}"#),
         raw_arguments(r#"{ "text":"42", "number":42.0 }"#)
@@ -682,6 +692,19 @@ fn nested_numeric_arguments_are_compared_without_binary64_rounding() {
     assert_ne!(
         raw_arguments(r#"{"number":42}"#),
         raw_arguments(r#"{"number":"42"}"#)
+    );
+}
+
+#[test]
+fn yaml_numeric_arguments_keep_their_json_number_lexemes() {
+    let yaml = "kind: tool_call\nname: inspect\narguments:\n  fraction: 3.5\n  text: \"3.5\"\n";
+    let decoded: Ev = serde_yaml::from_str(yaml).expect("decode YAML numeric arguments");
+    assert_eq!(
+        decoded,
+        Ev::ToolCall {
+            name: "inspect".into(),
+            arguments: raw_arguments(r#"{"fraction":3.5,"text":"3.5"}"#),
+        }
     );
 }
 
@@ -1125,7 +1148,7 @@ fn render_unified_conformance_html() {
         "note": "GOLDEN = authored oracle. dynamo = LIVE native UnifiedParser output. vllm = documented expectation when a live capture is unavailable.",
         "cases": json_cases,
     });
-    std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();
+    std::fs::write(&yaml_out, serde_json::to_string_pretty(&feed).unwrap()).unwrap();
     eprintln!(
         "wrote {} ({total} cases, dynamo_red={dynamo_red}, vllm_red={vllm_red})",
         yaml_out.display()

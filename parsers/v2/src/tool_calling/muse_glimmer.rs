@@ -968,16 +968,17 @@ impl InvokeEmitter for MuseInvokeEmitter {
             let literal_text =
                 declared_string && schema.is_some_and(|s| s["contentMediaType"] == "text/plain");
             let decoded = decode_value(raw);
-            let nullable_null = decoded.is_null() && schema.is_some_and(|s| s["nullable"] == true);
+            let nullable_null = matches!(decoded, ParsedValue::Json(serde_json::Value::Null))
+                && schema.is_some_and(|s| s["nullable"] == true);
             arguments.insert(
                 key.to_string(),
                 if literal_text
                     || (self.schema_string_types
                         && declared_string
-                        && !decoded.is_string()
+                        && !matches!(decoded, ParsedValue::Json(serde_json::Value::String(_)))
                         && !nullable_null)
                 {
-                    serde_json::Value::String(raw.to_owned())
+                    ParsedValue::from(serde_json::Value::String(raw.to_owned()))
                 } else {
                     decoded
                 },

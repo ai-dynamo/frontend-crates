@@ -343,6 +343,66 @@ impl<'a> SchemaFacts<'a> {
         hint == Some(true)
     }
 
+    pub(crate) fn array_item_permits_null(&mut self, schemas: &[&'a Value]) -> bool {
+        let mut hint = None;
+        for schema in schemas {
+            hint = intersect_type_hints(hint, self.array_item_null_hint(schema));
+            if hint == Some(false) {
+                return false;
+            }
+        }
+        hint == Some(true)
+    }
+
+    fn array_item_null_hint(&mut self, schema: &'a Value) -> Option<bool> {
+        self.with_schema(schema, None, |walker, schema| {
+            let mut hint = schema
+                .get("items")
+                .and_then(|items| walker.permits_null(items));
+
+            if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+                && let Some(target) = resolve_local_schema_ref(reference, walker.root)
+            {
+                hint = intersect_type_hints(hint, walker.array_item_null_hint(target));
+            }
+
+            if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
+                for branch in branches {
+                    hint = intersect_type_hints(hint, walker.array_item_null_hint(branch));
+                }
+            }
+
+            for keyword in ["anyOf", "oneOf"] {
+                let Some(branches) = schema.get(keyword).and_then(Value::as_array) else {
+                    continue;
+                };
+                let mut branch_hint = None;
+                let mut unknown = false;
+                for branch in branches {
+                    if !walker.may_describe_array(branch) {
+                        continue;
+                    }
+                    match walker.array_item_null_hint(branch) {
+                        Some(true) => {
+                            branch_hint = Some(true);
+                            break;
+                        }
+                        Some(false) => {}
+                        None => unknown = true,
+                    }
+                }
+                let alternatives = match (branch_hint, unknown) {
+                    (Some(true), _) => Some(true),
+                    (None, true) => None,
+                    (None, false) => Some(false),
+                    (Some(false), _) => Some(false),
+                };
+                hint = intersect_type_hints(hint, alternatives);
+            }
+            hint
+        })
+    }
+
     fn array_item_type_hint(&mut self, schema: &'a Value, expected: &str) -> Option<bool> {
         self.with_schema(schema, None, |walker, schema| {
             let mut hint = schema

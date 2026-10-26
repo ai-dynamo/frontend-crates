@@ -112,7 +112,8 @@ def test_implicit_eof_retains_finish_output_in_table_replay():
 
 @pytest.mark.parametrize("preserve_arguments", [False, True])
 @pytest.mark.parametrize("misaligned", [False, True])
-def test_exact_arguments_keep_aligned_malformed_fallback(preserve_arguments, misaligned):
+@pytest.mark.parametrize("encoded_recording", [False, True])
+def test_exact_arguments_keep_aligned_malformed_fallback(preserve_arguments, misaligned, encoded_recording):
     module = _load_table_module()
     exact = '{"value":9007199254740992.5}'
     malformed = '{"broken":'
@@ -121,8 +122,8 @@ def test_exact_arguments_keep_aligned_malformed_fallback(preserve_arguments, mis
         {"kind": "tool_call", "name": "bad", "arguments": malformed, "complete": True},
     ]]
     recorded = [
-        {"kind": "tool_call", "name": "number", "arguments": {"value": 9007199254740992.0}},
-        {"kind": "tool_call", "name": "bad", "arguments": {}},
+        {"kind": "tool_call", "name": "number", "arguments": exact if encoded_recording else {"value": 9007199254740992.0}},
+        {"kind": "tool_call", "name": "bad", "arguments": "{}" if encoded_recording else {}},
     ]
     if misaligned:
         recorded.reverse()
@@ -130,5 +131,5 @@ def test_exact_arguments_keep_aligned_malformed_fallback(preserve_arguments, mis
         rows, recorded_assembly=recorded, preserve_arguments=preserve_arguments,
     ) == [
         {"kind": "tool_call", "name": "number", "arguments": exact if preserve_arguments else {"value": 9007199254740992.0}},
-        {"kind": "tool_call", "name": "bad", "arguments": malformed if misaligned else {}},
+        {"kind": "tool_call", "name": "bad", "arguments": malformed if misaligned else "{}" if preserve_arguments and encoded_recording else {}},
     ]

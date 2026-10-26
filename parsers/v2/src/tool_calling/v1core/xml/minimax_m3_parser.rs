@@ -594,8 +594,12 @@ fn convert_array_item_scalar(
     let trimmed = value.trim();
     let mut facts = SchemaFacts::new(root_schema);
 
-    if let Some(value) = convert_null_scalar(&value, item_schemas, &mut facts) {
-        return value;
+    if trimmed.eq_ignore_ascii_case("null") {
+        return if facts.array_item_permits_null(array_schemas) {
+            ParsedValue::from(Value::Null)
+        } else {
+            ParsedValue::from(Value::String(value))
+        };
     }
 
     // An array's anyOf/oneOf item schemas are alternatives, unlike the
@@ -608,11 +612,19 @@ fn convert_array_item_scalar(
     {
         return integer;
     }
-    if facts.has_array_item_type(array_schemas, "number") {
-        return coerce_integral_number(trimmed)
+    if facts.has_array_item_type(array_schemas, "number")
+        && let Some(number) = coerce_integral_number(trimmed)
             .or_else(|| raw_number_literal(trimmed))
             .or_else(|| normalize_decimal_spelling(trimmed))
-            .unwrap_or_else(|| ParsedValue::from(Value::String(value)));
+    {
+        return number;
+    }
+    if facts.has_array_item_type(array_schemas, "boolean") {
+        return match trimmed.to_ascii_lowercase().as_str() {
+            "true" | "1" => ParsedValue::from(Value::Bool(true)),
+            "false" | "0" => ParsedValue::from(Value::Bool(false)),
+            _ => ParsedValue::from(Value::String(value)),
+        };
     }
 
     convert_scalar_value_with_schemas(raw, item_schemas, root_schema)
@@ -838,6 +850,59 @@ mod tests {
             serde_json::to_string(&contradictory_value).unwrap(),
             "[\"9007199254740992.5\"]"
         );
+    }
+
+    #[test]
+    fn array_schema_alternatives_preserve_null_and_boolean_items() {
+        let config = MiniMaxM3ParserConfig::default();
+        let token = &config.namespace_token;
+        for keyword in ["anyOf", "oneOf"] {
+            for branches in [
+                json!([
+                    {"type": "array", "items": {"type": ["number", "null"]}},
+                    {"type": "array", "items": {"type": "number"}}
+                ]),
+                json!([
+                    {"type": "array", "items": {"type": "number"}},
+                    {"type": "array", "items": {"type": ["number", "null"]}}
+                ]),
+            ] {
+                let mut schema = serde_json::Map::new();
+                schema.insert(keyword.to_string(), branches.clone());
+                let values = Value::Object(schema);
+                let root = json!({"properties": {"values": values}});
+                let values_schema = root["properties"]["values"].clone();
+                let input = format!("{token}<item>null{token}</item>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&input, Some(&values_schema), &root, &config),
+                    json!([null]),
+                    "{keyword}: {branches}"
+                );
+            }
+
+            for branches in [
+                json!([
+                    {"type": "array", "items": {"type": "boolean"}},
+                    {"type": "array", "items": {"type": "number"}}
+                ]),
+                json!([
+                    {"type": "array", "items": {"type": "number"}},
+                    {"type": "array", "items": {"type": "boolean"}}
+                ]),
+            ] {
+                let mut schema = serde_json::Map::new();
+                schema.insert(keyword.to_string(), branches.clone());
+                let values = Value::Object(schema);
+                let root = json!({"properties": {"values": values}});
+                let values_schema = root["properties"]["values"].clone();
+                let input = format!("{token}<item>true{token}</item>");
+                assert_eq!(
+                    parse_nested_minimax_xml(&input, Some(&values_schema), &root, &config),
+                    json!([true]),
+                    "{keyword}: {branches}"
+                );
+            }
+        }
     }
 
     #[test]

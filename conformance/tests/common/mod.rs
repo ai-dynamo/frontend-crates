@@ -19,8 +19,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// Legacy assembled-event tests consume Value; exact decimal comparisons belong
-/// to the raw-delta report and numeric parser tests, not this lossy projection.
 pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
     match arguments {
         serde_json::Value::String(raw) => {
@@ -28,6 +26,58 @@ pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Va
         }
         value => value.clone(),
     }
+}
+
+pub fn json_to_yaml_value<T: serde::Serialize>(value: &T) -> serde_yaml::Value {
+    fn convert(value: serde_json::Value) -> serde_yaml::Value {
+        match value {
+            serde_json::Value::Null => serde_yaml::Value::Null,
+            serde_json::Value::Bool(value) => serde_yaml::Value::Bool(value),
+            serde_json::Value::Number(number) => {
+                let lexeme = number.to_string();
+                let nonzero_digit = lexeme
+                    .split(['e', 'E'])
+                    .next()
+                    .expect("JSON number has a mantissa")
+                    .bytes()
+                    .any(|byte| byte.is_ascii_digit() && byte != b'0');
+                let yaml_incompatible = number
+                    .as_f64()
+                    .is_none_or(|value| !value.is_finite() || value == 0.0 && nonzero_digit);
+                if yaml_incompatible {
+                    serde_yaml::Value::String(lexeme)
+                } else {
+                    serde_yaml::from_str(&lexeme).expect("JSON number parses as YAML")
+                }
+            }
+            serde_json::Value::String(value) => serde_yaml::Value::String(value),
+            serde_json::Value::Array(values) => {
+                serde_yaml::Value::Sequence(values.into_iter().map(convert).collect())
+            }
+            serde_json::Value::Object(values) => serde_yaml::Value::Mapping(
+                values
+                    .into_iter()
+                    .map(|(key, value)| (serde_yaml::Value::String(key), convert(value)))
+                    .collect(),
+            ),
+        }
+    }
+
+    convert(serde_json::to_value(value).expect("value serializes as JSON"))
+}
+
+pub fn unified_event_to_yaml_value<T: serde::Serialize>(event: &T) -> serde_yaml::Value {
+    let mut event = serde_json::to_value(event).expect("event serializes as JSON");
+    if event.get("kind").and_then(serde_json::Value::as_str) == Some("tool_call")
+        && let Some(arguments) = event.get_mut("arguments")
+    {
+        // Preserve the whole JSON payload: YAML float scalars round decimals,
+        // and quoting individual numbers would change their argument types.
+        *arguments = serde_json::Value::String(
+            serde_json::to_string(arguments).expect("tool arguments serialize as JSON"),
+        );
+    }
+    json_to_yaml_value(&event)
 }
 
 /// Copy the schema file with historical harnesses: tool registration and argument
@@ -846,6 +896,7 @@ impl Init {
         parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
     ) -> anyhow::Result<()> {
         use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        #[cfg(not(conformance_legacy_message_phases))]
         parser.preserve_message_phases(self.preserve_message_phases);
         parser.initialize_request(UnifiedParserInit {
             starting_state: self.starting_state(),

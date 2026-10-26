@@ -33,6 +33,7 @@
 //! Builds predating UnifiedParser instead use `--cfg conformance_split_only`.
 //! Builds without ToolCallDelta::complete also require `--cfg conformance_legacy_terminal`.
 //! Builds without the reasoning-aware structural-tag API use `--cfg conformance_no_structural_tag`.
+//! Builds without message-phase events use `--cfg conformance_legacy_message_phases`.
 //!
 //! No-op unless `XVER_INPUTS` is set, so it costs nothing in a normal test run.
 
@@ -53,15 +54,40 @@ use common::unified_tools as tools;
 
 type Captured = (Vec<Vec<serde_yaml::Value>>, Vec<serde_yaml::Value>);
 
+fn requested_chunks(
+    value: &serde_yaml::Value,
+    family: &str,
+    case_id: &str,
+) -> Option<Vec<capture::InputChunk>> {
+    let has_numeric_delta = value.as_sequence().is_some_and(|rows| {
+        rows.iter().any(|row| {
+            row.as_mapping()
+                .and_then(|mapping| mapping.get(serde_yaml::Value::String("delta_text".into())))
+                .is_some_and(|delta| matches!(delta, serde_yaml::Value::Number(_)))
+        })
+    });
+    if has_numeric_delta {
+        eprintln!("[xver] {family}/{case_id}: numeric YAML delta_text; deriving chunks from input");
+        return None;
+    }
+    Some(
+        serde_yaml::from_value(value.clone())
+            .unwrap_or_else(|error| panic!("requested chunks for {family}/{case_id}: {error}")),
+    )
+}
+
+#[test]
+fn numeric_yaml_chunk_text_uses_input_schedule() {
+    let chunks: serde_yaml::Value = serde_yaml::from_str("- delta_text: 4.2e1").unwrap();
+    assert!(requested_chunks(&chunks, "deepseek_v4", "numeric_exponent").is_none());
+}
+
 fn capture_record(
     result: Result<Captured, CaptureFailure>,
     init: &common::Init,
 ) -> serde_yaml::Value {
     let mut record = serde_yaml::Mapping::new();
-    record.insert(
-        "init".into(),
-        serde_yaml::to_value(init).expect("case init"),
-    );
+    record.insert("init".into(), common::json_to_yaml_value(init));
     match result {
         Ok((rows, assembled)) => {
             record.insert("assembled".into(), serde_yaml::Value::Sequence(assembled));
@@ -254,7 +280,7 @@ fn capture_producer_records_init_and_identity() {
         } else {
             let expected = match key {
                 "guided" => {
-                    json!([{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}])
+                    json!([{"kind":"tool_call", "name":"get_weather", "arguments":r#"{"city":"Paris"}"#}])
                 }
                 "reasoning" => {
                     json!([{"kind":"reasoning", "text":"hidden"}, {"kind":"text", "text":"visible"}])
@@ -518,7 +544,7 @@ fn split_path_chunks_with_parsers(
 
 #[cfg(not(conformance_split_only))]
 fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {
-    serde_yaml::to_value(ev).expect("event serializes")
+    common::unified_event_to_yaml_value(ev)
 }
 
 /// Fold per-chunk deltas into assembled events, mirroring the page's `_assemble_stream`:
@@ -581,7 +607,7 @@ fn fold_chunks(rows: &[Vec<Value>]) -> Vec<serde_yaml::Value> {
         }
     }
     out.into_iter()
-        .map(|v| serde_yaml::to_value(v).expect("event"))
+        .map(|v| common::unified_event_to_yaml_value(&v))
         .collect()
 }
 
@@ -709,7 +735,7 @@ fn capture_case_with_chunks(
         .into_iter()
         .map(|row| {
             row.into_iter()
-                .map(|value| serde_yaml::to_value(value).expect("delta"))
+                .map(|value| common::json_to_yaml_value(&value))
                 .collect()
         })
         .collect();
@@ -722,15 +748,42 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
     let (_, assembled) =
         split_path_capture_with_parsers("gemma4", "gemma4", input, &tools()).expect("split path");
     let want = vec![
-        serde_yaml::to_value(json!({"kind": "reasoning", "text": "Look it up.Now answer."}))
-            .expect("reasoning"),
-        serde_yaml::to_value(
-            json!({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}),
-        )
-        .expect("tool call"),
-        serde_yaml::to_value(json!({"kind": "text", "text": "It's 18C."})).expect("text"),
+        common::json_to_yaml_value(&json!({"kind": "reasoning", "text": "Look it up.Now answer."})),
+        common::json_to_yaml_value(
+            &json!({"kind": "tool_call", "name": "get_weather", "arguments": r#"{"city":"Paris"}"#}),
+        ),
+        common::json_to_yaml_value(&json!({"kind": "text", "text": "It's 18C."})),
     ];
     assert_eq!(assembled, want);
+}
+
+#[test]
+fn json_to_yaml_preserves_large_integers_and_yaml_incompatible_floats() {
+    let value: Value = serde_json::from_str(r#"{"value":9007199254740993,"tiny":1e-400}"#).unwrap();
+    let yaml = common::json_to_yaml_value(&value);
+    assert_eq!(yaml["value"].as_u64(), Some(9_007_199_254_740_993));
+    assert_eq!(yaml["tiny"].as_str(), Some("1e-400"));
+    for raw in ["0e1", "0.0e-400"] {
+        let value: Value = serde_json::from_str(raw).unwrap();
+        assert!(common::json_to_yaml_value(&value).is_number());
+    }
+}
+
+#[test]
+fn captured_event_arguments_round_trip_without_yaml_number_conversion() {
+    for raw in [
+        r#"{"fraction":9007199254740992.5,"tiny":1e-400,"huge":1e400}"#,
+        r#"{"values":[9007199254740993,-9007199254740993],"text":"3.5"}"#,
+        "null",
+        r#""null""#,
+        r#""[1]""#,
+    ] {
+        let arguments: Value = serde_json::from_str(raw).unwrap();
+        let event = json!({"kind": "tool_call", "name": "inspect", "arguments": arguments});
+        let yaml = common::unified_event_to_yaml_value(&event);
+        let captured = yaml["arguments"].as_str().expect("raw JSON arguments");
+        assert_eq!(serde_json::from_str::<Value>(captured).unwrap(), arguments);
+    }
 }
 
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the
@@ -739,9 +792,11 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
 #[cfg(not(conformance_split_only))]
 fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
+        #[cfg(not(conformance_legacy_message_phases))]
         dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
             serde_json::json!({"kind":"message_start","phase":phase})
         }
+        #[cfg(not(conformance_legacy_message_phases))]
         dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => {
             serde_json::json!({"kind":"message_end"})
         }
@@ -753,7 +808,7 @@ fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value
         }
         dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => tool_delta_json(c),
     };
-    serde_yaml::to_value(v).expect("delta serializes")
+    common::json_to_yaml_value(&v)
 }
 
 #[test]
@@ -889,9 +944,9 @@ fn capture_this_build_against_the_current_corpus() {
                     .map(|value| serde_json::to_value(value).expect("case tools schema JSON"));
                 let tool_schema_json =
                     common::unified_tool_schemas_for_case(tool_schema_json.as_ref());
-                let recorded: Option<Vec<capture::InputChunk>> = cdoc
+                let recorded = cdoc
                     .get("chunks")
-                    .map(|value| serde_yaml::from_value(value.clone()).expect("requested chunks"));
+                    .and_then(|value| requested_chunks(value, &family, &cid));
                 let schedule = capture::replay_chunks(input, recorded.as_deref());
                 let mut record = capture_record(
                     capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
@@ -909,7 +964,7 @@ fn capture_this_build_against_the_current_corpus() {
                 });
                 record.as_mapping_mut().unwrap().insert(
                     "capture_input".into(),
-                    serde_yaml::to_value(stimulus).unwrap(),
+                    common::json_to_yaml_value(&stimulus),
                 );
                 cases.insert(cid, record);
             }
@@ -928,7 +983,7 @@ fn capture_this_build_against_the_current_corpus() {
             doc.insert("captured_with".into(), serde_yaml::Value::Mapping(cw));
             doc.insert(
                 "capture_provenance".into(),
-                serde_yaml::to_value(&provenance).expect("provenance"),
+                common::json_to_yaml_value(&provenance),
             );
             doc.insert("cases".into(), serde_yaml::Value::Mapping(one));
             std::fs::write(

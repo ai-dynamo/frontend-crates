@@ -2252,19 +2252,29 @@ def _assemble_stream(chunk_deltas: list, *, recorded_assembly: list | None = Non
                     e["arguments"] = raw
     if malformed and recorded_assembly is not None:
         calls = [(position, event) for position, event in enumerate(events) if event["kind"] == "tool_call"]
-        recorded = [event for event in recorded_assembly if event["kind"] == "tool_call"]
+        recorded = []
+        for observed in recorded_assembly:
+            if observed["kind"] != "tool_call":
+                continue
+            arguments = observed["arguments"]
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except (ValueError, TypeError):
+                    pass
+            recorded.append((observed, arguments))
         # Native P3 uses {}, but split-era captures preserve invalid JSON bytes.
         # Require the entire call sequence to align before using recorded fallbacks;
         # split batch assembly can differ from stream order and must not replace it.
         if len(calls) == len(recorded) and all(
             event["name"] == observed["name"] and (
-                projections.get(position, event["arguments"]) == observed["arguments"] or
-                position in malformed and observed["arguments"] == {}
-            ) for (position, event), observed in zip(calls, recorded)
+                projections.get(position, event["arguments"]) == arguments or
+                position in malformed and arguments == {}
+            ) for (position, event), (observed, arguments) in zip(calls, recorded)
         ):
-            for (position, event), observed in zip(calls, recorded):
+            for (position, event), (observed, arguments) in zip(calls, recorded):
                 if position in malformed:
-                    event["arguments"] = observed["arguments"]
+                    event["arguments"] = observed["arguments"] if preserve_arguments else arguments
     return events
 
 

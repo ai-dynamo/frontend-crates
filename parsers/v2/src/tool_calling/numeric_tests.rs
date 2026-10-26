@@ -74,6 +74,8 @@ fn assert_numeric_case(schema: &serde_json::Value, raw: &str, expected: &str) {
                     let mut output = ToolParseResult::default();
                     for event in events {
                         match event {
+                            UnifiedParserEvent::MessageStart(_)
+                            | UnifiedParserEvent::MessageEnd => {}
                             UnifiedParserEvent::ToolCall(call) => output.calls.push(call),
                             UnifiedParserEvent::Text(text) => output.normal_text.push_str(&text),
                             UnifiedParserEvent::Reasoning(text) => {
