@@ -42,8 +42,8 @@ mod python;
 mod template;
 
 pub use template::{
-    ChatTemplate, ChatTemplateValue, ContextMixins, deepseek_formatter_for, kimi_k3_formatter_for,
-    may_be_fix_tool_schema, native_formatter_for,
+    ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins,
+    deepseek_formatter_for, kimi_k3_formatter_for, may_be_fix_tool_schema, native_formatter_for,
 };
 
 /// Selects which context-mixin behaviors a template renders with.

@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use anyhow::{Ok, Result};
 use minijinja::Environment;
@@ -110,17 +113,57 @@ pub fn native_formatter_for(
     deepseek_formatter_for(model_type_lower, display_name_lower)
 }
 
+/// How message `content` is shaped before the HF chat template sees it, with
+/// the semantics of vLLM's `--chat-template-content-format`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub enum ChatTemplateContentFormat {
+    /// Probe the template at load and pick a shape for it (Dynamo's default).
+    #[default]
+    Auto,
+    /// Flatten every message's content to one string, as vLLM's `string`
+    /// format does with its default `interleave_mm_strings=False`: one
+    /// placeholder per media item first, then the text parts, all joined
+    /// with `\n`.
+    String {
+        /// The model's placeholder for each modality (`image`, `video`,
+        /// `audio`), as vLLM's `get_placeholder_str` returns it. `{n}` is
+        /// replaced with the item's 1-based index among that modality's
+        /// items in the whole conversation. A modality without an entry, or
+        /// with an empty one, gets no placeholder.
+        media_placeholders: HashMap<String, String>,
+    },
+    /// Pass every message's content as a list of parts, as vLLM's `openai`
+    /// format does.
+    OpenAi,
+}
+
 impl PromptFormatter {
     pub fn from_parts(
         config: ChatTemplate,
         context: ContextMixins,
         exclude_tools_when_tool_choice_none: bool,
     ) -> Result<PromptFormatter> {
-        let formatter = HfTokenizerConfigJsonFormatter::with_options(
+        Self::from_parts_with_content_format(
+            config,
+            context,
+            exclude_tools_when_tool_choice_none,
+            ChatTemplateContentFormat::Auto,
+        )
+    }
+
+    /// [`PromptFormatter::from_parts`] with an explicit content format.
+    pub fn from_parts_with_content_format(
+        config: ChatTemplate,
+        context: ContextMixins,
+        exclude_tools_when_tool_choice_none: bool,
+        content_format: ChatTemplateContentFormat,
+    ) -> Result<PromptFormatter> {
+        let mut formatter = HfTokenizerConfigJsonFormatter::with_options(
             config,
             context,
             exclude_tools_when_tool_choice_none,
         )?;
+        formatter.content_format = content_format;
         Ok(Self::OAI(Arc::new(formatter)))
     }
 }
@@ -173,6 +216,9 @@ struct HfTokenizerConfigJsonFormatter {
     config: ChatTemplate,
     mixins: Arc<ContextMixins>,
     supports_add_generation_prompt: bool,
+    /// How message content is shaped for the template. `Auto` uses
+    /// `requires_content_arrays` and `image_placeholder_template`.
+    content_format: ChatTemplateContentFormat,
     requires_content_arrays: bool,
     /// When true, strip tool definitions from the chat template when tool_choice is "none".
     /// This prevents models from generating raw XML tool calls in the content field.

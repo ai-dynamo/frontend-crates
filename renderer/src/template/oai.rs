@@ -3,7 +3,7 @@
 
 use super::*;
 
-use crate::{OAIChatLikeRequest, TextInput};
+use crate::{OAIChatLikeRequest, PromptRenderError, TextInput};
 use minijinja::{context, value::Value};
 use serde_json::json;
 use std::{collections::HashMap, result::Result::Ok};
@@ -202,6 +202,153 @@ fn flatten_mixed_content(parts: &[serde_json::Value], placeholder_tpl: &str) -> 
         }
     }
     out
+}
+
+/// What vLLM's chat parser makes of one content part.
+enum ContentPart<'a> {
+    /// A text or refusal part. `None` when it carries no text; vLLM skips it.
+    Text(Option<&'a str>),
+    /// A media part of this modality.
+    Media(&'static str),
+    Other,
+}
+
+fn content_part(part: &serde_json::Value) -> ContentPart<'_> {
+    let field = |name: &str| part.get(name).and_then(serde_json::Value::as_str);
+    match part.get("type").and_then(serde_json::Value::as_str) {
+        Some("text") => ContentPart::Text(field("text")),
+        Some("refusal") => ContentPart::Text(field("refusal")),
+        Some("image_url" | "image") => ContentPart::Media("image"),
+        Some("video_url" | "video") => ContentPart::Media("video"),
+        Some("audio_url" | "input_audio" | "audio") => ContentPart::Media("audio"),
+        _ => ContentPart::Other,
+    }
+}
+
+/// vLLM's `string` content format: every message's content becomes one string.
+/// Like vLLM, media items are numbered per modality across the conversation.
+fn flatten_msg_content_to_string(
+    messages: &mut serde_json::Value,
+    media_placeholders: &HashMap<String, String>,
+) -> Result<()> {
+    let Some(msgs) = messages.as_array_mut() else {
+        return Ok(());
+    };
+    let mut media_counts = HashMap::new();
+    for msg in msgs {
+        let Some(msg) = msg.as_object_mut() else {
+            continue;
+        };
+        let content = match msg.get("content") {
+            Some(serde_json::Value::String(_)) => continue,
+            Some(serde_json::Value::Array(parts)) => {
+                flatten_parts_to_string(parts, media_placeholders, &mut media_counts)?
+            }
+            // vLLM renders missing content as an empty string.
+            _ => String::new(),
+        };
+        msg.insert("content".to_string(), serde_json::Value::String(content));
+    }
+    Ok(())
+}
+
+/// One message's parts as vLLM's `_get_full_multimodal_text_prompt` joins them
+/// (`interleave_mm_strings=False`): the text parts joined with `\n`, preceded
+/// by the media placeholders the text does not already contain, grouped by
+/// modality in first-seen order.
+fn flatten_parts_to_string(
+    parts: &[serde_json::Value],
+    media_placeholders: &HashMap<String, String>,
+    media_counts: &mut HashMap<&'static str, usize>,
+) -> Result<String> {
+    let mut texts = Vec::new();
+    let mut by_modality: Vec<(&str, Vec<String>)> = Vec::new();
+    for part in parts {
+        match content_part(part) {
+            ContentPart::Text(text) => texts.extend(text),
+            ContentPart::Media(modality) => {
+                let n = media_counts.entry(modality).or_default();
+                *n += 1;
+                let Some(placeholder) = media_placeholders
+                    .get(modality)
+                    .map(|template| template.replace("{n}", &n.to_string()))
+                    .filter(|placeholder| !placeholder.is_empty())
+                else {
+                    continue;
+                };
+                match by_modality.iter_mut().find(|(m, _)| *m == modality) {
+                    Some((_, placeholders)) => placeholders.push(placeholder),
+                    None => by_modality.push((modality, vec![placeholder])),
+                }
+            }
+            ContentPart::Other => {
+                return Err(PromptRenderError::invalid_request(format!(
+                    "content part {part} is not supported with the `string` chat template content format"
+                ))
+                .into());
+            }
+        }
+    }
+    let text = texts.join("\n");
+
+    // vLLM counts each distinct placeholder string, in first-seen order.
+    let mut counts: Vec<(String, usize)> = Vec::new();
+    for placeholder in by_modality.into_iter().flat_map(|(_, p)| p) {
+        match counts.iter_mut().find(|(p, _)| *p == placeholder) {
+            Some((_, count)) => *count += 1,
+            None => counts.push((placeholder, 1)),
+        }
+    }
+    let mut lines = Vec::new();
+    for (placeholder, count) in counts {
+        let present = text.matches(placeholder.as_str()).count();
+        if present > count {
+            return Err(PromptRenderError::invalid_request(format!(
+                "found more '{placeholder}' placeholders in the message text than media items"
+            ))
+            .into());
+        }
+        lines.extend(std::iter::repeat_n(placeholder, count - present));
+    }
+    if !text.is_empty() {
+        lines.push(text);
+    }
+    Ok(lines.join("\n"))
+}
+
+/// vLLM's `openai` content format: every message's content becomes a list of
+/// parts, with media reduced to `{"type": <modality>}`. As in vLLM, a `tool`
+/// message whose parts are all text is joined back into one string.
+fn wrap_msg_content_in_parts(messages: &mut serde_json::Value) {
+    let Some(msgs) = messages.as_array_mut() else {
+        return;
+    };
+    for msg in msgs {
+        let is_tool = msg.get("role").and_then(serde_json::Value::as_str) == Some("tool");
+        let Some(msg) = msg.as_object_mut() else {
+            continue;
+        };
+        let parts: Vec<serde_json::Value> = match msg.get("content") {
+            Some(serde_json::Value::String(text)) => vec![json!({"type": "text", "text": text})],
+            Some(serde_json::Value::Array(parts)) => parts
+                .iter()
+                .filter_map(|part| match content_part(part) {
+                    ContentPart::Text(text) => Some(json!({"type": "text", "text": text?})),
+                    ContentPart::Media(modality) => Some(json!({"type": modality})),
+                    ContentPart::Other => Some(part.clone()),
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        let all_text = parts.iter().all(|part| part["type"] == "text");
+        let content = if is_tool && all_text {
+            let texts: Vec<&str> = parts.iter().filter_map(|p| p["text"].as_str()).collect();
+            serde_json::Value::String(texts.join("\n"))
+        } else {
+            serde_json::Value::Array(parts)
+        };
+        msg.insert("content".to_string(), content);
+    }
 }
 
 fn normalize_tool_calls_arguments_in_messages(messages: &mut serde_json::Value) {
@@ -594,11 +741,21 @@ impl HfTokenizerConfigJsonFormatter {
             normalize_system_messages(&mut messages_for_template, system_normalization);
         }
 
-        messages_for_template = may_be_fix_msg_content(
-            messages_for_template,
-            self.requires_content_arrays,
-            self.image_placeholder_template,
-        );
+        match &self.content_format {
+            ChatTemplateContentFormat::Auto => {
+                messages_for_template = may_be_fix_msg_content(
+                    messages_for_template,
+                    self.requires_content_arrays,
+                    self.image_placeholder_template,
+                );
+            }
+            ChatTemplateContentFormat::String { media_placeholders } => {
+                flatten_msg_content_to_string(&mut messages_for_template, media_placeholders)?;
+            }
+            ChatTemplateContentFormat::OpenAi => {
+                wrap_msg_content_in_parts(&mut messages_for_template);
+            }
+        }
 
         // Pre-parse JSON-string `arguments` into objects — but only for templates
         // that unconditionally `| tojson` them. Templates that branch on
@@ -3940,5 +4097,243 @@ NORMAL_MODE
                 render(&formatter, reasoning_tool_call_turn(string)).unwrap()
             );
         }
+    }
+
+    // --- chat template content format (vLLM's --chat-template-content-format) ---
+
+    fn string_format(placeholders: &[(&str, &str)]) -> ChatTemplateContentFormat {
+        ChatTemplateContentFormat::String {
+            media_placeholders: placeholders
+                .iter()
+                .map(|(modality, placeholder)| (modality.to_string(), placeholder.to_string()))
+                .collect(),
+        }
+    }
+
+    /// The user-turn branch of Nemotron-3-Nano-Omni's chat template, trimmed to
+    /// text and images: string content renders verbatim, while a part array
+    /// gets the template's own numbered image tags.
+    const NEMOTRON_OMNI_USER_TEMPLATE: &str = r#"
+{%- for message in messages -%}
+  {%- if message.content is string -%}
+    {%- set content = message.content -%}
+  {%- else -%}
+    {%- set ns = namespace(images=0, text='', tags=[]) -%}
+    {%- for part in message.content -%}
+      {%- if part.type == 'image' -%}
+        {%- set ns.images = ns.images + 1 -%}
+      {%- elif part.type == 'text' -%}
+        {%- set ns.text = ns.text + part.text -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- for i in range(ns.images) -%}
+      {%- set ns.tags = ns.tags + ['<image ' + (i + 1)|string + '><image>'] -%}
+    {%- endfor -%}
+    {%- set content = ' '.join(ns.tags) + '\n' + ns.text -%}
+  {%- endif -%}
+  {{- '<|im_start|>' + message.role + '\n' + content + '<|im_end|>\n' -}}
+{%- endfor -%}"#;
+
+    /// Nemotron-Omni recipes use vLLM's `string` format. `Auto` keeps the part
+    /// array, so the template numbers the images itself; `String` hands it the
+    /// text vLLM builds instead.
+    #[test]
+    fn content_format_string_matches_vllm_for_nemotron_omni_images() {
+        let messages = json!([{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+            {"type": "image_url", "image_url": {"url": "data:image/png;base64,BBBB"}},
+            {"type": "text", "text": "Compare them."}
+        ]}]);
+        let mut formatter = formatter_for(NEMOTRON_OMNI_USER_TEMPLATE);
+        assert_eq!(
+            render_shape(&formatter, messages.clone()).unwrap(),
+            "<|im_start|>user\n<image 1><image> <image 2><image>\nCompare them.<|im_end|>\n"
+        );
+
+        formatter.content_format = string_format(&[("image", "<image>"), ("video", "<video>")]);
+        assert_eq!(
+            render_shape(&formatter, messages).unwrap(),
+            "<|im_start|>user\n<image>\n<image>\nCompare them.<|im_end|>\n"
+        );
+    }
+
+    /// vLLM puts placeholders before the text, grouped by modality in
+    /// first-seen order, numbers each modality across the conversation, and
+    /// skips a modality the model has no placeholder for.
+    #[test]
+    fn content_format_string_orders_and_numbers_placeholders_like_vllm() {
+        let mut messages = json!([
+            {"role": "user", "content": [
+                {"type": "text", "text": "a"},
+                {"type": "image_url", "image_url": {"url": "x"}},
+                {"type": "video_url", "video_url": {"url": "y"}},
+                {"type": "text", "text": "b"},
+                {"type": "image_url", "image_url": {"url": "z"}},
+                {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}}
+            ]},
+            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": "w"}}]}
+        ]);
+        let ChatTemplateContentFormat::String { media_placeholders } =
+            string_format(&[("image", "<|image_{n}|>"), ("video", "<video>")])
+        else {
+            unreachable!()
+        };
+        flatten_msg_content_to_string(&mut messages, &media_placeholders).unwrap();
+        assert_eq!(
+            messages[0]["content"],
+            "<|image_1|>\n<|image_2|>\n<video>\na\nb"
+        );
+        assert_eq!(messages[1]["content"], "<|image_3|>");
+    }
+
+    /// Strings pass through, missing content becomes "", refusals count as
+    /// text, and a placeholder the text already contains is not added again.
+    #[test]
+    fn content_format_string_keeps_text_and_inline_placeholders() {
+        let mut messages = json!([
+            {"role": "system", "content": "plain"},
+            {"role": "assistant"},
+            {"role": "assistant", "content": [{"type": "refusal", "refusal": "no"}]},
+            {"role": "user", "content": [
+                {"type": "text", "text": "see <image> here"},
+                {"type": "image_url", "image_url": {"url": "x"}},
+                {"type": "image_url", "image_url": {"url": "y"}}
+            ]}
+        ]);
+        let ChatTemplateContentFormat::String { media_placeholders } =
+            string_format(&[("image", "<image>")])
+        else {
+            unreachable!()
+        };
+        flatten_msg_content_to_string(&mut messages, &media_placeholders).unwrap();
+        let contents: Vec<_> = messages
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["content"].clone())
+            .collect();
+        assert_eq!(
+            contents,
+            [
+                json!("plain"),
+                json!(""),
+                json!("no"),
+                json!("<image>\nsee <image> here")
+            ]
+        );
+    }
+
+    /// Like vLLM, more inline placeholders than media items, or a part the
+    /// format cannot flatten, is an invalid request.
+    #[test]
+    fn content_format_string_rejects_what_vllm_rejects() {
+        let ChatTemplateContentFormat::String { media_placeholders } =
+            string_format(&[("image", "<image>")])
+        else {
+            unreachable!()
+        };
+        for content in [
+            json!([
+                {"type": "text", "text": "<image><image>"},
+                {"type": "image_url", "image_url": {"url": "x"}}
+            ]),
+            json!([{"type": "file", "file": {}}]),
+        ] {
+            let mut messages = json!([{"role": "user", "content": content}]);
+            let error = flatten_msg_content_to_string(&mut messages, &media_placeholders)
+                .expect_err("invalid content must be rejected");
+            assert!(
+                matches!(
+                    error.downcast_ref::<PromptRenderError>(),
+                    Some(PromptRenderError::InvalidRequest(_))
+                ),
+                "{error}"
+            );
+        }
+    }
+
+    /// vLLM's `openai` format: every content is a part list with media reduced
+    /// to its modality, except text-only `tool` content, which is joined.
+    #[test]
+    fn content_format_openai_wraps_content_in_parts_like_vllm() {
+        let mut messages = json!([
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": [
+                {"type": "text", "text": "look"},
+                {"type": "image_url", "image_url": {"url": "x"}},
+                {"type": "input_audio", "input_audio": {"data": "", "format": "wav"}}
+            ]},
+            {"role": "assistant", "content": [{"type": "refusal", "refusal": "no"}]},
+            {"role": "assistant"},
+            {"role": "tool", "tool_call_id": "1", "content": [
+                {"type": "text", "text": "a"},
+                {"type": "text", "text": "b"}
+            ]},
+            {"role": "tool", "tool_call_id": "2", "content": "done"}
+        ]);
+        wrap_msg_content_in_parts(&mut messages);
+        let contents: Vec<_> = messages
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| m["content"].clone())
+            .collect();
+        assert_eq!(
+            contents,
+            [
+                json!([{"type": "text", "text": "sys"}]),
+                json!([{"type": "text", "text": "look"}, {"type": "image"}, {"type": "audio"}]),
+                json!([{"type": "text", "text": "no"}]),
+                json!([]),
+                json!("a\nb"),
+                json!("done"),
+            ]
+        );
+    }
+
+    /// The public constructor carries the format to `render`: a template that
+    /// takes either shape sees what each format produces.
+    #[test]
+    fn content_format_reaches_render_through_from_parts() {
+        let template = "{% for m in messages %}{% if m.content is string %}{{ m.content }}\
+            {% else %}{% for p in m.content %}[{{ p.type }}{% if p.text %} {{ p.text }}{% endif %}]\
+            {% endfor %}{% endif %}|{% endfor %}";
+        let request: NvCreateChatCompletionRequest = serde_json::from_value(json!({
+            "model": "test",
+            "messages": [
+                {"role": "system", "content": "sys"},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "hi"},
+                    {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}}
+                ]}
+            ]
+        }))
+        .unwrap();
+        let render = |content_format| {
+            let config: SysChatTemplate =
+                serde_json::from_value(json!({ "chat_template": template })).unwrap();
+            let crate::PromptFormatter::OAI(formatter) =
+                crate::PromptFormatter::from_parts_with_content_format(
+                    config,
+                    SysMixins::new(&[]),
+                    true,
+                    content_format,
+                )
+                .unwrap();
+            formatter.render(&request).unwrap()
+        };
+
+        assert_eq!(
+            render(ChatTemplateContentFormat::Auto),
+            "sys|[text hi][image]|"
+        );
+        assert_eq!(
+            render(ChatTemplateContentFormat::OpenAi),
+            "[text sys]|[text hi][image]|"
+        );
+        assert_eq!(
+            render(string_format(&[("image", "<image>")])),
+            "sys|<image>\nhi|"
+        );
     }
 }
