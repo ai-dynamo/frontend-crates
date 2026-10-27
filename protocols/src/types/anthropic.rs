@@ -214,6 +214,8 @@ pub struct ThinkingConfig {
 pub enum ThinkingDisplay {
     Summarized,
     Omitted,
+    /// Beta progress-update display; serving capability is validated downstream.
+    Updates,
 }
 
 /// A single message in the conversation.
@@ -479,7 +481,11 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
                     .transpose()
                     .map_err(serde::de::Error::custom)?
                     .flatten();
-                let is_error = value.get("is_error").and_then(|v| v.as_bool());
+                let is_error = take_field(&mut value, "is_error")
+                    .map(serde_json::from_value::<Option<bool>>)
+                    .transpose()
+                    .map_err(serde::de::Error::custom)?
+                    .flatten();
                 let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
                 Ok(AnthropicContentBlock::ToolResult {
@@ -613,10 +619,27 @@ mod source_and_display_tests {
     }
 
     #[test]
+    fn tool_error_status_requires_a_boolean() {
+        for is_error in [json!("true"), json!(1), json!({}), json!([])] {
+            let request = json!({"model": "model", "max_tokens": 2048,
+                "messages": [{"role": "user", "content": [{"type": "tool_result",
+                    "tool_use_id": "tool_1", "content": "failed", "is_error": is_error}]}]});
+            assert!(serde_json::from_value::<AnthropicCreateMessageRequest>(request).is_err());
+        }
+        for is_error in [json!(true), json!(false), json!(null)] {
+            let block =
+                json!({"type": "tool_result", "tool_use_id": "tool_1", "is_error": is_error});
+            let parsed: AnthropicContentBlock = serde_json::from_value(block).unwrap();
+            assert_eq!(serde_json::to_value(parsed).unwrap()["is_error"], is_error);
+        }
+    }
+
+    #[test]
     fn thinking_display_preserves_explicit_values_and_omission() {
         for (display, expected) in [
             ("summarized", ThinkingDisplay::Summarized),
             ("omitted", ThinkingDisplay::Omitted),
+            ("updates", ThinkingDisplay::Updates),
         ] {
             let value = json!({"type": "adaptive", "display": display});
             let config: ThinkingConfig = serde_json::from_value(value.clone()).unwrap();
