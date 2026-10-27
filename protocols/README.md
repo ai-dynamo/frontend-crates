@@ -12,6 +12,23 @@ Request/response types for OpenAI- and Anthropic-compatible inference servers. B
 - **Anthropic Messages** — fully owned (no upstream equivalent).
 - **Embeddings**, **Images** — re-exported.
 
+## Anthropic image sources and thinking display
+
+`AnthropicImageSource` distinguishes the `Base64 { media_type, data }` and
+`Url { url }` source variants. Both ordinary image blocks and image-bearing tool
+results preserve their source when serialized. The serving layer owns URL policy,
+fetching, and image validation; parsing a URL source does not fetch it.
+
+`ThinkingConfig.display` preserves `ThinkingDisplay::Summarized` and
+`ThinkingDisplay::Omitted`. Omission remains unset. The serving layer validates
+combinations with the thinking mode and applies the response-display policy.
+Beta display modes and file sources are outside this subset.
+
+Rust callers migrating from the previous image-source struct must construct an
+enum variant and match on it instead of accessing `source_type`, `media_type`, or
+`data` directly. Existing `ThinkingConfig` literals need `display: None` to retain
+their previous behavior.
+
 ## Optional protocol schemas
 
 The `protocol-schema` feature is disabled by default. When enabled, it supplies utoipa 5 `ToSchema`

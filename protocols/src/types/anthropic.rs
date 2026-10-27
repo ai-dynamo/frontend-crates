@@ -203,6 +203,17 @@ pub struct ThinkingConfig {
     /// Maximum tokens for internal reasoning. Only relevant when type is "enabled".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub budget_tokens: Option<u32>,
+    /// Select readable thinking or empty thinking blocks on the response path.
+    /// The server owns display semantics and validates combinations with `type`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub display: Option<ThinkingDisplay>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ThinkingDisplay {
+    Summarized,
+    Omitted,
 }
 
 /// A single message in the conversation.
@@ -518,12 +529,76 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
 }
 
 /// Image source for image content blocks.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AnthropicImageSource {
-    #[serde(rename = "type")]
-    pub source_type: String,
-    pub media_type: String,
-    pub data: String,
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum AnthropicImageSource {
+    Base64 { media_type: String, data: String },
+    Url { url: String },
+}
+
+#[cfg(test)]
+mod source_and_display_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn image_sources_round_trip_in_messages_and_tool_results() {
+        for source in [
+            json!({"type": "base64", "media_type": "image/png", "data": "aGVsbG8="}),
+            json!({"type": "url", "url": "https://example.com/image.png"}),
+        ] {
+            let image = json!({"type": "image", "source": source});
+            let block: AnthropicContentBlock = serde_json::from_value(image.clone()).unwrap();
+            assert_eq!(serde_json::to_value(block).unwrap(), image);
+            let result: ToolResultContentBlock = serde_json::from_value(image.clone()).unwrap();
+            assert_eq!(serde_json::to_value(result).unwrap(), image);
+        }
+    }
+
+    #[test]
+    fn image_source_discriminators_require_the_matching_fields() {
+        for source in [
+            json!({"type": "url"}),
+            json!({"type": "url", "url": null}),
+            json!({"type": "url", "url": 42}),
+            json!({"type": "url", "url": "https://example.com/image.png", "data": "x"}),
+            json!({"type": "base64", "media_type": "image/png"}),
+            json!({"type": "base64", "data": "aGVsbG8="}),
+            json!({"type": "base64", "media_type": "image/png", "data": "x", "url": "https://example.com/image.png"}),
+            json!({"type": "file", "file_id": "file_123"}),
+            json!({"url": "https://example.com/image.png"}),
+        ] {
+            assert!(
+                serde_json::from_value::<AnthropicImageSource>(source.clone()).is_err(),
+                "{source}"
+            );
+        }
+    }
+
+    #[test]
+    fn thinking_display_preserves_explicit_values_and_omission() {
+        for (display, expected) in [
+            ("summarized", ThinkingDisplay::Summarized),
+            ("omitted", ThinkingDisplay::Omitted),
+        ] {
+            let value = json!({"type": "adaptive", "display": display});
+            let config: ThinkingConfig = serde_json::from_value(value.clone()).unwrap();
+            assert_eq!(config.display, Some(expected));
+            assert_eq!(serde_json::to_value(config).unwrap(), value);
+        }
+        let value = json!({"type": "enabled", "budget_tokens": 1024});
+        let config: ThinkingConfig = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(config.display, None);
+        assert_eq!(serde_json::to_value(config).unwrap(), value);
+        for display in [json!("unknown"), json!(false), json!(1)] {
+            assert!(
+                serde_json::from_value::<ThinkingConfig>(
+                    json!({"type": "adaptive", "display": display})
+                )
+                .is_err()
+            );
+        }
+    }
 }
 
 /// A tool definition.
