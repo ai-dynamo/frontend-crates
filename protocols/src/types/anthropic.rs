@@ -474,8 +474,11 @@ impl<'de> Deserialize<'de> for AnthropicContentBlock {
             }
             "tool_result" => {
                 let tool_use_id = take_required_string::<D::Error>(&mut value, "tool_use_id")?;
-                let content: Option<ToolResultContent> =
-                    take_field(&mut value, "content").and_then(|v| serde_json::from_value(v).ok());
+                let content = take_field(&mut value, "content")
+                    .map(serde_json::from_value::<Option<ToolResultContent>>)
+                    .transpose()
+                    .map_err(serde::de::Error::custom)?
+                    .flatten();
                 let is_error = value.get("is_error").and_then(|v| v.as_bool());
                 let cache_control: Option<CacheControl> = take_field(&mut value, "cache_control")
                     .and_then(|v| serde_json::from_value(v).ok());
@@ -572,6 +575,40 @@ mod source_and_display_tests {
                 serde_json::from_value::<AnthropicImageSource>(source.clone()).is_err(),
                 "{source}"
             );
+            let image = json!({"type": "image", "source": source});
+            for block in [
+                image.clone(),
+                json!({"type": "tool_result", "tool_use_id": "toolu_image", "content": [image]}),
+            ] {
+                let request = json!({"model": "test-model", "max_tokens": 64,
+                    "messages": [{"role": "user", "content": [block]}]});
+                assert!(
+                    serde_json::from_value::<AnthropicCreateMessageRequest>(request).is_err(),
+                    "malformed nested image source must not be discarded: {source}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn tool_result_content_keeps_absent_null_empty_and_text_semantics() {
+        for content in [
+            None,
+            Some(json!(null)),
+            Some(json!("")),
+            Some(json!([])),
+            Some(json!("result")),
+        ] {
+            let mut block = json!({"type": "tool_result", "tool_use_id": "toolu_image"});
+            if let Some(content) = &content {
+                block["content"] = content.clone();
+            }
+            let parsed: AnthropicContentBlock = serde_json::from_value(block).unwrap();
+            let value = serde_json::to_value(parsed).unwrap();
+            match content {
+                None | Some(serde_json::Value::Null) => assert!(value.get("content").is_none()),
+                Some(content) => assert_eq!(value["content"], content),
+            }
         }
     }
 
