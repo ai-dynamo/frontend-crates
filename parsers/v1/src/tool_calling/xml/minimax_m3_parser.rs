@@ -9,6 +9,7 @@ use super::super::ToolDefinition;
 use super::super::config::MiniMaxM3ParserConfig;
 use super::parsed_value::{coerce_integer_literal, raw_number_literal};
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::sources::SourcedText;
 
 const MIN_PARTIAL_TOOL_CALL_START_LEN: usize = 3;
 
@@ -57,14 +58,27 @@ pub fn try_tool_call_parse_minimax_m3(
     config: &MiniMaxM3ParserConfig,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let (calls, normal) = try_tool_call_parse_minimax_m3_sourced(message, config, tools, false)?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
+
+/// [`try_tool_call_parse_minimax_m3`], with the input ranges of `normal_text`
+/// when `record` is set. Normal text here is always one slice of `message`.
+pub(crate) fn try_tool_call_parse_minimax_m3_sourced(
+    message: &str,
+    config: &MiniMaxM3ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
+    let sourced = |normal: &str| Some(SourcedText::slice(message, normal, record));
     let Some(start_pos) = message.find(tool_call_start(config).as_str()) else {
         if let Some(marker_idx) = first_orphan_minimax_m3_marker_index(message, config) {
             if let Some((prefix, calls)) = recover_orphan_invokes_in_span(message, config, tools)? {
-                return Ok((calls, Some(prefix)));
+                return Ok((calls, sourced(prefix)));
             }
-            return Ok((vec![], Some(message[..marker_idx].trim_end().to_string())));
+            return Ok((vec![], sourced(message[..marker_idx].trim_end())));
         }
-        return Ok((vec![], Some(message.to_string())));
+        return Ok((vec![], sourced(message)));
     };
 
     let pre_block_span = &message[..start_pos];
@@ -73,12 +87,9 @@ pub fn try_tool_call_parse_minimax_m3(
     {
         (prefix, recovered)
     } else if let Some(marker_idx) = first_orphan_minimax_m3_marker_index(pre_block_span, config) {
-        (
-            pre_block_span[..marker_idx].trim_end().to_string(),
-            Vec::new(),
-        )
+        (pre_block_span[..marker_idx].trim_end(), Vec::new())
     } else {
-        (pre_block_span.to_string(), Vec::new())
+        (pre_block_span, Vec::new())
     };
 
     let block_start = start_pos + tool_call_start(config).len();
@@ -92,11 +103,11 @@ pub fn try_tool_call_parse_minimax_m3(
         };
 
     if !complete && !config.allow_eof_recovery {
-        return Ok((vec![], Some(prefix)));
+        return Ok((vec![], sourced(prefix)));
     }
 
     calls.extend(parse_invokes(block, config, tools)?);
-    Ok((calls, Some(prefix)))
+    Ok((calls, sourced(prefix)))
 }
 
 // Builds the configured outer tool-call start marker.
@@ -139,11 +150,11 @@ fn first_orphan_minimax_m3_marker_index(
     .min()
 }
 
-fn recover_orphan_invokes_in_span(
-    span: &str,
+fn recover_orphan_invokes_in_span<'a>(
+    span: &'a str,
     config: &MiniMaxM3ParserConfig,
     tools: Option<&[ToolDefinition]>,
-) -> anyhow::Result<Option<(String, Vec<ToolCallResponse>)>> {
+) -> anyhow::Result<Option<(&'a str, Vec<ToolCallResponse>)>> {
     let Some(marker_idx) = first_orphan_minimax_m3_marker_index(span, config) else {
         return Ok(None);
     };
@@ -161,7 +172,7 @@ fn recover_orphan_invokes_in_span(
         return Ok(None);
     }
 
-    Ok(Some((span[..marker_idx].trim_end().to_string(), calls)))
+    Ok(Some((span[..marker_idx].trim_end(), calls)))
 }
 
 // Extracts one or more `<invoke name="...">` blocks from the outer tool-call block.

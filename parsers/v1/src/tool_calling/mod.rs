@@ -13,6 +13,8 @@ pub mod json;
 pub mod parsers;
 pub mod pythonic;
 pub mod response;
+#[cfg(test)]
+mod sources_tests;
 pub mod structural_tag;
 #[cfg(test)]
 pub mod tests;

@@ -3,6 +3,8 @@
 
 mod glm47_parser;
 pub(crate) use glm47_parser::resolve_local_schema_ref;
+pub(crate) use kimi_k2_parser::try_tool_call_parse_kimi_k2_sourced;
+pub(crate) use minimax_m3_parser::try_tool_call_parse_minimax_m3_sourced;
 mod kimi_k2_parser;
 mod minimax_m3_parser;
 mod parsed_value;

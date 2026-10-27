@@ -19,7 +19,7 @@ use super::inkling::{
     try_tool_call_parse_inkling,
 };
 use super::json::{
-    detect_tool_call_start_json, find_tool_call_end_position_json, try_tool_call_parse_json,
+    detect_tool_call_start_json, find_tool_call_end_position_json, try_tool_call_parse_json_sourced,
 };
 use super::pythonic::{
     detect_tool_call_start_pythonic, find_tool_call_end_position_pythonic,
@@ -31,13 +31,14 @@ use super::xml::{
     detect_tool_call_start_minimax_m3, detect_tool_call_start_xml,
     find_tool_call_end_position_glm47, find_tool_call_end_position_kimi_k2,
     find_tool_call_end_position_minimax_m3, find_tool_call_end_position_xml,
-    try_tool_call_parse_glm47, try_tool_call_parse_kimi_k2, try_tool_call_parse_minimax_m3,
-    try_tool_call_parse_xml,
+    try_tool_call_parse_glm47, try_tool_call_parse_kimi_k2_sourced,
+    try_tool_call_parse_minimax_m3_sourced, try_tool_call_parse_xml,
 };
 use super::xtml::{
     detect_tool_call_start_kimi_k3, find_tool_call_end_position_kimi_k3,
     try_tool_call_parse_kimi_k3,
 };
+use crate::sources::SourcedText;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
@@ -93,60 +94,71 @@ pub async fn try_tool_call_parse(
     config: &ToolCallConfig,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let (calls, normal) = try_tool_call_parse_sourced(message, config, tools, false).await?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
+
+/// [`try_tool_call_parse`], with the input ranges of `normal_text` when
+/// `record` is set, for the parsers that record them: the basic JSON parser
+/// (`hermes`), `kimi_k2`, and `minimax_m3`. The others return no ranges.
+pub(crate) async fn try_tool_call_parse_sourced(
+    message: &str,
+    config: &ToolCallConfig,
+    tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
+    let unsourced = |(calls, normal): (Vec<ToolCallResponse>, Option<String>)| {
+        (calls, normal.map(SourcedText::unsourced))
+    };
     // Use match statement (Rust's switch statement) to call the appropriate parser
     match &config.parser_config {
         ParserConfig::Json(json_config) => {
-            let (results, normal_content) = try_tool_call_parse_json(message, json_config, tools)?;
-            Ok((results, normal_content))
+            try_tool_call_parse_json_sourced(message, json_config, tools, record)
         }
         ParserConfig::Harmony(json_config) => {
             let (results, normal_content) =
                 parse_tool_calls_harmony_complete(message, json_config, tools).await?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::Pythonic => {
             let (results, normal_content) = try_tool_call_parse_pythonic(message, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::Typescript => {
             anyhow::bail!("Typescript parser not implemented");
         }
         ParserConfig::Xml(xml_config) => {
             let (results, normal_content) = try_tool_call_parse_xml(message, xml_config, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::Dsml(dsml_config) => {
             let (results, normal_content) = try_tool_call_parse_dsml(message, dsml_config)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::Glm47(glm47_config) => {
             let (results, normal_content) =
                 try_tool_call_parse_glm47(message, glm47_config, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::KimiK2(kimi_config) => {
-            let (results, normal_content) =
-                try_tool_call_parse_kimi_k2(message, kimi_config, tools)?;
-            Ok((results, normal_content))
+            try_tool_call_parse_kimi_k2_sourced(message, kimi_config, tools, record)
         }
         ParserConfig::KimiK3(kimi_config) => {
             let (results, normal_content) =
                 try_tool_call_parse_kimi_k3(message, kimi_config, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::MiniMaxM3(minimax_config) => {
-            let (results, normal_content) =
-                try_tool_call_parse_minimax_m3(message, minimax_config, tools)?;
-            Ok((results, normal_content))
+            try_tool_call_parse_minimax_m3_sourced(message, minimax_config, tools, record)
         }
         ParserConfig::Gemma4 => {
             let (results, normal_content) = try_tool_call_parse_gemma4(message, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
         ParserConfig::Inkling(inkling_config) => {
             let (results, normal_content) =
                 try_tool_call_parse_inkling(message, inkling_config, tools)?;
-            Ok((results, normal_content))
+            Ok(unsourced((results, normal_content)))
         }
     }
 }
@@ -169,6 +181,19 @@ pub async fn detect_and_parse_tool_call_with_recovery(
     parser_str: Option<&str>,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let (calls, normal) =
+        detect_and_parse_tool_call_with_recovery_sourced(message, parser_str, tools, false).await?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
+
+/// [`detect_and_parse_tool_call_with_recovery`], with the input ranges of
+/// `normal_text` as [`try_tool_call_parse_sourced`] gives them.
+pub(crate) async fn detect_and_parse_tool_call_with_recovery_sourced(
+    message: &str,
+    parser_str: Option<&str>,
+    tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
     let parser_map = get_tool_parser_map();
     let parser_key = match parser_str {
         Some(s) if !s.is_empty() => s,
@@ -224,7 +249,7 @@ pub async fn detect_and_parse_tool_call_with_recovery(
         parser_config: recovery_config,
         structural_tag_builder: None,
     };
-    let (calls, normal_text) = try_tool_call_parse(message, &cfg, tools).await?;
+    let (calls, normal_text) = try_tool_call_parse_sourced(message, &cfg, tools, record).await?;
 
     // An unterminated qwen25/hermes call (open <tool_call>, no close, nothing
     // parsed) drops its partial markup instead of leaking it. Deliberate
@@ -235,11 +260,12 @@ pub async fn detect_and_parse_tool_call_with_recovery(
     // match the wrapped-call extraction) rather than wiping the whole message.
     if matches!(parser_key, "qwen25" | "hermes")
         && calls.is_empty()
-        && let Some(text) = normal_text.as_deref()
-        && let Some(idx) = text.find("<tool_call>")
-        && !text.contains("</tool_call>")
+        && let Some(normal) = normal_text.as_ref()
+        && let Some(idx) = normal.text.find("<tool_call>")
+        && !normal.text.contains("</tool_call>")
     {
-        return Ok((calls, Some(text[..idx].trim_end().to_string())));
+        let normal = normal_text.expect("checked above");
+        return Ok((calls, Some(normal.truncate_trim_end(idx))));
     }
 
     Ok((calls, normal_text))
@@ -265,6 +291,19 @@ pub async fn detect_and_parse_tool_call(
     parser_str: Option<&str>,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let (calls, normal) =
+        detect_and_parse_tool_call_sourced(message, parser_str, tools, false).await?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
+
+/// [`detect_and_parse_tool_call`], with the input ranges of `normal_text` as
+/// [`try_tool_call_parse_sourced`] gives them.
+pub(crate) async fn detect_and_parse_tool_call_sourced(
+    message: &str,
+    parser_str: Option<&str>,
+    tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
     // Get the tool parser map
     let parser_map = get_tool_parser_map();
 
@@ -275,10 +314,7 @@ pub async fn detect_and_parse_tool_call(
     };
 
     match parser_map.get(parser_key) {
-        Some(config) => {
-            let (results, normal_content) = try_tool_call_parse(message, config, tools).await?;
-            Ok((results, normal_content))
-        }
+        Some(config) => try_tool_call_parse_sourced(message, config, tools, record).await,
         None => anyhow::bail!(
             "Parser '{}' is not implemented. Available parsers: {:?}",
             parser_key,

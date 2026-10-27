@@ -238,6 +238,85 @@ pub(crate) fn subslice_range(whole: &str, part: &str) -> Range<usize> {
     start..start + part.len()
 }
 
+/// Text a parser built from its input, with the input range of each byte.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct SourcedText {
+    pub(crate) text: String,
+    pub(crate) spans: Spans,
+}
+
+impl SourcedText {
+    pub(crate) fn empty(record: bool) -> Self {
+        Self {
+            text: String::new(),
+            spans: Spans::recording(record),
+        }
+    }
+
+    /// Text from a parser that does not record its sources.
+    pub(crate) fn unsourced(text: String) -> Self {
+        Self {
+            text,
+            spans: Spans::OFF,
+        }
+    }
+
+    /// `part`, a subslice of `base`.
+    pub(crate) fn slice(base: &str, part: &str, record: bool) -> Self {
+        let spans = if record {
+            Spans::contiguous(true, subslice_range(base, part))
+        } else {
+            Spans::OFF
+        };
+        Self {
+            text: part.to_string(),
+            spans,
+        }
+    }
+
+    /// `parts`, subslices of `base`, joined.
+    pub(crate) fn join(base: &str, parts: &[&str], record: bool) -> Self {
+        let mut spans = Spans::recording(record);
+        if record {
+            for part in parts {
+                spans.push(subslice_range(base, part));
+            }
+        }
+        Self {
+            text: parts.concat(),
+            spans,
+        }
+    }
+
+    /// Keeps bytes `at` of the text.
+    fn keep(mut self, at: Range<usize>) -> Self {
+        if at.start == 0 && at.end == self.text.len() {
+            return self;
+        }
+        self.spans = self.spans.slice(at.clone());
+        self.text = self.text[at].to_string();
+        self
+    }
+
+    pub(crate) fn trim(self) -> Self {
+        let start = self.text.len() - self.text.trim_start().len();
+        let end = self.text.trim_end().len().max(start);
+        self.keep(start..end)
+    }
+
+    pub(crate) fn trim_start(self) -> Self {
+        let start = self.text.len() - self.text.trim_start().len();
+        let end = self.text.len();
+        self.keep(start..end)
+    }
+
+    /// Keeps the first `at` bytes, then trims their end.
+    pub(crate) fn truncate_trim_end(self, at: usize) -> Self {
+        let end = self.text[..at].trim_end().len();
+        self.keep(0..end)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,6 +392,29 @@ mod tests {
         let text = "STOP";
         let copy = text.to_string();
         subslice_range(text, &copy);
+    }
+
+    #[test]
+    fn sourced_text_trims_and_joins() {
+        let base = "  a b  |  c  ";
+        let joined = SourcedText::join(base, &[&base[..7], &base[8..]], true);
+        assert_eq!(joined.text, "  a b    c  ");
+        let trimmed = joined.trim();
+        assert_eq!(trimmed.text, "a b    c");
+        assert_eq!(trimmed.spans.ranges(), &[2..7, 8..11]);
+        let start = SourcedText::slice(base, &base[..7], true).trim_start();
+        assert_eq!(
+            (start.text.as_str(), start.spans.ranges()),
+            ("a b  ", &[2..7][..])
+        );
+        let cut = SourcedText::slice(base, base, true).truncate_trim_end(7);
+        assert_eq!(
+            (cut.text.as_str(), cut.spans.ranges()),
+            ("  a b", &[0..5][..])
+        );
+        let blank = SourcedText::slice(base, &base[..2], true).trim();
+        assert_eq!((blank.text.as_str(), blank.spans.len()), ("", 0));
+        assert!(!SourcedText::join(base, &[base], false).spans.is_recording());
     }
 
     #[test]

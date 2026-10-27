@@ -12,6 +12,7 @@ use regex::Regex;
 use super::super::ToolDefinition;
 use super::super::config::KimiK2ParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::sources::SourcedText;
 
 static ID_REGEX: OnceLock<Regex> = OnceLock::new();
 
@@ -112,15 +113,21 @@ pub fn try_tool_call_parse_kimi_k2(
     config: &KimiK2ParserConfig,
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
-    let (normal_text, tool_calls) = extract_tool_calls(message, config, tools)?;
+    let (calls, normal) = try_tool_call_parse_kimi_k2_sourced(message, config, tools, false)?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
 
-    let normal_content = if normal_text.is_empty() {
-        Some("".to_string())
-    } else {
-        Some(normal_text)
-    };
-
-    Ok((tool_calls, normal_content))
+/// [`try_tool_call_parse_kimi_k2`], with the input ranges of `normal_text`
+/// when `record` is set. Normal text here is slices of `message`, joined and
+/// trimmed.
+pub(crate) fn try_tool_call_parse_kimi_k2_sourced(
+    message: &str,
+    config: &KimiK2ParserConfig,
+    tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
+    let (normal_text, tool_calls) = extract_tool_calls(message, config, tools, record)?;
+    Ok((tool_calls, Some(normal_text)))
 }
 
 /// Find the first occurrence of any section start variant in `text[cursor..]`.
@@ -161,7 +168,7 @@ fn find_section_end(
 
 /// True for prefix-only narration before a tool section where vLLM preserves
 /// the wrapper-adjacent trailing space (TOOLCALLING.batch.8.a).
-fn should_preserve_vllm_prefix_trailing_space(normal_parts: &[String]) -> bool {
+fn should_preserve_vllm_prefix_trailing_space(normal_parts: &[&str]) -> bool {
     let mut non_empty_parts = normal_parts
         .iter()
         .enumerate()
@@ -176,7 +183,7 @@ fn should_preserve_vllm_prefix_trailing_space(normal_parts: &[String]) -> bool {
 /// True when the first visible normal text appears only after a parsed tool
 /// section, so the intermediate Kimi tool-call turn should expose no content
 /// (TOOLCALLING.batch.8.b).
-fn should_drop_post_tool_text_without_prefix(normal_parts: &[String]) -> bool {
+fn should_drop_post_tool_text_without_prefix(normal_parts: &[&str]) -> bool {
     normal_parts
         .iter()
         .enumerate()
@@ -187,7 +194,7 @@ fn should_drop_post_tool_text_without_prefix(normal_parts: &[String]) -> bool {
 /// True when there is prefix narration before the first tool section plus
 /// post-wrapper or inter-wrapper narration that should be dropped for Kimi
 /// tool-call turns (TOOLCALLING.batch.2.c, 8.c, 8.d).
-fn should_drop_post_tool_text_after_prefix(normal_parts: &[String]) -> bool {
+fn should_drop_post_tool_text_after_prefix(normal_parts: &[&str]) -> bool {
     normal_parts
         .first()
         .is_some_and(|prefix| !prefix.trim().is_empty())
@@ -227,8 +234,10 @@ fn extract_tool_calls(
     text: &str,
     config: &KimiK2ParserConfig,
     tools: Option<&[ToolDefinition]>,
-) -> anyhow::Result<(String, Vec<ToolCallResponse>)> {
-    let mut normal_parts = Vec::new();
+    record: bool,
+) -> anyhow::Result<(SourcedText, Vec<ToolCallResponse>)> {
+    let sourced = |normal: &str| SourcedText::slice(text, normal, record);
+    let mut normal_parts: Vec<&str> = Vec::new();
     let mut calls = Vec::new();
     let mut cursor = 0;
 
@@ -247,10 +256,10 @@ fn extract_tool_calls(
                     "Kimi K2 parser recovered complete call(s) without section_begin"
                 );
                 calls.append(&mut recovered);
-                return Ok((text[..marker_idx].trim().to_string(), calls));
+                return Ok((sourced(text[..marker_idx].trim()), calls));
             }
         }
-        return Ok((text[..marker_idx].trim().to_string(), calls));
+        return Ok((sourced(text[..marker_idx].trim()), calls));
     }
 
     while cursor < text.len() {
@@ -263,7 +272,7 @@ fn extract_tool_calls(
                 normal_parts.push(prefix);
                 calls.append(&mut recovered);
             } else {
-                normal_parts.push(gap.to_string());
+                normal_parts.push(gap);
             }
 
             // Add text before tool call section to normal parts.
@@ -294,13 +303,12 @@ fn extract_tool_calls(
                 normal_parts.push(prefix);
                 calls.append(&mut recovered);
             } else {
-                normal_parts.push(gap.to_string());
+                normal_parts.push(gap);
             }
             break;
         }
     }
 
-    let joined_normal_text = normal_parts.join("");
     let normal_text =
         if !calls.is_empty() && should_drop_post_tool_text_without_prefix(&normal_parts) {
             // Kimi tool-call responses are intermediate assistant turns: the
@@ -308,31 +316,31 @@ fn extract_tool_calls(
             // emitted, then asks the client to execute tools before returning
             // final user-facing content. Match vLLM/SGLang by not surfacing
             // post-wrapper text when there is no prefix narration.
-            String::new()
+            SourcedText::empty(record)
         } else if !calls.is_empty() && should_drop_post_tool_text_after_prefix(&normal_parts) {
             // Kimi tool-call responses are intermediate assistant turns even
             // when a single section contains multiple calls or a turn contains
             // multiple sections. Preserve only the prefix emitted before the
             // first tool section and drop post-wrapper/inter-wrapper text;
             // final user-facing content should be produced after tool results.
-            normal_parts[0].trim_start().to_string()
+            sourced(normal_parts[0].trim_start())
         } else if !calls.is_empty() && should_preserve_vllm_prefix_trailing_space(&normal_parts) {
             // vLLM preserves wrapper-adjacent trailing whitespace when the
             // response has only prefix narration before a Kimi tool section.
             // Keep this compatibility path narrow to avoid changing Dynamo's
             // existing handling of post-wrapper/inter-wrapper narration.
-            normal_parts[0].trim_start().to_string()
+            sourced(normal_parts[0].trim_start())
         } else {
-            joined_normal_text.trim().to_string()
+            SourcedText::join(text, &normal_parts, record).trim()
         };
     Ok((normal_text, calls))
 }
 
-fn recover_bare_kimi_calls_in_span(
-    span: &str,
+fn recover_bare_kimi_calls_in_span<'a>(
+    span: &'a str,
     config: &KimiK2ParserConfig,
     tools: Option<&[ToolDefinition]>,
-) -> anyhow::Result<Option<(String, Vec<ToolCallResponse>)>> {
+) -> anyhow::Result<Option<(&'a str, Vec<ToolCallResponse>)>> {
     let Some(marker_idx) = first_orphan_kimi_marker_index(span, config) else {
         return Ok(None);
     };
@@ -353,7 +361,7 @@ fn recover_bare_kimi_calls_in_span(
         kept_prefix_bytes = marker_idx,
         "Kimi K2 parser recovered complete bare call(s) before a later section_begin"
     );
-    Ok(Some((span[..marker_idx].trim().to_string(), recovered)))
+    Ok(Some((span[..marker_idx].trim(), recovered)))
 }
 
 fn first_orphan_kimi_marker_index(text: &str, config: &KimiK2ParserConfig) -> Option<usize> {

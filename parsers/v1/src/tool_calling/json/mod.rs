@@ -14,6 +14,7 @@ pub use deepseek_v3_parser::{detect_tool_call_start_deepseek_v3, parse_tool_call
 
 pub use super::config::JsonParserConfig;
 pub use super::response::ToolCallResponse;
+use crate::sources::SourcedText;
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Default)]
 pub enum JsonParserType {
@@ -35,6 +36,24 @@ pub fn try_tool_call_parse_json(
         JsonParserType::DeepseekV3 => parse_tool_calls_deepseek_v3(message, config, tools),
         JsonParserType::DeepseekV31 => parse_tool_calls_deepseek_v3_1(message, config, tools),
     }
+}
+
+/// [`try_tool_call_parse_json`], with the sources of `normal_text` for the
+/// parsers that record them (the basic JSON parser). The others return no
+/// sources even when `record` is set.
+pub(crate) fn try_tool_call_parse_json_sourced(
+    message: &str,
+    config: &JsonParserConfig,
+    tools: Option<&[super::ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
+    if matches!(config.parser_type, JsonParserType::Basic) {
+        return base_json_parser::try_tool_call_parse_basic_json_sourced(
+            message, config, tools, record,
+        );
+    }
+    let (calls, normal) = try_tool_call_parse_json(message, config, tools)?;
+    Ok((calls, normal.map(SourcedText::unsourced)))
 }
 
 pub fn detect_tool_call_start_json(chunk: &str, config: &JsonParserConfig) -> bool {

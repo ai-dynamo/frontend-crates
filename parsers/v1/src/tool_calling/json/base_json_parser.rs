@@ -9,6 +9,7 @@ use uuid::Uuid;
 use super::super::ToolDefinition;
 use super::config::JsonParserConfig;
 use super::response::{CalledFunction, ToolCallResponse, ToolCallType};
+use crate::sources::SourcedText;
 
 #[derive(Debug, serde::Deserialize)]
 struct CalledFunctionRaw {
@@ -247,7 +248,7 @@ fn recover_leading_complete_objects(json: &str) -> Vec<String> {
     out
 }
 
-fn try_parse_normal_text(input: &str, start_token: &str) -> String {
+fn try_parse_normal_text<'a>(input: &'a str, start_token: &str) -> &'a str {
     // If input contains start token, just take the part before it
     if let Some(idx) = input.find(start_token) {
         let prefix = &input[..idx];
@@ -257,14 +258,14 @@ fn try_parse_normal_text(input: &str, start_token: &str) -> String {
         // exported `JsonParserConfig` gains no new public member (downstream
         // struct-literal constructors stay source-compatible).
         return if start_token == "[TOOL_CALLS]" {
-            prefix.to_string()
+            prefix
         } else {
-            prefix.trim().to_string()
+            prefix.trim()
         };
     }
 
     // No start token found, return empty string
-    String::new()
+    &input[..0]
 }
 
 /// Parse a JSON `payload` into tool calls through one internal representation.
@@ -360,15 +361,28 @@ pub(crate) fn parse_indexed_calls(
 pub fn try_tool_call_parse_basic_json(
     message: &str,
     config: &JsonParserConfig,
-    _tools: Option<&[ToolDefinition]>,
+    tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
+    let (calls, normal) = try_tool_call_parse_basic_json_sourced(message, config, tools, false)?;
+    Ok((calls, normal.map(|normal| normal.text)))
+}
+
+/// [`try_tool_call_parse_basic_json`], with the input ranges of `normal_text`
+/// when `record` is set. Normal text here is always one slice of `message`.
+pub(crate) fn try_tool_call_parse_basic_json_sourced(
+    message: &str,
+    config: &JsonParserConfig,
+    _tools: Option<&[ToolDefinition]>,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
     // Log the config we are using
     tracing::debug!("Using JSON parser config: {:?}", config);
+    let sourced = |normal: &str| Some(SourcedText::slice(message, normal, record));
     let trimmed = message.trim();
 
     // Early exit if no content
     if trimmed.is_empty() {
-        return Ok((vec![], Some(String::new())));
+        return Ok((vec![], Some(SourcedText::empty(record))));
     }
 
     let tool_call_start_tokens = &config.tool_call_start_tokens;
@@ -377,13 +391,13 @@ pub fn try_tool_call_parse_basic_json(
     // Early exit if no tokens configured (unless bare_json_mode forces the
     // no-marker extraction path).
     if tool_call_start_tokens.is_empty() && !config.bare_json_mode {
-        return Ok((vec![], Some(trimmed.to_string())));
+        return Ok((vec![], sourced(trimmed)));
     }
 
     // Iterate over all start and end tokens and try to extract the content between them
     // Assumption : One message will not contain different tags for tool calls. Iteration over tags is to support different tags by default for multiple models
     let mut json = Cow::Borrowed(trimmed);
-    let mut normal_text = trimmed.to_string();
+    let mut normal_text = trimmed;
     let mut found_start_token_with_no_valid_json = false;
 
     // First, check if ANY start token exists in the input. `bare_json_mode`
@@ -396,7 +410,7 @@ pub fn try_tool_call_parse_basic_json(
     if !has_start_token {
         // No start tokens found, try to extract JSON directly. Everything that starts with { or [ is considered a potential JSON.
         if let Some(idx) = normal_text.find(['{', '[']) {
-            let extracted_normal = normal_text[..idx].trim().to_string();
+            let extracted_normal = normal_text[..idx].trim();
             let extracted_json = trimmed[idx..].trim();
             if !extracted_json.is_empty() {
                 normal_text = extracted_normal;
@@ -408,7 +422,7 @@ pub fn try_tool_call_parse_basic_json(
         // Try all combinations of start and end tokens
         'outer: for start_token in tool_call_start_tokens.iter() {
             for end_token in tool_call_end_tokens.iter() {
-                let new_normal_text = try_parse_normal_text(&normal_text, start_token);
+                let new_normal_text = try_parse_normal_text(normal_text, start_token);
 
                 // Process based on token types
                 match (start_token.is_empty(), end_token.is_empty()) {
@@ -475,7 +489,7 @@ pub fn try_tool_call_parse_basic_json(
     // including an empty array, which is a valid empty result and must not fall
     // through to truncation recovery.
     if let Some(calls) = parse_calls(json, config.allow_name_only_call)? {
-        return Ok((calls, Some(normal_text)));
+        return Ok((calls, sourced(normal_text)));
     }
 
     // mistral optional-close form: an unterminated call (a `[TOOL_CALLS]`
@@ -503,9 +517,9 @@ pub fn try_tool_call_parse_basic_json(
             )?
             && !calls.is_empty()
         {
-            return Ok((calls, Some(normal_text)));
+            return Ok((calls, sourced(normal_text)));
         }
-        return Ok((vec![], Some(normal_text)));
+        return Ok((vec![], sourced(normal_text)));
     }
 
     // Truncation recovery: balance unclosed strings/braces (common
@@ -517,13 +531,13 @@ pub fn try_tool_call_parse_basic_json(
         && let Some(calls) = parse_calls(repaired.as_str(), config.allow_name_only_call)?
         && !calls.is_empty()
     {
-        return Ok((calls, Some(normal_text)));
+        return Ok((calls, sourced(normal_text)));
     }
 
     // If we found a start token but no valid JSON, return empty content
     // to avoid leaking the token and invalid JSON content
     if found_start_token_with_no_valid_json {
-        return Ok((vec![], Some(String::new())));
+        return Ok((vec![], Some(SourcedText::empty(record))));
     }
 
     // Strict recovery (opt-in via `strip_markup_on_recovery`, e.g. nemotron_deci):
@@ -609,14 +623,14 @@ pub fn try_tool_call_parse_basic_json(
                     "Recovered {} tool call(s) from malformed tool-call framing; stripped wrapper markers instead of leaking them into normal_text",
                     calls.len()
                 );
-                return Ok((calls, Some(String::new())));
+                return Ok((calls, Some(SourcedText::empty(record))));
             }
 
             tracing::warn!(
                 dropped_content = %trimmed,
                 "Dropping unparseable tool-call content; wrapper markers stripped, no valid tool call recovered"
             );
-            return Ok((vec![], Some(String::new())));
+            return Ok((vec![], Some(SourcedText::empty(record))));
         }
     }
 
@@ -640,7 +654,7 @@ pub fn try_tool_call_parse_basic_json(
             // parsed out of it (non-JSON garbage, missing name, etc.). Discard
             // the whole jailed region rather than leaking the wrapper markup;
             // `normal_text` already holds the pre-wrapper prefix.
-            return Ok((vec![], Some(normal_text)));
+            return Ok((vec![], sourced(normal_text)));
         }
         if has_end {
             // Orphan end token(s) with no matching opener (e.g.
@@ -662,12 +676,12 @@ pub fn try_tool_call_parse_basic_json(
                 }
             }
             if cleaned.len() != trimmed.len() {
-                return Ok((vec![], Some(cleaned.trim().to_string())));
+                return Ok((vec![], sourced(cleaned.trim())));
             }
         }
     }
 
-    Ok((vec![], Some(trimmed.to_string())))
+    Ok((vec![], sourced(trimmed)))
 }
 
 pub fn detect_tool_call_start_basic_json(chunk: &str, config: &JsonParserConfig) -> bool {
