@@ -131,6 +131,8 @@ mod tests {
     fn structural_tag_capability_is_declared_in_the_family_registry() {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
+        assert!(structural_tag_builder_for_family("deepseek_v41").is_some());
+        assert!(create_tool_parser_for_family("deepseek_v41", &[]).is_err());
         assert!(structural_tag_builder_for_family("glm47").is_some());
         assert!(structural_tag_builder_for_family("kimi_k2").is_some());
         assert!(structural_tag_builder_for_family("kimi_k3").is_some());
@@ -154,6 +156,7 @@ mod tests {
             ("qwen3", "<tool_call>\n<function="),
             ("qwen3_coder", "<tool_call>\n<function="),
             ("deepseek_v4", "<｜DSML｜tool_calls>"),
+            ("deepseek_v41", "<｜DSML｜ calls>"),
             ("glm47", "<tool_call>"),
         ] {
             let builder = structural_tag_builder_for_family(family)

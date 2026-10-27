@@ -94,6 +94,8 @@ pub(crate) enum JsonSchemaStyle {
     Json,
     QwenXml,
     DeepseekXml,
+    #[serde(rename = "deepseek_v4_1_xml")]
+    DeepseekV41Xml,
     GlmXml,
     MinimaxXml,
 }
