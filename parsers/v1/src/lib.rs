@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod reasoning;
+pub mod sources;
 pub mod tool_calling;
 
 // Re-export everything from tool_calling for convenience
