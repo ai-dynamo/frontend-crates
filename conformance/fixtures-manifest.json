@@ -336,6 +336,11 @@
       "size": 35957
     },
     {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.8.1.tar.gz",
+      "sha256": "3ca928cdb9277ca49fe6f25815d62bde2526c41a505b9ef22f3e7d1cfa900e74",
+      "size": 35949
+    },
+    {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
       "sha256": "b3a39ffd517de5e59a39f6dbfb92c71aa8ca10d492ef1000d4cd494c4299b8b8",
       "size": 208837
