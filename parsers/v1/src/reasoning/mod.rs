@@ -161,6 +161,26 @@ pub trait ReasoningParser: Send + std::fmt::Debug {
     fn set_in_reasoning(&mut self, _in_reasoning: bool) {
         // Default no-op for parsers that don't support per-request overrides.
     }
+
+    /// Records where the streamed text came from. Call before the first parse.
+    ///
+    /// With recording on, every byte that [`parse_reasoning_streaming_incremental`]
+    /// and [`finish_reasoning_stream`] return gets the offset of the input byte it
+    /// was copied from, over all the text this parser received. Batch parsing
+    /// ([`detect_and_parse_reasoning`]) records nothing. Returns `false` when this
+    /// parser cannot record, so the caller can refuse the request; recording is
+    /// then off and the output is unchanged.
+    ///
+    /// [`parse_reasoning_streaming_incremental`]: Self::parse_reasoning_streaming_incremental
+    /// [`finish_reasoning_stream`]: Self::finish_reasoning_stream
+    /// [`detect_and_parse_reasoning`]: Self::detect_and_parse_reasoning
+    fn record_sources(&mut self) -> bool {
+        false
+    }
+
+    /// Moves the runs of the text returned since the last call into `out`, in
+    /// input order. Each run is tagged with the field its text went to.
+    fn take_sources(&mut self, _out: &mut Vec<crate::sources::SourceRun>) {}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -229,6 +249,14 @@ impl ReasoningParser for ReasoningParserWrapper {
 
     fn set_in_reasoning(&mut self, in_reasoning: bool) {
         self.parser.set_in_reasoning(in_reasoning)
+    }
+
+    fn record_sources(&mut self) -> bool {
+        self.parser.record_sources()
+    }
+
+    fn take_sources(&mut self, out: &mut Vec<crate::sources::SourceRun>) {
+        self.parser.take_sources(out)
     }
 }
 

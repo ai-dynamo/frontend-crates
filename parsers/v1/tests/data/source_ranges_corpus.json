@@ -1,0 +1,2196 @@
+{
+"source": "dynamo lib/llm recorded v1 streams (45e30e07), content chunks only",
+"reasoning": [
+{
+"name": "reasoning/kimi_linear/plain/answer_only",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/answer_then_second_block_cut_in_close",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/bare_json",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/content_after_finish",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/error_mid_stream",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/leading_newline_then_opener",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/no_finish_reason_answer",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/no_opener_reasoning_then_close",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/think_then_answer_one_chunk_finish",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/think_then_answer_split_markers",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/tool_call_after_reasoning",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>need weather</think>",
+"<|tool_",
+"calls_s",
+"ection_",
+"begin|>",
+"<|tool_",
+"call_be",
+"gin|>fu",
+"nctions",
+".get_we",
+"ather:0",
+"<|tool_",
+"call_ar",
+"gument_",
+"begin|>",
+"{\"city\"",
+": \"Pari",
+"s\"}<|to",
+"ol_call",
+"_end|><",
+"|tool_c",
+"alls_se",
+"ction_e",
+"nd|>"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/tool_call_inside_reasoning_no_close",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>need weather ",
+"<|tool_call",
+"s_section_b",
+"egin|><|too",
+"l_call_begi",
+"n|>function",
+"s.get_weath",
+"er:0<|tool_",
+"call_argume",
+"nt_begin|>{",
+"\"city\": \"Pa",
+"ris\"}<|tool",
+"_call_end|>",
+"<|tool_call",
+"s_section_e",
+"nd|>"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/truncated_partial_close_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/truncated_reasoning_length",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/two_choices_interleaved",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/two_choices_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/two_choices_one_bare_json",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/usage_trailer",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/usage_trailer_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r",
+"more"
+]
+},
+{
+"name": "reasoning/kimi_linear/plain/whitespace_answer",
+"parser": "basic",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/answer_only",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/answer_then_second_block_cut_in_close",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/bare_json",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/content_after_finish",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/error_mid_stream",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/leading_newline_then_opener",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/no_finish_reason_answer",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/no_opener_reasoning_then_close",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/think_then_answer_one_chunk_finish",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/think_then_answer_split_markers",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/tool_call_after_reasoning",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>need weather</think>",
+"<|tool_",
+"calls_s",
+"ection_",
+"begin|>",
+"<|tool_",
+"call_be",
+"gin|>fu",
+"nctions",
+".get_we",
+"ather:0",
+"<|tool_",
+"call_ar",
+"gument_",
+"begin|>",
+"{\"city\"",
+": \"Pari",
+"s\"}<|to",
+"ol_call",
+"_end|><",
+"|tool_c",
+"alls_se",
+"ction_e",
+"nd|>"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/tool_call_inside_reasoning_no_close",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>need weather ",
+"<|tool_call",
+"s_section_b",
+"egin|><|too",
+"l_call_begi",
+"n|>function",
+"s.get_weath",
+"er:0<|tool_",
+"call_argume",
+"nt_begin|>{",
+"\"city\": \"Pa",
+"ris\"}<|tool",
+"_call_end|>",
+"<|tool_call",
+"s_section_e",
+"nd|>"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/truncated_partial_close_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/truncated_reasoning_length",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/two_choices_interleaved",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/two_choices_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/two_choices_one_bare_json",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/usage_trailer",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/usage_trailer_no_finish",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r",
+"more"
+]
+},
+{
+"name": "reasoning/kimi_linear/prompt_injected/whitespace_answer",
+"parser": "basic",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+},
+{
+"name": "reasoning/minimax/plain/answer_only",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/minimax/plain/answer_then_second_block_cut_in_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>r</mm:think>answer ",
+"<mm:think>more",
+"</mm"
+]
+},
+{
+"name": "reasoning/minimax/plain/bare_json",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/minimax/plain/content_after_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>r",
+"late"
+]
+},
+{
+"name": "reasoning/minimax/plain/error_mid_stream",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/minimax/plain/leading_newline_then_opener",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"\n<mm:think>why</mm:think>ok"
+]
+},
+{
+"name": "reasoning/minimax/plain/no_finish_reason_answer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/minimax/plain/no_opener_reasoning_then_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"reasoning without opener ",
+"more</mm:think>",
+"answer"
+]
+},
+{
+"name": "reasoning/minimax/plain/think_then_answer_one_chunk_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>I should check.</mm:think>The answer is 4."
+]
+},
+{
+"name": "reasoning/minimax/plain/think_then_answer_split_markers",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm",
+":th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"mm:",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/minimax/plain/tool_call_after_reasoning",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>need weather</mm:think>",
+"]<]mini",
+"max[>[<",
+"tool_ca",
+"ll>\n]<]",
+"minimax",
+"[>[<inv",
+"oke nam",
+"e=\"get_",
+"weather",
+"\">]<]mi",
+"nimax[>",
+"[<city>",
+"Paris]<",
+"]minima",
+"x[>[</c",
+"ity>]<]",
+"minimax",
+"[>[</in",
+"voke>\n]",
+"<]minim",
+"ax[>[</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/minimax/plain/tool_call_inside_reasoning_no_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>need weather ",
+"]<]minimax[",
+">[<tool_cal",
+"l>\n]<]minim",
+"ax[>[<invok",
+"e name=\"get",
+"_weather\">]",
+"<]minimax[>",
+"[<city>Pari",
+"s]<]minimax",
+"[>[</city>]",
+"<]minimax[>",
+"[</invoke>\n",
+"]<]minimax[",
+">[</tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/minimax/plain/truncated_partial_close_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>thinking",
+"</m"
+]
+},
+{
+"name": "reasoning/minimax/plain/truncated_reasoning_length",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/minimax/plain/two_choices_interleaved",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>",
+"plain ",
+"a</mm:think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/minimax/plain/two_choices_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>one",
+"zero ",
+"<mm:think>z"
+]
+},
+{
+"name": "reasoning/minimax/plain/two_choices_one_bare_json",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"{\"k\": 1}",
+"<mm:think>r</mm:think>a"
+]
+},
+{
+"name": "reasoning/minimax/plain/usage_trailer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>r</mm:think>",
+"answer"
+]
+},
+{
+"name": "reasoning/minimax/plain/usage_trailer_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>r",
+"more"
+]
+},
+{
+"name": "reasoning/minimax/plain/whitespace_answer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<mm:think>r</mm:think>",
+"  \n"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/answer_only",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/answer_then_second_block_cut_in_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>r</mm:think>answer ",
+"<mm:think>more",
+"</mm"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/bare_json",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/content_after_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>r",
+"late"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/error_mid_stream",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/leading_newline_then_opener",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"\n<mm:think>why</mm:think>ok"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/no_finish_reason_answer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/no_opener_reasoning_then_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"reasoning without opener ",
+"more</mm:think>",
+"answer"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/think_then_answer_one_chunk_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>I should check.</mm:think>The answer is 4."
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/think_then_answer_split_markers",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm",
+":th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"mm:",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/tool_call_after_reasoning",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>need weather</mm:think>",
+"]<]mini",
+"max[>[<",
+"tool_ca",
+"ll>\n]<]",
+"minimax",
+"[>[<inv",
+"oke nam",
+"e=\"get_",
+"weather",
+"\">]<]mi",
+"nimax[>",
+"[<city>",
+"Paris]<",
+"]minima",
+"x[>[</c",
+"ity>]<]",
+"minimax",
+"[>[</in",
+"voke>\n]",
+"<]minim",
+"ax[>[</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/tool_call_inside_reasoning_no_close",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>need weather ",
+"]<]minimax[",
+">[<tool_cal",
+"l>\n]<]minim",
+"ax[>[<invok",
+"e name=\"get",
+"_weather\">]",
+"<]minimax[>",
+"[<city>Pari",
+"s]<]minimax",
+"[>[</city>]",
+"<]minimax[>",
+"[</invoke>\n",
+"]<]minimax[",
+">[</tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/truncated_partial_close_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>thinking",
+"</m"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/truncated_reasoning_length",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/two_choices_interleaved",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>",
+"plain ",
+"a</mm:think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/two_choices_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>one",
+"zero ",
+"<mm:think>z"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/two_choices_one_bare_json",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"{\"k\": 1}",
+"<mm:think>r</mm:think>a"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/usage_trailer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>r</mm:think>",
+"answer"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/usage_trailer_no_finish",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>r",
+"more"
+]
+},
+{
+"name": "reasoning/minimax/prompt_injected/whitespace_answer",
+"parser": "minimax_m3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<mm:think>r</mm:think>",
+"  \n"
+]
+},
+{
+"name": "reasoning/qwen3/plain/answer_only",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/qwen3/plain/answer_then_second_block_cut_in_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "reasoning/qwen3/plain/bare_json",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/qwen3/plain/content_after_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "reasoning/qwen3/plain/error_mid_stream",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/qwen3/plain/leading_newline_then_opener",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "reasoning/qwen3/plain/no_finish_reason_answer",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/qwen3/plain/no_opener_reasoning_then_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/qwen3/plain/think_then_answer_one_chunk_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "reasoning/qwen3/plain/think_then_answer_split_markers",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/qwen3/plain/tool_call_after_reasoning",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>need weather</think>",
+"<tool_c",
+"all>\n{\"",
+"name\": ",
+"\"get_we",
+"ather\",",
+" \"argum",
+"ents\": ",
+"{\"city\"",
+": \"Pari",
+"s\"}}\n</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/qwen3/plain/tool_call_inside_reasoning_no_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>need weather ",
+"<tool_call>",
+"\n{\"name\": \"",
+"get_weather",
+"\", \"argumen",
+"ts\": {\"city",
+"\": \"Paris\"}",
+"}\n</tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/qwen3/plain/truncated_partial_close_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "reasoning/qwen3/plain/truncated_reasoning_length",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/qwen3/plain/two_choices_interleaved",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/qwen3/plain/two_choices_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "reasoning/qwen3/plain/two_choices_one_bare_json",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "reasoning/qwen3/plain/usage_trailer",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/qwen3/plain/usage_trailer_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r",
+"more"
+]
+},
+{
+"name": "reasoning/qwen3/plain/whitespace_answer",
+"parser": "qwen3",
+"prompt_injected_reasoning": false,
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/answer_only",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/answer_then_second_block_cut_in_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/bare_json",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/content_after_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/error_mid_stream",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/leading_newline_then_opener",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/no_finish_reason_answer",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/no_opener_reasoning_then_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/think_then_answer_one_chunk_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/think_then_answer_split_markers",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/tool_call_after_reasoning",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>need weather</think>",
+"<tool_c",
+"all>\n{\"",
+"name\": ",
+"\"get_we",
+"ather\",",
+" \"argum",
+"ents\": ",
+"{\"city\"",
+": \"Pari",
+"s\"}}\n</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/tool_call_inside_reasoning_no_close",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>need weather ",
+"<tool_call>",
+"\n{\"name\": \"",
+"get_weather",
+"\", \"argumen",
+"ts\": {\"city",
+"\": \"Paris\"}",
+"}\n</tool_ca",
+"ll>"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/truncated_partial_close_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/truncated_reasoning_length",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/two_choices_interleaved",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/two_choices_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/two_choices_one_bare_json",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/usage_trailer",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>",
+"answer"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/usage_trailer_no_finish",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r",
+"more"
+]
+},
+{
+"name": "reasoning/qwen3/prompt_injected/whitespace_answer",
+"parser": "qwen3",
+"prompt_injected_reasoning": true,
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+}
+],
+"tool": [
+{
+"name": "jail/kimi_linear/call",
+"parser": "kimi_k2",
+"chunks": [
+"<|too",
+"l_cal",
+"ls_se",
+"ction",
+"_begi",
+"n|><|",
+"tool_",
+"call_",
+"begin",
+"|>fun",
+"ction",
+"s.get",
+"_weat",
+"her:0",
+"<|too",
+"l_cal",
+"l_arg",
+"ument",
+"_begi",
+"n|>{\"",
+"city\"",
+": \"Pa",
+"ris\"}",
+"<|too",
+"l_cal",
+"l_end",
+"|><|t",
+"ool_c",
+"alls_",
+"secti",
+"on_en",
+"d|>"
+]
+},
+{
+"name": "jail/kimi_linear/call_cut_by_error",
+"parser": "kimi_k2",
+"chunks": [
+"Let me check. ",
+"<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_cal"
+]
+},
+{
+"name": "jail/kimi_linear/call_then_error",
+"parser": "kimi_k2",
+"chunks": [
+"<|tool_ca",
+"lls_secti",
+"on_begin|",
+"><|tool_c",
+"all_begin",
+"|>functio",
+"ns.get_we",
+"ather:0<|",
+"tool_call",
+"_argument",
+"_begin|>{",
+"\"city\": \"",
+"Paris\"}<|",
+"tool_call",
+"_end|><|t",
+"ool_calls",
+"_section_",
+"end|>",
+"never seen"
+]
+},
+{
+"name": "jail/kimi_linear/error_first",
+"parser": "kimi_k2",
+"chunks": [
+"never seen"
+]
+},
+{
+"name": "jail/kimi_linear/text_then_error",
+"parser": "kimi_k2",
+"chunks": [
+"hello "
+]
+},
+{
+"name": "jail/minimax/call",
+"parser": "minimax_m3",
+"chunks": [
+"]<]mi",
+"nimax",
+"[>[<t",
+"ool_c",
+"all>\n",
+"]<]mi",
+"nimax",
+"[>[<i",
+"nvoke",
+" name",
+"=\"get",
+"_weat",
+"her\">",
+"]<]mi",
+"nimax",
+"[>[<c",
+"ity>P",
+"aris]",
+"<]min",
+"imax[",
+">[</c",
+"ity>]",
+"<]min",
+"imax[",
+">[</i",
+"nvoke",
+">\n]<]",
+"minim",
+"ax[>[",
+"</too",
+"l_cal",
+"l>"
+]
+},
+{
+"name": "jail/minimax/call_cut_by_error",
+"parser": "minimax_m3",
+"chunks": [
+"Let me check. ",
+"]<]minimax[>[<tool_call>\n]<]minimax[>[<invoke name=\"get_weather\">]<]minimax[>[<"
+]
+},
+{
+"name": "jail/minimax/call_then_error",
+"parser": "minimax_m3",
+"chunks": [
+"]<]minima",
+"x[>[<tool",
+"_call>\n]<",
+"]minimax[",
+">[<invoke",
+" name=\"ge",
+"t_weather",
+"\">]<]mini",
+"max[>[<ci",
+"ty>Paris]",
+"<]minimax",
+"[>[</city",
+">]<]minim",
+"ax[>[</in",
+"voke>\n]<]",
+"minimax[>",
+"[</tool_c",
+"all>",
+"never seen"
+]
+},
+{
+"name": "jail/minimax/error_first",
+"parser": "minimax_m3",
+"chunks": [
+"never seen"
+]
+},
+{
+"name": "jail/minimax/text_then_error",
+"parser": "minimax_m3",
+"chunks": [
+"hello "
+]
+},
+{
+"name": "jail/qwen3/call",
+"parser": "hermes",
+"chunks": [
+"<tool",
+"_call",
+">\n{\"n",
+"ame\":",
+" \"get",
+"_weat",
+"her\",",
+" \"arg",
+"ument",
+"s\": {",
+"\"city",
+"\": \"P",
+"aris\"",
+"}}\n</",
+"tool_",
+"call>"
+]
+},
+{
+"name": "jail/qwen3/call_cut_by_error",
+"parser": "hermes",
+"chunks": [
+"Let me check. ",
+"<tool_call>\n{\"name\": \"get_weather\", \"argu"
+]
+},
+{
+"name": "jail/qwen3/call_then_error",
+"parser": "hermes",
+"chunks": [
+"<tool_cal",
+"l>\n{\"name",
+"\": \"get_w",
+"eather\", ",
+"\"argument",
+"s\": {\"cit",
+"y\": \"Pari",
+"s\"}}\n</to",
+"ol_call>",
+"never seen"
+]
+},
+{
+"name": "jail/qwen3/error_first",
+"parser": "hermes",
+"chunks": [
+"never seen"
+]
+},
+{
+"name": "jail/qwen3/text_then_error",
+"parser": "hermes",
+"chunks": [
+"hello "
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/answer_only",
+"parser": "kimi_k2",
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/answer_then_second_block_cut_in_close",
+"parser": "kimi_k2",
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/bare_json",
+"parser": "kimi_k2",
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/content_after_finish",
+"parser": "kimi_k2",
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/error_mid_stream",
+"parser": "kimi_k2",
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/leading_newline_then_opener",
+"parser": "kimi_k2",
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/no_finish_reason_answer",
+"parser": "kimi_k2",
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/no_opener_reasoning_then_close",
+"parser": "kimi_k2",
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/think_then_answer_one_chunk_finish",
+"parser": "kimi_k2",
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/think_then_answer_split_markers",
+"parser": "kimi_k2",
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/tool_call_after_reasoning",
+"parser": "kimi_k2",
+"chunks": [
+"<think>need weather</think>",
+"<|tool_",
+"calls_s",
+"ection_",
+"begin|>",
+"<|tool_",
+"call_be",
+"gin|>fu",
+"nctions",
+".get_we",
+"ather:0",
+"<|tool_",
+"call_ar",
+"gument_",
+"begin|>",
+"{\"city\"",
+": \"Pari",
+"s\"}<|to",
+"ol_call",
+"_end|><",
+"|tool_c",
+"alls_se",
+"ction_e",
+"nd|>"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/tool_call_inside_reasoning_no_close",
+"parser": "kimi_k2",
+"chunks": [
+"<think>need weather ",
+"<|tool_call",
+"s_section_b",
+"egin|><|too",
+"l_call_begi",
+"n|>function",
+"s.get_weath",
+"er:0<|tool_",
+"call_argume",
+"nt_begin|>{",
+"\"city\": \"Pa",
+"ris\"}<|tool",
+"_call_end|>",
+"<|tool_call",
+"s_section_e",
+"nd|>"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/truncated_partial_close_no_finish",
+"parser": "kimi_k2",
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/truncated_reasoning_length",
+"parser": "kimi_k2",
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/two_choices_interleaved",
+"parser": "kimi_k2",
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/two_choices_no_finish",
+"parser": "kimi_k2",
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/two_choices_one_bare_json",
+"parser": "kimi_k2",
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "v1_route/kimi_linear/plain/whitespace_answer",
+"parser": "kimi_k2",
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+},
+{
+"name": "v1_route/minimax/plain/answer_only",
+"parser": "minimax_m3",
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "v1_route/minimax/plain/answer_then_second_block_cut_in_close",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>r</mm:think>answer ",
+"<mm:think>more",
+"</mm"
+]
+},
+{
+"name": "v1_route/minimax/plain/bare_json",
+"parser": "minimax_m3",
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "v1_route/minimax/plain/content_after_finish",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>r",
+"late"
+]
+},
+{
+"name": "v1_route/minimax/plain/error_mid_stream",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>thinking",
+"after error"
+]
+},
+{
+"name": "v1_route/minimax/plain/leading_newline_then_opener",
+"parser": "minimax_m3",
+"chunks": [
+"\n<mm:think>why</mm:think>ok"
+]
+},
+{
+"name": "v1_route/minimax/plain/no_finish_reason_answer",
+"parser": "minimax_m3",
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "v1_route/minimax/plain/no_opener_reasoning_then_close",
+"parser": "minimax_m3",
+"chunks": [
+"reasoning without opener ",
+"more</mm:think>",
+"answer"
+]
+},
+{
+"name": "v1_route/minimax/plain/think_then_answer_one_chunk_finish",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>I should check.</mm:think>The answer is 4."
+]
+},
+{
+"name": "v1_route/minimax/plain/think_then_answer_split_markers",
+"parser": "minimax_m3",
+"chunks": [
+"<mm",
+":th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"mm:",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "v1_route/minimax/plain/tool_call_after_reasoning",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>need weather</mm:think>",
+"]<]mini",
+"max[>[<",
+"tool_ca",
+"ll>\n]<]",
+"minimax",
+"[>[<inv",
+"oke nam",
+"e=\"get_",
+"weather",
+"\">]<]mi",
+"nimax[>",
+"[<city>",
+"Paris]<",
+"]minima",
+"x[>[</c",
+"ity>]<]",
+"minimax",
+"[>[</in",
+"voke>\n]",
+"<]minim",
+"ax[>[</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "v1_route/minimax/plain/tool_call_inside_reasoning_no_close",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>need weather ",
+"]<]minimax[",
+">[<tool_cal",
+"l>\n]<]minim",
+"ax[>[<invok",
+"e name=\"get",
+"_weather\">]",
+"<]minimax[>",
+"[<city>Pari",
+"s]<]minimax",
+"[>[</city>]",
+"<]minimax[>",
+"[</invoke>\n",
+"]<]minimax[",
+">[</tool_ca",
+"ll>"
+]
+},
+{
+"name": "v1_route/minimax/plain/truncated_partial_close_no_finish",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>thinking",
+"</m"
+]
+},
+{
+"name": "v1_route/minimax/plain/truncated_reasoning_length",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>",
+"partial thought"
+]
+},
+{
+"name": "v1_route/minimax/plain/two_choices_interleaved",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>",
+"plain ",
+"a</mm:think>",
+"text",
+"b"
+]
+},
+{
+"name": "v1_route/minimax/plain/two_choices_no_finish",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>one",
+"zero ",
+"<mm:think>z"
+]
+},
+{
+"name": "v1_route/minimax/plain/two_choices_one_bare_json",
+"parser": "minimax_m3",
+"chunks": [
+"{\"k\": 1}",
+"<mm:think>r</mm:think>a"
+]
+},
+{
+"name": "v1_route/minimax/plain/whitespace_answer",
+"parser": "minimax_m3",
+"chunks": [
+"<mm:think>r</mm:think>",
+"  \n"
+]
+},
+{
+"name": "v1_route/qwen3/plain/answer_only",
+"parser": "hermes",
+"chunks": [
+"Just ",
+"an answer."
+]
+},
+{
+"name": "v1_route/qwen3/plain/answer_then_second_block_cut_in_close",
+"parser": "hermes",
+"chunks": [
+"<think>r</think>answer ",
+"<think>more",
+"</th"
+]
+},
+{
+"name": "v1_route/qwen3/plain/bare_json",
+"parser": "hermes",
+"chunks": [
+"  ",
+"{\"city\": ",
+"\"Paris\"}"
+]
+},
+{
+"name": "v1_route/qwen3/plain/content_after_finish",
+"parser": "hermes",
+"chunks": [
+"<think>r",
+"late"
+]
+},
+{
+"name": "v1_route/qwen3/plain/error_mid_stream",
+"parser": "hermes",
+"chunks": [
+"<think>thinking",
+"after error"
+]
+},
+{
+"name": "v1_route/qwen3/plain/leading_newline_then_opener",
+"parser": "hermes",
+"chunks": [
+"\n<think>why</think>ok"
+]
+},
+{
+"name": "v1_route/qwen3/plain/no_finish_reason_answer",
+"parser": "hermes",
+"chunks": [
+"an answer with ",
+"no finish"
+]
+},
+{
+"name": "v1_route/qwen3/plain/no_opener_reasoning_then_close",
+"parser": "hermes",
+"chunks": [
+"reasoning without opener ",
+"more</think>",
+"answer"
+]
+},
+{
+"name": "v1_route/qwen3/plain/think_then_answer_one_chunk_finish",
+"parser": "hermes",
+"chunks": [
+"<think>I should check.</think>The answer is 4."
+]
+},
+{
+"name": "v1_route/qwen3/plain/think_then_answer_split_markers",
+"parser": "hermes",
+"chunks": [
+"<th",
+"ink",
+">I ",
+"sho",
+"uld",
+" ch",
+"eck",
+".</",
+"thi",
+"nk>",
+"The",
+" an",
+"swe",
+"r i",
+"s 4",
+"."
+]
+},
+{
+"name": "v1_route/qwen3/plain/tool_call_after_reasoning",
+"parser": "hermes",
+"chunks": [
+"<think>need weather</think>",
+"<tool_c",
+"all>\n{\"",
+"name\": ",
+"\"get_we",
+"ather\",",
+" \"argum",
+"ents\": ",
+"{\"city\"",
+": \"Pari",
+"s\"}}\n</",
+"tool_ca",
+"ll>"
+]
+},
+{
+"name": "v1_route/qwen3/plain/tool_call_inside_reasoning_no_close",
+"parser": "hermes",
+"chunks": [
+"<think>need weather ",
+"<tool_call>",
+"\n{\"name\": \"",
+"get_weather",
+"\", \"argumen",
+"ts\": {\"city",
+"\": \"Paris\"}",
+"}\n</tool_ca",
+"ll>"
+]
+},
+{
+"name": "v1_route/qwen3/plain/truncated_partial_close_no_finish",
+"parser": "hermes",
+"chunks": [
+"<think>thinking",
+"</t"
+]
+},
+{
+"name": "v1_route/qwen3/plain/truncated_reasoning_length",
+"parser": "hermes",
+"chunks": [
+"<think>",
+"partial thought"
+]
+},
+{
+"name": "v1_route/qwen3/plain/two_choices_interleaved",
+"parser": "hermes",
+"chunks": [
+"<think>",
+"plain ",
+"a</think>",
+"text",
+"b"
+]
+},
+{
+"name": "v1_route/qwen3/plain/two_choices_no_finish",
+"parser": "hermes",
+"chunks": [
+"<think>one",
+"zero ",
+"<think>z"
+]
+},
+{
+"name": "v1_route/qwen3/plain/two_choices_one_bare_json",
+"parser": "hermes",
+"chunks": [
+"{\"k\": 1}",
+"<think>r</think>a"
+]
+},
+{
+"name": "v1_route/qwen3/plain/whitespace_answer",
+"parser": "hermes",
+"chunks": [
+"<think>r</think>",
+"  \n"
+]
+}
+]
+}

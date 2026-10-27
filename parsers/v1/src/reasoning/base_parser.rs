@@ -33,6 +33,9 @@
 //! (standard serving, Qwen3, GLM-4.5) should use `force_reasoning=false`
 //! (`glm45`, `nemotron_deci`, `qwen3` parsers).
 
+use std::ops::Range;
+
+use crate::sources::{SourceChannel, SourceRun, Spans, push_run};
 use crate::{ParserResult, ReasoningParser};
 
 /// Returns the length of the longest suffix of `s` that is also a prefix of `delim`.
@@ -59,6 +62,23 @@ fn earliest_marker_offset(s: &str, markers: &[String]) -> Option<usize> {
         .filter(|marker| !marker.is_empty())
         .filter_map(|marker| s.find(marker))
         .min()
+}
+
+/// Returns bytes `at` of `text`, which `spans` describe, in `channel`.
+fn release(
+    out: &mut String,
+    runs: &mut Option<Vec<SourceRun>>,
+    spans: &Spans,
+    channel: SourceChannel,
+    text: &str,
+    at: Range<usize>,
+) {
+    out.push_str(&text[at.clone()]);
+    if let Some(runs) = runs.as_mut() {
+        for input in spans.slice(at).ranges() {
+            push_run(runs, channel, input.clone());
+        }
+    }
 }
 
 fn max_marker_overlap(s: &str, markers: &[String]) -> usize {
@@ -108,6 +128,13 @@ pub struct BasicReasoningParser {
     /// delimiters inside these regions are literal argument data, not markup.
     tool_parameter_tokens: Option<(String, String)>,
     in_tool_parameter: bool,
+    /// Input offset of the next byte fed to the streaming methods. Kept with
+    /// recording off too, so recording can start after earlier chunks.
+    fed: usize,
+    /// Sources of `_buffer`, while recording. Every buffer edit edits these.
+    buffer_spans: Spans,
+    /// Runs returned since the last `take_sources`, while recording.
+    runs: Option<Vec<SourceRun>>,
 }
 
 impl BasicReasoningParser {
@@ -130,7 +157,33 @@ impl BasicReasoningParser {
             tool_start_tokens: Vec::new(),
             tool_parameter_tokens: None,
             in_tool_parameter: false,
+            fed: 0,
+            buffer_spans: Spans::OFF,
+            runs: None,
         }
+    }
+
+    /// Appends a streamed chunk to the buffer, with its sources.
+    fn feed(&mut self, text: &str) {
+        self._buffer.push_str(text);
+        self.buffer_spans.push(self.fed..self.fed + text.len());
+        self.fed += text.len();
+    }
+
+    /// Returns bytes `at` of `text`, a copy of the buffer, in `channel`.
+    fn release(&mut self, out: &mut String, channel: SourceChannel, text: &str, at: Range<usize>) {
+        release(out, &mut self.runs, &self.buffer_spans, channel, text, at);
+    }
+
+    /// Keeps bytes `at..` of `text`, a copy of the buffer, as the buffer.
+    fn keep_from(&mut self, text: &str, at: usize) {
+        self._buffer = text[at..].to_string();
+        self.buffer_spans.drain_front(at);
+    }
+
+    fn clear_buffer(&mut self) {
+        self._buffer.clear();
+        self.buffer_spans.clear();
     }
 
     /// Enables force-exit from reasoning when `token` appears inside an open reasoning
@@ -156,7 +209,7 @@ impl BasicReasoningParser {
     /// Missing parameter closers recover at the same function/wrapper boundary
     /// as the downstream v1 XML parser, so later reasoning is not shielded.
     fn scan_tool_parameters(&mut self, text: &str, flush: bool) -> ParserResult {
-        self._buffer.push_str(text);
+        self.feed(text);
         let input = std::mem::take(&mut self._buffer);
         let (parameter_start, parameter_end) = self.tool_parameter_tokens.as_ref().unwrap();
         let mut result = ParserResult::default();
@@ -182,20 +235,39 @@ impl BasicReasoningParser {
                 ]
             };
             if let Some(marker) = markers.iter().find(|marker| tail.starts_with(**marker)) {
+                let (runs, spans) = (&mut self.runs, &self.buffer_spans);
                 if self._in_reasoning {
-                    result.reasoning_text.push_str(&input[span..cursor]);
+                    let out = &mut result.reasoning_text;
+                    release(
+                        out,
+                        runs,
+                        spans,
+                        SourceChannel::Reasoning,
+                        &input,
+                        span..cursor,
+                    );
                 } else {
-                    result.normal_text.push_str(&input[span..cursor]);
+                    let out = &mut result.normal_text;
+                    release(
+                        out,
+                        runs,
+                        spans,
+                        SourceChannel::Normal,
+                        &input,
+                        span..cursor,
+                    );
                 }
+                let marker_at = cursor..cursor + marker.len();
+                let out = &mut result.normal_text;
                 if self.in_tool_parameter {
-                    result.normal_text.push_str(marker);
+                    release(out, runs, spans, SourceChannel::Normal, &input, marker_at);
                     self.in_tool_parameter = false;
                 } else if *marker == self.think_start_token {
                     self._in_reasoning = true;
                 } else if *marker == self.think_end_token {
                     self._in_reasoning = false;
                 } else {
-                    result.normal_text.push_str(marker);
+                    release(out, runs, spans, SourceChannel::Normal, &input, marker_at);
                     self._in_reasoning = false;
                     self.in_tool_parameter = *marker == parameter_start;
                 }
@@ -209,12 +281,30 @@ impl BasicReasoningParser {
                 cursor += tail.chars().next().unwrap().len_utf8();
             }
         }
+        let (runs, spans) = (&mut self.runs, &self.buffer_spans);
         if self._in_reasoning {
-            result.reasoning_text.push_str(&input[span..cursor]);
+            let out = &mut result.reasoning_text;
+            release(
+                out,
+                runs,
+                spans,
+                SourceChannel::Reasoning,
+                &input,
+                span..cursor,
+            );
         } else {
-            result.normal_text.push_str(&input[span..cursor]);
+            let out = &mut result.normal_text;
+            release(
+                out,
+                runs,
+                spans,
+                SourceChannel::Normal,
+                &input,
+                span..cursor,
+            );
         }
         self._buffer.push_str(&input[cursor..]);
+        self.buffer_spans.drain_front(cursor);
         result
     }
 
@@ -262,6 +352,9 @@ impl ReasoningParser for BasicReasoningParser {
             let mut parser = self.clone();
             parser._buffer.clear();
             parser.in_tool_parameter = false;
+            // Batch parsing records nothing.
+            parser.buffer_spans = Spans::OFF;
+            parser.runs = None;
             return parser.scan_tool_parameters(text, true);
         }
         let has_think_tag = text.contains(&self.think_start_token);
@@ -429,7 +522,7 @@ impl ReasoningParser for BasicReasoningParser {
         if self.tool_parameter_tokens.is_some() {
             return self.scan_tool_parameters(text, false);
         }
-        self._buffer.push_str(text);
+        self.feed(text);
 
         let mut accumulated_normal = String::new();
         let mut accumulated_reasoning = String::new();
@@ -447,7 +540,7 @@ impl ReasoningParser for BasicReasoningParser {
             if !self.stripped_think_start
                 && current_text.starts_with(self.think_start_token.as_str())
             {
-                self._buffer = current_text[self.think_start_token.len()..].to_string();
+                self.keep_from(&current_text, self.think_start_token.len());
                 self.stripped_think_start = true;
                 self._in_reasoning = true;
                 self.recover_tool_start_without_opener = false;
@@ -473,6 +566,7 @@ impl ReasoningParser for BasicReasoningParser {
                     &current_text[..start_pos],
                     &current_text[after_start..]
                 );
+                self.buffer_spans.remove(start_pos..after_start);
                 self.stripped_think_start = true;
                 self.recover_tool_start_without_opener = false;
                 continue;
@@ -510,20 +604,36 @@ impl ReasoningParser for BasicReasoningParser {
                 };
 
                 if let Some(tool_at) = force_exit_idx {
-                    accumulated_reasoning.push_str(&current_text[..tool_at]);
+                    let all = current_text.len();
+                    self.release(
+                        &mut accumulated_reasoning,
+                        SourceChannel::Reasoning,
+                        &current_text,
+                        0..tool_at,
+                    );
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
                     self.recover_tool_start_without_opener = false;
-                    accumulated_normal.push_str(&current_text[tool_at..]);
-                    self._buffer.clear();
+                    self.release(
+                        &mut accumulated_normal,
+                        SourceChannel::Normal,
+                        &current_text,
+                        tool_at..all,
+                    );
+                    self.clear_buffer();
                     break;
                 }
 
                 if let Some(end_idx) = end_idx {
                     // End of reasoning block: accumulate content and transition out.
-                    accumulated_reasoning.push_str(&current_text[..end_idx]);
+                    self.release(
+                        &mut accumulated_reasoning,
+                        SourceChannel::Reasoning,
+                        &current_text,
+                        0..end_idx,
+                    );
                     let after_end = end_idx + self.think_end_token.len();
-                    self._buffer = current_text[after_end..].to_string();
+                    self.keep_from(&current_text, after_end);
                     self._in_reasoning = false;
                     self.stripped_think_start = false; // Allow detecting next <think> block
                     self.recover_tool_start_without_opener = false;
@@ -547,12 +657,24 @@ impl ReasoningParser for BasicReasoningParser {
                         {
                             let safe_end = current_text.len() - ol;
                             if safe_end > 0 {
-                                accumulated_reasoning.push_str(&current_text[..safe_end]);
+                                let out = &mut accumulated_reasoning;
+                                self.release(
+                                    out,
+                                    SourceChannel::Reasoning,
+                                    &current_text,
+                                    0..safe_end,
+                                );
                             }
-                            self._buffer = current_text[safe_end..].to_string();
+                            self.keep_from(&current_text, safe_end);
                         } else {
-                            accumulated_reasoning.push_str(&current_text);
-                            self._buffer.clear();
+                            let all = current_text.len();
+                            self.release(
+                                &mut accumulated_reasoning,
+                                SourceChannel::Reasoning,
+                                &current_text,
+                                0..all,
+                            );
+                            self.clear_buffer();
                         }
                     }
                     // When stream_reasoning=false, buffer retains all content until
@@ -584,9 +706,14 @@ impl ReasoningParser for BasicReasoningParser {
                     };
                     if start_before_boundary {
                         // <think> arrives first → enter reasoning.
-                        accumulated_normal.push_str(&current_text[..start_pos]);
+                        self.release(
+                            &mut accumulated_normal,
+                            SourceChannel::Normal,
+                            &current_text,
+                            0..start_pos,
+                        );
                         let after_start = start_pos + self.think_start_token.len();
-                        self._buffer = current_text[after_start..].to_string();
+                        self.keep_from(&current_text, after_start);
                         self._in_reasoning = true;
                         self.stripped_think_start = true;
                         self.recover_tool_start_without_opener = false;
@@ -597,9 +724,20 @@ impl ReasoningParser for BasicReasoningParser {
                 let tool_before_end = tool_pos
                     .filter(|tool_pos| end_pos.map(|end_pos| *tool_pos < end_pos).unwrap_or(true));
                 if let Some(tool_pos) = tool_before_end {
-                    accumulated_reasoning.push_str(&current_text[..tool_pos]);
-                    accumulated_normal.push_str(&current_text[tool_pos..]);
-                    self._buffer.clear();
+                    let all = current_text.len();
+                    self.release(
+                        &mut accumulated_reasoning,
+                        SourceChannel::Reasoning,
+                        &current_text,
+                        0..tool_pos,
+                    );
+                    self.release(
+                        &mut accumulated_normal,
+                        SourceChannel::Normal,
+                        &current_text,
+                        tool_pos..all,
+                    );
+                    self.clear_buffer();
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
                     self.recover_tool_start_without_opener = false;
@@ -613,12 +751,22 @@ impl ReasoningParser for BasicReasoningParser {
                     // marker and keep the surrounding text as normal so a stray
                     // `</think>` between two spans does not leak.
                     if self.recover_dangling_end {
-                        accumulated_reasoning.push_str(&current_text[..end_pos]);
+                        self.release(
+                            &mut accumulated_reasoning,
+                            SourceChannel::Reasoning,
+                            &current_text,
+                            0..end_pos,
+                        );
                     } else {
-                        accumulated_normal.push_str(&current_text[..end_pos]);
+                        self.release(
+                            &mut accumulated_normal,
+                            SourceChannel::Normal,
+                            &current_text,
+                            0..end_pos,
+                        );
                     }
                     let after_end = end_pos + self.think_end_token.len();
-                    self._buffer = current_text[after_end..].to_string();
+                    self.keep_from(&current_text, after_end);
                     self._in_reasoning = false;
                     self.stripped_think_start = false;
                     self.recover_tool_start_without_opener = false;
@@ -659,12 +807,23 @@ impl ReasoningParser for BasicReasoningParser {
 
                     let safe_end = current_text.len() - ol;
                     if safe_end > 0 {
-                        accumulated_normal.push_str(&current_text[..safe_end]);
+                        self.release(
+                            &mut accumulated_normal,
+                            SourceChannel::Normal,
+                            &current_text,
+                            0..safe_end,
+                        );
                     }
-                    self._buffer = current_text[safe_end..].to_string();
+                    self.keep_from(&current_text, safe_end);
                 } else {
-                    accumulated_normal.push_str(&current_text);
-                    self._buffer.clear();
+                    let all = current_text.len();
+                    self.release(
+                        &mut accumulated_normal,
+                        SourceChannel::Normal,
+                        &current_text,
+                        0..all,
+                    );
+                    self.clear_buffer();
                 }
                 break;
             }
@@ -685,16 +844,44 @@ impl ReasoningParser for BasicReasoningParser {
         }
 
         let buffered = std::mem::take(&mut self._buffer);
+        let mut result = ParserResult::default();
+        let all = buffered.len();
         if self._in_reasoning {
-            ParserResult {
-                normal_text: String::new(),
-                reasoning_text: buffered,
-            }
+            self.release(
+                &mut result.reasoning_text,
+                SourceChannel::Reasoning,
+                &buffered,
+                0..all,
+            );
         } else {
-            ParserResult {
-                normal_text: buffered,
-                reasoning_text: String::new(),
-            }
+            self.release(
+                &mut result.normal_text,
+                SourceChannel::Normal,
+                &buffered,
+                0..all,
+            );
+        }
+        self.buffer_spans.clear();
+        result
+    }
+
+    fn record_sources(&mut self) -> bool {
+        if self.runs.is_some() {
+            return true;
+        }
+        // Bytes held from before recording have no sources, and would surface
+        // later without any.
+        if !self._buffer.is_empty() {
+            return false;
+        }
+        self.runs = Some(Vec::new());
+        self.buffer_spans = Spans::recording(true);
+        true
+    }
+
+    fn take_sources(&mut self, out: &mut Vec<SourceRun>) {
+        if let Some(runs) = self.runs.as_mut() {
+            out.append(runs);
         }
     }
 }
