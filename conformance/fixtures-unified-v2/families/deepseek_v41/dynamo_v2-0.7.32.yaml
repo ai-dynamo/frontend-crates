@@ -401,7 +401,6 @@ changes:
         - expected: []
         - expected: []
   deepseek_v41_json_invocation_body:
-    case_key: UNIFIED.deepseek-json_invocation_body
     observation:
       value:
         assembled:
@@ -445,7 +444,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_encoded_targets:
-    case_key: UNIFIED.7-glm_ref_encoded_targets
     observation:
       value:
         assembled:
@@ -475,7 +473,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_json_looking_strings:
-    case_key: UNIFIED.7-glm_ref_json_looking_strings
     observation:
       value:
         assembled:
@@ -509,7 +506,6 @@ changes:
         - expected: []
         - expected: []
   glm_ref_scalar_types:
-    case_key: UNIFIED.7-glm_ref_scalar_types
     observation:
       value:
         assembled:

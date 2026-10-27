@@ -200,7 +200,6 @@ changes:
             complete: true
         - expected: []
   guided_json_quoted_bare_header_in_answer:
-    case_key: UNIFIED.35-guided_json_quoted_bare_header_in_answer
     observation:
       value:
         assembled:
@@ -268,7 +267,6 @@ changes:
             complete: true
         - expected: []
   guided_response_quoted_control_braces_named:
-    case_key: UNIFIED.35-guided_response_quoted_control_braces_named
     observation:
       value:
         assembled:
@@ -292,7 +290,6 @@ changes:
             arguments: '{"city": "Paris"}'
             complete: true
   guided_response_quoted_control_braces_required:
-    case_key: UNIFIED.35-guided_response_quoted_control_braces_required
     observation:
       value:
         assembled:

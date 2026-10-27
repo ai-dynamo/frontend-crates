@@ -9,9 +9,6 @@ document:
 changes:
   arg_null_mixed_labels:
     case_key: UNIFIED.7-4.mixed_labels
-    stimulus:
-      ref: current
-      semantic_sha256: 4872b7b85e01d931049fa9c3b0ab9508cf173de856c9b8674c498dbe204df32c
     observation:
       unavailable:
         code: legacy_unclassified

@@ -612,6 +612,7 @@ def merge_shards(
     fixtures_dir=None,
     history_dir=None,
     manifest_path=None,
+    reject_unbuilt_drift=False,
 ):
     """Final manifest shard set: built shards, plus prior-manifest entries whose
     store file was kept (partial capture trees update only their own shards).
@@ -637,17 +638,34 @@ def merge_shards(
             if s.get("format") == "unified-history":
                 if s["path"] not in built_paths:
                     digest, size = unified_history.store_digest(history_dir)
+                    if reject_unbuilt_drift and (
+                        digest != s["sha256"] or size != s["size"]
+                    ):
+                        raise ValueError(
+                            f"unselected fixture shard differs from manifest: {s['path']}"
+                        )
                     merged.append({**s, "sha256": digest, "size": size})
                 continue
-            if s["path"] not in built_paths and fp.exists():
+            if s["path"] not in built_paths:
+                if reject_unbuilt_drift and not fp.is_file():
+                    raise FileNotFoundError(
+                        f"unselected fixture shard is missing: {s['path']}"
+                    )
+                if not fp.exists():
+                    continue
+                digest, size = sha256_file(fp), fp.stat().st_size
+                if reject_unbuilt_drift and (
+                    digest != s["sha256"] or size != s["size"]
+                ):
+                    raise ValueError(
+                        f"unselected fixture shard differs from manifest: {s['path']}"
+                    )
                 # RECOMPUTE the sha/size from the on-disk file — never trust the prior
                 # manifest's value. A kept shard's store file can change between runs
                 # (git restore, a re-pin, a manual swap); copying the old sha would
                 # publish a manifest that lies about the content and makes
                 # extract_fixtures' sha-verify fail or serve stale data.
-                merged.append(
-                    {"path": s["path"], "sha256": sha256_file(fp), "size": fp.stat().st_size}
-                )
+                merged.append({"path": s["path"], "sha256": digest, "size": size})
     merged.sort(key=lambda s: s["path"])
     return merged
 
@@ -763,6 +781,7 @@ def package_snapshot(
                     fixtures_dir=candidate_fixtures,
                     history_dir=candidate_history,
                     manifest_path=manifest_path,
+                    reject_unbuilt_drift=stream_only or unified_only,
                 ),
                 "inactive_shards": inactive_shards,
             }

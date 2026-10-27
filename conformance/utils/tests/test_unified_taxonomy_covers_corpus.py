@@ -2119,7 +2119,7 @@ def test_gpt_oss_numeric_input_oracle_preserves_exact_decimal_values():
     assert calls[0]["arguments"]["value"] == Decimal("9007199254740993.0")
 
 @pytest.mark.parametrize("scenario", ["reason_only", "reason_markup_in_arg"])
-def test_cross_family_contract_rejects_nemotron_only_reasoning(scenario, monkeypatch):
+def test_cross_family_contract_rejects_nemotron_only_generic_reasoning(scenario, monkeypatch):
     corpus = {family: build_cases(family) for family in NATIVE_FAMILIES}
     for family, cases in corpus.items():
         if family != "nemotron_v3":
@@ -2129,7 +2129,7 @@ def test_cross_family_contract_rejects_nemotron_only_reasoning(scenario, monkeyp
         G, "scenario_families",
         lambda name: frozenset({"nemotron_v3"}) if name == scenario else scenario_families(name),
     )
-    with pytest.raises(AssertionError, match="shared reasoning coverage"):
+    with pytest.raises(AssertionError, match="single-family generic cases"):
         _assert_cross_family_contract(corpus)
 
 @pytest.mark.parametrize("family", NATIVE_FAMILIES)

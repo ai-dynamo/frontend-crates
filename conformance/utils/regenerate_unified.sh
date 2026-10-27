@@ -25,7 +25,7 @@ if ! run python3 conformance/utils/src/explode_unified_fixtures.py; then
   render_report || true
   exit 1
 fi
-if ! run python3 conformance/utils/src/package_fixtures.py --require-unified-capture-dir "$current_capture"; then
+if ! run python3 conformance/utils/src/package_fixtures.py --unified-only --require-unified-capture-dir "$current_capture"; then
   render_report || true
   exit 1
 fi

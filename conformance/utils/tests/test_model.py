@@ -1748,6 +1748,22 @@ def test_case_description_readers_accept_numbered_suffixes(tmp_path, monkeypatch
 
 def test_unified_null_column_popups_show_type_descriptions_above_chart(model_v2):
     tab = _tab(model_v2, "tab-unified")
+    subs = {"arg_json_null", "arg_string_null"}
+    columns = [column for column in tab["columns"] if column["sub"] in subs]
+    row = next(
+        row for row in tab["rows"]
+        if row.get("family") in table.gen_unified_golden.FAMILIES
+        and all(sub in row.get("cells", {}) for sub in subs)
+    )
+    tab = {
+        "case_prefix": tab.get("case_prefix", ""),
+        "columns": columns,
+        "rows": [{
+            "family": row["family"],
+            "model_label": row.get("model_label"),
+            "cells": {sub: row["cells"][sub] for sub in subs},
+        }],
+    }
     script = r"""
 const fs = require('fs');
 const vm = require('vm');
@@ -2156,12 +2172,11 @@ def test_null_groups_keep_every_schema_variant_and_mixed_probe(model_v2: dict) -
         if row.get("family") not in families:
             continue
         mixed = True
-        refs = tab_id == "tab-unified" and row["family"] in {"glm47", "qwen3", "nemotron_v3"}
         groups = []
-        for scenario, count in (("arg_json_null", 5), ("arg_string_null", 7)):
+        for scenario, count in (("arg_json_null", 6), ("arg_string_null", 8)):
             sub = next(col["sub"] for col in tab["columns"] if col["sub"] == scenario)
             cell = row["cells"][sub]
-            assert len(cell["variants"]) == count + int(mixed) + int(refs)
+            assert len(cell["variants"]) == count + int(mixed)
             assert all("golden" in leaf["cmp"] for leaf in cell["variants"])
             groups.append({leaf["sub"] for leaf in cell["variants"]})
             if tab_id.endswith("streamv1"):

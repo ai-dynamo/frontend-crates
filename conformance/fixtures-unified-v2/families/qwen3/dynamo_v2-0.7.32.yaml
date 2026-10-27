@@ -9,62 +9,8 @@ document:
 changes:
   arg_json_null_ref:
     case_key: UNIFIED.7-arg_json_null_ref
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: null
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city":null}'
-            complete: true
-        - expected: []
-        - expected: []
   arg_null_mixed_labels:
     case_key: UNIFIED.7-arg_null_mixed_labels
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: set_labels
-          arguments:
-            label: null
-            note: null
-            literal: 'null'
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: set_labels
-            arguments: '{"label":null,"note":null,"literal":"null"}'
-            complete: true
-        - expected: []
-        - expected: []
-        - expected: []
   arg_numeric_14_fraction_underflow:
     case_key: UNIFIED.7-arg_numeric_14_fraction_underflow
     observation:
@@ -130,4 +76,22 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        git_commit: bd3471b067fdb5af3959b58217fe2c1ab84f8109
+        source_sha256: 572686dfa7be98529a2fc07cb62fc66d557bfb81a2391fa0003e5172eb655ab7
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.32
+      capture_origin:
+        crate_version: 0.7.32
+        git_commit: bd3471b067fdb5af3959b58217fe2c1ab84f8109
+        source_sha256: 572686dfa7be98529a2fc07cb62fc66d557bfb81a2391fa0003e5172eb655ab7
+      inherited_from: null

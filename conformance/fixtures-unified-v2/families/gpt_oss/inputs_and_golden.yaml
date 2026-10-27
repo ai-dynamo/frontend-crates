@@ -8389,7 +8389,7 @@ cases:
   gpt_oss_control_marker_inside_argument_string:
     lifecycle: active
     scenario: gpt_oss_control_marker_inside_argument_string
-    description: Every Harmony control marker spelling inside a JSON string is payload and must not end, split, or resynchronize the tool call.
+    description: Native control marker spellings inside a JSON string are payload and must not end, split, or resynchronize the tool call.
     policy:
     - I5
     - I7
@@ -8500,7 +8500,7 @@ cases:
   gpt_oss_truncated_tool_resynchronizes_at_next_message:
     lifecycle: active
     scenario: gpt_oss_truncated_tool_resynchronizes_at_next_message
-    description: A truncated tool message is discarded at the next message boundary and later assistant content is retained.
+    description: A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.
     policy:
     - I3
     - I4
@@ -8850,7 +8850,7 @@ cases:
   gpt_oss_interrupted_reasoning_then_response:
     lifecycle: active
     scenario: gpt_oss_interrupted_reasoning_then_response
-    description: A final Harmony message interrupts analysis without a message-end token. The preceding reasoning remains withheld, and the explicit final header routes the answer to visible text.
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
     policy:
     - I1
     - I3
@@ -9008,7 +9008,7 @@ cases:
   gpt_oss_invalid_tool_body_then_empty_call:
     lifecycle: active
     scenario: gpt_oss_invalid_tool_body_then_empty_call
-    description: A completed Harmony tool message contains invalid JSON. Its handoff closes the malformed body; drop that call and preserve the following call's name and empty arguments.
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including empty arguments.
     policy:
     - P2
     - I7
@@ -9050,7 +9050,7 @@ cases:
   gpt_oss_invalid_tool_body_then_valid_call:
     lifecycle: active
     scenario: gpt_oss_invalid_tool_body_then_valid_call
-    description: A completed Harmony tool message contains invalid JSON. Its handoff closes the malformed body; drop that call and preserve the following call's name and arguments.
+    description: A completed native JSON tool message contains invalid JSON. Preserve the following call and the family's malformed-body fallback, including arguments.
     policy:
     - P2
     - I7
@@ -10618,7 +10618,7 @@ cases:
   arg_json_null_ref:
     lifecycle: active
     scenario: arg_json_null_ref
-    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; the referenced definition permits JSON null.'
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
     policy:
     - I7
     display_id: UNIFIED.7-arg_json_null_ref
