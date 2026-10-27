@@ -891,6 +891,35 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    /// With recording off, no path builds ranges: the stock frontend pays one
+    /// add per chunk and one `None` check per edit, and allocates nothing.
+    #[test]
+    fn recording_off_builds_no_ranges() {
+        let parsers = [
+            BasicReasoningParser::new("<think>".into(), "</think>".into(), false, true),
+            BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true),
+            BasicReasoningParser::new("<think>".into(), "</think>".into(), true, true)
+                .with_tool_start_token("<tool_call>")
+                .with_tool_parameter_tokens("<parameter=", "</parameter>"),
+        ];
+        for mut parser in parsers {
+            for chunk in [
+                "a\n<think>b</th",
+                "ink>c<th",
+                "ink>d<tool_call><parameter=x>",
+                "y</parameter>",
+            ] {
+                parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                assert!(!parser.buffer_spans.is_recording());
+                assert!(parser.runs.is_none());
+            }
+            parser.finish_reasoning_stream();
+            let mut out = Vec::new();
+            parser.take_sources(&mut out);
+            assert!(out.is_empty() && parser.runs.is_none());
+        }
+    }
+
     #[test]
     fn xml_parameter_scan_many_calls_and_bounded_stream_buffer() {
         let make = || {

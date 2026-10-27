@@ -108,6 +108,7 @@ impl Spans {
         self.0.as_deref().unwrap_or(&[])
     }
 
+    #[cfg(test)]
     pub(crate) fn into_ranges(self) -> Vec<Range<usize>> {
         self.0.unwrap_or_default()
     }
@@ -215,6 +216,20 @@ impl Spans {
         }
     }
 
+    /// Maps `local`, ranges over the string these spans describe, to input
+    /// ranges.
+    pub(crate) fn map(&self, local: &Spans) -> Spans {
+        if self.0.is_none() {
+            return Spans::OFF;
+        }
+        debug_assert!(local.is_recording(), "mapping text that recorded no ranges");
+        let mut out = Spans::recording(true);
+        for range in local.ranges() {
+            out.append(&self.slice(range.clone()));
+        }
+        out
+    }
+
     /// Takes the ranges out, leaving an empty list that still records.
     pub(crate) fn take(&mut self) -> Spans {
         match self.0.as_mut() {
@@ -288,6 +303,17 @@ impl SourcedText {
         }
     }
 
+    /// Cuts every occurrence of `pattern` out, as `str::replace(pattern, "")`.
+    pub(crate) fn remove_all(&mut self, pattern: &str) {
+        if self.spans.is_recording() {
+            let cuts: Vec<usize> = self.text.match_indices(pattern).map(|(at, _)| at).collect();
+            for at in cuts.into_iter().rev() {
+                self.spans.remove(at..at + pattern.len());
+            }
+        }
+        self.text = self.text.replace(pattern, "");
+    }
+
     /// Keeps bytes `at` of the text.
     fn keep(mut self, at: Range<usize>) -> Self {
         if at.start == 0 && at.end == self.text.len() {
@@ -304,12 +330,6 @@ impl SourcedText {
         self.keep(start..end)
     }
 
-    pub(crate) fn trim_start(self) -> Self {
-        let start = self.text.len() - self.text.trim_start().len();
-        let end = self.text.len();
-        self.keep(start..end)
-    }
-
     /// Keeps the first `at` bytes, then trims their end.
     pub(crate) fn truncate_trim_end(self, at: usize) -> Self {
         let end = self.text[..at].trim_end().len();
@@ -318,6 +338,8 @@ impl SourcedText {
 }
 
 #[cfg(test)]
+// A list with one range is the expected value in many cases here.
+#[allow(clippy::single_range_in_vec_init)]
 mod tests {
     use super::*;
 
@@ -402,11 +424,6 @@ mod tests {
         let trimmed = joined.trim();
         assert_eq!(trimmed.text, "a b    c");
         assert_eq!(trimmed.spans.ranges(), &[2..7, 8..11]);
-        let start = SourcedText::slice(base, &base[..7], true).trim_start();
-        assert_eq!(
-            (start.text.as_str(), start.spans.ranges()),
-            ("a b  ", &[2..7][..])
-        );
         let cut = SourcedText::slice(base, base, true).truncate_trim_end(7);
         assert_eq!(
             (cut.text.as_str(), cut.spans.ranges()),
@@ -415,6 +432,20 @@ mod tests {
         let blank = SourcedText::slice(base, &base[..2], true).trim();
         assert_eq!((blank.text.as_str(), blank.spans.len()), ("", 0));
         assert!(!SourcedText::join(base, &[base], false).spans.is_recording());
+    }
+
+    #[test]
+    fn remove_all_cuts_each_occurrence() {
+        let base = "a</t>b</t></t>c";
+        let mut text = SourcedText::slice(base, base, true);
+        text.remove_all("</t>");
+        assert_eq!(text.text, "abc");
+        assert_eq!(text.spans.ranges(), &[0..1, 5..6, 14..15]);
+        let parent = spans(&[100..104, 200..211]);
+        assert_eq!(
+            parent.map(&text.spans).ranges(),
+            &[100..101, 201..202, 210..211]
+        );
     }
 
     #[test]

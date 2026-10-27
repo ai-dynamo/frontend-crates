@@ -12,6 +12,9 @@
 //! * Verbatim and tiling: the input bytes of the ranges, in order, equal the
 //!   normal text.
 
+// A list with one range is the expected value in many cases here.
+#![allow(clippy::single_range_in_vec_init)]
+
 use std::ops::Range;
 
 use serde::Deserialize;
