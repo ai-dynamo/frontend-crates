@@ -456,3 +456,30 @@ fn fastokens_checks_plain_added_tokens_loaded_only_from_the_config() {
     assert_eq!(uncached, [4], "fastokens loads the config's plain token");
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
+
+#[test]
+#[ignore = "F7: neither view combines a promoted token with its encoder strip flags"]
+fn fastokens_checks_strip_flags_of_a_plain_token_the_config_makes_special() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([flagged(3, "<sep>", false, "rstrip")]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1, " ": 2}),
+    );
+    let config = json!({"added_tokens_decoder": {"3": added(3, "<sep>", true)}});
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write tokenizer");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string())
+        .expect("write config");
+    let path = path.to_str().expect("UTF-8");
+    let hf = HuggingFaceTokenizer::from_file(path).expect("load HF");
+    assert_eq!(ids(&hf, "a<sep> b"), [0, 3, 2, 1]);
+    assert!(hf.prefix_cache_hazard().is_none());
+    let fast: Arc<dyn Tokenizer> =
+        Arc::new(crate::FastTokenizer::from_file(path).expect("load fastokens"));
+    assert!(fast.special_token_ids().expect("special ids").contains(&3));
+    let (uncached, cached, _) = three_ways(fast, vec!["<sep>".to_owned()], "a<sep> b");
+    assert_eq!(uncached, [0, 3, 1], "fastokens keeps the plain token's rstrip");
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
