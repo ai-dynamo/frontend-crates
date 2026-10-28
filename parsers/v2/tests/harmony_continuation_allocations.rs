@@ -10,11 +10,13 @@ struct CountingAllocator;
 thread_local! {
     static COUNTING: Cell<bool> = const { Cell::new(false) };
     static ALLOCATED: Cell<usize> = const { Cell::new(0) };
+    static LIVE: Cell<isize> = const { Cell::new(0) };
 }
 
 fn record(size: usize) {
     if COUNTING.try_with(Cell::get).unwrap_or(false) {
         let _ = ALLOCATED.try_with(|total| total.set(total.get() + size));
+        let _ = LIVE.try_with(|total| total.set(total.get() + size as isize));
     }
 }
 
@@ -24,6 +26,9 @@ unsafe impl GlobalAlloc for CountingAllocator {
         unsafe { System.alloc(layout) }
     }
     unsafe fn dealloc(&self, pointer: *mut u8, layout: Layout) {
+        if COUNTING.try_with(Cell::get).unwrap_or(false) {
+            let _ = LIVE.try_with(|total| total.set(total.get() - layout.size() as isize));
+        }
         unsafe { System.dealloc(pointer, layout) }
     }
     unsafe fn alloc_zeroed(&self, layout: Layout) -> *mut u8 {
@@ -32,6 +37,9 @@ unsafe impl GlobalAlloc for CountingAllocator {
     }
     unsafe fn realloc(&self, pointer: *mut u8, layout: Layout, size: usize) -> *mut u8 {
         record(size);
+        if COUNTING.try_with(Cell::get).unwrap_or(false) {
+            let _ = LIVE.try_with(|total| total.set(total.get() - layout.size() as isize));
+        }
         unsafe { System.realloc(pointer, layout, size) }
     }
 }
@@ -41,6 +49,7 @@ static ALLOCATOR: CountingAllocator = CountingAllocator;
 
 fn measured<T>(operation: impl FnOnce() -> T) -> (T, usize) {
     ALLOCATED.with(|total| total.set(0));
+    LIVE.with(|total| total.set(0));
     COUNTING.with(|active| active.set(true));
     let result = operation();
     COUNTING.with(|active| active.set(false));
@@ -124,5 +133,63 @@ fn unresolved_quoted_control_is_shared_until_disambiguation() {
         );
         // Disambiguation must emit the unresolved literal body. Its output
         // allocation is expected to scale with the bytes that were not emitted.
+    }
+}
+
+fn retained_choices(tokens: &[u32], choices: usize, cohorts: usize) -> isize {
+    let append = encode_harmony("z").unwrap();
+    let mut seeds = Vec::new();
+    for _ in 0..cohorts {
+        let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+        parser.initialize(&[]).unwrap();
+        let mut discarded = UnifiedParserOutput::default();
+        for chunk in tokens.chunks(256) {
+            parser.parse_token_ids_into(chunk, &mut discarded).unwrap();
+            discarded.events.clear();
+        }
+        seeds.push(parser.continuation().unwrap().unwrap());
+    }
+    let ((retained, after_drop), allocated) = measured(|| {
+        let mut forks = Vec::new();
+        for seed in &seeds {
+            for _ in 0..choices {
+                let mut fork = seed.fork().unwrap();
+                fork.parse_token_ids_into(&append, &mut UnifiedParserOutput::default())
+                    .unwrap();
+                forks.push(fork);
+            }
+        }
+        let retained = LIVE.with(Cell::get);
+        drop(forks);
+        (retained, LIVE.with(Cell::get))
+    });
+    assert_eq!(after_drop, 0, "choice-owned memory must be reclaimed");
+    eprintln!(
+        "tokens={} choices={choices} cohorts={cohorts} allocated={allocated} retained={retained} after_drop={after_drop}",
+        tokens.len()
+    );
+    retained
+}
+
+#[test]
+fn retained_choice_cost_is_flat_for_original_prefix_and_128k_tokens() {
+    let header = "<|start|>assistant to=functions.lookup<|channel|>commentary<|message|>{\"q\":\"";
+    let body = "hello world ".repeat(65_536);
+    let original = format!("{header}{}", &body[..65_608 - header.len()]);
+    assert_eq!(original.len(), 65_608);
+    let original = encode_harmony(&original).unwrap();
+    let mut full = encode_harmony(&format!("{header}{body}")).unwrap();
+    assert!(full.len() >= 131_072);
+    full.truncate(131_072);
+    retained_choices(&original, 1, 1);
+    for cohorts in [1, 8] {
+        for choices in [1, 4] {
+            let small = retained_choices(&original, choices, cohorts);
+            let large = retained_choices(&full, choices, cohorts);
+            assert!(
+                large <= small + 4096 * (choices * cohorts) as isize,
+                "consumed-prefix memory was copied per choice: {small} -> {large}"
+            );
+        }
     }
 }

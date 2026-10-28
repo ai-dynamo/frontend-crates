@@ -558,6 +558,13 @@ impl HarmonyRuntime {
         if self.in_body {
             let delta = self.parser.last_content_delta()?;
             let completion = self.parser.last_completion_delta().map(str::to_owned);
+            if let Some(text) = &completion {
+                tracing::warn!(
+                    why = "harmony_boundary_text_recovery",
+                    recovered_bytes = text.len(),
+                    "recovered pending Harmony text at a message boundary"
+                );
+            }
             for delta in delta.into_iter().chain(completion) {
                 match self.route.as_ref().unwrap_or(&Route::Suppress) {
                     Route::Reasoning => output.push_reasoning(delta),
@@ -1468,6 +1475,116 @@ mod tests {
     use crate::unified::{UnifiedEvent, UnifiedParserEvent, UnifiedParserExt};
 
     #[test]
+    fn continuation_boundary_preserves_partial_utf8_text_and_reasoning() {
+        let encoding = harmony_encoding().unwrap();
+        let tokens = encode_harmony("𐍈🙂").unwrap();
+        for starting_state in [
+            UnifiedParserStartingState::Reasoning,
+            UnifiedParserStartingState::Response,
+        ] {
+            for split in 0..=tokens.len() {
+                for marker in [MESSAGE_END, TURN_END] {
+                    let mut parser = gpt_oss_unified(&[]);
+                    parser
+                        .initialize_request(UnifiedParserInit {
+                            starting_state,
+                            ..Default::default()
+                        })
+                        .unwrap();
+                    let before = parser.push_tokens(&tokens[..split]).unwrap();
+                    let seed = parser.continuation().unwrap().unwrap();
+                    for mut current in [parser, seed.fork().unwrap()] {
+                        let mut events = before.clone();
+                        events.extend(
+                            current
+                                .push_tokens(&encode_harmony(marker).unwrap())
+                                .unwrap(),
+                        );
+                        events.extend(current.finish().unwrap().events);
+                        let actual = events
+                            .into_iter()
+                            .map(|event| match event {
+                                UnifiedParserEvent::Text(text)
+                                    if starting_state == UnifiedParserStartingState::Response =>
+                                {
+                                    text
+                                }
+                                UnifiedParserEvent::Reasoning(text)
+                                    if starting_state == UnifiedParserStartingState::Reasoning =>
+                                {
+                                    text
+                                }
+                                _ => panic!("boundary recovery changed the output channel"),
+                            })
+                            .collect::<String>();
+                        let bytes = encoding.tokenizer().decode_bytes(&tokens[..split]).unwrap();
+                        assert_eq!(actual, String::from_utf8_lossy(&bytes));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn continuation_request_modes_preserve_initialization_and_fallback() {
+        for starting_state in [
+            UnifiedParserStartingState::None,
+            UnifiedParserStartingState::Reasoning,
+            UnifiedParserStartingState::Response,
+        ] {
+            for tool_output_mode in [
+                UnifiedToolOutputMode::Native,
+                UnifiedToolOutputMode::GuidedJson { named_tool: None },
+                UnifiedToolOutputMode::GuidedJson {
+                    named_tool: Some("lookup".into()),
+                },
+            ] {
+                let init = UnifiedParserInit {
+                    starting_state,
+                    tool_output_mode: tool_output_mode.clone(),
+                    ..Default::default()
+                };
+                let mut source = gpt_oss_unified(&[]);
+                let mut baseline = gpt_oss_unified(&[]);
+                source.initialize_request(init.clone()).unwrap();
+                baseline.initialize_request(init).unwrap();
+                let snapshot = source.continuation().unwrap();
+                let native = tool_output_mode == UnifiedToolOutputMode::Native;
+                assert_eq!(snapshot.is_some(), native);
+                let mut actual = snapshot.map_or(source, |seed| seed.fork().unwrap());
+                let opening = match starting_state {
+                    UnifiedParserStartingState::None => {
+                        format!("{START}assistant{CHANNEL}final{MESSAGE}")
+                    }
+                    UnifiedParserStartingState::Reasoning => {
+                        format!("thinking{MESSAGE_END}{START}assistant{CHANNEL}final{MESSAGE}")
+                    }
+                    UnifiedParserStartingState::Response => String::new(),
+                };
+                let payload = match tool_output_mode {
+                    UnifiedToolOutputMode::Native => "done",
+                    UnifiedToolOutputMode::GuidedJson { named_tool: None } => {
+                        r#"[{"name":"lookup","arguments":{"q":"漢🙂"}}]"#
+                    }
+                    UnifiedToolOutputMode::GuidedJson {
+                        named_tool: Some(_),
+                    } => r#"{"q":"漢🙂"}"#,
+                };
+                for id in encode_harmony(&format!("{opening}{payload}{TURN_END}")).unwrap() {
+                    assert_eq!(
+                        actual.push_tokens(&[id]).unwrap(),
+                        baseline.push_tokens(&[id]).unwrap()
+                    );
+                }
+                assert_eq!(
+                    actual.finish().unwrap().events,
+                    baseline.finish().unwrap().events
+                );
+            }
+        }
+    }
+
+    #[test]
     fn debug_continuation_preserves_capabilities_and_generated_event_timing() {
         let prefix = format!("{START}assistant to=functions.lookup{MESSAGE}{{\"q\":\"漢");
         let mut wrapped: Box<dyn UnifiedParser> = Box::new(super::super::DebugUnifiedParser {
@@ -1523,6 +1640,15 @@ mod tests {
                 source.initialize(&[]).unwrap();
                 let before = source.push_tokens(&ids[..split]).unwrap();
                 let continuation = source.continuation().unwrap().unwrap();
+                // Corpus records cannot encode independent forks or checkpoint EOF.
+                let mut eof_baseline = gpt_oss_unified(&[]);
+                eof_baseline.initialize(&[]).unwrap();
+                eof_baseline.push_tokens(&ids[..split]).unwrap();
+                assert_eq!(
+                    continuation.fork().unwrap().finish().unwrap().events,
+                    eof_baseline.finish().unwrap().events,
+                    "checkpoint EOF split={split}"
+                );
                 for _ in 0..2 {
                     let mut fork = continuation.fork().unwrap();
                     let mut token_baseline = gpt_oss_unified(&[]);
@@ -1554,6 +1680,33 @@ mod tests {
                     );
                     assert!(fork.continuation().is_err());
                 }
+            }
+            for split in input.char_indices().map(|(at, _)| at).chain([input.len()]) {
+                let mut source = gpt_oss_unified(&[]);
+                source.initialize(&[]).unwrap();
+                source.push(&input[..split]).unwrap();
+                let seed = source.continuation().unwrap().unwrap();
+                let mut eof_baseline = gpt_oss_unified(&[]);
+                eof_baseline.initialize(&[]).unwrap();
+                eof_baseline.push(&input[..split]).unwrap();
+                assert_eq!(
+                    seed.fork().unwrap().finish().unwrap().events,
+                    eof_baseline.finish().unwrap().events,
+                    "text checkpoint EOF split={split}"
+                );
+                let mut fork = seed.fork().unwrap();
+                for ch in input[split..].chars() {
+                    let text = ch.to_string();
+                    assert_eq!(
+                        fork.push(&text).unwrap(),
+                        source.push(&text).unwrap(),
+                        "text generated checkpoint split={split}"
+                    );
+                }
+                assert_eq!(
+                    fork.finish().unwrap().events,
+                    source.finish().unwrap().events
+                );
             }
         }
         let prefix = format!("{START}assistant to=functions.lookup{MESSAGE}{{\"q\":\"");
