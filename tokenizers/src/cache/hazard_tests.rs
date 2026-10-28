@@ -430,3 +430,29 @@ fn fastokens_uses_the_encoders_strip_flags_when_the_config_disagrees() {
     );
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
+
+#[test]
+#[ignore = "F6: config-only plain added tokens are absent from both hazard views"]
+fn fastokens_checks_plain_added_tokens_loaded_only_from_the_config() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([added(3, "<sep>", true)]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1, " ": 2}),
+    );
+    let config = json!({"added_tokens_decoder": {"4": added(4, "a<sep>b", false)}});
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write tokenizer");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string())
+        .expect("write config");
+    let path = path.to_str().expect("UTF-8");
+    let hf = HuggingFaceTokenizer::from_file(path).expect("load HF");
+    assert_eq!(ids(&hf, "a<sep>b"), [0, 3, 1]);
+    assert!(hf.prefix_cache_hazard().is_none());
+    let fast: Arc<dyn Tokenizer> =
+        Arc::new(crate::FastTokenizer::from_file(path).expect("load fastokens"));
+    let (uncached, cached, _) = three_ways(fast, specials(&json), "a<sep>b");
+    assert_eq!(uncached, [4], "fastokens loads the config's plain token");
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
