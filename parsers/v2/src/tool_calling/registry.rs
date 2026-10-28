@@ -154,6 +154,7 @@ mod tests {
             ("qwen3", "<tool_call>"),
             ("qwen3_coder", "<tool_call>"),
             ("deepseek_v4", "<｜DSML｜tool_calls>"),
+            ("deepseek_v41", "<｜DSML｜ calls>"),
             ("glm47", "<tool_call>"),
         ] {
             let builder = structural_tag_builder_for_family(family)

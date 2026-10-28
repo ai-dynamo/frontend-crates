@@ -17,10 +17,11 @@ pub(crate) use beam::BEAM;
 pub(crate) fn unified_only_builder(family: &str) -> Option<&'static StructuralTagBuilder> {
     match family {
         "beam" => Some(&BEAM),
+        "deepseek_v41" => Some(&DEEPSEEK_DSML_V41),
         _ => None,
     }
 }
-pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
+pub(crate) use deepseek_dsml::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41};
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
 pub(crate) use kimi::{KIMI_K2, KIMI_K3};
