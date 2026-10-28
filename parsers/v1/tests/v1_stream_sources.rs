@@ -600,3 +600,36 @@ async fn review_f2_missing_ranges_remain_fail_closed() {
         "source entries resume after a gap: {violations:?}"
     );
 }
+
+#[tokio::test]
+#[ignore = "F3: the jail reuses the first source entry for every duplicate choice index"]
+async fn review_f3_jail_dates_duplicate_choices_in_caller_offsets() {
+    let stage = json!({"kind": "jail", "tool_call_parser": "hermes", "options": {}});
+    let chunk = to_item(&json!({"data": {"choices": [
+        {"index": 0, "delta": {"content": "A"}},
+        {"index": 0, "delta": {"content": "B"}}
+    ]}}));
+    let input = vec![SourcedChunk {
+        chunk,
+        sources: Some(vec![
+            ChoiceSources {
+                index: 0,
+                content: vec![100..101],
+                reasoning: vec![],
+            },
+            ChoiceSources {
+                index: 0,
+                content: vec![200..201],
+                reasoning: vec![],
+            },
+        ]),
+    }];
+    let output = run_sourced(&stage, input).await;
+    let (text, offsets) = content_offsets(&output);
+    assert_eq!(text, "AB");
+    assert_eq!(
+        offsets,
+        [100, 200],
+        "each duplicate choice has its own caller ranges"
+    );
+}
