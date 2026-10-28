@@ -19,6 +19,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
@@ -755,7 +756,7 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             panel = driver.find_element("id", "tab-unified")
             assert panel.get_attribute("data-load-state") == state
             if state == "loading":
-                assert driver.find_element(By.CSS_SELECTOR, "dialog.conformance-loading").text.startswith("Loading ")
+                assert not driver.find_element(By.CSS_SELECTOR, "dialog.conformance-loading").is_displayed()
             assert driver.execute_script("return Boolean(window.__conformanceModel)")
             assert cell.is_displayed()
             assert popup.is_displayed()
@@ -923,6 +924,7 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
             };
         """, stale_failure)
         capture_select = _choose_engine(driver, 1, 'vllm')
+        capture_select.send_keys(Keys.ESCAPE)
         rust = next(option.get_attribute('value') for option in capture_select.find_elements('tag name', 'option')
                     if option.get_attribute('value').startswith('vllm_rust@'))
         driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", capture_select, rust)

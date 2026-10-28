@@ -131,6 +131,7 @@ export class SelectionLoader {
 export class LoadingOverlay {
   constructor() {
     this.tasks = new Map();
+    this.frame = null;
     this.dialog = document.createElement('dialog');
     this.dialog.className = 'conformance-loading';
     this.dialog.setAttribute('aria-label', 'Loading results');
@@ -146,12 +147,20 @@ export class LoadingOverlay {
   set(key, label) {
     this.tasks.delete(key);
     if (label) this.tasks.set(key, label);
-    if (!this.tasks.size) {
-      if (this.dialog.open) this.dialog.close();
-      return;
-    }
-    this.message.textContent = `Loading ${[...this.tasks.values()].at(-1)}...`;
-    if (!this.dialog.open) this.dialog.showModal();
+    if (this.tasks.size) this.message.textContent = `Loading ${[...this.tasks.values()].at(-1)}...`;
+    if (this.frame !== null) cancelAnimationFrame(this.frame);
+    this.refresh();
+  }
+
+  refresh() {
+    this.frame = null;
+    const otherPopup = this.tasks.size && [...document.querySelectorAll('dialog[open], select:open, .ttip-visible')]
+      .some(element => element !== this.dialog && element.getClientRects().length);
+    if (this.tasks.size && !otherPopup) {
+      if (!this.dialog.open) this.dialog.showModal();
+    } else if (this.dialog.open) this.dialog.close();
+    // Native select menus can close without a DOM event; observe them before each paint.
+    if (this.tasks.size) this.frame = requestAnimationFrame(() => this.refresh());
   }
 
   async run(key, label, operation) {

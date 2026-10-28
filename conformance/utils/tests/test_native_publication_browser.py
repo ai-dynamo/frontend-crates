@@ -407,7 +407,6 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
         driver.find_element('css selector', "[data-slot-open='1']").send_keys(Keys.ENTER)
         driver.find_element('css selector', "[data-picker-engine-choice='vllm']").click()
         _ready(driver, 'tab-unified')
-        driver.find_element('css selector', "[data-slot-capture='1']").send_keys(Keys.ESCAPE)
         assert driver.find_elements('css selector', '.ttip-pinned .ttip-head')
         assert driver.execute_script("return window.__conformanceCellModel(window.previousTooltipCell) === undefined")
         assert driver.execute_script("return window.__conformanceTooltipModel(window.previousTooltipCell) === undefined")

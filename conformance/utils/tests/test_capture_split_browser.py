@@ -239,6 +239,46 @@ def test_history_json_loading_dims_page_until_success_or_failure(historical_publ
         server.server_close()
 
 
+
+def test_loading_yields_to_parser_picker_and_native_capture_selection(published_viewer):
+    driver = _driver()
+    try:
+        driver.get((published_viewer / "index.html").as_uri())
+        _ready(driver, "tab-unified")
+        driver.execute_script("""
+            const loader = window.__conformanceLoader;
+            const build = loader.build;
+            loader.build = async (...args) => {
+                const model = await build(...args);
+                await new Promise(resolve => { window.finishPickerLoad = resolve; });
+                return model;
+            };
+        """)
+        driver.find_element("css selector", "[data-slot-open='1']").click()
+        assert not driver.find_element("css selector", "dialog.conformance-loading").is_displayed()
+        driver.find_element("css selector", "[data-picker-engine-choice='vllm']").click()
+        capture = driver.find_element("css selector", "[data-slot-capture='1']")
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return arguments[0].matches(':open')", capture))
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert not dialog.is_displayed(), "native capture choices must be the only popup"
+        capture.send_keys(Keys.ESCAPE)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        assert driver.execute_script("return document.querySelectorAll('dialog[open]').length") == 1
+
+        # A picker opened during a pending load must take ownership of the popup.
+        driver.execute_script("document.querySelector('[data-slot-open=\"1\"]').click()")
+        WebDriverWait(driver, 15).until(lambda page: not dialog.is_displayed())
+        assert driver.find_element("css selector", ".comparison-picker[open]").is_displayed()
+        driver.switch_to.active_element.send_keys(Keys.ESCAPE)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return typeof window.finishPickerLoad === 'function'"))
+        driver.execute_script("window.finishPickerLoad()")
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+    finally:
+        driver.quit()
+
+
 def test_history_discovery_preserves_completed_table_selection_and_popup(historical_published_viewer):
     gate = (threading.Event(), threading.Event())
     server, _requests = _server(root=historical_published_viewer, gate=gate,
