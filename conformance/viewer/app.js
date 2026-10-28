@@ -132,6 +132,8 @@ export class LoadingOverlay {
   constructor() {
     this.tasks = new Map();
     this.frame = null;
+    const selectPopup = globalThis.CSS?.supports?.('selector(select:open)') ? 'select:open' : 'select:focus';
+    this.popupSelector = `dialog[open], ${selectPopup}, .ttip-visible`;
     this.dialog = document.createElement('dialog');
     this.dialog.className = 'conformance-loading';
     this.dialog.setAttribute('aria-label', 'Loading results');
@@ -154,7 +156,7 @@ export class LoadingOverlay {
 
   refresh() {
     this.frame = null;
-    const otherPopup = this.tasks.size && [...document.querySelectorAll('dialog[open], select:open, .ttip-visible')]
+    const otherPopup = this.tasks.size && [...document.querySelectorAll(this.popupSelector)]
       .some(element => element !== this.dialog && element.getClientRects().length);
     if (this.tasks.size && !otherPopup) {
       if (!this.dialog.open) this.dialog.showModal();

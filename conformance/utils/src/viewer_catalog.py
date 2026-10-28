@@ -1148,37 +1148,32 @@ def refresh_catalog(root: Path = ROOT, *, destination: Path | None = None, check
         raise ValueError("catalog updates require a writer lease")
     catalog = build_catalog(root, fixtures=fixtures, unified=unified, manifest=manifest, generation=generation, unified_only=unified_only,
                             include_history=include_history, history_source=history_source)
+    destination = destination or root / "conformance/viewer-catalog.json"
+    documents = {
+        destination: json.dumps(catalog, ensure_ascii=False, indent=2) + "\n",
+        destination.parent / "viewer-unified-catalog.json": json.dumps(unified_projection(catalog), ensure_ascii=False, separators=(",", ":")) + "\n",
+    }
+    if include_history and capture_sources.is_current(root):
+        latest = build_catalog(root, generation=generation)
+        documents[destination.parent / "viewer-latest-catalog.json"] = json.dumps(latest, ensure_ascii=False, indent=2) + "\n"
     generation.validate_inventories()
-    document = json.dumps(catalog, ensure_ascii=False, indent=2) + "\n"
-    destination = destination or root / "conformance/viewer-catalog.json"
-    projection = destination.parent / "viewer-unified-catalog.json"
-    projection_document = json.dumps(unified_projection(catalog), ensure_ascii=False, separators=(",", ":")) + "\n"
-    destination = destination or root / "conformance/viewer-catalog.json"
     if check:
-        return destination.is_file() and destination.read_text() == document and projection.is_file() and projection.read_text() == projection_document
+        return all(path.is_file() and path.read_text() == document for path, document in documents.items())
     destination.parent.mkdir(parents=True, exist_ok=True)
-    projection_temporary = projection.with_suffix(".json.new")
-    try:
-        projection_temporary.write_text(projection_document)
-        os.chmod(projection_temporary, 0o644)
-        unified_history._fsync_candidate_payload(projection_temporary)
-        os.replace(projection_temporary, projection)
-    finally:
-        projection_temporary.unlink(missing_ok=True)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=destination.parent, suffix=".json", delete=False) as handle:
-            temporary = Path(handle.name)
-            handle.write(document)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.chmod(temporary, 0o644)
-        os.replace(temporary, destination)
-        unified_history._fsync_directory(destination.parent)
-    finally:
-        if temporary is not None:
-            temporary.unlink(missing_ok=True)
+    for path, document in documents.items():
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, suffix=".json", delete=False) as handle:
+                temporary = Path(handle.name)
+                handle.write(document)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.chmod(temporary, 0o644)
+            os.replace(temporary, path)
+            unified_history._fsync_directory(path.parent)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     return True
 
 

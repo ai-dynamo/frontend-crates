@@ -239,6 +239,56 @@ def test_history_json_loading_dims_page_until_success_or_failure(historical_publ
         server.server_close()
 
 
+@pytest.mark.parametrize("feature_probe", ["unsupported", "missing"])
+def test_loading_works_when_native_open_selector_is_unavailable(published_viewer, feature_probe):
+    driver = _driver()
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": """
+            window.unsupportedSelectorQueries = 0;
+            window.selectOpenProbes = 0;
+            const query = document.querySelectorAll.bind(document);
+            document.querySelectorAll = selector => {
+                if (selector.includes('select:open')) {
+                    window.unsupportedSelectorQueries++;
+                    throw new DOMException('Unsupported select:open selector', 'SyntaxError');
+                }
+                return query(selector);
+            };
+            const supports = CSS.supports.bind(CSS);
+            CSS.supports = FEATURE_PROBE === 'missing' ? undefined : (...args) => {
+                if (args[0] === 'selector(select:open)') { window.selectOpenProbes++; return false; }
+                return supports(...args);
+            };
+        """.replace("FEATURE_PROBE", json.dumps(feature_probe))})
+        driver.get((published_viewer / "index.html").as_uri())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script(
+            "return Boolean(window.__conformanceModel) || window.unsupportedSelectorQueries > 0"))
+        assert driver.execute_script("return window.unsupportedSelectorQueries") == 0
+        _ready(driver, "tab-unified")
+        assert driver.execute_script("return window.selectOpenProbes") == (1 if feature_probe == "unsupported" else 0)
+        driver.execute_script("""
+            const loader = window.__conformanceLoader;
+            const build = loader.build;
+            loader.build = async (...args) => {
+                const model = await build(...args);
+                await new Promise(resolve => { window.finishLegacyLoad = resolve; });
+                return model;
+            };
+        """)
+        capture = _choose_engine(driver, 1, 'vllm')
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert not dialog.is_displayed()
+        capture.send_keys(Keys.ESCAPE)
+        capture.send_keys(Keys.TAB)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return typeof window.finishLegacyLoad === 'function'"))
+        driver.execute_script("window.finishLegacyLoad()")
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+        assert driver.execute_script("return window.unsupportedSelectorQueries") == 0
+    finally:
+        driver.quit()
+
 
 def test_loading_yields_to_parser_picker_and_native_capture_selection(published_viewer):
     driver = _driver()
