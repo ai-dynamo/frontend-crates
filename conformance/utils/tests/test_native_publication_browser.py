@@ -19,7 +19,7 @@ import pytest
 selenium = pytest.importorskip("selenium")
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from browser_helpers import raw_view_download
+from browser_helpers import raw_view_download, settle
 
 from test_browser_viewer import ROOT, _driver, _ready, _server, _choose_engine
 from unified_archives import read_source
@@ -348,18 +348,17 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/frontend-crates/')
         assert gate[0].wait(15), 'history discovery did not start'
-        WebDriverWait(driver, 30).until(lambda page: page.execute_script("return Boolean(document.querySelector('#tab-unified[data-load-state=ready] td.cell'))"))
+        settle(driver, 'tab-unified')
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ['dynamo']
         assert not driver.find_elements('css selector', f"option[value='{previous_dynamo_capture['key']}']")
         assert not any('/viewer-data/' in path for path in requests)
         if change_selection:
-            driver.find_element('css selector', "[data-slot-open='0']").click()
-            driver.find_element('css selector', "[data-picker-engine-choice='vllm']").click()
-            driver.find_element('css selector', "[data-slot-capture='0']").send_keys(Keys.ESCAPE)
-            WebDriverWait(driver, 30).until(lambda page: page.execute_script("return Boolean(document.querySelector('#tab-unified[data-load-state=ready] td.cell'))"))
+            _choose_engine(driver, 0, 'vllm', programmatic=True)
+            settle(driver, 'tab-unified')
         expected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
         cell = driver.find_element('css selector', '#tab-unified td.cell[data-ttip-click=pin]')
-        cell.click()
+        # Establish retained popup state while history loading blocks user input.
+        driver.execute_script("arguments[0].click()", cell)
         WebDriverWait(driver, 10).until(lambda page: page.find_elements('css selector', '.ttip-pinned .ttip-head'))
         generation = driver.execute_script('return window.__conformanceLoader.generation')
         gate[1].set()
@@ -407,8 +406,8 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
         assert driver.execute_script("return Boolean(window.__conformanceCellModel(window.previousTooltipCell))")
         driver.find_element('css selector', "[data-slot-open='1']").send_keys(Keys.ENTER)
         driver.find_element('css selector', "[data-picker-engine-choice='vllm']").click()
-        driver.find_element('css selector', "[data-slot-capture='1']").send_keys(Keys.ESCAPE)
         _ready(driver, 'tab-unified')
+        driver.find_element('css selector', "[data-slot-capture='1']").send_keys(Keys.ESCAPE)
         assert driver.find_elements('css selector', '.ttip-pinned .ttip-head')
         assert driver.execute_script("return window.__conformanceCellModel(window.previousTooltipCell) === undefined")
         assert driver.execute_script("return window.__conformanceTooltipModel(window.previousTooltipCell) === undefined")
