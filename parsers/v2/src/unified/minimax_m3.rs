@@ -292,11 +292,17 @@ struct PartialArguments {
     cursor: usize,
     tag_scanned: usize,
     seen: HashSet<String>,
+    /// Parameters whose JSON text has gone out, as (parameter, value text), so a
+    /// close that no longer extends `emitted` can append only what changed.
+    members: Vec<(String, String)>,
     active: Option<PartialParameter>,
     blocked: bool,
 }
 
 struct PartialParameter {
+    name: String,
+    /// Encoded string bytes streamed so far (streamable parameters only).
+    value_json: String,
     close: String,
     cursor: usize,
     start: usize,
@@ -332,6 +338,7 @@ impl InvokeEmitter for M3Emitter {
                 cursor: end + 1,
                 tag_scanned: 0,
                 seen: HashSet::new(),
+                members: Vec::new(),
                 active: None,
                 blocked: false,
             });
@@ -372,7 +379,18 @@ impl InvokeEmitter for M3Emitter {
                     } else {
                         ','
                     });
-                    arguments.push_str(&typed[1..typed.len() - 1]);
+                    let member = &typed[1..typed.len() - 1];
+                    arguments.push_str(member);
+                    let key = serde_json::to_string(&active.name)?;
+                    // Fall back to the whole member when the converter spelled the key
+                    // differently; an unmatched member is only re-appended, never lost.
+                    let value = member
+                        .strip_prefix(key.as_str())
+                        .and_then(|rest| rest.strip_prefix(':'))
+                        .unwrap_or(member);
+                    partial
+                        .members
+                        .push((active.name.clone(), value.to_string()));
                     partial.cursor = end;
                     partial.active = None;
                     continue;
@@ -384,9 +402,13 @@ impl InvokeEmitter for M3Emitter {
                 });
                 let encoded = serde_json::to_string(&invoke[active.cursor..end])?;
                 arguments.push_str(&encoded[1..encoded.len() - 1]);
+                active.value_json.push_str(&encoded[1..encoded.len() - 1]);
                 active.cursor = end;
                 if close.is_some() {
                     arguments.push('"');
+                    partial
+                        .members
+                        .push((active.name.clone(), format!("\"{}\"", active.value_json)));
                     partial.cursor = end + active.close.len();
                     partial.active = None;
                     continue;
@@ -436,6 +458,8 @@ impl InvokeEmitter for M3Emitter {
                 arguments.push_str(":\"");
             }
             partial.active = Some(PartialParameter {
+                name: parameter.to_string(),
+                value_json: String::new(),
                 close: format!("{NS}</{parameter}>"),
                 cursor: end + 1,
                 start: tag_start - NS.len(),
@@ -482,13 +506,42 @@ impl InvokeEmitter for M3Emitter {
             .as_ref()
             .map_or("", |partial| partial.emitted.as_str());
         if !arguments.starts_with(prefix) {
-            // A repeated parameter changes the final value to an array. Bytes
-            // already sent cannot be retracted; do not complete corrupted JSON.
+            // A repeated parameter changed a value that is already out: the batch
+            // converter aggregates repeats into an array, and bytes already sent
+            // cannot be retracted. As Beam does, close what is open and append
+            // every member whose text is not already out. The concatenation is
+            // one JSON object whose last-wins reading is the batch result, so
+            // whole and streamed input assemble identically at every split.
+            let partial = partial.expect("a non-empty prefix was streamed");
+            let mut members = partial.members;
+            let mut rest = String::new();
+            if let Some(active) = partial.active.filter(|active| active.streamable) {
+                rest.push('"');
+                members.push((active.name, format!("\"{}\"", active.value_json)));
+            }
+            for (key, value) in object_members(&arguments)? {
+                if members
+                    .iter()
+                    .any(|(name, text)| *name == key && *text == value)
+                {
+                    continue;
+                }
+                rest.push(',');
+                rest.push_str(&serde_json::to_string(&key)?);
+                rest.push(':');
+                rest.push_str(&value);
+            }
+            rest.push('}');
+            tracing::warn!(
+                why = "minimax_m3_streamed_call_reconciled_after_duplicate_parameter",
+                tool_index,
+                "a repeated parameter changed a streamed MiniMax M3 argument; the member is appended again"
+            );
             return Ok(Some(ToolCallDelta {
                 tool_index,
                 name: None,
-                arguments: String::new(),
-                complete: false,
+                arguments: rest,
+                complete: true,
             }));
         }
         Ok(Some(ToolCallDelta {
@@ -504,6 +557,34 @@ impl InvokeEmitter for M3Emitter {
         self.header_scanned = 0;
         self.header_rejected = false;
     }
+}
+
+/// The members of a JSON object in source order, with each value's original text.
+fn object_members(json: &str) -> anyhow::Result<Vec<(String, String)>> {
+    struct Members;
+    impl<'de> serde::de::Visitor<'de> for Members {
+        type Value = Vec<(String, String)>;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("a JSON object")
+        }
+        fn visit_map<A: serde::de::MapAccess<'de>>(
+            self,
+            mut map: A,
+        ) -> Result<Self::Value, A::Error> {
+            let mut members = Vec::new();
+            while let Some((key, value)) =
+                map.next_entry::<String, Box<serde_json::value::RawValue>>()?
+            {
+                members.push((key, value.get().to_string()));
+            }
+            Ok(members)
+        }
+    }
+    let mut deserializer = serde_json::Deserializer::from_str(json);
+    Ok(serde::Deserializer::deserialize_map(
+        &mut deserializer,
+        Members,
+    )?)
 }
 
 /// Build the shared M3 scanner with ordered reasoning and tool events.

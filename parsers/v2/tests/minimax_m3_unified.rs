@@ -809,6 +809,64 @@ fn repeated_array_parameters_preserve_legacy_values_at_every_split() {
 }
 
 #[test]
+fn repeated_scalar_parameters_reconcile_to_the_batch_result_at_every_split() {
+    // A repeat of a scalar or string parameter aggregates into an array in batch.
+    // Once the first value has streamed it cannot be retracted, so the close appends
+    // the changed member again and every last-wins JSON reader gets the batch result.
+    let repeat =
+        "]<]minimax[>[<value>1]<]minimax[>[</value>]<]minimax[>[<value>2]<]minimax[>[</value>";
+    for (value, want) in [
+        (json!({"type":"integer"}), json!({"value":[1,2]})),
+        (json!({"type":"string"}), json!({"value":["1","2"]})),
+    ] {
+        assert_splits(
+            &call(repeat),
+            json!({"type":"object","properties":{"value":value}}),
+            UnifiedParserInit::default(),
+            &[expected(want)],
+        );
+    }
+    // A sibling streamed between the repeats is already out and is not appended again.
+    let sibling = "]<]minimax[>[<value>1]<]minimax[>[</value>]<]minimax[>[<text>hi]<]minimax[>[</text>]<]minimax[>[<value>2]<]minimax[>[</value>";
+    let schema =
+        json!({"type":"object","properties":{"value":{"type":"integer"},"text":{"type":"string"}}});
+    assert_splits(
+        &call(sibling),
+        schema.clone(),
+        UnifiedParserInit::default(),
+        &[expected(json!({"value":[1,2],"text":"hi"}))],
+    );
+    // The wire text itself. Split after the first closed value, the rest of the invoke
+    // arrives whole and is not streamed, so both remaining members are appended in
+    // converter order; split after the sibling, it is already out and only the changed
+    // member follows.
+    let input = call(sibling);
+    let first_close = input.find("]<]minimax[>[</value>").unwrap() + "]<]minimax[>[</value>".len();
+    let after_text = input.find("]<]minimax[>[</text>").unwrap() + "]<]minimax[>[</text>".len();
+    for (at, wire) in [
+        (first_close, "{\"value\":1,\"value\":[1,2],\"text\":\"hi\"}"),
+        (after_text, "{\"value\":1,\"text\":\"hi\",\"value\":[1,2]}"),
+    ] {
+        let mut p = parser(schema.clone());
+        let mut output = p.push(&input[..at]).unwrap();
+        output.extend(p.push(&input[at..]).unwrap());
+        output.extend(p.finish().unwrap().events);
+        let text: String = output
+            .iter()
+            .filter_map(|e| match e {
+                UnifiedParserEvent::ToolCall(c) => Some(c.arguments.as_str()),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(text, wire, "split={at}");
+        assert_eq!(
+            assemble(&output),
+            [expected(json!({"value":[1,2],"text":"hi"}))]
+        );
+    }
+}
+
+#[test]
 fn incomplete_namespace_like_text_does_not_delay_a_closed_string_call() {
     let schema = json!({"type":"object","properties":{"text":{"type":"string"}}});
     for value in ["]<]minimax[>[<unfinished", "]<]minimax[>[<text>literal"] {
