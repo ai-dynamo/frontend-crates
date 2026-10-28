@@ -48,6 +48,64 @@ def test_matrix_columns_keep_minimal_width(published_viewer, vertical, stacked):
         driver.quit(); server.shutdown(); server.server_close()
 
 
+@pytest.mark.parametrize("vertical", [False, True])
+def test_stacked_families_are_grouped_and_legend_matches_visible_colors(published_viewer, vertical):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1600, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified=stacked")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "sglang")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 2, "vllm")
+        _ready(driver, "tab-unified", reference=False)
+
+        def assert_groups_and_legend():
+            result = driver.execute_script("""
+              const table=document.querySelector('.comparison-matrix');
+              const familyRows=window.__conformanceModel.rows;
+              const counts=new Map();
+              for(const row of familyRows){const family=row.family||row.model_label;counts.set(family,(counts.get(family)||0)+1)}
+              const statuses=new Set([...table.querySelectorAll('.matrix-segments > i')]
+                .flatMap(node=>[...node.classList].filter(name=>name.startsWith('status-')).map(name=>name.slice(7))));
+              const legend=new Set([...document.querySelectorAll('.comparison-legend [data-status]')].map(node=>node.dataset.status));
+              const after=Boolean(document.querySelector('.comparison-matrix-scroll').compareDocumentPosition(
+                document.querySelector('.comparison-legend')) & Node.DOCUMENT_POSITION_FOLLOWING);
+              if(!document.body.classList.contains('transpose-mode')){
+                const rows=[...table.tBodies[0].querySelectorAll('tr[data-family]')],groups=[];
+                for(const row of rows){const family=row.dataset.family,last=groups.at(-1);if(last?.family===family)last.rows++;
+                  else groups.push({family,rows:1,start:row.classList.contains('matrix-family-start')})}
+                const boundaries=getComputedStyle(table.tBodies[0].querySelector('tr.matrix-family-start').firstElementChild);
+                return {statuses:[...statuses].sort(),legend:[...legend].sort(),after,
+                  grouped:groups.length===counts.size&&groups.every(group=>group.rows===3*counts.get(group.family)),
+                  separators:groups.slice(1).every(group=>group.start),separatorWidth:boundaries.borderTopWidth};
+              }
+              const heads=[...table.tHead.querySelectorAll('.matrix-family-heading')];
+              const expected=[...counts.values()].map(count=>3*count);
+              const widths=heads.map(head=>head.colSpan);
+              const ends=[...table.tHead.querySelectorAll('.matrix-capture-heading.matrix-family-end')];
+              const bodyEnds=[...table.tBodies[0].querySelectorAll('tr:not(.matrix-category-row) td.matrix-family-end')];
+              const categoryRows=[...table.tBodies[0].querySelectorAll('.matrix-category-row')];
+              return {statuses:[...statuses].sort(),legend:[...legend].sort(),after,
+                grouped:heads.length===counts.size&&widths.every((width,index)=>width===expected[index]),
+                separators:ends.length===heads.length-1&&bodyEnds.length>0&&categoryRows.length>0
+                  &&categoryRows.every(row=>row.querySelectorAll('td.matrix-family-end').length===heads.length-1),
+                separatorWidth:getComputedStyle(ends[0]).borderRightWidth};
+            """)
+            assert result["statuses"] == result["legend"], result
+            assert result["after"], result
+            assert result["grouped"], result
+            assert result["separators"], result
+            assert result["separatorWidth"] == "3px", result
+
+        assert_groups_and_legend()
+        driver.find_element("css selector", "[data-case-search]").send_keys("dotted_name_minimal")
+        assert_groups_and_legend()
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize("width", [1600, 480])
 @pytest.mark.parametrize("captures", [1, 2])
 def test_long_case_hover_fits_matrix_scroller(published_viewer, width, captures):

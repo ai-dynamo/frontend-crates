@@ -41,7 +41,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .segmented button { border: 0; padding: 6px 10px; border-radius: 6px; background: transparent; color: var(--ink-muted); cursor: pointer; }
 .segmented button[aria-pressed="true"] { color: var(--ink); background: var(--panel-bg); box-shadow: var(--card-shadow); }
 [data-case-search] { flex: 1; min-width: 160px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-alt); color: var(--ink); }
-.comparison-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; color: var(--ink-muted); font-size: 11px; margin: 8px 0; }
+.comparison-legend { display: flex; flex-wrap: wrap; gap: 7px 14px; color: var(--ink-muted); font-size: 11px; margin: 10px 0 0; }
 .matrix-category-heading button { max-width: 100%; padding: 2px 3px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; text-align: inherit; overflow-wrap: anywhere; }
 .matrix-category-heading button[aria-pressed="false"] { opacity: .45; }
 .matrix-category-heading button:hover { text-decoration: underline; }
@@ -60,6 +60,8 @@ body { background: var(--page-bg); color: var(--ink); }
 .comparison-ui.layout-vertical .comparison-matrix thead th { vertical-align: bottom; }
 .matrix-capture-heading .tcol-model-name { max-height: 140px; overflow: hidden; text-overflow: ellipsis; }
 .matrix-category-row th,.matrix-category-row td { background: var(--panel-alt); }
+.comparison-ui:not(.layout-vertical) .comparison-matrix tr.matrix-family-start > * { border-top: 3px solid var(--line-strong); }
+.comparison-ui.layout-vertical .comparison-matrix .matrix-family-end { border-right: 3px solid var(--line-strong); }
 .comparison-matrix tr > th:first-child { position: sticky; left: 0; z-index: 2; text-align: left; padding: 6px 10px; border-right: 1px solid var(--line-strong); overflow-wrap: anywhere; }
 .comparison-matrix tr > th:first-child .matrix-case-label { display: block; }
 .comparison-matrix tr > th:first-child .matrix-case-text { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
