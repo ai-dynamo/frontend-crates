@@ -432,7 +432,6 @@ fn fastokens_uses_the_encoders_strip_flags_when_the_config_disagrees() {
 }
 
 #[test]
-#[ignore = "F6: config-only plain added tokens are absent from both hazard views"]
 fn fastokens_checks_plain_added_tokens_loaded_only_from_the_config() {
     let dir = tempfile::tempdir().expect("tempdir");
     let json = tokenizer_json(
@@ -458,7 +457,6 @@ fn fastokens_checks_plain_added_tokens_loaded_only_from_the_config() {
 }
 
 #[test]
-#[ignore = "F7: neither view combines a promoted token with its encoder strip flags"]
 fn fastokens_checks_strip_flags_of_a_plain_token_the_config_makes_special() {
     let dir = tempfile::tempdir().expect("tempdir");
     let json = tokenizer_json(
@@ -480,6 +478,10 @@ fn fastokens_checks_strip_flags_of_a_plain_token_the_config_makes_special() {
         Arc::new(crate::FastTokenizer::from_file(path).expect("load fastokens"));
     assert!(fast.special_token_ids().expect("special ids").contains(&3));
     let (uncached, cached, _) = three_ways(fast, vec!["<sep>".to_owned()], "a<sep> b");
-    assert_eq!(uncached, [0, 3, 1], "fastokens keeps the plain token's rstrip");
+    assert_eq!(
+        uncached,
+        [0, 3, 1],
+        "fastokens keeps the plain token's rstrip"
+    );
     assert_eq!(cached, [uncached.clone(), uncached]);
 }

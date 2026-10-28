@@ -42,10 +42,14 @@ impl HuggingFaceTokenizer {
         Ok(Self::from_tokenizer(tokenizer))
     }
 
-    /// Why the prefix cache cannot split prompts of an encoder that loads
-    /// the same `tokenizer.json` but matches added tokens in one pass.
-    pub(crate) fn one_pass_prefix_cache_hazard(&self) -> Option<String> {
-        prefix_cache_hazard(&self.tokenizer, Matching::OnePass)
+    /// The contents of the added tokens this tokenizer calls special.
+    pub(crate) fn special_token_contents(&self) -> HashSet<String> {
+        self.tokenizer
+            .get_added_tokens_decoder()
+            .into_values()
+            .filter(|token| token.special)
+            .map(|token| token.content)
+            .collect()
     }
 
     pub fn from_tokenizer(tokenizer: HfTokenizer) -> Self {
