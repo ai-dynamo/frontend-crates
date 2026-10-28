@@ -11,6 +11,7 @@ encode/decode/sequence API designed for streaming detokenization.
 - **Streaming-friendly.** `Sequence` tracks incremental token-id appends and emits text deltas without re-decoding the full prefix.
 - **Prefix caching.** `CachedTokenizer` records prefix tokenizations at special-token boundaries; repeated prompts that share a system prefix re-encode only the trailing suffix, turning O(N) work into O(suffix_len).
 - **Hash verification.** Detect tokenizer drift across model versions.
+- **Dynamo's stop rules.** `StopTokenDecoder` applies the Dynamo frontend decoder's stop-token rules over a `DecodeStream`, and `eos_token_ids` reads a model's end-of-sequence IDs as the frontend's model card does.
 
 ## Segmented prompts
 
@@ -77,6 +78,21 @@ sequence.append_text("Your sample text here")
 // and get back just the incremental text delta:
 let delta = sequence.append_token_id(1337)
     .expect("append token_id");
+```
+
+## Stop tokens with `StopTokenDecoder`
+
+```rust
+use dynamo_tokenizers::{StopTokenDecoder, StopTokenIds, eos_token_ids};
+
+let eos = eos_token_ids(model_dir).expect("eos ids");
+let ids = StopTokenIds { hidden: eos, ..StopTokenIds::default() };
+let mut decoder = StopTokenDecoder::new(tokenizer.decode_stream(&prompt, true), ids, 0, false);
+
+// From token `min_tokens` on, a hidden stop token ends the reply and adds
+// no text; a visible one adds its text and ends it.
+let step = decoder.step(token_id).expect("step");
+if step.stop.is_some() { /* the reply ended */ }
 ```
 
 ## Prefix caching with `CachedTokenizer`

@@ -3,8 +3,10 @@
 
 pub mod basetenkenizer;
 pub mod cache;
+pub mod eos;
 pub mod fastokens;
 pub mod hf;
+pub mod stop_tokens;
 pub mod tiktoken;
 
 // TODO: Add tokenizer benchmarks
@@ -23,8 +25,10 @@ pub use cache::{
     CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats, SharedTokenizerCache,
     SharedTokenizerCacheStats,
 };
+pub use eos::eos_token_ids;
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
+pub use stop_tokens::{StopTokenDecoder, StopTokenIds, StopTokenStep, StopTokenTrigger};
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
