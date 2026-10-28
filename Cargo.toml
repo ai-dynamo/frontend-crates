@@ -65,7 +65,7 @@ minijinja = { version = "2.24.0" }
 minijinja-contrib = { version = "2.24.0" }
 moka = { version = "0.12" }
 num-traits = "0.2"
-openai-harmony = "0.0.8"
+openai-harmony = { version = "0.0.8", git = "https://github.com/keivenchang/harmony", rev = "32530bcc10740588962216a3e7ce161fc9386306" }
 percent-encoding = "2.3"
 png = "0.18"
 pyo3 = { version = "0.22", features = ["extension-module"] }
