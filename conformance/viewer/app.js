@@ -346,7 +346,7 @@ async function initialize() {
     else {
       const notice = document.createElement('p');
       notice.className = 'capture-slots-notice';
-      notice.textContent = 'Last captured results only. To show historic results, please run with --include-history.';
+      notice.textContent = `Last captured results only. To show historic results, please run ${window.ConformanceView.historyPublicationCommand}.`;
       panel.querySelector('.capture-slots').appendChild(notice);
     }
   }

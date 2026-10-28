@@ -1534,7 +1534,7 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
         _ready(driver, "tab-unified")
-        assert "built in your browser" in driver.find_element(By.CSS_SELECTOR, ".generated").text
+        assert not driver.find_element(By.CSS_SELECTOR, ".generated").is_displayed()
         instructions = driver.find_element(By.CSS_SELECTOR, ".generation-instructions")
         assert not instructions.is_displayed()
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
@@ -1542,6 +1542,7 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
         assert "python3 conformance/utils/src/viewer_catalog.py" in instructions.text
         assert "cargo build --locked --release -p conformance-publisher" in instructions.text
         assert "--output" in instructions.text and "--revision" in instructions.text
+        assert "--include-history" in instructions.text
         assert "index.html" in instructions.text and "JSON" in instructions.text
         assert driver.find_element(By.CSS_SELECTOR, ".capture-legend > p").text == (
             "Legend: One segment is an output capture from the parser when compared with golden output")
@@ -1598,8 +1599,9 @@ def test_missing_sidecar_keeps_source_identity_without_inventing_generation(publ
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, "tab-unified")
         metadata = publication_metadata(published_viewer)
-        assert "No matching generation record is available" in driver.find_element(By.CSS_SELECTOR, ".generated").text
-        assert "Generated on" not in driver.find_element(By.CSS_SELECTOR, ".generated").text
+        generated = driver.find_element(By.CSS_SELECTOR, ".generated")
+        assert not generated.is_displayed()
+        assert generated.get_attribute("textContent") == ""
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
         assert not driver.find_elements(By.CSS_SELECTOR, ".generated-command")
         assert driver.find_element(By.CSS_SELECTOR, ".generation-instructions").is_displayed()
