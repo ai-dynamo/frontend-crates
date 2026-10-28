@@ -318,85 +318,130 @@ pub(crate) fn subslice_range(whole: &str, part: &str) -> Range<usize> {
 }
 
 /// Text a parser built from its input, with the input range of each byte.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct SourcedText {
-    pub(crate) text: String,
-    pub(crate) spans: Spans,
+///
+/// Unrecorded text is a bare `String`, so `Option<SourcedText>` is as small as
+/// `Option<String>`. The jail's per-chunk completion check holds a parse
+/// result across an await, so its size is paid on every jailed chunk; recorded
+/// text and its ranges sit behind one box instead.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum SourcedText {
+    Plain(String),
+    Sourced(Box<(String, Spans)>),
+}
+
+/// The sources of [`SourcedText::Plain`].
+static NO_SPANS: Spans = Spans::OFF;
+
+impl Default for SourcedText {
+    fn default() -> Self {
+        Self::Plain(String::new())
+    }
 }
 
 impl SourcedText {
-    pub(crate) fn empty(record: bool) -> Self {
-        Self {
-            text: String::new(),
-            spans: Spans::recording(record),
+    fn new(text: String, spans: Spans) -> Self {
+        if spans.is_recording() {
+            Self::Sourced(Box::new((text, spans)))
+        } else {
+            Self::Plain(text)
         }
+    }
+
+    pub(crate) fn empty(record: bool) -> Self {
+        Self::new(String::new(), Spans::recording(record))
     }
 
     /// Text from a parser that does not record its sources.
     pub(crate) fn unsourced(text: String) -> Self {
-        Self {
-            text,
-            spans: Spans::OFF,
-        }
+        Self::Plain(text)
     }
 
     /// `part`, a subslice of `base`.
     pub(crate) fn slice(base: &str, part: &str, record: bool) -> Self {
-        let spans = if record {
-            Spans::contiguous(true, subslice_range(base, part))
-        } else {
-            Spans::OFF
-        };
-        Self {
-            text: part.to_string(),
-            spans,
+        if !record {
+            return Self::Plain(part.to_string());
         }
+        Self::new(
+            part.to_string(),
+            Spans::contiguous(true, subslice_range(base, part)),
+        )
     }
 
     /// `parts`, subslices of `base`, joined.
     pub(crate) fn join(base: &str, parts: &[&str], record: bool) -> Self {
-        let mut spans = Spans::recording(record);
-        if record {
-            for part in parts {
-                spans.push(subslice_range(base, part));
-            }
+        if !record {
+            return Self::Plain(parts.concat());
         }
-        Self {
-            text: parts.concat(),
-            spans,
+        let mut spans = Spans::recording(true);
+        for part in parts {
+            spans.push(subslice_range(base, part));
+        }
+        Self::new(parts.concat(), spans)
+    }
+
+    pub(crate) fn text(&self) -> &str {
+        match self {
+            Self::Plain(text) => text,
+            Self::Sourced(sourced) => &sourced.0,
+        }
+    }
+
+    /// The sources of the text, [`Spans::OFF`] when it recorded none.
+    pub(crate) fn spans(&self) -> &Spans {
+        match self {
+            Self::Plain(_) => &NO_SPANS,
+            Self::Sourced(sourced) => &sourced.1,
+        }
+    }
+
+    pub(crate) fn into_text(self) -> String {
+        match self {
+            Self::Plain(text) => text,
+            Self::Sourced(sourced) => sourced.0,
         }
     }
 
     /// Cuts every occurrence of `pattern` out, as `str::replace(pattern, "")`.
     pub(crate) fn remove_all(&mut self, pattern: &str) {
-        if self.spans.is_recording() {
-            let cuts: Vec<usize> = self.text.match_indices(pattern).map(|(at, _)| at).collect();
-            for at in cuts.into_iter().rev() {
-                self.spans.remove(at..at + pattern.len());
+        match self {
+            Self::Plain(text) => *text = text.replace(pattern, ""),
+            Self::Sourced(sourced) => {
+                let (text, spans) = &mut **sourced;
+                let cuts: Vec<usize> = text.match_indices(pattern).map(|(at, _)| at).collect();
+                for at in cuts.into_iter().rev() {
+                    spans.remove(at..at + pattern.len());
+                }
+                *text = text.replace(pattern, "");
             }
         }
-        self.text = self.text.replace(pattern, "");
     }
 
     /// Keeps bytes `at` of the text.
-    fn keep(mut self, at: Range<usize>) -> Self {
-        if at.start == 0 && at.end == self.text.len() {
+    fn keep(self, at: Range<usize>) -> Self {
+        if at.start == 0 && at.end == self.text().len() {
             return self;
         }
-        self.spans = self.spans.slice(at.clone());
-        self.text = self.text[at].to_string();
-        self
+        match self {
+            Self::Plain(text) => Self::Plain(text[at].to_string()),
+            Self::Sourced(mut sourced) => {
+                let (text, spans) = &mut *sourced;
+                *spans = spans.slice(at.clone());
+                *text = text[at].to_string();
+                Self::Sourced(sourced)
+            }
+        }
     }
 
     pub(crate) fn trim(self) -> Self {
-        let start = self.text.len() - self.text.trim_start().len();
-        let end = self.text.trim_end().len().max(start);
+        let text = self.text();
+        let start = text.len() - text.trim_start().len();
+        let end = text.trim_end().len().max(start);
         self.keep(start..end)
     }
 
     /// Keeps the first `at` bytes, then trims their end.
     pub(crate) fn truncate_trim_end(self, at: usize) -> Self {
-        let end = self.text[..at].trim_end().len();
+        let end = self.text()[..at].trim_end().len();
         self.keep(0..end)
     }
 }
@@ -484,18 +529,19 @@ mod tests {
     fn sourced_text_trims_and_joins() {
         let base = "  a b  |  c  ";
         let joined = SourcedText::join(base, &[&base[..7], &base[8..]], true);
-        assert_eq!(joined.text, "  a b    c  ");
+        assert_eq!(joined.text(), "  a b    c  ");
         let trimmed = joined.trim();
-        assert_eq!(trimmed.text, "a b    c");
-        assert_eq!(trimmed.spans.ranges(), &[2..7, 8..11]);
+        assert_eq!(trimmed.text(), "a b    c");
+        assert_eq!(trimmed.spans().ranges(), &[2..7, 8..11]);
         let cut = SourcedText::slice(base, base, true).truncate_trim_end(7);
-        assert_eq!(
-            (cut.text.as_str(), cut.spans.ranges()),
-            ("  a b", &[0..5][..])
-        );
+        assert_eq!((cut.text(), cut.spans().ranges()), ("  a b", &[0..5][..]));
         let blank = SourcedText::slice(base, &base[..2], true).trim();
-        assert_eq!((blank.text.as_str(), blank.spans.len()), ("", 0));
-        assert!(!SourcedText::join(base, &[base], false).spans.is_recording());
+        assert_eq!((blank.text(), blank.spans().len()), ("", 0));
+        assert!(
+            !SourcedText::join(base, &[base], false)
+                .spans()
+                .is_recording()
+        );
     }
 
     #[test]
@@ -503,11 +549,11 @@ mod tests {
         let base = "a</t>b</t></t>c";
         let mut text = SourcedText::slice(base, base, true);
         text.remove_all("</t>");
-        assert_eq!(text.text, "abc");
-        assert_eq!(text.spans.ranges(), &[0..1, 5..6, 14..15]);
+        assert_eq!(text.text(), "abc");
+        assert_eq!(text.spans().ranges(), &[0..1, 5..6, 14..15]);
         let parent = spans(&[100..104, 200..211]);
         assert_eq!(
-            parent.map(&text.spans).ranges(),
+            parent.map(text.spans()).ranges(),
             &[100..101, 201..202, 210..211]
         );
     }

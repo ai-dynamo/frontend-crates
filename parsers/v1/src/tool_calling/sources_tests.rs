@@ -164,16 +164,16 @@ async fn batch_parsers_tile_their_normal_text() {
                 };
                 assert_eq!(shape(&public.0), shape(&off.0), "{label}");
                 assert_eq!(shape(&public.0), shape(&on.0), "{label}");
-                let off_text = off.1.as_ref().map(|normal| normal.text.as_str());
-                let on_text = on.1.as_ref().map(|normal| normal.text.as_str());
+                let off_text = off.1.as_ref().map(|normal| normal.text());
+                let on_text = on.1.as_ref().map(|normal| normal.text());
                 assert_eq!(public.1.as_deref(), off_text, "{label}");
                 assert_eq!(public.1.as_deref(), on_text, "{label}");
                 if let Some(off) = off.1 {
-                    assert!(!off.spans.is_recording(), "{label}");
+                    assert!(!off.spans().is_recording(), "{label}");
                 }
                 if let Some(on) = on.1 {
-                    assert!(on.spans.is_recording(), "{label}: no sources");
-                    assert_eq!(read(&text, on.spans.ranges()), on.text, "{label}");
+                    assert!(on.spans().is_recording(), "{label}: no sources");
+                    assert_eq!(read(&text, on.spans().ranges()), on.text(), "{label}");
                 }
                 count += 1;
             }
@@ -188,7 +188,7 @@ async fn normal_ranges(parser: &str, text: &str, finalize: bool) -> (usize, Vec<
         try_tool_call_parse_aggregate_sourced(text, Some(parser), None, finalize, true)
             .await
             .unwrap();
-    (calls.len(), normal.unwrap().spans.into_ranges())
+    (calls.len(), normal.unwrap().spans().ranges().to_vec())
 }
 
 #[tokio::test]
