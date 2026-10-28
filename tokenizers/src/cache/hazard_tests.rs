@@ -319,3 +319,21 @@ fn a_normalized_special_inside_a_normalized_plain_token_turns_the_cache_off() {
     assert_eq!(uncached, [3], "control: the longer normalized token wins");
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
+
+#[test]
+#[ignore = "F2: promotion changes uncached IDs when the configured normalized flag differs"]
+fn promoting_a_plain_token_preserves_the_uncached_ids() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([flagged(2, "<sep>", false, "normalized")]),
+        json!({"type": "Replace", "pattern": {"String": "<sep>b"}, "content": "a"}),
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let config = json!({"added_tokens_decoder": {"2": added(2, "<sep>", true)}});
+    std::fs::write(dir.path().join("tokenizer.json"), json.to_string()).expect("write");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string()).expect("write");
+    let path = dir.path().join("tokenizer.json");
+    let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().expect("UTF-8")).expect("load");
+    assert_eq!(ids(&tokenizer, "<sep>b"), [2, 1]);
+}
