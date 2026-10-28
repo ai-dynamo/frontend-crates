@@ -1,9 +1,9 @@
 provenance:
   status: captured
   origin:
-    crate_version: 0.8.0
-    git_commit: c3858249acc09b5231acd7aa45126fe3b85019b9
-    source_sha256: af281c178ea34d5914f324cb83c10cd03eaa6559fdc3e2bd00816a885b64b1b5
+    crate_version: 0.9.0
+    git_commit: b9e1b0c5f1ccf4096f15b8c140488226850c0334
+    source_sha256: b394dfceed66ac1a0a89aacbf4a48b6666e16033ba03f97be6396bf96d6cbb0e
 document:
   mode: unified
 changes:
@@ -2253,7 +2253,7 @@ changes:
         - expected: []
         - expected: []
   guided_native_after_prefilled_reasoning_named:
-    case_key: UNIFIED.32-guided_native_after_prefilled_reasoning_named
+    case_key: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_named
     stimulus:
       ref: current
       semantic_sha256: bc59a1ab32fe8a15f363f23a2ad689b7c4a973e6c9b72384522bb371592d1f93
@@ -2313,7 +2313,7 @@ changes:
         - expected: []
         - expected: []
   guided_native_after_prefilled_reasoning_required:
-    case_key: UNIFIED.32-guided_native_after_prefilled_reasoning_required
+    case_key: UNIFIED.minimax_m3-guided_native_after_prefilled_reasoning_required
     stimulus:
       ref: current
       semantic_sha256: 486cfa4e49e477bdc7533a82663f13383fbb4c4d3a72b9a11921705c9aa16fa1
