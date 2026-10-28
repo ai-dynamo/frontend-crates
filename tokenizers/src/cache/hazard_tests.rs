@@ -351,3 +351,54 @@ fn lstrip_cannot_consume_a_normalized_whitespace_special_across_a_split() {
     assert_eq!(uncached, [0, 3, 1], "control: lstrip consumes the newline");
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
+
+#[test]
+fn a_raw_special_preempts_a_normalized_plain_token_in_hf() {
+    let json = tokenizer_json(
+        json!([
+            added(2, "<sep>", true),
+            flagged(3, "a<sep>b", false, "normalized")
+        ]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let (uncached, cached, used) = three_ways(hf(&json), specials(&json), "a<sep>b");
+    assert_eq!(uncached, [0, 2, 1]);
+    assert_eq!(cached, [uncached.clone(), uncached]);
+    assert!(used, "HF keeps its safe cache");
+}
+
+#[test]
+#[ignore = "F4: single-pass backends let a normalized plain token shadow the split"]
+fn a_normalized_plain_token_cannot_shadow_a_fast_backend_split() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([
+            added(2, "<sep>", true),
+            flagged(3, "a<sep>b", false, "normalized")
+        ]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write");
+    let path = path.to_str().expect("UTF-8");
+
+    let backends: [Arc<dyn Tokenizer>; 2] = [
+        Arc::new(crate::FastTokenizer::from_file(path).expect("load Fastokens")),
+        Arc::new(crate::BasetenTokenizer::from_file(path).expect("load Baseten")),
+    ];
+    let mut results = Vec::new();
+    for backend in backends {
+        let (uncached, cached, _) = three_ways(backend, specials(&json), "a<sep>b");
+        assert_eq!(uncached, [3], "control: the longer added token wins");
+        results.push(cached);
+    }
+    assert_eq!(
+        results,
+        vec![[vec![3], vec![3]], [vec![3], vec![3]]],
+        "Fastokens and Baseten must match their own uncached IDs"
+    );
+}
