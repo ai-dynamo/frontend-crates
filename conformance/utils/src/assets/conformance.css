@@ -127,6 +127,9 @@ tr.section td { background: #eef; font-weight: bold; text-align: left; }
 .generation-instructions { max-width: 1000px; }
 .generation-instructions pre { overflow-x: auto; }
 .generated-command { max-width: 100%; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; }
+dialog.conformance-loading { margin: auto; box-sizing: border-box; max-width: min(560px, calc(100vw - 48px)); padding: 20px 28px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--panel-bg); color: var(--ink); box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25); }
+dialog.conformance-loading::backdrop { background: rgba(80, 80, 80, 0.5); }
+dialog.conformance-loading p { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .title-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .versions { color: #555; font-size: 12px; margin-top: 0.6em; }
 .legend-note { border-left: 3px solid #d0d7de; padding: 6px 10px; max-width: 1200px; line-height: 1.35; }

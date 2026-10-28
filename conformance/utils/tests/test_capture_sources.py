@@ -23,9 +23,10 @@ import extract_fixtures
 import unified_archives
 import unified_history
 import migrate_capture_sources
+import viewer_catalog
 from test_unified_history import _store
 from fixture_test_support import publish, publisher_binary
-from fixture_test_support import prepare_isolated_publication
+from fixture_test_support import prepare_isolated_publication, copy_publication_modules
 
 
 def pin_history(root):
@@ -117,7 +118,8 @@ def test_release_gaps_modes_and_backfills_do_not_change_a_newer_family_capture()
 
 
 @pytest.fixture
-def split_evidence(tmp_path):
+def split_evidence(tmp_path, monkeypatch):
+    monkeypatch.delenv("CONFORMANCE_PUBLICATION_CONTEXT", raising=False)
     sparse = _store(tmp_path / "sparse")
     history = tmp_path / "history"
     migrate_capture_sources.convert_snapshots(sparse, history / sources.STORE, tmp_path)
@@ -440,11 +442,7 @@ def test_current_source_status_needs_no_history_or_publisher_and_cleans_view(tmp
 def test_current_source_status_rejects_stale_catalog_and_cleans_view(split_evidence, tmp_path):
     root, _history, _capture, _path = split_evidence
     original_root = Path(sources.__file__).resolve().parents[3]
-    scripts = Path(sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
-        target = root / "conformance/utils/src" / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(scripts / name, target)
+    copy_publication_modules(root)
     (root / "conformance/viewer-catalog.json").write_bytes(sources.encoded({"capture_generation": {"current": []}}))
     temporary = tmp_path / "status-temporary"
     temporary.mkdir()
@@ -458,6 +456,81 @@ def test_current_source_status_rejects_stale_catalog_and_cleans_view(split_evide
     assert "current source catalog is stale" in result.stderr
     assert not destination.exists()
     assert not list(temporary.glob("current-source-status-*"))
+
+
+@pytest.fixture
+def current_source_catalog(split_evidence):
+    root, _history, _capture, _path = split_evidence
+    catalog = {"revision": "history", "capture_generation": {"mode": "history",
+               "current": sources.current_identities(sources.current(root))},
+               "metadata": {"tabs": [{"suite": "unified"}]}, "sources": {"unified": []}}
+    (root / "conformance/viewer-catalog.json").write_bytes(sources.encoded(catalog))
+    return root, catalog
+
+
+def test_history_generation_pairs_latest_readers_without_ci_copy(history_source, tmp_path, monkeypatch):
+    root = Path(sources.__file__).resolve().parents[3]
+    output = tmp_path / "generated/viewer-catalog.json"
+    assert viewer_catalog.refresh_catalog(root, destination=output, include_history=True, history_source=history_source)
+    history = json.loads(output.read_bytes())
+    latest = json.loads(output.with_name("viewer-latest-catalog.json").read_bytes())
+    assert history["capture_generation"]["mode"] == "history"
+    assert latest == viewer_catalog.build_catalog(root)
+    assert len(history["sources"]["unified"]) > len(latest["sources"]["unified"])
+    assert viewer_catalog.refresh_catalog(root, destination=output, check=True, include_history=True, history_source=history_source)
+    original_read = sources.read
+
+    def generated_catalog(source, name):
+        if source == root and name in {"conformance/viewer-catalog.json", "conformance/viewer-latest-catalog.json"}:
+            return (output.parent / Path(name).name).read_bytes()
+        return original_read(source, name)
+
+    monkeypatch.setattr(sources, "read", generated_catalog)
+    monkeypatch.setattr(sources, "verify", lambda *_: pytest.fail("current staging attempted history retrieval"))
+    monkeypatch.setattr(sources, "publisher_binary", lambda *_: pytest.fail("current staging attempted publication"))
+    assert sources.current_catalog(root) == latest
+    staged = tmp_path / "current-source-view"
+    sources.stage_current_sources(root, staged)
+    assert all((staged / resource["path"]).is_file() for resource in latest["sources"]["unified"])
+
+
+def test_current_catalog_and_staging_use_latest_sibling(current_source_catalog, tmp_path, monkeypatch):
+    root, catalog = current_source_catalog
+    catalog = {**catalog, "revision": "latest", "capture_generation": {**catalog["capture_generation"], "mode": "latest"}}
+    (root / "conformance/viewer-latest-catalog.json").write_bytes(sources.encoded(catalog))
+    monkeypatch.setattr(sources, "verify", lambda *_: pytest.fail("current staging attempted history retrieval"))
+    monkeypatch.setattr(sources, "publisher_binary", lambda *_: pytest.fail("current staging attempted publication"))
+    assert sources.current_catalog(root) == catalog
+    staged = tmp_path / "current-source-view"
+    sources.stage_current_sources(root, staged)
+    result = json.loads((staged / "conformance/viewer-catalog.json").read_bytes())
+    assert result["revision"] == catalog["revision"]
+    assert result["capture_generation"]["current"] == sources.current_identities(sources.current(root))
+
+
+@pytest.mark.parametrize("damage", ["absent", "history", "malformed", "directory", "symlink", "dangling-symlink"])
+def test_current_catalog_rejects_invalid_ci_sibling(current_source_catalog, damage):
+    root, catalog = current_source_catalog
+    sibling = root / "conformance/viewer-latest-catalog.json"
+    if damage == "absent":
+        pass
+    elif damage == "directory":
+        sibling.mkdir()
+    elif damage in {"symlink", "dangling-symlink"}:
+        sibling.symlink_to("viewer-catalog.json" if damage == "symlink" else "missing.json")
+    else:
+        sibling.write_bytes(sources.encoded(catalog) if damage == "history" else b"invalid JSON")
+    with pytest.raises(ValueError):
+        sources.current_catalog(root)
+
+
+def test_history_catalog_preserves_current_freshness_guard(current_source_catalog, tmp_path):
+    root, catalog = current_source_catalog
+    catalog["capture_generation"]["current"] = []
+    catalog["capture_generation"]["mode"] = "latest"
+    (root / "conformance/viewer-latest-catalog.json").write_bytes(sources.encoded(catalog))
+    with pytest.raises(ValueError, match="current source catalog is stale"):
+        sources.stage_current_sources(root, tmp_path / "current-source-view")
 
 
 @pytest.mark.parametrize("crash_call", [1, 2, 3])

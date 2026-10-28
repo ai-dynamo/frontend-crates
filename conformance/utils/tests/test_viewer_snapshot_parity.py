@@ -15,7 +15,7 @@ import unified_archives
 import unified_history
 import migrate_capture_sources
 import viewer_catalog
-from fixture_test_support import native_snapshots, proof_catalog, snapshot_bytes
+from fixture_test_support import native_snapshots, proof_catalog, snapshot_bytes, retained_source_bytes
 from viewer_codec import decode_typed, typed_equal
 from verify_publication_transport import read_index
 from conformance.utils.tests.test_execution_manifests import compact_store
@@ -154,7 +154,7 @@ def test_full_corpus_json_snapshots_match_python_and_javascript_resolution(tmp_p
         source = tmp_path / "current-source"
         capture_sources.stage_unified(ROOT, source / capture_sources.STORE)
     else:
-        with capture_sources.history_view(ROOT, ROOT / capture_sources.HISTORIC) as source:
+        with capture_sources.history_view(ROOT, capture_sources.default_history(ROOT)) as source:
             _assert_routed_history_parity(source, site, published)
         return
     _assert_full_corpus_parity(tmp_path, source, site, published)
@@ -327,3 +327,16 @@ def test_startup_publication_is_content_addressed_and_default_scoped(published_v
             assert offset == end, "default pack contains bytes outside default-view dependencies"
             end += length
         assert end == pack["size"]
+
+
+def test_routed_retained_resource_uses_history_checkout_owner(tmp_path):
+    resource_path = "conformance/history-datasets/retained/conformance/fixtures-unified-v2/families/sample/dynamo_v2-1.0.0.yaml"
+    data = b"original retained source\n"
+    path = tmp_path / resource_path
+    path.parent.mkdir(parents=True)
+    path.write_bytes(data)
+    resource = {"path": resource_path, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    assert retained_source_bytes(tmp_path / capture_sources.STORE, resource) == data
+    path.write_bytes(b"altered retained source\n")
+    with pytest.raises(ValueError, match="retained source identity mismatch"):
+        retained_source_bytes(tmp_path / capture_sources.STORE, resource)

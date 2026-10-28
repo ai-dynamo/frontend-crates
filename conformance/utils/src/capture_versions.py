@@ -4,6 +4,7 @@
 import re
 
 
+DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_VERSION_PATTERN = r"\d+(?:\.\d+){2,}(?:\.post\d+|-[0-9A-Za-z.-]+)?"
 UNIFIED_VERSION_RE = re.compile(UNIFIED_VERSION_PATTERN)
 

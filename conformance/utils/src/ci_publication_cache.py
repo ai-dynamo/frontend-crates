@@ -11,9 +11,14 @@ import platform
 import re
 import shlex
 import subprocess
+import sys
+
+import dynamo_version
 
 from verify_publication_transport import publication_metadata
 
+
+CONTEXT = "conformance/publication-context.json"
 
 FILES = ("native-pages.tar", "source-catalogs.tar", "conformance-publish")
 PUBLICATION_DOCUMENTS = frozenset({
@@ -35,6 +40,8 @@ GENERATED_CATALOGS = frozenset({
     "conformance/viewer-resolved-catalog.json",
     "conformance/viewer-resolved-catalog.json.gz",
     "conformance/viewer-publication.json",
+    CONTEXT,
+    "conformance/viewer-latest-catalog.json",
 })
 
 
@@ -74,39 +81,78 @@ def is_publication_input(name):
     return True
 
 
-def cache_key(root, publication_policy, *, include_history=False, history_source=None):
-    if not publication_policy:
-        raise ValueError("publication policy is required")
-    # Hash publication inputs, including actual LFS content, rather than every
-    # tracked file or the commit SHA. The generated page metadata is restamped
-    # for the current commit after a cache hit.
+def publication_files(root):
     paths = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, check=True).stdout
     new_sources = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--exclude=conformance/historic/", "-z"],
                                  cwd=root, capture_output=True, check=True).stdout
     paths += new_sources
+    return {path: input_identity(root / path) for path in sorted(set(paths.decode().split("\0")))
+            if path and is_publication_input(path)}
+
+
+def release_tags(root):
+    return subprocess.run(
+        ["git", "for-each-ref", "--format=%(refname) %(if)%(*objectname)%(then)%(*objectname)%(else)%(objectname)%(end)",
+         "refs/tags/dynamo-parsers-v2-v*"], cwd=root, capture_output=True, check=True).stdout.decode()
+
+
+def context_digest(context):
+    return hashlib.sha256(json.dumps(context, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def freeze_context(root, *, include_history=False):
+    tags = release_tags(root)
+    context = {"schema": 1, "generation_mode": "history" if include_history else "latest",
+               "files": publication_files(root), "producer": {key: value for key, value in dynamo_version.dynamo_v2_provenance(root, release_refs=tags).items()
+                            if key not in {"git_commit", "git_head_tree"}},
+               "tags": tags}
+    context["sha256"] = context_digest(context)
+    return context
+
+
+def read_context(root, *, path=None):
+    configured = path or os.environ.get("CONFORMANCE_PUBLICATION_CONTEXT")
+    if not configured:
+        return None
+    context = json.loads(Path(configured).read_bytes())
+    content = {key: value for key, value in context.items() if key != "sha256"}
+    if (set(content) != {"schema", "generation_mode", "files", "producer", "tags"}
+            or content["schema"] != 1 or content["generation_mode"] not in {"latest", "history"}
+            or context.get("sha256") != context_digest(content)):
+        raise ValueError("publication context identity is invalid")
+    if context["files"] != publication_files(root):
+        raise ValueError("publication context sources changed")
+    # Qualification checkouts may be shallow. The sealed producer retains the
+    # original tag decision; only the current parser bytes need revalidation.
+    producer = context["producer"]
+    if (producer["source_sha256"] != dynamo_version.source_fingerprint(root)
+            or producer["crate_version"] != dynamo_version.crate_version(root / "parsers/v2/Cargo.toml")):
+        raise ValueError("publication context parser source changed")
+    return context
+
+
+def cache_key(root, publication_policy, *, include_history=False, history_source=None):
+    if not publication_policy:
+        raise ValueError("publication policy is required")
+    context = read_context(root)
+    if context and context["generation_mode"] != ("history" if include_history else "latest"):
+        raise ValueError("publication context generation mode differs")
+    inputs = publication_files(root)
     rust = subprocess.run(["rustc", "--version"], capture_output=True, check=True).stdout.decode().strip()
     node = subprocess.run(["node", "--version"], capture_output=True, check=True).stdout.decode().strip()
-    tags = subprocess.run(
-        ["git", "for-each-ref", "--format=%(refname) %(objectname)", "refs/tags/dynamo-parsers-v2-v*"],
-        cwd=root,
-        capture_output=True,
-        check=False,
-    )
-    if tags.returncode not in (0, 1):
-        raise RuntimeError("cannot inventory release tags")
-    inputs = {path: input_identity(root / path) for path in paths.decode().split("\0")
-              if path and is_publication_input(path)}
+    tags = context["tags"] if context else release_tags(root)
     if history_source is not None and not include_history:
         raise ValueError("--history-source requires --include-history")
     history = None
     if include_history:
         history_source = history_source or root
         history = json.loads(subprocess.check_output([
-            "python3", str(root / "conformance/utils/src/capture_sources.py"), "--root", str(root),
+            sys.executable, str(root / "conformance/utils/src/capture_sources.py"), "--root", str(root),
             "--verify-history", str(history_source)], text=True))
     identity = {"schema": 4, "publication_policy": publication_policy, "files": inputs, "rust": rust,
                 "generation_mode": "history" if include_history else "latest", "history": history,
-                "python": platform.python_version(), "node": node, "tags": tags.stdout.decode(),
+                "python": platform.python_version(), "node": node, "tags": tags,
+                "context": context,
                 "platform": [platform.system(), platform.machine()]}
     return hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()
 
@@ -204,16 +250,29 @@ def stamp(directory, revision):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("key", "seal", "check", "stamp"))
+    parser.add_argument("action", choices=("identify", "key", "seal", "check", "stamp", "context-check"))
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--publication-policy")
     parser.add_argument("--revision")
+    parser.add_argument("--context", type=Path)
     parser.add_argument("--directory", type=Path)
     parser.add_argument("--identity")
     parser.add_argument("--include-history", action="store_true")
     parser.add_argument("--history-source", type=Path)
     args = parser.parse_args()
-    if args.action == "key":
+    if args.action == "context-check":
+        if args.context is None:
+            parser.error("context-check requires --context")
+        read_context(args.root, path=args.context)
+        return 0
+    if args.action == "identify":
+        if args.context is None:
+            parser.error("identify requires --context")
+        context = freeze_context(args.root, include_history=args.include_history)
+        args.context.parent.mkdir(parents=True, exist_ok=True)
+        args.context.write_text(json.dumps(context, sort_keys=True))
+        os.environ["CONFORMANCE_PUBLICATION_CONTEXT"] = str(args.context.resolve())
+    if args.action in {"key", "identify"}:
         if not args.publication_policy:
             parser.error("key requires --publication-policy")
         print(cache_key(args.root, args.publication_policy, include_history=args.include_history, history_source=args.history_source))

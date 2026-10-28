@@ -8,15 +8,19 @@ import os
 import re
 from pathlib import Path
 import shutil
+import threading
 from urllib.parse import urlencode, urlsplit
 
 import pytest
+from selenium.common.exceptions import ElementClickInterceptedException
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from browser_helpers import raw_view_download
+from browser_helpers import raw_view_download, settle
 from verify_publication_transport import runtime_catalog
 from fixture_test_support import capture_releases, historical_source_bytes
 from test_browser_viewer import _driver, _ready, _server, _choose_engine
+from test_browser_smoke import _RECORD_FIRST_VISIBLE_MATRIX_JS
 import capture_sources
 import unified_history
 
@@ -184,6 +188,194 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
             if path.endswith(".yaml"):
                 assert download["renderedHash"] == expected
     finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_history_json_loading_dims_page_until_success_or_failure(historical_published_viewer, missing):
+    gate = (threading.Event(), threading.Event())
+    target = "/conformance/viewer-resolved-catalog.json.gz"
+    fault = {"path": target, "kind": "missing", "used": False} if missing else None
+    server, _requests = _server(root=historical_published_viewer, gate=gate, gate_path=target, fault=fault)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        settle(driver, "tab-unified")
+        assert gate[0].wait(15)
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert dialog.is_displayed()
+        assert dialog.text == "Loading historic results..."
+        geometry = driver.execute_script("""
+            const dialog = arguments[0], box = dialog.getBoundingClientRect();
+            return {modal: dialog.matches(':modal'), shade: getComputedStyle(dialog, '::backdrop').backgroundColor,
+                centered: Math.abs(box.x + box.width / 2 - document.documentElement.clientWidth / 2) < 2
+                    && Math.abs(box.y + box.height / 2 - document.documentElement.clientHeight / 2) < 2,
+                cells: document.querySelectorAll('#tab-unified td.cell').length};
+        """, dialog)
+        assert geometry["modal"] and geometry["centered"]
+        assert geometry["shade"] == "rgba(80, 80, 80, 0.5)"
+        assert geometry["cells"] > 0
+        driver.switch_to.active_element.send_keys(Keys.ESCAPE)
+        assert dialog.is_displayed(), "Escape must not dismiss an active load"
+        with pytest.raises(ElementClickInterceptedException):
+            driver.find_element("css selector", "[data-reset]").click()
+        assert dialog.is_displayed()
+        driver.set_window_size(360, 640)
+        assert driver.execute_script("""
+            const box = arguments[0].getBoundingClientRect();
+            return box.left >= 0 && box.right <= document.documentElement.clientWidth;
+        """, dialog)
+        gate[1].set()
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+        assert driver.find_element("id", "viewer").get_attribute("data-history-available") == str(not missing).lower()
+        assert len(driver.find_elements("css selector", "#tab-unified td.cell")) == geometry["cells"]
+    finally:
+        gate[1].set()
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.mark.parametrize("feature_probe", ["unsupported", "missing"])
+def test_loading_works_when_native_open_selector_is_unavailable(published_viewer, feature_probe):
+    driver = _driver()
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": """
+            window.unsupportedSelectorQueries = 0;
+            window.selectOpenProbes = 0;
+            const query = document.querySelectorAll.bind(document);
+            document.querySelectorAll = selector => {
+                if (selector.includes('select:open')) {
+                    window.unsupportedSelectorQueries++;
+                    throw new DOMException('Unsupported select:open selector', 'SyntaxError');
+                }
+                return query(selector);
+            };
+            const supports = CSS.supports.bind(CSS);
+            CSS.supports = FEATURE_PROBE === 'missing' ? undefined : (...args) => {
+                if (args[0] === 'selector(select:open)') { window.selectOpenProbes++; return false; }
+                return supports(...args);
+            };
+        """.replace("FEATURE_PROBE", json.dumps(feature_probe))})
+        driver.get((published_viewer / "index.html").as_uri())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script(
+            "return Boolean(window.__conformanceModel) || window.unsupportedSelectorQueries > 0"))
+        assert driver.execute_script("return window.unsupportedSelectorQueries") == 0
+        _ready(driver, "tab-unified")
+        assert driver.execute_script("return window.selectOpenProbes") == (1 if feature_probe == "unsupported" else 0)
+        driver.execute_script("""
+            const loader = window.__conformanceLoader;
+            const build = loader.build;
+            loader.build = async (...args) => {
+                const model = await build(...args);
+                await new Promise(resolve => { window.finishLegacyLoad = resolve; });
+                return model;
+            };
+        """)
+        capture = _choose_engine(driver, 1, 'vllm')
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert not dialog.is_displayed()
+        capture.send_keys(Keys.ESCAPE)
+        capture.send_keys(Keys.TAB)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return typeof window.finishLegacyLoad === 'function'"))
+        driver.execute_script("window.finishLegacyLoad()")
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+        assert driver.execute_script("return window.unsupportedSelectorQueries") == 0
+    finally:
+        driver.quit()
+
+
+def test_loading_yields_to_parser_picker_and_native_capture_selection(published_viewer):
+    driver = _driver()
+    try:
+        driver.get((published_viewer / "index.html").as_uri())
+        _ready(driver, "tab-unified")
+        driver.execute_script("""
+            const loader = window.__conformanceLoader;
+            const build = loader.build;
+            loader.build = async (...args) => {
+                const model = await build(...args);
+                await new Promise(resolve => { window.finishPickerLoad = resolve; });
+                return model;
+            };
+        """)
+        driver.find_element("css selector", "[data-slot-open='1']").click()
+        assert not driver.find_element("css selector", "dialog.conformance-loading").is_displayed()
+        driver.find_element("css selector", "[data-picker-engine-choice='vllm']").click()
+        capture = driver.find_element("css selector", "[data-slot-capture='1']")
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return arguments[0].matches(':open')", capture))
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert not dialog.is_displayed(), "native capture choices must be the only popup"
+        capture.send_keys(Keys.ESCAPE)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        assert driver.execute_script("return document.querySelectorAll('dialog[open]').length") == 1
+
+        # A picker opened during a pending load must take ownership of the popup.
+        driver.execute_script("document.querySelector('[data-slot-open=\"1\"]').click()")
+        WebDriverWait(driver, 15).until(lambda page: not dialog.is_displayed())
+        assert driver.find_element("css selector", ".comparison-picker[open]").is_displayed()
+        driver.switch_to.active_element.send_keys(Keys.ESCAPE)
+        WebDriverWait(driver, 15).until(lambda page: dialog.is_displayed())
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return typeof window.finishPickerLoad === 'function'"))
+        driver.execute_script("window.finishPickerLoad()")
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+    finally:
+        driver.quit()
+
+
+def test_history_discovery_preserves_completed_table_selection_and_popup(historical_published_viewer):
+    gate = (threading.Event(), threading.Event())
+    server, _requests = _server(root=historical_published_viewer, gate=gate,
+                               gate_path="/conformance/viewer-resolved-catalog.json.gz")
+    driver = _driver()
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        settle(driver, "tab-unified")
+        assert gate[0].wait(15)
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return window.__firstVisibleMatrix !== null"))
+        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        # Programmatic popup state must survive discovery even while pointer input is blocked.
+        driver.execute_script("arguments[0].click()", cell)
+        WebDriverWait(driver, 15).until(lambda page: any(item.is_displayed() for item in page.find_elements("css selector", ".ttip-pinned")))
+        before = driver.execute_script("""
+            window.historyTransitionFrames = [];
+            window.observeHistoryTransition = true;
+            function observe() {
+                const panel = document.getElementById('tab-unified');
+                window.historyTransitionFrames.push({cells: panel.querySelectorAll('td.cell').length,
+                    popup: [...document.querySelectorAll('.ttip-pinned')].some(node => node.getBoundingClientRect().width > 0)});
+                if (window.observeHistoryTransition) requestAnimationFrame(observe);
+            }
+            requestAnimationFrame(observe);
+            return {cells: document.querySelectorAll('#tab-unified td.cell').length,
+                    selection: document.getElementById('tab-unified')._comparisonSelection.keys,
+                    popup: document.querySelector('.ttip-pinned').textContent,
+                    initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions};
+        """)
+        gate[1].set()
+        WebDriverWait(driver, 30).until(lambda page: page.execute_script("return document.getElementById('viewer').dataset.historyAvailable === 'true' && document.getElementById('tab-unified').dataset.loadState === 'ready'"))
+        after = driver.execute_async_script("""
+            const done = arguments[arguments.length - 1];
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.observeHistoryTransition = false;
+                done({cells: document.querySelectorAll('#tab-unified td.cell').length,
+                    selection: document.getElementById('tab-unified')._comparisonSelection.keys,
+                    popup: document.querySelector('.ttip-pinned').textContent,
+                    initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions});
+            }));
+        """)
+        assert after == before
+        frames = driver.execute_script("return window.historyTransitionFrames")
+        assert frames and all(frame["cells"] == before["cells"] and frame["popup"] for frame in frames)
+    finally:
+        gate[1].set()
         driver.quit()
         server.shutdown()
         server.server_close()

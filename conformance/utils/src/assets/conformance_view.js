@@ -1252,6 +1252,8 @@
     return h;
   }
 
+  const historyPublicationCommand = 'target/release/conformance-publish --root . --output ../conformance-site --revision "$(git rev-parse HEAD)" --include-history';
+
   // --- Panel + tabs bar ------------------------------------------------------
   function buildPanel(tab, page, multiTab) {
     var section = document.createElement('section');
@@ -1285,7 +1287,7 @@
         + '<pre><code>python3 conformance/utils/src/viewer_catalog.py\n'
         + 'npm ci --prefix conformance/viewer --ignore-scripts\n'
         + 'cargo build --locked --release -p conformance-publisher\n'
-        + 'target/release/conformance-publish --root . --output ../conformance-site --revision "$(git rev-parse HEAD)"</code></pre>'
+        + escapeHtml(historyPublicationCommand) + '</code></pre>'
         + '<p>The output directory contains <code>index.html</code>, browser assets, a runtime catalog, recipe indexes, '
         + 'and shared compressed payload packs. Serve the whole directory over HTTP:</p>'
         + '<pre><code>python3 -m http.server 8000 --directory ../conformance-site</code></pre>'
@@ -1342,9 +1344,11 @@
     });
   }
   window.ConformanceView = {
+    historyPublicationCommand,
     updateGeneration(root, metadata) {
       const revision = root.querySelector('.generated');
       if (!revision) return;
+      revision.hidden = false;
       const generatedRevision = metadata.generated_revision || metadata.revision;
       const link = document.createElement('a');
       link.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + generatedRevision;
@@ -1380,7 +1384,7 @@
       const header = [heading];
       const revision = document.createElement('p');
       revision.className = 'generated';
-      revision.textContent = 'Live checkout view, built in your browser from the current catalog. No matching generation record is available. Detailed shows how to generate a dated HTML/JSON publication.';
+      revision.hidden = true;
       header.push(revision);
       root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, true)));
     },

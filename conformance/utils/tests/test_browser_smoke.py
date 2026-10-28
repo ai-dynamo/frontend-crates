@@ -67,6 +67,7 @@ function matrixGeometry(table) {
 }
 let framePending = false;
 function observeMatrix() {
+  if (window.__firstVisibleMatrix) return;
   const panel = document.querySelector('#tab-unified');
   if (!panel) return;
   if (panel.dataset.loadState !== 'ready') {
@@ -89,6 +90,7 @@ function observeMatrix() {
           transposeMode: document.body.classList.contains('transpose-mode'),
           state: active.dataset.loadState, cells, frameTime, ...geometry
         };
+        observer.disconnect();
         break;
       }
     }

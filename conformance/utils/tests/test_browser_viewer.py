@@ -19,6 +19,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
@@ -134,8 +135,13 @@ def _ready(driver, tab):
     settle(driver, tab, history_ready=True, idle=False)
 
 
-def _choose_engine(driver, slot: int, engine: str):
-    driver.find_element("css selector", f"[data-slot-open='{slot}']").click()
+def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
+    button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
+    if programmatic:
+        # Exercise externally triggered selection while the loading modal blocks pointer input.
+        driver.execute_script("arguments[0].click()", button)
+    else:
+        button.click()
     picker = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".comparison-picker[open]")))
     picker.find_element("css selector", f"[data-picker-engine-choice='{engine}']").click()
     return WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", f"[data-slot-capture='{slot}']"))
@@ -174,9 +180,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert loaded == [], 'default capture data must come entirely from HTML'
         assert not any('viewer-resolved-catalog' in path for path in requests)
         default_capture = _published_capture(published_viewer)
-        producer = _published_catalog(published_viewer)["metadata"]["dynamo_v2_producer"]
-        unpublished = producer["kind"] == "unpublished" and default_capture["version"] == producer["crate_version"]
-        version_label = default_capture["version"] + (" [unpublished]" if unpublished else "")
+        version_label = default_capture["version"]
         assert select.get_attribute('aria-label') == f"Choose capture for comparison slot 1: Dynamo, v2 Rust {version_label} (stream, UnifiedParser)"
         expected_rows = next(item["native_unified_families"] for item in _published_catalog(published_viewer)["sources"]["candidates"]
                              if item["implementation"] == default_capture["implementation"] and item["version"] == default_capture["version"])
@@ -482,6 +486,7 @@ def test_same_engine_slots_none_geometry_duplicate_prevention_and_reset(historic
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ["dynamo", v1_options[0]]
         assert not second.find_element("css selector", "option[value='dynamo']").is_enabled()
+        assert all("selected in another slot" not in option.text for option in second.find_elements("tag name", "option"))
 
         _clear_slot(driver, 1)
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ["dynamo"]
@@ -752,7 +757,7 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             panel = driver.find_element("id", "tab-unified")
             assert panel.get_attribute("data-load-state") == state
             if state == "loading":
-                assert panel.find_element(By.CSS_SELECTOR, ".load-status").text.startswith("Loading...")
+                assert not driver.find_element(By.CSS_SELECTOR, "dialog.conformance-loading").is_displayed()
             assert driver.execute_script("return Boolean(window.__conformanceModel)")
             assert cell.is_displayed()
             assert popup.is_displayed()
@@ -763,7 +768,9 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             assert len(slot_widths) == 3 and min(slot_widths) > 300, slot_widths
             assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == ['dynamo']
             assert driver.execute_script("return [...arguments[0].querySelectorAll('.matrix-status')].map(node => node.dataset.capture)", cell) == ['dynamo']
-            assert driver.find_element("css selector", "#tab-unified .load-status").text
+            if state == "error":
+                assert driver.find_element("css selector", "#tab-unified .load-status[role=alert]").text
+                assert not driver.find_element("css selector", "dialog.conformance-loading").is_displayed()
             assert driver.find_element("css selector", "[data-view-detailed]").get_property("checked") is True
             assert driver.execute_script("return document.body.classList.contains('view-details')")
             if scroll_before is not None:
@@ -834,7 +841,7 @@ def test_history_upgrade_repaints_user_selection_before_old_build_finishes(histo
                 return model;
             };
         """)
-        _choose_engine(driver, 1, 'vllm')
+        _choose_engine(driver, 1, 'vllm', programmatic=True)
         WebDriverWait(driver, 30).until(lambda page: page.execute_script(
             "return typeof window.releasePreHistoryBuild === 'function'"))
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
@@ -918,17 +925,19 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
             };
         """, stale_failure)
         capture_select = _choose_engine(driver, 1, 'vllm')
+        capture_select.send_keys(Keys.ESCAPE)
         rust = next(option.get_attribute('value') for option in capture_select.find_elements('tag name', 'option')
                     if option.get_attribute('value').startswith('vllm_rust@'))
-        Select(capture_select).select_by_value(rust)
-        notice = driver.find_element("css selector", "#tab-unified .load-status")
+        driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", capture_select, rust)
+        notice = driver.find_element("css selector", "dialog.conformance-loading")
         latest_message = notice.text
         assert "Rust" in latest_message
         assert driver.execute_script("return window.__conformanceLoader.pending") == 2
         driver.execute_script("window.releaseStaleComparison()")
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 1"))
         assert driver.find_element("id", "tab-unified").get_attribute("data-load-state") == "loading"
-        assert driver.find_element("css selector", "#tab-unified .load-status") == notice
+        assert driver.find_element("css selector", "dialog.conformance-loading") == notice
+        assert notice.is_displayed()
         assert notice.text == latest_message
         assert cell.is_displayed()
         assert driver.execute_script("return window.__conformanceModel === window.retainedModelBeforePending")
@@ -964,8 +973,8 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result(pu
         """, stale_failure)
         vllm_select = _choose_engine(driver, 1, 'vllm')
         rust = next(option.get_attribute('value') for option in vllm_select.find_elements('tag name', 'option') if option.get_attribute('value').startswith('vllm_rust@'))
-        Select(vllm_select).select_by_value(rust)
-        _choose_engine(driver, 2, 'sglang')
+        driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", vllm_select, rust)
+        _choose_engine(driver, 2, 'sglang', programmatic=True)
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
         assert len(selected) == 3
         _ready(driver, "tab-unified")
@@ -1068,7 +1077,7 @@ def test_reset_discards_popup_pin_during_retained_selection_load(published_viewe
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return typeof window.releaseNavigationSelection === 'function'"))
         assert driver.find_element("id", "tab-unified").get_attribute("data-load-state") == "loading"
         assert popup.is_displayed()
-        driver.find_element("css selector", "[data-reset]").click()
+        driver.execute_script("arguments[0].click()", driver.find_element("css selector", "[data-reset]"))
         _ready(driver, "tab-unified")
         selection = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))")
         assert selection == {'reference': None, 'selected': ['dynamo']}
@@ -1536,7 +1545,7 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
         _ready(driver, "tab-unified")
-        assert "built in your browser" in driver.find_element(By.CSS_SELECTOR, ".generated").text
+        assert not driver.find_element(By.CSS_SELECTOR, ".generated").is_displayed()
         instructions = driver.find_element(By.CSS_SELECTOR, ".generation-instructions")
         assert not instructions.is_displayed()
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
@@ -1544,6 +1553,7 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
         assert "python3 conformance/utils/src/viewer_catalog.py" in instructions.text
         assert "cargo build --locked --release -p conformance-publisher" in instructions.text
         assert "--output" in instructions.text and "--revision" in instructions.text
+        assert "--include-history" in instructions.text
         assert "index.html" in instructions.text and "JSON" in instructions.text
         assert driver.find_element(By.CSS_SELECTOR, ".capture-legend > p").text == (
             "Legend: One segment is an output capture from the parser when compared with golden output")
@@ -1600,8 +1610,9 @@ def test_missing_sidecar_keeps_source_identity_without_inventing_generation(publ
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, "tab-unified")
         metadata = publication_metadata(published_viewer)
-        assert "No matching generation record is available" in driver.find_element(By.CSS_SELECTOR, ".generated").text
-        assert "Generated on" not in driver.find_element(By.CSS_SELECTOR, ".generated").text
+        generated = driver.find_element(By.CSS_SELECTOR, ".generated")
+        assert not generated.is_displayed()
+        assert generated.get_attribute("textContent") == ""
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
         assert not driver.find_elements(By.CSS_SELECTOR, ".generated-command")
         assert driver.find_element(By.CSS_SELECTOR, ".generation-instructions").is_displayed()

@@ -161,7 +161,7 @@ for (const family of ['qwen3','deepseek_v4']) {
   const columns=entries.map(([sub,item])=>({sub,label:item.canonical_label,desc:'schema '+item.legacy_label,group_key:'args'}));
   const cells=Object.fromEntries(entries.map(([sub,item])=>[sub,makeCell(sub,item.legacy_label,family)]));
   const bare=structuredClone([cells.unused_reference_graph_parameter_types,cells.nullable_reference_alias_literals]);
-  const tab={id:'tab-unified',columns,rows:[{family,cells}],candidates:[{key:'dynamo'}],column_groups:[{key:'args',span:columns.length}],stats:{},glossary:[{rows:entries.map(([,item])=>[item.canonical_label,'description'])}]};
+  const tab={id:'tab-unified',columns,rows:[{family,cells}],candidates:[{key:'dynamo'},{key:'dynamo@0.6.1'}],column_groups:[{key:'args',span:columns.length}],stats:{},glossary:[{rows:entries.map(([,item])=>[item.canonical_label,'description'])}]};
   foldNullVariants(tab,metadata);
   rankUnifiedColumns(tab,metadata);
   assert.deepEqual(tab.columns.slice(-3).map(column=>column.label),['7-17','7-19','7-18']);
@@ -170,6 +170,8 @@ for (const family of ['qwen3','deepseek_v4']) {
   for (const [label,count] of [['7-17',9],['7-19',3],['7-18',7]]) {
     const column=tab.columns.find(column=>column.label===label), cell=cells[column.sub];
     assert.equal(cell.case_id,`UNIFIED.${label}`);assert.equal(cell.variants.length,count);
+    assert.deepEqual(Object.keys(cell.cmp).sort(), ['dynamo','golden']);
+    for (const leaf of cell.variants) assert.deepEqual(Object.keys(leaf.cmp).sort(), ['dynamo','golden']);
     assert.equal(cell.status==='na',label==='7-19'&&family==='deepseek_v4');
   }
 }

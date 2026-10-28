@@ -29,14 +29,18 @@ from unified_tools import unified_tools
 REPO = Path(__file__).resolve().parents[3]
 
 
-def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *, mode, metadata=None,
-                                 retained_history_only=False):
-    """Exercise both source modes against the same tiny, verified synthetic dataset."""
+def copy_publication_modules(root):
     tools = Path(capture_sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
+    for name in ("capture_sources.py", "ci_publication_cache.py", "dynamo_version.py", "capture_versions.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
         target = root / "conformance/utils/src" / name
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(tools / name, target)
+
+
+def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *, mode, metadata=None,
+                                 retained_history_only=False):
+    """Exercise both source modes against the same tiny, verified synthetic dataset."""
+    copy_publication_modules(root)
     (root / "index.html").write_bytes(b"<head></head><body></body>")
     (root / "conformance/CONFORMANCE_v2.html").write_bytes(b'<a href="../">Viewer</a>')
     (root / "conformance/fixtures-manifest.json").write_bytes(b'{"shards":[]}\n')
@@ -75,6 +79,7 @@ def prepare_isolated_publication(root, history, view, monkeypatch, publisher, *,
         # Supply synthetic catalog metadata; source discovery and admission stay real.
         patch.setattr(subprocess, "run", build_catalog)
         patch.delenv("CONFORMANCE_DOCUMENT_LOCK", raising=False)
+        patch.delenv("CONFORMANCE_PUBLICATION_CONTEXT", raising=False)
         patch.setenv("CONFORMANCE_CONVERSION_CACHE", str(root / "build/conformance-cache"))
         capture_sources.prepare(root, view, include_history=mode == "history",
                                 history_source=history if mode == "history" else None, publisher=str(publisher),
@@ -113,9 +118,12 @@ def publisher_binary():
 
 
 def publish(root, destination, *, workers="auto", extra=(), check=True, revision="a" * 40):
+    environment = dict(os.environ)
+    if root.resolve() != ROOT:
+        environment.pop("CONFORMANCE_PUBLICATION_CONTEXT", None)
     try:
         return subprocess.run([str(publisher_binary()), "--root", str(root), "--output", str(destination), "--revision", revision,
-                              "--workers", str(workers), *extra], cwd=ROOT, capture_output=True, text=True, check=check, timeout=4500)
+                              "--workers", str(workers), *extra], cwd=ROOT, env=environment, capture_output=True, text=True, check=check, timeout=4500)
     except subprocess.CalledProcessError as error:
         error.add_note(error.stderr)
         raise
@@ -167,7 +175,9 @@ def native_snapshots(root, destination, catalog, *, workers="auto"):
 def proof_catalog(root, destination, *, source_resources=None):
     catalog = runtime_catalog(destination)
     if source_resources is None:
-        source_catalog = json.loads((Path(root) / "conformance/viewer-catalog.json").read_bytes())
+        source_catalog = (capture_sources.current_catalog(Path(root))
+                          if catalog.get("capture_generation", {}).get("mode") == "latest" else
+                          json.loads((Path(root) / "conformance/viewer-catalog.json").read_bytes()))
         source_resources = source_catalog["sources"]["unified"]
     catalog["proof_original_unified"] = source_resources
     return catalog
@@ -190,6 +200,17 @@ def capture_releases(site):
             versions.setdefault(resource['implementation'], set()).add(resource['version'])
     return {implementation: sorted(releases, key=capture_release_sort_key)
             for implementation, releases in versions.items()}
+
+
+def retained_source_bytes(store_root: Path, resource: dict) -> bytes:
+    """Read a catalog resource through its checkout or store owner."""
+    if resource["path"].startswith("conformance/"):
+        data = historical_source_bytes(store_root.parent.parent, resource["path"])
+    else:
+        data = unified_archives.read_source(store_root, resource)
+    if len(data) != resource["size"] or hashlib.sha256(data).hexdigest() != resource["sha256"]:
+        raise ValueError("retained source identity mismatch")
+    return data
 
 
 def historical_source_bytes(root: Path, path: str) -> bytes:

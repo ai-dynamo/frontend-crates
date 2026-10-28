@@ -52,7 +52,7 @@ def historical_unified_sources(history_source):
 @pytest.fixture(scope="session")
 def source_catalog():
     """Declare checkout catalog dependencies, including JavaScript subprocesses."""
-    return json.loads((REPO / "conformance/viewer-catalog.json").read_bytes())
+    return capture_sources.current_catalog(REPO)
 
 
 def _browser_publication(tmp_path_factory, history_source=None):
@@ -64,8 +64,15 @@ def _browser_publication(tmp_path_factory, history_source=None):
         catalog = runtime_catalog(restored)
         if catalog["capture_generation"]["mode"] == "history":
             configured = str(restored)
+    embedded_source = None
     if configured:
-        return Path(configured).resolve(strict=True)
+        restored = Path(configured).resolve(strict=True)
+        restored_mode = runtime_catalog(restored)["capture_generation"]["mode"]
+        if restored_mode == mode:
+            return restored
+        if include_history:
+            raise ValueError("history fixture requires a history publication")
+        embedded_source = restored
     base = tmp_path_factory.getbasetemp()
     if os.environ.get("PYTEST_XDIST_WORKER"):
         base = base.parent
@@ -79,7 +86,11 @@ def _browser_publication(tmp_path_factory, history_source=None):
         existing = json.loads(receipt.read_bytes()) if receipt.is_file() else {}
         if existing.get("publisher_inputs_sha256") != expected or not (site / "index.html").is_file():
             extra = ("--include-history", "--history-source", str(history_source)) if include_history else ()
-            publish(REPO, site, extra=extra)
+            if embedded_source:
+                site.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(embedded_source / "index.html", site / "index.html")
+            else:
+                publish(REPO, site, extra=extra)
             receipt.write_text(json.dumps({"publisher_inputs_sha256": expected}))
     return site
 
@@ -88,6 +99,7 @@ def _browser_publication(tmp_path_factory, history_source=None):
 def published_viewer(tmp_path_factory, source_catalog):
     site = _browser_publication(tmp_path_factory)
     catalog = runtime_catalog(site)
+    assert catalog["capture_generation"]["mode"] == "latest"
     assert catalog.get("source_revision") == source_catalog["revision"]
     assert catalog["transport"]["schema"] == 2
     assert catalog["transport"]["raw_buckets"]

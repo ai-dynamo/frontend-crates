@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 env:
-  CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
+  CONFORMANCE_INCLUDE_HISTORY: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'true' || github.event.inputs.include-history || 'false' }}
 
 jobs:
   # The conformance jobs validate the maintained viewer and source resources and
@@ -176,8 +176,8 @@ jobs:
     env:
       CONFORMANCE_PUBLISHER: ${{ github.workspace }}/target/release/conformance-publish
       # Bump when the publisher command or output policy changes.
-      CONFORMANCE_PUBLICATION_POLICY: native-latest-single-html-v3
-      CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
+      CONFORMANCE_PUBLICATION_POLICY: native-history-context-v4
+      CONFORMANCE_INCLUDE_HISTORY: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'true' || github.event.inputs.include-history || 'false' }}
     steps:
       - name: Checkout publication sources
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
@@ -187,18 +187,25 @@ jobs:
       - name: Configure publication output
         run: |
           printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'CONFORMANCE_PUBLICATION_CONTEXT=%s/conformance/publication-context.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           printf 'CONFORMANCE_CONVERSION_CACHE=%s/conversion-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Install publication identity dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/publication-venv"
+          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
+          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
       - name: Identify exact publication inputs and reader
         id: identity
         run: |
           history_args=()
           if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")" >> "$GITHUB_OUTPUT"
+          identity=$("$CONFORMANCE_PYTHON" conformance/utils/src/ci_publication_cache.py identify --context "$CONFORMANCE_PUBLICATION_CONTEXT" --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")
+          printf 'key=%s\n' "$identity" >> "$GITHUB_OUTPUT"
       - name: Restore exact publication cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ${{ runner.temp }}/native-publication
-          key: ${{ runner.os }}-native-publication-v3-${{ github.ref }}-${{ steps.identity.outputs.key }}
+          key: ${{ runner.os }}-native-publication-v4-${{ github.ref }}-${{ steps.identity.outputs.key }}
       - name: Admit cached publication or fall back to cold generation
         id: cache
         run: |
@@ -237,12 +244,13 @@ jobs:
       - name: Generate source catalog inputs
         if: ${{ steps.cache.outputs.usable != 'true' }}
         run: |
-          python3 -m venv "$RUNNER_TEMP/publication-venv"
-          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
-          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
           history_args=()
           if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
+          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py
+          \cp -f conformance/viewer-catalog.json conformance/viewer-latest-catalog.json
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then
+            "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
+          fi
       - name: Publish native site
         if: ${{ steps.cache.outputs.usable != 'true' }}
         run: |
@@ -268,7 +276,7 @@ jobs:
           if [[ "$CONFORMANCE_PUBLISHER" != "$RUNNER_TEMP/native-publication/conformance-publish" ]]; then
             \cp -f "$CONFORMANCE_PUBLISHER" "$RUNNER_TEMP/native-publication/conformance-publish"
           fi
-          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json
+          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json conformance/viewer-latest-catalog.json conformance/publication-context.json
       - name: Seal reusable publication payload
         run: python3 conformance/utils/src/ci_publication_cache.py seal --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'
       - name: Retain candidate inputs for independent qualification
@@ -341,6 +349,9 @@ jobs:
 
       - name: Restore candidate publication for qualification
         uses: ./.github/actions/conformance-publication
+
+      - name: Install bundler for publication equivalence checks
+        uses: ./.github/actions/conformance-viewer-build
 
       - name: Conformance core shard (catalog + lint + invariants)
         run: |
@@ -598,21 +609,21 @@ jobs:
           python3 conformance/utils/src/verify_ci_selection.py --baseline "$RUNNER_TEMP/baseline-selection" --selections "$RUNNER_TEMP/assignments"
 
       - name: Download qualified Pages input after required checks
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: conformance-native-publication
           path: ${{ runner.temp }}/native-publication
       - name: Restore qualified Pages directory
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}
         run: |
           mkdir -p "$RUNNER_TEMP/pages"
           tar -xf "$RUNNER_TEMP/native-publication/native-pages.tar" -C "$RUNNER_TEMP/pages"
       - name: Configure GitHub Pages
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
       - name: Upload GitHub Pages artifact
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: ${{ runner.temp }}/pages
@@ -631,7 +642,7 @@ jobs:
   deploy-pages:
     name: Deploy conformance matrix to GitHub Pages
     needs: conformance-table
-    if: ${{ github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
