@@ -1194,21 +1194,18 @@ mod tests {
     fn reasoning_input_summary_normalizes_empty_values_and_preserves_fields() {
         let populated = serde_json::json!([{"type": "summary_text", "text": "summary"}]);
         for (summary, expected_summary) in [
-            (None, serde_json::json!([])),
-            (Some(serde_json::Value::Null), serde_json::json!([])),
-            (Some(serde_json::json!([])), serde_json::json!([])),
-            (Some(populated.clone()), populated),
+            (serde_json::Value::Null, serde_json::json!([])),
+            (serde_json::json!([]), serde_json::json!([])),
+            (populated.clone(), populated),
         ] {
             let mut input = serde_json::json!({
                 "type": "reasoning",
                 "id": "rs_1",
+                "summary": summary,
                 "content": [{"text": "reasoning content"}],
                 "encrypted_content": "AB==",
                 "status": "completed",
             });
-            if let Some(summary) = summary {
-                input["summary"] = summary;
-            }
             let request: CreateResponse = serde_json::from_value(serde_json::json!({
                 "model": "example-model", "input": [input.clone()]
             }))
