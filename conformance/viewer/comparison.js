@@ -61,6 +61,11 @@ export function mountComparison(panel, controller) {
     + '</div><div class="comparison-matrix-scroll"></div>';
   panel.appendChild(ui);
   const toolbar = ui.querySelector('.comparison-toolbar');
+  const viewActions = panel.querySelector('.capture-slots .tabs-right');
+  if (viewActions) {
+    viewActions.classList.remove('capture-slot-actions');
+    toolbar.appendChild(viewActions);
+  }
   toolbar.querySelector('[data-case-search]').value = state.search;
   let tab;
   const persist = () => {

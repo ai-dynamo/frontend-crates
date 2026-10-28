@@ -69,6 +69,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .matrix-segments { display: flex; height: 22px; border-radius: 4px; overflow: hidden; }
 .matrix-segments > i { flex: 1; border-right: 1px solid var(--panel-bg); }
 .matrix-cell.focus-dim .matrix-segments { opacity: .18; }
+.publication-history-notice { display: block; flex: none; margin: 16px 0 0; }
 @media (max-width: 700px) {
   .capture-slot-controls { grid-template-columns: 1fr; }
   .capture-slot { grid-template-columns: auto minmax(0,1fr); }
