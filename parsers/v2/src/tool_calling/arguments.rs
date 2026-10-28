@@ -162,7 +162,6 @@ impl ParsedValue {
         .expect("ParsedValue serialization must be valid JSON")
     }
 
-    #[cfg(test)]
     pub(crate) fn as_object(&self) -> Option<&BTreeMap<String, ParsedValue>> {
         match self {
             Self::Object(fields) => Some(&fields.values),
@@ -201,6 +200,18 @@ pub(crate) fn parsed_json_literal(value: &str) -> Option<ParsedValue> {
     // RawValue skips serde_json's nesting limit; retain that limit before building
     // recursive nodes so serialization and drop remain stack bounded.
     parsed_json_literal_with_budget(value, 128)
+}
+
+/// Locate a complete JSON prefix without converting numeric tokens to floats.
+pub(crate) fn parsed_json_prefix_end(value: &str) -> serde_json::Result<Option<usize>> {
+    let mut values = serde_json::Deserializer::from_str(value).into_iter::<Box<RawValue>>();
+    let Some(raw) = values.next().transpose()? else {
+        return Ok(None);
+    };
+    if parsed_json_literal(raw.get()).is_none() {
+        return Err(serde::de::Error::custom("JSON nesting limit exceeded"));
+    }
+    Ok(Some(values.byte_offset()))
 }
 
 fn parsed_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedValue> {
@@ -387,7 +398,7 @@ pub(crate) fn coerce_integral_number(value: &str) -> Option<ParsedValue> {
 mod tests {
     use super::{
         ParsedObject, ParsedValue, coerce_integral_number, normalize_decimal_spelling,
-        parsed_json_literal, raw_number_literal,
+        parsed_json_literal, parsed_json_prefix_end, raw_number_literal,
     };
 
     #[test]
@@ -437,6 +448,25 @@ mod tests {
             parsed_json_literal(input).unwrap().json_text().unwrap(),
             expected
         );
+    }
+
+    #[test]
+    fn raw_prefix_validation_preserves_numbers_and_nesting_limits() {
+        let payload = r#"{"n":1e9999,"nested":[1e-400]}"#;
+        assert_eq!(
+            parsed_json_prefix_end(&format!("{payload} trailing")).unwrap(),
+            Some(payload.len())
+        );
+        assert!(parsed_json_prefix_end(r#"{"n":1e"#).is_err());
+        assert!(parsed_json_prefix_end(r#"{"n":invalid}"#).is_err());
+        for depth in [126, 127, 128, 129] {
+            let input = format!("{}1e9999{}", "[".repeat(depth), "]".repeat(depth));
+            assert_eq!(
+                parsed_json_prefix_end(&input).is_ok(),
+                depth < 128,
+                "depth={depth}"
+            );
+        }
     }
 
     #[test]

@@ -8,6 +8,12 @@ This README is the canonical parser documentation for the workspace. The goals, 
 
 **Runtime selection is separate from this naming cleanup.** Dynamo reads parser names from the model deployment. `DYN_ENABLE_EXPERIMENTAL_PARSERS_V2` enables both experimental routes; it does not choose one by itself. Routing checks Unified first: the exact `tool_call_parser=qwen3_coder` plus `reasoning_parser=qwen3` pair uses Qwen3 Unified when the flag is on. If no Unified pair matches, eligible `qwen3_coder` or `deepseek_v4` requests use the older non-Unified incremental parser. All remaining tool-parsing requests use batch+jail. DeepSeek V4.1 and Muse have separate Unified routes that do not depend on this flag. A parser failure does not trigger a general Unified-to-incremental-to-jail retry chain.
 
+## Numeric values and Serde consumers
+
+The default build keeps `serde_json` numbers compatible with independent Serde serializers such as Pythonizer, MessagePack, and YAML. Parser argument deltas and `tool_arguments_raw()` preserve exact numeric JSON tokens, including large integers, fractions, and exponents, through the shared raw-argument representation. `UnifiedEvent.arguments` is a lossy `serde_json::Value` projection; use the raw accessor for serving exact argument text.
+
+Enable the `arbitrary-precision` Cargo feature only when a consumer needs arbitrary-precision `serde_json::Value` numbers and supports their Serde representation. This enables `serde_json/arbitrary_precision`, which serializes numbers through a private struct rather than native numeric scalar methods. Independent serializers may expose that struct as a map or reject it. Cargo unifies dependency features, so enabling this feature also affects other `serde_json` users in the same dependency graph. `raw_value` remains enabled in both builds.
+
 ## Parser goals (read first)
 
 These goals govern every tool-calling and reasoning parser, v1 and v2, and are the tie-breakers when the engines (vLLM, SGLang, Dynamo) disagree.

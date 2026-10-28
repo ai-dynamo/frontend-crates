@@ -31,10 +31,12 @@ use std::sync::OnceLock;
 
 use regex::Regex;
 
-use crate::tool_calling::arguments::{ParsedObject, ParsedValue, parsed_json_literal};
+use crate::tool_calling::arguments::{
+    ParsedObject, ParsedValue, parsed_json_literal, parsed_json_prefix_end,
+};
 use crate::tool_calling::scan::{
-    InvokeEmitter, ProseControl, ProseControlState, ProseGrammarSpan, marker_prefix_suffix_len,
-    push_run, reorder_arguments,
+    InvokeEmitter, ProseControl, ProseControlState, ProseGrammarSpan, find_first_outside_strings,
+    marker_prefix_suffix_len, push_run, reorder_arguments,
 };
 use crate::tool_calling::traits::{Tool, ToolCallDelta, ToolParseResult, ToolParser};
 use crate::tool_calling::v1core::ToolDefinition;
@@ -120,15 +122,14 @@ fn parameter_end(value: &str, schema: Option<&serde_json::Value>) -> Option<usiz
     if !schema.is_some_and(|s| s["type"] == "string")
         && value.trim_start().starts_with(['{', '[', '"'])
     {
-        let mut json = serde_json::Deserializer::from_str(value).into_iter::<serde_json::Value>();
-        match json.next() {
-            Some(Ok(_)) => {
-                let end = json.byte_offset();
+        match parsed_json_prefix_end(value) {
+            Ok(Some(end)) => {
                 return value[end..].find(PARAMETER_CLOSE).map(|at| end + at);
             }
-            Some(Err(error)) if error.is_eof() => return None,
-            // Invalid non-JSON text retains the existing verbatim fallback.
-            _ => {}
+            Err(error) if error.is_eof() => return None,
+            // RawValue and Value classify truncated numeric tokens differently.
+            // Quoted delimiters still belong to JSON-shaped argument text.
+            _ => return find_first_outside_strings(value, [PARAMETER_CLOSE]).map(|(at, _)| at),
         }
     }
     value.find(PARAMETER_CLOSE)
@@ -1731,6 +1732,22 @@ impl ToolParser for MuseGlimmerToolStreamParser {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn json_parameter_fallback_keeps_quoted_delimiters_owned() {
+        let quoted = r#"{"text":"</atem:parameter></atem:invoke>","n":invalid}"#;
+        let value = format!("{quoted}{PARAMETER_CLOSE}tail");
+        assert_eq!(parameter_end(&value, None), Some(quoted.len()));
+        let prefix = r#"{"text":"</atem:parameter></atem:invoke>","n":1e"#;
+        assert_eq!(parameter_end(prefix, None), None);
+        let raw = format!("raw{PARAMETER_CLOSE}tail{PARAMETER_CLOSE}");
+        assert_eq!(parameter_end(&raw, None), Some(3));
+        let string_schema = serde_json::json!({"type":"string"});
+        assert_eq!(
+            parameter_end(&value, Some(&string_schema)),
+            value.find(PARAMETER_CLOSE)
+        );
+    }
+
     use super::*;
 
     fn tools(names: &[&str]) -> Vec<Tool> {

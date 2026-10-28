@@ -23,6 +23,59 @@ pub(super) fn deliveries(input: &str) -> Vec<Vec<&str>> {
     schedules
 }
 
+fn tool_result(events: Vec<UnifiedParserEvent>) -> ToolParseResult {
+    let mut output = ToolParseResult::default();
+    for event in events {
+        match event {
+            UnifiedParserEvent::ToolCall(call) => output.calls.push(call),
+            UnifiedParserEvent::Text(text) => output.normal_text.push_str(&text),
+            UnifiedParserEvent::Reasoning(text) => panic!("unexpected reasoning: {text}"),
+            UnifiedParserEvent::MessageStart(_) | UnifiedParserEvent::MessageEnd => {}
+        }
+    }
+    output.coalesce_calls()
+}
+
+fn assert_native_raw_case(family: &str, input: &str, arguments: &str) {
+    let tools = [Tool {
+        name: "echo".into(),
+        description: None,
+        strict: None,
+        parameters: serde_json::json!({"type":"object","properties":{
+            "n":{"type":["number","null"]}, "payload":{"type":"object"}
+        }}),
+    }];
+    let expected = ToolParseResult {
+        normal_text: String::new(),
+        calls: vec![ToolCallDelta {
+            tool_index: 0,
+            name: Some("echo".into()),
+            arguments: arguments.into(),
+            complete: true,
+        }],
+    };
+    for chunks in deliveries(input) {
+        let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+        let mut events = Vec::new();
+        for chunk in &chunks {
+            events.extend(parser.push(chunk).unwrap());
+        }
+        events.extend(parser.finish().unwrap().events);
+        assert_eq!(tool_result(events), expected, "{family}: {chunks:?}");
+        let mut parser = create_tool_parser_for_family(family, &tools).unwrap();
+        let mut output = ToolParseResult::default();
+        for chunk in &chunks {
+            output.append(parser.push(chunk).unwrap());
+        }
+        output.append(parser.finish().unwrap());
+        assert_eq!(
+            output.coalesce_calls(),
+            expected,
+            "legacy {family}: {chunks:?}"
+        );
+    }
+}
+
 fn assert_numeric_case(schema: &serde_json::Value, raw: &str, expected: &str) {
     let tools = vec![Tool {
         name: "get_weather".into(),
@@ -157,4 +210,132 @@ fn large_fractional_arguments_remain_exact_json_numbers() {
             assert_numeric_case(&schema, raw, raw);
         }
     }
+}
+
+#[cfg(not(feature = "arbitrary-precision"))]
+#[test]
+fn default_json_numbers_serialize_as_native_scalars() {
+    // YAML uses an independent Serde serializer, like Pythonizer and MessagePack
+    // consumers; serde_json's private arbitrary-precision struct must not escape.
+    for (raw, expected) in [
+        ("512", serde_yaml::to_value(512_u64).unwrap()),
+        ("-512", serde_yaml::to_value(-512_i64).unwrap()),
+        ("0.5", serde_yaml::to_value(0.5_f64).unwrap()),
+    ] {
+        let value: serde_json::Value = serde_json::from_str(raw).unwrap();
+        assert_eq!(serde_yaml::to_value(value).unwrap(), expected, "{raw}");
+    }
+}
+
+#[test]
+fn guided_numeric_arguments_remain_exact_at_every_split() {
+    let arguments = r#"{"large":18446744073709551617,"fraction":9007199254740992.5,"nested":[1e-400,{"overflow":1e9999}]}"#;
+    for family in ["qwen3", "deepseek_v4", "deepseek_v41", "kimi_k2"] {
+        for policy in [
+            crate::InvalidGuidedPayloadPolicy::RecoverAsText,
+            crate::InvalidGuidedPayloadPolicy::Reject,
+            crate::InvalidGuidedPayloadPolicy::StreamBestEffort,
+        ] {
+            for payload in [
+                arguments.to_string(),
+                format!(r#"[{{"name":"echo","arguments":{arguments}}}]"#),
+                format!(r#"[{{"name":"echo","parameters":{arguments}}}]"#),
+            ] {
+                let named = payload.starts_with('{');
+                for chunks in deliveries(&payload) {
+                    let mut parser = create_unified_parser_for_family(family, &[]).unwrap();
+                    parser
+                        .initialize_request(crate::UnifiedParserInit {
+                            tool_output_mode: crate::UnifiedToolOutputMode::GuidedJson {
+                                named_tool: named.then(|| "echo".into()),
+                            },
+                            invalid_guided_payload: policy,
+                            ..Default::default()
+                        })
+                        .unwrap();
+                    let mut events = Vec::new();
+                    for chunk in chunks {
+                        events.extend(parser.push(chunk).unwrap());
+                    }
+                    assert!(
+                        events.iter().any(|event| matches!(event,
+                        UnifiedParserEvent::ToolCall(delta) if delta.complete)),
+                        "{family}: {policy:?}: completed payload must commit before EOF"
+                    );
+                    let tail = parser.push("after").unwrap();
+                    assert_eq!(
+                        tool_result(tail.clone()).normal_text,
+                        "after",
+                        "{family}: {policy:?}: trailing text must route before EOF"
+                    );
+                    events.extend(tail);
+                    events.extend(parser.finish().unwrap().events);
+                    assert_eq!(
+                        tool_result(events),
+                        ToolParseResult {
+                            normal_text: "after".into(),
+                            calls: vec![ToolCallDelta {
+                                tool_index: 0,
+                                name: Some("echo".into()),
+                                arguments: arguments.into(),
+                                complete: true,
+                            }],
+                        },
+                        "{family}: {policy:?}, {payload}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn kimi_k3_json_numeric_payload_remains_exact_at_every_split() {
+    let arguments = r#"{"n":1e9999,"payload":{"fraction":9007199254740992.5,"underflow":1e-400}}"#;
+    let body = format!("<|open|>json<|sep|>{arguments}<|close|>json<|sep|>");
+    let input = format!(
+        "<|open|>tools<|sep|><|open|>call tool=\"echo\" index=\"0\"<|sep|>{body}<|close|>call<|sep|><|close|>tools<|sep|>"
+    );
+    assert_native_raw_case("kimi_k3", &input, arguments);
+}
+
+#[test]
+fn kimi_k3_typed_numeric_payload_remains_exact_at_every_split() {
+    let input = "<|open|>tools<|sep|><|open|>call tool=\"echo\" index=\"0\"<|sep|><|open|>argument key=\"n\" type=\"number\"<|sep|>1e9999<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>";
+    assert_native_raw_case("kimi_k3", input, r#"{"n":1e9999}"#);
+}
+
+#[test]
+fn kimi_k2_numeric_payload_owns_embedded_closer_at_every_split() {
+    let arguments = r#"{"n":1e9999,"payload":{"text":"<|tool_call_end|>"}}"#;
+    let input = format!(
+        "<|tool_calls_section_begin|><|tool_call_begin|>functions.echo:0<|tool_call_argument_begin|>{arguments}<|tool_call_end|><|tool_calls_section_end|>"
+    );
+    assert_native_raw_case("kimi_k2", &input, arguments);
+}
+
+#[test]
+fn muse_numeric_payload_owns_embedded_closer_at_every_split() {
+    let payload = r#"{"text":"</atem:parameter></atem:invoke>","n":1e9999}"#;
+    let input = format!(
+        "<|start|>assistant to=echo<|message|><atem:function_calls><atem:invoke name=\"echo\"><atem:parameter name=\"payload\">{payload}</atem:parameter></atem:invoke></atem:function_calls><|eom|>"
+    );
+    assert_native_raw_case(
+        "muse_glimmer",
+        &input,
+        &format!(r#"{{"payload":{payload}}}"#),
+    );
+    let malformed = r#"{"text":"</atem:parameter></atem:invoke>","n":invalid}"#;
+    let input = input.replace(payload, malformed);
+    let arguments = serde_json::to_string(&serde_json::json!({"payload":malformed})).unwrap();
+    assert_native_raw_case("muse_glimmer", &input, &arguments);
+}
+
+#[test]
+fn glm_numeric_union_preserves_nonintegral_overflow_at_every_split() {
+    // A non-integral number beyond f64 avoids the integer hint's separate path.
+    let raw = format!("1.{}1e309", "0".repeat(399));
+    let input =
+        format!("<tool_call>echo<arg_key>n</arg_key><arg_value>{raw}</arg_value></tool_call>");
+    assert_native_raw_case("glm47", &input, &format!(r#"{{"n":{raw}}}"#));
 }

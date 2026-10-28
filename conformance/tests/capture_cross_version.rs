@@ -818,12 +818,13 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
 
 #[test]
 fn json_to_yaml_preserves_large_integers_and_yaml_incompatible_floats() {
-    let value: Value = serde_json::from_str(r#"{"value":9007199254740993,"tiny":1e-400}"#).unwrap();
+    let value: Box<serde_json::value::RawValue> =
+        serde_json::from_str(r#"{"value":9007199254740993,"tiny":1e-400}"#).unwrap();
     let yaml = common::json_to_yaml_value(&value);
     assert_eq!(yaml["value"].as_u64(), Some(9_007_199_254_740_993));
     assert_eq!(yaml["tiny"].as_str(), Some("1e-400"));
     for raw in ["0e1", "0.0e-400"] {
-        let value: Value = serde_json::from_str(raw).unwrap();
+        let value: Box<serde_json::value::RawValue> = serde_json::from_str(raw).unwrap();
         assert!(common::json_to_yaml_value(&value).is_number());
     }
 }
@@ -837,11 +838,23 @@ fn captured_event_arguments_round_trip_without_yaml_number_conversion() {
         r#""null""#,
         r#""[1]""#,
     ] {
-        let arguments: Value = serde_json::from_str(raw).unwrap();
-        let event = json!({"kind": "tool_call", "name": "inspect", "arguments": arguments});
+        #[derive(serde::Serialize)]
+        struct Event<'a> {
+            kind: &'a str,
+            name: &'a str,
+            arguments: Box<serde_json::value::RawValue>,
+        }
+        let event = Event {
+            kind: "tool_call",
+            name: "inspect",
+            arguments: serde_json::from_str(raw).unwrap(),
+        };
         let yaml = common::unified_event_to_yaml_value(&event);
         let captured = yaml["arguments"].as_str().expect("raw JSON arguments");
-        assert_eq!(serde_json::from_str::<Value>(captured).unwrap(), arguments);
+        assert_eq!(
+            common::canonical_argument_json(captured),
+            common::canonical_argument_json(raw)
+        );
     }
 }
 

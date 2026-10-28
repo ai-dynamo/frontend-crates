@@ -135,8 +135,8 @@ mod json_comparison_tests {
             (r#"{"value":1e-400}"#, r#"{"value":0}"#, false),
             ("[1,2]", "[2,1]", false),
         ] {
-            let left: serde_json::Value = serde_json::from_str(left).unwrap();
-            let right: serde_json::Value = serde_json::from_str(right).unwrap();
+            let left: Box<serde_json::value::RawValue> = serde_json::from_str(left).unwrap();
+            let right: Box<serde_json::value::RawValue> = serde_json::from_str(right).unwrap();
             assert_eq!(super::json_values_equal(&left, &right), equal);
         }
     }
@@ -152,53 +152,70 @@ pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Va
 }
 
 pub fn json_to_yaml_value<T: serde::Serialize>(value: &T) -> serde_yaml::Value {
-    fn convert(value: serde_json::Value) -> serde_yaml::Value {
-        match value {
-            serde_json::Value::Null => serde_yaml::Value::Null,
-            serde_json::Value::Bool(value) => serde_yaml::Value::Bool(value),
-            serde_json::Value::Number(number) => {
-                let lexeme = number.to_string();
-                let nonzero_digit = lexeme
-                    .split(['e', 'E'])
-                    .next()
-                    .expect("JSON number has a mantissa")
-                    .bytes()
-                    .any(|byte| byte.is_ascii_digit() && byte != b'0');
-                let yaml_incompatible = number
-                    .as_f64()
-                    .is_none_or(|value| !value.is_finite() || value == 0.0 && nonzero_digit);
-                if yaml_incompatible {
-                    serde_yaml::Value::String(lexeme)
-                } else {
-                    serde_yaml::from_str(&lexeme).expect("JSON number parses as YAML")
+    fn convert(value: &serde_json::value::RawValue) -> serde_yaml::Value {
+        let raw = value.get();
+        match raw.as_bytes().first() {
+            Some(b'n') => serde_yaml::Value::Null,
+            Some(b't') => serde_yaml::Value::Bool(true),
+            Some(b'f') => serde_yaml::Value::Bool(false),
+            Some(b'"') => serde_yaml::Value::String(serde_json::from_str(raw).unwrap()),
+            Some(b'[') => {
+                let values: Vec<Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Sequence(values.iter().map(|value| convert(value)).collect())
+            }
+            Some(b'{') => {
+                let values: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Mapping(
+                    values
+                        .into_iter()
+                        .map(|(key, value)| (serde_yaml::Value::String(key), convert(&value)))
+                        .collect(),
+                )
+            }
+            Some(b'-' | b'0'..=b'9') => {
+                // YAML scalars use bounded numbers; preserve tokens whose value
+                // changes when that representation is serialized back to JSON.
+                let yaml = serde_yaml::from_str::<serde_yaml::Value>(raw)
+                    .ok()
+                    .filter(serde_yaml::Value::is_number)
+                    .or_else(|| {
+                        raw.parse::<f64>()
+                            .ok()
+                            .and_then(|value| serde_yaml::to_value(value).ok())
+                    });
+                if let Some(yaml) = yaml
+                    && let Ok(round_trip) = serde_json::to_string(&yaml)
+                    && canonical_argument_json(&round_trip) == canonical_argument_json(raw)
+                {
+                    return yaml;
                 }
+                serde_yaml::Value::String(raw.to_string())
             }
-            serde_json::Value::String(value) => serde_yaml::Value::String(value),
-            serde_json::Value::Array(values) => {
-                serde_yaml::Value::Sequence(values.into_iter().map(convert).collect())
-            }
-            serde_json::Value::Object(values) => serde_yaml::Value::Mapping(
-                values
-                    .into_iter()
-                    .map(|(key, value)| (serde_yaml::Value::String(key), convert(value)))
-                    .collect(),
-            ),
+            _ => unreachable!("RawValue only accepts JSON"),
         }
     }
 
-    convert(serde_json::to_value(value).expect("value serializes as JSON"))
+    let raw = serde_json::value::to_raw_value(value).expect("value serializes as JSON");
+    convert(&raw)
 }
 
 pub fn unified_event_to_yaml_value<T: serde::Serialize>(event: &T) -> serde_yaml::Value {
-    let mut event = serde_json::to_value(event).expect("event serializes as JSON");
-    if event.get("kind").and_then(serde_json::Value::as_str) == Some("tool_call")
-        && let Some(arguments) = event.get_mut("arguments")
-    {
+    let event = serde_json::value::to_raw_value(event).expect("event serializes as JSON");
+    if !event.get().starts_with('{') {
+        return json_to_yaml_value(&event);
+    }
+    let mut event: BTreeMap<String, Box<serde_json::value::RawValue>> =
+        serde_json::from_str(event.get()).expect("event object");
+    let tool_call = event.get("kind").is_some_and(|kind| {
+        serde_json::from_str::<String>(kind.get()).is_ok_and(|kind| kind == "tool_call")
+    });
+    if tool_call && let Some(arguments) = event.get_mut("arguments") {
         // Preserve the whole JSON payload: YAML float scalars round decimals,
         // and quoting individual numbers would change their argument types.
-        *arguments = serde_json::Value::String(
-            serde_json::to_string(arguments).expect("tool arguments serialize as JSON"),
-        );
+        *arguments = serde_json::value::to_raw_value(&arguments.get())
+            .expect("tool arguments serialize as JSON text");
     }
     json_to_yaml_value(&event)
 }

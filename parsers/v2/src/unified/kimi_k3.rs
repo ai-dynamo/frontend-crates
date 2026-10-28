@@ -10,7 +10,10 @@
 
 use std::collections::HashMap;
 
+#[cfg(test)]
 use serde_json::Value;
+
+use crate::tool_calling::arguments::{parsed_json_literal, parsed_json_object};
 
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
@@ -626,7 +629,7 @@ impl KimiK3CallBoundary {
                 return false;
             };
             let payload = &rest[..end];
-            serde_json::from_str::<Value>(payload).is_ok()
+            parsed_json_literal(payload).is_some()
                 && rest[end..].trim().is_empty()
                 && (self.context != CallBoundaryContext::Guided || guided_payload_starts(rest))
         })
@@ -659,9 +662,7 @@ impl KimiK3CallBoundary {
             let Some(end) = json_value_end(suffix) else {
                 continue;
             };
-            if serde_json::from_str::<Value>(&suffix[..end]).is_ok()
-                && suffix[end..].trim().is_empty()
-            {
+            if parsed_json_literal(&suffix[..end]).is_some() && suffix[end..].trim().is_empty() {
                 return Some(outer.end());
             }
         }
@@ -1012,7 +1013,7 @@ fn header_separator_is_partial(text: &str) -> bool {
 
 fn guided_payload_starts(text: &str) -> bool {
     let text = text.trim_start();
-    json_value_end(text).is_some_and(|end| serde_json::from_str::<Value>(&text[..end]).is_ok())
+    json_value_end(text).is_some_and(|end| parsed_json_literal(&text[..end]).is_some())
 }
 
 fn kimi_k3_call_boundary() -> Box<dyn InvokeBoundary> {
@@ -2078,9 +2079,7 @@ fn parse_call_body(body: &str) -> Option<String> {
             return None;
         }
         let raw = &trimmed[value_start..value_end];
-        let Value::Object(_) = serde_json::from_str::<Value>(raw).ok()? else {
-            return None;
-        };
+        parsed_json_object(raw)?;
         return Some(compact_json(raw));
     }
 
@@ -2282,7 +2281,7 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
     if arg_type == "string" {
         return serde_json::to_string(raw).expect("serializing a Rust string cannot fail");
     }
-    if serde_json::from_str::<Value>(raw).is_ok() {
+    if parsed_json_literal(raw).is_some() {
         compact_json(raw)
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")

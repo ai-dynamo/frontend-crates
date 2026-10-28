@@ -472,10 +472,10 @@ fn get_param_schema_type<'a>(
     let candidates: &[&str] = if coerce_integral_number(raw).is_some() {
         &["integer", "number"]
     } else {
-        match serde_json::from_str::<Value>(raw).ok()? {
-            Value::Null => &["null"],
-            Value::Bool(_) => &["boolean"],
-            Value::Number(_) => &["number"],
+        match parsed_json_literal(raw)? {
+            ParsedValue::Json(Value::Null) => &["null"],
+            ParsedValue::Json(Value::Bool(_)) => &["boolean"],
+            ParsedValue::RawNumber(_) => &["number"],
             _ => &[],
         }
     };

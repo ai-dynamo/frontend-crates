@@ -831,12 +831,25 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
             *coverage.entry(file.family.clone()).or_default() += 1;
             for (label, chunks) in splittings(&case.input) {
                 let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
-                let native = events(&file.family, &chunks, &case.init, &case_tools).map(|events| {
-                    events
-                        .into_iter()
-                        .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-                        .collect::<Vec<_>>()
-                });
+                let native = events_and_raw(&file.family, &chunks, &case.init, &case_tools).map(
+                    |(events, raw)| {
+                        let names = events
+                            .into_iter()
+                            .filter_map(|event| match event {
+                                UnifiedEvent::ToolCall { name, .. } => Some(name),
+                                _ => None,
+                            })
+                            .collect::<Vec<_>>();
+                        assert_eq!(names.len(), raw.len(), "native raw argument inventory");
+                        names
+                            .into_iter()
+                            .zip(raw.into_values())
+                            .map(|(name, arguments)| {
+                                (name, common::canonical_argument_json(&arguments))
+                            })
+                            .collect::<Vec<_>>()
+                    },
+                );
                 let mut parser = create_tool_parser_for_family("deepseek_v4", &case_tools).unwrap();
                 let mut result = ToolParseResult::default();
                 let mut failure = None;
@@ -861,9 +874,11 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                             .coalesce_calls()
                             .calls
                             .into_iter()
-                            .map(|call| UnifiedEvent::ToolCall {
-                                name: call.name.unwrap(),
-                                arguments: serde_json::from_str(&call.arguments).unwrap(),
+                            .map(|call| {
+                                (
+                                    call.name.unwrap(),
+                                    common::canonical_argument_json(&call.arguments),
+                                )
                             })
                             .collect::<Vec<_>>())
                     },

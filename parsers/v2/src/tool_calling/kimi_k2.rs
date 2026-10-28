@@ -34,6 +34,7 @@
 //! round-trips compact JSON byte-for-byte and falls back to the raw string for
 //! malformed payloads, which is exactly what the fixtures expect.
 
+use crate::tool_calling::arguments::parsed_json_literal;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch, InvokeScan,
     WrappedBlockScanner, WrappedBlockSpec, find_first_outside_strings, json_value_end,
@@ -306,9 +307,8 @@ fn kimi_invoke_end(text: &str, flush: bool, tool_index: usize) -> Option<usize> 
     // section-end guard) instead of taking the well-formed path at all --
     // one owner for "is this argument actually usable as JSON", not a
     // patchwork of per-branch checks.
-    let valid_json_len = json_value_end(after_args).filter(|&json_len| {
-        serde_json::from_str::<serde_json::Value>(&after_args[..json_len]).is_ok()
-    });
+    let valid_json_len = json_value_end(after_args)
+        .filter(|&json_len| parsed_json_literal(&after_args[..json_len]).is_some());
     let Some(json_len) = valid_json_len else {
         // `json_value_end` returning `None` does NOT mean "malformed" --
         // most of the time it means "not balanced YET", e.g. a chunk split
