@@ -42,6 +42,7 @@ import gen_unified_golden as G  # noqa: E402
 from schema_cases import CONFORMANCE_CASES, XML_COMPATIBILITY_CASES, schema_arguments  # noqa: E402
 import unified_history  # noqa: E402
 import unified_archives
+from fixture_test_support import retained_source_bytes
 import ci_coverage
 import capture_stimulus  # noqa: E402
 import unified_taxonomy as taxonomy  # noqa: E402
@@ -1098,7 +1099,7 @@ def retained_unified_snapshots(store, *, families=None, source_root=None, resour
         [row for row in resources
          if row["kind"] == "history" and row["implementation"] == "dynamo_v2"
          and (families is None or row["family"] in families)], profile="exhaustive")
-    sparse = any("schema_version" not in unified_history.load_yaml(root / _store_resource(row)["path"])
+    sparse = any("schema_version" not in yaml.load(retained_source_bytes(root, row), Loader=unified_history.StrictLoader)
                  for row in resources if "archive" not in row)
     if sparse or (root.parent.parent / "conformance/history-datasets.json").is_file():
         resolved = unified_history.load_store(root)
@@ -1230,7 +1231,7 @@ def test_reference_backfills_require_request_bound_version_receipts(authored_uni
             measured = {family.cases[key]["display_id"] for key in document["records"]}
             missing = introduced - measured
             if missing:
-                source = unified_archives.read_source(root, _store_resource(resource))
+                source = retained_source_bytes(root, resource)
                 assert hashlib.sha256(source).hexdigest() == resource["sha256"]
                 retained_absences.append({"family": family.name, "version": version, "missing": sorted(missing), "source_sha256": resource["sha256"]})
             continue

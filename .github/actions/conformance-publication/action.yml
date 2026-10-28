@@ -13,9 +13,13 @@ runs:
     - name: Restore matching publication inputs
       shell: bash
       run: |
+        python3 conformance/utils/src/ci_publication_cache.py check --directory "$RUNNER_TEMP/native-publication" --identity "$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/native-publication/cache-manifest.json"))["identity"])')"
         printf 'CONFORMANCE_PUBLISHER=%s/native-publication/conformance-publish\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
         printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
         chmod u+x "$RUNNER_TEMP/native-publication/conformance-publish"
         mkdir -p "$RUNNER_TEMP/pages"
         tar -xf "$RUNNER_TEMP/native-publication/native-pages.tar" -C "$RUNNER_TEMP/pages"
         tar -xf "$RUNNER_TEMP/native-publication/source-catalogs.tar" -C "$GITHUB_WORKSPACE"
+        python3 conformance/utils/src/ci_publication_cache.py context-check --context "$GITHUB_WORKSPACE/conformance/publication-context.json"
+        printf 'CONFORMANCE_PUBLICATION_CONTEXT=%s/conformance/publication-context.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+        printf 'CONFORMANCE_INCLUDE_HISTORY=%s\n' "$(python3 -c 'import json; print(str(json.load(open("conformance/publication-context.json"))["generation_mode"] == "history").lower())')" >> "$GITHUB_ENV"

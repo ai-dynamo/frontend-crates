@@ -8,15 +8,17 @@ import os
 import re
 from pathlib import Path
 import shutil
+import threading
 from urllib.parse import urlencode, urlsplit
 
 import pytest
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from browser_helpers import raw_view_download
+from browser_helpers import raw_view_download, settle
 from verify_publication_transport import runtime_catalog
 from fixture_test_support import capture_releases, historical_source_bytes
 from test_browser_viewer import _driver, _ready, _server, _choose_engine
+from test_browser_smoke import _RECORD_FIRST_VISIBLE_MATRIX_JS
 import capture_sources
 import unified_history
 
@@ -184,6 +186,57 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
             if path.endswith(".yaml"):
                 assert download["renderedHash"] == expected
     finally:
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
+def test_history_discovery_preserves_completed_table_selection_and_popup(historical_published_viewer):
+    gate = (threading.Event(), threading.Event())
+    server, _requests = _server(root=historical_published_viewer, gate=gate,
+                               gate_path="/conformance/viewer-resolved-catalog.json.gz")
+    driver = _driver()
+    try:
+        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {"source": _RECORD_FIRST_VISIBLE_MATRIX_JS})
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        settle(driver, "tab-unified")
+        assert gate[0].wait(15)
+        WebDriverWait(driver, 15).until(lambda page: page.execute_script("return window.__firstVisibleMatrix !== null"))
+        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        cell.click()
+        WebDriverWait(driver, 15).until(lambda page: any(item.is_displayed() for item in page.find_elements("css selector", ".ttip-pinned")))
+        before = driver.execute_script("""
+            window.historyTransitionFrames = [];
+            window.observeHistoryTransition = true;
+            function observe() {
+                const panel = document.getElementById('tab-unified');
+                window.historyTransitionFrames.push({cells: panel.querySelectorAll('td.cell').length,
+                    popup: [...document.querySelectorAll('.ttip-pinned')].some(node => node.getBoundingClientRect().width > 0)});
+                if (window.observeHistoryTransition) requestAnimationFrame(observe);
+            }
+            requestAnimationFrame(observe);
+            return {cells: document.querySelectorAll('#tab-unified td.cell').length,
+                    selection: document.getElementById('tab-unified')._comparisonSelection.keys,
+                    popup: document.querySelector('.ttip-pinned').textContent,
+                    initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions};
+        """)
+        gate[1].set()
+        WebDriverWait(driver, 30).until(lambda page: page.execute_script("return document.getElementById('viewer').dataset.historyAvailable === 'true' && document.getElementById('tab-unified').dataset.loadState === 'ready'"))
+        after = driver.execute_async_script("""
+            const done = arguments[arguments.length - 1];
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                window.observeHistoryTransition = false;
+                done({cells: document.querySelectorAll('#tab-unified td.cell').length,
+                    selection: document.getElementById('tab-unified')._comparisonSelection.keys,
+                    popup: document.querySelector('.ttip-pinned').textContent,
+                    initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions});
+            }));
+        """)
+        assert after == before
+        frames = driver.execute_script("return window.historyTransitionFrames")
+        assert frames and all(frame["cells"] == before["cells"] and frame["popup"] for frame in frames)
+    finally:
+        gate[1].set()
         driver.quit()
         server.shutdown()
         server.server_close()

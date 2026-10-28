@@ -294,10 +294,20 @@ def current_identities(document: dict) -> list[dict]:
             for row in document["captures"]]
 
 
+def current_catalog(root: Path) -> dict:
+    """Pair latest readers with the latest source catalog in either CI mode."""
+    catalog = json.loads(read(root, "conformance/viewer-catalog.json"))
+    if catalog.get("capture_generation", {}).get("mode") == "history":
+        catalog = json.loads(read(root, "conformance/viewer-latest-catalog.json"))
+        if catalog.get("capture_generation", {}).get("mode") != "latest":
+            raise ValueError("current source catalog must be latest-only")
+    return catalog
+
+
 def stage_current_sources(root: Path, destination: Path) -> None:
     """Expose current YAML to source readers without publication or history retrieval."""
     document = current(root)
-    catalog = json.loads(read(root, "conformance/viewer-catalog.json"))
+    catalog = current_catalog(root)
     if catalog.get("capture_generation", {}).get("current") != current_identities(document):
         raise ValueError("current source catalog is stale; regenerate viewer_catalog.py")
     authored = stage_unified(root, destination / STORE, document=document)
@@ -472,6 +482,7 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
     pin = history_pin(root, history_source) if include_history else None
     if include_history:
         verify(history_source, pin)
+    context = ci_publication_cache.read_context(root)
     inputs = []
     input_paths = publication_input_paths(root)
     for name in input_paths:
@@ -534,6 +545,8 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
              "controls": [identity(row["path"], read(root, row["path"])) for row in document["captures"]],
              "current": identities, "publication_paths": input_paths,
              "authored_paths": [row["path"] for row in copied_authored], "history_source": str(history_source) if include_history else None, "history_pin": pin}
+    if context:
+        guard["publication_context_sha256"] = context["sha256"]
     guard["inputs"].extend(copied_authored)
     if retained_history_only:
         del guard["current"]
@@ -552,6 +565,10 @@ def prepare(root: Path, destination: Path, *, include_history: bool = False,
 def verify_prepared(root: Path) -> None:
     guard = json.loads(read(root, "conformance/capture-source-guard.json"))
     original = Path(guard["root"])
+    if "publication_context_sha256" in guard:
+        context = ci_publication_cache.read_context(original)
+        if context is None or context["sha256"] != guard["publication_context_sha256"]:
+            raise ValueError("publication context changed during generation")
     for row in guard["inputs"] + guard["controls"]:
         data = encoded(verify(Path(guard["history_source"]), guard["history_pin"])) if row["path"] == "history-catalog" else read(original, row["path"])
         if identity(row["path"], data) != row:

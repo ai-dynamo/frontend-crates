@@ -6,6 +6,7 @@ import platform
 import re
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -16,6 +17,7 @@ import ci_coverage
 import ci_publication_cache
 import unified_history
 import verify_ci_selection
+import viewer_catalog
 
 
 @pytest.mark.parametrize("path", [
@@ -45,7 +47,7 @@ def test_capture_shards_have_exact_disjoint_union_and_newest_versions(profile, s
     rows = [{"path": f"{implementation}/{mode}/{family}/{version}", "implementation": implementation,
              "mode": mode, "family": family, "version": version}
             for implementation in ("dynamo_v2", "sglang") for mode in ("unified", "batch")
-            for family in ("a", "b") for version in ("0.7.9", "0.7.10", "0.7.18")]
+            for family in ("a", "muse_spark") for version in ("0.7.9", "0.7.10", "0.7.18")]
     whole = ci_coverage.select_resources(rows, profile=profile, shard=0, shards=1)
     shards = [ci_coverage.select_resources(rows, profile=profile, shard=index, shards=shard_count) for index in range(shard_count)]
     paths = [row["path"] for shard in shards for row in shard]
@@ -98,6 +100,7 @@ def test_cache_miss_hit_corruption_and_identity_invalidation(tmp_path):
 
 
 def test_cache_key_tracks_publication_inputs_but_reuses_unrelated_changes(tmp_path, monkeypatch):
+    monkeypatch.delenv("CONFORMANCE_PUBLICATION_CONTEXT", raising=False)
     paths = [
         "conformance/fixtures-unified-v2/families/sample/dynamo_v2.yaml",
         "conformance/viewer/app.js",
@@ -444,12 +447,16 @@ def test_workflow_publishes_before_qualification_and_requires_every_lane():
     conformance_filter = next(step["with"]["filters"] for step in jobs["changes"]["steps"]
                               if step.get("id") == "filter")
     assert "- '.gitattributes'" in conformance_filter
-    assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-latest-single-html-v3"
+    assert jobs["pages-build"]["env"]["CONFORMANCE_PUBLICATION_POLICY"] == "native-history-context-v4"
     identity_step = next(step for step in jobs["pages-build"]["steps"] if step.get("id") == "identity")
     assert "--publication-policy \"$CONFORMANCE_PUBLICATION_POLICY\"" in identity_step["run"]
     catalog_step = next(step for step in jobs["pages-build"]["steps"]
                         if step.get("name") == "Generate source catalog inputs")
-    assert "-r conformance/utils/publication-requirements.in" in catalog_step["run"]
+    dependency_step = next(step for step in jobs["pages-build"]["steps"]
+                           if step.get("name") == "Install publication identity dependencies")
+    assert "-r conformance/utils/publication-requirements.in" in dependency_step["run"]
+    assert jobs["pages-build"]["steps"].index(dependency_step) < jobs["pages-build"]["steps"].index(identity_step)
+    assert '"$CONFORMANCE_PYTHON" conformance/utils/src/ci_publication_cache.py identify' in identity_step["run"]
     restore = next(step for step in jobs["pages-build"]["steps"] if step.get("name") == "Restore compatible family conversion fragments")
     assert jobs["pages-build"]["steps"].index(restore) < jobs["pages-build"]["steps"].index(catalog_step)
     assert "--include-history" in catalog_step["run"]
@@ -509,3 +516,139 @@ def test_ci_accounting_rejects_lost_tests_and_incomplete_qualification(fault):
             verify_ci_selection.verify(baseline, assignments)
     else:
         assert verify_ci_selection.verify(baseline, assignments)["unique_tests"] == 2 + len(qualification)
+
+
+def _context_repo(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    cargo = root / "parsers/v2/Cargo.toml"
+    cargo.parent.mkdir(parents=True)
+    cargo.write_text('[package]\nname="parser"\nversion="1.2.3"\n')
+    subprocess.run(["git", "init", "-q", str(root)], check=True)
+    subprocess.run(["git", "-C", str(root), "add", "parsers"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.com",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "fixture"], check=True)
+    return root
+
+
+@pytest.mark.parametrize("include_history", [False, True])
+def test_publication_context_survives_tag_creation_and_rejects_tampering(tmp_path, monkeypatch, include_history):
+    root = _context_repo(tmp_path)
+    context = ci_publication_cache.freeze_context(root, include_history=include_history)
+    assert context["producer"]["kind"] == "unpublished"
+    path = root / ci_publication_cache.CONTEXT
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(context))
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(path))
+    # The history inventory has its own existing admission proofs; isolate tag transport here.
+    original_output = subprocess.check_output
+    monkeypatch.setattr(subprocess, "check_output", lambda command, **kwargs:
+        '{}' if "--verify-history" in command else original_output(command, **kwargs))
+    before = ci_publication_cache.cache_key(root, "policy", include_history=include_history)
+    payload = tmp_path / "payload"
+    payload.mkdir()
+    catalog = root / "conformance/viewer-catalog.json"
+    catalog.write_text(json.dumps({"metadata": {"dynamo_v2_producer": {key: context["producer"][key] for key in ("kind", "crate_version")}}}))
+    with tarfile.open(payload / "source-catalogs.tar", "w") as archive:
+        for name in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+            archive.add(root / name, arcname=name)
+    (payload / "native-pages.tar").write_bytes(b"standalone HTML")
+    (payload / "conformance-publish").write_bytes(b"matching publisher")
+    ci_publication_cache.seal(payload, before)
+    assert ci_publication_cache.valid(payload, before)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    assert ci_publication_cache.dynamo_version.dynamo_v2_provenance(root)["kind"] == "release"
+    assert ci_publication_cache.read_context(root) == context
+    assert viewer_catalog._dynamo_v2_display_producer(root) == {"crate_version": "1.2.3", "kind": "unpublished"}
+    assert ci_publication_cache.dynamo_version.dynamo_v2_provenance(root, release_refs=context["tags"])["kind"] == "unpublished"
+    assert ci_publication_cache.cache_key(root, "policy", include_history=include_history) == before
+    restored = tmp_path / "restored"
+    subprocess.run(["git", "clone", "-q", "--no-hardlinks", str(root), str(restored)], check=True)
+    with tarfile.open(payload / "source-catalogs.tar") as archive:
+        archive.extractall(restored, filter="data")
+    restored_context = restored / ci_publication_cache.CONTEXT
+    assert ci_publication_cache.read_context(restored, path=restored_context) == context
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(restored_context))
+    assert ci_publication_cache.cache_key(restored, "policy", include_history=include_history) == before
+    # Either archived context or catalog corruption invalidates the sealed payload.
+    original_archive = (payload / "source-catalogs.tar").read_bytes()
+    for name in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+        target = restored / name
+        original_bytes = target.read_bytes()
+        target.write_bytes(original_bytes + b"tampered")
+        with tarfile.open(payload / "source-catalogs.tar", "w") as archive:
+            for member in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
+                archive.add(restored / member, arcname=member)
+        assert not ci_publication_cache.valid(payload, before)
+        target.write_bytes(original_bytes)
+    (payload / "source-catalogs.tar").write_bytes(original_archive)
+    assert ci_publication_cache.valid(payload, before)
+    monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(path))
+    with pytest.raises(ValueError, match="generation mode differs"):
+        ci_publication_cache.cache_key(root, "policy", include_history=not include_history)
+    context["producer"]["kind"] = "release"
+    path.write_text(json.dumps(context))
+    with pytest.raises(ValueError, match="context identity is invalid"):
+        ci_publication_cache.read_context(root)
+    context["producer"]["kind"] = "unpublished"
+    path.write_text(json.dumps(context))
+    cargo = root / "parsers/v2/Cargo.toml"
+    cargo.write_text(cargo.read_text() + "# altered source\n")
+    with pytest.raises(ValueError, match="context (parser source|sources) changed"):
+        ci_publication_cache.read_context(root)
+
+
+@pytest.mark.parametrize("include_history", [False, True])
+def test_catalog_check_receives_selected_mode(tmp_path, include_history):
+    root = Path(__file__).resolve().parents[3]
+    binary = tmp_path / "python3"
+    binary.write_text('#!/bin/sh\nprintf "%s\\n" "$@" >> "$PROBE"\nexit 23\n')
+    binary.chmod(0o700)
+    environment = {**os.environ, "PATH": str(tmp_path) + ":" + os.environ["PATH"],
+                   "PROBE": str(tmp_path / "arguments.json"), "CONFORMANCE_CI_SHARD": "core",
+                   "CONFORMANCE_INCLUDE_HISTORY": str(include_history).lower()}
+    result = subprocess.run(["bash", str(root / "conformance/utils/check.sh"), "ci"], env=environment)
+    assert result.returncode == 23
+    arguments = (tmp_path / "arguments.json").read_text().splitlines()
+    assert arguments == [str(root / "conformance/utils/src/viewer_catalog.py"), "--check", *(["--include-history"] if include_history else [])]
+
+
+def test_only_history_can_replace_public_main_site():
+    root = Path(__file__).resolve().parents[3]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    mode = workflow["env"]["CONFORMANCE_INCLUDE_HISTORY"]
+    assert "github.event_name == 'push' && github.ref == 'refs/heads/main'" in mode
+    assert "github.event.inputs.include-history" in mode
+    jobs = workflow["jobs"]
+    deployment_guard = "${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.include-history == true) }}"
+    assert jobs["deploy-pages"]["if"] == deployment_guard
+    for step in jobs["conformance-table"]["steps"]:
+        if "Pages" in step.get("name", "") or step.get("name") == "Restore qualified Pages directory":
+            assert step["if"] == deployment_guard
+
+
+def test_publication_identification_bootstraps_without_site_packages():
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run([sys.executable, "-S", "conformance/utils/src/ci_publication_cache.py", "--help"],
+                            cwd=root, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert "identify" in result.stdout
+
+
+def test_sealed_release_context_qualifies_a_shallow_checkout(tmp_path):
+    root = _context_repo(tmp_path)
+    subprocess.run(["git", "-C", str(root), "-c", "tag.gpgsign=false", "tag", "dynamo-parsers-v2-v1.2.3"], check=True)
+    context = ci_publication_cache.freeze_context(root)
+    assert context["producer"]["kind"] == "release"
+    (root / "unrelated.json").write_bytes(b"{}\n")
+    subprocess.run(["git", "-C", str(root), "add", "unrelated.json"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.name=Fixture", "-c", "user.email=fixture@example.com",
+                    "-c", "commit.gpgsign=false", "commit", "-qm", "documentation"], check=True)
+    restored = tmp_path / "shallow"
+    subprocess.run(["git", "clone", "-q", "--depth=1", root.as_uri(), str(restored)], check=True)
+    missing = subprocess.run(["git", "-C", str(restored), "cat-file", "-e", context["producer"]["release_commit"]], capture_output=True)
+    assert missing.returncode != 0
+    path = restored / ci_publication_cache.CONTEXT
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(context))
+    assert ci_publication_cache.read_context(restored, path=path) == context

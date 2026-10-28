@@ -74,7 +74,7 @@ def _preserved(root, output, *, extra=()):
     return result.stderr
 
 
-def test_publication_source_integrity_and_revision(published_viewer):
+def test_publication_source_integrity_and_revision(published_viewer, source_catalog):
     site = published_viewer
     catalog = runtime_catalog(site)
     provenance = publication_metadata(site)
@@ -102,8 +102,6 @@ def test_publication_source_integrity_and_revision(published_viewer):
         assert len(data) == resource["size"]
         assert hashlib.sha256(data).hexdigest() == resource["sha256"]
         assert data.endswith(b"\n")
-    source_root = Path(__file__).resolve().parents[3]
-    source_catalog = json.loads((source_root / "conformance/viewer-catalog.json").read_bytes())
     originals = {resource["path"]: resource for kind in ("unified", "archives") for resource in source_catalog["sources"][kind]}
     seen = set()
     for descriptor in catalog["transport"]["raw_buckets"].values():
@@ -342,3 +340,19 @@ def test_workers_publish_each_mode_once(tmp_path, monkeypatch):
     assert sorted(calls) == ['history', 'latest']
     assert len(set(sites[::2])) == len(set(sites[1::2])) == 1
     assert sites[0] != sites[1]
+
+
+@pytest.mark.parametrize("restored_mode", ["latest", "history"])
+def test_latest_fixture_reuses_identical_embedded_html_without_history(tmp_path, monkeypatch, restored_mode):
+    restored = tmp_path / "restored"
+    restored.mkdir()
+    (restored / "index.html").write_bytes(b"exact embedded latest HTML")
+    monkeypatch.setenv("CONFORMANCE_PUBLISHED_SITE", str(restored))
+    monkeypatch.delenv("PYTEST_XDIST_WORKER", raising=False)
+    monkeypatch.setattr(conftest, "runtime_catalog", lambda site: {"capture_generation": {"mode": restored_mode}})
+    monkeypatch.setattr(conftest.capture_sources, "publication_inputs_digest", lambda *args, **kwargs: "latest")
+    monkeypatch.setattr(conftest, "publish", lambda *args, **kwargs: pytest.fail("identical HTML must be reused"))
+    site = conftest._browser_publication(SimpleNamespace(getbasetemp=lambda: tmp_path / "fresh"))
+    assert (site / "index.html").read_bytes() == (restored / "index.html").read_bytes()
+    assert sorted(path.relative_to(site).as_posix() for path in site.rglob("*") if path.is_file()) == ["index.html"]
+    assert (site == restored) == (restored_mode == "latest")

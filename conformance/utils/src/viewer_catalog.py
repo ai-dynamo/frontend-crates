@@ -228,7 +228,8 @@ def _unified_records(root: Path = ROOT, unified: Path | None = None, *, store=No
 def _dynamo_v2_display_producer(root: Path) -> dict[str, str]:
     guard = root / "conformance/capture-source-guard.json"
     source_root = Path(json.loads(guard.read_bytes())["root"]) if guard.is_file() else root
-    producer = dynamo_version.dynamo_v2_provenance(source_root)
+    context = capture_sources.ci_publication_cache.read_context(source_root)
+    producer = context["producer"] if context else dynamo_version.dynamo_v2_provenance(source_root)
     return {key: producer[key] for key in ("crate_version", "kind")}
 
 
