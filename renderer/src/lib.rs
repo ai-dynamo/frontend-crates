@@ -39,6 +39,7 @@ pub mod deepseek;
 pub mod inkling;
 pub mod kimi_k3;
 mod python;
+pub mod request_rules;
 mod template;
 
 pub use template::{

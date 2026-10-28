@@ -26,18 +26,37 @@
 //! - [`stream_item`]: the stream item the adapter reads, so Dynamo keeps its own
 //!   chunk fields.
 //! - [`guided`]: the tool-output grammar a request installed.
+//! - [`chat_stream`]: the parse stage of a chat stream. It picks the stages for a
+//!   request (the v2 adapter, or the v1 reasoning stream and the caller's jail)
+//!   and chains the stream policies after them.
+//! - [`reasoning_off`]: whether a request turned reasoning off, and the fold of
+//!   reasoning into content when it did.
+//! - [`nonempty_content`]: the `force_nonempty_content` contract on a stream, and
+//!   whether a stream can hold back all output (the keep-alive predicate).
+//! - [`tool_call_policy`]: the request's tool-call policy on parsed output, and the
+//!   assistant role on each choice's first delta.
+//! - [`reasoning_usage`]: the `reasoning_tokens` estimate in the usage chunk.
 
 pub mod aggregator;
+pub mod chat_stream;
 pub mod families;
 pub mod guided;
+pub mod nonempty_content;
 pub mod prefill;
+pub mod reasoning_off;
+pub mod reasoning_usage;
 pub mod route;
 pub mod special_tokens;
 pub mod stop_tokens;
 pub mod stream_item;
+pub mod tool_call_policy;
 pub mod tools;
 pub mod unified_stream;
 pub mod version;
 
+pub use chat_stream::{
+    ChatStreamParsers, ChatStreamPlan, JailRequest, PolicyStreamItem, parse_chat_stream,
+};
+pub use reasoning_off::ChatStreamRequest;
 pub use route::{InvalidRequest, ToolProcessingRoute, tool_processing_route};
 pub use version::ParserVersion;

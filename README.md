@@ -8,7 +8,7 @@ Standalone Rust crates for building OpenAI/Anthropic-compatible inference server
 | [`dynamo-tokenizers`](./tokenizers/) | HuggingFace + tiktoken + FastTokenizer wrappers with fast incremental detokenization and prefix-caching for shared-prefix workloads. |
 | [`dynamo-parsers`](./parsers/v1/)    | Reasoning + tool-calling parsers across 18+ model families (DeepSeek R1/V4, Qwen3, GPT-OSS, Kimi K2/K3, Gemma 4, Llama, Hermes, ...). The stable batch parser — the *decode* side, and the crate to depend on. |
 | [`dynamo-renderer`](./renderer/)     | Chat-template / prompt rendering: OpenAI chat requests → model-ready prompts via HF `chat_template` (minijinja), plus native DeepSeek, Inkling, and Kimi K3 formatters. The *encode* side. |
-| [`dynamo-chat-parsing`](./parsers/chat/) | The Dynamo frontend's rules that pick a parser for each chat request: the parser route and version, the request rules keyed on parser names, and the v2 stream adapter. Depends on the protocol, renderer, and both parser crates. |
+| [`dynamo-chat-parsing`](./parsers/chat/) | The Dynamo frontend's rules that pick a parser for each chat request: the parser route and version, the request rules keyed on parser names, the v2 stream adapter, and the stream policies that run after the parsers. Depends on the protocol, renderer, and both parser crates. |
 | [`dynamo-multimodal`](./multimodal/) | Shared multimodal input processing and accounting, with a golden-tested Qwen-VL image pipeline. The optional `fetch` API is signatures-only. |
 
 Each library listed above is independently published to crates.io and can be adopted on its own, except `dynamo-chat-parsing`, which is not published yet. `dynamo-renderer` depends on `dynamo-protocols` and re-exports `dynamo-tokenizers` for convenience, `dynamo-parsers` depends on `dynamo-protocols`, and `dynamo-chat-parsing` depends on `dynamo-protocols`, `dynamo-renderer`, `dynamo-parsers`, and `dynamo-parsers-v2`; the other listed libraries are leaf crates with no internal deps. The repository itself is a Cargo workspace so shared dependency versions, CI checks, and the demo build stay consistent.
@@ -24,7 +24,7 @@ frontend-crates/
 ├── parsers/
 │   ├── v1/                 # dynamo-parsers        (stable batch parser)
 │   ├── v2/                 # dynamo-parsers-v2     (WIP streaming parser, 0.x)
-│   ├── chat/               # dynamo-chat-parsing   (parser route, parser-name rules, v2 stream adapter)
+│   ├── chat/               # dynamo-chat-parsing   (parser route, parser-name rules, v2 stream adapter, stream policies)
 │   └── v2-py/              # dynamo-parsers-v2-py  (test-only PyO3 binding, unpublished)
 ├── renderer/               # dynamo-renderer (deps protocols, tokenizers)
 ├── multimodal/             # dynamo-multimodal (Qwen-VL image pipeline)

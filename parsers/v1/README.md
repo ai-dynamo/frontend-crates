@@ -39,4 +39,15 @@ The v1 batch entry points (in `src/tool_calling/parsers.rs`) that v2 does not mi
 
 The registry (`tool_calling/parsers.rs`) maps a parser name to a `ParserConfig` variant (`Dsml` / `Json` / `Xml` / `KimiK2` / `Pythonic` / `Harmony`); per-parser presets are in `tool_calling/config.rs`. Reasoning parsers register by name in `reasoning/mod.rs`; see [`src/reasoning/README.md`](src/reasoning/README.md).
 
+### Stream stages
+
+dynamo's frontend runs these stages on a chat chunk stream, on the v1 route (reasoning stream, then the jail):
+
+- `reasoning::stream::parse_reasoning_content_from_stream` splits `content` into `reasoning_content` and `content`, per choice.
+- `reasoning::stream::strip_leading_reasoning_start_from_stream` strips a leading reasoning opener.
+- `tool_calling::jail::apply_tool_calling_jail` parses tool calls.
+- `tool_calling::jail::apply_jail_terminal_error_contract` runs a jail stage so that a backend error ends the stream with that error, and nothing the jail builds after it.
+
+The two reasoning stages and the contract are generic over `chat_stream::ChatStreamItem`. The jail's `Annotated` implements it. A caller with its own item type, as dynamo has, implements it to keep its own per-chunk fields.
+
 For the family-to-grammar-to-file mapping (the cheat-sheet), the parser goals, and the step-by-step add flow, see [`../v2/README.md`](../v2/README.md).

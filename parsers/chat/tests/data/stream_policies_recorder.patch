@@ -1,0 +1,97 @@
+diff --git a/lib/llm/src/preprocessor.rs b/lib/llm/src/preprocessor.rs
+index 25a58a636f..47d0ae4e1e 100644
+--- a/lib/llm/src/preprocessor.rs
++++ b/lib/llm/src/preprocessor.rs
+@@ -5326,6 +5326,14 @@ impl OpenAIPreprocessor {
+         S: Stream<Item = Annotated<NvCreateChatCompletionStreamResponse>> + Send + 'static,
+     {
+         use crate::protocols::openai::chat_completions::unified_parser;
++        let capture = stream_policies_capture::start(
++            self,
++            request,
++            &prompt_injected_reasoning,
++            &guided_tool_constraint,
++            &tool_processing_route,
++        );
++        let stream = stream_policies_capture::tap(&capture, "input", stream);
+         let prompt_prefill = prompt_injected_reasoning;
+         let prompt_injected_reasoning = prompt_prefill.for_route(&tool_processing_route);
+         let uses_tool_call_structural_tag = guided_tool_constraint.uses_structural_tag();
+@@ -5373,11 +5381,14 @@ impl OpenAIPreprocessor {
+                         structured_response: Self::has_structured_response_format(request),
+                     },
+                 ));
+-            return Ok(Self::apply_unified_response_policies(
+-                unified,
+-                Self::tool_call_parsing_enabled(request),
+-                defer_reasoning_for_nonempty_content,
+-                reasoning_disabled,
++            return Ok(stream_policies_capture::finish(
++                capture,
++                Self::apply_unified_response_policies(
++                    unified,
++                    Self::tool_call_parsing_enabled(request),
++                    defer_reasoning_for_nonempty_content,
++                    reasoning_disabled,
++                ),
+             ));
+         }
+ 
+@@ -5537,14 +5548,31 @@ impl OpenAIPreprocessor {
+                 // jail keeps its own native fallback, so a backend that ignores the
+                 // grammar (MiniMax M2 emits XML under `required`) still parses normally.
+                 // Same request-scoped decision the unified path above was given.
+-                Box::pin(Self::apply_tool_calling_jail(
++                let jail_request = stream_policies_capture::jail_request_json(
++                    effective_tool_call_parser.as_deref(),
++                    request.inner.tool_choice.as_ref(),
++                    tool_definitions.as_deref(),
++                    uses_tool_call_structural_tag,
++                    guided_tool_streaming,
++                );
++                #[cfg(test)]
++                stream_policies_recorder::tap_jail_request(jail_request.clone());
++                stream_policies_capture::set(&capture, "jail_request", jail_request);
++                #[cfg(test)]
++                let stream = stream_policies_recorder::tap_jail_input(stream);
++                let stream = stream_policies_capture::tap(&capture, "jail_input", stream);
++                let jailed = Self::apply_tool_calling_jail(
+                     effective_tool_call_parser,
+                     request.inner.tool_choice.clone(),
+                     tool_definitions,
+                     uses_tool_call_structural_tag,
+                     guided_tool_streaming,
+                     stream,
+-                ))
++                );
++                #[cfg(test)]
++                let jailed = stream_policies_recorder::tap_jail_output(jailed);
++                let jailed = stream_policies_capture::tap(&capture, "jail_output", jailed);
++                Box::pin(jailed)
+             }
+             ToolProcessingRoute::PassThrough => Box::pin(stream),
+             ToolProcessingRoute::Unified(_) => {
+@@ -5552,9 +5580,9 @@ impl OpenAIPreprocessor {
+             }
+         };
+ 
+-        Ok(Self::apply_tool_call_response_policy(
+-            transformed_stream,
+-            tool_call_parsing_enabled,
++        Ok(stream_policies_capture::finish(
++            capture,
++            Self::apply_tool_call_response_policy(transformed_stream, tool_call_parsing_enabled),
+         ))
+     }
+ 
+@@ -17281,3 +17309,10 @@ mod tests {
+         ]));
+     }
+ }
++
++#[cfg(test)]
++#[path = "preprocessor/stream_policies_recorder.rs"]
++mod stream_policies_recorder;
++
++#[path = "preprocessor/stream_policies_capture.rs"]
++mod stream_policies_capture;

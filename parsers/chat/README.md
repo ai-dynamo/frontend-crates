@@ -20,6 +20,11 @@ The rules an OpenAI chat frontend uses to pick and drive Dynamo's parsers. The p
 | `aggregator` | The non-streaming finalize: the chunks of a `stream: false` reply become one response. It re-parses the text when no tool call came through, drops cut-off calls, and can move reasoning to content. |
 | `stream_item` | The stream item that `unified_stream` reads. Dynamo implements it for its own item, so its per-chunk fields (`nvext`, metrics, completion evidence) stay in place. |
 | `guided` | `GuidedToolConstraint`: the tool-output grammar a request installed. |
+| `chat_stream` | `parse_chat_stream`: the parse stage of a chat stream. It picks the stages for a request (the v2 adapter, or dynamo-parsers' v1 reasoning stream and the caller's v1 jail) and chains the stream policies after them. |
+| `reasoning_off` | Whether a request turned reasoning off, and the fold of reasoning into content when it did. |
+| `nonempty_content` | The `force_nonempty_content` contract on a stream, and whether a stream can hold back all output (the keep-alive predicate). |
+| `tool_call_policy` | The request's tool-call policy on parsed output, and the assistant role on each choice's first delta. |
+| `reasoning_usage` | The `reasoning_tokens` estimate in the usage chunk. |
 
 ```rust
 use dynamo_chat_parsing::{ParserVersion, ToolProcessingRoute, tool_processing_route};
@@ -40,3 +45,5 @@ cargo test -p dynamo-chat-parsing
 `tests/unified_stream_parity.rs` does the same for the v2 stream adapter, with output recorded by `tests/data/unified_stream_recorder.rs`. dynamo-llm's unit tests for the adapter and its batch parse are in `src/unified_stream_tests.rs`.
 
 `tests/aggregator_parity.rs` does the same for the aggregator, with output recorded by `tests/data/aggregator_recorder.rs`. dynamo-llm's unit tests for it are in `src/aggregator_tests.rs`.
+
+`tests/stream_policies_parity.rs` does the same for `parse_chat_stream` and the stream policies, with two fixtures: a matrix of parser pairs, requests, and streams recorded by `tests/data/stream_policies_recorder.rs`, and every call that dynamo-llm's own tests make, captured by `tests/data/stream_policies_capture.rs`. dynamo-llm's unit tests for the policies are in `src/stream_policies_tests.rs`.
