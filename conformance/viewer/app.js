@@ -346,7 +346,7 @@ async function initialize() {
     else {
       const notice = document.createElement('p');
       notice.className = 'capture-slots-notice';
-      notice.textContent = 'Latest results are available offline. Older results are not included here.';
+      notice.textContent = 'Last captured results only. To show historic results, please run with --include-history.';
       panel.querySelector('.capture-slots').appendChild(notice);
     }
   }
