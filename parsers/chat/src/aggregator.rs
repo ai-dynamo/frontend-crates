@@ -23,14 +23,18 @@ use dynamo_parsers::tool_calling::{
     ToolCallResponse, ToolDefinition, try_tool_call_parse_aggregate_finalize,
 };
 use dynamo_protocols::types::{
-    ChatCompletionMessageContent, ChatCompletionMessageToolCall, CreateChatCompletionResponse,
-    CreateChatCompletionStreamResponse, FunctionCall, FunctionType,
+    ChatCompletionMessageContent, ChatCompletionMessageToolCall, CreateChatCompletionRequest,
+    CreateChatCompletionResponse, CreateChatCompletionStreamResponse, FunctionCall, FunctionType,
+    ResponseFormat,
 };
 
 use crate::families::selected_family;
 use crate::guided::GuidedToolConstraint;
+use crate::nonempty_content::wants_reasoning_as_content_when_empty;
+use crate::reasoning_off::{ChatStreamRequest, request_disables_reasoning_with_family};
 use crate::route::{InvalidRequest, validate_tool_request_mode};
 use crate::stream_item::ToolCallCompletion;
+use crate::tools::tool_call_parsing_enabled;
 use crate::unified_stream::UnifiedRequestPolicy;
 use crate::version::{PARSER_VERSION_ENV, ParserVersion};
 
@@ -226,6 +230,76 @@ impl AggregatorOptions {
         }
         self
     }
+}
+
+impl AggregatorOptions {
+    /// The options the Dynamo frontend's HTTP handlers build for `request`
+    /// before they aggregate its reply: the deployment's parsers narrowed to
+    /// what the request permits (`apply_request_tool_call_parsing_options`
+    /// in dynamo-llm's `http/service.rs`), with the request's
+    /// `parallel_tool_calls` and `force_nonempty_content`. The Chat
+    /// Completions and Responses handlers use these as they are; the
+    /// Messages handler then applies [`Self::for_messages`].
+    ///
+    /// `default_thinking_mode` is the deployment's, as the stream path reads
+    /// it. The caller decides the tool-output grammar, as for the stream
+    /// path's `ChatStreamPlan`, and passes it as `guided_tool_constraint`.
+    /// `tool_definitions` are the request's effective tools, validated by
+    /// the caller.
+    pub fn for_request(
+        request: &ChatStreamRequest<'_>,
+        tool_call_parser: Option<&str>,
+        reasoning_parser: Option<&str>,
+        default_thinking_mode: Option<&str>,
+        guided_tool_constraint: GuidedToolConstraint,
+        tool_definitions: Vec<ToolDefinition>,
+        parser_version: ParserVersion,
+    ) -> Self {
+        let unified_family = selected_family(tool_call_parser, reasoning_parser, parser_version);
+        let reasoning_disabled = request_disables_reasoning_with_family(
+            request,
+            tool_call_parser,
+            reasoning_parser,
+            default_thinking_mode,
+            unified_family,
+        );
+        let options = Self {
+            tool_call_parser: tool_call_parser.map(str::to_owned),
+            reasoning_parser: reasoning_parser.map(str::to_owned),
+            reasoning_disabled,
+            structured_response: has_structured_response_format(request.request),
+            suppress_tool_calls: false,
+            guided_tool_constraint,
+            parallel_tool_calls: request.request.parallel_tool_calls,
+            move_reasoning_to_content_when_empty: wants_reasoning_as_content_when_empty(
+                request.chat_template_args,
+            ),
+            tools: Vec::new(),
+            parser_version,
+        };
+        let mut options =
+            options.with_tool_call_parsing_enabled(tool_call_parsing_enabled(request.request));
+        options.tools = tool_definitions;
+        options
+    }
+
+    /// The Messages handler's options: it aggregates without the
+    /// `parallel_tool_calls` cap, because its converter keeps only the first
+    /// tool block itself when the client set `disable_parallel_tool_use`.
+    pub fn for_messages(mut self) -> Self {
+        self.parallel_tool_calls = None;
+        self
+    }
+}
+
+/// Whether the request asks for a structured `response_format`: any but
+/// `text`. Moved from dynamo-llm's
+/// `OpenAIPreprocessor::has_structured_response_format`.
+pub fn has_structured_response_format(request: &CreateChatCompletionRequest) -> bool {
+    request
+        .response_format
+        .as_ref()
+        .is_some_and(|format| !matches!(format, ResponseFormat::Text))
 }
 
 /// Aggregates the chunks of a chat completion stream into one response.

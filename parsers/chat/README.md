@@ -46,4 +46,6 @@ cargo test -p dynamo-chat-parsing
 
 `tests/aggregator_parity.rs` does the same for the aggregator, with output recorded by `tests/data/aggregator_recorder.rs`. dynamo-llm's unit tests for it are in `src/aggregator_tests.rs`.
 
+`AggregatorOptions::for_request` builds the aggregator's options as dynamo-llm's HTTP handlers do; `tests/aggregator_options_parity.rs` checks it against a copy of their code.
+
 `tests/stream_policies_parity.rs` does the same for `parse_chat_stream` and the stream policies, with two fixtures: a matrix of parser pairs, requests, and streams recorded by `tests/data/stream_policies_recorder.rs`, and every call that dynamo-llm's own tests make, captured by `tests/data/stream_policies_capture.rs`. dynamo-llm's unit tests for the policies are in `src/stream_policies_tests.rs`.
