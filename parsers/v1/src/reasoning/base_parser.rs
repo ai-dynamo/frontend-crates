@@ -843,26 +843,30 @@ impl ReasoningParser for BasicReasoningParser {
             return ParserResult::default();
         }
 
+        // The whole buffer is the result, so it moves rather than copies.
         let buffered = std::mem::take(&mut self._buffer);
-        let mut result = ParserResult::default();
-        let all = buffered.len();
-        if self._in_reasoning {
-            self.release(
-                &mut result.reasoning_text,
-                SourceChannel::Reasoning,
-                &buffered,
-                0..all,
-            );
+        let channel = if self._in_reasoning {
+            SourceChannel::Reasoning
         } else {
-            self.release(
-                &mut result.normal_text,
-                SourceChannel::Normal,
-                &buffered,
-                0..all,
-            );
+            SourceChannel::Normal
+        };
+        if let Some(runs) = self.runs.as_mut() {
+            for input in self.buffer_spans.ranges() {
+                push_run(runs, channel, input.clone());
+            }
         }
         self.buffer_spans.clear();
-        result
+        if self._in_reasoning {
+            ParserResult {
+                normal_text: String::new(),
+                reasoning_text: buffered,
+            }
+        } else {
+            ParserResult {
+                normal_text: buffered,
+                reasoning_text: String::new(),
+            }
+        }
     }
 
     fn record_sources(&mut self) -> bool {
@@ -890,6 +894,25 @@ impl ReasoningParser for BasicReasoningParser {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    /// Finish hands the held buffer back as the result, as it did before
+    /// recording existed. A copy would cost the stock path one allocation and
+    /// one pass over the held text per stream.
+    #[test]
+    fn finish_moves_the_held_buffer() {
+        for record in [false, true] {
+            let mut parser =
+                BasicReasoningParser::new("<think>".into(), "</think>".into(), true, false);
+            if record {
+                assert!(parser.record_sources());
+            }
+            parser.parse_reasoning_streaming_incremental(&"x".repeat(4096), &[]);
+            let held = parser._buffer.as_ptr();
+            let result = parser.finish_reasoning_stream();
+            assert_eq!(result.reasoning_text.len(), 4096);
+            assert_eq!(result.reasoning_text.as_ptr(), held, "record={record}");
+        }
+    }
 
     /// With recording off, no path builds ranges: the stock frontend pays one
     /// add per chunk and one `None` check per edit, and allocates nothing.
