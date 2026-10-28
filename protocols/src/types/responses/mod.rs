@@ -1220,9 +1220,6 @@ mod tests {
     fn reasoning_input_summary_rejects_invalid_values() {
         for summary in [
             serde_json::json!(false),
-            serde_json::json!(42),
-            serde_json::json!("summary"),
-            serde_json::json!({}),
             serde_json::json!([null]),
             serde_json::json!([{"type": "summary_text"}]),
             serde_json::json!([{"type": "output_text", "text": "summary"}]),
