@@ -52,9 +52,9 @@ impl UnifiedParser for AcmeParser {
 
 This example is compiled and run as an integration test — [`tests/vendor_parser_example.rs`](tests/vendor_parser_example.rs). It uses only this crate's public API, exactly as your crate would.
 
-The block above and that file are compared **by a test**, not by hand: `doc_trait_method_bodies_match_compiled_example` parses the first Rust block out of this file and asserts that the two implement the same trait METHODS with the same bodies. That check exists because the claim it replaces was false — the two drifted, the documented example double-emitted its buffer, and nothing caught it.
+`doc_trait_method_bodies_match_compiled_example` checks that this block's `impl UnifiedParser` methods match the compiled example, guarding against drift such as double-emitting buffered text.
 
-Know its limit: the test does not COMPILE this Markdown block, and it compares only the `impl UnifiedParser` methods. Renaming a struct field or changing an import here alone would break the documented example while the test stays green. The compiled file is the authority; treat this block as a copy that is guarded at the method level.
+The test compares method bodies; it does not compile this Markdown or check imports and struct fields. Keep those aligned with the compiled example too.
 
 `UnifiedParserOutput` gives you `push_text`, `push_reasoning` and `push_call`. The first two coalesce: appending text onto a trailing text event extends it rather than adding a second one.
 
@@ -73,7 +73,7 @@ fn main() {
 }
 ```
 
-Register during startup, before serving. Registration is process-wide and intended for startup. A parser already created keeps its implementation; a concurrent constructor that looked up the factory before registration may still finish with the old factory. Register before accepting requests.
+Register before accepting requests. Registration is process-wide; existing parsers and constructors that already looked up a factory keep the old implementation.
 
 ## 3. Replacing a family this crate already ships
 

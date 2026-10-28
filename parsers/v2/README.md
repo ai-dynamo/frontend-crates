@@ -1,12 +1,12 @@
 # dynamo-parsers-v2
 
-Rust crate for Dynamo-owned token-incremental tool-call parsers. This is the v2 path for streaming parser behavior, and its public Rust contract intentionally mimics vLLM Rust's parser contract so vLLM can move toward using the frontend-crate parser instead of carrying a separate Rust parser surface.
+Rust parsers for ordered reasoning, text, and tool-call output. Includes Unified parsing and a tool-only API shaped like vLLM Rust's parser contract.
 
-This README is the canonical parser documentation for the workspace. The goals, family taxonomy, and how-to-add-a-parser guidance below cover both the v1 batch crate (`../v1/`) and this v2 streaming crate, and `../v1/README.md` defers here.
+This guide covers parser goals, grammar families, and contributor workflows for both [v1](../v1/) and v2.
 
-**Implementation names and conformance convention names are different axes.** `dynamo-parsers` / `dynamo_v1` is the batch implementation, used for plain batch parsing and for jail+batch, where streaming input is buffered until a call completes and then emitted all at once. `dynamo-parsers-v2` / `dynamo_v2` is this newer crate; it contains both the first incremental tool-only parsers and the later Unified parsers. The first incremental path was originally called `stream-v2` because it was intended to replace batch+jail. Unified later introduced a second meaning for “v2.” Conformance now calls the older non-Unified convention **streaming v1** (`fixtures-stream-v1`, `TOOLCALLING.streamv1.*`) and reserves **v2** for Unified (`fixtures-unified-v2`). A `dynamo_v2-*` implementation capture inside `fixtures-stream-v1` is therefore expected, not contradictory.
+**Crate versions and corpus names differ.** `dynamo-parsers` / `dynamo_v1` is the batch/jail implementation. `dynamo-parsers-v2` / `dynamo_v2` includes incremental tool-only and Unified parsers. In conformance, **streaming v1** means non-Unified (`fixtures-stream-v1`, `TOOLCALLING.streamv1.*`); **v2** means Unified (`fixtures-unified-v2`). A `dynamo_v2-*` capture in `fixtures-stream-v1` is therefore valid. See [migration terminology](../../docs/PARSERS-V2-MIGRATION-PLAN.md#terminology) for the naming history.
 
-**Library API and serving selection are separate.** This crate is published and used by Dynamo for compatible configurations. Its `0.x` API can change between minor releases: pin the version you integrate, read its public types, and run request-level regressions before upgrading. Dynamo pins its own release and selects it through `DYN_PARSER_VERSION=auto|1|2`; the [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) owns that policy. A new library family or vendor registration does not automatically add a serving adapter or qualification.
+**Pin and test the version you integrate.** Dynamo uses this published crate for compatible configurations, but its `0.x` API can change between minor releases. The [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) owns serving selection. Library families and vendor registrations do not automatically add serving adapters or qualification.
 
 ## Using Unified Parsing
 
@@ -54,9 +54,17 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-Create one parser per choice of a request. Preserve special tokens when `preserve_special_tokens()` is true. Resolve prompt-prefilled reasoning, native versus guided tool output, and invalid-payload policy into one `UnifiedParserInit` before feeding deltas; the neutral default above starts in native mode. Token-aware callers must check `input_capabilities()` before using token input. Finalize once: call `finish_at_eos()` only when the backend confirms a grammar-ending EOS; call `finish()` for truncation, cancellation, or transport EOF. Confirmed EOS can close complete native tool arguments whose final terminator is implicit (for example Beam); an interrupted stream must not be promoted to that success condition. The text-only example above uses ordinary `finish()`. On failure, events already appended by `parse_into` remain committed; `reset()` returns uncommitted bytes and clears stream state. Initialize again for the next request because built-in reset may retain the previous request configuration.
+Create one parser per request choice. Preserve special tokens when `preserve_special_tokens()` is true, and check `input_capabilities()` before feeding token IDs. Before parsing, resolve prompt prefill, native/guided output, and invalid-payload policy into `UnifiedParserInit`; the example uses native defaults.
 
-`output.events` retains incremental `UnifiedParserEvent` values for assembly. Adjacent text or reasoning events coalesce in place, so its length is not a cursor for newly committed output. Forward each fresh per-advance buffer before appending it to retained output, and forward the finalization buffer once too. Tool-call updates carry a stable `tool_index`, an optional name, raw `arguments` fragments, and a `complete` flag; provisional updates do not authorize execution. Retain and concatenate argument fragments per index (or retain the whole output and call `tool_arguments_raw()`) when exact JSON text, key order, or numeric representation matters. `assembled()` gives ordered `UnifiedEvent` values with a typed `serde_json::Value` argument projection; it cannot preserve every lexical representation. Do not serialize that projection back into the wire arguments when fidelity is required. Validate tool availability, authorization, schema, and call policy in the serving layer before execution.
+Finalize once. Use `finish_at_eos()` only for a backend-confirmed grammar-ending EOS; it can complete native arguments with an implicit terminator, as in Beam. Use `finish()` for truncation, cancellation, or transport EOF, as above.
+
+Events appended before a `parse_into` error remain committed. `reset()` returns uncommitted bytes and clears stream state; initialize the next request because built-in reset may retain request configuration.
+
+Forward a fresh output buffer after each advance and after finalization, then append it to retained output. Adjacent text and reasoning events coalesce, so `output.events.len()` cannot track newly committed output.
+
+Tool updates carry a stable `tool_index`, optional name, raw `arguments` fragments, and `complete` flag. Concatenate fragments per index, or use retained output's `tool_arguments_raw()`, when exact JSON text, key order, or numeric representation matters. `assembled()` returns ordered `UnifiedEvent` values with typed `serde_json::Value` arguments and may change their lexical representation. Do not serialize that projection back to wire arguments when fidelity matters.
+
+Provisional updates do not authorize execution. The serving layer must validate tool availability, authorization, schema, and call policy.
 
 ## Parser goals (read first)
 
@@ -74,7 +82,7 @@ These goals govern every tool-calling and reasoning parser, v1 and v2, and are t
 
 The end-to-end workflow for adding a parser — fetch the chat template, identify the format, prefer an existing parser + config over new code, register, test, render — lives in the `tool-parser-generator` skill under `.agents/skills/tool-parser-generator/`. Adding a family to the **unified** path (one ordered reasoning + content + tool stream, rather than the reasoning-then-tool split) is a different workflow with its own tiers and traps — see [`UNIFIED_PORTING.md`](UNIFIED_PORTING.md). Reasoning parsers follow the same goals; see [`../v1/src/reasoning/README.md`](../v1/src/reasoning/README.md).
 
-**Writing a parser in YOUR OWN crate — including replacing a family this crate already ships — does not require forking or a PR here.** Implement `UnifiedParser`, call `register_unified_parser("family", factory)` at startup, and your parser is used for that family; registering an existing name shadows the built-in, and unregistering restores it. See [`CUSTOM_PARSERS.md`](CUSTOM_PARSERS.md) for the trait, the contract a parser must honour, and how to run the conformance corpus against your implementation.
+To supply or replace a family without forking, implement `UnifiedParser` and call `register_unified_parser("family", factory)` at startup. Unregistering restores the built-in. See [CUSTOM_PARSERS.md](CUSTOM_PARSERS.md) for the contract and conformance enrollment.
 
 ## Parser families
 
@@ -206,11 +214,11 @@ New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family
 
 Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests and generate the latest report; administrators update recorded captures through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
-Retain archive-backed `TOOLCALLING.*` fixtures and their original observations as historical evidence. Their format below is for explicitly requested historical maintenance; normal Unified generation does not read those archives or derive GOLDEN from their results.
+Retain `TOOLCALLING.*` archives as historical evidence. Latest-only generation does not read them or derive GOLDEN from recorded results.
 
 ## Historical Fixture Format
 
-Retained archives contain multiple historical schemas, including older combined implementation maps and later implementation-specific snapshots. Preserve their original implementation keys, request bindings, and producer provenance; do not rewrite a historical `dynamo_v2` record to `dynamo_rust` or apply a current schema to old observations. See the [fixture storage guide](../../conformance/fixtures/README.md) for retained storage, and the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md) for administrator updates. Normal contributor work uses the Unified inputs/GOLDEN and latest tests described above.
+Historical archives use several schemas. Preserve their implementation keys, request bindings, and producer provenance; never relabel `dynamo_v2` as `dynamo_rust` or rewrite old observations into a current schema. See [fixture storage](../../conformance/fixtures/README.md) and the administrator-owned [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## Adding A Day-0 Tool-Calling Parser
 
@@ -236,13 +244,11 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- -
 cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture
 ```
 
-Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and recorded observations over HTTP. Missing recorded output requires an administrator capture update; it does not require contributors to capture historical versions. A live parser mismatch must be fixed or explained by a deliberate authored contract change. Do not hide it with `reason:`, `unavailable:`, stale HTML, or an unsupported GOLDEN edit.
-
-The legacy Harmony example documents retained historical fixtures. Recorded capture updates use the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
+Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations need administrator capture updates. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
 
 ## Which Fixture Do I Edit?
 
-New family and scenario coverage belongs in the Unified generator, shared registry, and `UNIFIED_CASES.md`; preserve existing authored requests and independent GOLDEN values. Run latest parser tests and generate the latest report. Historical backfills are administrator work.
+Use the [fixture files](#fixture-files-to-add) above for new families and scenarios. Preserve authored requests and independent GOLDEN; historical backfills remain administrator work.
 
 ### Retained historical fixture paths
 

@@ -13,7 +13,7 @@ The parser implementations and test binding live under `parsers/`, grouped but s
 | `parsers/structural-tag/` | `dynamo-structural-tag` (shared grammar/schema helpers) | crates.io |
 | `parsers/v2-py/` | `dynamo-parsers-v2-py` (PyO3 binding, module `dynamo_parsers_v2`) | **no** — test-only, `publish = false` |
 
-`parsers/v2-py` is the conformance harness's Python binding. It is a cdylib (a Python extension module, useless as a crates.io dependency), has no consumer outside this repo, and no PyPI publish job exists — so it is not published.
+`parsers/v2-py` is the conformance harness's Python extension. It has no external consumer or PyPI publish job.
 
 ## Terminology
 
@@ -24,7 +24,7 @@ There are two separate version axes. Do not infer one from the other:
 
 The non-Unified incremental parser was originally called `stream-v2` because it was intended to replace the original batch+jail implementation. Unified arrived later and also used the v2 name. That left two different “v2” conventions. The corpus rename resolves the collision: **streaming v1 means legacy/non-Unified streaming; v2 means Unified**. A `dynamo_v2-*` capture can therefore appear inside `fixtures-stream-v1`; the directory names the convention, while the capture key names the implementation.
 
-Dynamo manages serving selection independently through `DYN_PARSER_VERSION=auto|1|2` and its pinned registry/adapter. Follow the [Dynamo routing guide](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing), rather than inferring runtime behavior from conformance names. Compatible deployments use Unified by default; unavailable or incompatible auto configurations use V1. A runtime parse failure does not create a retry chain.
+Dynamo selects parsers through `DYN_PARSER_VERSION=auto|1|2` and its pinned registry/adapters; conformance names do not determine runtime behavior. See [Dynamo routing](https://github.com/ai-dynamo/dynamo/blob/main/docs/fern/pages/use-cases/tool-calling-and-reasoning/troubleshooting-tool-calls.md#parser-generation-routing) for defaults and fallback.
 
 ## Why The Split Exists
 
@@ -77,7 +77,7 @@ The `v1`/`v2` directory names are transitional; when the merge happens the survi
 
 ## Ownership
 
-Contributors edit parsers and authored inputs/GOLDEN, run [current parser tests and qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report) with the Rust publisher. Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP. Latest generation must not read historical captures or change recorded YAML. Repository administrators own capture/history updates under the [latest capture plan](CONFORMANCE-LATEST-PLAN.md); no historical backfill is a contributor prerequisite.
+Contributors edit parsers and authored inputs/GOLDEN, run [current qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report). Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP. Leave recorded YAML and history unchanged; administrators own those updates under the [capture plan](CONFORMANCE-LATEST-PLAN.md).
 
 ## Version Pins
 

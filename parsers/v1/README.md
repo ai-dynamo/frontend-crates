@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
 }
 ```
 
-The return value is `(Vec<ToolCallResponse>, Option<String>)`; each call contains an ID and `function.name` / `function.arguments`, where arguments are JSON text. The second argument is an optional registry name, and the third is an optional slice of request tool definitions for schema-directed conversion. Parsing is async. The import path is `dynamo_parsers`.
+Returns `(Vec<ToolCallResponse>, Option<String>)`: calls contain an ID, `function.name`, and JSON-text `function.arguments`; the optional string is remaining text. Pass an optional registry name and optional request tool definitions for schema-directed conversion. The call is async.
 
 ## v1-specific API
 
