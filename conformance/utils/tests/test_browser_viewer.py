@@ -130,9 +130,13 @@ def _driver():
     return driver
 
 
-def _ready(driver, tab):
+def _ready(driver, tab, *, reference=True):
     # Race tests inspect the current matrix while an obsolete read is held.
     settle(driver, tab, history_ready=True, idle=False)
+    if reference:
+        # These retained tests exercise the detailed reference surface. The
+        # comparison matrix has its own default-state and interaction tests.
+        driver.execute_script("const details = document.querySelector('.legacy-report-details'); if (!details.open) details.querySelector('summary').click()")
 
 
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
@@ -161,7 +165,8 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         driver.get(f"{base}/index.html?tab=tab-unified&view=details&transpose=0&keep=1")
         _ready(driver, "tab-unified")
         assert driver.title == 'Dynamo Parser Conformance Table'
-        assert driver.find_element('css selector', '#viewer > h1').text == driver.title
+        assert driver.find_element('css selector', '#viewer > h1').text.startswith('Parser Conformance')
+        assert len(driver.find_element('css selector', '.source-commit').text) == 12
         assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-parity-table] td.cell")
         family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified table[data-parity-table] td.model")}
         assert "deepseek_v4" in family_labels
@@ -192,7 +197,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert all(" (v" not in label for label in family_labels), family_labels
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert "transpose-mode" in driver.find_element("tag name", "body").get_attribute("class")
-        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-transpose-table] td.cell")
+        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-comparison-table][data-transpose-table] .matrix-cell")
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert driver.find_element("tag name", "html").get_attribute("data-theme") == "dark"
         driver.find_element("css selector", "[data-transpose-toggle]").click()
@@ -304,7 +309,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
     server, requests = _server(root=site)
     driver = _driver()
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
+        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified&transpose=0")
         _ready(driver, "tab-unified")
         provenance = json.loads((site / "conformance/viewer-publication.json").read_text())
         generated = WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", ".generated") if "Generated on" in page.find_element("css selector", ".generated").text else False)
@@ -424,7 +429,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return document.body.classList.contains('transpose-mode')"))
-        cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-transpose-table] td.cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
+        cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-parity-table] td.cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
         assert cell is not None
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
@@ -667,12 +672,12 @@ def test_first_capture_slot_keeps_horizontal_size_during_version_switch(historic
         Select(capture_select).select_by_value("dynamo_v1@5.1.3")
         assert started.wait(20), "the selected v1 5.1.3 capture request did not start"
         during = first_slot_size()
-        assert during["width"] > 400 and during["height"] < 100, {"before": before, "during": during}
+        assert during["width"] > 400 and during["height"] == before["height"], {"before": before, "during": during}
 
         release.set()
         _ready(driver, "tab-unified")
         after = first_slot_size()
-        assert after["width"] > 400 and after["height"] < 100, {"before": before, "after": after}
+        assert after["width"] > 400 and after["height"] == before["height"], {"before": before, "after": after}
     finally:
         release.set()
         driver.quit()
@@ -740,7 +745,7 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&view=details&transpose={int(vertical)}")
         _ready(driver, "tab-unified")
-        table_selector = "[data-transpose-table]" if vertical else "table[data-parity-table]:not([data-transpose-table])"
+        table_selector = "table[data-parity-table]:not([data-transpose-table])"
         cell = driver.find_element("css selector", f"#tab-unified {table_selector} td.cell[data-ttip-id]")
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
@@ -1009,7 +1014,7 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result(pu
 
 @pytest.mark.parametrize("tab,transpose,selector", [
     ("tab-unified", False, "th.case-sub[data-ttip-id]"),
-    ("tab-unified", True, "th.trow-case[data-ttip-id]"),
+    ("tab-unified", True, "th.case-sub[data-ttip-id]"),
 ])
 def test_grammar_header_pin_survives_asynchronous_model_refresh(tab, transpose, selector, published_viewer):
     server, _requests = _server(root=published_viewer)
@@ -1139,7 +1144,7 @@ def test_legacy_capture_alias_and_reset_preserve_unrelated_url_state(historical_
         reset = urlsplit(driver.current_url)
         assert dict(parse_qsl(reset.query)) == {'tab': 'tab-unified', 'keep': '1'} and reset.fragment == 'saved'
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {'reference': None, 'selected': ['dynamo']}
-        assert not driver.execute_script("return document.body.classList.contains('transpose-mode')")
+        assert driver.execute_script("return document.body.classList.contains('transpose-mode')")
     finally:
         driver.quit()
         server.shutdown()
@@ -1307,7 +1312,7 @@ def test_unavailable_jail_capture_deep_link_is_cleared(published_viewer):
 
 
 @pytest.mark.parametrize("stale_capture", ["dynamo_v1@9.2.10", "dynamo_v1@5.0.1"])
-def test_stale_primary_v1_deep_link_keeps_producer_and_major(stale_capture, historical_published_viewer):
+def test_primary_v1_deep_link_preserves_available_capture(stale_capture, historical_published_viewer):
     producer, version = stale_capture.split("@")
     major = version.split(".")[0]
     catalog = _published_catalog(historical_published_viewer)
@@ -1316,7 +1321,10 @@ def test_stale_primary_v1_deep_link_keeps_producer_and_major(stale_capture, hist
                   and row.get("capture_families") and not row.get("source_blocker")
                   and row.get("has_captured_results") is not False),
                  key=unified_history._capture_release_sort_key)
-    expected_capture = f"{producer}@{newest}"
+    available = any(row["implementation"] == producer and row["version"] == version
+                    and row.get("capture_families") and not row.get("source_blocker")
+                    and row.get("has_captured_results") is not False for row in catalog["sources"]["candidates"])
+    expected_capture = stale_capture if available else f"{producer}@{newest}"
     server, _requests = _server(root=historical_published_viewer)
     driver = _driver()
     try:
@@ -1363,10 +1371,10 @@ def test_report_details_keep_legend_below_chart_and_generation_last(published_vi
                 const panel = document.getElementById('tab-unified');
                 const instructions = panel.querySelector('.generation-instructions');
                 const command = panel.querySelector('.generated-command');
-                const table = panel.querySelector(arguments[0] ? 'table[data-transpose-table]' : 'table[data-parity-table]:not([data-transpose-table])');
+                const table = panel.querySelector('table[data-parity-table]:not([data-transpose-table])');
                 const legend = panel.querySelector('.capture-legend');
                 return {text: command.textContent, overflow: command.scrollWidth - command.clientWidth,
-                    inInstructions: instructions.contains(command), last: panel.lastElementChild === instructions,
+                    inInstructions: instructions.contains(command), last: instructions.parentElement.lastElementChild === instructions,
                     next: table.nextElementSibling === legend || (!table.nextElementSibling.offsetHeight && table.nextElementSibling.nextElementSibling === legend),
                     gap: legend.getBoundingClientRect().top - table.getBoundingClientRect().bottom,
                     glossary: panel.querySelector('.glossary td.sub').textContent,
@@ -1378,7 +1386,7 @@ def test_report_details_keep_legend_below_chart_and_generation_last(published_vi
             assert geometry["overflow"] <= 1, geometry
             assert geometry["next"] and 0 <= geometry["gap"] < 40, geometry
             assert geometry["glossary"].startswith(f"{geometry['firstId']} ({geometry['firstNumber']})"), geometry
-            header = driver.find_element(By.CSS_SELECTOR, "th.trow-case a" if vertical else "th.case-sub a")
+            header = driver.find_element(By.CSS_SELECTOR, "th.case-sub a")
             driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'center'})", header)
             ActionChains(driver).move_to_element(header).perform()
             WebDriverWait(driver, 5).until(lambda page: page.execute_script(
@@ -1402,8 +1410,8 @@ def test_popup_heading_uses_case_id_before_description(published_viewer, vertica
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose={int(vertical)}")
         _ready(driver, "tab-unified")
-        table = "table[data-transpose-table]" if vertical else "table[data-parity-table]:not([data-transpose-table])"
-        header = "th.trow-case[data-ttip-id]" if vertical else "th.case-sub[data-ttip-id]"
+        table = "table[data-parity-table]:not([data-transpose-table])"
+        header = "th.case-sub[data-ttip-id]"
         tool_header = driver.find_element(By.CSS_SELECTOR, f"#tab-unified {header}:has(a[aria-label='UNIFIED.1-tool_only'])")
         number = tool_header.find_element(By.CSS_SELECTOR, '.case-label-short').get_attribute('textContent')
         tool_cell = driver.execute_script("""
@@ -1448,7 +1456,7 @@ def test_unified_slots_migrate_legacy_stream_candidate_keys(published_viewer):
 
 @pytest.mark.parametrize("identities", [
     ["dynamo_v1@10.0.1"],
-    ["dynamo_v2@0.7.24", "dynamo_v1@10.0.1"],
+    ["dynamo_v2@0.7.24", "dynamo_v1@10.2.2"],
     ["sglang_python@0.5.14"],
     ["dynamo_v1@9.2.13"],
 ])
@@ -1512,7 +1520,7 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                   return {gap: next.getBoundingClientRect().left - rect.right,
                     width: rect.width, radius: getComputedStyle(first).borderRadius,
                     segments: first.children.length, styles, knownStatuses: Object.keys(window.__conformanceSegmentLabels)};
-                """, "#tab-unified table[data-transpose-table]" if transpose else "#tab-unified table[data-parity-table]")
+                """, "#tab-unified table[data-parity-table]")
                 # The 30px content cell plus 1px side padding leaves 5px around a 27px box.
                 assert geometry["gap"] >= 5, geometry
                 assert geometry["width"] == 27
@@ -1557,19 +1565,20 @@ def test_checkout_generation_guidance_and_unclipped_case_names(current_source_vi
         assert "index.html" in instructions.text and "JSON" in instructions.text
         assert driver.find_element(By.CSS_SELECTOR, ".capture-legend > p").text == (
             "Legend: One segment is an output capture from the parser when compared with golden output")
-        assert driver.find_element(By.CSS_SELECTOR, '[data-legend-status="pass"]').text == "Matches golden"
+        assert driver.find_element(By.CSS_SELECTOR, '[data-legend-status="pass"]').text == "Matches GOLDEN"
         for theme in ("light", "dark"):
             driver.execute_script("document.documentElement.dataset.theme = arguments[0]", theme)
             for vertical in (False, True):
                 toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
                 if toggle.is_selected() != vertical:
                     toggle.click()
-                selector = "th.trow-case a" if vertical else "th.case-sub a"
+                selector = "th.case-sub a"
                 headers = driver.find_elements(By.CSS_SELECTOR, selector)
                 targets = [next(element for element in headers
                                 if element.get_attribute("aria-label") == name)
                            for name in ("UNIFIED.1-tool_only", "UNIFIED.2-two_calls")]
                 if not vertical:
+                    driver.execute_script("document.querySelector('.legacy-report-details table[data-parity-table]').scrollIntoView({block:'start',inline:'start'})")
                     rightmost = driver.execute_script("""
                         return [...document.querySelectorAll('th.case-sub a')].filter(a => {
                             const r = a.getBoundingClientRect();
@@ -1800,13 +1809,15 @@ def test_popup_close_over_column_control_preserves_dismissal(published_viewer, v
                 const r = node.getBoundingClientRect(); return r.width && r.height && r.left + r.width / 2 >= x;
             });
             if (!control) return null;
-            const target = control.getBoundingClientRect();
-            window.scrollBy(target.x + target.width / 2 - x, 0);
-            const r = control.getBoundingClientRect();
-            return {control, height: outerHeight + 2 * (r.y + r.height / 2 - close.y - close.height / 2)};
+            return {control};
         """, close)
         assert geometry is not None
-        driver.set_window_size(viewport_width, round(geometry["height"]))
+        driver.set_window_size(viewport_width, 500)
+        driver.execute_script("""
+            const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
+            window.scrollBy(r.x + r.width / 2 - c.x - c.width / 2, r.top - 32);
+            window.__conformanceController.refreshPopupLayout();
+        """, close, geometry["control"])
         WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
             const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
             const x = c.x + c.width / 2, y = c.y + c.height / 2;

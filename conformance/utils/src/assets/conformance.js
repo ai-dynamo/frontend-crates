@@ -411,7 +411,7 @@ window.initializeConformanceController = function (hooks = {}) {
     btn.addEventListener('click', function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
       const u = new URL(window.location.href);
-      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['slots_tab-unified', 'tab', 'ref', 'cmp', 'view', 'transpose', 'cols', 'show', 'hide', 'popup'].includes(key)) u.searchParams.delete(key);
+      for (const key of [...u.searchParams.keys()]) if (/^(?:base_|cmp_)/.test(key) || ['slots_tab-unified', 'tab', 'ref', 'cmp', 'view', 'transpose', 'vertical', 'layout_tab-unified', 'focus_tab-unified', 'groups_tab-unified', 'peer_tab-unified', 'search_tab-unified', 'cols', 'show', 'hide', 'popup'].includes(key)) u.searchParams.delete(key);
       if (tab) { u.searchParams.set('tab', tab); }
       window.location.href = u.href;  // reload at defaults, same tab
     });
@@ -1142,7 +1142,8 @@ window.initializeConformanceController = function (hooks = {}) {
     const cell = panel && Array.from(panel.querySelectorAll('[data-ttip-key][data-ttip-click="pin"]'))
       .find(function (candidate) {
         return candidate.dataset.ttipKey === stateKey
-          && Boolean(candidate.closest('table[data-transpose-table]')) === transposed;
+          && Boolean(candidate.closest('table[data-transpose-table]')) === transposed
+          && (!panel.querySelector('[data-comparison-table]') || candidate.closest('[data-comparison-table]'));
       });
     if (cell && cell._ttipPin) { cell._ttipPin(); }
     else if (!(panel && panel.id === 'tab-unified' && panel.dataset.loadState !== 'ready')) {
@@ -1169,9 +1170,7 @@ window.initializeConformanceController = function (hooks = {}) {
   const transposeToggle = document.querySelector('[data-transpose-toggle]');
 
   function readTransposeMode() {
-    const params = new URLSearchParams(window.location.search);
-    const requested = params.get('vertical') || params.get('transpose');
-    return requested === '1' || requested === 'true';
+    return window.__conformanceVerticalDefault(new URLSearchParams(window.location.search));
   }
 
   function updateTransposeUrl(enabled) {
@@ -1179,7 +1178,9 @@ window.initializeConformanceController = function (hooks = {}) {
     url.searchParams.delete('transpose');
     url.searchParams.delete('vertical');
     if (enabled) {
-      url.searchParams.set('transpose', '1');
+      url.searchParams.set('vertical', '1');
+    } else {
+      url.searchParams.set('vertical', '0');
     }
     window.history.replaceState(null, '', url.toString());
   }
@@ -1402,7 +1403,7 @@ window.initializeConformanceController = function (hooks = {}) {
   }
 
   function ensureTransposed(panel) {
-    if (panel.querySelector('table[data-transpose-table]')) return;
+    if (panel.querySelector('[data-comparison-table]') || panel.querySelector('table[data-transpose-table]')) return;
     const orig = panel.querySelector('table[data-parity-table]');
     if (!orig) return;
     const transposed = buildTransposed(orig);
@@ -1443,8 +1444,9 @@ window.initializeConformanceController = function (hooks = {}) {
     });
   }
   function disposePanel(panel) {
-    const selected = pinnedCell?.closest('.tab-panel') === panel ? {
+    const selected = pinnedCell && panel.contains(pinnedCell) ? {
       popupKey: pinnedCell.dataset.popupKey,
+      surface: pinnedCell.closest('[data-comparison-table]') ? 'comparison' : 'reference',
       transposed: Boolean(pinnedCell.closest('[data-transpose-table]')),
       width: pinnedCell._ttip.style.width, height: pinnedCell._ttip.style.height,
       scrollTop: pinnedCell._ttip.scrollTop, scrollLeft: pinnedCell._ttip.scrollLeft,
@@ -1461,8 +1463,12 @@ window.initializeConformanceController = function (hooks = {}) {
     applyColumnState(visibleColumns, false);
     if (document.body.classList.contains('transpose-mode')) ensureTransposed(panel);
     applyCtl(panel);
+    restorePopup(panel, pin);
+    updateStickyOffsets();
+  }
+  function restorePopup(panel, pin) {
     if (pin?.popupKey) {
-      const table = panel.querySelector(pin.transposed ? '[data-transpose-table]' : '[data-parity-table]');
+      const table = pin.surface === 'reference' ? panel.querySelector('[data-parity-table]') : panel.querySelector('[data-comparison-table]') || panel.querySelector(pin.transposed ? '[data-transpose-table]' : '[data-parity-table]');
       const cell = [...(table?.querySelectorAll('[data-popup-key]') || [])].find(cell => cell.dataset.popupKey === pin.popupKey);
       if (cell) {
         window.__buildTooltip(cell);
@@ -1470,12 +1476,13 @@ window.initializeConformanceController = function (hooks = {}) {
         cell._ttipPin?.();
         cell._ttip.scrollTop = pin.scrollTop;
         cell._ttip.scrollLeft = pin.scrollLeft;
+        return;
       }
     }
     restorePinnedTooltip();
     updateStickyOffsets();
   }
-  return { refreshPanel, updatePanel, disposePanel, activePanel, refreshPopupLayout: repositionVisibleTooltips,
+  return { refreshPanel, updatePanel, disposePanel, restorePopup, activePanel, refreshPopupLayout: repositionVisibleTooltips,
     selection(panel) {
       const ctl = panelCtl(panel), reference = ctlBase(ctl);
       return hooks.engineSelection ? hooks.engineSelection.selection() : { reference, selected: reference ? [reference, ...ctlShown(ctl).filter(key => key !== reference)] : [] };
@@ -1555,6 +1562,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
   setCandidates(tab.candidates || []);
   const isDynamoV2Choice = item => Boolean(item)
     && (item.identity?.startsWith('dynamo_v2@') || item.key.startsWith('dynamo@'));
+  const linkedChoices = new Set();
   const captureChoices = engine => {
     const choices = (byEngine.get(engine) || []).filter(item => !availableIdentities || availableIdentities.has(item.identity));
     if (engine !== 'dynamo') return choices;
@@ -1573,6 +1581,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
       if (!latestByLine.has(key)) latestByLine.set(key, item.version);
     }
     return choices.filter(item => {
+      if (linkedChoices.has(item.key)) return true;
       const producer = item.key.split('@')[0];
       const isV2 = isDynamoV2Choice(item);
       if (!/^dynamo_v1(?:_|@)/.test(item.key) && !isV2) return true;
@@ -1621,6 +1630,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
     : legacySelection;
   const requested = params.has(slotsParam) ? (params.get(slotsParam) || '').split(',').map(key => key && key !== 'none' ? resolveSlotKey(key) : '') : legacy;
   const initial = requested === null ? preferred : requested;
+  for (const key of requested || []) if (key) linkedChoices.add(key);
   const overflow = initial.filter(Boolean).length > 3;
   const slots = [null, null, null];
   const slotEngines = [...engines];

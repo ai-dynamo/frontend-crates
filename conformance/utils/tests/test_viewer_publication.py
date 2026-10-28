@@ -85,7 +85,8 @@ def test_publication_source_integrity_and_revision(published_viewer, source_cata
         assert "conformance-publish" in provenance["command"]
         assert ".native-publication-stage-" not in provenance["command"]
     else:
-        assert set(provenance) == {"schema", "revision", "catalog_revision", "resolved_catalog_revision"}
+        assert set(provenance) == {"schema", "revision", "source_commit_sha", "catalog_revision", "resolved_catalog_revision"}
+        assert provenance["source_commit_sha"] == provenance["revision"]
         assert [path.relative_to(site).as_posix() for path in site.rglob("*") if path.is_file()] == ["index.html"]
     inline = json.loads(re.search(r'id="conformance-publication">(.*?)</script>', (site / "index.html").read_text(), re.S)[1])
     assert provenance["catalog_revision"] == inline["catalog_revision"]

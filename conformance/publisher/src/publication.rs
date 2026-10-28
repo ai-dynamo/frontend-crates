@@ -1142,7 +1142,7 @@ fn publish_prepared(
                 None
             }
         };
-        let mut publication = json!({"schema":1,"revision":options.revision,"generated_revision":options.revision,"catalog_revision":if options.data_only {&catalog["revision"]} else {&resolved["revision"]},"generated_on":publication_time()?,"command":command(&options,&root,&output)?,"output":output.to_str(),"resolved_catalog_revision":resolved["revision"]});
+        let mut publication = json!({"schema":1,"source_commit_sha":options.revision,"revision":options.revision,"generated_revision":options.revision,"catalog_revision":if options.data_only {&catalog["revision"]} else {&resolved["revision"]},"generated_on":publication_time()?,"command":command(&options,&root,&output)?,"output":output.to_str(),"resolved_catalog_revision":resolved["revision"]});
         if let Some(tree) = &options.candidate_tree {
             publication["candidate_tree"] = json!(tree);
         }
@@ -1209,7 +1209,7 @@ fn publish_prepared(
                 String::from_utf8(source::read(site, "index.html")?)?
             } else {
                 // Invocation paths, timestamps and history policy belong in the sidecar.
-                let identity = json!({"schema":1,"revision":publication["revision"],"catalog_revision":publication["catalog_revision"],"resolved_catalog_revision":publication["resolved_catalog_revision"]});
+                let identity = json!({"schema":1,"source_commit_sha":publication["source_commit_sha"],"revision":publication["revision"],"catalog_revision":publication["catalog_revision"],"resolved_catalog_revision":publication["resolved_catalog_revision"]});
                 let inline = serde_json::to_string(&identity)?.replace('<', "\\u003c");
                 let embedded = serde_json::to_string(
                     &embedded

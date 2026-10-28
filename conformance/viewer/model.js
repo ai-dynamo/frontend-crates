@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, hasField, setField, deleteField, mergeMappings, compareText, parseJson } from './values.js';
 
+export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Disagreements',
+  error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
+  blocked: 'Blocked sources', expected: 'Expected errors', uncompared: 'GOLDEN unavailable'};
+
 const has = hasField;
 const parserError = (value) => /parser not captured|parsing failed|parse error|panicked|exception|traceback/i.test(value);
 
@@ -435,7 +439,7 @@ function captureIssue(cell, key) {
 export function selectedCaptureOutcome(cell, key, reference = 'golden') {
   if (cell?.variants) {
     const outcomes = cell.variants.filter(isApplicableCell).map(leaf => selectedCaptureOutcome(leaf, key, reference));
-    return ['error', 'leak', 'diverge', 'missing', 'blocked', 'unsupported', 'uncompared', 'documented', 'pass']
+    return ['error', 'leak', 'diverge', 'expected', 'missing', 'blocked', 'unsupported', 'uncompared', 'documented', 'pass']
       .find(outcome => outcomes.includes(outcome)) || 'unsupported';
   }
   const issue = captureIssue(cell, key);

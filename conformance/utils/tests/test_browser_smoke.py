@@ -24,7 +24,7 @@ from selenium.webdriver.common.by import By  # noqa: E402
 from selenium.webdriver.common.keys import Keys  # noqa: E402
 from selenium.webdriver.chrome.options import Options  # noqa: E402
 from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
-from conformance.utils.tests.browser_helpers import click as _click, navigate as _navigate, script as _script, refresh as _refresh
+from conformance.utils.tests.browser_helpers import click as _click, navigate as _navigate_primary, script as _script, refresh as _refresh
 
 pytestmark = pytest.mark.skipif(
     not any(shutil.which(b) for b in ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser")),
@@ -55,7 +55,7 @@ window.__firstVisibleMatrix = null;
 window.__loadingMatrixInsertions = [];
 function matrixGeometry(table) {
   const rect = table.getBoundingClientRect();
-  let ancestorsVisible = true;
+  let ancestorsVisible = table.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
   for (let node = table; node; node = node.parentElement) {
     const style = getComputedStyle(node);
     if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' || Number(style.opacity) === 0) {
@@ -71,8 +71,8 @@ function observeMatrix() {
   const panel = document.querySelector('#tab-unified');
   if (!panel) return;
   if (panel.dataset.loadState !== 'ready') {
-    for (const table of panel.querySelectorAll('table[data-parity-table]')) {
-      window.__loadingMatrixInsertions.push({cells: table.querySelectorAll('td.cell').length, ...matrixGeometry(table)});
+    for (const table of panel.querySelectorAll('table[data-comparison-table]')) {
+      window.__loadingMatrixInsertions.push({cells: table.querySelectorAll('.matrix-cell').length, ...matrixGeometry(table)});
     }
   }
   if (window.__firstVisibleMatrix || framePending) return;
@@ -81,9 +81,9 @@ function observeMatrix() {
     framePending = false;
     const active = document.querySelector('#tab-unified');
     if (!active) return;
-    for (const table of active.querySelectorAll('table[data-parity-table], table[data-transpose-table]')) {
+    for (const table of active.querySelectorAll('table[data-comparison-table]')) {
       const geometry = matrixGeometry(table);
-      const cells = table.querySelectorAll('td.cell').length;
+      const cells = table.querySelectorAll('.matrix-cell').length;
       if (cells && geometry.width > 0 && geometry.height > 0 && geometry.ancestorsVisible) {
         window.__firstVisibleMatrix = {
           kind: table.hasAttribute('data-transpose-table') ? 'transpose' : 'horizontal',
@@ -99,6 +99,35 @@ function observeMatrix() {
 const observer = new MutationObserver(observeMatrix);
 observer.observe(document, {childList: true, subtree: true, attributes: true});
 """
+
+
+def _navigate(driver, url):
+    _navigate_primary(driver, url)
+    _open_reference(driver)
+
+
+def _open_reference(driver):
+    driver.execute_script("const d=document.querySelector('.legacy-report-details'); if(d && !d.open)d.querySelector('summary').click()")
+
+
+@pytest.fixture(autouse=True)
+def restore_browser_state(request):
+    browsers = [request.getfixturevalue(name) for name in ('driver', 'unforced_driver', 'touch_driver')
+                if name in request.fixturenames]
+    saved = [(d, d.current_url, d.get_window_size(), d.execute_script(
+        "return {theme:document.documentElement.dataset.theme,scroll:[scrollX,scrollY]}")) for d in browsers]
+    try:
+        for d in browsers:
+            _dismiss_visible_tooltips(d)
+            _open_reference(d)
+        yield
+    finally:
+        for d, url, size, state in saved:
+            d.set_window_size(size['width'], size['height'])
+            _navigate(d, url)
+            if d.execute_script("return document.documentElement.dataset.theme") != state['theme']:
+                _click(d.find_element(By.CSS_SELECTOR, "[data-theme-toggle]"))
+            d.execute_script("scrollTo(...arguments[0])", state['scroll'])
 
 
 def _chrome(viewer_url, force_hover, initial_navigation=True):
@@ -136,16 +165,7 @@ def unforced_driver(viewer_url):
 
 @pytest.fixture(scope="module")
 def touch_driver(viewer_url):
-    """A driver on the TOUCH branch — no matchMedia patch, so `(hover: hover)` is false.
-
-    Tap-to-pin only exists here: pinning is modal, so a mouse click must never pin or it
-    would disable hover page-wide. The page decides from `PointerEvent.pointerType`, and
-    the tap is delivered by `_tap`, which fires a genuine `pointerdown` carrying
-    `pointerType: 'touch'` before the click. A bare `.click()` carries no pointerdown and
-    would be classified (correctly) as not-touch, testing nothing; CDP mouse-to-touch
-    emulation was tried first and deadlocks ActionChains. This fixture is what keeps the
-    pin machinery under test.
-    """
+    """Use real media queries and explicit touch events for pointer provenance."""
     d = _chrome(viewer_url, force_hover=False)
     yield d
     d.quit()
@@ -211,15 +231,14 @@ def test_real_mouse_activation_opens_a_visible_pinned_tooltip(unforced_driver):
     el = drv.execute_script(
         """
         const p = document.querySelector('#tab-unified') || document;
-        const c = [...p.querySelectorAll('td.cell')].filter(e => e.offsetParent !== null
+        const c = [...p.querySelectorAll('.matrix-cell')].filter(e => e.offsetParent !== null
                                                              && e.querySelector('.ttip'))[20];
         if (!c) return null;
         c.scrollIntoView({block: 'center'});
         return c;
         """
     )
-    if el is None:
-        pytest.skip("no visible cell with a tooltip on the active tab")
+    assert el is not None, "no visible primary matrix cell"
     webdriver.ActionChains(drv).move_to_element(el).click().perform()
     _assert_tooltip_actually_visible(drv, "real mouse activation, no forced media queries")
     assert drv.execute_script("return !!document.querySelector('.ttip.ttip-pinned');")
@@ -345,16 +364,16 @@ def test_transpose_keeps_one_open_tooltip(driver, viewer_url):
     try:
         _navigate(driver, f"{viewer_url}?tab=tab-unified&transpose=0")
         _dismiss_visible_tooltips(driver)
-        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified td.cell[data-ttip-click='pin']")
+        cell = driver.find_element(By.CSS_SELECTOR, "#tab-unified .matrix-cell[data-ttip-click='pin']")
         cell.click()
-        popup = WebDriverWait(driver, 10).until(lambda page: page.find_element(By.CSS_SELECTOR, ".ttip.ttip-pinned"))
-        source_id = cell.get_attribute("data-ttip-id")
+        WebDriverWait(driver, 10).until(lambda page: page.find_element(By.CSS_SELECTOR, ".ttip.ttip-pinned"))
+        source_id = cell.get_attribute("data-ttip-key")
+        before = driver.find_element(By.CSS_SELECTOR, ".ttip.ttip-pinned .ttip-head").text
         _click(driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]"))
-        clone = driver.find_element(By.CSS_SELECTOR, f".transpose-table td.cell[data-ttip-id='{source_id}']")
-        assert popup.is_displayed()
-        assert popup.get_attribute("class").find("ttip-pinned") >= 0
-        assert clone.get_attribute("data-ttip-id") == source_id
-        assert driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-pinned") == [popup]
+        popups = driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-pinned")
+        assert len(popups) == 1 and popups[0].is_displayed()
+        assert popups[0].find_element(By.CSS_SELECTOR, '.ttip-head').text == before
+        assert source_id == driver.execute_script("return document.querySelector('.ttip-pinned')._ttipOwner.dataset.ttipKey")
     finally:
         _navigate(driver, saved_url)
 
@@ -399,7 +418,7 @@ def _set_transpose(driver, on):
     time.sleep(0.2)
 
 
-@pytest.mark.parametrize("override,expected", [("", False), ("1", True), ("true", True),
+@pytest.mark.parametrize("override,expected", [("", True), ("1", True), ("true", True),
                                                ("0", False), ("false", False)])
 def test_transpose_default_overrides_toggle_and_reload(driver, viewer_url, override, expected):
     url = f"{viewer_url}?tab=tab-unified"
@@ -411,7 +430,7 @@ def test_transpose_default_overrides_toggle_and_reload(driver, viewer_url, overr
         _click(toggle)
         selected = not expected
         assert toggle.is_selected() == selected
-        assert _script(driver, "return new URL(location.href).searchParams.get('transpose')") == ("1" if selected else None)
+        assert _script(driver, "return new URL(location.href).searchParams.get('vertical')") == ("1" if selected else "0")
         _refresh(driver)
         assert driver.find_element(By.CSS_SELECTOR, '[data-transpose-toggle]').is_selected() == selected
         assert _script(driver, "return document.body.classList.contains('transpose-mode')") == selected
@@ -419,7 +438,7 @@ def test_transpose_default_overrides_toggle_and_reload(driver, viewer_url, overr
         _navigate(driver, f"{viewer_url}?transpose=0")
 
 
-@pytest.mark.parametrize("override,expected", [("", "horizontal"), ("1", "transpose"),
+@pytest.mark.parametrize("override,expected", [("", "transpose"), ("1", "transpose"),
                                                ("true", "transpose"), ("0", "horizontal"),
                                                ("false", "horizontal")])
 def test_first_visible_matrix_matches_transpose_url(viewer_url, override, expected):
@@ -526,38 +545,9 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
 
         _script(driver, "document.documentElement.setAttribute('data-theme', 'dark')")
         _set_transpose(driver, True)
-        transposed = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-transpose-table] th.trow-case a")
-        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") != "none"
-        reference = transposed.find_element(By.CSS_SELECTOR, ".case-label-short")
-        assert reference.value_of_css_property("display") == "inline-block"
-        assert reference.text == short_label
-        assert transposed.text.startswith(f"{full_label} {short_label}")
-        assert float(reference.value_of_css_property("margin-left")[:-2]) > 0
-        full_bounds = transposed.find_element(By.CSS_SELECTOR, ".case-label-full").rect
-        assert reference.rect["x"] > full_bounds["x"] + full_bounds["width"]
-        reference_number = reference.find_element(By.CSS_SELECTOR, ".case-label-placeholder")
-        assert reference_number.value_of_css_property("color") == "rgba(138, 143, 152, 1)"
-        assert float(reference_number.value_of_css_property("font-size")[:-2]) < float(
-            transposed.value_of_css_property("font-size")[:-2]
-        )
-        transpose_labels = _script(driver, "return Array.from(document.querySelectorAll('#tab-unified .transpose-table th.trow-case a')).map(a=>["
-            "a.querySelector('.case-label-full').textContent,a.querySelector('.case-label-short').textContent,"
-            "getComputedStyle(a.querySelector('.case-label-short')).display]);"
-        )
-        assert [(full, short) for full, short, _ in transpose_labels] == [
-            (full, short) for full, short, _, _ in label_pairs
-        ]
-        assert all(display == "inline-block" for _, _, display in transpose_labels)
-        assert transposed.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") == full_label
-        model_header = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table thead .tcol-model")
-        assert model_header.value_of_css_property("background-color") == "rgba(15, 23, 42, 1)"
-        transpose_group = driver.find_element(By.CSS_SELECTOR, "#tab-unified .transpose-table tr.section td")
-        assert transpose_group.value_of_css_property("color") == "rgba(89, 101, 117, 1)"
-        assert transpose_group.value_of_css_property("text-align") == "left"
-        assert transpose_group.value_of_css_property("padding-left") == "8px"
-        text_inset = _script(driver, "const e=arguments[0],range=document.createRange();range.selectNodeContents(e);"
-            "return range.getBoundingClientRect().left-e.getBoundingClientRect().left;", transpose_group)
-        assert 8 <= text_inset <= 10
+        transposed = driver.find_element(By.CSS_SELECTOR, "[data-comparison-table] .matrix-case-heading")
+        assert full_label in transposed.text and short_label in transposed.text
+        assert _script(driver, "return window.__conformanceTooltipModel(arguments[0]).popupCase.case_id", transposed) == header.get_attribute('aria-label')
 
         _set_transpose(driver, False)
         assert header.find_element(By.CSS_SELECTOR, ".case-label-full").value_of_css_property("display") == "none"
@@ -577,81 +567,28 @@ def test_case_labels_squish_horizontally_and_expand_when_transposed(driver, view
         _navigate(driver, f"{viewer_url}?transpose=0")
 
 
-def test_transpose_builds_mirror_and_colors(driver, viewer_url):
-    """Transpose preserves counts, Reference colors, and collapsed case groups."""
-    saved_url = f"{viewer_url}?tab=tab-unified&view=details&transpose=0"
-    try:
-        _navigate(driver, saved_url)
-        source = _script(driver, """
-            const p = document.querySelector('#tab-unified');
-            const table = p.querySelector('table[data-parity-table]');
-            const group = table.querySelector('th.case-group[data-col-control-group]');
-            return {cells: table.querySelectorAll('td.cell').length,
-                    group: group?.dataset.colControlGroup || null,
-                    groupLabel: group?.textContent || null};
+def test_orientation_preserves_matrix_outcomes_and_counts(driver, viewer_url):
+    _navigate(driver, f"{viewer_url}?vertical=0")
+    def inventory():
+        return _script(driver, """
+            const t=document.querySelector('[data-comparison-table]');
+            return {cells:t.querySelectorAll('.matrix-cell').length,
+              statuses:[...t.querySelectorAll('.matrix-cell[data-ttip-key]')].map(e=>[e.dataset.ttipKey,[...e.querySelectorAll('.matrix-segments i')].map(s=>s.className)]).sort((a,b)=>a[0].localeCompare(b[0])),
+              counts:[...document.querySelectorAll('.capture-summary')].map(e=>e.textContent)};
         """)
-        assert source["cells"] > 0 and source["group"], source
-        group = driver.find_element(
-            By.CSS_SELECTOR,
-            f"#tab-unified table[data-parity-table] th.case-group[data-col-control-group='{source['group']}'] .col-toggle",
-        )
-        _click(group)
-        WebDriverWait(driver, 5).until(lambda browser: "col-collapsed" in browser.find_element(
-            By.CSS_SELECTOR,
-            f"#tab-unified table[data-parity-table] th.case-group[data-col-control-group='{source['group']}']",
-        ).get_attribute("class").split())
-        _set_transpose(driver, True)
-        info = _script(driver, """
-            const p = document.querySelector('#tab-unified');
-            const tt = p.querySelector('table[data-transpose-table]');
-            if (!tt) return {built:false};
-            const cells = tt.querySelectorAll('td.cell');
-            let colored = 0;
-            cells.forEach(function (c) {
-              if (c.classList.contains('cmp-eq') || c.classList.contains('cmp-leak') || c.classList.contains('cmp-na')) colored++;
-            });
-            const hiddenRows = [...tt.querySelectorAll('tbody tr[data-col-hide-group]')]
-              .filter(row => getComputedStyle(row).display === 'none');
-            return {
-              built: true,
-              models: tt.querySelectorAll('th.tcol-model').length,
-              rows: tt.querySelectorAll('th.trow-case').length,
-              cells: cells.length,
-              colored: colored,
-              hiddenRows: hiddenRows.length,
-              hiddenGroupRows: hiddenRows.filter(row => row.dataset.colHideGroup === arguments[0]).length,
-            };
-            """, source["group"])
-        assert info["built"], "transposed mirror table was not built"
-        assert info["models"] > 1, "expected multiple rotated model columns"
-        assert info["rows"] > 1, "expected multiple case rows"
-        assert info["cells"] == source["cells"], (
-            f"transpose changed matrix cell count: {source['cells']} -> {info['cells']}"
-        )
-        assert info["cells"] > 0 and info["colored"] == info["cells"], (
-            f"every cloned cell should be colored by applyCtl, got {info['colored']}/{info['cells']}"
-        )
-        assert info["hiddenGroupRows"] > 0, f"collapsed group {source['group']} was not hidden in the mirror: {info}"
-    finally:
-        _navigate(driver, saved_url)
+    before = inventory()
+    assert before['cells'] > 0 and before['statuses']
+    _set_transpose(driver, True)
+    assert inventory() == before
+    assert driver.find_element(By.CSS_SELECTOR, '[data-comparison-table]').get_attribute('data-transpose-table') is not None
 
 
-
-
-def test_click_never_pins_where_hover_exists(driver):
-    """Where hover exists, a click must NOT pin — hover stays live afterwards.
-
-    Pinning is modal: `hoverAllowed()` returns false for every other cell while one is
-    pinned. When a desktop click also pinned, a single stray click disabled hover for the
-    whole page until the pin was released, and in details view "click elsewhere to
-    dismiss" almost always lands on another wired cell, which only moves the pin. This
-    pins the fix: on a hover-capable device no click pins anything, so hover cannot be
-    switched off by clicking.
-    """
+def test_column_control_click_keeps_hover_available(driver):
+    """Column controls toggle visibility without entering modal popup pin mode."""
     _script(driver, "const v=document.querySelector('[data-view-detailed]'); if(v && !v.checked){v.checked=true; v.dispatchEvent(new Event('change'));}")
     clicked = _script(driver, """
         const tab = document.querySelector('#tab-unified') || document;
-        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+        for (const el of tab.querySelectorAll('[data-col-toggle][data-ttip-wired]')) {
           if (!el.querySelector('.ttip')) continue;
           if (el.offsetParent === null) continue;
           el.click();
@@ -669,7 +606,7 @@ def test_click_never_pins_where_hover_exists(driver):
     # And hover still opens a popup on a DIFFERENT cell afterwards — the actual symptom.
     _script(driver, """
         const tab = document.querySelector('#tab-unified') || document;
-        for (const el of tab.querySelectorAll('[data-ttip-wired]')) {
+        for (const el of tab.querySelectorAll('[data-col-toggle][data-ttip-wired]')) {
           if (!el.querySelector('.ttip')) continue;
           if (el.offsetParent === null || el === window.__clicked) continue;
           el.dispatchEvent(new PointerEvent('pointerenter', {bubbles: false}));
@@ -688,8 +625,7 @@ def test_click_never_pins_where_hover_exists(driver):
 def test_every_wired_element_stays_pinned(touch_driver, transposed):
     """TOUCH: tapping anything with a popup PINS it, and the same tap must not close it.
 
-    Runs on `touch_driver` because tap-to-pin is now touch-only; where hover exists there
-    is no click-to-pin at all (see test_click_never_pins_where_hover_exists).
+    Runs on `touch_driver` to exercise touch provenance as well as explicit activation.
 
     The document-level outside-click handler decides what counts as "inside". While it
     enumerated classes, it kept drifting from the set `attachTooltip` actually wires: first
@@ -793,8 +729,7 @@ def test_capture_legend_tracks_visible_statuses(driver):
             assert not driver.find_elements(By.CSS_SELECTOR, "#tab-unified .toolbar-desc")
             assert _script(driver, """
                 const panel = document.querySelector('#tab-unified');
-                const table = panel.querySelector(document.body.classList.contains('transpose-mode')
-                  ? 'table[data-transpose-table]' : 'table[data-parity-table]');
+                const table = panel.querySelector('table[data-parity-table]');
                 const statuses = new Set([...table.querySelectorAll('td.cell .matrix-status')]
                   .filter(segment => !segment.closest('.col-hidden,[hidden]'))
                   .map(segment => segment.className.split('status-')[1]));
@@ -809,10 +744,9 @@ def test_capture_legend_tracks_visible_statuses(driver):
 def _schema_header(driver, transposed):
     return _script(driver, """
         const panel = document.querySelector('#tab-unified');
-        const table = panel?.querySelector(arguments[0]
-          ? 'table[data-transpose-table]' : 'table[data-parity-table]');
+        const table = panel?.querySelector('table[data-parity-table]');
         if (!table) return null;
-        const selector = arguments[0] ? 'th.trow-case' : 'th.case-sub';
+        const selector = 'th.case-sub';
         return [...table.querySelectorAll(selector)].find(header =>
           header.querySelector('.case-schema-indicator') && header.offsetWidth > 20
         ) || null;
@@ -823,11 +757,9 @@ def _dismiss_visible_tooltips(driver, move_pointer=True):
     if move_pointer:
         ActionChains(driver).move_to_element(driver.find_element(By.TAG_NAME, "h1")).perform()
     _script(driver, """
-        const owners = new Set([
-          ...document.querySelectorAll('[data-ttip-wired]:hover'),
-          ...[...document.querySelectorAll('.ttip-visible')].map(tip => tip._ttipOwner),
-        ]);
-        for (const owner of owners) owner?._ttipDispose?.();
+        document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',bubbles:true}));
+        document.querySelectorAll('.ttip-pinned .ttip-close').forEach(b=>b.click());
+        document.querySelectorAll('[data-ttip-wired]').forEach(e=>e.dispatchEvent(new PointerEvent('pointerleave')));
         """)
     WebDriverWait(driver, 10).until(lambda browser: not browser.find_elements(By.CSS_SELECTOR, ".ttip-visible"))
 
@@ -851,9 +783,7 @@ def _set_schema_view(driver, transposed):
         _click(toggle)
     WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
         return document.body.classList.contains('transpose-mode') === arguments[0]
-          && Boolean(document.querySelector(arguments[0]
-            ? '#tab-unified table[data-transpose-table]'
-            : '#tab-unified table[data-parity-table]'));
+          && Boolean(document.querySelector('[data-comparison-table]'));
         """, transposed))
 
 
@@ -1021,7 +951,7 @@ def test_touch_then_keyboard_does_not_pin(driver):
     ok = drv.execute_script(
         """
         const p = document.querySelector('#tab-unified') || document;
-        const els = [...p.querySelectorAll('[data-ttip-wired]')]
+        const els = [...p.querySelectorAll('[data-col-toggle][data-ttip-wired]')]
             .filter(e => e.offsetParent !== null && e.querySelector('.ttip'));
         if (els.length < 2) return false;
         window.__a = els[0]; window.__b = els[1];
@@ -1064,7 +994,7 @@ def test_touch_then_keyboard_does_not_pin(driver):
     tapped_inside = drv.execute_script(
         """
         const p = document.querySelector('#tab-unified') || document;
-        for (const el of p.querySelectorAll('[data-ttip-wired]')) {
+        for (const el of p.querySelectorAll('[data-col-toggle][data-ttip-wired]')) {
           const tip = el.querySelector('.ttip');
           if (!tip || el.offsetParent === null) continue;
           tip.dispatchEvent(new PointerEvent('pointerdown',
@@ -1112,7 +1042,7 @@ def test_touch_outside_a_host_does_not_arm_a_pointerdownless_activation(driver):
     pinned = drv.execute_script(
         """
         const p = document.querySelector('#tab-unified') || document;
-        const cell = p.querySelector('[data-ttip-wired]');
+        const cell = p.querySelector('[data-col-toggle][data-ttip-wired]');
         if (!cell) { return 'no-cell'; }
 
         // A touch that goes down on something that is NOT a tooltip host, and whose
@@ -1151,70 +1081,24 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, viewer_url, transposed
         if not toggled:
             pytest.skip("no transpose toggle on this page")
 
-    result = _script(driver, """
-        const table = document.querySelector(arguments[0]
-          ? '#tab-unified table[data-transpose-table]'
-          : '#tab-unified table[data-parity-table]');
-        if (!table) return {error: 'active matrix not found'};
-        const header = arguments[0]
-          ? table.querySelector('thead tr.transpose-models th.tcorner-case')
-              : table.querySelector('thead tr.matrix-groups th[data-col-control-group="model"]');
-        const label = arguments[0]
-          ? table.querySelector('tbody tr:not(.section) th.trow-case')
-          : table.querySelector('tbody tr:not(.section) td.model');
-        if (!header || !label) return {error: 'matrix labels not found'};
-            const before = header.getBoundingClientRect();
-            const tableRect = table.getBoundingClientRect();
-            const verticalScroll = tableRect.top + window.scrollY + Math.min(100, tableRect.height / 3);
-            window.scrollTo(500, Math.max(0, verticalScroll));
-        const afterHeader = header.getBoundingClientRect();
-        const afterLabel = label.getBoundingClientRect();
-        const ancestors = [];
-        for (let node = header.parentElement; node && node !== document.documentElement; node = node.parentElement) {
-          const style = getComputedStyle(node);
-          ancestors.push({tag: node.tagName, id: node.id, className: String(node.className || ''),
-            overflowX: style.overflowX, overflowY: style.overflowY,
-            position: style.position, transform: style.transform, contain: style.contain,
-            willChange: style.willChange, filter: style.filter,
-            top: node.getBoundingClientRect().top, bottom: node.getBoundingClientRect().bottom});
-        }
-        return {
-          beforeTop: before.top,
-          afterTop: afterHeader.top,
-          scrollY: window.scrollY,
-          scrollElement: document.scrollingElement.tagName,
-          documentScrollTop: document.scrollingElement.scrollTop,
-          theadPosition: getComputedStyle(table.tHead).position,
-          theadTop: table.tHead.getBoundingClientRect().top,
-          stickyTop: getComputedStyle(header).top,
-          ancestors,
-          afterLeft: afterLabel.left,
-          headerLeft: afterHeader.left,
-          headerPosition: getComputedStyle(header).position,
-          labelPosition: getComputedStyle(label).position,
-          labelWidth: afterLabel.width,
-          headerWidth: afterHeader.width,
-          viewportHeight: window.innerHeight,
-        };
-        """, transposed)
-    try:
-        assert "error" not in result, result.get("error")
-        assert result["headerPosition"] == "sticky"
-        assert result["labelPosition"] == "sticky"
-        if not 0 <= result["afterTop"] < result["viewportHeight"]:
-            pytest.fail(f"Sticky header geometry: {result}", pytrace=False)
-        assert abs(result["afterLeft"] - result["headerLeft"]) < 2, result
-        assert result["labelWidth"] > 0 and result["headerWidth"] > 0
-    finally:
-        _navigate(driver, f"{viewer_url}")
+    _script(driver, "const s=document.querySelector('.comparison-matrix-scroll');s.scrollIntoView({block:'start'});s.scrollTop=200;s.scrollLeft=500")
+    WebDriverWait(driver, 10).until(lambda page: page.execute_script("""
+        const t=document.querySelector('[data-comparison-table]'), s=t.parentElement;
+        const header=t.tHead.rows[0].cells[0], label=t.tBodies[0].rows[0].cells[0];
+        const h=header.getBoundingClientRect(), l=label.getBoundingClientRect(), r=s.getBoundingClientRect();
+        return getComputedStyle(header).position==='sticky' && getComputedStyle(label).position==='sticky'
+          && (s.scrollHeight<=s.clientHeight || s.scrollTop>0) && s.scrollLeft>0
+          && Math.abs(h.top-r.top)<=2 && Math.abs(l.left-r.left)<=2 && h.width>0 && l.width>0
+          && h.top>=0 && h.bottom<=innerHeight && l.left>=0 && l.left<innerWidth;
+    """))
 
 
 def test_popup_headings_include_compact_references(driver, viewer_url):
     try:
         for transpose in ("0", "1"):
             _navigate(driver, f"{viewer_url}?tab=tab-unified&transpose={transpose}")
-            table = "#tab-unified table[data-transpose-table]" if transpose == "1" else "#tab-unified table:not([data-transpose-table])"
-            header_selector = "th.trow-case" if transpose == "1" else "th.case-sub"
+            table = "#tab-unified table[data-parity-table]"
+            header_selector = "th.case-sub"
             for prefix in ("1-", None, "7-arg_json_null"):
                 header = _script(driver, "return Array.from(document.querySelectorAll(arguments[0])).find(e=>"
                     "e.offsetWidth > 0 && (arguments[1] === null ? "
@@ -1246,13 +1130,14 @@ def test_popup_headings_include_compact_references(driver, viewer_url):
         _navigate(driver, f"{viewer_url}?tab=tab-unified&transpose=0")
 
 
-def test_unified_view_controls_share_parser_selection_row(driver, viewer_url):
+def test_three_cards_and_toolbar_do_not_overlap(driver, viewer_url):
     _navigate(driver, f"{viewer_url}?tab=tab-unified")
-    row = driver.find_element(By.CSS_SELECTOR, "#tab-unified .capture-slots")
-    controls = row.find_element(By.CSS_SELECTOR, ".capture-slot-controls")
-    actions = row.find_element(By.CSS_SELECTOR, ".tabs-right.capture-slot-actions")
-    assert len(controls.find_elements(By.CSS_SELECTOR, ".capture-slot")) == 3
-    alignment = _script(driver, "const a=arguments[0].getBoundingClientRect(),b=arguments[1].getBoundingClientRect();"
-        "return {sameRow:Math.abs((a.top+a.height/2)-(b.top+b.height/2))<3, ordered:a.right<=b.left};", controls, actions)
-    assert alignment["sameRow"], alignment
-    assert alignment["ordered"], alignment
+    cards = driver.find_elements(By.CSS_SELECTOR, '.capture-slot')
+    assert len(cards) == 3
+    assert all(c.find_elements(By.CSS_SELECTOR, '.capture-summary') for c in cards)
+    assert _script(driver, """
+        const cards=[...document.querySelectorAll('.capture-slot')].map(e=>e.getBoundingClientRect());
+        const toolbar=document.querySelector('.comparison-toolbar').getBoundingClientRect();
+        return cards.every((a,i)=>cards.slice(i+1).every(b=>a.right<=b.left || b.right<=a.left || a.bottom<=b.top || b.bottom<=a.top))
+          && cards.every(a=>a.bottom<=toolbar.top);
+    """)
