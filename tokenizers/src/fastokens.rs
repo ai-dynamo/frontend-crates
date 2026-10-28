@@ -63,7 +63,14 @@ impl FastTokenizer {
         let fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
         let hf_decoder = HuggingFaceTokenizer::from_file(path)?;
-        let prefix_cache_hazard = hf_decoder.one_pass_prefix_cache_hazard();
+        // fastokens keeps `tokenizer.json`'s flags for a token it lists, and
+        // takes only new tokens from `tokenizer_config.json`. Check the file as
+        // it is, and as the Hugging Face side merged it, which covers both.
+        let file_hazard = std::fs::read_to_string(path)
+            .ok()
+            .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+            .and_then(|json| crate::cache::hazard::prefix_cache_hazard_in_json(&json));
+        let prefix_cache_hazard = file_hazard.or_else(|| hf_decoder.one_pass_prefix_cache_hazard());
         Ok(Self {
             fast_encoder,
             hf_decoder,

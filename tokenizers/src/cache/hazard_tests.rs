@@ -403,7 +403,6 @@ fn a_normalized_plain_token_cannot_shadow_a_fast_backend_split() {
 }
 
 #[test]
-#[ignore = "F5: merged HF flags hide the fastokens encoder's rstrip hazard"]
 fn fastokens_uses_the_encoders_strip_flags_when_the_config_disagrees() {
     let dir = tempfile::tempdir().expect("tempdir");
     let json = tokenizer_json(
