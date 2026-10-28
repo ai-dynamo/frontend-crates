@@ -130,7 +130,7 @@ async fn recorded(
     });
     let jail = jail(parser);
     assert!(jail.can_record_sources(), "{parser} cannot record");
-    jail.apply_sourced(true, input)
+    jail.apply_pairs(true, input)
         .map(|item| {
             let seen = pulled.load(Ordering::SeqCst);
             (item, seen)
@@ -433,7 +433,7 @@ async fn recording_off_carries_no_sources() {
             .map(|input| (chunk(input), None))
             .collect();
         let out: Vec<SourcedItem> = jail(parser)
-            .apply_sourced(false, stream::iter(items))
+            .apply_pairs(false, stream::iter(items))
             .collect()
             .await;
         assert!(!out.is_empty());
@@ -442,7 +442,7 @@ async fn recording_off_carries_no_sources() {
     // A jail that cannot record ignores the request and carries none.
     let items = vec![(chunk(&text(0, "plain")), None)];
     let out: Vec<SourcedItem> = jail("glm47")
-        .apply_sourced(true, stream::iter(items))
+        .apply_pairs(true, stream::iter(items))
         .collect()
         .await;
     assert!(out.iter().all(|(_, sources)| sources.is_none()));
@@ -470,7 +470,7 @@ async fn partial_marker_splitters_run_without_recording() {
         let stock = stock(parser, &inputs).await;
         let items: Vec<SourcedItem> = inputs.iter().map(|input| (chunk(input), None)).collect();
         let asked: Vec<SourcedItem> = jail(parser)
-            .apply_sourced(true, stream::iter(items))
+            .apply_pairs(true, stream::iter(items))
             .collect()
             .await;
         assert!(
