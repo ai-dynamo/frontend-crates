@@ -337,3 +337,20 @@ fn promoting_a_plain_token_preserves_the_uncached_ids() {
     let tokenizer = HuggingFaceTokenizer::from_file(path.to_str().expect("UTF-8")).expect("load");
     assert_eq!(ids(&tokenizer, "<sep>b"), [2, 1]);
 }
+
+#[test]
+#[ignore = "F3: lstrip consumes normalized whitespace specials only before the cache splits"]
+fn lstrip_cannot_consume_a_normalized_whitespace_special_across_a_split() {
+    let json = tokenizer_json(
+        json!([
+            flagged(2, "\n", true, "normalized"),
+            flagged(3, "<sep>", true, "lstrip")
+        ]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let (uncached, cached, _) = three_ways(hf(&json), specials(&json), "a\n<sep>b");
+    assert_eq!(uncached, [0, 3, 1], "control: lstrip consumes the newline");
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
