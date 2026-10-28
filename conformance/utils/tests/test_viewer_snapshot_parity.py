@@ -154,7 +154,7 @@ def test_full_corpus_json_snapshots_match_python_and_javascript_resolution(tmp_p
         source = tmp_path / "current-source"
         capture_sources.stage_unified(ROOT, source / capture_sources.STORE)
     else:
-        with capture_sources.history_view(ROOT, capture_sources.default_history(ROOT)) as source:
+        with capture_sources.history_view(ROOT, ROOT / capture_sources.HISTORIC) as source:
             _assert_routed_history_parity(source, site, published)
         return
     _assert_full_corpus_parity(tmp_path, source, site, published)

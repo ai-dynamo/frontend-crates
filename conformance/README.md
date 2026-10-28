@@ -40,7 +40,7 @@ Reuse a valid complete-publication cache before source staging. On a miss, resto
 
 Current native tests discover versionless latest files through the shared resolver and materialize only those complete snapshots plus authored inputs. They do not sort or open historical captures and require no network access. Use `extract_fixtures.py --include-history` for retained historical fixtures, or supply `--history-source` for an alternate dataset.
 
-Ordinary CI generates latest only. Generation freezes parser/source identity, release-tag context, and latest/history mode in a sealed publication context; qualification restores that context and verifies source bytes rather than recomputing the release decision from newly fetched tags. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
+Ordinary CI generates latest only. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
 
 ## Case applicability
 
