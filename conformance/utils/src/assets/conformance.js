@@ -1701,7 +1701,7 @@ window.mountConformanceCaptureSlots = function (page, panel, onChange = () => {}
         + ' title="' + escapeAttr(captureTitle(item, engine)) + '"'
         + (selectedKey === item.key ? ' selected' : '') + (duplicate || item.source_blocker ? ' disabled' : '') + '>'
         + label.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        + (duplicate ? ' — selected in another slot' : '') + '</option>';
+        + '</option>';
     }).join('');
   }
   controls.innerHTML = slots.map((_key, index) => {

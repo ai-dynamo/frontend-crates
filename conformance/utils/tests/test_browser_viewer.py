@@ -486,6 +486,7 @@ def test_same_engine_slots_none_geometry_duplicate_prevention_and_reset(historic
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ["dynamo", v1_options[0]]
         assert not second.find_element("css selector", "option[value='dynamo']").is_enabled()
+        assert all("selected in another slot" not in option.text for option in second.find_elements("tag name", "option"))
 
         _clear_slot(driver, 1)
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected") == ["dynamo"]
