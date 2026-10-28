@@ -591,9 +591,3 @@ families retain their authored cases and captures. The existing
 the recovered native call. Separate M3 split tests cover early arguments,
 parallel indices, named-tool rejection, reset, and literal native headers
 inside JSON strings.
-
-The M3 Rust schema regressions include patterns adapted from OpenRouter's
-[tool-call format and realistic schema-fuzz datasets](https://github.com/OpenRouterTeam/benchmark-harness/tree/ccab6a7988c181f396331ae46474a8e7e18eaf80/src/benchmarks),
-licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-They replace benchmark prompts with authored native parser inputs and expected
-argument values.

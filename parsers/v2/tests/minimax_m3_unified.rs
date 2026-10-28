@@ -945,46 +945,50 @@ fn fixed_parameter_names_preserve_spaces_and_unicode() {
 }
 
 #[test]
-fn literal_schema_values_and_scalar_unions_preserve_json_types() {
-    // Reduced from the pinned OpenRouter realistic schema-fuzz cases. The
-    // native value is unambiguous when a schema excludes its string spelling.
-    for (schema, raw, value) in [
-        (
-            json!({"enum":[106254871930264_u64,108837402915583_u64]}),
-            "106254871930264",
-            json!(106254871930264_u64),
-        ),
-        (json!({"const":0.2}), "0.2", json!(0.2)),
-        (json!({"const":false}), "false", json!(false)),
-        (
-            json!({"anyOf":[{"const":false},{"type":"null"}]}),
-            "false",
-            json!(false),
-        ),
-        (
-            json!({"oneOf":[{"type":"integer"},{"type":"boolean"}]}),
-            "false",
-            json!(false),
-        ),
-        (
-            json!({"anyOf":[{"type":"number"},{"type":"boolean"}]}),
-            "true",
-            json!(true),
-        ),
-        (
-            json!({"anyOf":[{"type":"integer"},{"type":"object"}]}),
-            "{\"x\":1}",
-            json!({"x":1}),
-        ),
-        (json!({"type":["number","array"]}), "[1,2]", json!([1, 2])),
-        (json!({"not":{"type":"string"}}), "-2500", json!(-2500)),
+fn literal_constraints_preserve_types_and_numeric_precision() {
+    // 2^53 + 1 catches integer rounding through an intermediate f64.
+    for value in [json!(false), json!(-0.125), json!(9007199254740993u64)] {
+        let raw = value.to_string();
+        let input = call(&format!(
+            "]<]minimax[>[<value>{raw}]<]minimax[>[</value>]<]minimax[>[<text>{raw}]<]minimax[>[</text>"
+        ));
+        for constraint in [json!({"const":value}), json!({"enum":[value]})] {
+            assert_splits(
+                &input,
+                json!({"type":"object","properties":{
+                    "value":constraint,"text":{"type":"string"}
+                }}),
+                UnifiedParserInit::default(),
+                &[expected(json!({"value":value,"text":raw}))],
+            );
+        }
+    }
+}
+
+#[test]
+fn equivalent_non_string_schemas_preserve_each_json_type() {
+    let types = ["number", "boolean", "null", "object", "array"];
+    let branches: Vec<Value> = types.iter().map(|kind| json!({"type":kind})).collect();
+    for schema in [
+        json!({"anyOf":branches}),
+        json!({"oneOf":branches}),
+        json!({"type":types}),
+        json!({"not":{"type":"string"}}),
     ] {
-        assert_splits(
-            &call(&format!("]<]minimax[>[<value>{raw}]<]minimax[>[</value>")),
-            json!({"type":"object","properties":{"value":schema}}),
-            UnifiedParserInit::default(),
-            &[expected(json!({"value":value}))],
-        );
+        for value in [
+            json!(-1),
+            json!(false),
+            Value::Null,
+            json!({"enabled":true}),
+            json!([null, false]),
+        ] {
+            assert_splits(
+                &call(&format!("]<]minimax[>[<value>{value}]<]minimax[>[</value>")),
+                json!({"type":"object","properties":{"value":schema}}),
+                UnifiedParserInit::default(),
+                &[expected(json!({"value":value}))],
+            );
+        }
     }
 }
 
