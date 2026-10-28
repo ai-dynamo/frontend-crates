@@ -211,15 +211,19 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         driver.quit(); server.shutdown(); server.server_close()
 
 
-def test_matrix_keyboard_drawer_and_reload(published_viewer):
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("width", [1600, 480])
+def test_matrix_keyboard_popup_and_reload(published_viewer, vertical, width):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/")
+        driver.set_window_size(width, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
         _ready(driver,"tab-unified",reference=False)
         cell = driver.find_element("css selector", ".comparison-matrix .matrix-cell[data-ttip-id]")
         cell.send_keys(Keys.ENTER)
         popup = WebDriverWait(driver,10).until(lambda d: d.find_element("css selector", ".comparison-output.ttip-pinned"))
+        assert driver.execute_script("const r=arguments[0].getBoundingClientRect(); return Math.abs(r.left+r.width/2-innerWidth/2)<=1", popup)
         assert popup.find_elements("css selector", ".golden-out-cap, [data-cand=golden]")
         assert parse_qs(urlsplit(driver.current_url).query)["popup"]
         driver.refresh(); _ready(driver,"tab-unified",reference=False)

@@ -69,7 +69,6 @@ body { background: var(--page-bg); color: var(--ink); }
 .matrix-segments { display: flex; height: 22px; border-radius: 4px; overflow: hidden; }
 .matrix-segments > i { flex: 1; border-right: 1px solid var(--panel-bg); }
 .matrix-cell.focus-dim .matrix-segments { opacity: .18; }
-.ttip-pinned.comparison-output { position: fixed !important; inset: 10px 10px 10px auto !important; width: min(1100px,97vw) !important; height: auto !important; max-height: calc(100vh - 20px) !important; box-sizing: border-box; border-radius: 12px; }
 @media (max-width: 700px) {
   .capture-slot-controls { grid-template-columns: 1fr; }
   .capture-slot { grid-template-columns: auto minmax(0,1fr); }
