@@ -111,14 +111,77 @@ impl Encoder for TikTokenTokenizer {
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let mut token_ids = Vec::new();
         for segment in segments {
-            if segment.allow_special {
-                token_ids.extend(self.bpe.encode_with_special_tokens(segment.text));
-            } else {
-                token_ids.extend(self.bpe.encode_ordinary(segment.text));
+            for piece in reference_pieces(segment.text) {
+                if segment.allow_special {
+                    token_ids.extend(self.bpe.encode_with_special_tokens(piece));
+                } else {
+                    token_ids.extend(self.bpe.encode_ordinary(piece));
+                }
             }
         }
         Ok(Encoding::Sp(token_ids))
     }
+}
+
+/// Longest text, in characters, the reference Kimi tokenizer passes to tiktoken at once.
+const MAX_ENCODE_CHARS: usize = 400_000;
+
+/// Longest run of whitespace or non-whitespace characters the reference Kimi tokenizer
+/// encodes in one piece (<https://github.com/openai/tiktoken/issues/195>).
+const MAX_RUN_CHARS: usize = 25_000;
+
+/// Python's `str.isspace`: Unicode `White_Space` plus the ASCII information separators
+/// U+001C..U+001F, which Rust's [`char::is_whitespace`] does not include.
+fn is_python_space(c: char) -> bool {
+    c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
+}
+
+/// The pieces the reference Kimi tokenizer (`TikTokenTokenizer._encode_text_piece` in the
+/// checkpoint's `tokenization_kimi.py`) encodes separately: `text` cut into chunks of
+/// [`MAX_ENCODE_CHARS`] characters, each split before any whitespace or non-whitespace
+/// run would exceed [`MAX_RUN_CHARS`] characters. BPE does not merge across these cuts,
+/// so encoding the text whole yields different ids whenever a cut applies.
+fn reference_pieces(text: &str) -> Vec<&str> {
+    // At most MAX_RUN_CHARS bytes means at most that many characters: no cut applies.
+    if text.len() <= MAX_RUN_CHARS {
+        return vec![text];
+    }
+    let mut pieces = Vec::new();
+    let mut chunk_start = 0;
+    let mut chunk_chars = 0;
+    let mut chunk_ends = Vec::new();
+    for (index, _) in text.char_indices() {
+        if chunk_chars == MAX_ENCODE_CHARS {
+            chunk_ends.push((chunk_start, index));
+            chunk_start = index;
+            chunk_chars = 0;
+        }
+        chunk_chars += 1;
+    }
+    chunk_ends.push((chunk_start, text.len()));
+
+    for (start, end) in chunk_ends {
+        let chunk = &text[start..end];
+        let mut run_is_space = chunk.chars().next().is_some_and(is_python_space);
+        let mut run_len = 0;
+        let mut piece_start = 0;
+        for (index, c) in chunk.char_indices() {
+            let is_space = is_python_space(c);
+            if is_space != run_is_space {
+                run_is_space = is_space;
+                run_len = 1;
+            } else {
+                run_len += 1;
+                if run_len > MAX_RUN_CHARS {
+                    pieces.push(&chunk[piece_start..index]);
+                    piece_start = index;
+                    run_len = 1;
+                }
+            }
+        }
+        pieces.push(&chunk[piece_start..]);
+    }
+    pieces
 }
 
 impl Decoder for TikTokenTokenizer {
@@ -925,6 +988,79 @@ mod tests {
             .unwrap()
             .into();
         assert_eq!(decoded, marker);
+    }
+
+    /// Character lengths of [`reference_pieces`], to compare with the Python reference.
+    fn piece_chars(text: &str) -> Vec<usize> {
+        reference_pieces(text)
+            .iter()
+            .map(|piece| piece.chars().count())
+            .collect()
+    }
+
+    #[test]
+    fn test_reference_pieces_match_kimi_reference_split() {
+        // Expected lengths come from the checkpoint's `_encode_text_piece` split, run in
+        // Python on the same strings.
+        assert_eq!(piece_chars("hello world"), vec![11]);
+        assert_eq!(
+            piece_chars(&"a".repeat(60_000)),
+            vec![25_000, 25_000, 10_000]
+        );
+        assert_eq!(
+            piece_chars(&("a".repeat(30_000) + &" ".repeat(30_000))),
+            vec![25_000, 30_000, 5_000]
+        );
+        assert_eq!(
+            piece_chars(&("x".repeat(25_000) + " " + &"y".repeat(25_001))),
+            vec![50_001, 1]
+        );
+        // Python's isspace counts U+001C..U+001F as whitespace.
+        assert_eq!(
+            piece_chars(&("\u{1c}".repeat(30_000) + "b")),
+            vec![25_000, 5_001]
+        );
+        // Lengths are in characters, not bytes.
+        assert_eq!(piece_chars(&"é".repeat(26_000)), vec![25_000, 1_000]);
+        // Chunks of 400k characters, even without long runs.
+        let chunked: String = "ab ".repeat(136_667).chars().take(410_000).collect();
+        assert_eq!(piece_chars(&chunked), vec![400_000, 10_000]);
+    }
+
+    #[test]
+    fn test_segment_encoding_cuts_long_runs_like_the_reference() {
+        // Byte vocabulary plus one merge ("aa"), so a cut inside an "aa" pair changes ids.
+        let dir = tempfile::tempdir().unwrap();
+        let engine = base64::engine::general_purpose::STANDARD;
+        let mut content = String::new();
+        for byte_val in 0u16..256 {
+            let encoded = engine.encode([byte_val as u8]);
+            content.push_str(&format!("{encoded} {byte_val}\n"));
+        }
+        content.push_str(&format!("{} 256\n", engine.encode(b"aa")));
+        let file_path = dir.path().join("tiktoken.model");
+        std::fs::write(&file_path, &content).unwrap();
+        let tokenizer = TikTokenTokenizer::from_file(
+            file_path.to_str().unwrap(),
+            r"(?s).+",
+            FxHashMap::default(),
+        )
+        .unwrap();
+
+        // One non-whitespace run of 25,001 characters: the reference encodes the first
+        // 25,000 ("b" + 24,999 "a") and the last "a" separately.
+        let text = "b".to_string() + &"a".repeat(25_000);
+        let segmented = tokenizer
+            .encode_segments(&[EncodeSegment::ordinary(&text)])
+            .unwrap();
+        let mut expected = tokenizer.bpe.encode_ordinary(&text[..25_000]);
+        expected.extend(tokenizer.bpe.encode_ordinary(&text[25_000..]));
+        assert_eq!(segmented.token_ids(), expected.as_slice());
+        assert_ne!(
+            segmented.token_ids(),
+            tokenizer.bpe.encode_ordinary(&text).as_slice(),
+            "the cut must change ids for this input, or the test proves nothing"
+        );
     }
 
     fn has_nontrivial_self_overlap(token: &str) -> bool {
