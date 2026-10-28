@@ -134,8 +134,13 @@ def _ready(driver, tab):
     settle(driver, tab, history_ready=True, idle=False)
 
 
-def _choose_engine(driver, slot: int, engine: str):
-    driver.find_element("css selector", f"[data-slot-open='{slot}']").click()
+def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
+    button = driver.find_element("css selector", f"[data-slot-open='{slot}']")
+    if programmatic:
+        # Exercise externally triggered selection while the loading modal blocks pointer input.
+        driver.execute_script("arguments[0].click()", button)
+    else:
+        button.click()
     picker = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".comparison-picker[open]")))
     picker.find_element("css selector", f"[data-picker-engine-choice='{engine}']").click()
     return WebDriverWait(driver, 10).until(lambda page: page.find_element("css selector", f"[data-slot-capture='{slot}']"))
@@ -750,7 +755,7 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             panel = driver.find_element("id", "tab-unified")
             assert panel.get_attribute("data-load-state") == state
             if state == "loading":
-                assert panel.find_element(By.CSS_SELECTOR, ".load-status").text.startswith("Loading...")
+                assert driver.find_element(By.CSS_SELECTOR, "dialog.conformance-loading").text.startswith("Loading ")
             assert driver.execute_script("return Boolean(window.__conformanceModel)")
             assert cell.is_displayed()
             assert popup.is_displayed()
@@ -761,7 +766,9 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             assert len(slot_widths) == 3 and min(slot_widths) > 300, slot_widths
             assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == ['dynamo']
             assert driver.execute_script("return [...arguments[0].querySelectorAll('.matrix-status')].map(node => node.dataset.capture)", cell) == ['dynamo']
-            assert driver.find_element("css selector", "#tab-unified .load-status").text
+            if state == "error":
+                assert driver.find_element("css selector", "#tab-unified .load-status[role=alert]").text
+                assert not driver.find_element("css selector", "dialog.conformance-loading").is_displayed()
             assert driver.find_element("css selector", "[data-view-detailed]").get_property("checked") is True
             assert driver.execute_script("return document.body.classList.contains('view-details')")
             if scroll_before is not None:
@@ -832,7 +839,7 @@ def test_history_upgrade_repaints_user_selection_before_old_build_finishes(histo
                 return model;
             };
         """)
-        _choose_engine(driver, 1, 'vllm')
+        _choose_engine(driver, 1, 'vllm', programmatic=True)
         WebDriverWait(driver, 30).until(lambda page: page.execute_script(
             "return typeof window.releasePreHistoryBuild === 'function'"))
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
@@ -918,15 +925,16 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
         capture_select = _choose_engine(driver, 1, 'vllm')
         rust = next(option.get_attribute('value') for option in capture_select.find_elements('tag name', 'option')
                     if option.get_attribute('value').startswith('vllm_rust@'))
-        Select(capture_select).select_by_value(rust)
-        notice = driver.find_element("css selector", "#tab-unified .load-status")
+        driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", capture_select, rust)
+        notice = driver.find_element("css selector", "dialog.conformance-loading")
         latest_message = notice.text
         assert "Rust" in latest_message
         assert driver.execute_script("return window.__conformanceLoader.pending") == 2
         driver.execute_script("window.releaseStaleComparison()")
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return window.__conformanceLoader.pending === 1"))
         assert driver.find_element("id", "tab-unified").get_attribute("data-load-state") == "loading"
-        assert driver.find_element("css selector", "#tab-unified .load-status") == notice
+        assert driver.find_element("css selector", "dialog.conformance-loading") == notice
+        assert notice.is_displayed()
         assert notice.text == latest_message
         assert cell.is_displayed()
         assert driver.execute_script("return window.__conformanceModel === window.retainedModelBeforePending")
@@ -962,8 +970,8 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result(pu
         """, stale_failure)
         vllm_select = _choose_engine(driver, 1, 'vllm')
         rust = next(option.get_attribute('value') for option in vllm_select.find_elements('tag name', 'option') if option.get_attribute('value').startswith('vllm_rust@'))
-        Select(vllm_select).select_by_value(rust)
-        _choose_engine(driver, 2, 'sglang')
+        driver.execute_script("arguments[0].value=arguments[1]; arguments[0].dispatchEvent(new Event('change', {bubbles:true}));", vllm_select, rust)
+        _choose_engine(driver, 2, 'sglang', programmatic=True)
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
         assert len(selected) == 3
         _ready(driver, "tab-unified")
@@ -1066,7 +1074,7 @@ def test_reset_discards_popup_pin_during_retained_selection_load(published_viewe
         WebDriverWait(driver, 90).until(lambda page: page.execute_script("return typeof window.releaseNavigationSelection === 'function'"))
         assert driver.find_element("id", "tab-unified").get_attribute("data-load-state") == "loading"
         assert popup.is_displayed()
-        driver.find_element("css selector", "[data-reset]").click()
+        driver.execute_script("arguments[0].click()", driver.find_element("css selector", "[data-reset]"))
         _ready(driver, "tab-unified")
         selection = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))")
         assert selection == {'reference': None, 'selected': ['dynamo']}

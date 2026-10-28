@@ -128,6 +128,39 @@ export class SelectionLoader {
   }
 }
 
+export class LoadingOverlay {
+  constructor() {
+    this.tasks = new Map();
+    this.dialog = document.createElement('dialog');
+    this.dialog.className = 'conformance-loading';
+    this.dialog.setAttribute('aria-label', 'Loading results');
+    this.dialog.setAttribute('aria-modal', 'true');
+    this.dialog.setAttribute('closedby', 'none');
+    this.message = document.createElement('p');
+    this.message.setAttribute('role', 'status');
+    this.dialog.appendChild(this.message);
+    this.dialog.addEventListener('cancel', event => event.preventDefault());
+    document.body.appendChild(this.dialog);
+  }
+
+  set(key, label) {
+    this.tasks.delete(key);
+    if (label) this.tasks.set(key, label);
+    if (!this.tasks.size) {
+      if (this.dialog.open) this.dialog.close();
+      return;
+    }
+    this.message.textContent = `Loading ${[...this.tasks.values()].at(-1)}...`;
+    if (!this.dialog.open) this.dialog.showModal();
+  }
+
+  async run(key, label, operation) {
+    this.set(key, label);
+    try { return await operation(); }
+    finally { this.set(key, null); }
+  }
+}
+
 export async function startApp() {
   await import('../utils/src/assets/colorize.js');
   await import('../utils/src/assets/conformance_view.js');
@@ -136,6 +169,7 @@ export async function startApp() {
 
 const root = document.querySelector('#viewer');
 const baseUrl = new URL('.', document.baseURI);
+const loading = new LoadingOverlay();
 window.__CONFORMANCE_INITIAL_SEARCH = location.search;
 window.__formatConformanceValue = stringifyValue;
 window.__conformanceCaptureOutcome = selectedCaptureOutcome;
@@ -188,16 +222,18 @@ function captureControls(catalog, spec) {
 async function initialize() {
   window.__conformanceStartup = startupMetrics;
   const params = new URLSearchParams(location.search);
-  const startup = await timedStartupPhase('catalog', () => loadStartupCatalog(baseUrl, params));
+  const startup = await loading.run('startup', 'last captured results', () =>
+    timedStartupPhase('catalog', () => loadStartupCatalog(baseUrl, params)));
   let catalog = startup.catalog;
   const bootstrapRevision = catalog.revision;
   const embeddedIdentities = startup.embeddedCaptures ? new Set(startup.embeddedCaptures.map(capture => capture.join('@'))) : null;
   let historyAvailable = !embeddedIdentities && ['http:', 'https:'].includes(baseUrl.protocol);
   root.dataset.historyAvailable = embeddedIdentities ? 'checking' : String(historyAvailable);
   let publicationRequest;
-  const readPublication = () => publicationRequest ||= loadPublication(baseUrl);
+  const readPublication = () => publicationRequest ||= loading.run('publication', 'publication metadata', () => loadPublication(baseUrl));
   let historyDiscovery;
-  const readHistory = () => historyDiscovery ||= discoverHistory(baseUrl, catalog, { publication: readPublication() });
+  const readHistory = () => historyDiscovery ||= loading.run('history', 'historic results', () =>
+    discoverHistory(baseUrl, catalog, { publication: readPublication() }));
   // Resolve explicit historical URLs before controls normalize unknown choices.
   const explicitHistory = params.has('raw') || [...params.keys()].some(key => /^(slots_|base_|cmp_|ref$|cmp$)/.test(key));
   if (embeddedIdentities && explicitHistory) {
@@ -209,15 +245,17 @@ async function initialize() {
   window.addEventListener('pagehide', () => reader.dispose(), { once: true });
   if (params.has('raw')) {
     if (catalog.transport?.schema !== 2 && ![...catalog.sources.unified, ...(catalog.sources.original_unified || [])].some(resource => resource.path === params.get('raw'))) {
-      const fullResponse = await fetch(new URL('conformance/viewer-catalog.json', baseUrl), { cache: 'no-store' });
-      if (!fullResponse.ok) throw new Error(`Catalog fetch failed (${fullResponse.status})`);
-      const full = await fullResponse.json();
+      const full = await loading.run('raw-catalog', 'original resource catalog', async () => {
+        const fullResponse = await fetch(new URL('conformance/viewer-catalog.json', baseUrl), { cache: 'no-store' });
+        if (!fullResponse.ok) throw new Error(`Catalog fetch failed (${fullResponse.status})`);
+        return fullResponse.json();
+      });
       if (full.revision !== catalog.revision && full.revision !== catalog.source_revision) throw new Error('Legacy catalog revision mismatch');
       catalog = full; reader.catalog = full;
     }
     const path = params.get('raw');
     const rawCatalog = startup.catalog.capture_generation?.current?.some(capture => capture.source === path) ? startup.catalog : catalog;
-    await rawView(rawCatalog, reader, path); return;
+    await loading.run('raw', path.split('/').at(-1), () => rawView(rawCatalog, reader, path)); return;
   }
   if (params.get('tab') && params.get('tab') !== 'tab-unified') {
     const url = new URL(location.href);
@@ -275,13 +313,12 @@ async function initialize() {
       panel.dataset.loadState = state;
       panel.setAttribute('aria-busy', String(state === 'loading'));
       panel.querySelector('.load-status')?.remove();
-      if (state !== 'ready') {
-        const notice = document.createElement('div'); notice.className = 'load-status'; notice.setAttribute('role', state === 'error' ? 'alert' : 'status');
-        const labels = selection?.selected.map(key => descriptors.find(item => item.control.key === key)?.control.label || key);
-        notice.textContent = state === 'error' ? `Fixture load failed: ${error.message} ` : `Loading... ${labels?.join(', ') || 'selected fixtures'}`;
-        if (state === 'error') {
-          const retry = document.createElement('button'); retry.textContent = 'Retry'; retry.addEventListener('click', () => load(panel)); notice.appendChild(retry);
-        }
+      const labels = selection?.selected.map(key => descriptors.find(item => item.control.key === key)?.control.label || key);
+      loading.set(`selection:${tabId}`, state === 'loading' ? labels?.join(', ') || 'selected fixtures' : null);
+      if (state === 'error') {
+        const notice = document.createElement('div'); notice.className = 'load-status'; notice.setAttribute('role', 'alert');
+        notice.textContent = `Fixture load failed: ${error.message} `;
+        const retry = document.createElement('button'); retry.textContent = 'Retry'; retry.addEventListener('click', () => load(panel)); notice.appendChild(retry);
         panel.querySelector('.capture-slots').appendChild(notice);
       }
       controller.refreshPopupLayout();

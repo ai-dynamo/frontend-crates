@@ -12,6 +12,8 @@ import threading
 from urllib.parse import urlencode, urlsplit
 
 import pytest
+from selenium.common.exceptions import ElementClickInterceptedException
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from browser_helpers import raw_view_download, settle
@@ -191,6 +193,52 @@ def test_full_history_selection_urls_and_original_downloads(history_source, hist
         server.server_close()
 
 
+@pytest.mark.parametrize("missing", [False, True])
+def test_history_json_loading_dims_page_until_success_or_failure(historical_published_viewer, missing):
+    gate = (threading.Event(), threading.Event())
+    target = "/conformance/viewer-resolved-catalog.json.gz"
+    fault = {"path": target, "kind": "missing", "used": False} if missing else None
+    server, _requests = _server(root=historical_published_viewer, gate=gate, gate_path=target, fault=fault)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        settle(driver, "tab-unified")
+        assert gate[0].wait(15)
+        dialog = driver.find_element("css selector", "dialog.conformance-loading")
+        assert dialog.is_displayed()
+        assert dialog.text == "Loading historic results..."
+        geometry = driver.execute_script("""
+            const dialog = arguments[0], box = dialog.getBoundingClientRect();
+            return {modal: dialog.matches(':modal'), shade: getComputedStyle(dialog, '::backdrop').backgroundColor,
+                centered: Math.abs(box.x + box.width / 2 - document.documentElement.clientWidth / 2) < 2
+                    && Math.abs(box.y + box.height / 2 - document.documentElement.clientHeight / 2) < 2,
+                cells: document.querySelectorAll('#tab-unified td.cell').length};
+        """, dialog)
+        assert geometry["modal"] and geometry["centered"]
+        assert geometry["shade"] == "rgba(80, 80, 80, 0.5)"
+        assert geometry["cells"] > 0
+        driver.switch_to.active_element.send_keys(Keys.ESCAPE)
+        assert dialog.is_displayed(), "Escape must not dismiss an active load"
+        with pytest.raises(ElementClickInterceptedException):
+            driver.find_element("css selector", "[data-reset]").click()
+        assert dialog.is_displayed()
+        driver.set_window_size(360, 640)
+        assert driver.execute_script("""
+            const box = arguments[0].getBoundingClientRect();
+            return box.left >= 0 && box.right <= document.documentElement.clientWidth;
+        """, dialog)
+        gate[1].set()
+        _ready(driver, "tab-unified")
+        assert not dialog.is_displayed()
+        assert driver.find_element("id", "viewer").get_attribute("data-history-available") == str(not missing).lower()
+        assert len(driver.find_elements("css selector", "#tab-unified td.cell")) == geometry["cells"]
+    finally:
+        gate[1].set()
+        driver.quit()
+        server.shutdown()
+        server.server_close()
+
+
 def test_history_discovery_preserves_completed_table_selection_and_popup(historical_published_viewer):
     gate = (threading.Event(), threading.Event())
     server, _requests = _server(root=historical_published_viewer, gate=gate,
@@ -203,7 +251,8 @@ def test_history_discovery_preserves_completed_table_selection_and_popup(histori
         assert gate[0].wait(15)
         WebDriverWait(driver, 15).until(lambda page: page.execute_script("return window.__firstVisibleMatrix !== null"))
         cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
-        cell.click()
+        # Programmatic popup state must survive discovery even while pointer input is blocked.
+        driver.execute_script("arguments[0].click()", cell)
         WebDriverWait(driver, 15).until(lambda page: any(item.is_displayed() for item in page.find_elements("css selector", ".ttip-pinned")))
         before = driver.execute_script("""
             window.historyTransitionFrames = [];
