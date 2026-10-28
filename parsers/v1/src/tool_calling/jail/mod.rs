@@ -244,10 +244,6 @@ fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatCh
 ///
 /// While recording, the second result holds each frame's sources, one per
 /// choice in the same order. It is `None` when no emission records.
-///
-/// Always inlined: its one caller is built for the stock and the sourced item,
-/// and as a call it cost the stock jail 65 more instructions per chunk.
-#[inline(always)]
 fn pack_choices(
     emissions: Vec<Emitted>,
 ) -> (Vec<Vec<ChatChoiceStream>>, Option<Vec<Vec<ChoiceSources>>>) {
