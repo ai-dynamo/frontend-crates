@@ -485,3 +485,37 @@ fn fastokens_checks_strip_flags_of_a_plain_token_the_config_makes_special() {
     );
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
+
+#[test]
+#[ignore = "F8: numeric ID aliases can hide the rstrip flags fastokens selects"]
+fn fastokens_checks_both_spellings_of_a_config_token_id() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1, " ": 2}),
+    );
+    let config = json!({"added_tokens_decoder": {
+        "03": added(3, "<sep>", true),
+        "3": flagged(3, "<sep>", true, "rstrip")
+    }});
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write tokenizer");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string())
+        .expect("write config");
+
+    // Equal numeric IDs retain the config map's random iteration order in
+    // fastokens, so repeated loads can select different strip flags.
+    for _ in 0..64 {
+        let fast: Arc<dyn Tokenizer> =
+            Arc::new(crate::FastTokenizer::from_file(path.to_str().expect("UTF-8")).expect("load"));
+        let (uncached, cached, _) = three_ways(fast, vec!["<sep>".to_owned()], "a<sep> b");
+        assert!(uncached == [0, 3, 1] || uncached == [0, 3, 2, 1]);
+        assert_eq!(
+            cached,
+            [uncached.clone(), uncached],
+            "fastokens may keep either alias's strip flags"
+        );
+    }
+}
