@@ -424,6 +424,10 @@ fn fastokens_uses_the_encoders_strip_flags_when_the_config_disagrees() {
     let fast: Arc<dyn Tokenizer> =
         Arc::new(crate::FastTokenizer::from_file(path).expect("load fastokens"));
     let (uncached, cached, _) = three_ways(fast, specials(&json), "a<sep> b");
-    assert_eq!(uncached, [0, 3, 1], "fastokens keeps tokenizer.json's rstrip");
+    assert_eq!(
+        uncached,
+        [0, 3, 1],
+        "fastokens keeps tokenizer.json's rstrip"
+    );
     assert_eq!(cached, [uncached.clone(), uncached]);
 }
