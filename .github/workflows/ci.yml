@@ -350,6 +350,9 @@ jobs:
       - name: Restore candidate publication for qualification
         uses: ./.github/actions/conformance-publication
 
+      - name: Install bundler for publication equivalence checks
+        uses: ./.github/actions/conformance-viewer-build
+
       - name: Conformance core shard (catalog + lint + invariants)
         run: |
           python3 -m venv /tmp/pvenv

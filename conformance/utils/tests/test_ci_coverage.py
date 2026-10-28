@@ -405,8 +405,8 @@ def test_cache_identity_does_not_follow_tracked_directory_links(tmp_path):
     assert ci_publication_cache.input_identity(link) != before
 
 
-@pytest.mark.parametrize("job_name", ["conformance-native-browser", "conformance-viewer"])
-def test_browser_jobs_that_publish_install_the_locked_bundler(job_name):
+@pytest.mark.parametrize("job_name", ["conformance-core", "conformance-native-browser", "conformance-viewer"])
+def test_qualification_jobs_that_publish_install_the_locked_bundler(job_name):
     root = Path(__file__).resolve().parents[3]
     workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
     steps = workflow["jobs"][job_name]["steps"]
