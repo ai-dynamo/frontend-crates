@@ -17,6 +17,9 @@ use super::{
 /// Tokenizer backed by the `basetenkenizer` crate.
 pub struct BasetenTokenizer {
     tokenizer: basetenkenizer::Tokenizer,
+    /// Why the prefix cache cannot split this tokenizer's prompts, if it
+    /// cannot; see [`crate::cache::hazard`].
+    prefix_cache_hazard: Option<String>,
     options: TokenizerOptions,
 }
 
@@ -31,10 +34,12 @@ impl BasetenTokenizer {
         if let Some(parent) = path.parent() {
             merge_special_tokens_from_config(&mut json, parent);
         }
+        let prefix_cache_hazard = crate::cache::hazard::prefix_cache_hazard_in_json(&json);
         let tokenizer = basetenkenizer::Tokenizer::from_json(json)
             .map_err(|e| Error::msg(format!("Error loading Baseten tokenizer: {e}")))?;
         Ok(Self {
             tokenizer,
+            prefix_cache_hazard,
             options: TokenizerOptions::default(),
         })
     }
@@ -157,6 +162,10 @@ impl Decoder for BasetenTokenizer {
 }
 
 impl Tokenizer for BasetenTokenizer {
+    fn prefix_cache_hazard(&self) -> Option<String> {
+        self.prefix_cache_hazard.clone()
+    }
+
     fn validate_prefix_cache(&self) -> Result<()> {
         if self.options.add_special_tokens {
             return Err(Error::msg(

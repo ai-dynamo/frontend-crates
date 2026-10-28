@@ -5,6 +5,8 @@ use std::{collections::HashSet, path::Path, sync::OnceLock};
 
 use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
+use crate::cache::hazard::AddedTokenFlags;
+
 use super::{
     Encoding, Error, Result, TokenIdType, TokenizerOptions,
     traits::{DecodeResult, Decoder, Encoder, Tokenizer},
@@ -15,6 +17,9 @@ pub struct HuggingFaceTokenizer {
     segment_tokenizers: OnceLock<(HfTokenizer, HfTokenizer)>,
     byte_fallback_ids: HashSet<u32>,
     special_ids: HashSet<u32>,
+    /// Why the prefix cache cannot split this tokenizer's prompts, if it
+    /// cannot; see [`crate::cache::hazard`].
+    prefix_cache_hazard: Option<String>,
     /// Construction-time options; see [`TokenizerOptions`]. Defaults preserve
     /// the historical behavior (e.g. `add_special_tokens: false`). Set via
     /// [`Tokenizer::with_options`].
@@ -70,11 +75,13 @@ impl HuggingFaceTokenizer {
             .into_iter()
             .filter_map(|(id, token)| token.special.then_some(id))
             .collect();
+        let prefix_cache_hazard = prefix_cache_hazard(&tokenizer);
         HuggingFaceTokenizer {
             tokenizer,
             segment_tokenizers: OnceLock::new(),
             byte_fallback_ids,
             special_ids,
+            prefix_cache_hazard,
             options: TokenizerOptions::default(),
         }
     }
@@ -86,6 +93,29 @@ impl HuggingFaceTokenizer {
         merge_special_tokens_from_config(&mut tokenizer, model_dir);
         Self::from_tokenizer(tokenizer)
     }
+}
+
+/// Why the prefix cache cannot split `tokenizer`'s prompts, if it cannot.
+fn prefix_cache_hazard(tokenizer: &HfTokenizer) -> Option<String> {
+    let added = tokenizer.get_added_tokens_decoder();
+    let tokens: Vec<_> = added
+        .values()
+        .map(|token| AddedTokenFlags {
+            content: &token.content,
+            special: token.special,
+            rstrip: token.rstrip,
+            single_word: token.single_word,
+            normalized: token.normalized,
+        })
+        .collect();
+    let pre_tokenizer = tokenizer
+        .get_pre_tokenizer()
+        .and_then(|pre_tokenizer| serde_json::to_value(pre_tokenizer).ok());
+    crate::cache::hazard::prefix_cache_hazard(
+        &tokens,
+        tokenizer.get_normalizer().is_some(),
+        pre_tokenizer.as_ref(),
+    )
 }
 
 /// Promote `tokenizer_config.json`'s `special: true` `added_tokens_decoder`
@@ -117,6 +147,14 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
         return;
     };
 
+    // `tokenizers` matches a token it already has with the `normalized` flag
+    // it first saw, and re-adding the token changes only the flag it reports.
+    // Keep that flag, so the report stays true.
+    let normalized_now: std::collections::HashMap<String, bool> = tokenizer
+        .get_added_tokens_decoder()
+        .into_values()
+        .map(|token| (token.content, token.normalized))
+        .collect();
     let mut to_add: Vec<AddedToken> = Vec::new();
     for (_id, spec) in decoder {
         let obj = match spec.as_object() {
@@ -140,10 +178,11 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
             .unwrap_or(false);
         let lstrip = obj.get("lstrip").and_then(|v| v.as_bool()).unwrap_or(false);
         let rstrip = obj.get("rstrip").and_then(|v| v.as_bool()).unwrap_or(false);
-        let normalized = obj
-            .get("normalized")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
+        let normalized = normalized_now.get(content).copied().unwrap_or_else(|| {
+            obj.get("normalized")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+        });
         let token = AddedToken::from(content.to_string(), true)
             .single_word(single_word)
             .lstrip(lstrip)
@@ -261,6 +300,10 @@ impl Decoder for HuggingFaceTokenizer {
 }
 
 impl Tokenizer for HuggingFaceTokenizer {
+    fn prefix_cache_hazard(&self) -> Option<String> {
+        self.prefix_cache_hazard.clone()
+    }
+
     fn validate_prefix_cache(&self) -> Result<()> {
         if self.options.add_special_tokens {
             return Err(Error::msg(

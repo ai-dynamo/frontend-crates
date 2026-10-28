@@ -97,6 +97,11 @@ impl Tokenizer for FastTokenizer {
         Ok(())
     }
 
+    // Read from the HF side, which loads the same tokenizer.json.
+    fn prefix_cache_hazard(&self) -> Option<String> {
+        self.hf_decoder.prefix_cache_hazard()
+    }
+
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
     // so the HF side's vocabulary introspection applies to both.
     fn vocab_size(&self) -> Option<usize> {

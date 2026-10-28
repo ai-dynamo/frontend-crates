@@ -115,6 +115,15 @@ let stats = cached.cache_stats();
 println!("hits={} misses={} hit_rate={:.2}", stats.hits, stats.misses, stats.hit_rate);
 ```
 
+The cache passes every encode through, as with an empty list, when the special
+tokens can overlap one another, or when the tokenizer encodes the text after a
+special token differently on its own than inside the whole prompt
+(`Tokenizer::prefix_cache_hazard`). A Hugging Face `tokenizer.json` does so
+when it has a special token with `rstrip`, or with `normalized` and a
+normalizer, a special token that overlaps a plain added token, an added token
+with `single_word`, or a Metaspace pre-tokenizer with `prepend_scheme: first`.
+It logs a warning that names the reason.
+
 TikToken models expose the exact special-token strings registered with their BPE, so
 the same cache can be constructed without duplicating model metadata:
 

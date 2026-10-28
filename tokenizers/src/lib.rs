@@ -204,6 +204,16 @@ pub mod traits {
             Err(Error::msg("tokenizer does not support prefix caching"))
         }
 
+        /// Why the prefix cache cannot split this tokenizer's prompts after
+        /// its special tokens, if it cannot. The cache then turns itself off,
+        /// as it does for overlapping special tokens.
+        ///
+        /// The default reports no reason: the tokenizer encodes the text after
+        /// a special token the same on its own as inside the prompt.
+        fn prefix_cache_hazard(&self) -> Option<String> {
+            None
+        }
+
         /// Apply construction-time [`TokenizerOptions`].
         ///
         /// The default implementation ignores the options — correct for

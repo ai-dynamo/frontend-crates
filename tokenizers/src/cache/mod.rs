@@ -28,7 +28,10 @@
 //!
 //! Atomicity alone is insufficient when registered special-token strings can overlap.
 //! [`CachedTokenizer::new`] disables L1 for such sets because the boundary scanner could
-//! otherwise split inside the token selected by the underlying tokenizer.
+//! otherwise split inside the token selected by the underlying tokenizer. It also disables
+//! L1 when the inner tokenizer reports a [`Tokenizer::prefix_cache_hazard`]: a setup that
+//! encodes the text after a special token differently on its own than inside the prompt,
+//! such as a special token with `rstrip` (see the `hazard` module).
 //!
 //! # Storage normalization
 //!
@@ -64,6 +67,9 @@
 //! upstream fingerprinting were dropped; L1 covers the multi-turn-chat workload.
 //! Shared caches use caller-supplied namespaces to separate tokenizer identities.
 
+pub(crate) mod hazard;
+#[cfg(test)]
+mod hazard_tests;
 mod l1;
 
 use std::sync::Arc;
@@ -179,7 +185,21 @@ impl CachedTokenizer {
             None => false,
         };
 
-        let l1_enabled = !special_tokens.is_empty() && !overlapping_specials;
+        // Some tokenizers encode the text after a special token differently
+        // on their own than inside the prompt. Bypass the cache for them too.
+        let hazard = match inner.prefix_cache_hazard() {
+            Some(hazard) => {
+                tracing::warn!(
+                    target: "tokenizer",
+                    hazard,
+                    "tokenizer cannot split prompts at special tokens; tokenizer prefix cache disabled"
+                );
+                true
+            }
+            None => false,
+        };
+
+        let l1_enabled = !special_tokens.is_empty() && !overlapping_specials && !hazard;
         let cache_tokens = if l1_enabled {
             special_tokens
         } else {

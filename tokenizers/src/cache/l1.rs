@@ -174,7 +174,7 @@ fn has_nontrivial_self_overlap(token: &str) -> bool {
     (1..bytes.len()).any(|overlap| bytes[bytes.len() - overlap..] == bytes[..overlap])
 }
 
-fn tokens_can_overlap(a: &str, b: &str) -> bool {
+pub(super) fn tokens_can_overlap(a: &str, b: &str) -> bool {
     if a.contains(b) || b.contains(a) {
         return true;
     }
