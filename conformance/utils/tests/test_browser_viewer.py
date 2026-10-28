@@ -136,7 +136,7 @@ def _ready(driver, tab, *, reference=True):
     if reference:
         # These retained tests exercise the detailed reference surface. The
         # comparison matrix has its own default-state and interaction tests.
-        driver.execute_script("const details = document.querySelector('.legacy-report-details'); if (!details.open) details.querySelector('summary').click()")
+        driver.execute_script("const details = document.querySelector('.legacy-report-details'); if (details && !details.open) details.querySelector('summary').click()")
 
 
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
