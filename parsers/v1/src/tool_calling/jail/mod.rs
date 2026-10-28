@@ -73,6 +73,50 @@ pub(crate) type SourcedItem = (
     Option<Vec<ChoiceSources>>,
 );
 
+/// An item type the jail streams: the stock chunk, or a [`SourcedItem`].
+///
+/// The jail loop is generic over it so that the stock `apply` streams its
+/// chunks as they are. Wrapping each chunk in a `(chunk, None)` pair and back
+/// cost the stock path about 2% more instructions per chunk, mostly copies of
+/// the chunk. `RECORDS` is false for the stock chunk, so its copy of the loop
+/// compiles the recording branches out.
+pub(crate) trait JailItem: Send + 'static {
+    /// Whether this item type can carry sources.
+    const RECORDS: bool;
+
+    fn into_parts(self) -> SourcedItem;
+
+    fn from_parts(item: SourcedItem) -> Self;
+}
+
+impl JailItem for Annotated<CreateChatCompletionStreamResponse> {
+    const RECORDS: bool = false;
+
+    #[inline]
+    fn into_parts(self) -> SourcedItem {
+        (self, None)
+    }
+
+    #[inline]
+    fn from_parts((chunk, _): SourcedItem) -> Self {
+        chunk
+    }
+}
+
+impl JailItem for SourcedItem {
+    const RECORDS: bool = true;
+
+    #[inline]
+    fn into_parts(self) -> SourcedItem {
+        self
+    }
+
+    #[inline]
+    fn from_parts(item: SourcedItem) -> Self {
+        item
+    }
+}
+
 fn is_harmony_parser(parser: Option<&str>) -> bool {
     parser == Some("harmony")
 }
@@ -905,6 +949,7 @@ impl ChoiceJailState {
     }
 
     /// The sources of an input text: the caller's, or this choice's own offsets.
+    #[inline]
     fn input_spans(
         &mut self,
         text: &str,
@@ -2130,8 +2175,7 @@ impl JailedStream {
     where
         S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
     {
-        self.apply_sourced(false, stream.map(|response| (response, None)))
-            .map(|(response, _)| response)
+        self.apply_sourced(false, stream)
     }
 
     /// Whether [`apply_sourced`](Self::apply_sourced) can record sources for
@@ -2156,15 +2200,16 @@ impl JailedStream {
     /// text it received, counted apart for content and for reasoning, so those
     /// are two offset spaces. Without recording the output items carry `None`,
     /// and the chunks are the ones [`apply`](Self::apply) emits.
-    pub(crate) fn apply_sourced<S>(
+    pub(crate) fn apply_sourced<I, S>(
         mut self,
         record: bool,
         stream: S,
-    ) -> impl Stream<Item = SourcedItem> + Send
+    ) -> impl Stream<Item = I> + Send
     where
-        S: Stream<Item = SourcedItem> + Send + 'static,
+        I: JailItem,
+        S: Stream<Item = I> + Send + 'static,
     {
-        self.recording = record && self.can_record_sources();
+        self.recording = I::RECORDS && record && self.can_record_sources();
         let recording = self.recording;
         let separates_k3_reasoning = is_kimi_k3_parser(self.tool_call_parser.as_deref());
         // Use the stream! macro for cleaner async stream processing
@@ -2185,7 +2230,8 @@ impl JailedStream {
 
 
             // Process each item in the stream
-            while let Some((response, input_sources)) = stream.next().await {
+            while let Some(item) = stream.next().await {
+                let (response, input_sources) = item.into_parts();
                 let given = |index: u32| {
                     input_sources
                         .as_ref()
@@ -2201,7 +2247,7 @@ impl JailedStream {
                     if chat_response.choices.is_empty() {
                         // No choices processed (e.g., usage-only chunk)
                         // Pass through as-is to preserve usage and other metadata
-                        yield (response, recording.then(Vec::new));
+                        yield I::from_parts((response, recording.then(Vec::new)));
                         continue;
                     }
 
@@ -2404,7 +2450,7 @@ impl JailedStream {
                             let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
                             let responses = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
                             for emitted_response in responses {
-                                yield emitted_response;
+                                yield I::from_parts(emitted_response);
                             }
                         }
 
@@ -2417,7 +2463,7 @@ impl JailedStream {
                             );
                             let responses = self.emit_choice_emissions(tool_content_emissions, chat_response, preserved_metadata);
                             for emitted_response in responses {
-                                yield emitted_response;
+                                yield I::from_parts(emitted_response);
                             }
                         }
 
@@ -2430,13 +2476,13 @@ impl JailedStream {
                             );
                             let responses = self.emit_choice_emissions(trailing_emissions, chat_response, preserved_metadata);
                             for emitted_response in responses {
-                                yield emitted_response;
+                                yield I::from_parts(emitted_response);
                             }
                         }
                     }
                 } else {
                     // No response data, pass through as-is
-                    yield (response, recording.then(Vec::new));
+                    yield I::from_parts((response, recording.then(Vec::new)));
                 }
             }
 
@@ -2468,7 +2514,7 @@ impl JailedStream {
                 let final_metadata = (last_annotated_id, last_annotated_event, last_annotated_comment);
                 let responses = self.emit_choice_emissions(final_emissions, &dummy_response, final_metadata);
                 for emitted_response in responses {
-                    yield emitted_response;
+                    yield I::from_parts(emitted_response);
                 }
             }
         }
