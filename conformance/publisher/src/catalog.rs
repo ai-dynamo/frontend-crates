@@ -74,19 +74,23 @@ fn index_version_archive(
     Ok(resources)
 }
 
-fn observation_code(value: &Node) -> Result<Value> {
+fn selected_observation(value: &Node) -> Result<Option<&Node>> {
     let recapture = value
         .field("document")?
         .get("record_metadata")
         .and_then(|metadata| metadata.get("verified_recapture"))
         .filter(|recapture| **recapture != Node::Null);
-    // Availability follows the selected checkpoint result, including its absent
-    // typed observation. Archived plural proofs never select an observation.
-    let observation = match recapture {
-        Some(recapture) => recapture.field("result")?.get("capture_observation"),
-        None => Some(value.field("observation")?),
-    };
-    Ok(observation
+    match recapture {
+        Some(recapture) => {
+            let result = recapture.field("result")?;
+            Ok(Some(result.get("capture_observation").unwrap_or(result)))
+        }
+        None => Ok(Some(value.field("observation")?)),
+    }
+}
+
+fn observation_code(value: &Node) -> Result<Value> {
+    Ok(selected_observation(value)?
         .and_then(|observation| observation.get("unavailable"))
         .and_then(|unavailable| unavailable.get("code"))
         .map(Node::string)
@@ -97,6 +101,7 @@ fn observation_code(value: &Node) -> Result<Value> {
 pub(crate) fn record_summary(records: &Node) -> Result<Value> {
     let mut codes = serde_json::Map::new();
     let mut has_results = false;
+    let mut recorded_cases = Vec::new();
     let mut unified = false;
     let mut split = false;
     let mut route_recorded = false;
@@ -105,6 +110,16 @@ pub(crate) fn record_summary(records: &Node) -> Result<Value> {
         let observation = value.field("observation")?;
         codes.insert(case.string()?.to_string(), observation_code(value)?);
         has_results |= observation.get("value").is_some() || observation.get("error").is_some();
+        if observation_code(value)?.is_null()
+            && selected_observation(value)?.is_some_and(|selected| {
+                selected.get("unavailable").is_none()
+                    && ["value", "error", "chunks", "assembled"]
+                        .iter()
+                        .any(|key| selected.get(key).is_some())
+            })
+        {
+            recorded_cases.push(case.string()?.to_string());
+        }
         let document = value.field("document")?;
         route_recorded |= document
             .get("record_metadata")
@@ -130,7 +145,7 @@ pub(crate) fn record_summary(records: &Node) -> Result<Value> {
         split |= route == Some(&Node::Str("split".into()));
     }
     Ok(
-        json!({"codes":codes,"has_results":has_results,"native":unified && !split,
+        json!({"codes":codes,"recorded_cases":recorded_cases,"has_results":has_results,"native":unified && !split,
         "route_recorded":route_recorded,"historical_evidence":0}),
     )
 }
@@ -211,6 +226,7 @@ pub(crate) fn valid_summary(
             .iter()
             .all(|key| summary[key].is_boolean())
         && summary["historical_evidence"].is_u64()
+        && string_list(&summary["recorded_cases"])
 }
 
 fn string_list(value: &Value) -> bool {
@@ -760,6 +776,49 @@ mod tests {
 
         assert_eq!(documents.len(), 1);
         assert_eq!(documents[0].0, name);
+        Ok(())
+    }
+    #[test]
+    fn recorded_cases_follow_selected_recapture() -> Result<()> {
+        let records = yaml::load_str(
+            r#"
+ordinary: {value: {document: {}, observation: {value: {}}}}
+error: {value: {document: {}, observation: {error: {}}}}
+missing: {value: {document: {}, observation: {unavailable: {code: missing_capture}}}}
+fresh_error:
+  value:
+    document: {record_metadata: {verified_recapture: {result: {error: failure, capture_observation: {error: {}}}}}}
+    observation: {unavailable: {code: missing_capture}}
+fresh_stream:
+  value:
+    document: {record_metadata: {verified_recapture: {result: {chunks: []}}}}
+    observation: {unavailable: {code: missing_capture}}
+fresh_batch:
+  value:
+    document: {record_metadata: {verified_recapture: {result: {assembled: []}}}}
+    observation: {unavailable: {code: missing_capture}}
+fresh_missing:
+  value:
+    document: {record_metadata: {verified_recapture: {result: {unavailable: not_recorded}}}}
+    observation: {value: {}}
+"#,
+        )?;
+        let summary = record_summary(&records)?;
+        let mut actual = summary["recorded_cases"].as_array().unwrap().clone();
+        actual.sort_by_key(|v| v.as_str().unwrap().to_owned());
+        assert_eq!(
+            actual,
+            json!([
+                "error",
+                "fresh_batch",
+                "fresh_error",
+                "fresh_stream",
+                "ordinary"
+            ])
+            .as_array()
+            .unwrap()
+            .clone()
+        );
         Ok(())
     }
 }

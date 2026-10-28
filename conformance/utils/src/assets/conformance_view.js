@@ -1207,11 +1207,7 @@
   }
 
   // --- Static per-panel sections (legends, stats, glossary) ------------------
-  const segmentLabels = { pass: 'Matches golden', documented: 'Documented difference',
-    diverge: 'Disagreement', leak: 'Markup leak', error: 'Parser error', expected: 'Expected error',
-    unsupported: 'Not applicable or unsupported', missing: 'Output not yet captured', blocked: 'Source unavailable',
-    uncompared: 'GOLDEN unavailable' };
-  window.__conformanceSegmentLabels = segmentLabels;
+  const segmentLabels = window.__conformanceSegmentLabels;
 
   window.__conformanceUpdateLegend = function (panel) {
     const list = panel.querySelector('.capture-legend ul');
@@ -1220,7 +1216,7 @@
     const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === panel.id);
     const captures = tab.candidates.filter(item => selected.has(item.key));
     panel.querySelector('[data-dynamo-v1]').hidden = !captures.some(item => item.identity?.startsWith('dynamo_v1@') || item.identity?.startsWith('dynamo_v1_jail@'));
-    const table = panel.querySelector(document.body.classList.contains('transpose-mode')
+    const table = panel.querySelector(panel.querySelector('[data-comparison-table]') ? '[data-parity-table]' : document.body.classList.contains('transpose-mode')
       ? 'table[data-transpose-table]' : 'table[data-parity-table]:not([data-transpose-table])');
     const present = new Set();
     if (table) {
@@ -1417,17 +1413,26 @@
       _familyMarkers = page.family_markers || {};
       _summaryLegendHtml = page.meta?.summary_legend_html || null;
       const heading = document.createElement('h1');
-      heading.textContent = page.meta.title;
+      heading.textContent = 'Parser Conformance';
+      if (page.meta.sha) {
+        const source = document.createElement('a');
+        source.className = 'source-commit';
+        source.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + page.meta.sha;
+        source.title = page.meta.sha;
+        source.setAttribute('aria-label', 'Source commit ' + page.meta.sha);
+        source.textContent = page.meta.short_sha;
+        heading.append(' ', source);
+      }
       document.title = page.meta.title;
       const header = [heading];
       const revision = document.createElement('p');
       revision.className = 'generated';
       revision.hidden = true;
       header.push(revision);
-      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, true)));
+      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, page.tabs.length > 1)));
     },
     prepareUpdate(panel, tab, page) {
-      const next = buildPanel(prepare(tab), page, true);
+      const next = buildPanel(prepare(tab), page, page.tabs.length > 1);
       // Preparing the same models reuses IDs already registered by the replacement.
       // Retiring the old DOM must not delete those replacement-owned entries.
       const retainedIds = new Set([...next.querySelectorAll('[data-ttip-id]')].map(cell => cell.getAttribute('data-ttip-id')));
@@ -1435,9 +1440,9 @@
         disposePanel(panel, retainedIds);
         // Candidate controls and their handlers survive asynchronous data updates.
         const generationDetails = panel.querySelector('.generated-command');
-        for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots')) child.remove();
+        for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots, .comparison-ui, .legacy-report-details')) child.remove();
         for (const child of [...next.children]) if (!child.matches('.cmpctl, .capture-slots')) panel.appendChild(child);
-        if (generationDetails) panel.querySelector('.generation-instructions')?.appendChild(generationDetails);
+        if (generationDetails) panel.querySelector(':scope > .generation-instructions')?.appendChild(generationDetails);
       };
     },
     update(panel, tab, page) {

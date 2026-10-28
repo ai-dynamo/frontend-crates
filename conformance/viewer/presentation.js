@@ -301,6 +301,7 @@ function schemaVariants(families, byFamily, scenario, shared) {
 }
 
 export function validatePublication(publication, catalogRevision, resolvedCatalogRevision) {
+  if (publication?.source_commit_sha !== undefined && (publication.source_commit_sha !== publication.revision || !/^[0-9a-f]{40}$/.test(publication.source_commit_sha))) throw new Error('Invalid source_commit_sha');
   if (!publication || publication.schema !== 1 || !/^[0-9a-f]{40}$/.test(publication.revision) || publication.catalog_revision !== catalogRevision
       || (publication.generated_revision !== undefined && !/^[0-9a-f]{40}$/.test(publication.generated_revision))
       || (resolvedCatalogRevision !== undefined && publication.resolved_catalog_revision !== resolvedCatalogRevision)) {
