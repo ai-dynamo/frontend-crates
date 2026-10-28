@@ -83,7 +83,7 @@ pub(crate) fn prefix_cache_hazard<'a>(
         // take its place: the special token is split out first.
         let shadow = tokens.iter().find(|other| {
             !other.special
-                && !(other.normalized && !token.normalized)
+                && (token.normalized || !other.normalized)
                 && tokens_can_overlap(token.content, other.content)
         });
         if let Some(other) = shadow {
