@@ -19,9 +19,9 @@ use std::pin::Pin;
 use dynamo_protocols::types::ChatCompletionMessageContent;
 use futures::{Stream, StreamExt, stream};
 
-use crate::chat_stream::ChatStreamItem;
+use crate::chat_stream::{ChatStreamItem, choice_texts};
 use crate::reasoning::{ParserResult, ReasoningParser, ReasoningParserType};
-use crate::sources::{ChoiceSources, SourceChannel, SourceRun, Spans};
+use crate::sources::{ChoiceSources, SourceChannel, SourceRun, Spans, match_choice_sources};
 
 /// Options for [`parse_reasoning_content_from_stream`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -500,15 +500,14 @@ where
 
                 // While recording, the input slot gives each choice's ranges and
                 // the output slot gets the ranges of the text this stage emits.
-                let mut input_sources = response.sources_mut().map(std::mem::take);
-                let mut output_sources = input_sources.as_ref().map(|_| Vec::new());
+                let mut matched = match_input_sources(&mut response);
+                let mut output_sources = matched.as_ref().map(|_| Vec::new());
                 let recording = output_sources.is_some();
                 if let Some(data) = response.chunk_mut() {
-                    for choice in data.choices.iter_mut() {
-                        let given = input_sources.as_mut().and_then(|all| {
-                            let at = all.iter().position(|given| given.index == choice.index)?;
-                            Some(all.remove(at))
-                        });
+                    for (position, choice) in data.choices.iter_mut().enumerate() {
+                        let given = matched
+                            .as_mut()
+                            .and_then(|matched| matched.get_mut(position)?.take());
                         let choice_state = choices.entry(choice.index).or_insert_with(|| {
                             let mut parser = Box::new(
                                 ReasoningParserType::get_reasoning_parser_from_name(parser_name),
@@ -912,6 +911,17 @@ where
     .fuse()
 }
 
+/// While the item records, takes its input entries out of its slot and pairs
+/// them with its choices; see [`match_choice_sources`]. `None` when the item has
+/// no slot.
+fn match_input_sources<T: ChatStreamItem>(response: &mut T) -> Option<Vec<Option<ChoiceSources>>> {
+    let entries = std::mem::take(response.sources_mut()?);
+    let texts = response
+        .chunk()
+        .map_or_else(Vec::new, |data| choice_texts(&data.choices));
+    Some(match_choice_sources(entries, &texts))
+}
+
 /// [`Spans`] of the caller's ranges.
 fn spans_of(ranges: &[std::ops::Range<usize>]) -> Spans {
     let mut spans = Spans::recording(true);
@@ -994,18 +1004,18 @@ where
         if let Some(mut response) = state.stream.next().await {
             // While recording, the input slot gives each choice's ranges and
             // the output slot gets the ranges of the text this stage emits.
-            let mut input_sources = response.sources_mut().map(std::mem::take);
+            let mut matched = match_input_sources(&mut response);
             let mut output_sources: Option<Vec<ChoiceSources>> =
-                input_sources.as_ref().map(|_| Vec::new());
+                matched.as_ref().map(|_| Vec::new());
             let recording = output_sources.is_some();
             let Some(data) = response.chunk_mut() else {
                 if let Some(slot) = response.sources_mut() {
-                    *slot = input_sources.unwrap_or_default();
+                    *slot = Vec::new();
                 }
                 return Some((response, state));
             };
 
-            for choice in data.choices.iter_mut() {
+            for (position, choice) in data.choices.iter_mut().enumerate() {
                 let choice_state =
                     state
                         .choices
@@ -1014,10 +1024,9 @@ where
                             buffer_spans: Spans::recording(recording),
                             ..StripChoiceState::default()
                         });
-                let given = input_sources.as_mut().and_then(|all| {
-                    let at = all.iter().position(|given| given.index == choice.index)?;
-                    Some(all.remove(at))
-                });
+                let given = matched
+                    .as_mut()
+                    .and_then(|matched| matched.get_mut(position)?.take());
                 let content_len = match &choice.delta.content {
                     Some(ChatCompletionMessageContent::Text(text)) => text.len(),
                     _ => 0,

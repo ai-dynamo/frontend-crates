@@ -22,9 +22,11 @@
 //! output chunk, the input byte ranges that tile its `content` and its
 //! `reasoning_content`. Items without a slot record nothing.
 
-use dynamo_protocols::types::CreateChatCompletionStreamResponse;
+use dynamo_protocols::types::{
+    ChatChoiceStream, ChatCompletionMessageContent, CreateChatCompletionStreamResponse,
+};
 
-use crate::sources::{ChoiceSources, SourceSlot};
+use crate::sources::{ChoiceSources, ChoiceText, SourceSlot};
 use crate::tool_calling::jail::Annotated;
 
 /// A stream item that may carry one OpenAI chat completion chunk.
@@ -71,6 +73,27 @@ impl ChatStreamItem for Annotated<CreateChatCompletionStreamResponse> {
             data.usage = None;
         }
     }
+}
+
+/// The text lengths of each choice, in order, for [`match_choice_sources`].
+///
+/// [`match_choice_sources`]: crate::sources::match_choice_sources
+pub fn choice_texts(choices: &[ChatChoiceStream]) -> Vec<ChoiceText> {
+    choices
+        .iter()
+        .map(|choice| ChoiceText {
+            index: choice.index,
+            content_len: match &choice.delta.content {
+                Some(ChatCompletionMessageContent::Text(text)) => text.len(),
+                _ => 0,
+            },
+            reasoning_len: choice
+                .delta
+                .reasoning_content
+                .as_ref()
+                .map_or(0, String::len),
+        })
+        .collect()
 }
 
 /// [`Annotated`] carries no source slot.

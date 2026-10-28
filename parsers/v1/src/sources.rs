@@ -37,6 +37,71 @@ pub trait SourceSlot {
     }
 }
 
+/// The text of one choice of a chunk, as [`match_choice_sources`] needs it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ChoiceText {
+    pub index: u32,
+    /// Byte length of the choice's text `content` (0 for none or parts).
+    pub content_len: usize,
+    /// Byte length of its `reasoning_content`.
+    pub reasoning_len: usize,
+}
+
+impl ChoiceText {
+    fn has_text(&self) -> bool {
+        self.content_len + self.reasoning_len > 0
+    }
+}
+
+/// Matches a chunk's source entries to its choices, in choice order.
+///
+/// Entries pair, in order, with the choices that share their index: with all
+/// of those choices when the counts are equal, or else with those that have
+/// text when that count is equal. Any other count is ambiguous and pairs
+/// nothing. An entry whose ranges do not cover its choice's text lengths
+/// exactly is not used. A choice gets `None` when no entry pairs with it. A
+/// choice with text and `None` has no known source, and a stage treats it as
+/// unsourced from then on.
+pub fn match_choice_sources(
+    entries: Vec<ChoiceSources>,
+    choices: &[ChoiceText],
+) -> Vec<Option<ChoiceSources>> {
+    let mut out: Vec<Option<ChoiceSources>> = vec![None; choices.len()];
+    let mut by_index: std::collections::BTreeMap<u32, std::collections::VecDeque<ChoiceSources>> =
+        std::collections::BTreeMap::new();
+    for entry in entries {
+        by_index.entry(entry.index).or_default().push_back(entry);
+    }
+    for (index, mut group) in by_index {
+        let members: Vec<usize> = (0..choices.len())
+            .filter(|&at| choices[at].index == index)
+            .collect();
+        let with_text: Vec<usize> = members
+            .iter()
+            .copied()
+            .filter(|&at| choices[at].has_text())
+            .collect();
+        let paired = if group.len() == members.len() {
+            members
+        } else if group.len() == with_text.len() {
+            with_text
+        } else {
+            continue;
+        };
+        for at in paired {
+            let entry = group.pop_front().expect("one entry per paired choice");
+            let len =
+                |ranges: &[Range<usize>]| ranges.iter().map(|range| range.len()).sum::<usize>();
+            if len(&entry.content) == choices[at].content_len
+                && len(&entry.reasoning) == choices[at].reasoning_len
+            {
+                out[at] = Some(entry);
+            }
+        }
+    }
+    out
+}
+
 /// Which field of a reasoning parser's result a run of text went to.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SourceChannel {
@@ -445,6 +510,41 @@ mod tests {
             parent.map(&text.spans).ranges(),
             &[100..101, 201..202, 210..211]
         );
+    }
+
+    #[test]
+    fn choice_sources_pair_by_index_and_order() {
+        let text = |index, content_len, reasoning_len| ChoiceText {
+            index,
+            content_len,
+            reasoning_len,
+        };
+        let entry = |index, content: Vec<Range<usize>>| ChoiceSources {
+            index,
+            content,
+            reasoning: vec![],
+        };
+        // One entry per choice: positional within the index.
+        let got = match_choice_sources(
+            vec![
+                entry(0, vec![0..1]),
+                entry(1, vec![5..7]),
+                entry(0, vec![1..3]),
+            ],
+            &[text(0, 1, 0), text(0, 2, 0), text(1, 2, 0)],
+        );
+        assert_eq!(got[0].as_ref().unwrap().content, vec![0..1]);
+        assert_eq!(got[1].as_ref().unwrap().content, vec![1..3]);
+        assert_eq!(got[2].as_ref().unwrap().content, vec![5..7]);
+        // A textless duplicate without an entry does not take the text's entry.
+        let got = match_choice_sources(vec![entry(0, vec![4..5])], &[text(0, 0, 0), text(0, 1, 0)]);
+        assert!(got[0].is_none());
+        assert_eq!(got[1].as_ref().unwrap().content, vec![4..5]);
+        // Ambiguous counts pair nothing; a wrong length is not used.
+        let got = match_choice_sources(vec![entry(0, vec![0..1])], &[text(0, 1, 0), text(0, 1, 0)]);
+        assert!(got.iter().all(Option::is_none));
+        let got = match_choice_sources(vec![entry(0, vec![0..2])], &[text(0, 1, 0)]);
+        assert!(got[0].is_none());
     }
 
     #[test]

@@ -633,7 +633,6 @@ async fn review_f3_jail_dates_duplicate_choices_in_caller_offsets() {
 }
 
 #[tokio::test]
-#[ignore = "F5: a contentless duplicate consumes the following choice's source entry"]
 async fn review_f5_contentless_duplicate_does_not_steal_text_sources() {
     let mut violations = Vec::new();
     for (stage, text) in [
@@ -714,14 +713,13 @@ async fn review_f5_contentless_duplicate_does_not_steal_text_sources() {
     );
 }
 #[tokio::test]
-#[ignore = "F7: synthesized jail terminals give an unsourced choice an entry again"]
 async fn review_f7_synthetic_jail_terminal_stays_unsourced() {
     let stage = json!({"kind": "jail", "tool_call_parser": "hermes", "options": {}});
     let input = to_item(&json!({"data": {"choices": [{
         "index": 0,
         "delta": {"content": "<tool_call>{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}</tool_call>"}
     }]}}));
-    let control = run_sourced(&stage, with_sources(&[input.clone()])).await;
+    let control = run_sourced(&stage, with_sources(std::slice::from_ref(&input))).await;
     assert!(control.iter().any(|(item, _)| {
         item.chunk()
             .unwrap()

@@ -59,8 +59,8 @@ pub use self::boundary::{
     JailChoiceCountError, apply_jail_terminal_error_contract, validate_jail_nvext_choice_count,
 };
 use self::prefix_matcher::{MarkerMatcher, MatchResult};
-use crate::chat_stream::SourcedChunk;
-use crate::sources::{ChoiceSources, SourcedText, Spans};
+use crate::chat_stream::{SourcedChunk, choice_texts};
+use crate::sources::{ChoiceSources, SourcedText, Spans, match_choice_sources};
 use crate::tool_calling::parsers::{
     detect_and_parse_tool_call_sourced, detect_and_parse_tool_call_with_recovery_sourced,
 };
@@ -2237,15 +2237,12 @@ impl JailedStream {
 
             // Process each item in the stream
             while let Some((response, input_sources)) = stream.next().await {
-                // Entries match choices by position among the choices with
-                // the same index, so two choices that share an index in one
-                // chunk each get their own ranges.
-                let mut taken = vec![false; input_sources.as_ref().map_or(0, Vec::len)];
-                let mut take_given = |index: u32| {
-                    let all = input_sources.as_ref()?;
-                    let at = (0..all.len()).find(|&at| !taken[at] && all[at].index == index)?;
-                    taken[at] = true;
-                    Some(&all[at])
+                // Each choice's entry, paired by `match_choice_sources`.
+                let matched: Vec<Option<ChoiceSources>> = match (input_sources, response.data.as_ref()) {
+                    (Some(entries), Some(data)) if recording => {
+                        match_choice_sources(entries, &choice_texts(&data.choices))
+                    }
+                    _ => Vec::new(),
                 };
                 if let Some(chat_response) = response.data.as_ref() {
                     last_stream_id.clone_from(&chat_response.id);
@@ -2262,12 +2259,12 @@ impl JailedStream {
                     }
 
                     // Process each choice independently using the new architecture
-                    for choice in &chat_response.choices {
+                    for (position, choice) in chat_response.choices.iter().enumerate() {
                         let recovered_choice = separates_k3_reasoning
                             .then(|| recover_kimi_k3_reasoning_handoff(choice))
                             .flatten();
                         let choice = recovered_choice.as_ref().unwrap_or(choice);
-                        let given = take_given(choice.index);
+                        let given = matched.get(position).and_then(Option::as_ref);
                         if caller_ranges && recording && given.is_none() {
                             let has_text = matches!(
                                 &choice.delta.content,
@@ -3372,8 +3369,13 @@ impl JailedStream {
     where
         S: Stream<Item = SourcedItem> + Send + 'static,
     {
-        let added = move |index: u32| {
+        // A chunk it adds names a choice; one whose text had no source gets
+        // no entry, as the jail gave it none.
+        let added = move |index: u32, unsourced: &HashSet<u32>| {
             recording.then(|| {
+                if unsourced.contains(&index) {
+                    return Vec::new();
+                }
                 vec![ChoiceSources {
                     index,
                     ..ChoiceSources::default()
@@ -3395,7 +3397,17 @@ impl JailedStream {
             // to terminate even if an earlier empty-choices chunk emitted nothing.
             let mut synthesized: HashSet<u32> = HashSet::new();
 
+            let mut unsourced: HashSet<u32> = HashSet::new();
             while let Some((mut response, sources)) = input_stream.next().await {
+                // While recording, the jail gives every choice an entry unless
+                // its text has no source.
+                if let (Some(sources), Some(data)) = (&sources, &response.data) {
+                    for choice in &data.choices {
+                        if !sources.iter().any(|entry| entry.index == choice.index) {
+                            unsourced.insert(choice.index);
+                        }
+                    }
+                }
                 // Track if any choice emitted tool calls, and which already terminated.
                 if let Some(ref data) = response.data {
                     for choice in &data.choices {
@@ -3470,7 +3482,7 @@ impl JailedStream {
                                 None,
                                 Some(FinishReason::ToolCalls),
                             ),
-                            added(index),
+                            added(index, &unsourced),
                         );
                         synthesized.insert(index);
                     }
@@ -3504,7 +3516,7 @@ impl JailedStream {
                             None,
                             Some(FinishReason::ToolCalls),
                         ),
-                        added(index),
+                        added(index, &unsourced),
                     );
                     synthesized.insert(index);
                 }
