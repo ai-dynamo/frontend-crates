@@ -273,6 +273,9 @@ struct MeteredItem {
     chunk_tokens: Option<u32>,
 }
 
+// This item carries no source slot: the defaults record nothing.
+impl dynamo_parsers::sources::SourceSlot for MeteredItem {}
+
 impl ChatStreamItem for MeteredItem {
     fn is_error(&self) -> bool {
         self.item.is_error()

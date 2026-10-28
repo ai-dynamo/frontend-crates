@@ -14,14 +14,21 @@
 //! flush chunk has no input chunk to take them from.
 //!
 //! This crate implements the trait for its own [`Annotated`] over
-//! [`CreateChatCompletionStreamResponse`], the item the jail already uses.
+//! [`CreateChatCompletionStreamResponse`], the item the jail already uses, and
+//! for [`SourcedChunk`], the same item with a source slot.
+//!
+//! An item may carry a [`SourceSlot`]. When the input items have one, each
+//! stage records where its text came from and writes, for each choice of each
+//! output chunk, the input byte ranges that tile its `content` and its
+//! `reasoning_content`. Items without a slot record nothing.
 
 use dynamo_protocols::types::CreateChatCompletionStreamResponse;
 
+use crate::sources::{ChoiceSources, SourceSlot};
 use crate::tool_calling::jail::Annotated;
 
 /// A stream item that may carry one OpenAI chat completion chunk.
-pub trait ChatStreamItem: Clone + Send + 'static {
+pub trait ChatStreamItem: SourceSlot + Clone + Send + 'static {
     /// Whether this item is a terminal error from the backend.
     ///
     /// dynamo-runtime decides this from the annotation event (`event ==
@@ -63,5 +70,52 @@ impl ChatStreamItem for Annotated<CreateChatCompletionStreamResponse> {
         if let Some(data) = self.data.as_mut() {
             data.usage = None;
         }
+    }
+}
+
+/// [`Annotated`] carries no source slot.
+impl SourceSlot for Annotated<CreateChatCompletionStreamResponse> {}
+
+/// A chat chunk with a source slot: the item to feed the v1 stream stages and
+/// the jail when the caller needs to know which input bytes each output byte
+/// came from.
+///
+/// `sources` is `Some` on every item of a recording stream, with one entry
+/// per choice of `chunk` in the same order. On input, an entry gives the
+/// caller's byte ranges of that choice's `content` (and `reasoning_content`, if
+/// any). On output, the stages write the ranges of the text they emit. A
+/// choice whose stage cannot record gets no entry, so the caller can tell that
+/// its text has no source.
+#[derive(Clone, Debug)]
+pub struct SourcedChunk {
+    pub chunk: Annotated<CreateChatCompletionStreamResponse>,
+    pub sources: Option<Vec<ChoiceSources>>,
+}
+
+impl SourceSlot for SourcedChunk {
+    fn sources(&self) -> Option<&[ChoiceSources]> {
+        self.sources.as_deref()
+    }
+
+    fn sources_mut(&mut self) -> Option<&mut Vec<ChoiceSources>> {
+        self.sources.as_mut()
+    }
+}
+
+impl ChatStreamItem for SourcedChunk {
+    fn is_error(&self) -> bool {
+        self.chunk.is_error()
+    }
+
+    fn chunk(&self) -> Option<&CreateChatCompletionStreamResponse> {
+        self.chunk.chunk()
+    }
+
+    fn chunk_mut(&mut self) -> Option<&mut CreateChatCompletionStreamResponse> {
+        self.chunk.chunk_mut()
+    }
+
+    fn scrub_synthetic(&mut self) {
+        self.chunk.scrub_synthetic();
     }
 }
