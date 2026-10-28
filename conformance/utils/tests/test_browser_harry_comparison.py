@@ -211,6 +211,35 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         driver.quit(); server.shutdown(); server.server_close()
 
 
+def test_toolbar_shares_one_row_and_offline_notice_is_at_page_bottom(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1600, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "sglang")
+        _ready(driver, "tab-unified", reference=False)
+        notice = WebDriverWait(driver, 10).until(
+            lambda d: d.find_element("css selector", ".publication-history-notice"))
+        geometry = driver.execute_script("""
+          const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};
+          const options=document.querySelector('.comparison-toolbar .tabs-right');
+          return {layout:rect('.comparison-toolbar .layout-control'), options:rect('.comparison-toolbar .tabs-right'),
+            search:rect('.comparison-toolbar [data-case-search]'), matrix:rect('.comparison-matrix-scroll'),
+            notice:rect('.publication-history-notice'),
+            optionsParent:options.parentElement.className, lastChild:document.querySelector('#viewer').lastElementChild.className};
+        """)
+        assert geometry["optionsParent"] == "comparison-toolbar", geometry
+        assert abs(geometry["layout"]["y"] - geometry["options"]["y"]) <= 1, geometry
+        assert geometry["layout"]["x"] < geometry["search"]["x"] < geometry["options"]["x"], geometry
+        assert geometry["notice"]["y"] > geometry["matrix"]["bottom"], geometry
+        assert geometry["lastChild"] == "capture-slots-notice publication-history-notice", geometry
+        assert notice.text == "Latest results are available offline. Older results are not included here."
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("width", [1600, 480])
 def test_matrix_keyboard_popup_and_reload(published_viewer, vertical, width):

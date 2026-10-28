@@ -407,9 +407,9 @@ async function initialize() {
     }
     else {
       const notice = document.createElement('p');
-      notice.className = 'capture-slots-notice';
-      notice.textContent = `Last captured results only. To show historic results, please run ${window.ConformanceView.historyPublicationCommand}.`;
-      panel.querySelector('.capture-slots').appendChild(notice);
+      notice.className = 'capture-slots-notice publication-history-notice';
+      notice.textContent = 'Latest results are available offline. Older results are not included here.';
+      root.appendChild(notice);
     }
   }
   discoverOlderResults().catch(error => {
