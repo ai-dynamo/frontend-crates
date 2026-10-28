@@ -117,6 +117,20 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
             json!({"anyOf":[{"type":"array","items":{"type":"integer"}},{"type":"array","items":{"type":"boolean"}}]}),
             Some("several object or array alternatives"),
         ),
+        // One object beside one array collides when the object has an `item`
+        // property: `{"item": v}` and `[v]` render as the same `<item>` tag.
+        (
+            json!({"anyOf":[object("item", "integer"), {"type":"array","items":{"type":"boolean"}}]}),
+            Some("several object or array alternatives"),
+        ),
+        (
+            json!({"oneOf":[{"type":"array","items":{"type":"boolean"}}, object("item", "integer")]}),
+            Some("several object or array alternatives"),
+        ),
+        (
+            json!({"anyOf":[object("item", "integer"), {"type":"array","items":{"type":"integer"}}]}),
+            Some("several object or array alternatives"),
+        ),
         (
             json!({"type":"integer","if":{"minimum":1},"then":{"maximum":5}}),
             Some("if constraints"),
@@ -130,6 +144,14 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
             None,
         ),
         (json!({"type":"array","items":{"type":"integer"}}), None),
+        (
+            json!({"anyOf":[object("n", "integer"), {"type":"array","items":{"type":"boolean"}}]}),
+            None,
+        ),
+        (
+            json!({"anyOf":[object("item", "integer"), {"type":"null"}]}),
+            None,
+        ),
         (json!({"const":5}), None),
         (json!({"enum":[1,2]}), None),
         (object("n", "integer"), None),
