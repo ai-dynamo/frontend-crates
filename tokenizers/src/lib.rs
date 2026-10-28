@@ -20,8 +20,8 @@ pub use anyhow::{Error, Result};
 
 pub use basetenkenizer::BasetenTokenizer;
 pub use cache::{
-    CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats, SharedTokenizerCache,
-    SharedTokenizerCacheStats,
+    CacheTokenUsage, CacheTokenUsageFn, CachedTokenizer, L1CacheStats, MIN_CACHED_SEGMENT_BYTES,
+    SharedTokenizerCache, SharedTokenizerCacheStats,
 };
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;

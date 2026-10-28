@@ -41,6 +41,9 @@ use crate::{TokenIdType, traits::Encoder};
 /// Hash type for cache keys
 type Blake3Hash = [u8; 32];
 
+/// First byte hashed for a segment key (see [`L1Cache::segment_key`]).
+const SEGMENT_KEY_TAG: u8 = 0xFF;
+
 /// Keys are blake3 digests (already uniformly distributed), so a fast non-DoS-resistant
 /// hasher suffices — no need for the default SipHash.
 type PrefixHasher = BuildHasherDefault<FxHasher>;
@@ -301,6 +304,42 @@ impl L1Cache {
                 tokens,
             },
         );
+    }
+
+    /// Key of one renderer segment's tokens.
+    ///
+    /// Prefix keys hash UTF-8 text, which never contains the byte `0xFF`; starting the
+    /// segment key with it keeps the two key spaces disjoint within a namespace.
+    pub(super) fn segment_key(&self, text: &str, allow_special: bool) -> Blake3Hash {
+        let mut hasher = self.hasher();
+        hasher.update(&[SEGMENT_KEY_TAG, allow_special as u8]);
+        hasher.update(text.as_bytes());
+        *hasher.finalize().as_bytes()
+    }
+
+    /// Cached tokens of one renderer segment, if present.
+    pub(super) fn get_segment(&self, key: &Blake3Hash) -> Option<Arc<[TokenIdType]>> {
+        self.cache.cache.get(key).map(|entry| entry.tokens)
+    }
+
+    /// Cache one renderer segment's tokens.
+    pub(super) fn insert_segment(&self, key: Blake3Hash, tokens: Arc<[TokenIdType]>) {
+        self.insert(key, tokens);
+    }
+
+    /// Count one lookup in the hit / miss counters and notify the observers.
+    pub(super) fn record_lookup(&self, hit: bool) {
+        if hit {
+            self.hits.fetch_add(1, Ordering::Relaxed);
+            if let Some(cb) = &self.on_hit {
+                cb();
+            }
+        } else {
+            self.misses.fetch_add(1, Ordering::Relaxed);
+            if let Some(cb) = &self.on_miss {
+                cb();
+            }
+        }
     }
 
     /// Install hit/miss callbacks. Replaces any previously-set observers.
