@@ -13,8 +13,8 @@ const leaves = Object.keys(statusLabels).filter(s => s !== 'uncompared').map(s =
 leaves.push(cell('uncompared', 'pass', {cmp: {d: {sig: 1}, golden: {na: 1}}}));
 const columns = leaves.map(c => ({sub: c.sub, label: c.sub, desc: 'case ' + c.sub, group_key: 'core'}));
 const tab = {rows: [{family: 'family', model_label: 'Model', cells: Object.fromEntries(leaves.map(c => [c.sub, c]))}], columns,
-  column_groups: [{key: 'core', label: 'Core'}], peer_availability: {schema: 1, families: {family: ['pass']}}};
-const state = {groups: new Set(['core']), search: '', peerOnly: false, focus: 'all'};
+  column_groups: [{key: 'core', label: 'Core'}]};
+const state = {groups: new Set(['core']), search: '', focus: 'all'};
 test('each status is counted separately without scores', () => {
   const counts = captureCounts(comparisonView(tab, state), 'd');
   for (const status of Object.keys(statusLabels)) assert.equal(counts[status], 1, status);
@@ -27,8 +27,6 @@ test('filters and focus use the same applicable leaf inventory', () => {
   assert.equal(captureCounts(comparisonView(tab, {...state, search: 'Model'}), 'd').total, leaves.length);
   assert.equal(captureCounts(comparisonView(tab, {...state, search: 'case leak'}), 'd').leak, 1);
   assert.equal(captureCounts(comparisonView(tab, {...state, groups: new Set()}), 'd').total, 0);
-  assert.equal(captureCounts(comparisonView(tab, {...state, peerOnly: true}), 'd').total, 1);
-  assert.throws(() => comparisonView({...tab, peer_availability: undefined}, {...state, peerOnly: true}), /regenerat/i);
 });
 test('folding deduplicates underlying cases per family and skips inapplicable leaves', () => {
   const a = cell('a'), b = cell('b', 'leak'), na = cell('na', 'pass', {status: 'na'});
