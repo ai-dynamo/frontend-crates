@@ -570,7 +570,6 @@ def test_publication_context_survives_tag_creation_and_rejects_tampering(tmp_pat
     assert ci_publication_cache.read_context(restored, path=restored_context) == context
     monkeypatch.setenv("CONFORMANCE_PUBLICATION_CONTEXT", str(restored_context))
     assert ci_publication_cache.cache_key(restored, "policy", include_history=include_history) == before
-    # Either archived context or catalog corruption invalidates the sealed payload.
     original_archive = (payload / "source-catalogs.tar").read_bytes()
     for name in (ci_publication_cache.CONTEXT, "conformance/viewer-catalog.json"):
         target = restored / name

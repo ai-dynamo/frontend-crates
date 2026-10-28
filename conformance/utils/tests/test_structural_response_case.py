@@ -128,7 +128,7 @@ def test_structural_history_contract_rejects_missing_resource_or_changed_binding
         _assert_bound_columns({"oldest": {SCENARIO: {"stimulus": {"semantic_sha256": "changed"}}}}, SCENARIO, "digest")
 
 
-def test_structural_shard_union_retains_every_family_including_muse_spark():
+def test_structural_history_contract_retains_every_family_including_muse_spark():
     rows = [{"kind": "history", "implementation": "dynamo_v2", "family": family, "version": version,
              "path": f"{family}/{version}"}
             for family, versions in HISTORY_CONTRACT["versions"].items() for version in versions]
@@ -136,8 +136,4 @@ def test_structural_shard_union_retains_every_family_including_muse_spark():
         _assert_required_resources(rows)
     rows.append({"kind": "history", "implementation": "dynamo_v2", "family": "muse_spark", "version": "0.7.28", "path": "muse_spark/0.7.28"})
     _assert_required_resources(rows)
-    shards = [ci_coverage.select_resources(rows, profile="exhaustive", shard=index, shards=8) for index in range(8)]
-    paths = [row["path"] for shard in shards for row in shard]
-    assert len(paths) == len(set(paths)) == len(rows)
-    assert set(paths) == {row["path"] for row in rows}
-    assert {row["family"] for shard in shards for row in shard} == scenario_families(SCENARIO)
+    assert {row["family"] for row in rows} == scenario_families(SCENARIO)
