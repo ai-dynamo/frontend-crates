@@ -77,7 +77,7 @@ The `v1`/`v2` directory names are transitional; when the merge happens the survi
 
 ## Ownership
 
-Contributors edit parsers and authored inputs/GOLDEN, run [current qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report). Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP. Leave recorded YAML and history unchanged; administrators own those updates under the [capture plan](CONFORMANCE-LATEST-PLAN.md).
+Contributors edit parsers and authored inputs/GOLDEN, run [current qualification](../conformance/README.md#current-parser-tests-and-qualification), and [generate the latest report](../conformance/README.md#generate-the-latest-or-history-report). Refresh `conformance/CONFORMANCE_v2.html` and inspect it over HTTP; leave regenerated HTML unstaged unless explicitly requested. Leave recorded YAML and history unchanged; administrators own those updates under the [capture plan](CONFORMANCE-LATEST-PLAN.md).
 
 ## Version Pins
 
@@ -98,7 +98,7 @@ These files exist only for the parser v1/v2 migration and conformance workflow.
 | `conformance/utils/src/validate.py` | Cross-implementation validation via `docker exec` or pip. |
 | `conformance/viewer/presentation.js` | Shared browser/Node matrix-model construction. |
 | `conformance/publisher/` | Rust latest/history publisher; default output is a self-contained `index.html`. |
-| `conformance/CONFORMANCE_v2.html` | Unstaged canonical local copy of the generated latest report. |
+| `conformance/CONFORMANCE_v2.html` | Tracked canonical local report; refresh for inspection. |
 | `conformance/utils/README.md` | Usage docs for validation, catalog refresh, status, and capture helpers. |
 | `conformance/utils/.gitignore` | Excludes `.stage*/`, local `CONFORMANCE*.html` outputs, and Python bytecode. |
 | `conformance/utils/tests/__init__.py` | Empty package root for `.stage/` imports. |
