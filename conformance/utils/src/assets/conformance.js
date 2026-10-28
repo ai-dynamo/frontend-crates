@@ -537,15 +537,17 @@ window.initializeConformanceController = function (hooks = {}) {
   // Label widths and header heights vary by tab, view, and collapsed column group. Measure
   // them after each layout change so CSS sticky positioning does not hide either axis.
   function updateStickyOffsets() {
-    document.querySelectorAll('table[data-parity-table], table[data-transpose-table]')
+    document.querySelectorAll('table[data-parity-table], table[data-transpose-table], table[data-comparison-table]')
       .forEach(function (table) {
-        const topRow = table.querySelector(
+        const comparison = table.hasAttribute('data-comparison-table');
+        const topRow = comparison ? table.tHead?.rows[0] : table.querySelector(
           'thead > tr.matrix-groups, thead > tr.transpose-sections'
         );
         table.style.setProperty(
           '--sticky-top-row-height',
           topRow ? topRow.getBoundingClientRect().height + 'px' : '0px'
         );
+        if (comparison) return;
         if (table.matches('[data-parity-table]')) {
           const modelHeader = table.querySelector(
             'thead th[data-col-control-group="model"]'
@@ -683,20 +685,31 @@ window.initializeConformanceController = function (hooks = {}) {
     }
   }
 
-  function boundedPopupLeft(left, width) {
-    return Math.max(margin, Math.min(left, window.innerWidth - margin - width));
+  function boundedPopupLeft(left, width, minimum = margin, maximum = window.innerWidth - margin) {
+    return Math.max(minimum, Math.min(left, maximum - width));
   }
 
   function placeCaseHint(cell) {
     const anchor = cell.matches('[data-hover-hint]') ? cell : cell.querySelector('[data-hover-hint]');
     if (!anchor) return;
+    const scroller = anchor.closest('.comparison-matrix-scroll');
+    const rect = scroller?.getBoundingClientRect();
+    const clip = scroller ? {left: rect.left + scroller.clientLeft, top: rect.top + scroller.clientTop,
+      right: rect.left + scroller.clientLeft + scroller.clientWidth,
+      bottom: rect.top + scroller.clientTop + scroller.clientHeight} : null;
+    const left = clip ? Math.max(margin, clip.left + 8) : margin;
+    const right = clip ? Math.min(window.innerWidth - margin, clip.right - 8) : window.innerWidth - margin;
+    anchor.style.setProperty('--case-hint-max-width', Math.max(0, right - left) + 'px');
     const hint = getComputedStyle(anchor, '::after');
     const width = parseFloat(hint.width);
     const height = parseFloat(hint.height);
     const box = anchor.getBoundingClientRect();
-    anchor.style.setProperty('--case-hint-left', (boundedPopupLeft(box.left, width) - box.left) + 'px');
-    // Keep the label outside the hand cursor, with a below-header fallback near the viewport top.
-    anchor.style.setProperty('--case-hint-top', (box.top >= height + margin + 12 ? -height - 12 : box.height + 24) + 'px');
+    anchor.style.setProperty('--case-hint-left', (boundedPopupLeft(box.left, width, left, right) - box.left) + 'px');
+    // Hints inside the matrix must fit its scroll clip as well as the viewport.
+    const top = clip ? Math.max(margin, clip.top + 8) : margin;
+    const bottom = clip ? Math.min(window.innerHeight - margin, clip.bottom - 8) : window.innerHeight - margin;
+    const requested = box.top >= height + top + 12 ? box.top - height - 12 : box.bottom + 24;
+    anchor.style.setProperty('--case-hint-top', ((clip ? Math.max(top, Math.min(requested, bottom - height)) : requested) - box.top) + 'px');
   }
 
   function place(cell) {
@@ -1467,6 +1480,7 @@ window.initializeConformanceController = function (hooks = {}) {
     updateStickyOffsets();
   }
   function restorePopup(panel, pin) {
+    updateStickyOffsets();
     if (pin?.popupKey) {
       const table = pin.surface === 'reference' ? panel.querySelector('[data-parity-table]') : panel.querySelector('[data-comparison-table]') || panel.querySelector(pin.transposed ? '[data-transpose-table]' : '[data-parity-table]');
       const cell = [...(table?.querySelectorAll('[data-popup-key]') || [])].find(cell => cell.dataset.popupKey === pin.popupKey);
@@ -1480,7 +1494,6 @@ window.initializeConformanceController = function (hooks = {}) {
       }
     }
     restorePinnedTooltip();
-    updateStickyOffsets();
   }
   return { refreshPanel, updatePanel, disposePanel, restorePopup, activePanel, refreshPopupLayout: repositionVisibleTooltips,
     selection(panel) {

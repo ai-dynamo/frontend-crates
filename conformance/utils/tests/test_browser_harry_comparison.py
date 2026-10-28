@@ -8,13 +8,125 @@ from urllib.parse import urlsplit, parse_qs
 
 import pytest
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from test_browser_viewer import _driver, _server, _ready, _choose_engine, _published_capture_index
+from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index
 
 
 def counts(driver):
     return driver.execute_script("return window.__conformanceComparison.counts")
+
+
+@pytest.mark.parametrize("width", [1600, 480])
+@pytest.mark.parametrize("captures", [1, 2])
+def test_long_case_hover_fits_matrix_scroller(published_viewer, width, captures):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(width, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=0")
+        _ready(driver, "tab-unified", reference=False)
+        if captures == 2:
+            _choose_engine(driver, 1, "sglang")
+            _ready(driver, "tab-unified", reference=False)
+            driver.find_element("css selector", "[data-layout='stacked']").click()
+        label = driver.execute_script("""
+            const headers=[...document.querySelectorAll('.matrix-case-heading')];
+            const header=headers.sort((a,b)=>window.__conformanceTooltipModel(b).popupCase.label.length
+              -window.__conformanceTooltipModel(a).popupCase.label.length)[0];
+            header.scrollIntoView({block:'center',inline:'end'});
+            return header.querySelector('[data-hover-hint]');
+        """)
+        ActionChains(driver).move_to_element(label).perform()
+        WebDriverWait(driver, 5).until(lambda d: d.execute_script(
+            "return getComputedStyle(arguments[0],'::after').opacity==='1'", label))
+        geometry = driver.execute_script("""
+            const a=arguments[0], r=a.getBoundingClientRect(), s=getComputedStyle(a,'::after');
+            const scroller=a.closest('.comparison-matrix-scroll'),clip=scroller.getBoundingClientRect();
+            return {x:r.left+parseFloat(s.left),y:r.top+parseFloat(s.top),w:parseFloat(s.width),h:parseFloat(s.height),
+              left:Math.max(0,clip.left+scroller.clientLeft),right:Math.min(innerWidth,clip.left+scroller.clientLeft+scroller.clientWidth),
+              top:Math.max(0,clip.top+scroller.clientTop),bottom:Math.min(innerHeight,clip.top+scroller.clientTop+scroller.clientHeight)};
+        """, label)
+        assert geometry['left'] <= geometry['x'] and geometry['x'] + geometry['w'] <= geometry['right'], geometry
+        assert geometry['top'] <= geometry['y'] and geometry['y'] + geometry['h'] <= geometry['bottom'], geometry
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("correction", ["layout", "categories", "labels"])
+def test_requested_matrix_corrections(published_viewer, vertical, correction):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1600, 1000)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified=stacked")
+        _ready(driver, "tab-unified", reference=False)
+        if correction == "layout":
+            assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
+            before = counts(driver)
+            _choose_engine(driver, 1, "sglang")
+            _ready(driver, "tab-unified", reference=False)
+            stacked = driver.find_element("css selector", "[data-layout='stacked']")
+            assert stacked.is_displayed()
+            assert stacked.text == ("Stacked columns" if vertical else "Stacked rows")
+            assert stacked.get_attribute("aria-pressed") == "true"
+            driver.find_element("css selector", "[data-layout='split']").click()
+            assert counts(driver)["dynamo"] == before["dynamo"]
+            _clear_slot(driver, 1)
+            _ready(driver, "tab-unified", reference=False)
+            assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
+        elif correction == "categories":
+            assert not driver.find_elements("css selector", ".category-chips")
+            button = driver.find_element("css selector", "[data-comparison-table] [data-group]")
+            key = button.get_attribute("data-group")
+            before = counts(driver)
+            button.send_keys(Keys.SPACE)
+            selector = f"[data-comparison-table] [data-group='{key}']"
+            assert driver.find_element("css selector", selector).get_attribute("aria-pressed") == "false"
+            reduced = counts(driver)
+            assert reduced["dynamo"]["total"] < before["dynamo"]["total"]
+            driver.refresh()
+            _ready(driver, "tab-unified", reference=False)
+            assert counts(driver) == reduced
+            driver.find_element("css selector", selector).send_keys(Keys.SPACE)
+            assert counts(driver) == before
+            driver.set_window_size(1600, 500)
+            driver.execute_script("const s=document.querySelector('.comparison-matrix-scroll');s.scrollIntoView({block:'start'});s.scrollTop=200")
+            WebDriverWait(driver, 5).until(lambda d: d.execute_script("""
+                const table=document.querySelector('[data-comparison-table]');
+                const top=table.tHead.rows[0].cells[0].getBoundingClientRect();
+                const next=table.tHead.rows[1].cells[0].getBoundingClientRect();
+                return table.parentElement.scrollTop>0 && Math.abs(next.top-top.bottom)<=1;
+            """))
+        else:
+            header = driver.find_element("css selector", ".matrix-case-heading")
+            full = driver.execute_script("return window.__conformanceTooltipModel(arguments[0]).popupCase.label", header)
+            label = header.find_element("css selector", "[data-hover-hint]")
+            assert label.get_attribute("data-hover-hint") == "Click to show " + full
+            if vertical:
+                assert full in header.text
+            else:
+                assert re.fullmatch(r"\d+-\d+", header.text)
+                assert full not in header.text
+                assert header.rect["width"] < 100
+                ActionChains(driver).move_to_element(label).perform()
+                WebDriverWait(driver, 5).until(lambda d: d.execute_script(
+                    "return getComputedStyle(arguments[0],'::after').visibility==='visible' && getComputedStyle(arguments[0],'::after').opacity==='1'", label))
+                assert full in driver.execute_script("return getComputedStyle(arguments[0],'::after').content", label)
+                assert driver.execute_script("""
+                    const a=arguments[0], r=a.getBoundingClientRect(), s=getComputedStyle(a,'::after');
+                    const box=a.closest('.comparison-matrix-scroll').getBoundingClientRect();
+                    const x=r.left+parseFloat(s.left), y=r.top+parseFloat(s.top);
+                    return x>=Math.max(0,box.left) && x+parseFloat(s.width)<=Math.min(innerWidth,box.right)
+                      && y>=Math.max(0,box.top) && y+parseFloat(s.height)<=Math.min(innerHeight,box.bottom);
+                """, label)
+                assert not driver.find_elements("css selector", ".ttip-pinned")
+            header.send_keys(Keys.ENTER)
+            assert driver.find_element("css selector", ".ttip-pinned .ttip-head").text
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
 
 
 @pytest.mark.parametrize("query,vertical", [("", True), ("?vertical=0", False), ("?transpose=0", False)])
@@ -39,7 +151,7 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         assert re.fullmatch(r"[a-f0-9]{12}", sha.text)
         assert sha.get_attribute("title") in sha.get_attribute("href")
         assert sha.get_attribute("title") in sha.get_attribute("aria-label")
-        assert driver.find_element("css selector", "[data-layout='stacked']").text == ("Stacked columns" if vertical else "Stacked rows")
+        assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
         assert "%" not in driver.find_element("id", "viewer").text
         disclosure = driver.find_element("css selector", ".legacy-report-details > summary")
         disclosure.click()
@@ -50,8 +162,6 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         disclosure.click()
         before = counts(driver)
         driver.find_element("css selector", "[data-focus='problems']").click()
-        assert counts(driver) == before
-        driver.find_element("css selector", "[data-layout='stacked']").click()
         assert counts(driver) == before
         search = driver.find_element("css selector", "[data-case-search]")
         search.send_keys("dotted_name_minimal")
