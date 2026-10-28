@@ -2237,10 +2237,15 @@ impl JailedStream {
 
             // Process each item in the stream
             while let Some((response, input_sources)) = stream.next().await {
-                let given = |index: u32| {
-                    input_sources
-                        .as_ref()
-                        .and_then(|all| all.iter().find(|sources| sources.index == index))
+                // Entries match choices by position among the choices with
+                // the same index, so two choices that share an index in one
+                // chunk each get their own ranges.
+                let mut taken = vec![false; input_sources.as_ref().map_or(0, Vec::len)];
+                let mut take_given = |index: u32| {
+                    let all = input_sources.as_ref()?;
+                    let at = (0..all.len()).find(|&at| !taken[at] && all[at].index == index)?;
+                    taken[at] = true;
+                    Some(&all[at])
                 };
                 if let Some(chat_response) = response.data.as_ref() {
                     last_stream_id.clone_from(&chat_response.id);
@@ -2262,7 +2267,8 @@ impl JailedStream {
                             .then(|| recover_kimi_k3_reasoning_handoff(choice))
                             .flatten();
                         let choice = recovered_choice.as_ref().unwrap_or(choice);
-                        if caller_ranges && recording && given(choice.index).is_none() {
+                        let given = take_given(choice.index);
+                        if caller_ranges && recording && given.is_none() {
                             let has_text = matches!(
                                 &choice.delta.content,
                                 Some(ChatCompletionMessageContent::Text(text)) if !text.is_empty()
@@ -2291,7 +2297,6 @@ impl JailedStream {
                                         self.guided_format(),
                                         recording,
                                     );
-                                let given = given(choice.index);
 
                                 if let Some(reasoning_content) = &choice.delta.reasoning_content {
                                     let reasoning_spans = choice_state.input_spans(
@@ -2375,7 +2380,7 @@ impl JailedStream {
                             let input_reasoning = choice.delta.reasoning_content.as_deref().map(|reasoning| {
                                 choice_state.input_spans(
                                     reasoning,
-                                    given(choice.index).map(|g| &g.reasoning[..]),
+                                    given.map(|g| &g.reasoning[..]),
                                     true,
                                 )
                             });

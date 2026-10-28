@@ -526,7 +526,6 @@ fn the_jail_records_only_for_the_three_marker_parsers() {
 }
 
 #[tokio::test]
-#[ignore = "F2: missing ranges outside parsed content do not latch the choice as unsourced"]
 async fn review_f2_missing_ranges_remain_fail_closed() {
     let cases = [
         (
@@ -602,7 +601,6 @@ async fn review_f2_missing_ranges_remain_fail_closed() {
 }
 
 #[tokio::test]
-#[ignore = "F3: the jail reuses the first source entry for every duplicate choice index"]
 async fn review_f3_jail_dates_duplicate_choices_in_caller_offsets() {
     let stage = json!({"kind": "jail", "tool_call_parser": "hermes", "options": {}});
     let chunk = to_item(&json!({"data": {"choices": [

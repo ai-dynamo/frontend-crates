@@ -234,7 +234,14 @@ impl ChoiceStreamSources {
 /// call, as `(normal, reasoning)`; [`Spans::OFF`] while not recording.
 fn take_runs(state: &mut ChoiceReasoningState) -> (Spans, Spans) {
     match state.sources.as_mut() {
-        Some(sources) => sources.take(&mut *state.parser),
+        Some(sources) if !state.unsourced => sources.take(&mut *state.parser),
+        // The parser still records: drain its runs so they do not pile up.
+        Some(sources) => {
+            sources.runs.clear();
+            state.parser.take_sources(&mut sources.runs);
+            sources.runs.clear();
+            (Spans::OFF, Spans::OFF)
+        }
         None => (Spans::OFF, Spans::OFF),
     }
 }
@@ -536,6 +543,11 @@ where
                             .as_ref()
                             .is_some_and(|reasoning| !reasoning.is_empty());
                         let known = given.is_some() || !has_text;
+                        if recording && !known {
+                            // Text with no source makes every later offset of
+                            // this choice unknown, whether it is parsed or not.
+                            choice_state.unsourced = true;
+                        }
                         let (mut content_spans, mut reasoning_spans) = match &given {
                             Some(given) => (spans_of(&given.content), spans_of(&given.reasoning)),
                             None => (Spans::recording(recording), Spans::recording(recording)),
@@ -579,25 +591,17 @@ where
                             && let Some(ChatCompletionMessageContent::Text(text)) =
                                 choice.delta.content.as_ref()
                         {
-                            if let Some(sources) = choice_state.sources.as_mut() {
-                                match &given {
-                                    Some(given) => {
-                                        let fed = spans_of(&given.content);
-                                        debug_assert_eq!(
-                                            fed.len(),
-                                            text.len(),
-                                            "input ranges must tile the content"
-                                        );
-                                        sources.fed.append(&fed);
-                                    }
-                                    None if text.is_empty() => {}
-                                    None => {
-                                        // Bytes with no source make every later
-                                        // offset of this choice unknown.
-                                        choice_state.sources = None;
-                                        choice_state.unsourced = true;
-                                    }
-                                }
+                            if let Some(sources) = choice_state.sources.as_mut()
+                                && !choice_state.unsourced
+                                && let Some(given) = &given
+                            {
+                                let fed = spans_of(&given.content);
+                                debug_assert_eq!(
+                                    fed.len(),
+                                    text.len(),
+                                    "input ranges must tile the content"
+                                );
+                                sources.fed.append(&fed);
                             }
                             let parser_result = choice_state
                                 .parser
@@ -1023,7 +1027,7 @@ where
                     .reasoning_content
                     .as_ref()
                     .map_or(0, String::len);
-                if given.is_none() && content_len > 0 {
+                if recording && given.is_none() && content_len + reasoning_len > 0 {
                     choice_state.unsourced = true;
                 }
                 let content_in = given.as_ref().map_or(Spans::recording(recording), |given| {

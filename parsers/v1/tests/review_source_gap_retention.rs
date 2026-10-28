@@ -100,7 +100,6 @@ async fn retained_bytes(chunks: usize, gap: bool) -> isize {
 }
 
 #[tokio::test]
-#[ignore = "F4: source runs accumulate after a gap drops the mapper that drained them"]
 async fn review_f4_source_gap_keeps_parser_retention_bounded() {
     retained_bytes(8, false).await;
     let control_short = retained_bytes(16, false).await;
