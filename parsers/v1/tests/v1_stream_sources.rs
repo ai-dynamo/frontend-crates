@@ -713,3 +713,47 @@ async fn review_f5_contentless_duplicate_does_not_steal_text_sources() {
         "contentless duplicates break tiling (stage, text bytes, source bytes): {violations:?}"
     );
 }
+#[tokio::test]
+#[ignore = "F7: synthesized jail terminals give an unsourced choice an entry again"]
+async fn review_f7_synthetic_jail_terminal_stays_unsourced() {
+    let stage = json!({"kind": "jail", "tool_call_parser": "hermes", "options": {}});
+    let input = to_item(&json!({"data": {"choices": [{
+        "index": 0,
+        "delta": {"content": "<tool_call>{\"name\":\"get_weather\",\"arguments\":{\"city\":\"Paris\"}}</tool_call>"}
+    }]}}));
+    let control = run_sourced(&stage, with_sources(&[input.clone()])).await;
+    assert!(control.iter().any(|(item, _)| {
+        item.chunk()
+            .unwrap()
+            .choices
+            .iter()
+            .any(|choice| choice.finish_reason.is_some())
+    }));
+    assert!(
+        control
+            .iter()
+            .all(|(item, _)| item.sources().unwrap().len() == item.chunk().unwrap().choices.len())
+    );
+
+    let output = run_sourced(
+        &stage,
+        vec![SourcedChunk {
+            chunk: input,
+            sources: Some(vec![]),
+        }],
+    )
+    .await;
+    assert!(output.iter().any(|(item, _)| {
+        item.chunk()
+            .unwrap()
+            .choices
+            .iter()
+            .any(|choice| choice.delta.tool_calls.is_some())
+    }));
+    for (item, _) in output {
+        assert!(
+            item.sources().unwrap().is_empty(),
+            "an unsourced choice regains an entry: {item:?}"
+        );
+    }
+}
