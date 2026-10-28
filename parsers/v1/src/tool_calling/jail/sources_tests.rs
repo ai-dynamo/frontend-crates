@@ -448,6 +448,44 @@ async fn recording_off_carries_no_sources() {
     assert!(out.iter().all(|(_, sources)| sources.is_none()));
 }
 
+#[tokio::test]
+async fn partial_marker_splitters_run_without_recording() {
+    // `gemma4` and Harmony hold a partial call prefix through their own
+    // splitters. They cannot record, so the request falls back to no ranges,
+    // and the stock output stays the same.
+    let cases: &[(&str, &[&str])] = &[
+        (
+            "gemma4",
+            &["hi <|tool_c", "all>call:f{}<tool_call|>", " bye"],
+        ),
+        ("gemma4", &["text <|tool", "_call>"]),
+        ("harmony", &["answer <", "|start|> tail <"]),
+    ];
+    for (parser, chunks) in cases {
+        let inputs: Vec<In> = chunks
+            .iter()
+            .map(|c| text(0, c))
+            .chain([finish(0)])
+            .collect();
+        let stock = stock(parser, &inputs).await;
+        let items: Vec<SourcedItem> = inputs.iter().map(|input| (chunk(input), None)).collect();
+        let asked: Vec<SourcedItem> = jail(parser)
+            .apply_sourced(true, stream::iter(items))
+            .collect()
+            .await;
+        assert!(
+            asked.iter().all(|(_, sources)| sources.is_none()),
+            "{parser}"
+        );
+        let asked: Vec<Chunk> = asked.into_iter().map(|(chunk, _)| chunk).collect();
+        assert_eq!(
+            stock_shape(&stock),
+            stock_shape(&asked),
+            "{parser} {chunks:?}"
+        );
+    }
+}
+
 #[test]
 fn only_the_three_marker_parsers_record() {
     for parser in RECORDING_TOOL_PARSERS {

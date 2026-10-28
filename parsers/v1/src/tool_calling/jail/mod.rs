@@ -55,7 +55,7 @@ use crate::tool_calling::{
 
 pub use self::annotated::Annotated;
 use self::prefix_matcher::{MarkerMatcher, MatchResult};
-use crate::sources::{ChoiceSources, SourcedText, Spans, subslice_range};
+use crate::sources::{ChoiceSources, SourcedText, Spans};
 use crate::tool_calling::tools::try_tool_call_parse_aggregate_sourced;
 
 #[cfg(test)]
@@ -1120,7 +1120,9 @@ impl ChoiceJailState {
             MatchResult::Partial {
                 prefix, partial, ..
             } => {
-                debug_assert_eq!(prefix.len() + partial.len(), content.len());
+                debug_assert!(
+                    !spans.is_recording() || prefix.len() + partial.len() == content.len()
+                );
                 if !prefix.is_empty() {
                     let prefix_lp = self.consume_pending_entries(prefix.chars().count());
                     #[allow(deprecated)]
@@ -1153,7 +1155,10 @@ impl ChoiceJailState {
                 suffix,
                 ..
             } => {
-                debug_assert_eq!(prefix.len() + marker.len() + suffix.len(), content.len());
+                debug_assert!(
+                    !spans.is_recording()
+                        || prefix.len() + marker.len() + suffix.len() == content.len()
+                );
                 let prefix_has_harmony_protocol =
                     is_harmony_parser(jail_stream.tool_call_parser.as_deref())
                         && contains_harmony_protocol(&prefix);
@@ -1199,13 +1204,14 @@ impl ChoiceJailState {
                     None,
                     prefix_lp,
                 );
-                let prefix_spans = spans.slice(subslice_range(content, prefix));
+                let prefix_spans = spans.slice(0..prefix.len());
                 emissions.push(Emitted::new(
                     ChoiceEmission::Trailing(trailing_choice),
                     prefix_spans,
                 ));
             }
-            self.partial_spans = spans.slice(subslice_range(content, partial));
+            // The splitters cut `content` at one index into `prefix` and `partial`.
+            self.partial_spans = spans.slice(prefix.len()..content.len());
             self.partial_match_buffer = partial.to_string();
         } else if jail_stream.should_start_jail(content) {
             let remaining = self.take_held_entries();
@@ -1603,13 +1609,14 @@ impl ChoiceJailState {
                                 None,
                                 prefix_lp,
                             );
-                            let prefix_spans = combined.slice(subslice_range(&content, prefix));
+                            let prefix_spans = combined.slice(0..prefix.len());
                             emissions.push(Emitted::new(
                                 ChoiceEmission::PassThrough(prefix_choice),
                                 prefix_spans,
                             ));
                         }
-                        self.partial_spans = combined.slice(subslice_range(&content, partial));
+                        // The splitters cut `content` at one index into `prefix` and `partial`.
+                        self.partial_spans = combined.slice(prefix.len()..content.len());
                         self.partial_match_buffer = partial.to_string();
                     } else if jail_stream.should_start_jail(&content) {
                         let remaining = self.take_held_entries();
@@ -2066,9 +2073,10 @@ impl JailedStream {
     /// true), every output item carries one [`ChoiceSources`] per choice whose
     /// ranges tile that choice's content and reasoning, through every hold,
     /// cut, trim, and merge. An input item's ranges are used when it carries
-    /// them for a choice; otherwise offsets count the text that choice
-    /// received. Without recording the output items carry `None`, and the
-    /// chunks are the ones [`apply`](Self::apply) emits.
+    /// them for a choice. A choice with no entry falls back to offsets over the
+    /// text it received, counted apart for content and for reasoning, so those
+    /// are two offset spaces. Without recording the output items carry `None`,
+    /// and the chunks are the ones [`apply`](Self::apply) emits.
     pub(crate) fn apply_sourced<S>(
         mut self,
         record: bool,
