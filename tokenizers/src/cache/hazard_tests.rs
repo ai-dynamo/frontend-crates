@@ -302,3 +302,20 @@ fn the_fastokens_backend_turns_the_cache_off_too() {
     assert_eq!(cached, [uncached.clone(), uncached]);
     assert!(!used, "the cache is off");
 }
+
+#[test]
+#[ignore = "F1: normalized plain tokens can span normalized specials without disabling L1"]
+fn a_normalized_special_inside_a_normalized_plain_token_turns_the_cache_off() {
+    let json = tokenizer_json(
+        json!([
+            flagged(2, "<sep>", true, "normalized"),
+            flagged(3, "a<sep>b", false, "normalized")
+        ]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let (uncached, cached, _) = three_ways(hf(&json), specials(&json), "a<sep>b");
+    assert_eq!(uncached, [3], "control: the longer normalized token wins");
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
