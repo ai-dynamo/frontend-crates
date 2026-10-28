@@ -72,6 +72,10 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             assert stacked.is_displayed()
             assert stacked.text == ("Stacked columns" if vertical else "Stacked rows")
             assert stacked.get_attribute("aria-pressed") == "true"
+            if vertical:
+                headings = driver.find_elements("css selector", ".comparison-matrix thead tr:nth-child(2) .matrix-capture-heading")
+                assert headings
+                assert all("matches GOLDEN" not in heading.text and "cases" not in heading.text for heading in headings)
             driver.find_element("css selector", "[data-layout='split']").click()
             assert counts(driver)["dynamo"] == before["dynamo"]
             _clear_slot(driver, 1)
@@ -80,6 +84,7 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
         elif correction == "categories":
             assert not driver.find_elements("css selector", ".category-chips")
             button = driver.find_element("css selector", "[data-comparison-table] [data-group]")
+            assert driver.execute_script("return getComputedStyle(arguments[0]).borderTopWidth", button) == "0px"
             key = button.get_attribute("data-group")
             before = counts(driver)
             button.send_keys(Keys.SPACE)
@@ -96,9 +101,11 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             driver.execute_script("const s=document.querySelector('.comparison-matrix-scroll');s.scrollIntoView({block:'start'});s.scrollTop=200")
             WebDriverWait(driver, 5).until(lambda d: d.execute_script("""
                 const table=document.querySelector('[data-comparison-table]');
-                const top=table.tHead.rows[0].cells[0].getBoundingClientRect();
+                const scroller=table.parentElement, top=table.tHead.rows[0].cells[0].getBoundingClientRect();
+                if (!scroller.scrollTop) return false;
+                if (table.tHead.rows.length === 1) return Math.abs(top.top-(scroller.getBoundingClientRect().top+scroller.clientTop))<=1;
                 const next=table.tHead.rows[1].cells[0].getBoundingClientRect();
-                return table.parentElement.scrollTop>0 && Math.abs(next.top-top.bottom)<=1;
+                return Math.abs(next.top-top.bottom)<=1;
             """))
         else:
             header = driver.find_element("css selector", ".matrix-case-heading")
@@ -153,13 +160,8 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         assert sha.get_attribute("title") in sha.get_attribute("aria-label")
         assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
         assert "%" not in driver.find_element("id", "viewer").text
-        disclosure = driver.find_element("css selector", ".legacy-report-details > summary")
-        disclosure.click()
-        assert driver.find_element("css selector", ".legacy-report-details table[data-parity-table]").is_displayed()
-        driver.find_element("css selector", "[data-transpose-toggle]").click()
-        assert driver.find_element("css selector", ".legacy-report-details table[data-parity-table]").is_displayed()
-        driver.find_element("css selector", "[data-transpose-toggle]").click()
-        disclosure.click()
+        assert not driver.find_elements("css selector", ".legacy-report-details, [data-peer-only]")
+        assert driver.execute_script("return [...document.querySelectorAll('.capture-summary [data-count]')].every(node => Number(node.textContent.trim().split(' ')[0]) > 0)")
         before = counts(driver)
         driver.find_element("css selector", "[data-focus='problems']").click()
         assert counts(driver) == before
@@ -167,14 +169,10 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         search.send_keys("dotted_name_minimal")
         after = counts(driver)
         assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
-        driver.find_element("css selector", "[data-peer-only]").click()
-        peer = counts(driver)
-        driver.refresh(); _ready(driver,"tab-unified",reference=False)
-        assert counts(driver) == peer
         assert driver.find_element("css selector", "[data-focus='problems']").get_attribute("aria-pressed") == "true"
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == "dotted_name_minimal"
         driver.find_element("css selector", "[data-theme-toggle]").click()
-        assert counts(driver) == peer
+        assert counts(driver) == after
         driver.set_window_size(480,850)
         assert driver.execute_script("return document.documentElement.scrollWidth <= innerWidth + 1")
         for card in driver.find_elements("css selector", ".capture-slot"):
@@ -230,19 +228,3 @@ def test_reference_url_same_engine_and_stale_request(historical_published_viewer
         assert driver.execute_script("return window.__conformanceModel.candidates.some(c => c.key === 'dynamo')")
     finally:
         release.set(); driver.quit(); server.shutdown(); server.server_close()
-
-
-def test_peer_filter_missing_index_requests_regeneration(published_viewer):
-    server, requests = _server(root=published_viewer)
-    driver = _driver()
-    try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/")
-        _ready(driver,"tab-unified",reference=False)
-        driver.execute_script("delete window.__conformanceModel.peer_availability")
-        request_count = len(requests)
-        driver.find_element("css selector","[data-peer-only]").click()
-        assert "Regenerate" in driver.find_element("css selector",".comparison-notice").text
-        assert counts(driver)["dynamo"]["total"] == 0
-        assert not any("/viewer-data/" in path for path in requests[request_count:])
-    finally:
-        driver.quit(); server.shutdown(); server.server_close()
