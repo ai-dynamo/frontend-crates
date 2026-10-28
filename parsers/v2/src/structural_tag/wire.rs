@@ -94,6 +94,8 @@ pub(crate) enum JsonSchemaStyle {
     Json,
     QwenXml,
     DeepseekXml,
+    #[serde(rename = "deepseek_v4_1_xml")]
+    DeepseekV41Xml,
     GlmXml,
     MinimaxXml,
 }
@@ -180,6 +182,7 @@ pub(super) fn import_native(
                 native::JsonSchemaStyle::QwenXml => JsonSchemaStyle::QwenXml,
                 native::JsonSchemaStyle::MinimaxXml => JsonSchemaStyle::MinimaxXml,
                 native::JsonSchemaStyle::DeepseekXml => JsonSchemaStyle::DeepseekXml,
+                native::JsonSchemaStyle::DeepseekV41Xml => JsonSchemaStyle::DeepseekV41Xml,
             },
             any_order,
         }),

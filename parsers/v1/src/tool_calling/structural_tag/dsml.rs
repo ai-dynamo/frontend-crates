@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 use super::TOOL_NAME_PLACEHOLDER;
 use super::builder::{ToolCallFormatBuildContext, resolve_tool_schema, resolve_tools_to_include};
 use super::format::{
-    Format, JsonSchemaFormat, JsonSchemaStyle, StructuralTag, TagFormat, TagsWithSeparatorFormat,
-    TriggeredTagsFormat,
+    ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, SequenceFormat, StructuralTag,
+    TagFormat, TagsWithSeparatorFormat, TriggeredTagsFormat,
 };
 
 /// Configuration for the nested DSML tool-call structural tag.
@@ -69,7 +69,14 @@ pub(crate) fn build_dsml_tool_calls(
                 begin,
                 content: Box::new(Format::JsonSchema(JsonSchemaFormat {
                     json_schema: resolve_tool_schema(tool, ctx.strict_schema()),
-                    style: JsonSchemaStyle::DeepseekXml,
+                    style: if config
+                        .invoke_begin_template
+                        .starts_with("<｜DSML｜ invoke name=")
+                    {
+                        JsonSchemaStyle::DeepseekV41Xml
+                    } else {
+                        JsonSchemaStyle::DeepseekXml
+                    },
                 })),
                 end: config.invoke_end.clone(),
             }
@@ -91,12 +98,30 @@ pub(crate) fn build_dsml_tool_calls(
         end: config.block_end.clone(),
     };
 
-    Ok(Some(StructuralTag {
-        format: Format::TriggeredTags(TriggeredTagsFormat {
-            triggers: vec![config.trigger.clone()],
-            tags: vec![block_tag],
-            at_least_one: outer_at_least_one,
-            stop_after_first: ctx.stop_after_first(),
-        }),
-    }))
+    let format = Format::TriggeredTags(TriggeredTagsFormat {
+        triggers: vec![config.trigger.clone()],
+        tags: vec![block_tag],
+        at_least_one: outer_at_least_one,
+        stop_after_first: ctx.stop_after_first(),
+    });
+    // A mandatory triggered tag starts at offset zero. Preserve the V4.1
+    // checkpoint's tool-block prefix, as the Unified builder already does.
+    // Auto mode permits this prefix as free text without changing its trigger.
+    let format = if outer_at_least_one
+        && config
+            .invoke_begin_template
+            .starts_with("<｜DSML｜ invoke name=")
+    {
+        Format::Sequence(SequenceFormat {
+            elements: vec![
+                Format::ConstString(ConstStringFormat {
+                    value: "\n\n".to_string(),
+                }),
+                format,
+            ],
+        })
+    } else {
+        format
+    };
+    Ok(Some(StructuralTag { format }))
 }

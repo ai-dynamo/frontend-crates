@@ -835,6 +835,27 @@ impl ToolCallConfig {
         Self::deepseek_dsml("tool_calls")
     }
 
+    /// The V4.1 unified output parser and its guided-decoding grammar must
+    /// agree on the spaces after DSML and on raw-string parameter encoding.
+    pub fn deepseek_v41() -> Self {
+        let mut config = Self::deepseek_dsml(" calls");
+        let ParserConfig::Dsml(dsml) = &mut config.parser_config else {
+            unreachable!("deepseek_dsml constructs a DSML configuration");
+        };
+        dsml.invoke_start_prefix = "<｜DSML｜ invoke name=".to_string();
+        dsml.invoke_end = "</｜DSML｜ invoke>".to_string();
+        dsml.parameter_prefix = "<｜DSML｜ parameter name=".to_string();
+        dsml.parameter_end = "</｜DSML｜ parameter>".to_string();
+        let Some(StructuralTagBuilder::DsmlToolCalls(builder)) = &mut config.structural_tag_builder
+        else {
+            unreachable!("deepseek_dsml constructs a DSML structural tag builder");
+        };
+        builder.invoke_begin_template =
+            format!("<｜DSML｜ invoke name=\"{}\">\n", TOOL_NAME_PLACEHOLDER);
+        builder.invoke_end = "</｜DSML｜ invoke>\n".to_string();
+        config
+    }
+
     pub fn minimax_m2() -> Self {
         // MiniMax-M2.1 format:
         // <minimax:tool_call>

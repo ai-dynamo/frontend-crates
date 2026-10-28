@@ -13,9 +13,37 @@ use crate::structural_tag::wire::{
 pub(crate) static DEEPSEEK_DSML: StructuralTagBuilder =
     StructuralTagBuilder::new(&DEEPSEEK_DSML_FORMAT);
 
-static DEEPSEEK_DSML_FORMAT: DeepSeekDsmlFormat = DeepSeekDsmlFormat;
+pub(crate) static DEEPSEEK_V41: StructuralTagBuilder =
+    StructuralTagBuilder::new(&DEEPSEEK_V41_FORMAT);
 
-struct DeepSeekDsmlFormat;
+static DEEPSEEK_DSML_FORMAT: DeepSeekDsmlFormat = DeepSeekDsmlFormat {
+    trigger: TRIGGER,
+    block_begin: TOOL_CALLS_BEGIN,
+    block_end: TOOL_CALLS_END,
+    invoke_begin_prefix: INVOKE_BEGIN_PREFIX,
+    invoke_end: INVOKE_END,
+    excludes: &[TRIGGER, BARE_INVOKE_BEGIN],
+    style: JsonSchemaStyle::DeepseekXml,
+};
+static DEEPSEEK_V41_FORMAT: DeepSeekDsmlFormat = DeepSeekDsmlFormat {
+    trigger: "<｜DSML｜ calls>",
+    block_begin: "<｜DSML｜ calls>\n",
+    block_end: "</｜DSML｜ calls>",
+    invoke_begin_prefix: "<｜DSML｜ invoke name=\"",
+    invoke_end: "</｜DSML｜ invoke>\n",
+    excludes: &["<｜DSML｜ calls>", "<｜DSML｜ invoke name="],
+    style: JsonSchemaStyle::DeepseekV41Xml,
+};
+
+struct DeepSeekDsmlFormat {
+    trigger: &'static str,
+    block_begin: &'static str,
+    block_end: &'static str,
+    invoke_begin_prefix: &'static str,
+    invoke_end: &'static str,
+    excludes: &'static [&'static str],
+    style: JsonSchemaStyle,
+}
 
 const TRIGGER: &str = "<｜DSML｜tool_calls>";
 const TOOL_CALLS_PREFIX: &str = "\n\n";
@@ -39,25 +67,25 @@ impl DeepSeekDsmlFormat {
             .tools
             .iter()
             .map(|tool| TagFormat {
-                begin: [INVOKE_BEGIN_PREFIX, &tool.name, INVOKE_BEGIN_SUFFIX].concat(),
+                begin: [self.invoke_begin_prefix, &tool.name, INVOKE_BEGIN_SUFFIX].concat(),
                 content: Box::new(Format::JsonSchema(JsonSchemaFormat {
                     json_schema: resolve_tool_schema(tool, policy.schema_mode),
-                    style: JsonSchemaStyle::DeepseekXml,
+                    style: self.style,
                     any_order: tool_arguments_any_order,
                 })),
-                end: INVOKE_END.to_string(),
+                end: self.invoke_end.to_string(),
             })
             .collect();
 
         TagFormat {
-            begin: TOOL_CALLS_BEGIN.to_string(),
+            begin: self.block_begin.to_string(),
             content: Box::new(Format::TagsWithSeparator(TagsWithSeparatorFormat {
                 tags: invoke_tags,
                 separator: INVOKE_SEPARATOR.to_string(),
                 at_least_one: true,
                 stop_after_first: policy.stop_after_first(),
             })),
-            end: TOOL_CALLS_END.to_string(),
+            end: self.block_end.to_string(),
         }
     }
 }
@@ -72,7 +100,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
     }
 
     fn tool_call_excludes(&self) -> &'static [&'static str] {
-        &[TRIGGER, BARE_INVOKE_BEGIN]
+        self.excludes
     }
 
     fn build_triggered_calls(
@@ -90,11 +118,11 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
         );
 
         let format = triggered_calls_format(
-            TRIGGER,
+            self.trigger,
             vec![self.tool_call_block(policy, tool_arguments_any_order)],
             self.reasoning_begin(),
             self.reasoning_end(),
-            &[BARE_INVOKE_BEGIN],
+            &self.excludes[1..],
             exclude_special_tokens,
             policy,
         );
@@ -127,7 +155,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
 mod tests {
     use serde_json::json;
 
-    use super::DEEPSEEK_DSML;
+    use super::{DEEPSEEK_DSML, DEEPSEEK_V41};
     use crate::structural_tag::test_support::{build, tools};
     use crate::structural_tag::{StructuralTagSchemaMode, StructuralTagToolChoice};
 
@@ -296,5 +324,109 @@ mod tests {
                 }
             })
         );
+    }
+    #[test]
+    fn v41_is_a_distinct_registered_unified_grammar() {
+        let builder = crate::structural_tag_builder_for_family("deepseek_v41").unwrap();
+        assert!(std::ptr::eq(builder, &DEEPSEEK_V41));
+        assert!(!std::ptr::eq(builder, &DEEPSEEK_DSML));
+    }
+
+    #[test]
+    fn v41_auto_preserves_its_schema_and_native_argument_style() {
+        let tools = tools();
+        let tag = build(
+            &DEEPSEEK_V41,
+            StructuralTagToolChoice::Auto,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        let outer = &tag["format"];
+        assert_eq!(outer["type"], "triggered_tags");
+        assert_eq!(outer["triggers"], json!(["<｜DSML｜ calls>"]));
+        assert_eq!(outer["at_least_one"], false);
+        let block = &outer["tags"][0];
+        assert_eq!(block["begin"], "<｜DSML｜ calls>\n");
+        assert_eq!(block["end"], "</｜DSML｜ calls>");
+        let invokes = block["content"]["tags"].as_array().unwrap();
+        assert_eq!(invokes.len(), 2);
+        for (invoke, tool) in invokes.iter().zip(&tools) {
+            assert_eq!(
+                invoke["begin"],
+                format!("<｜DSML｜ invoke name=\"{}\">\n", tool.name)
+            );
+            assert_eq!(invoke["end"], "</｜DSML｜ invoke>\n");
+            assert_eq!(invoke["content"]["style"], "deepseek_v4_1_xml");
+            assert_eq!(invoke["content"]["json_schema"], tool.parameters);
+        }
+        assert_eq!(block["content"]["stop_after_first"], true);
+        let encoded = serde_json::to_string(&tag).unwrap();
+        assert!(!encoded.contains("<｜DSML｜tool_calls>"));
+        assert!(!encoded.contains("<｜DSML｜invoke"));
+    }
+
+    #[test]
+    fn v41_required_and_named_keep_call_cardinality() {
+        let tools = tools();
+        let required = build(
+            &DEEPSEEK_V41,
+            StructuralTagToolChoice::Required,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        assert_eq!(required["format"]["elements"][0]["value"], "\n\n");
+        let calls = &required["format"]["elements"][1];
+        assert_eq!(calls["triggers"], json!(["<｜DSML｜ calls>"]));
+        assert_eq!(calls["at_least_one"], true);
+        assert_eq!(calls["tags"][0]["content"]["stop_after_first"], true);
+        let named = build(
+            &DEEPSEEK_V41,
+            StructuralTagToolChoice::Named("get_weather"),
+            &tools,
+            None,
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        let block = &named["format"];
+        assert_eq!(block["begin"], "\n\n<｜DSML｜ calls>\n");
+        let invokes = block["content"]["tags"].as_array().unwrap();
+        assert_eq!(invokes.len(), 1);
+        assert_eq!(
+            invokes[0]["begin"],
+            "<｜DSML｜ invoke name=\"get_weather\">\n"
+        );
+        assert_eq!(invokes[0]["content"]["style"], "deepseek_v4_1_xml");
+    }
+
+    #[test]
+    fn v41_none_and_prompt_opened_reasoning_use_v41_markers() {
+        let tools = tools();
+        let none = build(
+            &DEEPSEEK_V41,
+            StructuralTagToolChoice::None,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        assert_eq!(
+            none["format"]["content"]["excludes"],
+            json!(["<｜DSML｜ calls>", "<｜DSML｜ invoke name="])
+        );
+        let reasoning = build(
+            &DEEPSEEK_V41,
+            StructuralTagToolChoice::Required,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Strict,
+            true,
+        );
+        let encoded = serde_json::to_string(&reasoning).unwrap();
+        assert!(encoded.contains("</think>"));
+        assert!(encoded.contains("<｜DSML｜ calls>"));
     }
 }

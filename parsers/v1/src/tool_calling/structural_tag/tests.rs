@@ -890,3 +890,111 @@ fn parser_map_structural_tag_smoke() {
         assert_eq!(tag["type"], "structural_tag", "'{name}'");
     }
 }
+
+#[test]
+fn deepseek_v41_registered_builder_enforces_schema_without_client_strict() {
+    let tools = sample_tools();
+    assert!(tools.iter().all(|tool| tool.strict.is_none()));
+    let registry = crate::tool_calling::parsers::get_tool_parser_map();
+    let builder = registry["deepseek_v41"]
+        .structural_tag_builder
+        .as_ref()
+        .unwrap();
+    let choice = ToolChoice::Required;
+    let c = ctx(
+        &choice,
+        &tools,
+        Some(false),
+        StructuralTagSchemaMode::Strict,
+    );
+    let tag = builder.build_tool_call_format(&c).unwrap().unwrap();
+    assert_eq!(tag["format"]["elements"][0]["value"], "\n\n");
+    let outer = &tag["format"]["elements"][1];
+    assert_eq!(outer["triggers"][0], "<｜DSML｜ calls>");
+    assert_eq!(outer["at_least_one"], true);
+    let block = &outer["tags"][0];
+    assert_eq!(block["begin"], "<｜DSML｜ calls>\n");
+    assert_eq!(block["end"], "</｜DSML｜ calls>");
+    assert_eq!(block["content"]["stop_after_first"], true);
+    let invoke = &block["content"]["tags"][0];
+    assert_eq!(invoke["begin"], "<｜DSML｜ invoke name=\"add_numbers\">\n");
+    assert_eq!(invoke["end"], "</｜DSML｜ invoke>\n");
+    assert_eq!(invoke["content"]["style"], "deepseek_v4_1_xml");
+    assert_eq!(
+        invoke["content"]["json_schema"]["properties"]["a"]["type"],
+        "integer"
+    );
+    assert_eq!(
+        invoke["content"]["json_schema"]["required"],
+        json!(["a", "b"])
+    );
+}
+
+#[test]
+fn deepseek_v41_named_choice_limits_tool_and_preserves_reasoning_boundary() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::deepseek_v41();
+    let builder = config.structural_tag_builder.as_ref().unwrap();
+    let choice = ToolChoice::Named("get_weather".to_string());
+    let mut c = ctx(
+        &choice,
+        &tools,
+        Some(false),
+        StructuralTagSchemaMode::Strict,
+    );
+    c.starts_in_reasoning = true;
+    let tag = builder.build_tool_call_format(&c).unwrap().unwrap();
+    let encoded = serde_json::to_string(&tag).unwrap();
+    assert!(encoded.contains("</think>"));
+    assert!(encoded.contains("get_weather"));
+    assert!(!encoded.contains("add_numbers"));
+    assert!(encoded.contains("deepseek_v4_1_xml"));
+    assert!(builder.build_tool_call_ban().unwrap().is_some());
+}
+
+#[test]
+fn deepseek_v41_auto_preserves_free_text_before_the_block() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::deepseek_v41();
+    let c = ctx(
+        &ToolChoice::Auto,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+    );
+    let tag = config
+        .structural_tag_builder
+        .as_ref()
+        .unwrap()
+        .build_tool_call_format(&c)
+        .unwrap()
+        .unwrap();
+    assert_eq!(tag["format"]["type"], "triggered_tags");
+    assert_eq!(tag["format"]["at_least_one"], false);
+    assert_eq!(tag["format"]["tags"][0]["begin"], "<｜DSML｜ calls>\n");
+}
+
+#[test]
+fn deepseek_v41_named_choice_preserves_checkpoint_block_prefix() {
+    let tools = sample_tools();
+    let config = ToolCallConfig::deepseek_v41();
+    let choice = ToolChoice::Named("get_weather".to_string());
+    let c = ctx(&choice, &tools, None, StructuralTagSchemaMode::Strict);
+    let tag = config
+        .structural_tag_builder
+        .as_ref()
+        .unwrap()
+        .build_tool_call_format(&c)
+        .unwrap()
+        .unwrap();
+    assert_eq!(tag["format"]["elements"][0]["value"], "\n\n");
+    let outer = &tag["format"]["elements"][1];
+    assert_eq!(outer["at_least_one"], true);
+    assert_eq!(
+        outer["tags"][0]["content"]["tags"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
