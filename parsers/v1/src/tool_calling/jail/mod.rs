@@ -144,6 +144,25 @@ impl JailItem for SourcedItem {
     }
 }
 
+impl JailItem for SourcedChunk {
+    const RECORDS: bool = true;
+
+    #[inline]
+    fn into_parts(self) -> SourcedItem {
+        (self.chunk, self.sources)
+    }
+
+    #[inline]
+    fn from_parts((chunk, sources): SourcedItem) -> Self {
+        SourcedChunk { chunk, sources }
+    }
+
+    #[inline]
+    fn sources_mut(&mut self) -> Option<&mut Vec<ChoiceSources>> {
+        self.sources.as_mut()
+    }
+}
+
 fn is_harmony_parser(parser: Option<&str>) -> bool {
     parser == Some("harmony")
 }
@@ -2191,9 +2210,8 @@ impl JailedStream {
         S: Stream<Item = Annotated<CreateChatCompletionStreamResponse>> + Send + 'static,
     {
         let jail_mode = self.jail_mode.clone();
-        let jailed_stream = self.apply_pairs(false, stream.map(|response| (response, None)));
+        let jailed_stream = self.apply_pairs(false, stream);
         JailedStream::fix_finish_reason(jailed_stream, jail_mode, false)
-            .map(|(response, _)| response)
     }
 
     /// [`apply_with_finish_reason`](Self::apply_with_finish_reason), carrying
@@ -2209,9 +2227,8 @@ impl JailedStream {
         let jail_mode = self.jail_mode.clone();
         let record = self.can_record_sources();
         self.caller_ranges = true;
-        let jailed_stream = self.apply_pairs(record, stream.map(|item| (item.chunk, item.sources)));
+        let jailed_stream = self.apply_pairs(record, stream);
         JailedStream::fix_finish_reason(jailed_stream, jail_mode, record)
-            .map(|(chunk, sources)| SourcedChunk { chunk, sources })
     }
 
     /// Apply the jail transformation to a stream of chat completion responses
@@ -2243,8 +2260,7 @@ impl JailedStream {
     {
         let record = self.can_record_sources();
         self.caller_ranges = true;
-        self.apply_pairs(record, stream.map(|item| (item.chunk, item.sources)))
-            .map(|(chunk, sources)| SourcedChunk { chunk, sources })
+        self.apply_pairs(record, stream)
     }
 
     /// Whether [`apply_sourced`](Self::apply_sourced) can record sources for
@@ -2293,6 +2309,7 @@ impl JailedStream {
             tokio::pin!(stream);
             // Choices whose text arrived without the caller's ranges.
             let mut unsourced: HashSet<u32> = HashSet::new();
+
 
             // Process each item in the stream
             while let Some(item) = stream.next().await {
@@ -3423,14 +3440,18 @@ impl JailedStream {
     ///
     /// It changes no text, so each item's sources pass through. While
     /// `recording`, a chunk it adds carries an empty entry for its choice.
-    fn fix_finish_reason<S>(
+    fn fix_finish_reason<I, S>(
         input_stream: S,
         jail_mode: JailMode,
         recording: bool,
-    ) -> impl Stream<Item = SourcedItem> + Send
+    ) -> impl Stream<Item = I> + Send
     where
-        S: Stream<Item = SourcedItem> + Send + 'static,
+        I: JailItem,
+        S: Stream<Item = I> + Send + 'static,
     {
+        // Generic over the item type, as the jail loop is: the stock chunk
+        // streams as it is, and compiles the recording branches out.
+        let recording = I::RECORDS && recording;
         // A chunk it adds names a choice; one whose text had no source gets
         // no entry, as the jail gave it none.
         let added = move |index: u32, unsourced: &HashSet<u32>| {
@@ -3460,7 +3481,8 @@ impl JailedStream {
             let mut synthesized: HashSet<u32> = HashSet::new();
 
             let mut unsourced: HashSet<u32> = HashSet::new();
-            while let Some((mut response, sources)) = input_stream.next().await {
+            while let Some(item) = input_stream.next().await {
+                let (mut response, sources) = item.into_parts();
                 // While recording, the jail gives every choice an entry unless
                 // its text has no source.
                 if let (Some(sources), Some(data)) = (&sources, &response.data) {
@@ -3536,7 +3558,7 @@ impl JailedStream {
                         .collect();
                     indices.sort_unstable();
                     for index in indices {
-                        yield (
+                        yield I::from_parts((
                             stream_choice_chunk_from_template(
                                 template,
                                 index,
@@ -3545,12 +3567,12 @@ impl JailedStream {
                                 Some(FinishReason::ToolCalls),
                             ),
                             added(index, &unsourced),
-                        );
+                        ));
                         synthesized.insert(index);
                     }
                 }
 
-                yield (response, sources);
+                yield I::from_parts((response, sources));
             }
 
             // Backstop: the stream ended without a finish_reason AND without an
@@ -3570,7 +3592,7 @@ impl JailedStream {
                     .collect();
                 indices.sort_unstable();
                 for index in indices {
-                    yield (
+                    yield I::from_parts((
                         stream_choice_chunk_from_template(
                             &template,
                             index,
@@ -3579,7 +3601,7 @@ impl JailedStream {
                             Some(FinishReason::ToolCalls),
                         ),
                         added(index, &unsourced),
-                    );
+                    ));
                     synthesized.insert(index);
                 }
             }
