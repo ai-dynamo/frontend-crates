@@ -17,32 +17,46 @@ use super::l1::tokens_can_overlap;
 pub(crate) struct AddedTokenFlags<'a> {
     pub(crate) content: &'a str,
     pub(crate) special: bool,
+    pub(crate) lstrip: bool,
     pub(crate) rstrip: bool,
     pub(crate) single_word: bool,
     pub(crate) normalized: bool,
 }
 
-/// Why the cache cannot split this tokenizer's prompts safely, if it cannot:
+/// Why the cache cannot split this tokenizer's prompts safely, if it cannot.
+///
+/// `tokenizers` matches added tokens in two passes: first the tokens that are
+/// not normalized, in the raw text, then the normalized ones, in what is left.
+/// The setups:
 ///
 /// - a special token with `rstrip`: it takes the spaces after it, which the
 ///   part after the split keeps;
 /// - a special token with `normalized`, when the tokenizer has a normalizer:
 ///   the normalizer can rewrite text across the split;
-/// - a special token that overlaps an added token that is not special and
-///   not normalized: the tokenizer can match the other token in its place;
+/// - a special token that overlaps a plain added token matched in the same
+///   pass or an earlier one: the tokenizer can match the plain token in its
+///   place;
 /// - an added token with `single_word`: the character before the split
 ///   decides whether it matches;
+/// - a first-pass token with `lstrip` or `rstrip`, and a normalized special
+///   token that starts or ends with whitespace: the first pass can take that
+///   whitespace, and the special token then does not match where the cache
+///   splits;
 /// - a Metaspace pre-tokenizer with `prepend_scheme: first`: it marks the
 ///   start of the part after the split, which inside the prompt is not a
 ///   start.
 ///
-/// `lstrip` is safe: the spaces before a special token are in the same
-/// part as the token.
+/// Otherwise `lstrip` is safe: the spaces before a special token are in the
+/// same part as the token, and a match never takes text an earlier match in
+/// its pass took.
 pub(crate) fn prefix_cache_hazard<'a>(
     tokens: &[AddedTokenFlags<'a>],
     has_normalizer: bool,
     pre_tokenizer: Option<&Value>,
 ) -> Option<String> {
+    let strips_in_first_pass = tokens
+        .iter()
+        .find(|token| !token.normalized && (token.lstrip || token.rstrip));
     for token in tokens {
         if token.single_word {
             return Some(format!(
@@ -65,13 +79,25 @@ pub(crate) fn prefix_cache_hazard<'a>(
                 token.content
             ));
         }
+        // A plain token matched in a later pass than the special token cannot
+        // take its place: the special token is split out first.
         let shadow = tokens.iter().find(|other| {
-            !other.special && !other.normalized && tokens_can_overlap(token.content, other.content)
+            !other.special
+                && !(other.normalized && !token.normalized)
+                && tokens_can_overlap(token.content, other.content)
         });
         if let Some(other) = shadow {
             return Some(format!(
                 "the special token `{}` overlaps the added token `{}`",
                 token.content, other.content
+            ));
+        }
+        let edge_is_space = token.content.starts_with(char::is_whitespace)
+            || token.content.ends_with(char::is_whitespace);
+        if let Some(stripper) = strips_in_first_pass.filter(|_| token.normalized && edge_is_space) {
+            return Some(format!(
+                "the added token `{}` can strip the whitespace of the special token `{}`",
+                stripper.content, token.content
             ));
         }
     }
@@ -105,6 +131,7 @@ pub(crate) fn prefix_cache_hazard_in_json(json: &Value) -> Option<String> {
             Some(AddedTokenFlags {
                 content: token.get("content")?.as_str()?,
                 special: flag(token, "special"),
+                lstrip: flag(token, "lstrip"),
                 rstrip: flag(token, "rstrip"),
                 single_word: flag(token, "single_word"),
                 normalized: flag(token, "normalized"),

@@ -103,6 +103,7 @@ fn prefix_cache_hazard(tokenizer: &HfTokenizer) -> Option<String> {
         .map(|token| AddedTokenFlags {
             content: &token.content,
             special: token.special,
+            lstrip: token.lstrip,
             rstrip: token.rstrip,
             single_word: token.single_word,
             normalized: token.normalized,
@@ -147,12 +148,14 @@ pub fn merge_special_tokens_from_config(tokenizer: &mut HfTokenizer, model_dir: 
         return;
     };
 
-    // `tokenizers` matches a token it already has with the `normalized` flag
-    // it first saw, and re-adding the token changes only the flag it reports.
-    // Keep that flag, so the report stays true.
+    // `tokenizers` matches a special token it already has with the
+    // `normalized` flag it first saw, and re-adding the token changes only the
+    // flag it reports. Keep that flag, so the report stays true. A plain token
+    // that the config makes special is matched with the config's flag.
     let normalized_now: std::collections::HashMap<String, bool> = tokenizer
         .get_added_tokens_decoder()
         .into_values()
+        .filter(|token| token.special)
         .map(|token| (token.content, token.normalized))
         .collect();
     let mut to_add: Vec<AddedToken> = Vec::new();

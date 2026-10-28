@@ -304,7 +304,6 @@ fn the_fastokens_backend_turns_the_cache_off_too() {
 }
 
 #[test]
-#[ignore = "F1: normalized plain tokens can span normalized specials without disabling L1"]
 fn a_normalized_special_inside_a_normalized_plain_token_turns_the_cache_off() {
     let json = tokenizer_json(
         json!([
@@ -321,7 +320,6 @@ fn a_normalized_special_inside_a_normalized_plain_token_turns_the_cache_off() {
 }
 
 #[test]
-#[ignore = "F2: promotion changes uncached IDs when the configured normalized flag differs"]
 fn promoting_a_plain_token_preserves_the_uncached_ids() {
     let dir = tempfile::tempdir().expect("tempdir");
     let json = tokenizer_json(
@@ -339,7 +337,6 @@ fn promoting_a_plain_token_preserves_the_uncached_ids() {
 }
 
 #[test]
-#[ignore = "F3: lstrip consumes normalized whitespace specials only before the cache splits"]
 fn lstrip_cannot_consume_a_normalized_whitespace_special_across_a_split() {
     let json = tokenizer_json(
         json!([
