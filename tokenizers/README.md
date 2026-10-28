@@ -124,7 +124,10 @@ normalizer, a special token that overlaps a plain added token matched in the
 same pass or an earlier one, an added token with `single_word`, a token with
 `lstrip` or `rstrip` beside a normalized special token that starts or ends
 with whitespace, or a Metaspace pre-tokenizer with `prepend_scheme: first`.
-It logs a warning that names the reason.
+Hugging Face matches added tokens in two passes, the normalized ones last;
+fastokens and Baseten match them all in one pass, so for them any plain added
+token that overlaps a special token counts. It logs a warning that names the
+reason.
 
 TikToken models expose the exact special-token strings registered with their BPE, so
 the same cache can be constructed without duplicating model metadata:

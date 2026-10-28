@@ -5,7 +5,7 @@ use std::{collections::HashSet, path::Path, sync::OnceLock};
 
 use tokenizers::tokenizer::{AddedToken, PostProcessor as _, Tokenizer as HfTokenizer};
 
-use crate::cache::hazard::AddedTokenFlags;
+use crate::cache::hazard::{AddedTokenFlags, Matching};
 
 use super::{
     Encoding, Error, Result, TokenIdType, TokenizerOptions,
@@ -42,6 +42,12 @@ impl HuggingFaceTokenizer {
         Ok(Self::from_tokenizer(tokenizer))
     }
 
+    /// Why the prefix cache cannot split prompts of an encoder that loads
+    /// the same `tokenizer.json` but matches added tokens in one pass.
+    pub(crate) fn one_pass_prefix_cache_hazard(&self) -> Option<String> {
+        prefix_cache_hazard(&self.tokenizer, Matching::OnePass)
+    }
+
     pub fn from_tokenizer(tokenizer: HfTokenizer) -> Self {
         // ByteFallback decodes a contiguous run atomically: one invalid byte
         // replaces the entire run, including previously valid ASCII/UTF-8.
@@ -75,7 +81,7 @@ impl HuggingFaceTokenizer {
             .into_iter()
             .filter_map(|(id, token)| token.special.then_some(id))
             .collect();
-        let prefix_cache_hazard = prefix_cache_hazard(&tokenizer);
+        let prefix_cache_hazard = prefix_cache_hazard(&tokenizer, Matching::TwoPasses);
         HuggingFaceTokenizer {
             tokenizer,
             segment_tokenizers: OnceLock::new(),
@@ -95,8 +101,9 @@ impl HuggingFaceTokenizer {
     }
 }
 
-/// Why the prefix cache cannot split `tokenizer`'s prompts, if it cannot.
-fn prefix_cache_hazard(tokenizer: &HfTokenizer) -> Option<String> {
+/// Why the prefix cache cannot split `tokenizer`'s prompts, if it cannot,
+/// for an encoder that matches its added tokens as `matching` says.
+fn prefix_cache_hazard(tokenizer: &HfTokenizer, matching: Matching) -> Option<String> {
     let added = tokenizer.get_added_tokens_decoder();
     let tokens: Vec<_> = added
         .values()
@@ -114,6 +121,7 @@ fn prefix_cache_hazard(tokenizer: &HfTokenizer) -> Option<String> {
         .and_then(|pre_tokenizer| serde_json::to_value(pre_tokenizer).ok());
     crate::cache::hazard::prefix_cache_hazard(
         &tokens,
+        matching,
         tokenizer.get_normalizer().is_some(),
         pre_tokenizer.as_ref(),
     )

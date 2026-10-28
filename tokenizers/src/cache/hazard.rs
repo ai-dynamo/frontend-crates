@@ -13,6 +13,17 @@ use serde_json::Value;
 
 use super::l1::tokens_can_overlap;
 
+/// How an encoder matches added tokens.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Matching {
+    /// As `tokenizers` does: first the tokens that are not normalized, in the
+    /// raw text, then the normalized ones, in what is left.
+    TwoPasses,
+    /// All added tokens in one leftmost-longest pass over the raw text,
+    /// whatever their `normalized` flag, as fastokens and Baseten do.
+    OnePass,
+}
+
 /// The match flags of one added token, as `tokenizer.json` lists them.
 pub(crate) struct AddedTokenFlags<'a> {
     pub(crate) content: &'a str,
@@ -25,9 +36,8 @@ pub(crate) struct AddedTokenFlags<'a> {
 
 /// Why the cache cannot split this tokenizer's prompts safely, if it cannot.
 ///
-/// `tokenizers` matches added tokens in two passes: first the tokens that are
-/// not normalized, in the raw text, then the normalized ones, in what is left.
-/// The setups:
+/// `matching` says whether the encoder matches added tokens in two passes
+/// ([`Matching::TwoPasses`]) or one. The setups:
 ///
 /// - a special token with `rstrip`: it takes the spaces after it, which the
 ///   part after the split keeps;
@@ -51,12 +61,15 @@ pub(crate) struct AddedTokenFlags<'a> {
 /// its pass took.
 pub(crate) fn prefix_cache_hazard<'a>(
     tokens: &[AddedTokenFlags<'a>],
+    matching: Matching,
     has_normalizer: bool,
     pre_tokenizer: Option<&Value>,
 ) -> Option<String> {
+    let second_pass =
+        |token: &AddedTokenFlags<'_>| matching == Matching::TwoPasses && token.normalized;
     let strips_in_first_pass = tokens
         .iter()
-        .find(|token| !token.normalized && (token.lstrip || token.rstrip));
+        .find(|token| !second_pass(token) && (token.lstrip || token.rstrip));
     for token in tokens {
         if token.single_word {
             return Some(format!(
@@ -83,7 +96,7 @@ pub(crate) fn prefix_cache_hazard<'a>(
         // take its place: the special token is split out first.
         let shadow = tokens.iter().find(|other| {
             !other.special
-                && (token.normalized || !other.normalized)
+                && (second_pass(token) || !second_pass(other))
                 && tokens_can_overlap(token.content, other.content)
         });
         if let Some(other) = shadow {
@@ -94,7 +107,8 @@ pub(crate) fn prefix_cache_hazard<'a>(
         }
         let edge_is_space = token.content.starts_with(char::is_whitespace)
             || token.content.ends_with(char::is_whitespace);
-        if let Some(stripper) = strips_in_first_pass.filter(|_| token.normalized && edge_is_space) {
+        if let Some(stripper) = strips_in_first_pass.filter(|_| second_pass(token) && edge_is_space)
+        {
             return Some(format!(
                 "the added token `{}` can strip the whitespace of the special token `{}`",
                 stripper.content, token.content
@@ -118,8 +132,8 @@ fn marks_only_the_first_word(value: &Value) -> bool {
     }
 }
 
-/// [`prefix_cache_hazard`] of a `tokenizer.json`, for backends that read it
-/// as JSON.
+/// [`prefix_cache_hazard`] of a `tokenizer.json`, for a backend that reads it
+/// as JSON and matches added tokens in one pass.
 pub(crate) fn prefix_cache_hazard_in_json(json: &Value) -> Option<String> {
     let flag = |token: &Value, name| token.get(name).and_then(Value::as_bool).unwrap_or(false);
     let tokens: Vec<_> = json
@@ -141,5 +155,10 @@ pub(crate) fn prefix_cache_hazard_in_json(json: &Value) -> Option<String> {
     let has_normalizer = json
         .get("normalizer")
         .is_some_and(|normalizer| !normalizer.is_null());
-    prefix_cache_hazard(&tokens, has_normalizer, json.get("pre_tokenizer"))
+    prefix_cache_hazard(
+        &tokens,
+        Matching::OnePass,
+        has_normalizer,
+        json.get("pre_tokenizer"),
+    )
 }

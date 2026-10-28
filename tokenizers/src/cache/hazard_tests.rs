@@ -370,7 +370,6 @@ fn a_raw_special_preempts_a_normalized_plain_token_in_hf() {
 }
 
 #[test]
-#[ignore = "F4: single-pass backends let a normalized plain token shadow the split"]
 fn a_normalized_plain_token_cannot_shadow_a_fast_backend_split() {
     let dir = tempfile::tempdir().expect("tempdir");
     let json = tokenizer_json(

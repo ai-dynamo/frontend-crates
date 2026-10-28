@@ -53,6 +53,9 @@ fn fast_encode_segments(
 pub struct FastTokenizer {
     fast_encoder: fastokens::Tokenizer,
     hf_decoder: HuggingFaceTokenizer,
+    /// Why the prefix cache cannot split this tokenizer's prompts, if it
+    /// cannot. fastokens matches added tokens in one pass.
+    prefix_cache_hazard: Option<String>,
 }
 
 impl FastTokenizer {
@@ -60,9 +63,11 @@ impl FastTokenizer {
         let fast_encoder = fastokens::Tokenizer::from_file(Path::new(path))
             .map_err(|e| Error::msg(format!("Error loading fastokens tokenizer: {e}")))?;
         let hf_decoder = HuggingFaceTokenizer::from_file(path)?;
+        let prefix_cache_hazard = hf_decoder.one_pass_prefix_cache_hazard();
         Ok(Self {
             fast_encoder,
             hf_decoder,
+            prefix_cache_hazard,
         })
     }
 }
@@ -97,9 +102,8 @@ impl Tokenizer for FastTokenizer {
         Ok(())
     }
 
-    // Read from the HF side, which loads the same tokenizer.json.
     fn prefix_cache_hazard(&self) -> Option<String> {
-        self.hf_decoder.prefix_cache_hazard()
+        self.prefix_cache_hazard.clone()
     }
 
     // `fast_encoder` and `hf_decoder` are loaded from the same tokenizer.json,
