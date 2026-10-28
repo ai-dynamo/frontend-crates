@@ -3,6 +3,29 @@
 
 use serde::Deserialize;
 
+/// Keep oracle disagreements visible even when the test runner hides successful output.
+pub fn report_comparison(suite: &str, checked: usize, differences: &[String], blocking: bool) {
+    let level = if blocking { "ERROR" } else { "WARNING" };
+    for difference in differences {
+        eprintln!("{level}: {suite}: {difference}");
+    }
+    if let Some(directory) = std::env::var_os("CONFORMANCE_CAPTURE_REPORT_DIR") {
+        let directory = std::path::PathBuf::from(directory);
+        std::fs::create_dir_all(&directory).expect("create capture verification report directory");
+        let report = serde_json::json!({
+            "schema": 1, "suite": suite, "checked": checked,
+            "blocking": blocking, "differences": differences,
+            "revision": std::env::var("GITHUB_SHA").ok(),
+            "candidate_tree": std::env::var("CONFORMANCE_CANDIDATE_TREE").ok(),
+        });
+        let output = directory.join(format!("{suite}.json"));
+        let temporary = directory.join(format!("{suite}.{}.tmp", std::process::id()));
+        std::fs::write(&temporary, serde_json::to_vec_pretty(&report).unwrap())
+            .expect("write capture verification report");
+        std::fs::rename(temporary, output).expect("install capture verification report");
+    }
+}
+
 #[derive(Debug)]
 pub enum CaptureFailure {
     Unavailable(String),

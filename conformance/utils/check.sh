@@ -16,10 +16,10 @@ CARGO="${CARGO:-cargo}"
 if [ "${1:-}" = status ]; then
   shift
   if [ "$DRY" = 1 ]; then
-    echo "[dry-run] node $status_root/conformance/viewer/qualification.js status --require-green $*"
+    echo "[dry-run] node $status_root/conformance/viewer/qualification.js status $*"
     exit 0
   fi
-  exec node "$status_root/conformance/viewer/qualification.js" status --root "$status_root" --require-green "$@"
+  exec node "$status_root/conformance/viewer/qualification.js" status --root "$status_root" "$@"
 fi
 run_dynamo() {
   if [ "$DRY" = 1 ]; then
@@ -47,7 +47,9 @@ run_ci() {  # the conformance-data CI gate; fail-fast, also runnable locally
   case "$shard" in all|fixtures|core|qualification|native-browser|browser|viewer|first-matrix) ;; *) echo "invalid CONFORMANCE_CI_SHARD: $shard" >&2; return 2 ;; esac
   set -e
   if [ "$shard" = all ] || [ "$shard" = core ]; then
-    python3 "$TOOLS/viewer_catalog.py" --check
+    local history_args=()
+    if [ "${CONFORMANCE_INCLUDE_HISTORY:-false}" = true ]; then history_args+=(--include-history); fi
+    python3 "$TOOLS/viewer_catalog.py" --check "${history_args[@]}"
   fi
   # Keep every test file covered. Selenium modules run on separate CI runners so
   # Chrome does not contend with CPU-heavy shared-model Node checks under xdist.

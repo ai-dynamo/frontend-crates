@@ -25,7 +25,7 @@ import unified_history
 import migrate_capture_sources
 from test_unified_history import _store
 from fixture_test_support import publish, publisher_binary
-from fixture_test_support import prepare_isolated_publication
+from fixture_test_support import prepare_isolated_publication, copy_publication_modules
 
 
 def pin_history(root):
@@ -117,7 +117,8 @@ def test_release_gaps_modes_and_backfills_do_not_change_a_newer_family_capture()
 
 
 @pytest.fixture
-def split_evidence(tmp_path):
+def split_evidence(tmp_path, monkeypatch):
+    monkeypatch.delenv("CONFORMANCE_PUBLICATION_CONTEXT", raising=False)
     sparse = _store(tmp_path / "sparse")
     history = tmp_path / "history"
     migrate_capture_sources.convert_snapshots(sparse, history / sources.STORE, tmp_path)
@@ -440,11 +441,7 @@ def test_current_source_status_needs_no_history_or_publisher_and_cleans_view(tmp
 def test_current_source_status_rejects_stale_catalog_and_cleans_view(split_evidence, tmp_path):
     root, _history, _capture, _path = split_evidence
     original_root = Path(sources.__file__).resolve().parents[3]
-    scripts = Path(sources.__file__).parent
-    for name in ("capture_sources.py", "ci_publication_cache.py", "verify_publication_transport.py", "yaml_fast.py", "unified_archives.py", "execution_manifests.py", "impls.py", "viewer_codec.py", "parser_families.yaml"):
-        target = root / "conformance/utils/src" / name
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(scripts / name, target)
+    copy_publication_modules(root)
     (root / "conformance/viewer-catalog.json").write_bytes(sources.encoded({"capture_generation": {"current": []}}))
     temporary = tmp_path / "status-temporary"
     temporary.mkdir()

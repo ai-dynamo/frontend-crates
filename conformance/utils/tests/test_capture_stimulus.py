@@ -244,7 +244,7 @@ def test_current_release_rejects_surviving_invalid_records(tmp_path, invalid):
     base = "dynamo_v2-0.6.0"
     _write(tmp_path, "inputs", current)
     _write(tmp_path, base, record)
-    with pytest.raises(ValueError, match="did not succeed|stimulus mismatch"):
+    with pytest.raises(ValueError, match="did not succeed|invalid error output|stimulus mismatch"):
         capture_stimulus.validate_current_capture(tmp_path / base, [tmp_path / "inputs"])
 
 
@@ -273,14 +273,19 @@ def test_current_capture_does_not_fold_removed_source_snapshot_patches(tmp_path,
     ]
 
 
-def test_recorded_error_for_resolved_divergence_is_rejected(tmp_path):
+@pytest.mark.parametrize("extra", [{}, {"assembled": []}, {"chunks": []}, {"error": ""}, {"error": "structural tag: missing verifier"}])
+def test_recorded_parser_error_is_observation_not_golden_approval(tmp_path, extra):
     current = _input("same") | {"scenario": "malformed_json_then_two_valid_calls"}
     error = "native push: EOF while parsing a string at line 1 column 16"
     record = {"capture_input": capture_stimulus.capture_input(current), "error": error}
+    record.update(extra)
     _write(tmp_path, "inputs", current, "UNIFIED.5-4")
     _write(tmp_path, "capture", record, "UNIFIED.5-4")
-    with pytest.raises(ValueError, match="unexpected error"):
-        capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
+    if extra:
+        with pytest.raises(ValueError, match="invalid error output"):
+            capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"])
+    else:
+        assert capture_stimulus.validate_current_capture(tmp_path / "capture", [tmp_path / "inputs"]) == 1
 
 
 @pytest.mark.parametrize("expected,actual", [(True, 1), (1, True), (0.0, -0.0), (-0.0, 0.0)])

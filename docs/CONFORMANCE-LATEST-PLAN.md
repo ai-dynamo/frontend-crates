@@ -14,7 +14,7 @@ The viewer has seven runtime owners plus the existing DOM/detail/coloring bounda
 
 ## Publication contract
 
-Default output is one self-contained `index.html`, with latest data and downloads embedded. Full history is a user option to add sidecar JSON beside byte-identical HTML. HTTP viewing automatically discovers a matching history publication. Missing sidecars leave latest usable; local files make zero external reads. Historical results load on demand, preserve request/provenance bindings, and cannot overwrite a newer selection.
+Default output is one self-contained `index.html`, with latest data and downloads embedded. Generation, cache admission, and independent qualification share sealed parser/source identity, release-tag context, and latest/history mode; later tag creation cannot change a running publication's producer classification. Full history is a user option to add sidecar JSON beside byte-identical HTML. HTTP viewing automatically discovers a matching history publication. Missing sidecars leave latest usable; local files make zero external reads. Historical results load on demand, preserve request/provenance bindings, and cannot overwrite a newer selection.
 
 Reuse complete publications before staging, then validated family fragments before conversion. Latest generation and parser tests must pass with history reads and network sockets denied, and generation must preserve capture YAML. Warm conversion reuse, independent family invalidation, historical-only isolation, and corrupt-cache recovery remain required.
 

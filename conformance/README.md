@@ -11,7 +11,7 @@ Parser conformance fixtures, fixture-based Rust tests, and the browser-loaded Un
 
 `TOOLCALLING.*` is deprecated. New cases, capture jobs, and normal reports use `UNIFIED.*`. Retain the archived evidence; deprecated v1 conformance executors and tests are retired; do not migrate or relabel their observations, read them during normal Unified regeneration, or derive Unified GOLDEN expectations from recorded parser output.
 
-Contributors edit parsers and authored inputs/GOLDEN, run latest parser tests, and generate the latest report. Recorded observations and historical backfills are maintained by repository administrators; they are not a contributor prerequisite. Generated publication JSON stays outside Git.
+Contributors edit parsers and independently authored inputs/GOLDEN, recapture affected latest Dynamo v2 snapshots, run tests, and generate the latest report. Capture changes use normal PR review. CI executes current native Dynamo v2 cases: differences from GOLDEN produce warnings; differences from recorded YAML fail. Generated publication JSON stays outside Git.
 
 ## Latest captures and retained history
 
@@ -40,7 +40,7 @@ Reuse a valid complete-publication cache before source staging. On a miss, resto
 
 Current native tests discover versionless latest files through the shared resolver and materialize only those complete snapshots plus authored inputs. They do not sort or open historical captures and require no network access. Use `extract_fixtures.py --include-history` for retained historical fixtures, or supply `--history-source` for an alternate dataset.
 
-Ordinary CI generates latest only. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
+Ordinary CI generates latest only. Generation freezes parser/source identity, release-tag context, and latest/history mode in a sealed publication context; qualification restores that context and verifies source bytes rather than recomputing the release decision from newly fetched tags. The explicit `include-history` workflow input enables historical publication and qualification. Qualification covers cold and warm cache equivalence, independent family conversion, corrupt-entry recovery, and Chromium release selection, comparison, reload, and downloads. Latest generation must leave capture YAML unchanged and work when historical access and network sockets are denied.
 
 ## Case applicability
 
@@ -84,7 +84,7 @@ toolcalling/fixtures-batch-on-stream-v1/<family>/ # legacy, non-Unified batch-on
 reasoning/fixtures-v1/inputs/<family>/            # v1 reasoning cases
 ```
 
-**Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Administrators maintain recorded observations and historical request bindings through the capture workflow; no historical backfill is required in this PR. `dynamo_v1` and `dynamo_v2` remain separate implementations.
+**Latest captures are complete current snapshots.** Each family/implementation/mode YAML contains its current records independently of historical parents. Latest records use `member` to download their supplied complete snapshot. Their record metadata retains the original producer, and the selection header identifies the selected release. Historical records retain their original sparse source members; a newer selection label does not imply a new execution. Authored inputs and GOLDEN are contributor files. Contributors maintain recorded observations through the capture workflow and preserve historical request bindings. Routine latest changes require no historical backfill. `dynamo_v1` and `dynamo_v2` remain separate implementations.
 
 Latest execution metadata and receipt bodies are inline in complete snapshots. Historical conversion follows the unchanged sparse records and caches resolved JSON fragments. Original YAML and evidence are never rewritten by generation or tests. Source catalog and published transport hashes continue to validate the bytes used by a publication.
 
@@ -173,14 +173,14 @@ The commands below cover Unified v2. Preserve archived evidence and historical r
 
 ### Edit parsers and authored inputs/GOLDEN
 
-Reproduce the behavior in a parser test, edit the shared parser owner, and run the latest tests below. Author expected GOLDEN independently of observed parser output. An output mismatch is a parser regression or a deliberate authored expectation change; historical recapture is not required to submit the parser fix.
+Reproduce the behavior in a parser test, edit the shared parser owner, and run the latest tests below. Author expected GOLDEN independently of observed parser output. A GOLDEN mismatch remains visible as a correctness warning. The fresh observation must match recorded latest YAML; historical recapture is not required to submit the parser fix.
 
 ```bash
 cargo test --locked -p dynamo-parsers-v2
 cargo test --locked -p dynamo-conformance-fixtures-v2
 ```
 
-Use versionless YAML in `fixtures-unified-v2/families/<family>/` for recorded latest expectations. Contributors do not maintain historical versions. Request an administrator capture update when the latest recorded observation needs to advance. Generate and inspect the latest report after the final edit using [Generate the latest or history report](#generate-the-latest-or-history-report).
+Use versionless YAML in `fixtures-unified-v2/families/<family>/` for recorded latest expectations. Recapture affected latest observations from the changed parser code without rewriting historical versions. CI verifies those observations; it does not update checked-in YAML automatically. Generate and inspect the latest report after the final edit using [Generate the latest or history report](#generate-the-latest-or-history-report).
 
 ### Structural-tag request checks
 
@@ -192,11 +192,11 @@ Install the pinned CPU verifier with `python3 -m pip install --no-deps -r confor
 
 The `rust` CI job materializes the local current YAML and authored inputs, then runs current parser code against those expectations. It does not retrieve history or build the report publisher first:
 
-- `unified_parity`: ordered events, request initialization, stream/batch parity, reuse, and family applicability.
+- `unified_parity`: advisory GOLDEN comparisons plus strict request initialization, chunk/stream invariance, reuse, and family applicability.
 - `unified_render`: native rendering and current capture agreement.
 - `unified_schema_roundtrip`: authored schema and request round trips.
 
-Parser mismatches require a parser fix or a deliberate authored expectation change. Contributors request an administrator update when recorded latest observations need to advance. Rust and fixture checks start alongside latest publication. `pages-build` uploads the candidate site before qualification, and independent qualification jobs compare latest YAML with resolved JSON and exercise the current matrix. Historical receipt bindings and older-release comparisons run only when the workflow input `include-history` is enabled. Authored-only checks load family inputs without expanding history; publication and tests preserve recorded YAML.
+GOLDEN mismatches are warnings, including reproducible parser errors. Fresh output must match recorded latest YAML in assembled events, per-chunk deltas, and error outcomes; missing cases and request-binding or provenance failures block CI. Ordinary parser unit tests, schema checks, and stream invariants remain strict. The required Rust job retains executed-comparison JSON and publishes warning counts even when successful test output is hidden. Rust and fixture checks start alongside latest publication. `pages-build` uploads the candidate site before qualification, and independent qualification jobs compare latest YAML with resolved JSON and exercise the current matrix. Historical receipt bindings and older-release comparisons run only when the workflow input `include-history` is enabled. Authored-only checks load family inputs without expanding history; publication and tests preserve recorded YAML.
 
 The `conformance-core` job checks the Unified catalog and publication-dependent utility tests. Smoke tests run in two independent browser groups; interactive viewer tests and popup regressions run in three groups. First-visible-matrix and strict native publication/browser acceptance run separately. Each browser group owns its fixtures and Chrome processes. Every conformance job has a 20-minute limit. The stable `conformance-table` status requires Rust, publication, fixture checks, all qualification shards, and all browser groups before deployment.
 
@@ -206,13 +206,13 @@ Native pack compression uses the publication worker pool with deterministic pack
 
 ### 5. Add or change an authored test case
 
-Author family-native inputs and independent GOLDEN in `utils/src/gen_unified_golden.py`, reusing `schema_cases.native_call_wire` and stable IDs from `unified_taxonomy.py`. Preserve existing identities, describe grammar exclusions in `utils/lib/parsers/UNIFIED_CASES.md`, and update the coverage taxonomy. Generate authored YAML, run latest parser tests, then generate and inspect the latest report. Historical backfills are administrator work and are not required for contributor changes. A changed authored request does not rewrite the frozen request bound to an older observation.
+Author family-native inputs and independent GOLDEN in `utils/src/gen_unified_golden.py`, reusing `schema_cases.native_call_wire` and stable IDs from `unified_taxonomy.py`. Preserve existing identities, describe grammar exclusions in `utils/lib/parsers/UNIFIED_CASES.md`, and update the coverage taxonomy. Generate authored YAML, run latest parser tests, then generate and inspect the latest report. Historical backfills are separate work and are not required for routine latest changes. A changed authored request does not rewrite the frozen request bound to an older observation.
 
 ### Classify a Unified parser difference
 
 Authored GOLDEN remains the correctness oracle. Capture differences retain exact observations and provenance; they do not authorize changing GOLDEN to match the parser.
 
-A separately triaged, pre-existing v2 defect may be retained while a scoped change is reviewed, following the exact-output policy in `unified-known-divergences.yaml`. Use a distinct `baseline_defect` note starting with `FIXME (v2 defect):` and `baseline_defect_actual` containing the exact observed result as JSON. The gate checks both that observation and the pinned capture, reports the defect separately, and rejects changed or stale entries. The report keeps the differing outputs and FIXME diagnostic visible without the intended-difference badge. This records a deferred parser fix; it does not change a golden, bless the defective result, or permit a new regression.
+Known v2 defects remain documented in `unified-known-divergences.yaml`; GOLDEN comparisons are advisory regardless of whether a defect is listed. Use a distinct `baseline_defect` note starting with `FIXME (v2 defect):` and `baseline_defect_actual` containing the exact observed result as JSON. The report retains the defect annotation. CI strictly checks fresh output against the pinned capture; it warns when that output differs from GOLDEN. The report keeps the differing outputs and FIXME diagnostic visible without the intended-difference badge. This records a deferred parser fix; it does not change a golden, bless the defective result, or permit a new regression.
 
 ### Unified applicability and preservation
 

@@ -124,7 +124,21 @@ jobs:
 
       # nextest runs test binaries concurrently; doctests run separately below.
       - name: Run tests
+        env:
+          CONFORMANCE_CAPTURE_REPORT_DIR: ${{ runner.temp }}/capture-verification
         run: cargo nextest run --workspace --all-targets --locked
+
+      - name: Publish capture verification and GOLDEN warnings
+        if: ${{ always() }}
+        run: python3 conformance/utils/src/report_capture_verification.py --directory "$RUNNER_TEMP/capture-verification" --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Retain executed capture comparisons
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: capture-verification
+          path: ${{ runner.temp }}/capture-verification/*.json
+          if-no-files-found: error
 
       - name: Verify grammar checks under optimized Python
         run: PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
@@ -162,7 +176,7 @@ jobs:
     env:
       CONFORMANCE_PUBLISHER: ${{ github.workspace }}/target/release/conformance-publish
       # Bump when the publisher command or output policy changes.
-      CONFORMANCE_PUBLICATION_POLICY: native-latest-single-html-v3
+      CONFORMANCE_PUBLICATION_POLICY: native-history-context-v4
       CONFORMANCE_INCLUDE_HISTORY: ${{ github.event.inputs.include-history || 'false' }}
     steps:
       - name: Checkout publication sources
@@ -173,18 +187,25 @@ jobs:
       - name: Configure publication output
         run: |
           printf 'CONFORMANCE_PUBLISHED_SITE=%s/pages\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          printf 'CONFORMANCE_PUBLICATION_CONTEXT=%s/conformance/publication-context.json\n' "$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           printf 'CONFORMANCE_CONVERSION_CACHE=%s/conversion-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Install publication identity dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/publication-venv"
+          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
+          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
       - name: Identify exact publication inputs and reader
         id: identity
         run: |
           history_args=()
           if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          echo "key=$(python3 conformance/utils/src/ci_publication_cache.py key --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")" >> "$GITHUB_OUTPUT"
+          identity=$("$CONFORMANCE_PYTHON" conformance/utils/src/ci_publication_cache.py identify --context "$CONFORMANCE_PUBLICATION_CONTEXT" --publication-policy "$CONFORMANCE_PUBLICATION_POLICY" "${history_args[@]}")
+          printf 'key=%s\n' "$identity" >> "$GITHUB_OUTPUT"
       - name: Restore exact publication cache
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ${{ runner.temp }}/native-publication
-          key: ${{ runner.os }}-native-publication-v3-${{ github.ref }}-${{ steps.identity.outputs.key }}
+          key: ${{ runner.os }}-native-publication-v4-${{ github.ref }}-${{ steps.identity.outputs.key }}
       - name: Admit cached publication or fall back to cold generation
         id: cache
         run: |
@@ -223,12 +244,13 @@ jobs:
       - name: Generate source catalog inputs
         if: ${{ steps.cache.outputs.usable != 'true' }}
         run: |
-          python3 -m venv "$RUNNER_TEMP/publication-venv"
-          "$RUNNER_TEMP/publication-venv/bin/pip" install --quiet -r conformance/utils/publication-requirements.in
-          echo "CONFORMANCE_PYTHON=$RUNNER_TEMP/publication-venv/bin/python3" >> "$GITHUB_ENV"
           history_args=()
           if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then history_args+=(--include-history); fi
-          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
+          "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py
+          \cp -f conformance/viewer-catalog.json conformance/viewer-latest-catalog.json
+          if [ "$CONFORMANCE_INCLUDE_HISTORY" = true ]; then
+            "$RUNNER_TEMP/publication-venv/bin/python3" conformance/utils/src/viewer_catalog.py "${history_args[@]}"
+          fi
       - name: Publish native site
         if: ${{ steps.cache.outputs.usable != 'true' }}
         run: |
@@ -254,7 +276,7 @@ jobs:
           if [[ "$CONFORMANCE_PUBLISHER" != "$RUNNER_TEMP/native-publication/conformance-publish" ]]; then
             \cp -f "$CONFORMANCE_PUBLISHER" "$RUNNER_TEMP/native-publication/conformance-publish"
           fi
-          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json
+          tar -cf "$RUNNER_TEMP/native-publication/source-catalogs.tar" conformance/viewer-catalog.json conformance/viewer-unified-catalog.json conformance/viewer-latest-catalog.json conformance/publication-context.json
       - name: Seal reusable publication payload
         run: python3 conformance/utils/src/ci_publication_cache.py seal --directory "$RUNNER_TEMP/native-publication" --identity '${{ steps.identity.outputs.key }}'
       - name: Retain candidate inputs for independent qualification
@@ -327,6 +349,9 @@ jobs:
 
       - name: Restore candidate publication for qualification
         uses: ./.github/actions/conformance-publication
+
+      - name: Install bundler for publication equivalence checks
+        uses: ./.github/actions/conformance-viewer-build
 
       - name: Conformance core shard (catalog + lint + invariants)
         run: |

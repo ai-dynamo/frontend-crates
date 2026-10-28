@@ -172,7 +172,7 @@ export function foldNullVariants(tab, metadata) {
           const cell = row.cells[column.sub];
           if (!cell) continue;
           Object.assign(cell, { kind: 'cell', status: 'na', applicable: false, red_on_diff: false,
-            cmp: Object.fromEntries(tab.candidates.map(({key}) => [key, {sig: 0, na: 1, err: 0, leak: 0}])) });
+            cmp: Object.fromEntries(Object.keys(cell.cmp || {}).map(key => [key, {sig: 0, na: 1, err: 0, leak: 0}])) });
           cell.tooltip = {...cell.tooltip, description, na_note: 'This grammar does not coerce untyped fractional text through an integer/string schema.'};
         }
         const children = referenced.map((column) => row.cells[column.sub]).filter((cell) => cell && ['cell', 'missing'].includes(cell.kind) && (inapplicable || isApplicableCell(cell)));

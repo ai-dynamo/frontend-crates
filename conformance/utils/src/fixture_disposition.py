@@ -8,11 +8,12 @@ import re
 import tarfile
 from pathlib import Path, PurePosixPath
 
+from capture_versions import DYNAMO_VERSION_RE
+
 import unified_taxonomy
 from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
-DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
 
 
