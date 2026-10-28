@@ -7,7 +7,7 @@ UNIFIED_CASES.md). Scenario meaning is shared; family-specific marker values and
 the DSML missing-invoke-close contract are explicit exceptions. Native inputs use
 each family's grammar, while request modes and payloads keep the same contract.
 
-The family registry supplies the seven golden-spec paths under the gitignored
+The family registry supplies the golden-spec paths under the gitignored
 conformance/unified/golden_spec/ tree. Explicit scenario scopes and the redundant
 DeepSeek V4.1 prefill rows determine applicability. This spec is the harness INPUT (unified_render.rs reads it to
 compute the live Dynamo column; unified_schema_roundtrip.rs validates it); it is
@@ -16,6 +16,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
+from functools import cache
 import json
 from copy import deepcopy
 from functools import lru_cache
@@ -43,13 +44,16 @@ from numeric_cases import (
     unified_numeric_expected,
     numeric_schema,
 )
+from impls import VLLM_UNIFIED_PIPELINES
+from schema_cases import native_call_wire
 from null_cases import MIXED_CASE_FAMILIES, NULL_VARIANTS, MIXED_LABELS_SCHEMA, MIXED_LABELS_ARGS, null_description
+from unified_taxonomy import V1_SPLIT_SCENARIOS
 
 # Families and their golden-spec filenames come from the ONE declaration in
 # parser_families.yaml (`unified:`), so adding a family to this generator is adding a
 # row there rather than editing three lists that had to agree.
 _MANIFEST = yaml.safe_load(markers.parser_families_path().read_text())["unified"]
-FAMILIES = sorted(_MANIFEST)
+FAMILIES = sorted(f for f, row in _MANIFEST.items() if row.get("scenario_profile") != "native")
 TEMPLATE_FAMILIES = [f for f in FAMILIES if not _MANIFEST[f].get("grammar")]
 SHARED_FAMILIES = [f for f in FAMILIES if f != "deepseek_v41"]
 FAM_FILE = {f: r["golden_spec"] for f, r in _MANIFEST.items()}
@@ -74,15 +78,25 @@ DOTTED_NAME_FAMILIES = frozenset({
     "nemotron_v3",
     "qwen3",
 })
-# Families whose unified parser accepts GUIDED tool output, declared in the manifest.
+_REGISTRY_UNIFIED_FAMILIES = {row.get("registry", family) for family, row in _MANIFEST.items()}
+MUSE_FAMILIES = {"muse_glimmer", "muse_spark"}
+# The v1 archive has native family captures for every registered parser family
+# except the Muse families, which were introduced only in the v2 parser registry. Keep
+# those captures alongside native Unified-v2 histories so the viewer can compare
+# the generations on the same family-specific stimulus.
+V1_SPLIT_FAMILIES = frozenset(
+    set(yaml.safe_load(markers.parser_families_path().read_text())["families"])
+    - MUSE_FAMILIES
+) | {"gpt_oss"}
+# Families in the shared scenario profile whose parser accepts guided output.
+# The family-native profile declares its guided scenarios separately.
 # Every family with a native unified parser does today. The gate is kept rather than
 # deleted because "can this family honour a guided request mode" is a real per-family
 # fact a new family can answer no to; what it must NOT be read as is "does this family
 # have a reasoning marker pair", which is how muse_glimmer sat opted out while having a
 # perfectly good reasoning channel routed by recipient. Prefilled channels are a
 # separate axis and are supported everywhere, so they are not gated.
-GUIDED_FAMILIES = {f for f, r in _MANIFEST.items() if r.get("guided_tool_output", True)}
-MUSE_FAMILIES = {"muse_glimmer", "muse_spark"}
+GUIDED_FAMILIES = {f for f in FAMILIES if _MANIFEST[f].get("guided_tool_output", _MANIFEST[f].get("native", False))}
 
 GRAMMAR_NOTE = {
     "beam": "Beam channel grammar (NOT Harmony): reasoning `<|start|>assistant<|channel|>analysis<|message|>...<|end|>`, visible `<|start|>assistant<|channel|>final<|message|>...<|return|>`, tool `<|start|>assistant to=NAME<|channel|>analysis <|constrain|>xml<|message|><rfl:parameter name=\"KEY\">\\nVALUE\\n</rfl:parameter><|call|>` (a call dispatches only once `<|call|>`/`<|end|>` arrives; analysis closes only on `<|end|>`; one LF is stripped at each value edge).",
@@ -101,9 +115,25 @@ GRAMMAR_NOTE = {
 
 # --- grammar renderers: one semantic segment -> that family's raw text --------
 
+def _harmony_channel(fam, channel, text, end):
+    # Native GPT-OSS requests include the assistant header; retained Harmony
+    # aliases begin at the prompt-prefilled channel boundary.
+    prefix = "<|start|>assistant" if fam == "gpt_oss" else ""
+    return f"{prefix}<|channel|>{channel}<|message|>{text}{end}"
+
+
 def r_reason(fam, text):
-    if fam == "gpt_oss":
-        return f"<|start|>assistant<|channel|>analysis<|message|>{text}<|end|>"
+    grammar = _MANIFEST.get(fam, {}).get("reasoning_grammar")
+    if grammar == "none":
+        raise ValueError(f"{fam} has no reasoning grammar")
+    if grammar == "inkling":
+        return f"<|message_model|><|content_thinking|>{text}<|end_message|>"
+    if grammar == "mistral":
+        return f"[THINK]{text}[/THINK]"
+    if grammar == "minimax_m3":
+        return f"<mm:think>{text}</mm:think>"
+    if grammar == "harmony" or fam == "gpt_oss":
+        return _harmony_channel(fam, "analysis", text, "<|end|>")
     if fam == "beam":
         return f"<|start|>assistant<|channel|>analysis<|message|>{text}<|end|>"
     if fam == "kimi_k3":
@@ -123,8 +153,10 @@ def r_text(fam, text):
     `<|eot|>`: `<|eot|>` ends the TURN, which would make any following segment
     unreachable. The marker-pair grammars leave visible text bare.
     """
-    if fam == "gpt_oss":
-        return f"<|start|>assistant<|channel|>final<|message|>{text}<|return|>"
+    if _MANIFEST.get(fam, {}).get("reasoning_grammar") == "inkling":
+        return f"<|message_model|><|content_text|>{text}<|end_message|>"
+    if fam == "gpt_oss" or _MANIFEST.get(fam, {}).get("reasoning_grammar") == "harmony":
+        return _harmony_channel(fam, "final", text, "<|return|>")
     if fam in MUSE_FAMILIES:
         return f"<|start|>assistant to=user<|message|>{text}<|eom|>"
     if fam == "beam":
@@ -301,7 +333,8 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
             key, "number" if isinstance(value, NumericLiteral) else types[type(value)], raw[key]
         ) for key, value in arguments.items())
         return k3_tools(k3_call(name, idx + 1, params))
-    assert fam == "kimi_k2", fam
+    if fam != "kimi_k2":
+        return native_call_wire(fam, name, arguments, raw, r_tool_arguments)
     args = (_json_with_numeric_literals(arguments) if _contains_numeric_literal(arguments)
             else json.dumps(arguments, ensure_ascii=False))
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
@@ -667,18 +700,18 @@ V_MUSE_SPARK = {
     "note": "vLLM Muse Spark capture coverage is pending — unverified annotation",
 }
 
-# Families `capture_vllm_unified.py` has no entry for. The Unified tab falls back to
-# the AUTHORED `expect.vllm` whenever a capture is missing, so for these families it
-# falls back on EVERY case and draws the same plain `expected: MATCH` a captured
-# family earns. Carrying the caveat only on the cases that happened to need a
-# per-family verdict published the other 22 as if an engine had produced them.
-VLLM_UNCAPTURABLE = {
+# Registry-derived caveats distinguish an authored fallback from captured evidence.
+_VLLM_CAVEATS = {
     "muse_glimmer": V_MUSE,
     "gpt_oss": "No GPT-OSS vLLM Unified capture is configured; Dynamo Unified is captured separately.",
     "muse_spark": V_MUSE_SPARK,
     # The model builder's reference is the grammar's source of truth, not a peer engine,
     # and no released vLLM or SGLang parser reads this channel grammar.
     "beam": D("UNSUPPORTED", "no released vLLM or SGLang Beam parser; no peer capture exists, so no peer verdict is claimed"),
+}
+VLLM_UNCAPTURABLE = {
+    family: _VLLM_CAVEATS.get(family, {"verdict": "match", "note": f"No vLLM capture path for {family}; unverified annotation."})
+    for family in _MANIFEST if family not in VLLM_UNIFIED_PIPELINES
 }
 
 
@@ -2866,7 +2899,7 @@ EDGE.append((
 
 # Keep historical scenario IDs and raw spellings; applicability is shared.
 # GLM/Qwen consult schemas; explicitly typed grammars test value preservation.
-for scenario, description, parameters, raw_arguments, arguments in (
+_REFERENCE_CASES = (
     (
         "unused_reference_graph_parameter_types",
         'An unused compact reference graph precedes ordinary integer, boolean, and string parameters; its traversal must not consume their coercion budget.',
@@ -2956,7 +2989,8 @@ for scenario, description, parameters, raw_arguments, arguments in (
         {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
         {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
     ),
-):
+)
+for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CASES:
     EDGE.append((
         scenario, description + " GLM and Qwen exercise schema-driven typing; explicitly typed grammars preserve native values with unresolved refs in the request, without proving reference resolution.", ["I7"],
         [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
@@ -3800,6 +3834,132 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
         {"finish_reason": "stop"}, _inputs, _tools,
     ))
 
+_TEMPLATE_FAMILIES = tuple(FAMILIES)
+_TEMPLATE_EDGE_NAMES = frozenset(spec[0] for spec in EDGE)
+FAMILIES = sorted(_MANIFEST)
+
+
+def _registered_native_cases(fam):
+    cases = {}
+    for name, desc, policy, segments, _vllm, _dynamo in CLEAN:
+        if _MANIFEST[fam].get("reasoning_grammar") == "none" and any(segment[0] == "reason" for segment in segments):
+            continue
+        cases[f"UNIFIED.{name}.{fam}"] = {
+            "description": desc, "policy": policy,
+            "input": render_input(fam, segments), "golden": golden_of(segments),
+            "expect": {"vllm": D("UNSUPPORTED", "No peer capture recorded."), "dynamo": M},
+            "init": {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+            "finish_reason": "stop",
+        }
+    native = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+    call = r_tool(fam, "get_weather", "city", "Paris", 0)
+    extras = {
+        "empty_args": (r_tool_arguments(fam, "get_weather", {}, 0),
+                       [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
+                       "An offered tool with no required parameters accepts an empty argument object."),
+        "truncated_tool_eof": (call[:call.index("Paris")].rstrip("\n"), [],
+                               "EOF interrupts the first argument value; emits nothing because no completed tool call exists."),
+    }
+    if fam in {"deepseek_v3", "deepseek_v3_1", "hermes", "qwen25", "inkling", "harmony_text", "harmony", "jamba", "mistral", "llama3_json", "phi4", "nemotron_deci"}:
+        malformed = call.replace(json.dumps({"city": "Paris"}, ensure_ascii=False, separators=(",", ":")), '{"city": }')
+        if malformed == call:
+            raise ValueError(f"{fam}: malformed JSON stimulus did not change")
+        extras["malformed_json_then_two_valid_calls"] = (
+            malformed + r_tool(fam, "get_weather", "city", "Tokyo", 1) + r_tool(fam, "get_weather", "city", "Berlin", 2),
+            [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": city}} for city in ("Tokyo", "Berlin")],
+            "Discard a malformed JSON argument object, then recover the two later calls in order.",
+        )
+    for scenario, (wire, expected, description) in extras.items():
+        cases[f"UNIFIED.{scenario}.{fam}"] = {
+            "description": description, "policy": ["P2"], "input": wire,
+            "golden": expected, "init": native, "finish_reason": "stop",
+            "expect": {"vllm": D("UNSUPPORTED", "No peer capture recorded."), "dynamo": M},
+        }
+    for scenario, label, schema, value, detail in NULL_VARIANTS:
+        cases[f"UNIFIED.{scenario}.{fam}"] = {
+            "description": null_description(label, detail), "policy": ["I7"],
+            "input": r_tool_arguments(fam, "get_weather", {"city": value}, 0),
+            "golden": [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": value}}],
+            "init": native, "finish_reason": "stop", "expect": {"vllm": M, "dynamo": M},
+            "tools": [{"name": "get_weather", "parameters": {"type": "object", "properties": {"city": schema}}}],
+        }
+    for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CASES:
+        cases[f"UNIFIED.{scenario}.{fam}"] = {
+            "description": description, "policy": ["I7"],
+            "input": r_tool_arguments(fam, "capture_payload", arguments, 0, raw_arguments),
+            "golden": [{"kind": "tool_call", "name": "capture_payload", "arguments": arguments}],
+            "tools": [{"name": "capture_payload", "parameters": parameters}],
+            "init": native, "finish_reason": "stop", "expect": {"vllm": M, "dynamo": M},
+        }
+    if _MANIFEST[fam].get("reasoning_grammar") != "none":
+        opener, closer = r_reason(fam, "\0").split("\0")
+        reason = {"kind": "reasoning", "text": "checking"}
+        weather = {"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}
+        text = {"kind": "text", "text": "done"}
+        prefilled = {**native, "starting_state": "Reasoning"}
+        reasoning_cases = {
+            "reason_unterminated": (opener + "checking", [reason], native),
+            "two_adjacent_reason_spans": (r_reason(fam, "check") + r_reason(fam, "ing"), [reason], native),
+            "prefilled_reasoning_with_tool": ("checking" + closer + call, [reason, weather], prefilled),
+            "prefilled_reasoning_then_text": ("checking" + closer + r_text(fam, "done"), [reason, text], prefilled),
+            "prefilled_reasoning_then_text_then_tool": ("checking" + closer + r_text(fam, "done") + call, [reason, text, weather], prefilled),
+            "prefilled_reasoning_redundant_opener": (r_reason(fam, "checking") + r_text(fam, "done"), [reason, text], prefilled),
+            "prefilled_reasoning_truncated": ("checking" + closer + call[:call.index("Paris")], [reason], prefilled),
+            "prefilled_reasoning_with_guided_json": ("checking" + closer + GUIDED_ONE_CALL, [reason, weather], {**prefilled, "tool_output_mode": "GuidedJson"}),
+        }
+        if _MANIFEST[fam].get("reasoning_grammar") == "think":
+            literal = r_reason(fam, "literal")
+            reasoning_cases["prefilled_response_reasoning_markers_literal"] = (
+                literal, [{"kind": "text", "text": literal}], {**native, "starting_state": "Response"})
+        for scenario, (wire, expected, init) in reasoning_cases.items():
+            cases[f"UNIFIED.{scenario}.{fam}"] = {
+                "description": f"{scenario.replace('_', ' ')} in {init['starting_state']} with {init['tool_output_mode']} output; preserve channel boundaries and completed events.",
+                "policy": ["P2"], "input": wire, "golden": expected,
+                "init": init, "finish_reason": "stop", "expect": {"vllm": M, "dynamo": M},
+            }
+        for suffix, before, after in [("", "", ""), ("_with_text", "before", "after")]:
+            literal = r_reason(fam, "literal")
+            wire = r_text(fam, before) if before else ""
+            wire += r_tool(fam, "get_weather", "city", literal, 0)
+            wire += r_text(fam, after) if after else ""
+            events = ([{"kind": "text", "text": before}] if before else [])
+            events += [{"kind": "tool_call", "name": "get_weather", "arguments": {"city": literal}}]
+            events += [{"kind": "text", "text": after}] if after else []
+            cases[f"UNIFIED.reason_markup_in_arg{suffix}.{fam}"] = {
+                "description": "Reasoning delimiters owned by a native string argument remain literal data.",
+                "policy": ["I7"], "input": wire, "golden": events, "init": native,
+                "finish_reason": "stop", "expect": {"vllm": M, "dynamo": M},
+            }
+            wire = (r_text(fam, before) if before else "") + r_reason(fam, call) + (r_text(fam, after) if after else "")
+            events = ([{"kind": "text", "text": before}] if before else []) + [weather] + ([{"kind": "text", "text": after}] if after else [])
+            cases[f"UNIFIED.tool_in_reason{suffix}.{fam}"] = {
+                "description": "A native tool envelope inside reasoning remains structural and emits a tool call; surrounding text keeps its order.",
+                "policy": ["I3"], "input": wire, "golden": events, "init": native,
+                "finish_reason": "stop", "expect": {"vllm": M, "dynamo": M},
+            }
+    cases.update(unified_schema_cases(fam, r_tool_arguments))
+    # These shapes are grammar independent; an old runtime's lack of guided mode
+    # is an unsupported request, not an exclusion from the authored corpus.
+    for edge in EDGE:
+        init = edge[4] or {}
+        mapping = _edge_case_family_policy(edge)
+        if edge[0] not in _TEMPLATE_EDGE_NAMES and not isinstance(mapping, OnlyFamilies) and fam not in mapping:
+            raise KeyError(f"{edge[0]}: no input authored for family {fam!r}")
+        if init.get("tool_output_mode", "Native") == "Native" or isinstance(mapping, OnlyFamilies):
+            continue
+        if not isinstance(mapping, dict) or set(mapping) != set(_TEMPLATE_FAMILIES):
+            continue
+        inputs = {entry[0] for entry in mapping.values()}
+        if len(inputs) != 1:
+            continue
+        copied = list(edge)
+        offset = 5 if len(edge) == 6 else 6
+        copied[offset] = {fam: next(iter(mapping.values()))}
+        cases.update(_build_edge_cases(fam, [tuple(copied)]))
+    for case in cases.values():
+        case["expect"]["vllm"] = _vllm_entry_for_init(case["expect"]["vllm"], fam, case["init"])
+    return cases
+
 
 def _apply_numeric_tool_schemas(cases, family):
     for scenario, label, schema, _raw, _expected in NUMERIC_VARIANTS:
@@ -3870,6 +4030,8 @@ def build_cases(fam):
 
 def _build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
+    if _MANIFEST[fam].get("scenario_profile") == "native":
+        return _registered_native_cases(fam)
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
         inp, state = (_deepseek_v41_input(segs) if fam == "deepseek_v41"
@@ -3929,6 +4091,8 @@ def _preserve_historical_requests(cases, family):
     }
     for old_case in historical.values():
         scenario = old_case["scenario"]
+        if scenario in V1_SPLIT_SCENARIOS:
+            continue
         case = cases_by_scenario.get(scenario)
         if case is None:
             if old_case.get("lifecycle") != "active":
@@ -3982,6 +4146,8 @@ def _preserve_gpt_oss_historical_oracle(cases):
 def _build_edge_cases(fam, specs):
     cases = {}
     for edge_case in specs:
+        if edge_case[0] in RETIRED_SCENARIOS:
+            continue
         if fam == "gpt_oss" and edge_case[0] in HARMONY_INAPPLICABLE_EDGE_CASES:
             continue
         if fam == "deepseek_v41" and edge_case[0] in DEEPSEEK_V41_REDUNDANT_SCENARIOS:
@@ -4007,7 +4173,7 @@ def _build_edge_cases(fam, specs):
         # applies `init` before parsing and panics on the rejection, so the case is
         # skipped rather than recorded as a divergence. Only GUIDED output is gated;
         # a prefilled starting state is honoured by every family.
-        if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES:
+        if (init or {}).get("tool_output_mode", "Native") != "Native" and fam not in GUIDED_FAMILIES and _MANIFEST[fam].get("scenario_profile") != "native":
             continue
 
         # A scenario may DECLARE a grammar- or regression-specific scope with
@@ -4121,7 +4287,7 @@ def _build_edge_cases(fam, specs):
     return cases
 
 
-def scenario_families(scenario):
+def _template_scenario_families(scenario):
     """Return the families for which an authored scenario is applicable.
 
     A plain per-family map means the scenario is part of the full matrix. An
@@ -4137,16 +4303,18 @@ def scenario_families(scenario):
         return frozenset({"gpt_oss"}) if GPT_OSS_PR424_REQUEST_VARIANTS[original] else frozenset()
     if scenario in DOTTED_NAME_SCENARIOS:
         return DOTTED_NAME_FAMILIES
+    if scenario in V1_SPLIT_SCENARIOS:
+        return V1_SPLIT_FAMILIES
     for name, *_rest in CLEAN:
         if name == scenario:
-            return frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
+            return frozenset(_TEMPLATE_FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
     for edge_case in EDGE:
         name = edge_case[0]
         if name != scenario:
             continue
         per_fam = _edge_case_family_policy(edge_case)
         families = (set(per_fam) if isinstance(per_fam, OnlyFamilies)
-                    else set(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES))
+                    else set(_TEMPLATE_FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES))
         if isinstance(per_fam, OnlyFamilies) and "muse_glimmer" in per_fam:
             families.add("muse_spark")
         if name in HARMONY_INAPPLICABLE_EDGE_CASES:
@@ -4162,6 +4330,18 @@ def scenario_families(scenario):
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
 
+@cache
+def _registered_scenarios(family):
+    return frozenset(case_id[len("UNIFIED."):].rsplit(".", 1)[0] for case_id in build_cases(family))
+
+
+def scenario_families(scenario):
+    return _template_scenario_families(scenario) | frozenset(
+        family for family in FAMILIES if family not in _TEMPLATE_FAMILIES
+        and scenario in _registered_scenarios(family)
+    )
+
+
 # --- YAML emitter: `input` as a block literal, everything else as inline JSON
 # (valid YAML, and json.dumps escapes the marker-heavy strings safely). --------
 
@@ -4174,7 +4354,7 @@ def emit_yaml(fam):
         "# spec -- do not edit by hand; edit the spec so every family stays in lockstep.",
         "# GOLDEN is the AUTHORED correctness oracle (what a correct UnifiedParser MUST",
         "# emit), reasoned from UNIFIED_CASES.md -- NOT captured from any implementation.",
-        f"# {fam} grammar: {GRAMMAR_NOTE[unified_grammar_family(fam)]}",
+        f"# {fam} grammar: {GRAMMAR_NOTE.get(unified_grammar_family(fam), 'native grammar from parser_families.yaml and schema_cases.native_call_wire')}",
         "version: 1",
         f"family: {fam}",
         "cases:",
@@ -4194,9 +4374,10 @@ def emit_yaml(fam):
         # content-space from indent-space. `34-7` is authored with a leading space
         # (the bare-header form) and was emitted 110 bytes, reloaded 109: the corpus
         # was measuring a different input than the one authored. `2` is the content
-        # indentation relative to this mapping node, and the trailing `-` keeps the
-        # existing strip-final-newline behaviour.
-        lines.append("    input: |2-")
+        # indentation relative to this mapping node. Chomping follows the authored
+        # newline suffix so truncated payloads can retain their final newline.
+        chomping = "+" if c["input"].endswith("\n\n") else "" if c["input"].endswith("\n") else "-"
+        lines.append(f"    input: |2{chomping}")
         for ln in c["input"].split("\n"):
             lines.append(f"      {ln}")
         lines.append(f"    golden: {json.dumps(c['golden'], ensure_ascii=False)}")

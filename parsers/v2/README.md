@@ -154,24 +154,15 @@ Rules:
 
 ## Fixture Files To Add
 
-For a new streaming parser family, add or update these files:
+New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family in `conformance/utils/src/parser_families.yaml`, author applicable family-native scenarios and independent GOLDEN expectations in `conformance/utils/src/gen_unified_golden.py`, and document their contracts in `conformance/utils/lib/parsers/UNIFIED_CASES.md`. Preserve published IDs and expectations. New IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; existing numeric IDs retain their aliases.
 
-- `parsers/v2/src/tool_calling/<family>.rs` for the parser implementation.
-- `parsers/v2/src/tool_calling/registry.rs` for the family registry entry.
-- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` for per-chunk stream captures.
-- `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` for complete batch text fed through streaming parsers.
-- `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` only when the family or taxonomy cases do not already exist in the v1 batch corpus.
+Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests and generate the latest report; administrators update recorded captures through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
-New legacy tool-calling conformance sub-case IDs use numeric suffixes: `<num>-<num>` or `<letters/num>-<num>`. Do not create new letter-suffix IDs; existing lettered IDs remain historical identifiers.
-Unified IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; numeric Unified forms are historical aliases.
-- `conformance/utils/lib/parsers/TOOLCALLING_STREAMING_V1_CASES.md` when adding a new stream-only case or changing stream case descriptions.
-- `conformance/toolcalling/fixtures-stream-v1/README.md` only if the fixture schema or capture convention changes.
+Retain archive-backed `TOOLCALLING.*` fixtures and their original observations as historical evidence. Their format below is for explicitly requested historical maintenance; normal Unified generation does not read those archives or derive GOLDEN from their results.
 
-Fix legacy v1 parser bugs in `parsers/src/` and the matching v1 fixtures in `conformance/toolcalling/fixtures-batch-v1/`. While both paths coexist, keep v2-only parser behavior in `parsers_v2/`, `fixtures-stream-v1/`, and `fixtures-batch-on-stream-v1/` until v2 replaces v1.
+## Historical Fixture Format
 
-## Fixture Format
-
-v2 fixtures should use explicit implementation names. Do not rely on renderer inference for parser failures.
+Retained non-Unified v2 fixtures use explicit implementation names. Do not rely on renderer inference for parser failures.
 
 ```yaml
 captured_with:
@@ -215,34 +206,35 @@ In order:
 6. Register the family in `create_tool_parser_for_family` in `parsers/v2/src/tool_calling/registry.rs`; override `prefers_tokens()` if the parser is token-native.
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
 8. Add or update fixture files (see "Which Fixture Do I Edit?"). What "complete" means is machine-readable: `conformance/case-taxonomy.yaml` lists every case group and sub-case with requiredness. Run `conformance/utils/check.sh coverage --family <family>` — its FAIL list IS your fixture TODO list; a case your grammar cannot express gets a placeholder entry with an `explanation:` instead of silence.
-9. Capture one case (`conformance/utils/capture.sh dynamo-stream --fixture … --output …`), inspect, fix the parser, then capture all peer behavior (`capture.sh stream` / `capture.sh batch-on-stream`, optionally `--family <family>`).
-10. Verify (`conformance/utils/check.sh`), render the HTML matrix (`conformance/utils/render_table_v2.sh`), and record any intentional divergence (see "How To Record Divergences").
+9. Run the latest parser tests against the authored requests and independent GOLDEN, and fix parser mismatches.
+10. Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), inspect the affected family over HTTP, and explain any deliberate authored contract change. Repository administrators maintain recorded captures and historical backfills.
 
-### Unified parser hard gate
+### Unified parser validation
 
-Unified capture publication follows [the plain-version YAML contract](../../conformance/README.md#unified-storage-contract-plain-versioned-yaml-only). The older tool-calling stream and batch-on-stream tests keep their existing storage; they are outside this migration.
+Contributors edit the shared parser owner and authored inputs/GOLDEN, then run the latest tests:
 
-Unified parser work is complete only when the affected family's selected current Dynamo column has **zero empty cells and zero red cells**.
+```bash
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture
+cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture
+```
 
-1. **Write:** make the parser or fixture change.
-2. **Read:** render `conformance/CONFORMANCE_v2.html` and inspect every affected Unified popup, including its input, initialization, chunks, GOLDEN events, and current Dynamo events.
-3. **Fix:** an empty current cell means capture data is missing. A red current cell means the parser differs from GOLDEN unless the authored oracle is demonstrably wrong.
-4. **Regenerate:** publish the current plain-version YAML and required manifest changes, then rerender from the same worktree.
-5. **Re-read:** inspect the rendered current column and repeat until both counts are zero.
+Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and recorded observations over HTTP. Missing recorded output requires an administrator capture update; it does not require contributors to capture historical versions. A live parser mismatch must be fixed or explained by a deliberate authored contract change. Do not hide it with `reason:`, `unavailable:`, stale HTML, or an unsupported GOLDEN edit.
 
-Do not hide a failure with `reason:`, `unavailable:`, a historical capture, stale HTML, or an unsupported GOLDEN edit. Run the standard gate `conformance/utils/check.sh status --model <family> --tab unified`; it rerenders, reads the same model as the browser, names every empty or red case, and exits nonzero until the selected row is clear. Finish with `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- --nocapture` and `cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture`.
-
-Harmony is only the first example; DS4 and the other streaming families follow the same file layout, fixture schema, capture flow, and validation flow.
+The legacy Harmony example documents retained historical fixtures. Recorded capture updates use the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## Which Fixture Do I Edit?
 
+New family and scenario coverage belongs in the Unified generator, shared registry, and `UNIFIED_CASES.md`; preserve existing authored requests and independent GOLDEN values. Run latest parser tests and generate the latest report. Historical backfills are administrator work.
+
+### Retained historical fixture paths
+
 - `conformance/toolcalling/fixtures-batch-v1/<family>/TOOLCALLING.batch*.yaml` — legacy v1 batch input and the current batch baseline. Do not hand-edit for v2 work; it is also the seed for stream capture.
-- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` — per-chunk streaming behavior (the TC stream tab). Edit/capture here for streaming parser work.
+- `conformance/toolcalling/fixtures-stream-v1/<family>/TOOLCALLING.streamv1.*.yaml` — per-chunk streaming behavior (the TC stream tab). Retain for historical stream regression tests.
 - `conformance/toolcalling/fixtures-batch-on-stream-v1/<family>/TOOLCALLING.batch*.yaml` — each batch sample's full text run through the stream parser (the batch-on-stream tab).
 
-Decision rule for a new model: add the stream cases under `fixtures-stream-v1/`, capture peers, and let the batch-on-stream overlay derive from the v1 batch corpus.
+New models use the Unified workflow above. Do not seed new Unified expectations or observations from these historical archives.
 
-## How To Record Divergences
+## How To Record Historical Divergences
 
 Every cell in the matrix must be backed by exact YAML — the renderer infers nothing:
 
@@ -257,13 +249,10 @@ A divergent peer block with no `reason:` renders `?` (research needed) — never
 
 For a new parser family, done means:
 
-- Rust parser unit tests pass and the Dynamo fixture tests pass.
-- `conformance/utils/check.sh coverage --family <family>` passes: every group/sub-case in `conformance/case-taxonomy.yaml` is covered or carries an explicit n/a `explanation:` (this includes the legacy stream corpus — a family with batch fixtures only FAILS), and the family's `markers:` are declared in `parser_families.yaml`.
-- vLLM Python / SGLang live checks pass, or each failure is explicitly recorded (`error`/`unavailable` with exact text).
-- vLLM Rust captures include the source tag/commit in `captured_with` when available.
-- The HTML matrix is regenerated locally and has no unexplained `?`, no accidental tool-call markup leaks (`↯`), and no red-orphan tokens in the popups (undeclared markers).
-- For a native Unified family, its selected current Dynamo column has zero empty cells and zero red cells in the rendered Unified tab.
-- Case descriptions exist for every new sub-case, and any NEW case group/sub-case is added to `conformance/case-taxonomy.yaml` in the same PR (the coverage lint fails on IDs unknown to the taxonomy).
+- Rust parser unit tests and latest Dynamo fixture tests pass.
+- Applicable Unified scenarios have family-native authored inputs and independent GOLDEN. Grammar exclusions have explicit explanations, and the family's `markers:` are declared in `parser_families.yaml`.
+- The latest report is regenerated locally and affected cases are inspected for tool-call markup leaks, undeclared tokens, and mismatches against GOLDEN. Missing recorded observations are identified for an administrator capture update.
+- Case descriptions exist for every new scenario, and its stable ID is declared in the Unified taxonomy.
 
 ## Commands
 
@@ -279,38 +268,7 @@ Run this fixture-based check for committed YAML:
 cargo test --locked -p dynamo-conformance-fixtures-v2 -- --nocapture
 ```
 
-Capture one Dynamo v2 stream fixture into JSON:
-
-```bash
-conformance/utils/capture.sh dynamo-stream \
-  --fixture conformance/toolcalling/fixtures-stream-v1/inputs/harmony/TOOLCALLING.streamv1.1.yaml \
-  --output /tmp/dynamo_stream.json
-```
-
-Capture all stream behavior and refresh the legacy v1 stream corpus:
-
-```bash
-conformance/utils/capture.sh stream \
-  --vllm-container vllm-localdev \
-  --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.22.0
-```
-
-Capture all batch-on-stream behavior and refresh the legacy v1 batch-on-stream corpus:
-
-```bash
-conformance/utils/capture.sh batch-on-stream \
-  --vllm-container vllm-localdev \
-  --sglang-container sglang-localdev \
-  --vllm-rust-source ~/dynamo/vllm-0.22.0 \
-  --capture-dynamo-rust-json /tmp/dynamo_batch_on_stream.json
-```
-
-Generate the HTML matrix after code or fixture changes:
-
-```bash
-conformance/utils/render_table_v2.sh
-```
+Generate and serve the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) after parser, authored input, or metadata changes. Capture updates and historical backfills use the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 Run the table and marker regression tests:
 
@@ -320,7 +278,7 @@ python3 -m pytest conformance/utils/tests/test_stream_on_batch.py
 
 ## Reasoning Migration TODO
 
-Reasoning fixtures are still v1 today. They use `expected.dynamo`, `expected.vllm`, and `expected.sglang`, and the current HTML renderer infers some Python parser exceptions from v1 n/a stubs with no `model_text`.
+Reasoning fixtures are still v1 today. They use `expected.dynamo`, `expected.vllm`, and `expected.sglang`, and the shared JavaScript model preserves inference of some Python parser exceptions from v1 n/a stubs with no `model_text`.
 
 TODO for reasoning v2 migration: move reasoning fixtures to the v2 explicit implementation format before treating the table as the source of truth. The migrated YAML must record parser failures directly, for example:
 

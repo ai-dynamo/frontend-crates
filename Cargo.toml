@@ -8,6 +8,7 @@ members = [
     "renderer",
     "tokenizers",
     "conformance",
+    "conformance/publisher",
     "multimodal",
     "parsers/v2",
     "parsers/v2-py",
@@ -40,7 +41,7 @@ chrono = { version = "0.4", default-features = false, features = [
 clap = "4"
 derive_builder = "0.20"
 dynamo-parsers = { path = "parsers/v1", version = "10.2.2" }
-dynamo-protocols = { path = "protocols", version = "8.4.1" }
+dynamo-protocols = { path = "protocols", version = "8.4.2" }
 dynamo-decisions = { path = "decisions", version = "0.1.1" }
 dynamo-renderer = { path = "renderer", version = "8.2.1" }
 dynamo-tokenizers = { path = "tokenizers", version = "3.1.3" }

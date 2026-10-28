@@ -5,7 +5,6 @@
 Jobs are family-scoped. Unsupported detector registrations and requests retain
 explicit provenance instead of being silently skipped or mapped to another family.
 """
-import inspect
 import json
 import sys
 import traceback
@@ -16,32 +15,18 @@ import yaml
 from capture_stimulus import capture_peer_results, validate_family_scoped_cases
 from unified_tools import unified_tools
 
-from sglang.srt.entrypoints.openai.protocol import Function, Tool
-from sglang.srt.function_call.function_call_parser import FunctionCallParser
-from sglang.srt.parser.reasoning_parser import ReasoningParser
+from peer_modules import resolve_peer_module, sglang_reasoning_kwargs, parser_error_detail, peer_call
+
+protocol = resolve_peer_module("sglang", "protocol")
+Function, Tool = protocol.Function, protocol.Tool
+FunctionCallParser = resolve_peer_module("sglang", "tools").FunctionCallParser
+ReasoningParser = resolve_peer_module("sglang", "reasoning").ReasoningParser
 
 # family -> (reasoning model_type, tool_call_parser). Kimi K2.5 uses <think>; SGLang's
 # `kimi_k2` reasoning detector matches the golden corpus.
 from impls import SGLANG_UNIFIED_PIPELINES as FAMILY_PARSERS
 
 TOOL_SCHEMAS = unified_tools()
-
-
-# Here the reasoning parser's normal text always feeds a tool parser, which is exactly
-# what `tool_call_parser_active` declares; SGLang's own serving_chat passes it the same
-# way. Channel-framed formats (muse) need it: without it the reasoning detector unwraps
-# the `to=user` channel, and the tool detector then reads that leading prose as "no
-# header is coming", never resyncs on the later tool channel, and drops the call.
-#
-# The kwarg arrived WITH muse (PR #34262), so released SGLang — including the 0.5.14 that
-# captured the committed shard — has no such parameter and raises `TypeError` on it.
-# Probe the signature the same way SGLang forwards the flag to its own detectors, or a
-# recapture on a muse-less SGLang would error out every case of every family.
-_ACTIVE_KWARG = (
-    {"tool_call_parser_active": True}
-    if "tool_call_parser_active" in inspect.signature(ReasoningParser.__init__).parameters
-    else {}
-)
 
 
 def _tool_stream_delta(item):
@@ -93,8 +78,8 @@ def _stream_chunks(family, chunks, *, terminal_step=False, tools=TOOL_SCHEMAS, r
     rname, tname = FAMILY_PARSERS[family]
     # A native/default request has no template forcing reasoning. Serving passes
     # False explicitly rather than using family detector constructor defaults.
-    rp = ReasoningParser(model_type=rname, stream_reasoning=True, force_reasoning=False, **_ACTIVE_KWARG)
-    fp = FunctionCallParser(
+    rp = peer_call(ReasoningParser, model_type=rname, **sglang_reasoning_kwargs(ReasoningParser, streaming=True))
+    fp = peer_call(FunctionCallParser,
         tools=[Tool(type="function", function=Function(**tool)) for tool in tools],
         tool_call_parser=tname,
     )
@@ -103,15 +88,15 @@ def _stream_chunks(family, chunks, *, terminal_step=False, tools=TOOL_SCHEMAS, r
     for index, ch in enumerate(schedule):
         final = index == len(schedule) - 1
         # The authored terminal row is a serving boundary, not model text.
-        rd, nd = ("", "") if terminal_step and final else rp.parse_stream_chunk(ch)
+        rd, nd = ("", "") if terminal_step and final else peer_call(rp.parse_stream_chunk, ch)
         if final and hasattr(rp, "parse_stream_end"):
-            end_rd, end_nd = rp.parse_stream_end()
+            end_rd, end_nd = peer_call(rp.parse_stream_end)
             rd = (rd or "") + (end_rd or "")
             nd = (nd or "") + (end_nd or "")
         deltas = [{"kind": "reasoning", "text": rd}] if rd else []
-        tn, calls = fp.parse_stream_chunk(nd) if nd else ("", [])
+        tn, calls = peer_call(fp.parse_stream_chunk, nd) if nd else ("", [])
         if final and hasattr(fp, "parse_stream_end"):
-            end_tn, end_calls = fp.parse_stream_end()
+            end_tn, end_calls = peer_call(fp.parse_stream_end)
             tn = (tn or "") + (end_tn or "")
             calls = list(calls or []) + list(end_calls or [])
         if tn:
@@ -135,7 +120,7 @@ def _capture_cases(cases):
             entry["chunks"] = _stream_chunks(fam, case.get("chunks") or [], terminal_step=case.get("terminal_step", False), tools=case.get("tools", TOOL_SCHEMAS), rows=partial_rows)
         except Exception as exc:  # noqa: BLE001 — record per-case, keep the batch going
             entry["partial_chunks"] = partial_rows
-            entry["error"] = f"{type(exc).__name__}: {exc}"
+            entry["error"] = parser_error_detail(exc)
             entry["error_traceback"] = traceback.format_exc()
         results[case["id"]] = entry
     return results

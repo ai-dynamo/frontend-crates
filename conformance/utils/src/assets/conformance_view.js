@@ -1,11 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-// Conformance page VIEW (DIS-2434): build the tabs + table + compare bar + popups
-// from the inlined JSON model (`<script id="conformance-model">`). This runs at
-// parse time, BEFORE conformance.js, and produces the exact DOM (classes/attrs)
-// that conformance.js queries — so the interactivity script wires against it
-// unmodified. The template emits only the page skeleton + the model blob; this
-// view is the sole renderer of the tabs bar and panels.
+// Maintained matrix view: mount the catalog shell, then update active tab models.
 (function () {
   // --- Theme (light / dark) --------------------------------------------------
   // The page was light while every popup was dark, so the two surfaces disagreed. One
@@ -53,7 +48,7 @@
   // Every plain-text value from the model is escaped before insertion. Fields
   // whose name ends in `_html` (label_html, model_label_html, legend_html,
   // toolbar_desc_html, parser.html, candidate.label_html) are already-safe HTML
-  // produced by Python and are inserted verbatim.
+  // produced by the shared tab model and are inserted verbatim.
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;')
@@ -81,10 +76,9 @@
     if (Object.prototype.toString.call(v) === '[object Array]') {
       return v.map(function (x) { return String(x); }).join('\n');
     }
-    if (typeof v === 'object') { return JSON.stringify(v); }
+    if (typeof v === 'object') { return window.__formatConformanceValue(v, 0); }
     return String(v);
   }
-  // Escape text and turn embedded URLs into anchors (mirrors common.linkify_text_html).
   function linkify(v) {
     var text = refText(v);
     var out = '';
@@ -169,7 +163,10 @@
   const tooltipIds = new WeakMap();
   function registerTooltip(td, model, fixtureHref, stateKey, cellModel) {
     if (fixtureHref) td.dataset.ttipFixture = fixtureHref;
-    if (stateKey) td.dataset.ttipKey = stateKey;
+    if (stateKey) {
+      td.dataset.ttipKey = stateKey;
+      td.dataset.popupKey = stateKey;
+    }
     const id = tooltipIds.get(model) || String(++_ttipSeq);
     tooltipIds.set(model, id);
     td.setAttribute('data-ttip-id', id);
@@ -231,16 +228,7 @@
     }
     var ctl = panel.querySelector('.cmpctl');
     if (!ctl) { return; }
-    var box = ctl.querySelector('input.cmp-on');
-    if (!box) { return; }
-    var ev;
-    try {
-      ev = new Event('change', { bubbles: true });
-    } catch (e) {
-      ev = document.createEvent('Event');
-      ev.initEvent('change', true, false);
-    }
-    box.dispatchEvent(ev);
+    window.__conformanceController?.refreshPanel(panel);
   }
 
   // --- Output block rendering (mirrors _format_output_block_html) ------------
@@ -251,11 +239,16 @@
         + (b.inherited_from ? '\n<span class="expl">Inherited observation from ' + escapeHtml(b.inherited_from) + '</span>' : '')
       : '';
     if (b.unavailable != null) {
-      const code = b.unavailable_code || b.unavailable.code;
-      const reason = code === 'source_unavailable' ? 'Producer source unavailable.'
-        : ['scenario_not_applicable', 'duplicate_scenario'].includes(code)
-          ? String(b.unavailable) : 'Result not yet captured';
-      return '<span class="expl">' + escapeHtml(reason) + '</span>' + producerNote;
+      const unavailable = b.unavailable;
+      const detail = unavailable && typeof unavailable === 'object' ? unavailable.detail : null;
+      const code = b.unavailable_code || (unavailable && typeof unavailable === 'object' ? unavailable.code : null);
+      const reason = code === 'source_unavailable' ? 'Parser source'
+        : code === 'unsupported_request_mode' ? 'Request mode not supported'
+          : code === 'unsupported_family' ? 'Parser not supported'
+            : typeof detail === 'string' && detail ? detail
+              : unavailable && typeof unavailable === 'object' ? String(code || 'Output not yet captured')
+                : String(unavailable);
+      return '<span class="expl">' + (code === 'missing_capture' ? '' : 'unavailable: ') + escapeHtml(reason) + '</span>' + producerNote;
     }
     if (b.exception != null) {
       // The parser ran and threw; surface the exception verbatim (e.g. the named
@@ -263,21 +256,22 @@
       return 'exception: ' + escapeHtml(String(b.exception)) + producerNote;
     }
     if (b.error != null) {
-      var e = (typeof b.error === 'string') ? b.error : JSON.stringify(b.error);
+      var e = (typeof b.error === 'string') ? b.error : window.__formatConformanceValue(b.error, 0);
       return 'error: ' + escapeHtml(e) + producerNote;
     }
     if (b.batch_final != null) {
       const fields = b.batch_final;
       return '<span class="fldl">reasoning_text=</span>' + colorize(fields.reasoning_text, family, ctx)
         + '\n<span class="fldl">normal_text=</span>' + colorize(fields.normal_text, family, ctx)
-        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(fields.calls), ctx)
-        + '\n\n<span class="expl">Order/chunk not applicable for batch. Final assembly is compared to ordered GOLDEN; lost interleaving is a mismatch.</span>'
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(fields.calls, 0), ctx)
+        + '\n\n<span class="expl">Batch output is compared with ordered GOLDEN.</span>'
         + (b.verdict && b.verdict !== 'MATCH' ? '\n<span class="expl">diverges: ' + escapeHtml(b.verdict) + '</span>' : '')
         + producerNote;
     }
-    // Unified tab: an ordered event stream (reasoning | text | tool_call).
+    // Message boundaries must survive both assembled and per-chunk rendering.
     if (b.events != null) {
       var evlines = b.events.map(function (ev) {
+        if (ev.kind === 'message_start' || ev.kind === 'message_end') return messageBoundaryHtml(ev);
         if (ev.kind === 'reasoning') {
           return '<span class="fldl">reasoning=\'</span>' + colorizeUnifiedLeak(ev.text || '', family, ctx) + '<span class="fldl">\'</span>';
         }
@@ -288,7 +282,7 @@
           // Colorize the name + args like the streaming deltas do (word hues shared with
           // the input), instead of plain-escaping — so the assembled row matches.
           return '<span class="fldl">tool_call=</span>' + colorizeWords(ev.name || '', ctx)
-            + '(' + colorizeWords(typeof ev.arguments === 'string' ? ev.arguments : JSON.stringify(ev.arguments || {}), ctx) + ')';
+            + '(' + colorizeWords(typeof ev.arguments === 'string' ? ev.arguments : window.__formatConformanceValue(ev.arguments || {}, 0), ctx) + ')';
         }
         return '';
       });
@@ -334,7 +328,7 @@
       var calls = b.calls || [];
       out = '<span class="fldl">normal_text=\'</span>' + colorize(nt, family, ctx)
         + '<span class="fldl">\'</span>'
-        + '\n<span class="fldl">calls=</span>' + colorizeWords(JSON.stringify(calls), ctx);
+        + '\n<span class="fldl">calls=</span>' + colorizeWords(window.__formatConformanceValue(calls, 0), ctx);
     }
     if (b.explanation) {
       // Blank line before the prose: `explanation:` ran straight on from the `calls=`
@@ -371,6 +365,11 @@
   // `name='get_weather' name='get_time' args='{"location":"NYC"}{"timezone":"EST"}'`.
   // Fragments are only meant to join WITHIN one index; `index` is exactly the field a
   // client uses to demultiplex concurrent calls in the OpenAI stream.
+  function messageBoundaryHtml(event) {
+    return '<span class="fldl">' + escapeHtml(event.kind)
+      + (event.kind === 'message_start' ? ' phase=' + escapeHtml(String(event.phase)) : '') + '</span>';
+  }
+
   function renderDeltas(deltas, ctx) {
     if (!deltas || !deltas.length) { return '<span class="parser-base">—</span>'; }
     var order = [];
@@ -378,6 +377,7 @@
     var unified = [];  // Unified tab: reasoning / text / tool_call event deltas (one ordered stream)
     deltas.forEach(function (d) {
       if (d == null) { return; }
+      if (d.kind === 'message_start' || d.kind === 'message_end') { unified.push(messageBoundaryHtml(d)); return; }
       if (d.kind === 'reasoning') { unified.push("<span class=\"fldl\">reasoning='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
       if (d.kind === 'text') { unified.push("<span class=\"fldl\">text='</span>" + colorize(String(d.text || ''), null, ctx) + "<span class=\"fldl\">'</span>"); return; }
       if (d.kind === 'tool_call') {
@@ -459,11 +459,7 @@
         cands.forEach(function (c, ci) {
           const expected = ch.expected || {};
           const deltas = Object.prototype.hasOwnProperty.call(expected, c.key) ? expected[c.key] : expected[implKeyOf(c.key)];
-          const output = c.parse_mode === 'batch'
-            ? (c.block && c.block.unavailable == null && c.block.exception == null && c.block.error == null
-              && (c.block.batch_final != null || c.block.normal_text != null || c.block.events != null)
-              ? '<span class="parser-base">Order/chunk not applicable for batch</span>' : '')
-            : renderDeltas(deltas || [], ctx);
+          const output = c.parse_mode === 'batch' ? '' : renderDeltas(deltas || [], ctx);
           row += '<td data-cand="' + escapeAttr(c.key) + '" data-cand-order="' + ci + '">'
             + output + '</td>';
         });
@@ -554,7 +550,7 @@
       // Distinguish "the case did not set this" from "the case set it to the
       // variant that happens to be named None".
       var shown = unset ? '<unset>' : (v === null ? 'null'
-        : (objectValue ? JSON.stringify(v, null, 2) : String(v)));
+        : (objectValue ? (window.__formatConformanceValue ? window.__formatConformanceValue(v) : JSON.stringify(v, null, 2)) : String(v)));
       var why = spec.gloss
         ? spec.gloss(unset ? null : v, init)
         : (CONFIG_GLOSS[spec.key] || {})[shown];
@@ -587,7 +583,8 @@
   function popupCaseHeadingHtml(model) {
     const col = model.popupCase;
     if (!col || col.display_number == null) { return escapeHtml(model.head || ''); }
-    return '<span title="' + escapeAttr(model.head || '') + '">' + escapeHtml(col.label)
+    const label = escapeHtml((col.case_id || col.label).replace(/^UNIFIED\./, ''));
+    return '<span title="' + escapeAttr(model.head || '') + '">' + label
       + ' (<span class="popup-case-reference">' + compactCaseLabelHtml(col) + '</span>)</span>'
       + (model.family ? ' — ' + escapeHtml(model.family) : '');
   }
@@ -604,7 +601,7 @@
         ? '<div class="schema-variant-label">' + escapeHtml(associations) + '</div>'
         : '';
       return label + '<pre class="case-schema-json">'
-        + escapeHtml(JSON.stringify(variant.tools || [], null, 2)) + '</pre>';
+        + escapeHtml(window.__formatConformanceValue(variant.tools || [], 2)) + '</pre>';
     }).join('');
     return '<details class="case-schema"><summary class="case-schema-toggle">'
       + '<span aria-hidden="true">{ }</span> Schema</summary>'
@@ -692,6 +689,7 @@
   // impl matches. Bucket A = reference (radio checked, own compare box locked-on);
   // bucket A or B = compare-with checked; C = off.
   function compareBarHtml(tab) {
+    if (tab.kind === 'unified') return '';
     var groups = [['Dynamo', 'dynamo'], ['vLLM', 'vllm'], ['SGLang', 'sglang']];
     var html = '<div class="cmpctl" role="group" aria-label="Pick one Reference parser'
       + ' (radio) and any number of Compare-with parsers (checkbox)">';
@@ -764,7 +762,7 @@
     // "Reasoning family" (matches _subcase_group_headers_html / _case_group_headers_html).
     // `no_parser_col` drops it entirely (the Unified tab — parser architecture is
     // per-engine, not a per-family column).
-    var h = fixedColumnHeader('model', 'Model');
+    var h = fixedColumnHeader('model', tab.kind === 'unified' ? 'Model family' : 'Model');
     if (!tab.no_parser_col) {
       var parserLabel = tab.parser_col_label
         || (tab.kind === 'reasoning' ? 'Reasoning family' : 'Tool calling family');
@@ -874,7 +872,8 @@
     // inline in the normal tooltip text color (not the loud section blue).
     var h = '<div class="ttip-head">' + popupCaseHeadingHtml(m)
       + schemaDisclosureHtml(m.popupCase)
-      + (m.desc ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
+      + (m.desc
+        ? ' <span class="ttip-head-desc">' + codeSpans(escapeHtml(m.desc)) + '</span>' : '')
       + '</div>';
     h += buildConfigHtml(m.init);
     var cands = m.cands || [];
@@ -965,10 +964,12 @@
         : escapeHtml(label);
       var prefix = tab.case_prefix || '';
       var fullId = c.case_id || (label.indexOf(prefix) === 0 ? label : prefix + label);
+      var hoverHint = 'Click to show ' + label;
       // The rich grammar popup replaces the old native `title` tooltip (which could
       // only carry the one-line description, and rendered alongside the new popup).
       h += '<th class="case-sub ' + escapeAttr(c.band) + (startsGroup ? ' case-group-start' : '') + '" data-col-hide-group="'
-        + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId) + '">'
+        + escapeAttr(c.group_key) + '"><a href="' + href + '" aria-label="' + escapeAttr(fullId)
+        + '" data-hover-hint="' + escapeAttr(hoverHint) + '">'
         + '<span class="case-label-full">' + escapeHtml(label) + '</span> '
         + '<span class="case-label-short' + (c.display_number != null ? ' case-label-reference' : '')
         + '" aria-hidden="true">' + shortLabel + '</span>'
@@ -1016,6 +1017,9 @@
     }
     // kind 'cell' or 'missing': a real (comparable) cell.
     td.className = ('cell ' + (cell.band || '') + groupClass).trim();
+    td.dataset.caseId = cell.case_id || '';
+    td.dataset.sub = cell.sub || '';
+    td.dataset.fixture = cell.fixture_href || '';
     td.setAttribute('data-col-hide-group', cell.col_group || '');
     // data-family drives ONLY the reference-aware "not implemented for family X" note
     // (the PARSER_NI path). Emit it only on pages that carry a parser_ni map (the v2
@@ -1086,6 +1090,7 @@
     var tr = document.createElement('tr');
     var modelTd = document.createElement('td');
     modelTd.className = 'model';
+    modelTd.dataset.popupKey = `model:${row.family}`;
     modelTd.setAttribute('data-col-hide-group', 'model');
     modelTd.innerHTML = row.model_label_html || '';
     tr.appendChild(modelTd);
@@ -1095,6 +1100,7 @@
     if (!tab.no_parser_col) {
       if (row.parser && row.parser.html) {
         var ptd = parseTdHtml(row.parser.html);
+        if (ptd) ptd.dataset.popupKey = `parser:${row.family}`;
         tr.appendChild(ptd || emptyParserTd());
       } else {
         tr.appendChild(emptyParserTd());
@@ -1163,9 +1169,9 @@
   }
 
   // --- Static per-panel sections (legends, stats, glossary) ------------------
-  const segmentLabels = { pass: 'Matches GOLDEN', documented: 'Documented difference',
+  const segmentLabels = { pass: 'Matches golden', documented: 'Documented difference',
     diverge: 'Disagreement', leak: 'Markup leak', error: 'Parser error', expected: 'Expected error',
-    unsupported: 'Not applicable or unsupported', missing: 'No captured result', blocked: 'Historical source unavailable',
+    unsupported: 'Not applicable or unsupported', missing: 'Output not yet captured', blocked: 'Source unavailable',
     uncompared: 'GOLDEN unavailable' };
   window.__conformanceSegmentLabels = segmentLabels;
 
@@ -1175,10 +1181,7 @@
     const selected = new Set(panel._comparisonSelection ? panel._comparisonSelection.keys : []);
     const tab = window.__CONFORMANCE_PAGE.tabs.find(item => item.id === panel.id);
     const captures = tab.candidates.filter(item => selected.has(item.key));
-    const formats = new Set(captures.map(item => item.parse_mode === 'batch' ? 'batch' : 'events'));
-    panel.querySelector('[data-dynamo-parsers]').hidden = !captures.some(item => item.impl.startsWith('dynamo'));
-    panel.querySelector('[data-batch-timing]').hidden = !captures.some(item => item.parse_mode === 'batch' || item.stream === false);
-    panel.querySelector('[data-output-formats]').hidden = formats.size < 2;
+    panel.querySelector('[data-dynamo-v1]').hidden = !captures.some(item => item.identity?.startsWith('dynamo_v1@') || item.identity?.startsWith('dynamo_v1_jail@'));
     const table = panel.querySelector(document.body.classList.contains('transpose-mode')
       ? 'table[data-transpose-table]' : 'table[data-parity-table]:not([data-transpose-table])');
     const present = new Set();
@@ -1199,29 +1202,12 @@
   };
 
   function captureLegendHtml() {
-    return '<div class="legend capture-legend"><p><strong>Legend:</strong> Each rounded box has one equal-width segment per active capture, in slot order. Outputs are compared with GOLDEN, including tool-call order and reasoning/content/tool interleaving.</p><ul></ul>'
-      + '<p>Click a case cell or heading to open its outputs and status details. '
-      + '<span data-dynamo-parsers hidden>Dynamo v1 is the batch parser; Dynamo v2 details identify native UnifiedParser or split capture paths.</span> '
-      + '<span data-batch-timing hidden>Order/chunk not applicable for batch.</span></p>'
-      + '<p data-output-formats hidden>Output formats: batch <code>calls=[...]</code> is the final list of calls; streaming <code>tool_call=...</code> is one call event. '
-      + 'Both are compared as ordered events with the same call names and arguments. Lost reasoning/text/tool-call interleaving remains a mismatch.</p></div>';
+    return '<div class="legend capture-legend"><p><strong>Legend:</strong> One segment is an output capture from the parser when compared with golden output</p><ul></ul>'
+      + '<p data-dynamo-v1 hidden>Dynamo v1: batch + jail-buffer.</p></div>';
   }
 
-  // Copied verbatim from conformance_table.html.j2 so conformance.js finds the
-  // same data-overview-count spans it writes tallies into.
   function summaryLegendHtml() {
-    // Prefer the page-supplied summary legend (each generator emits its own so the v1
-    // "match Base" wording + its stats line survive); fall back to the v2 text.
-    if (_summaryLegendHtml) { return _summaryLegendHtml; }
-    return '<p class="legend summary-only">'
-      + '<span class="summary-key ok" aria-hidden="true"></span>green(<span data-overview-count="ok">0</span>)'
-      + ' = selected implementation output is clean · '
-      + '<span class="summary-key problem" aria-hidden="true"></span>red(<span data-overview-count="problem">0</span>)'
-      + ' = leaks parser markup, has an expected error, or the engine parser failed to parse'
-      + ' (<span style="font-family:ui-monospace,monospace">✗</span>) · '
-      + '<span class="summary-key na" aria-hidden="true"></span>gray(<span data-overview-count="na">0</span>)'
-      + ' = not applicable, unavailable, missing fixture, or a family the Dynamo v2 stream parser'
-      + ' doesn\'t implement.</p>';
+    return _summaryLegendHtml || '';
   }
   function detailsLegendHtml(tab, page) {
     if (page.tabs.length === 1 && tab.id === 'tab-unified') { return captureLegendHtml(); }
@@ -1248,6 +1234,7 @@
   function glossaryHtml(tab) {
     var sid = tab.case_section_id || tab.mode || '';
     var prefix = tab.case_prefix || '';
+    const columns = new Map((tab.columns || []).map(column => [column.label, column]));
     var h = '<div class="details-only"><h2 id="case-descriptions-' + escapeAttr(sid) + '">'
       + 'Case descriptions</h2><p>Full case definitions: <a href="'
       + escapeAttr(tab.case_docs_href || '') + '">' + escapeHtml(tab.case_docs_label || '')
@@ -1255,7 +1242,9 @@
     (tab.glossary || []).forEach(function (group) {
       h += '<tr class="category"><td colspan="2">' + escapeHtml(group.label) + '</td></tr>';
       (group.rows || []).forEach(function (pair) {
-        h += '<tr><td class="sub">' + escapeHtml(prefix + pair[0]) + '</td>'
+        const column = columns.get(pair[0]);
+        const reference = column?.display_number != null ? ' (' + compactCaseLabelHtml(column) + ')' : '';
+        h += '<tr><td class="sub">' + escapeHtml(column?.case_id || prefix + pair[0]) + reference + '</td>'
           + '<td class="gloss-desc">' + escapeHtml(pair[1]) + '</td></tr>';
       });
     });
@@ -1277,6 +1266,7 @@
       section.insertAdjacentHTML('beforeend', compareBarHtml(tab));
     }
     section.appendChild(buildTable(tab));
+    section.insertAdjacentHTML('beforeend', detailsLegendHtml(tab, page));
     // toolbar-desc (stream tabs carry a parser/input explainer).
     if (tab.toolbar_desc_html) {
       section.insertAdjacentHTML('beforeend', '<div class="toolbar-desc">' + tab.toolbar_desc_html + '</div>');
@@ -1284,10 +1274,24 @@
     if (multiTab || tab.id !== 'tab-unified') {
       section.insertAdjacentHTML('beforeend', summaryLegendHtml());
     }
-    section.insertAdjacentHTML('beforeend', detailsLegendHtml(tab, page));
     section.insertAdjacentHTML('beforeend', statsHtml(tab));
     if (tab.glossary && tab.glossary.length) {
       section.insertAdjacentHTML('beforeend', glossaryHtml(tab));
+    }
+    if (tab.id === 'tab-unified') {
+      section.insertAdjacentHTML('beforeend', '<div class="generation-instructions details-only">'
+        + '<h2>Generate this HTML and JSON</h2>'
+        + '<p>From the repository root, build and run the native publisher:</p>'
+        + '<pre><code>python3 conformance/utils/src/viewer_catalog.py\n'
+        + 'npm ci --prefix conformance/viewer --ignore-scripts\n'
+        + 'cargo build --locked --release -p conformance-publisher\n'
+        + 'target/release/conformance-publish --root . --output ../conformance-site --revision "$(git rev-parse HEAD)"</code></pre>'
+        + '<p>The output directory contains <code>index.html</code>, browser assets, a runtime catalog, recipe indexes, '
+        + 'and shared compressed payload packs. Serve the whole directory over HTTP:</p>'
+        + '<pre><code>python3 -m http.server 8000 --directory ../conformance-site</code></pre>'
+        + '<p>Open <code>http://localhost:8000/?tab=tab-unified</code>. '
+        + '<code>conformance/viewer-publication.json</code> records when the site was generated, its source revision, and the publication command. '
+        + 'A checkout builds the view in your browser; its generation record dates the catalog rather than the page.</p></div>');
     }
     // NOTE: tab.details_note_html exists in the model but the current template
     // does not render it into the DOM, so we omit it too (byte-parity with server).
@@ -1320,86 +1324,84 @@
     return tmp.firstChild;
   }
 
-  // --- Schema-2 hydration (mirror of model.py hydrate_page) -------------------
-  // The blob is COMPACTED (model.py _compact_page): repeated long strings live once
-  // in page.strings (slots hold int indexes), per-cell tooltip-candidate meta lives
-  // once per tab in tab.cand_meta, fixture_hrefs keep only their suffix under
-  // tab.fixture_href_base, and the standard "<case_id> — <family>" head is dropped.
-  // Hydrating once right after JSON.parse restores the schema-1 shape in memory, so
-  // every builder below (and conformance.js) is untouched by the compaction.
-  // KEEP THE SLOT LIST IN SYNC with model.py _iter_intern_slots.
-  function hydratePage(page) {
-    var strings = page.strings || [];
-    function S(container, key) {
-      if (typeof container[key] === 'number') { container[key] = strings[container[key]]; }
+  // Models arrive from the shared engine; no embedded-model hydration is needed.
+  function prepare(tab) {
+    const columns = new Map((tab.columns || []).map(column => [column.sub, column]));
+    for (const row of tab.rows || []) for (const [sub, cell] of Object.entries(row.cells || {})) {
+      if (cell.tooltip) {
+        cell.tooltip.popupCase = columns.get(sub);
+        cell.tooltip.family = cell.family;
+      }
     }
-    (page.tabs || []).forEach(function (tab) {
-      var meta = tab.cand_meta || {};
-      var base = tab.fixture_href_base || '';
-      const columnsBySub = new Map((tab.columns || []).map(col => [col.sub, col]));
-      (tab.rows || []).forEach(function (row) {
-        var cells = row.cells || {};
-        Object.keys(cells).forEach(function (sub) {
-          var cell = cells[sub];
-          if (base && cell.fixture_href) { cell.fixture_href = base + cell.fixture_href; }
-          (cell.facts || []).forEach(function (f) { S(f, 'reason'); });
-          var tip = cell.tooltip;
-          if (!tip) { return; }
-          tip.popupCase = columnsBySub.get(sub);
-          tip.family = cell.family;
-          if (typeof cell.duplicate_of === 'number') { cell.duplicate_of = strings[cell.duplicate_of]; }
-          S(tip, 'description'); S(tip, 'na_note'); S(tip, 'leak_note');
-          if (typeof tip.duplicate_of === 'number') { tip.duplicate_of = strings[tip.duplicate_of]; }
-          if (tip.input) { S(tip.input, 'text'); }
-          (tip.reasons || []).forEach(function (r) { S(r, 'label'); S(r, 'reason'); });
-          (tip.dynamo_notes || []).forEach(function (pair) { S(pair, 0); S(pair, 1); });
-          var blocks = (tip.candidates || []).map(function (c) { return c.block; });
-          if (tip.baseline) { blocks.push(tip.baseline.block); }
-          blocks.forEach(function (b) { if (b) { S(b, 'explanation'); S(b, 'unavailable'); S(b, 'exception'); } });
-          (tip.candidates || []).forEach(function (c) {
-            var fields = meta[c.key] || {};
-            for (var f in fields) {
-              if (!(f in c)) { c[f] = fields[f]; }
-            }
-          });
-          if (!('head' in tip) && cell.case_id && cell.family) {
-            tip.head = cell.case_id + ' — ' + cell.family;
-          }
-        });
-      });
+    return tab;
+  }
+  function disposePanel(panel, retainedIds = new Set()) {
+    panel.querySelectorAll('[data-ttip-id]').forEach(cell => {
+      const id = cell.getAttribute('data-ttip-id');
+      if (!retainedIds.has(id)) delete _ttipModels[id];
     });
-    return page;
   }
-
-  // --- Entry point -----------------------------------------------------------
-  try {
-    var modelEl = document.getElementById('conformance-model');
-    if (!modelEl) { return; }  // no model blob; nothing to build.
-    var page = hydratePage(JSON.parse(modelEl.textContent));
-    if (!page || !page.tabs || !page.tabs.length) { return; }
-    window.__CONFORMANCE_PAGE = page;
-
-    _usesFamily = !!(page.parser_ni && Object.keys(page.parser_ni).length);
-    _familyMarkers = page.family_markers || {};
-    _summaryLegendHtml = (page.meta && page.meta.summary_legend_html) || null;
-
-    var multiTab = page.tabs.length > 1;
-    var newNodes = [];
-    newNodes.push(buildTabsBar(page));
-    page.tabs.forEach(function (tab) { newNodes.push(buildPanel(tab, page, multiTab)); });
-
-    // Replace the server-rendered tabs bar + panels in place with model-built
-    // ones. Insert the new nodes ahead of the first existing tabs/panel (or the
-    // model script if the server rendered neither), then drop the old ones.
-    var oldTabs = document.querySelector('.tabs');
-    var oldPanels = Array.prototype.slice.call(document.querySelectorAll('.tab-panel'));
-    var anchor = oldTabs || oldPanels[0] || modelEl;
-    var parent = anchor ? anchor.parentNode : document.body;
-    newNodes.forEach(function (n) { parent.insertBefore(n, anchor); });
-    if (oldTabs && oldTabs.parentNode) { oldTabs.parentNode.removeChild(oldTabs); }
-    oldPanels.forEach(function (p) { if (p.parentNode) { p.parentNode.removeChild(p); } });
-  } catch (err) {
-    // On any failure, leave the server-rendered DOM intact — never blank the page.
-    console.error('conformance_view: failed to build DOM from model', err);
-  }
+  window.ConformanceView = {
+    updateGeneration(root, metadata) {
+      const revision = root.querySelector('.generated');
+      if (!revision) return;
+      const generatedRevision = metadata.generated_revision || metadata.revision;
+      const link = document.createElement('a');
+      link.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + generatedRevision;
+      const sha = document.createElement('code'); sha.textContent = generatedRevision.slice(0, 12);
+      link.appendChild(sha);
+      const command = document.createElement('code');
+      command.textContent = metadata.command + ' (output: ' + metadata.output + ')';
+      const identity = metadata.candidate_tree ? ' from working tree ' + metadata.candidate_tree.slice(0, 12) + ' based on commit ' : ' on commit ';
+      const generatedLabel = metadata.source_checkout ? 'Catalog generated on ' : 'Generated on ';
+      revision.replaceChildren(generatedLabel + metadata.generated_on + identity, link);
+      if (generatedRevision !== metadata.revision) {
+        const sourceLink = document.createElement('a');
+        sourceLink.href = 'https://github.com/ai-dynamo/frontend-crates/commit/' + metadata.revision;
+        const sourceSha = document.createElement('code'); sourceSha.textContent = metadata.revision.slice(0, 12);
+        sourceLink.appendChild(sourceSha);
+        revision.append(' (source links use commit ', sourceLink, ')');
+      }
+      let commandDetails = root.querySelector('.generated-command');
+      if (!commandDetails) {
+        commandDetails = document.createElement('p');
+        commandDetails.className = 'generated-command details-only';
+        root.querySelector('#tab-unified .generation-instructions')?.appendChild(commandDetails);
+      }
+      if (commandDetails) commandDetails.replaceChildren('Publication command: ', command);
+    },
+    initialize(page, root) {
+      _usesFamily = !!Object.keys(page.parser_ni || {}).length;
+      _familyMarkers = page.family_markers || {};
+      _summaryLegendHtml = page.meta?.summary_legend_html || null;
+      const heading = document.createElement('h1');
+      heading.textContent = page.meta.title;
+      document.title = page.meta.title;
+      const header = [heading];
+      const revision = document.createElement('p');
+      revision.className = 'generated';
+      revision.textContent = 'Live checkout view, built in your browser from the current catalog. No matching generation record is available. Detailed shows how to generate a dated HTML/JSON publication.';
+      header.push(revision);
+      root.replaceChildren(...header, buildTabsBar(page), ...page.tabs.map(tab => buildPanel(prepare(tab), page, true)));
+    },
+    prepareUpdate(panel, tab, page) {
+      const next = buildPanel(prepare(tab), page, true);
+      // Preparing the same models reuses IDs already registered by the replacement.
+      // Retiring the old DOM must not delete those replacement-owned entries.
+      const retainedIds = new Set([...next.querySelectorAll('[data-ttip-id]')].map(cell => cell.getAttribute('data-ttip-id')));
+      return () => {
+        disposePanel(panel, retainedIds);
+        // Candidate controls and their handlers survive asynchronous data updates.
+        const generationDetails = panel.querySelector('.generated-command');
+        for (const child of [...panel.children]) if (!child.matches('.cmpctl, .capture-slots')) child.remove();
+        for (const child of [...next.children]) if (!child.matches('.cmpctl, .capture-slots')) panel.appendChild(child);
+        if (generationDetails) panel.querySelector('.generation-instructions')?.appendChild(generationDetails);
+      };
+    },
+    update(panel, tab, page) {
+      this.prepareUpdate(panel, tab, page)();
+    },
+    dispose: disposePanel,
+    buildTooltip: buildTooltipInto,
+  };
 })();

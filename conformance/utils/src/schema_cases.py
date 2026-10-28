@@ -170,26 +170,25 @@ def _json(value: object) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
-def legacy_schema_wire(family: str, case: dict[str, Any], renderer: Callable[..., str]) -> str:
+def native_call_wire(family: str, name: str, values: dict[str, Any], raw_values: dict[str, str], renderer: Callable[..., str]) -> str:
     """Render every registered family's native grammar, never parser output."""
-    value, raw = case["value"], case["raw"]
-    arguments = _json({"value": value})
-    call = _json({"name": "schema_probe", "arguments": {"value": value}})
+    arguments = _json(values)
+    call = _json({"name": name, "arguments": values})
     if family == "deepseek_v3":
-        return f"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>schema_probe\n```json\n{arguments}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+        return f"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>function<｜tool▁sep｜>{name}\n```json\n{arguments}\n```<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
     if family == "deepseek_v3_1":
-        return f"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>schema_probe<｜tool▁sep｜>{arguments}<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
+        return f"<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>{name}<｜tool▁sep｜>{arguments}<｜tool▁call▁end｜><｜tool▁calls▁end｜>"
     if family in ("deepseek_v3_2", "deepseek_v4"):
         envelope = "function_calls" if family == "deepseek_v3_2" else "tool_calls"
-        flag = str(isinstance(value, str)).lower()
-        return f'<｜DSML｜{envelope}><｜DSML｜invoke name="schema_probe"><｜DSML｜parameter name="value" string="{flag}">{raw}</｜DSML｜parameter></｜DSML｜invoke></｜DSML｜{envelope}>'
+        params = "".join(f'<｜DSML｜parameter name="{key}" string="{str(isinstance(value, str)).lower()}">{raw_values[key]}</｜DSML｜parameter>' for key, value in values.items())
+        return f'<｜DSML｜{envelope}><｜DSML｜invoke name="{name}">{params}</｜DSML｜invoke></｜DSML｜{envelope}>'
     if family in ("harmony", "harmony_text"):
-        return f"<|channel|>commentary to=functions.schema_probe <|constrain|>json<|message|>{arguments}<|call|>"
+        return f"<|channel|>commentary to=functions.{name} <|constrain|>json<|message|>{arguments}<|call|>"
     if family in ("hermes", "qwen25"):
         return f"<tool_call>{call}</tool_call>"
     if family == "inkling":
-        inner = _json({"name": "schema_probe", "args": {"value": value}})
-        return f"<|message_model|>schema_probe<|content_invoke_tool_json|>{inner}<|end_message|>"
+        inner = _json({"name": name, "args": values})
+        return f"<|message_model|>{name}<|content_invoke_tool_json|>{inner}<|end_message|>"
     if family == "jamba":
         return f"<tool_calls>[{call}]</tool_calls>"
     if family == "llama3_json":
@@ -201,18 +200,25 @@ def legacy_schema_wire(family: str, case: dict[str, Any], renderer: Callable[...
     if family == "phi4":
         return f"functools[{call}]"
     if family == "pythonic":
-        return f"[schema_probe(value={value!r})]"
+        return f"[{name}({', '.join(f'{key}={value!r}' for key, value in values.items())})]"
     if family in ("qwen3_coder", "nemotron_nano"):
-        return f"<tool_call>\n<function=schema_probe>\n<parameter=value>\n{raw}\n</parameter>\n</function>\n</tool_call>"
+        params = "\n".join(f"<parameter={key}>\n{value}\n</parameter>" for key, value in raw_values.items())
+        return f"<tool_call>\n<function={name}>\n{params}\n</function>\n</tool_call>"
     if family == "minimax_m2":
-        return f'<minimax:tool_call><invoke name="schema_probe"><parameter name="value">{raw}</parameter></invoke></minimax:tool_call>'
+        params = "".join(f'<parameter name="{key}">{value}</parameter>' for key, value in raw_values.items())
+        return f'<minimax:tool_call><invoke name="{name}">{params}</invoke></minimax:tool_call>'
     if family == "minimax_m3":
         marker = "]<]minimax[>["
-        return f'{marker}<tool_call>{marker}<invoke name="schema_probe">{marker}<value>{raw}{marker}</value>{marker}</invoke>{marker}</tool_call>'
+        params = "".join(f"{marker}<{key}>{value}{marker}</{key}>" for key, value in raw_values.items())
+        return f'{marker}<tool_call>{marker}<invoke name="{name}">{params}{marker}</invoke>{marker}</tool_call>'
     # These grammars have an existing independently authored Unified renderer.
     if family in ("glm47", "gemma4", "kimi_k2", "kimi_k3", "muse_glimmer", "muse_spark"):
-        return renderer(family, "schema_probe", {"value": value}, 0, {"value": raw})
+        return renderer(family, name, values, 0, raw_values)
     raise ValueError(f"no schema grammar renderer for registered family {family}")
+
+
+def legacy_schema_wire(family: str, case: dict[str, Any], renderer: Callable[..., str]) -> str:
+    return native_call_wire(family, "schema_probe", {"value": case["value"]}, {"value": case["raw"]}, renderer)
 
 
 def unified_schema_cases(family: str, renderer: Callable[..., str]) -> dict[str, dict[str, Any]]:

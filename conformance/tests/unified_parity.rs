@@ -89,7 +89,8 @@ fn load_native_golden() -> Vec<GoldenFile> {
         }
         files.push(file);
     }
-    files.retain(|file| has_unified_parser(&file.family));
+    let families = common::unified_families();
+    files.retain(|file| families.get(&file.family).is_some_and(|row| row.native));
     files.sort_by(|a, b| a.family.cmp(&b.family));
     for file in &mut files {
         for case in file.cases.values_mut() {
@@ -153,10 +154,6 @@ fn structural_response_case_checks_the_schema_before_parsing() {
         families,
         ["deepseek_v4", "glm47", "gpt_oss", "muse_spark", "qwen3"]
     );
-}
-
-fn has_unified_parser(family: &str) -> bool {
-    create_unified_parser_for_family(family, &[]).is_ok()
 }
 
 fn events(
@@ -232,7 +229,9 @@ fn splittings(input: &str) -> Vec<(String, Vec<String>)> {
 #[test]
 fn string_quote_controls_survive_every_split_for_every_family() {
     let mut covered = std::collections::BTreeSet::new();
-    for file in load_native_golden() {
+    for file in load_native_golden().into_iter().filter(|file| {
+        dynamo_parsers_v2::canonical_unified_family(&file.family) == Some(file.family.as_str())
+    }) {
         let mut count = 0;
         for (id, case) in file.cases {
             if !id.contains("xml_string_type_") {
@@ -432,6 +431,8 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         "unused_reference_graph_parameter_types",
         "nullable_reference_alias_literals",
         "local_schema_id_preserves_type",
+    ];
+    let template_reference_scenarios = [
         "arg_json_null_ref",
         "arg_string_null_ref",
         "arg_null_mixed_labels",
@@ -462,6 +463,7 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         for (id, case) in &file.cases {
             if !reference_scenarios
                 .iter()
+                .chain(template_reference_scenarios.iter())
                 .chain(dotted_scenarios.iter())
                 .any(|scenario| id == &format!("UNIFIED.{scenario}.{}", file.family))
             {
@@ -501,9 +503,14 @@ fn reference_argument_and_dotted_name_cases_preserve_results_at_every_split() {
         .values()
         .filter(|family| family.native)
         .count();
+    let template_families = common::unified_families()
+        .values()
+        .filter(|family| family.native && family.scenario_profile.as_deref() != Some("native"))
+        .count();
     assert_eq!(
         checked,
         native_families * reference_scenarios.len()
+            + template_families * template_reference_scenarios.len()
             + dotted_native_families.len() * dotted_scenarios.len(),
     );
 }
@@ -662,25 +669,6 @@ fn registered_unified_families_all_create() {
 #[test]
 fn manifest_and_parser_registry_agree_on_native_families() {
     let mut wrong = Vec::new();
-    for (family, row) in common::unified_families() {
-        let constructs = create_unified_parser_for_family(&family, &[]).is_ok();
-        if row.native && !constructs {
-            wrong.push(format!(
-                "{family}: manifest says native, but create_unified_parser_for_family rejects it \
-                 — add it to `unified_registry!` in parsers/v2/src/unified/mod.rs"
-            ));
-        }
-        if !row.native && constructs {
-            wrong.push(format!(
-                "{family}: a native UnifiedParser exists, but the manifest still says \
-                 native: false — flip it in conformance/utils/src/parser_families.yaml"
-            ));
-        }
-    }
-    // ...and the other direction. Iterating manifest rows alone leaves a hole: a family
-    // added to `unified_registry!` with NO manifest row is invisible here, constructs
-    // fine, and silently gets no golden coverage — the exact failure this guard exists
-    // to prevent, one level up.
     let declared: std::collections::BTreeSet<String> = common::unified_families()
         .iter()
         .filter(|(_, row)| row.native)
@@ -691,6 +679,32 @@ fn manifest_and_parser_registry_agree_on_native_families() {
                 .map(str::to_string)
         })
         .collect();
+    for (family, row) in common::unified_families() {
+        let constructs = create_unified_parser_for_family(&family, &[]).is_ok();
+        if row.native && !constructs {
+            wrong.push(format!(
+                "{family}: manifest says native, but create_unified_parser_for_family rejects it \
+                 — add it to `unified_registry!` in parsers/v2/src/unified/mod.rs"
+            ));
+        }
+        if !native_corpus_registration_valid(
+            &family,
+            row.native,
+            constructs,
+            dynamo_parsers_v2::canonical_unified_family(&family),
+            &declared,
+        ) && !row.native
+        {
+            wrong.push(format!(
+                "{family}: a native UnifiedParser exists, but the manifest still says \
+                 native: false — flip it in conformance/utils/src/parser_families.yaml"
+            ));
+        }
+    }
+    // ...and the other direction. Iterating manifest rows alone leaves a hole: a family
+    // added to `unified_registry!` with NO manifest row is invisible here, constructs
+    // fine, and silently gets no golden coverage — the exact failure this guard exists
+    // to prevent, one level up.
     for registered in REGISTERED_UNIFIED_FAMILIES {
         let canonical =
             dynamo_parsers_v2::canonical_unified_family(registered).unwrap_or(registered);
@@ -708,6 +722,55 @@ fn manifest_and_parser_registry_agree_on_native_families() {
         "manifest/registry disagree:\n  {}",
         wrong.join("\n  ")
     );
+}
+
+// Legacy split-pipeline corpora can share a registry alias with a native
+// corpus. The canonical native owner must still declare and exercise its oracle.
+fn native_corpus_registration_valid(
+    family: &str,
+    native: bool,
+    constructs: bool,
+    canonical: Option<&str>,
+    declared: &std::collections::BTreeSet<String>,
+) -> bool {
+    if native {
+        constructs
+    } else {
+        !constructs || canonical.is_some_and(|owner| owner != family && declared.contains(owner))
+    }
+}
+
+#[test]
+fn legacy_alias_never_replaces_a_native_oracle() {
+    let declared = std::collections::BTreeSet::from(["gpt_oss".to_string()]);
+    assert!(native_corpus_registration_valid(
+        "harmony",
+        false,
+        true,
+        Some("gpt_oss"),
+        &declared
+    ));
+    assert!(!native_corpus_registration_valid(
+        "gpt_oss",
+        false,
+        true,
+        Some("gpt_oss"),
+        &declared
+    ));
+    assert!(!native_corpus_registration_valid(
+        "harmony",
+        false,
+        true,
+        Some("gpt_oss"),
+        &Default::default()
+    ));
+    assert!(!native_corpus_registration_valid(
+        "harmony",
+        true,
+        false,
+        Some("gpt_oss"),
+        &declared
+    ));
 }
 
 /// Compare only tool calls because the tool-only API has no separate reasoning channel.

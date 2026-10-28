@@ -19,7 +19,7 @@ Usage:
   python3 package_fixtures.py [--dry-run] [--snapshot YYYYMMDD_HHMMSS]
 
 Source trees are the loose capture outputs in conformance/{toolcalling,reasoning}/
-(written by capture.sh / capture_driver.py; not committed to git).
+(written by explicit capture maintenance; not committed to git).
 """
 
 import argparse
@@ -34,11 +34,15 @@ import tarfile
 import tempfile
 from pathlib import Path
 
-import extract_fixtures  # sibling script, same dir on sys.path (matches capture_driver's import pattern)
+import extract_fixtures
+import capture_sources
+import publish_current_capture
 from dynamo_version import capture_source_fingerprint
 import fixture_disposition
 import stream_capture_archive
 import unified_history
+import viewer_catalog
+import generation_workers
 
 # conformance/utils/src/ -> repo root: 4 .parent calls (strip filename, then 3 dirs)
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -177,10 +181,13 @@ def build_shards(
     trees=None,
     excluded_unified_capture_dirs=frozenset(),
     required_unified_capture_dirs=None,
+    retained_manifest=None,
 ):
     """Build per-version shard tarballs and whole-tree shards. Returns list of shard dicts."""
     shards = []
-    inactive = preserved_evidence()
+    if retained_manifest is not None and (prune or tuple(trees or ()) != ("unified",)):
+        raise ValueError("retained archive pins require a Unified-only build")
+    inactive = fixture_disposition.inactive_shards(retained_manifest) if retained_manifest is not None else preserved_evidence()
 
     for tree_rel in (trees if trees is not None else PER_SUBDIR_TREES):
         tree_abs = tmpdir / tree_rel
@@ -613,10 +620,16 @@ def merge_shards(
     history_dir=None,
     manifest_path=None,
     reject_unbuilt_drift=False,
+    retained_manifest=None,
 ):
     """Final manifest shard set: built shards, plus prior-manifest entries whose
     store file was kept (partial capture trees update only their own shards).
     With --prune the built set stands alone."""
+    if retained_manifest is not None:
+        if prune or len(built) != 1 or built[0].get("format") != "unified-history":
+            raise ValueError("Unified-only packaging cannot replace or prune historical archives")
+        prior = fixture_disposition.active_shards(retained_manifest)
+        return sorted([*built, *(shard for shard in prior if shard.get("format") != "unified-history")], key=lambda shard: shard["path"])
     fixtures_dir = Path(fixtures_dir or FIXTURES_DIR)
     history_dir = Path(history_dir or UNIFIED_HISTORY_DIR)
     manifest_path = Path(manifest_path or ROOT / MANIFEST_REL)
@@ -670,10 +683,17 @@ def merge_shards(
     return merged
 
 
-def _validate_candidate_package(manifest, fixtures_dir, history_dir):
+def _validate_candidate_package(manifest, fixtures_dir, history_dir, *, retained_manifest=None, generation=None):
     shards = fixture_disposition.active_shards(manifest)
-    inactive = fixture_disposition.verify_inactive_shards(manifest, fixtures_dir)
-    store = unified_history.load_store(history_dir)
+    if retained_manifest is not None:
+        retained = [shard for shard in fixture_disposition.active_shards(retained_manifest) if shard.get("format") != "unified-history"]
+        if ([shard for shard in shards if shard.get("format") != "unified-history"] != retained
+                or fixture_disposition.inactive_shards(manifest) != fixture_disposition.inactive_shards(retained_manifest)
+                or manifest.get("historical_catalog_sha256") != retained_manifest.get("historical_catalog_sha256")):
+            raise ValueError("Unified-only packaging changed historical archive pins")
+    else:
+        fixture_disposition.verify_inactive_shards(manifest, fixtures_dir)
+    store = generation.validated_store(history_dir) if generation is not None else unified_history.load_store(history_dir)
     for shard in shards:
         if shard.get("format") == "unified-history":
             digest, size = unified_history.store_digest(history_dir)
@@ -681,6 +701,8 @@ def _validate_candidate_package(manifest, fixtures_dir, history_dir):
             path = fixtures_dir / shard["path"]
             if not path.is_file():
                 raise FileNotFoundError(f"candidate package shard is missing: {shard['path']}")
+            if retained_manifest is not None:
+                continue
             digest, size = sha256_file(path), path.stat().st_size
         if digest != shard["sha256"] or size != shard["size"]:
             raise ValueError(f"candidate package shard differs from manifest: {shard['path']}")
@@ -701,6 +723,8 @@ def package_snapshot(
     excluded_unified_capture_dirs=frozenset(),
     required_unified_capture_dirs=None,
 ):
+    if unified_only and prune:
+        raise ValueError("Unified-only packaging cannot prune historical evidence")
     conformance_root = ROOT / "conformance"
     manifest_path = ROOT / MANIFEST_REL
     with tempfile.TemporaryDirectory(
@@ -709,13 +733,17 @@ def package_snapshot(
         transaction_root = Path(temporary)
         loose_root = transaction_root / "loose"
         blobs_dir = transaction_root / "blobs"
-        candidate_fixtures = transaction_root / "fixtures"
+        candidate_fixtures = FIXTURES_DIR if unified_only else transaction_root / "fixtures"
         candidate_history = transaction_root / "fixtures-unified-v2"
         candidate_manifest = transaction_root / "fixtures-manifest.json"
         loose_root.mkdir()
         blobs_dir.mkdir()
 
-        with unified_history._store_mutation_lock(UNIFIED_HISTORY_DIR):
+        with viewer_catalog.catalog_generation(ROOT) as generation:
+            retained_manifest = json.loads(manifest_path.read_text()) if unified_only else None
+            retained_options = {"retained_manifest": retained_manifest} if retained_manifest is not None else {}
+            if retained_manifest is not None:
+                viewer_catalog.retained_archive_catalog(ROOT, retained_manifest)
             print("\nStaging fixture trees…")
             trees = (
                 ["toolcalling/fixtures-stream-v1"]
@@ -728,7 +756,8 @@ def package_snapshot(
                 stage_fixtures(conformance_root, loose_root, trees=trees)
             else:
                 stage_fixtures(conformance_root, loose_root)
-            shutil.copytree(FIXTURES_DIR, candidate_fixtures, copy_function=os.link)
+            if not unified_only:
+                shutil.copytree(FIXTURES_DIR, candidate_fixtures, copy_function=os.link)
             shutil.copytree(UNIFIED_HISTORY_DIR, candidate_history)
 
             print("\nBuilding shards…")
@@ -741,6 +770,7 @@ def package_snapshot(
                     trees=trees,
                     excluded_unified_capture_dirs=excluded_unified_capture_dirs,
                     required_unified_capture_dirs=required_unified_capture_dirs,
+                    **retained_options,
                 )
             else:
                 shards = build_shards(
@@ -753,19 +783,21 @@ def package_snapshot(
                 )
 
             print(f"\nStaging store candidate for: {FIXTURES_DIR}")
-            sync_store(
-                blobs_dir,
-                shards,
-                False,
-                prune,
-                fixtures_dir=candidate_fixtures,
-                manifest_path=manifest_path,
-                approved_stream_replacements=approved_stream_replacements,
-                stream_capture_receipt=stream_capture_receipt,
-            )
+            if not unified_only:
+                sync_store(
+                    blobs_dir,
+                    shards,
+                    False,
+                    prune,
+                    fixtures_dir=candidate_fixtures,
+                    manifest_path=manifest_path,
+                    approved_stream_replacements=approved_stream_replacements,
+                    stream_capture_receipt=stream_capture_receipt,
+                )
 
             inactive_shards = list(
-                preserved_evidence(
+                fixture_disposition.inactive_shards(retained_manifest).values()
+                if retained_manifest is not None else preserved_evidence(
                     manifest_path=manifest_path,
                     fixtures_dir=candidate_fixtures,
                 ).values()
@@ -782,31 +814,52 @@ def package_snapshot(
                     history_dir=candidate_history,
                     manifest_path=manifest_path,
                     reject_unbuilt_drift=stream_only or unified_only,
+                    **retained_options,
                 ),
                 "inactive_shards": inactive_shards,
             }
+            if retained_manifest is not None:
+                manifest["historical_catalog_sha256"] = retained_manifest["historical_catalog_sha256"]
             if manifest_path.is_file():
                 previous = json.loads(manifest_path.read_text())
+                if retained_manifest is None and "historical_catalog_sha256" in previous:
+                    manifest["historical_catalog_sha256"] = previous["historical_catalog_sha256"]
                 if (
                     previous.get("crates") == manifest["crates"]
                     and previous.get("peers") == manifest["peers"]
                     and previous.get("shards") == manifest["shards"]
                     and previous.get("inactive_shards") == manifest["inactive_shards"]
+                    and previous.get("historical_catalog_sha256") == manifest.get("historical_catalog_sha256")
                 ):
                     manifest = previous
             candidate_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
-            _validate_candidate_package(manifest, candidate_fixtures, candidate_history)
+            _validate_candidate_package(manifest, candidate_fixtures, candidate_history, generation=generation, **retained_options)
 
             if dry_run:
                 print(f"\n[dry-run] validated candidate manifest for: {manifest_path}")
                 return
 
+            candidate_catalog = transaction_root / "viewer-catalog.json"
+            viewer_catalog.refresh_catalog(
+                ROOT, destination=candidate_catalog, fixtures=candidate_fixtures,
+                unified=candidate_history, manifest=candidate_manifest, generation=generation,
+                unified_only=unified_only,
+            )
+            if retained_manifest is None:
+                # An explicit historical refresh binds descriptors from the fresh scan.
+                catalog = json.loads(candidate_catalog.read_text())
+                manifest["historical_catalog_sha256"] = viewer_catalog.historical_catalog_fingerprint(catalog)
+                candidate_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
             publish_paths = [
-                (candidate_fixtures, FIXTURES_DIR),
                 (candidate_manifest, manifest_path),
+                (candidate_catalog, conformance_root / "viewer-catalog.json"),
+                (transaction_root / "viewer-unified-catalog.json", conformance_root / "viewer-unified-catalog.json"),
             ]
+            if not unified_only:
+                publish_paths.insert(0, (candidate_fixtures, FIXTURES_DIR))
             if not stream_only:
                 publish_paths.insert(0, (candidate_history, UNIFIED_HISTORY_DIR))
+            generation.validate_inventories()
             unified_history.publish_paths_transactionally(
                 publish_paths,
                 backup_parent=conformance_root,
@@ -829,6 +882,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="Build tarballs but don't touch the store")
     ap.add_argument("--stream-only", action="store_true", help="Package only the loose tool-calling stream tree")
     ap.add_argument("--unified-only", action="store_true", help="Package only the Unified capture history")
+    ap.add_argument("--history-source", type=Path, default=os.environ.get("CONFORMANCE_HISTORY_SOURCE"))
     ap.add_argument(
         "--replace-stream-case",
         action="append",
@@ -867,7 +921,14 @@ def main():
         action="store_true",
         help="Do not require every historical Dynamo capture to contain every active family and case",
     )
+    generation_workers.add_worker_argument(ap)
     args = ap.parse_args()
+    if capture_sources.is_current(ROOT):
+        if not args.unified_only or args.stream_only or args.prune or args.dry_run:
+            ap.error("split capture packaging supports --unified-only; legacy archive maintenance requires an explicit historical checkout")
+        args.history_source = args.history_source or ROOT / capture_sources.HISTORIC
+        print(json.dumps(publish_current_capture.publish_loose(ROOT, Path(args.history_source).resolve(), ROOT / "conformance/unified")))
+        return
     if args.stream_only and args.unified_only:
         ap.error("--stream-only and --unified-only cannot be combined")
     if (args.stream_only or args.unified_only) and args.prune:
@@ -910,26 +971,27 @@ def main():
     if args.stream_capture_receipt is not None:
         receipt = json.loads(args.stream_capture_receipt.read_text())
 
-    package_snapshot(
-        stamp,
-        created_pt,
-        crates,
-        peers,
-        dry_run=args.dry_run,
-        prune=args.prune,
-        stream_only=args.stream_only,
-        unified_only=args.unified_only,
-        approved_stream_replacements=frozenset(args.replace_stream_case),
-        stream_capture_receipt=receipt,
-        excluded_unified_capture_dirs=frozenset(args.exclude_unified_capture_dir),
-        required_unified_capture_dirs=(
-            frozenset(args.require_unified_capture_dir)
-            if args.require_unified_capture_dir is not None
-            else frozenset()
-            if args.allow_partial_unified_captures
-            else None
-        ),
-    )
+    with generation_workers.worker_policy(args.workers):
+        package_snapshot(
+            stamp,
+            created_pt,
+            crates,
+            peers,
+            dry_run=args.dry_run,
+            prune=args.prune,
+            stream_only=args.stream_only,
+            unified_only=args.unified_only,
+            approved_stream_replacements=frozenset(args.replace_stream_case),
+            stream_capture_receipt=receipt,
+            excluded_unified_capture_dirs=frozenset(args.exclude_unified_capture_dir),
+            required_unified_capture_dirs=(
+                frozenset(args.require_unified_capture_dir)
+                if args.require_unified_capture_dir is not None
+                else frozenset()
+                if args.allow_partial_unified_captures
+                else None
+            ),
+        )
 
 
 if __name__ == "__main__":
