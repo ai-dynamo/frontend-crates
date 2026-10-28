@@ -54,28 +54,6 @@ pub async fn try_tool_call_parse_aggregate_finalize(
     Ok((parsed, content))
 }
 
-/// [`try_tool_call_parse_aggregate`] (or, with `finalize`,
-/// [`try_tool_call_parse_aggregate_finalize`]), with the input ranges of
-/// `normal_text` when `record` is set. See
-/// [`try_tool_call_parse_sourced`](super::parsers::try_tool_call_parse_sourced)
-/// for the parsers that record them.
-pub(crate) async fn try_tool_call_parse_aggregate_sourced(
-    message: &str,
-    parser_str: Option<&str>,
-    tools: Option<&[super::ToolDefinition]>,
-    finalize: bool,
-    record: bool,
-) -> anyhow::Result<(Vec<ToolCallResponse>, Option<crate::sources::SourcedText>)> {
-    if finalize {
-        super::parsers::detect_and_parse_tool_call_with_recovery_sourced(
-            message, parser_str, tools, record,
-        )
-        .await
-    } else {
-        super::parsers::detect_and_parse_tool_call_sourced(message, parser_str, tools, record).await
-    }
-}
-
 /// Deprecated compatibility shim retained for the published `dynamo-parsers`
 /// API. Batch/non-streaming and stream-end finalize now share one recovery
 /// path; call [`try_tool_call_parse_aggregate_finalize`] directly.

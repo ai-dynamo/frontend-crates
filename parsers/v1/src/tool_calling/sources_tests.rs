@@ -20,10 +20,26 @@ use std::ops::Range;
 use serde::Deserialize;
 
 use super::ToolCallResponse;
-use super::tools::{
-    try_tool_call_parse_aggregate, try_tool_call_parse_aggregate_finalize,
-    try_tool_call_parse_aggregate_sourced,
+use super::parsers::{
+    detect_and_parse_tool_call_sourced, detect_and_parse_tool_call_with_recovery_sourced,
 };
+use super::tools::{try_tool_call_parse_aggregate, try_tool_call_parse_aggregate_finalize};
+use crate::sources::SourcedText;
+
+/// The sourced parse that the jail calls: with recovery at finalize.
+async fn try_tool_call_parse_aggregate_sourced(
+    message: &str,
+    parser: Option<&str>,
+    tools: Option<&[super::ToolDefinition]>,
+    finalize: bool,
+    record: bool,
+) -> anyhow::Result<(Vec<ToolCallResponse>, Option<SourcedText>)> {
+    if finalize {
+        detect_and_parse_tool_call_with_recovery_sourced(message, parser, tools, record).await
+    } else {
+        detect_and_parse_tool_call_sourced(message, parser, tools, record).await
+    }
+}
 
 pub(crate) const CORPUS: &str = include_str!("../../tests/data/source_ranges_corpus.json");
 

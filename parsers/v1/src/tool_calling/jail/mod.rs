@@ -56,7 +56,9 @@ use crate::tool_calling::{
 pub use self::annotated::Annotated;
 use self::prefix_matcher::{MarkerMatcher, MatchResult};
 use crate::sources::{ChoiceSources, SourcedText, Spans};
-use crate::tool_calling::tools::try_tool_call_parse_aggregate_sourced;
+use crate::tool_calling::parsers::{
+    detect_and_parse_tool_call_sourced, detect_and_parse_tool_call_with_recovery_sourced,
+};
 
 #[cfg(test)]
 mod sources_tests;
@@ -147,21 +149,50 @@ fn append_logprobs(target: &mut Option<ChatChoiceLogprobs>, extra: Option<ChatCh
 /// Pack emissions into frames that hold each choice index at most once, in
 /// emission order. A same-index entry folds into the current frame when that
 /// loses nothing and crosses no boundary; otherwise it opens the next frame.
-fn pack_choices(emissions: Vec<Emitted>) -> Vec<Vec<Emitted>> {
-    let mut frames: Vec<Vec<Emitted>> = vec![Vec::new()];
+///
+/// While recording, the second result holds each frame's sources, one per
+/// choice in the same order. It is `None` when no emission records.
+fn pack_choices(
+    emissions: Vec<Emitted>,
+) -> (Vec<Vec<ChatChoiceStream>>, Option<Vec<Vec<ChoiceSources>>>) {
+    let mut frames: Vec<Vec<ChatChoiceStream>> = vec![Vec::new()];
+    let mut sources: Option<Vec<Vec<ChoiceSources>>> = None;
     for emitted in emissions {
+        let (choice, choice_sources) = emitted.into_parts();
+        if choice_sources.is_some() && sources.is_none() {
+            debug_assert!(
+                frames.len() == 1 && frames[0].is_empty(),
+                "every emission records, or none does"
+            );
+            sources = Some(vec![Vec::new()]);
+        }
         let frame = frames.last_mut().expect("frames is never empty");
-        match frame.iter_mut().find(|seen| seen.index == emitted.index) {
-            None => frame.push(emitted),
-            Some(seen) if choices_merge(seen, &emitted) => {
-                seen.content.append(&emitted.content);
-                seen.reasoning.append(&emitted.reasoning);
-                merge_choice(seen, emitted.emission.into_choice());
+        match frame.iter().position(|seen| seen.index == choice.index) {
+            None => {
+                frame.push(choice);
+                if let (Some(all), Some(choice_sources)) = (sources.as_mut(), choice_sources) {
+                    all.last_mut()
+                        .expect("one list per frame")
+                        .push(choice_sources);
+                }
             }
-            Some(_) => frames.push(vec![emitted]),
+            Some(at) if choices_merge(&frame[at], &choice) => {
+                merge_choice(&mut frame[at], choice);
+                if let (Some(all), Some(more)) = (sources.as_mut(), choice_sources) {
+                    let seen = &mut all.last_mut().expect("one list per frame")[at];
+                    seen.content.extend(more.content);
+                    seen.reasoning.extend(more.reasoning);
+                }
+            }
+            Some(_) => {
+                frames.push(vec![choice]);
+                if let (Some(all), Some(choice_sources)) = (sources.as_mut(), choice_sources) {
+                    all.push(vec![choice_sources]);
+                }
+            }
         }
     }
-    frames
+    (frames, sources)
 }
 
 /// Whether two entries for one choice fold without losing anything or
@@ -323,62 +354,106 @@ impl ChoiceEmission {
     }
 }
 
-/// An emission with the input ranges of its content and its reasoning. Every
-/// edit to the emission's text edits these too, so they travel together.
+/// An emission with, while recording, the input ranges of its content and
+/// its reasoning. Every edit to the emission's text edits these too, so they
+/// travel together. The ranges sit behind a box in the niche of
+/// `ChoiceEmission`, so with recording off this type is exactly as large as
+/// the emission and the stock path moves no extra bytes.
+// Boxing `Plain` would add an allocation per emission on the stock path.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone)]
-struct Emitted {
-    emission: ChoiceEmission,
+enum Emitted {
+    Plain(ChoiceEmission),
+    Sourced(Box<(ChoiceEmission, EmittedSpans)>),
+}
+
+#[derive(Debug, Clone)]
+struct EmittedSpans {
     content: Spans,
     reasoning: Spans,
 }
 
 impl Emitted {
     fn new(emission: ChoiceEmission, content: Spans) -> Self {
-        let reasoning = Spans::recording(content.is_recording());
-        Self {
-            emission,
-            content,
-            reasoning,
+        if content.is_recording() {
+            let reasoning = Spans::recording(true);
+            Self::Sourced(Box::new((emission, EmittedSpans { content, reasoning })))
+        } else {
+            Self::Plain(emission)
+        }
+    }
+
+    fn emission(&self) -> &ChoiceEmission {
+        match self {
+            Self::Plain(emission) => emission,
+            Self::Sourced(sourced) => &sourced.0,
+        }
+    }
+
+    /// The emission, and its sources while recording.
+    fn parts_mut(&mut self) -> (&mut ChoiceEmission, Option<&mut EmittedSpans>) {
+        match self {
+            Self::Plain(emission) => (emission, None),
+            Self::Sourced(sourced) => {
+                let (emission, spans) = &mut **sourced;
+                (emission, Some(spans))
+            }
+        }
+    }
+
+    /// Sets the sources of the reasoning; a no-op while not recording.
+    fn set_reasoning(&mut self, reasoning: Spans) {
+        if let (_, Some(spans)) = self.parts_mut() {
+            spans.reasoning = reasoning;
         }
     }
 
     fn choice(&self) -> &ChatChoiceStream {
-        self.emission.choice()
+        self.emission().choice()
     }
 
     fn choice_mut(&mut self) -> &mut ChatChoiceStream {
-        self.emission.choice_mut()
+        self.parts_mut().0.choice_mut()
     }
 
     fn is_whitespace_only_content(&self) -> bool {
-        self.emission.is_whitespace_only_content()
+        self.emission().is_whitespace_only_content()
     }
 
-    fn sources(&self) -> Option<ChoiceSources> {
-        self.content.is_recording().then(|| ChoiceSources {
-            index: self.emission.index(),
-            content: self.content.ranges().to_vec(),
-            reasoning: self.reasoning.ranges().to_vec(),
-        })
+    /// The choice, and its sources while recording.
+    fn into_parts(self) -> (ChatChoiceStream, Option<ChoiceSources>) {
+        match self {
+            Self::Plain(emission) => (emission.into_choice(), None),
+            Self::Sourced(sourced) => {
+                let (emission, spans) = *sourced;
+                let choice = emission.into_choice();
+                let sources = ChoiceSources {
+                    index: choice.index,
+                    content: spans.content.into_ranges(),
+                    reasoning: spans.reasoning.into_ranges(),
+                };
+                (choice, Some(sources))
+            }
+        }
     }
 }
 
 impl From<ChoiceEmission> for Emitted {
     fn from(emission: ChoiceEmission) -> Self {
-        Self::new(emission, Spans::OFF)
+        Self::Plain(emission)
     }
 }
 
 impl std::ops::Deref for Emitted {
     type Target = ChatChoiceStream;
     fn deref(&self) -> &ChatChoiceStream {
-        self.emission.choice()
+        self.choice()
     }
 }
 
 impl std::ops::DerefMut for Emitted {
     fn deref_mut(&mut self) -> &mut ChatChoiceStream {
-        self.emission.choice_mut()
+        self.choice_mut()
     }
 }
 
@@ -983,7 +1058,7 @@ impl ChoiceJailState {
             logprobs: None,
         };
         let mut emitted = Emitted::new(ChoiceEmission::PassThrough(choice), self.no_spans());
-        emitted.reasoning = reasoning;
+        emitted.set_reasoning(reasoning);
         Some(emitted)
     }
 
@@ -1730,9 +1805,7 @@ impl ChoiceJailState {
                 index += 1;
                 continue;
             }
-            let Emitted {
-                emission, content, ..
-            } = &mut emissions[index];
+            let (emission, mut spans) = emissions[index].parts_mut();
             let choice = emission.choice_mut();
             let Some(dynamo_protocols::types::ChatCompletionMessageContent::Text(text)) =
                 choice.delta.content.as_mut()
@@ -1742,7 +1815,9 @@ impl ChoiceJailState {
             };
             if !self.terminal_suffix_buffer.is_empty() {
                 text.insert_str(0, &std::mem::take(&mut self.terminal_suffix_buffer));
-                content.prepend(self.terminal_suffix_spans.take());
+                if let Some(spans) = spans.as_mut() {
+                    spans.content.prepend(self.terminal_suffix_spans.take());
+                }
                 if !self.terminal_suffix_logprobs.is_empty() {
                     let mut tokens = std::mem::take(&mut self.terminal_suffix_logprobs);
                     let logprobs = choice.logprobs.get_or_insert(ChatChoiceLogprobs {
@@ -1790,7 +1865,9 @@ impl ChoiceJailState {
                         choice.logprobs = None;
                     }
                 }
-                self.terminal_suffix_spans = content.split_off(text.len() - suffix_len);
+                self.terminal_suffix_spans = spans.as_mut().map_or(Spans::OFF, |spans| {
+                    spans.content.split_off(text.len() - suffix_len)
+                });
                 self.terminal_suffix_buffer = text.split_off(text.len() - suffix_len);
                 if text.is_empty() {
                     choice.delta.content = None;
@@ -1867,7 +1944,7 @@ impl ChoiceJailState {
                 ChoiceEmission::Content(final_choice)
             };
             let mut emitted = Emitted::new(emission, content_spans);
-            emitted.reasoning = reasoning_spans;
+            emitted.set_reasoning(reasoning_spans);
             Some(emitted)
         } else if !self.partial_match_buffer.is_empty() {
             let suppress_marker = self.stream_finish_reason == Some(FinishReason::Length)
@@ -1894,7 +1971,7 @@ impl ChoiceJailState {
             choice.delta.reasoning_content = self.pending_reasoning_content.take();
             let mut emitted = Emitted::new(ChoiceEmission::Content(choice), content_spans);
             if emitted.delta.reasoning_content.is_some() {
-                emitted.reasoning = self.pending_reasoning_spans.take();
+                emitted.set_reasoning(self.pending_reasoning_spans.take());
             }
             Some(emitted)
         } else {
@@ -2206,7 +2283,7 @@ impl JailedStream {
                                     {
                                         first.choice_mut().delta.reasoning_content =
                                             Some(reasoning);
-                                        first.reasoning = choice_state.pending_reasoning_spans.take();
+                                        first.set_reasoning(choice_state.pending_reasoning_spans.take());
                                     }
                                 }
                                 all_emissions.extend(emissions);
@@ -2287,7 +2364,7 @@ impl JailedStream {
                                     ChoiceEmission::PassThrough(pass_through_choice),
                                     choice_state.no_spans(),
                                 );
-                                emitted.reasoning = reasoning_spans;
+                                emitted.set_reasoning(reasoning_spans);
                                 all_emissions.push(emitted);
                             } else if choice_state.is_jailed {
                                 append_logprobs(&mut choice_state.accumulated_logprobs, choice.logprobs.clone());
@@ -2305,7 +2382,7 @@ impl JailedStream {
                         let mut passthrough_emissions = Vec::new();
 
                         for emission in all_emissions {
-                            match emission.emission {
+                            match emission.emission() {
                                 ChoiceEmission::PassThrough(_) => passthrough_emissions.push(emission),
                                 ChoiceEmission::ToolCall(_) | ChoiceEmission::Content(_) => {
                                     tool_content_emissions.push(emission);
@@ -2413,14 +2490,20 @@ impl JailedStream {
                 // Pack all choices into as few responses as possible. One pass can emit
                 // several entries for one choice, and two for one index in one response
                 // is not valid at n = 1; entries that must stay apart get their own.
-                let frames = pack_choices(emissions);
+                let (frames, sources) = pack_choices(emissions);
+                debug_assert_eq!(
+                    sources.is_some(),
+                    self.recording,
+                    "every emission records, or none does"
+                );
+                let mut sources = sources.map(Vec::into_iter);
                 let last = frames.len() - 1;
                 frames
                     .into_iter()
                     .enumerate()
-                    .map(|(i, frame)| {
+                    .map(|(i, choices)| {
                         let mut response = base_response.clone();
-                        let (choices, sources) = self.split_sources(frame);
+                        let sources = sources.as_mut().and_then(Iterator::next);
                         response.choices = choices;
                         // Usage describes the whole chunk; count it once.
                         if i != last {
@@ -2443,8 +2526,9 @@ impl JailedStream {
                     .into_iter()
                     .map(|emission| {
                         let mut response = base_response.clone();
-                        let (choices, sources) = self.split_sources(vec![emission]);
-                        response.choices = choices;
+                        let (choice, sources) = emission.into_parts();
+                        response.choices = vec![choice];
+                        let sources = sources.map(|sources| vec![sources]);
 
                         let response = Annotated {
                             data: Some(response),
@@ -2458,28 +2542,6 @@ impl JailedStream {
                     .collect()
             }
         }
-    }
-
-    /// The choices of one output chunk, and their sources while recording.
-    fn split_sources(
-        &self,
-        emissions: Vec<Emitted>,
-    ) -> (Vec<ChatChoiceStream>, Option<Vec<ChoiceSources>>) {
-        let mut sources = self.recording.then(|| Vec::with_capacity(emissions.len()));
-        let choices = emissions
-            .into_iter()
-            .map(|emitted| {
-                if let Some(sources) = sources.as_mut() {
-                    debug_assert!(emitted.content.is_recording(), "emission without ranges");
-                    sources.push(emitted.sources().unwrap_or(ChoiceSources {
-                        index: emitted.index,
-                        ..ChoiceSources::default()
-                    }));
-                }
-                emitted.emission.into_choice()
-            })
-            .collect();
-        (choices, sources)
     }
 
     /// Check if content matches any jail start patterns
@@ -2598,11 +2660,12 @@ impl JailedStream {
     }
 
     async fn parse_marker_tool_calls(&self, accumulated_content: &str) -> MarkerParseResult {
-        try_tool_call_parse_aggregate_sourced(
+        // The recovery variant stays out of this future: the completion check
+        // runs per chunk, and its future is held across each chunk's await.
+        detect_and_parse_tool_call_sourced(
             accumulated_content,
             self.tool_call_parser.as_deref(),
             self.tool_definitions.as_deref(),
-            false,
             self.recording,
         )
         .await
@@ -2813,11 +2876,10 @@ impl JailedStream {
                 let parse_result = if let Some(parse_result) = marker_parse_result {
                     parse_result
                 } else if is_finalize {
-                    try_tool_call_parse_aggregate_sourced(
+                    detect_and_parse_tool_call_with_recovery_sourced(
                         accumulated_content,
                         self.tool_call_parser.as_deref(),
                         self.tool_definitions.as_deref(),
-                        true,
                         record,
                     )
                     .await
@@ -5755,7 +5817,7 @@ mod tests {
             logprobs_of(&["t1"]),
         );
 
-        let frames = pack_choices(vec![
+        let (frames, _) = pack_choices(vec![
             ChoiceEmission::ToolCall(fragment).into(),
             ChoiceEmission::ToolCall(remainder).into(),
         ]);
@@ -5804,7 +5866,7 @@ mod tests {
             None,
         );
 
-        let frames = pack_choices(vec![
+        let (frames, _) = pack_choices(vec![
             ChoiceEmission::ToolCall(first).into(),
             ChoiceEmission::ToolCall(second).into(),
         ]);
@@ -5832,7 +5894,7 @@ mod tests {
         let text = create_choice_stream(0, None, "after", None, None, None);
         let other = create_choice_stream(1, None, "other", None, None, None);
 
-        let frames = pack_choices(vec![
+        let (frames, _) = pack_choices(vec![
             ChoiceEmission::PassThrough(parts).into(),
             ChoiceEmission::PassThrough(other).into(),
             ChoiceEmission::PassThrough(text).into(),

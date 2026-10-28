@@ -108,7 +108,6 @@ impl Spans {
         self.0.as_deref().unwrap_or(&[])
     }
 
-    #[cfg(test)]
     pub(crate) fn into_ranges(self) -> Vec<Range<usize>> {
         self.0.unwrap_or_default()
     }
