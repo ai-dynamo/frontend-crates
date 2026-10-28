@@ -364,7 +364,7 @@ pub fn try_tool_call_parse_basic_json(
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let (calls, normal) = try_tool_call_parse_basic_json_sourced(message, config, tools, false)?;
-    Ok((calls, normal.map(|normal| normal.text)))
+    Ok((calls, normal.map(SourcedText::into_text)))
 }
 
 /// [`try_tool_call_parse_basic_json`], with the input ranges of `normal_text`

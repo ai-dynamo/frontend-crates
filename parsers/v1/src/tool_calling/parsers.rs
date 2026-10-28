@@ -95,7 +95,7 @@ pub async fn try_tool_call_parse(
     tools: Option<&[ToolDefinition]>,
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let (calls, normal) = try_tool_call_parse_sourced(message, config, tools, false).await?;
-    Ok((calls, normal.map(|normal| normal.text)))
+    Ok((calls, normal.map(SourcedText::into_text)))
 }
 
 /// [`try_tool_call_parse`], with the input ranges of `normal_text` when
@@ -183,7 +183,7 @@ pub async fn detect_and_parse_tool_call_with_recovery(
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let (calls, normal) =
         detect_and_parse_tool_call_with_recovery_sourced(message, parser_str, tools, false).await?;
-    Ok((calls, normal.map(|normal| normal.text)))
+    Ok((calls, normal.map(SourcedText::into_text)))
 }
 
 /// [`detect_and_parse_tool_call_with_recovery`], with the input ranges of
@@ -261,8 +261,8 @@ pub(crate) async fn detect_and_parse_tool_call_with_recovery_sourced(
     if matches!(parser_key, "qwen25" | "hermes")
         && calls.is_empty()
         && let Some(normal) = normal_text.as_ref()
-        && let Some(idx) = normal.text.find("<tool_call>")
-        && !normal.text.contains("</tool_call>")
+        && let Some(idx) = normal.text().find("<tool_call>")
+        && !normal.text().contains("</tool_call>")
     {
         let normal = normal_text.expect("checked above");
         return Ok((calls, Some(normal.truncate_trim_end(idx))));
@@ -293,7 +293,7 @@ pub async fn detect_and_parse_tool_call(
 ) -> anyhow::Result<(Vec<ToolCallResponse>, Option<String>)> {
     let (calls, normal) =
         detect_and_parse_tool_call_sourced(message, parser_str, tools, false).await?;
-    Ok((calls, normal.map(|normal| normal.text)))
+    Ok((calls, normal.map(SourcedText::into_text)))
 }
 
 /// [`detect_and_parse_tool_call`], with the input ranges of `normal_text` as

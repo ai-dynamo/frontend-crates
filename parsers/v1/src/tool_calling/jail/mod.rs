@@ -61,6 +61,8 @@ use crate::tool_calling::parsers::{
 };
 
 #[cfg(test)]
+mod future_size_tests;
+#[cfg(test)]
 mod sources_tests;
 
 /// A jail stream item with, while recording, the input ranges of each choice's
@@ -2868,7 +2870,7 @@ impl JailedStream {
     ) -> (ChatChoiceStream, Spans) {
         let record = self.recording;
         // Ranges in `accumulated_content`, mapped to input ranges.
-        let sourced = |text: &SourcedText| accumulated_spans.map(&text.spans);
+        let sourced = |text: &SourcedText| accumulated_spans.map(text.spans());
         let whole = || SourcedText::slice(accumulated_content, accumulated_content, record);
         match &self.jail_mode {
             JailMode::MarkerBased => {
@@ -2914,7 +2916,7 @@ impl JailedStream {
                             let choice = create_choice_stream(
                                 choice_index,
                                 Some(Role::Assistant),
-                                &normal_text.text,
+                                normal_text.text(),
                                 None,
                                 base_choice.finish_reason,
                                 base_choice.logprobs.clone(),
@@ -2940,7 +2942,7 @@ impl JailedStream {
                         let choice = create_choice_stream(
                             choice_index,
                             Some(Role::Assistant),
-                            &normal_text.text,
+                            normal_text.text(),
                             Some(tool_call_chunks),
                             base_choice.finish_reason,
                             base_choice.logprobs.clone(),
@@ -2980,7 +2982,7 @@ impl JailedStream {
                             SourcedText::slice(accumulated_content, prefix, record)
                         } else if normal_text
                             .as_ref()
-                            .is_some_and(|normal| normal.text.is_empty())
+                            .is_some_and(|normal| normal.text().is_empty())
                         {
                             SourcedText::empty(record)
                         } else if is_kimi_k3_parser(self.tool_call_parser.as_deref()) {
@@ -3025,7 +3027,7 @@ impl JailedStream {
                         let choice = create_choice_stream(
                             choice_index,
                             Some(Role::Assistant),
-                            &content.text,
+                            content.text(),
                             None,
                             base_choice.finish_reason,
                             base_choice.logprobs.clone(),
