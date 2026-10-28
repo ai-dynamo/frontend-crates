@@ -82,6 +82,153 @@ fn native_eligibility_checks_constraints_and_referenced_schemas() {
 }
 
 #[test]
+fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
+    // XGrammar renders these as nested tags, but the parser types a child only
+    // through `properties`, object-valued `additionalProperties`/`items`, or a
+    // union with exactly one object or array alternative; anything else comes
+    // back as a string and violates the schema the grammar enforced.
+    let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
+    let object =
+        |name: &str, kind: &str| json!({"type":"object","properties":{name:{"type":kind}}});
+    for (schema, declined) in [
+        (json!({"const":{"n":1}}), Some("nested const literals")),
+        (
+            json!({"enum":[{"n":1},{"n":2}]}),
+            Some("nested enum literals"),
+        ),
+        (json!({"const":[1,true]}), Some("nested const literals")),
+        (
+            json!({"type":"array","prefixItems":[{"type":"integer"},{"type":"boolean"}],"items":false,"minItems":2}),
+            Some("positional array items"),
+        ),
+        (
+            json!({"type":"array","items":[{"type":"integer"},{"type":"boolean"}]}),
+            Some("positional array items"),
+        ),
+        (
+            json!({"anyOf":[object("n", "integer"), object("m", "boolean")]}),
+            Some("several object or array alternatives"),
+        ),
+        (
+            json!({"oneOf":[object("n", "integer"), object("m", "boolean")]}),
+            Some("several object or array alternatives"),
+        ),
+        (
+            json!({"anyOf":[{"type":"array","items":{"type":"integer"}},{"type":"array","items":{"type":"boolean"}}]}),
+            Some("several object or array alternatives"),
+        ),
+        (
+            json!({"type":"integer","if":{"minimum":1},"then":{"maximum":5}}),
+            Some("if constraints"),
+        ),
+        (
+            json!({"type":"object","properties":{"n":{"type":"integer"}},"dependentSchemas":{"n":{"required":["n"]}}}),
+            Some("dependentSchemas constraints"),
+        ),
+        (
+            json!({"anyOf":[object("n", "integer"), {"type":"null"}]}),
+            None,
+        ),
+        (json!({"type":"array","items":{"type":"integer"}}), None),
+        (json!({"const":5}), None),
+        (json!({"enum":[1,2]}), None),
+        (object("n", "integer"), None),
+    ] {
+        let mut tools = tools();
+        tools[0].parameters["properties"]["count"] = schema.clone();
+        let result = builder.build(&StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Required,
+            tools: &tools,
+            parallel_tool_calls: None,
+            schema_mode: StructuralTagSchemaMode::Auto,
+            structured_output_schema: None,
+            starts_in_reasoning: false,
+            allow_unprefilled_reasoning: false,
+        });
+        match declined {
+            Some(reason) => {
+                let error = result.expect_err(&format!("{schema} must select fallback"));
+                assert!(error.to_string().contains(reason), "{schema}: {error}");
+            }
+            None => assert!(result.is_ok(), "{schema}: {result:?}"),
+        }
+    }
+}
+
+#[test]
+fn annotation_only_schemas_select_json_fallback() {
+    // XGrammar's schema parser dispatches on a fixed keyword set; a node with
+    // none of them is unconstrained, which the M3 XML converter refuses after
+    // the tag is installed. The builder must decline exactly those nodes and
+    // keep admitting untyped nodes that do carry a shape keyword.
+    let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
+    for (schema, supported) in [
+        (json!({"description":"any value"}), false),
+        (json!({"title":"count"}), false),
+        (json!({"default":1}), false),
+        (json!({"minimum":1}), false),
+        (json!({"minimum":1,"maximum":5}), false),
+        (json!({"anyOf":[{"description":"x"}]}), false),
+        (
+            json!({"anyOf":[{"type":"integer"},{"description":"x"}]}),
+            false,
+        ),
+        (
+            json!({"oneOf":[{"type":"integer"},{"description":"x"}]}),
+            false,
+        ),
+        (json!({"type":"array","items":{"description":"x"}}), false),
+        (
+            json!({"type":"object","properties":{"n":{"minimum":1}},"required":["n"],"additionalProperties":false}),
+            false,
+        ),
+        (
+            json!({"$ref":"#/$defs/count","$defs":{"count":{"description":"x"}}}),
+            false,
+        ),
+        (
+            json!({"$ref":"#/$defs/count","$defs":{"count":{"minimum":1}}}),
+            false,
+        ),
+        (
+            json!({"properties":{"n":{"type":"integer"}},"required":["n"],"additionalProperties":false}),
+            true,
+        ),
+        (json!({"items":{"type":"integer"}}), true),
+        (json!({"enum":[1,2]}), true),
+        (json!({"const":1}), true),
+        (json!({"description":"x","type":"integer"}), true),
+        (json!({"type":"integer","minimum":1}), true),
+        (
+            json!({"type":"integer","$defs":{"unused":{"description":"x"}}}),
+            true,
+        ),
+    ] {
+        let mut tools = tools();
+        tools[0].parameters["properties"]["count"] = schema.clone();
+        if let Some(definitions) = schema.get("$defs") {
+            tools[0].parameters["$defs"] = definitions.clone();
+        }
+        let result = builder.build(&StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Required,
+            tools: &tools,
+            parallel_tool_calls: None,
+            schema_mode: StructuralTagSchemaMode::Auto,
+            structured_output_schema: None,
+            starts_in_reasoning: false,
+            allow_unprefilled_reasoning: false,
+        });
+        assert_eq!(result.is_ok(), supported, "{schema}: {result:?}");
+        if let Err(error) = result {
+            assert!(
+                error.to_string().contains("constrained tool schema"),
+                "{schema}: {error}"
+            );
+        }
+    }
+}
+
+#[test]
 fn reasoning_gate_override_requires_explicit_family_support() {
     for (family, expected) in [
         ("minimax_m3", true),
@@ -285,6 +432,63 @@ fn structural_tag_policy_matrix() {
             json!({"case":format!("definitions/referenced={referenced}"), "tag":tag,
             "accepted":[one], "rejected":[block(&invoke("record", "wrong"))]}),
         );
+    }
+    // Eligibility must agree with the compiler on the constrained-node rule as
+    // well: every schema the walk declines as unconstrained must fail to compile,
+    // and untyped nodes that carry a shape keyword must compile and accept their
+    // native wire. The last row is a nested union the parser can type.
+    for (label, schema, accepted) in [
+        ("annotation-only", json!({"description":"any value"}), None),
+        ("bare-bound", json!({"minimum":1}), None),
+        (
+            "union-with-annotation-branch",
+            json!({"anyOf":[{"type":"integer"},{"description":"x"}]}),
+            None,
+        ),
+        (
+            "untyped-properties",
+            json!({"properties":{"a":{"type":"integer"}},"required":["a"],"additionalProperties":false}),
+            Some(format!("{NS}<a>1{NS}</a>")),
+        ),
+        (
+            "untyped-items",
+            json!({"items":{"type":"integer"}}),
+            Some(format!("{NS}<item>1{NS}</item>")),
+        ),
+        ("untyped-const", json!({"const":1}), Some("1".to_string())),
+        (
+            "nullable-object-union",
+            json!({"anyOf":[{"type":"object","properties":{"n":{"type":"integer"}}},{"type":"null"}]}),
+            Some(format!("{NS}<n>1{NS}</n>")),
+        ),
+    ] {
+        let mut tools = tools.clone();
+        tools[0].parameters["properties"]["count"] = schema;
+        let result = builder.build(&StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Required,
+            tools: &tools,
+            parallel_tool_calls: Some(false),
+            schema_mode: StructuralTagSchemaMode::Auto,
+            structured_output_schema: None,
+            starts_in_reasoning: false,
+            allow_unprefilled_reasoning: false,
+        });
+        match accepted {
+            Some(value) => cases.push(json!({
+                "case": format!("eligibility/{label}"),
+                "tag": result.unwrap().unwrap(),
+                "accepted": [block(&invoke("record", &value))],
+                "rejected": [block(&invoke("record", "wrong"))],
+            })),
+            None => {
+                assert!(result.is_err(), "eligibility/{label} must select fallback");
+                cases.push(json!({
+                    "case": format!("eligibility/{label}"),
+                    "declined": true,
+                    "json_schema": tools[0].parameters,
+                }));
+            }
+        }
     }
     if let Some(path) = std::env::var_os("MINIMAX_M3_XGRAMMAR_CASES") {
         std::fs::write(path, serde_json::to_vec_pretty(&cases).unwrap()).unwrap();

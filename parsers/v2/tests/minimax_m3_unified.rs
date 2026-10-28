@@ -1,10 +1,13 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use dynamo_parsers_v2::structural_tag::{
+    StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
+};
 use dynamo_parsers_v2::{
     InvalidGuidedPayloadPolicy, Tool, UnifiedEvent, UnifiedParser, UnifiedParserEvent,
     UnifiedParserExt, UnifiedParserInit, UnifiedParserStartingState, UnifiedToolOutputMode,
-    assemble, create_unified_parser_for_family,
+    assemble, create_unified_parser_for_family, structural_tag_builder_for_family,
 };
 use serde_json::{Value, json};
 
@@ -734,6 +737,61 @@ fn literal_union_alternatives_do_not_hide_typed_parameters() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn native_eligible_nested_children_keep_json_types() {
+    // The boundary of the builder's child-type rule: every nested shape it keeps
+    // native must come back from the parser with its JSON types intact. The
+    // shapes it declines are pinned in minimax_m3_structural_tag.rs.
+    let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
+    for (value, body, want) in [
+        (
+            json!({"anyOf":[{"type":"object","properties":{"n":{"type":"integer"}}},{"type":"null"}]}),
+            "]<]minimax[>[<value>]<]minimax[>[<n>1]<]minimax[>[</n>]<]minimax[>[</value>",
+            json!({"value":{"n":1}}),
+        ),
+        (
+            json!({"type":"object","properties":{"n":{"type":"integer"},"ok":{"type":"boolean"}}}),
+            "]<]minimax[>[<value>]<]minimax[>[<n>1]<]minimax[>[</n>]<]minimax[>[<ok>true]<]minimax[>[</ok>]<]minimax[>[</value>",
+            json!({"value":{"n":1,"ok":true}}),
+        ),
+        (
+            json!({"type":"array","items":{"type":"integer"}}),
+            "]<]minimax[>[<value>]<]minimax[>[<item>1]<]minimax[>[</item>]<]minimax[>[<item>2]<]minimax[>[</item>]<]minimax[>[</value>",
+            json!({"value":[1,2]}),
+        ),
+        (
+            json!({"const":5}),
+            "]<]minimax[>[<value>5]<]minimax[>[</value>",
+            json!({"value":5}),
+        ),
+        (
+            json!({"enum":[1,2]}),
+            "]<]minimax[>[<value>2]<]minimax[>[</value>",
+            json!({"value":2}),
+        ),
+    ] {
+        let schema = json!({"type":"object","properties":{"value":value},"required":["value"],"additionalProperties":false});
+        let mut native = tools(schema.clone());
+        native[0].strict = Some(true);
+        let tag = builder.build(&StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Required,
+            tools: &native,
+            parallel_tool_calls: None,
+            schema_mode: StructuralTagSchemaMode::Auto,
+            structured_output_schema: None,
+            starts_in_reasoning: false,
+            allow_unprefilled_reasoning: false,
+        });
+        assert!(tag.is_ok(), "{schema} must stay native: {tag:?}");
+        assert_splits(
+            &call(body),
+            schema,
+            UnifiedParserInit::default(),
+            &[expected(want)],
+        );
     }
 }
 

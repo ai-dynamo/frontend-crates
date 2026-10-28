@@ -23,6 +23,7 @@ with open(sys.argv[1]) as source:
 assert cases, "no exported grammar cases"
 checks = 0
 token_checks = 0
+declined = 0
 tokenizer_info = None
 if len(sys.argv) > 2:
     with open(sys.argv[2]) as source:
@@ -33,6 +34,18 @@ if len(sys.argv) > 2:
         for marker in ["<mm:think>", "</mm:think>"]
     }
 for case in cases:
+    if case.get("declined"):
+        # The builder declined this schema as unconstrained; the M3 converter
+        # must agree, or the builder is sending such requests to JSON needlessly.
+        tag = {"type": "structural_tag", "format": {
+            "type": "json_schema", "json_schema": case["json_schema"], "style": "minimax_m3_xml"}}
+        try:
+            compiler.compile_grammar(xgr.Grammar.from_structural_tag(json.dumps(tag)))
+        except Exception as error:  # noqa: BLE001 - XGrammar raises its own error types
+            assert "unconstrained" in str(error), (case["case"], str(error))
+            declined += 1
+            continue
+        raise AssertionError(f"{case['case']}: XGrammar compiled a schema the builder declined")
     if tokenizer_info is not None and case.get("token_masks"):
         token_grammar = token_compiler.compile_structural_tag(json.dumps(case["tag"]))
         for check in case["token_masks"]:
@@ -52,4 +65,4 @@ for case in cases:
             actual = matcher.accept_string(sample) and matcher.is_terminated()
             assert actual == expected, (case["case"], key, sample)
             checks += 1
-print(f"XGrammar {version} checked {checks} accepted/rejected samples and {token_checks} token masks across {len(cases)} M3 grammars")
+print(f"XGrammar {version} checked {checks} accepted/rejected samples and {token_checks} token masks across {len(cases) - declined} M3 grammars, and {declined} declined schemas failed to compile")

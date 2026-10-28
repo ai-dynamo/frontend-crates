@@ -6,7 +6,9 @@ use crate::structural_tag::policy::{ResolvedToolCallingPolicy, resolve_tool_sche
 use crate::structural_tag::wire::{
     Format, JsonSchemaFormat, JsonSchemaStyle, TagFormat, TagsWithSeparatorFormat,
 };
-use crate::tool_calling::v1core::xml::minimax_m3_parser::native_types_require_json;
+use crate::tool_calling::v1core::xml::minimax_m3_parser::{
+    native_types_require_json, native_union_children_ambiguous,
+};
 use serde_json::Value;
 
 pub(crate) static MINIMAX_M3: StructuralTagBuilder = StructuralTagBuilder::new(&MiniMaxM3);
@@ -16,6 +18,27 @@ const BLOCK_BEGIN: &str = "]<]minimax[>[<tool_call>";
 const BLOCK_END: &str = "]<]minimax[>[</tool_call>";
 const INVOKE_BEGIN: &str = "]<]minimax[>[<invoke name=\"";
 const INVOKE_END: &str = "]<]minimax[>[</invoke>";
+
+/// Keywords on which XGrammar's `SchemaParser::Parse` dispatches. A node carrying
+/// none of them is parsed as `Any`, which the M3 XML converter rejects after this
+/// builder has already installed the native tag. Identical in XGrammar 0.2.7 and
+/// 0.2.8. Annotations such as `description`, `title` and `default`, and bare bounds
+/// such as `minimum`, do not constrain a node on their own.
+const XGRAMMAR_SHAPE_KEYWORDS: &[&str] = &[
+    "$ref",
+    "const",
+    "enum",
+    "anyOf",
+    "oneOf",
+    "allOf",
+    "type",
+    "properties",
+    "additionalProperties",
+    "unevaluatedProperties",
+    "items",
+    "prefixItems",
+    "unevaluatedItems",
+];
 
 impl MiniMaxM3 {
     fn block(
@@ -68,9 +91,21 @@ impl MiniMaxM3 {
     }
 }
 
-/// XGrammar's M3 XML style cannot express these schema features. Decline
-/// native tags while preserving the schema for the serving adapter's existing
-/// JSON fallback. This is a conservative eligibility check, not schema rewriting.
+/// Whether XGrammar treats `schema` as a constrained node rather than `Any`.
+fn constrains_value(schema: &Value) -> bool {
+    match schema {
+        Value::Bool(true) => false,
+        Value::Object(object) => XGRAMMAR_SHAPE_KEYWORDS
+            .iter()
+            .any(|keyword| object.contains_key(*keyword)),
+        _ => true,
+    }
+}
+
+/// XGrammar's M3 XML style cannot express these schema features, or renders
+/// nested tags whose types the M3 parser cannot recover. Decline native tags
+/// while preserving the schema for the serving adapter's existing JSON
+/// fallback. This is a conservative eligibility check, not schema rewriting.
 fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
     let mut pending = vec![(root, 0)];
     let mut remaining = 1024;
@@ -81,18 +116,18 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
         );
         remaining -= 1;
         anyhow::ensure!(
-            schema != &Value::Bool(true)
-                && !schema.as_object().is_some_and(|object| object.is_empty()),
+            constrains_value(schema),
             "native tags require a constrained tool schema"
         );
         let Some(object) = schema.as_object() else {
             continue;
         };
-        // The native converter cannot intersect schemas, and ignores negation.
-        // A successful compilation alone therefore does not establish that the
-        // native grammar implements these constraints. JSON fallback preserves
-        // the requested schema; enforcement still depends on the backend.
-        for keyword in ["allOf", "not"] {
+        // The native converter cannot intersect schemas, and ignores negation,
+        // conditionals and dependent schemas. A successful compilation alone
+        // therefore does not establish that the native grammar implements these
+        // constraints. JSON fallback preserves the requested schema; enforcement
+        // still depends on the backend.
+        for keyword in ["allOf", "not", "if", "dependentSchemas"] {
             anyhow::ensure!(
                 !object.contains_key(keyword),
                 "native tags do not support {keyword} constraints"
@@ -136,6 +171,20 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
             !native_types_require_json(root, schema),
             "native tags cannot preserve mixed string and non-string value types"
         );
+        // The parser recovers a child's type through `properties`, an
+        // object-valued `additionalProperties`, an object-valued `items`, or a
+        // union with exactly one object or array alternative. XGrammar renders
+        // the shapes below as nested tags all the same, so their children would
+        // come back as strings. Keep them on the JSON path.
+        anyhow::ensure!(
+            !object.contains_key("prefixItems")
+                && object.get("items").is_none_or(|items| !items.is_array()),
+            "native tags cannot type positional array items"
+        );
+        anyhow::ensure!(
+            !native_union_children_ambiguous(root, schema),
+            "native tags cannot type unions with several object or array alternatives"
+        );
         for keyword in ["additionalProperties", "unevaluatedProperties"] {
             anyhow::ensure!(
                 object
@@ -162,8 +211,18 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
         );
         for keyword in ["const", "enum"] {
             if let Some(value) = object.get(keyword) {
-                // JSON serialization retains the namespace bytes even inside
-                // nested literal objects/arrays; no schema nodes are rewritten.
+                let literals: Vec<&Value> = match (keyword, value) {
+                    ("enum", Value::Array(options)) => options.iter().collect(),
+                    _ => vec![value],
+                };
+                anyhow::ensure!(
+                    literals
+                        .iter()
+                        .all(|literal| !literal.is_object() && !literal.is_array()),
+                    "native tags cannot type nested {keyword} literals"
+                );
+                // JSON serialization retains the namespace bytes; no schema
+                // nodes are rewritten.
                 anyhow::ensure!(
                     !value.to_string().contains("]<]minimax[>["),
                     "native string literals cannot contain the namespace marker"
@@ -178,27 +237,23 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
         }
         // Definitions are declarations, not active constraints. Visit only the
         // definitions reached through references above.
-        for keyword in ["properties", "dependentSchemas"] {
-            if let Some(children) = object.get(keyword).and_then(Value::as_object) {
-                if keyword == "properties" {
-                    anyhow::ensure!(
-                        children.keys().all(|key| key.is_ascii()
-                            && !key.is_empty()
-                            && !key.starts_with('/')
-                            && !key.contains('>')
-                            && key.bytes().any(|byte| !byte.is_ascii_whitespace())),
-                        "native tags require representable parameter names"
-                    );
-                }
-                pending.extend(children.values().map(|child| (child, depth + 1)));
-            }
+        if let Some(children) = object.get("properties").and_then(Value::as_object) {
+            anyhow::ensure!(
+                children.keys().all(|key| key.is_ascii()
+                    && !key.is_empty()
+                    && !key.starts_with('/')
+                    && !key.contains('>')
+                    && key.bytes().any(|byte| !byte.is_ascii_whitespace())),
+                "native tags require representable parameter names"
+            );
+            pending.extend(children.values().map(|child| (child, depth + 1)));
         }
-        for keyword in ["anyOf", "oneOf", "prefixItems"] {
+        for keyword in ["anyOf", "oneOf"] {
             if let Some(children) = object.get(keyword).and_then(Value::as_array) {
                 pending.extend(children.iter().map(|child| (child, depth + 1)));
             }
         }
-        for keyword in ["items", "additionalItems", "contains", "if", "then", "else"] {
+        for keyword in ["items", "additionalItems", "contains"] {
             if let Some(child) = object.get(keyword) {
                 pending.push((child, depth + 1));
             }
