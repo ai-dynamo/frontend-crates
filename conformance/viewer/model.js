@@ -260,17 +260,10 @@ export function escapeHtml(value) {
 }
 
 
-function captureVersionLabel(implementation, version, metadata) {
-  const producer = metadata.dynamo_v2_producer;
-  return implementation === 'dynamo_v2' && producer?.kind === 'unpublished' && version === producer.crate_version
-    ? `${version} [unpublished]` : version;
-}
-
-
 const slug = (version) => String(version || '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export function sortCandidates(items) {
-  const parserName = (item) => item.label.replace(/\s\d[\w.+]*\s*(?:\[unpublished(?: sha256:[a-f0-9]+)?\]\s*)?(?:\([^)]*\))?\s*$/, '').replace(/\s*\([^)]*\)\s*$/, '').toLowerCase();
+  const parserName = (item) => item.label.replace(/\s\d[\w.+]*\s*(?:\([^)]*\))?\s*$/, '').replace(/\s*\([^)]*\)\s*$/, '').toLowerCase();
   return [...items].sort((a, b) => (a.version && b.version ? compareLegacyVersions(b.version, a.version) : Number(Boolean(b.version)) - Number(Boolean(a.version))))
     .sort((a, b) => compareText(parserName(a), parserName(b)));
 }
@@ -323,7 +316,7 @@ export function tabCandidates(catalog, tab, { golden = false } = {}) {
         : source.implementation === 'dynamo_v1_jail' ? 'batch + jail-buffer'
         : capture.mode === 'batch' ? 'batch'
           : policy.capture_contracts?.[source.implementation]?.label || 'stream';
-      return `${producerLabel} ${captureVersionLabel(source.implementation, source.version, metadata)} (${flavor})`;
+      return `${producerLabel} ${source.version} (${flavor})`;
     };
     const makeControl = (source, key, bucket = 'C') => control(source, key, labelFor(source), bucket);
     const result = [makeControl(reference, 'dynamo', 'A'), oracle('unified', policy.golden_bucket)];

@@ -21,6 +21,14 @@ catalog.capture_generation = { mode: 'history' };
 catalog.metadata.unified_presentation.authored_scenarios = ['tool_only'];
 catalog.sources.unified = catalog.sources.unified.filter((source) => source.family === 'qwen3' && source.kind === 'inputs-and-golden');
 catalog.sources.candidates = [{ mode: 'unified', implementation: 'dynamo_v2', version: '1.0.0', source: 'capture.yaml', native_unified_families: ['qwen3'] }];
+for (const kind of ['unpublished', 'release']) {
+  const versionCatalog = structuredClone(catalog);
+  versionCatalog.metadata.dynamo_v2_producer = { kind, crate_version: '1.0.0' };
+  const reference = tabCandidates(versionCatalog, { id: 'tab-unified', mode: 'unified' })[0];
+  assert.equal(reference.control.version, '1.0.0');
+  assert.equal(reference.control.label, 'Dynamo v2 Rust 1.0.0 (stream, UnifiedParser)');
+  assert.equal(reference.control.label_html, reference.control.label);
+}
 const postCatalog = structuredClone(catalog);
 for (const [implementation, versions] of [
   ['vllm_python', ['0.8.5', '0.8.5.post1']],

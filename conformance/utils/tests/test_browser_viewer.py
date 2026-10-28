@@ -174,9 +174,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert loaded == [], 'default capture data must come entirely from HTML'
         assert not any('viewer-resolved-catalog' in path for path in requests)
         default_capture = _published_capture(published_viewer)
-        producer = _published_catalog(published_viewer)["metadata"]["dynamo_v2_producer"]
-        unpublished = producer["kind"] == "unpublished" and default_capture["version"] == producer["crate_version"]
-        version_label = default_capture["version"] + (" [unpublished]" if unpublished else "")
+        version_label = default_capture["version"]
         assert select.get_attribute('aria-label') == f"Choose capture for comparison slot 1: Dynamo, v2 Rust {version_label} (stream, UnifiedParser)"
         expected_rows = next(item["native_unified_families"] for item in _published_catalog(published_viewer)["sources"]["candidates"]
                              if item["implementation"] == default_capture["implementation"] and item["version"] == default_capture["version"])
