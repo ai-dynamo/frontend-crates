@@ -631,3 +631,85 @@ async fn review_f3_jail_dates_duplicate_choices_in_caller_offsets() {
         "each duplicate choice has its own caller ranges"
     );
 }
+
+#[tokio::test]
+#[ignore = "F5: a contentless duplicate consumes the following choice's source entry"]
+async fn review_f5_contentless_duplicate_does_not_steal_text_sources() {
+    let mut violations = Vec::new();
+    for (stage, text) in [
+        (
+            json!({"kind": "reasoning", "reasoning_parser": "qwen3", "options": {}}),
+            "<think>R</think>A",
+        ),
+        (
+            json!({"kind": "strip", "think_start_token": "<think>"}),
+            "<think>A",
+        ),
+        (
+            json!({"kind": "jail", "tool_call_parser": "hermes", "options": {}}),
+            "A",
+        ),
+    ] {
+        let input = to_item(&json!({"data": {"choices": [
+            {"index": 0, "delta": {"role": "assistant"}},
+            {"index": 0, "delta": {"content": text}}
+        ]}}));
+        let mut complete = with_sources(&[input]);
+        let control = run_sourced(&stage, complete.clone()).await;
+        let totals = |items: &[(SourcedChunk, usize)]| {
+            let mut text_bytes = (0, 0);
+            let mut source_bytes = (0, 0);
+            for (item, _) in items {
+                for choice in &item.chunk().unwrap().choices {
+                    text_bytes.0 += text_of(&choice.delta.content).len();
+                    text_bytes.1 += choice
+                        .delta
+                        .reasoning_content
+                        .as_ref()
+                        .map_or(0, String::len);
+                }
+                for entry in item.sources().unwrap() {
+                    source_bytes.0 += entry.content.iter().map(|range| range.len()).sum::<usize>();
+                    source_bytes.1 += entry
+                        .reasoning
+                        .iter()
+                        .map(|range| range.len())
+                        .sum::<usize>();
+                }
+            }
+            (text_bytes, source_bytes)
+        };
+        let (text_bytes, source_bytes) = totals(&control);
+        assert_eq!(text_bytes, source_bytes, "complete entries are the control");
+
+        // A choice with no text needs no entry. The only entry belongs to text.
+        complete[0].sources.as_mut().unwrap().remove(0);
+        let output = run_sourced(&stage, complete).await;
+        assert_eq!(
+            shape(
+                &control
+                    .iter()
+                    .map(|(item, _)| item.chunk.clone())
+                    .collect::<Vec<_>>()
+            ),
+            shape(
+                &output
+                    .iter()
+                    .map(|(item, _)| item.chunk.clone())
+                    .collect::<Vec<_>>()
+            ),
+        );
+        let (text_bytes, source_bytes) = totals(&output);
+        if text_bytes != source_bytes {
+            violations.push((
+                stage["kind"].as_str().unwrap().to_string(),
+                text_bytes,
+                source_bytes,
+            ));
+        }
+    }
+    assert!(
+        violations.is_empty(),
+        "contentless duplicates break tiling (stage, text bytes, source bytes): {violations:?}"
+    );
+}
