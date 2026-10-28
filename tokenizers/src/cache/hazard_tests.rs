@@ -401,3 +401,29 @@ fn a_normalized_plain_token_cannot_shadow_a_fast_backend_split() {
         "Fastokens and Baseten must match their own uncached IDs"
     );
 }
+
+#[test]
+#[ignore = "F5: merged HF flags hide the fastokens encoder's rstrip hazard"]
+fn fastokens_uses_the_encoders_strip_flags_when_the_config_disagrees() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([flagged(3, "<sep>", true, "rstrip")]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1, " ": 2}),
+    );
+    let config = json!({"added_tokens_decoder": {"3": added(3, "<sep>", true)}});
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write tokenizer");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string())
+        .expect("write config");
+    let path = path.to_str().expect("UTF-8");
+    let hf = HuggingFaceTokenizer::from_file(path).expect("load HF");
+    assert_eq!(ids(&hf, "a<sep> b"), [0, 3, 2, 1]);
+    assert!(hf.prefix_cache_hazard().is_none());
+    let fast: Arc<dyn Tokenizer> =
+        Arc::new(crate::FastTokenizer::from_file(path).expect("load fastokens"));
+    let (uncached, cached, _) = three_ways(fast, specials(&json), "a<sep> b");
+    assert_eq!(uncached, [0, 3, 1], "fastokens keeps tokenizer.json's rstrip");
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
