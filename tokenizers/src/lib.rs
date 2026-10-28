@@ -28,7 +28,10 @@ pub use cache::{
 pub use eos::eos_token_ids;
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
-pub use stop_tokens::{StopTokenDecoder, StopTokenIds, StopTokenStep, StopTokenTrigger};
+pub use stop_tokens::{
+    StopTokenDecoder, StopTokenIds, StopTokenStep, StopTokenTrigger, lossless_token_text,
+    token_text,
+};
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
@@ -523,6 +526,16 @@ impl DecodeStream {
             read_offset: num_input_tokens,
             has_emitted: false,
         }
+    }
+
+    /// The tokenizer the stream decodes with.
+    pub(crate) fn tokenizer(&self) -> &Arc<dyn traits::Tokenizer> {
+        &self.tokenizer
+    }
+
+    /// Whether the stream drops special tokens.
+    pub(crate) fn skip_special_tokens(&self) -> bool {
+        self.skip_special_tokens
     }
 
     /// Step appends a token_id to the internal state and tries to produce a text chunk.

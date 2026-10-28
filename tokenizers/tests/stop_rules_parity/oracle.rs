@@ -5,7 +5,10 @@
 //! the end-of-sequence chain of `HFConfig::from_json_file`
 //! (`lib/llm/src/model_card.rs:2176-2410`), and the stop-token part of
 //! `Decoder::step_with_token_text` and `Decoder::finish`
-//! (`lib/llm/src/backend.rs:895-1166`).
+//! (`lib/llm/src/backend.rs:895-1166`), with the per-token text of the
+//! selected token (`decode_token_text`, `lib/llm/src/backend.rs:94-110`) and
+//! of the top candidates (`fill_missing_top_logprob_text`,
+//! `lib/llm/src/backend.rs:112-131`).
 //!
 //! Each change from the stock code is marked `ORACLE CHANGE`.
 
@@ -15,7 +18,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use dynamo_tokenizers::{DecodeStream, TokenIdType, file_json_field};
+use dynamo_tokenizers::{DecodeStream, TokenIdType, Tokenizer, file_json_field};
 use serde::{Deserialize, Serialize};
 
 // ---------------------------------------------------------------------------
@@ -247,6 +250,7 @@ pub enum StopTrigger {
 
 #[derive(Debug, Default)]
 pub struct StepResult {
+    pub token: Option<String>,
     pub released_text: Option<String>,
     pub stop_trigger: Option<StopTrigger>,
 }
@@ -254,16 +258,49 @@ pub struct StepResult {
 impl StepResult {
     fn ok(released_text: Option<String>) -> Self {
         Self {
+            token: None,
             released_text,
             stop_trigger: None,
         }
     }
 }
 
-/// ORACLE CHANGE: the stop-token fields only. No tokenizer (so no per-token
-/// text), no tracker, and no stop strings: with none, the stock
+// lib/llm/src/backend.rs:94-110
+fn decode_token_text(
+    tokenizer: &Tokenizer,
+    token_id: TokenIdType,
+    skip_special_tokens: bool,
+) -> Option<String> {
+    tokenizer
+        .decode(&[token_id], skip_special_tokens)
+        .ok()
+        .map(String::from)
+}
+
+/// ORACLE CHANGE: one candidate of `fill_missing_top_logprob_text`
+/// (`lib/llm/src/backend.rs:112-131`): its text, or `None` when the stock
+/// code leaves the candidate's text missing.
+pub fn top_logprob_text(
+    tokenizer: &Tokenizer,
+    token_id: TokenIdType,
+    skip_special_tokens: bool,
+) -> Option<String> {
+    if let Ok(decoded) = tokenizer.decode(&[token_id], skip_special_tokens)
+        && decoded.is_complete()
+        && !decoded.as_str().contains('\u{fffd}')
+    {
+        let token: String = decoded.into();
+        return Some(token);
+    }
+    None
+}
+
+/// ORACLE CHANGE: the stop-token fields, and the tokenizer for the
+/// per-token text. No tracker, and no stop strings: with none, the stock
 /// `process_decoded_text` returns its input and `flush_jailed` nothing.
 pub struct Decoder {
+    tokenizer: Option<Tokenizer>,
+    skip_special_tokens: bool,
     decode_stream: DecodeStream,
     pending_token_ids: Vec<TokenIdType>,
     hidden_stop_ids: HashSet<TokenIdType>,
@@ -276,8 +313,12 @@ pub struct Decoder {
 
 impl Decoder {
     /// ORACLE CHANGE: takes the three ID lists of `StopConditions`
-    /// (`stop_token_ids`, `stop_token_ids_hidden`, `stop_token_ids_visible`).
+    /// (`stop_token_ids`, `stop_token_ids_hidden`, `stop_token_ids_visible`),
+    /// and the tokenizer of the per-token text, as `new_with_checkpoint`
+    /// gives it, or none, as `new` does.
     pub fn new(
+        tokenizer: Option<Tokenizer>,
+        skip_special_tokens: bool,
         decode_stream: DecodeStream,
         stop_token_ids: Vec<TokenIdType>,
         stop_token_ids_hidden: Vec<TokenIdType>,
@@ -291,6 +332,8 @@ impl Decoder {
             stop_token_ids_visible.iter().copied().collect();
         let hidden_stop_ids = user_stop_ids.union(&system_stop_ids).copied().collect();
         Self {
+            tokenizer,
+            skip_special_tokens,
             decode_stream,
             pending_token_ids: Vec::new(),
             hidden_stop_ids,
@@ -302,7 +345,16 @@ impl Decoder {
         }
     }
 
+    #[allow(dead_code)]
     pub fn step(&mut self, token_id: TokenIdType) -> Result<StepResult> {
+        self.step_with_token_text(token_id, true)
+    }
+
+    pub fn step_with_token_text(
+        &mut self,
+        token_id: TokenIdType,
+        needs_token_text: bool,
+    ) -> Result<StepResult> {
         let below_min_tokens = self.generated_tokens < self.min_tokens;
         self.generated_tokens += 1;
 
@@ -328,8 +380,22 @@ impl Decoder {
             self.pending_token_ids.clear();
         }
 
+        let selected_token = if needs_token_text {
+            self.tokenizer
+                .as_ref()
+                .and_then(|tokenizer| {
+                    decode_token_text(tokenizer, token_id, self.skip_special_tokens)
+                })
+                .or_else(|| decoded_text.clone())
+        } else {
+            None
+        };
+
         if below_min_tokens {
-            return Ok(StepResult::ok(decoded_text));
+            return Ok(StepResult {
+                token: selected_token,
+                ..StepResult::ok(decoded_text)
+            });
         }
 
         if self.visible_stop_ids.contains(&token_id) || self.hidden_stop_ids.contains(&token_id) {
@@ -341,6 +407,7 @@ impl Decoder {
         }
 
         let mut decoded = StepResult::ok(decoded_text);
+        decoded.token = selected_token;
 
         let trigger = if self.visible_stop_ids.contains(&token_id) {
             StopTrigger::VisibleStopTokenDetected(token_id)

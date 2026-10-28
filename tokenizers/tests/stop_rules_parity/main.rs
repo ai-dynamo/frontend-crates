@@ -9,7 +9,7 @@ mod oracle;
 use std::path::{Path, PathBuf};
 
 use dynamo_tokenizers::{
-    StopTokenDecoder, StopTokenIds, StopTokenTrigger, Tokenizer, eos_token_ids,
+    StopTokenDecoder, StopTokenIds, StopTokenTrigger, Tokenizer, eos_token_ids, lossless_token_text,
 };
 use serde_json::{Value, json};
 
@@ -195,27 +195,41 @@ fn tokenizer() -> Tokenizer {
     Tokenizer::from_file(path.to_str().expect("path")).expect("tokenizer")
 }
 
-/// What a decoder emits for `ids`: the text and stop of each step, then the
-/// finish's text.
+/// What a decoder emits for `ids`: the text, stop, and token text of each
+/// step, then the finish's text.
 type Run = (
-    Vec<(Option<String>, Option<StopTokenTrigger>)>,
+    Vec<(Option<String>, Option<StopTokenTrigger>, Option<String>)>,
     Option<String>,
 );
 
-fn run_ours(
-    tokenizer: &Tokenizer,
-    ids: &[u32],
-    stops: &StopTokenIds,
+/// How a case runs: its stop tokens and `min_tokens`, `no_stop_trim`,
+/// whether the decode skips special tokens, and whether the decoder gives
+/// each token's own text.
+#[derive(Debug, Clone)]
+struct Case {
+    stops: StopTokenIds,
     min_tokens: u32,
     no_stop_trim: bool,
-) -> Run {
-    let stream = tokenizer.decode_stream(&[], true);
-    let mut decoder = StopTokenDecoder::new(stream, stops.clone(), min_tokens, no_stop_trim);
+    skip_special_tokens: bool,
+    token_text: bool,
+}
+
+fn run_ours(tokenizer: &Tokenizer, ids: &[u32], case: &Case) -> Run {
+    let stream = tokenizer.decode_stream(&[], case.skip_special_tokens);
+    let mut decoder = StopTokenDecoder::new(
+        stream,
+        case.stops.clone(),
+        case.min_tokens,
+        case.no_stop_trim,
+    );
+    if case.token_text {
+        decoder = decoder.with_token_text();
+    }
     let mut steps = Vec::new();
     for &id in ids {
         let step = decoder.step(id).expect("step");
         let stopped = step.stop.is_some();
-        steps.push((step.text, step.stop));
+        steps.push((step.text, step.stop, step.token));
         if stopped {
             return (steps, None);
         }
@@ -224,32 +238,32 @@ fn run_ours(
 }
 
 /// The stock decoder, stopped as its caller stops it: at the first trigger.
-fn run_stock(
-    tokenizer: &Tokenizer,
-    ids: &[u32],
-    stops: &StopTokenIds,
-    min_tokens: u32,
-    no_stop_trim: bool,
-) -> Run {
-    let stream = tokenizer.decode_stream(&[], true);
+/// It decodes token text as the frontend's backend does: with the
+/// tokenizer, and only when the request asks for log probabilities.
+fn run_stock(tokenizer: &Tokenizer, ids: &[u32], case: &Case) -> Run {
+    let stream = tokenizer.decode_stream(&[], case.skip_special_tokens);
     let mut decoder = oracle::Decoder::new(
+        Some(tokenizer.clone()),
+        case.skip_special_tokens,
         stream,
-        stops.user.clone(),
-        stops.hidden.clone(),
-        stops.visible.clone(),
-        min_tokens,
-        no_stop_trim,
+        case.stops.user.clone(),
+        case.stops.hidden.clone(),
+        case.stops.visible.clone(),
+        case.min_tokens,
+        case.no_stop_trim,
     );
     let mut steps = Vec::new();
     for &id in ids {
-        let step = decoder.step(id).expect("step");
+        let step = decoder
+            .step_with_token_text(id, case.token_text)
+            .expect("step");
         let stop = step.stop_trigger.map(|trigger| match trigger {
             oracle::StopTrigger::VisibleStopTokenDetected(id) => StopTokenTrigger::Visible(id),
             oracle::StopTrigger::UserStopTokenDetected(id) => StopTokenTrigger::User(id),
             oracle::StopTrigger::HiddenStopTokenDetected(id) => StopTokenTrigger::Hidden(id),
         });
         let stopped = stop.is_some();
-        steps.push((step.released_text, stop));
+        steps.push((step.released_text, stop, step.token));
         if stopped {
             return (steps, None);
         }
@@ -257,24 +271,26 @@ fn run_stock(
     (steps, decoder.finish().expect("finish").released_text)
 }
 
-/// Each step's text and stop, and the finish, match the stock decoder: for
-/// stop tokens at each place in the reply, in each set, from each
-/// `min_tokens`, with and without `no_stop_trim`. The reply holds multi-byte
-/// text, so a stop can flush a held byte sequence.
-#[test]
-fn every_step_decodes_and_stops_as_the_frontend_decoder() {
-    let tokenizer = tokenizer();
+/// The reply of the parity cases: multi-byte text, so a stop can flush a
+/// held byte sequence and a byte token decodes alone to U+FFFD; the
+/// end-of-sequence token, twice; and one more token after it.
+fn reply(tokenizer: &Tokenizer) -> Vec<u32> {
     let mut ids = tokenizer
         .encode("héllo wörld, 你好! 🦀 end")
         .expect("encode")
         .token_ids()
         .to_vec();
-    // The end-of-sequence token, twice, and one more after it.
     ids.extend([2, 2, 29871]);
-    let mut candidates: Vec<u32> = ids.clone();
+    ids
+}
+
+/// Every case of the parity tests: stop tokens at each place in the reply,
+/// in each set, from each `min_tokens`, with and without `no_stop_trim`.
+fn cases(ids: &[u32], skip_special_tokens: bool, token_text: bool) -> Vec<Case> {
+    let mut candidates: Vec<u32> = ids.to_vec();
     candidates.sort_unstable();
     candidates.dedup();
-    let mut cases = 0;
+    let mut cases = Vec::new();
     for &stop in &candidates {
         for (user, hidden, visible) in [
             (vec![stop], vec![], vec![]),
@@ -292,18 +308,81 @@ fn every_step_decodes_and_stops_as_the_frontend_decoder() {
             };
             for min_tokens in 0..=ids.len() as u32 + 1 {
                 for no_stop_trim in [false, true] {
-                    let ours = run_ours(&tokenizer, &ids, &stops, min_tokens, no_stop_trim);
-                    let stock = run_stock(&tokenizer, &ids, &stops, min_tokens, no_stop_trim);
-                    assert_eq!(
-                        ours, stock,
-                        "stop {stop}, {stops:?}, min_tokens {min_tokens}, no_stop_trim {no_stop_trim}"
-                    );
-                    cases += 1;
+                    cases.push(Case {
+                        stops: stops.clone(),
+                        min_tokens,
+                        no_stop_trim,
+                        skip_special_tokens,
+                        token_text,
+                    });
                 }
             }
         }
     }
-    assert!(cases > 1000, "{cases} cases");
+    cases
+}
+
+/// Each step's text and stop, and the finish, match the stock decoder, for
+/// every case. With no token text asked for, each step's token text is
+/// `None`, as the stock decoder's is.
+#[test]
+fn every_step_decodes_and_stops_as_the_frontend_decoder() {
+    let tokenizer = tokenizer();
+    let ids = reply(&tokenizer);
+    let cases = cases(&ids, true, false);
+    for case in &cases {
+        let ours = run_ours(&tokenizer, &ids, case);
+        let stock = run_stock(&tokenizer, &ids, case);
+        assert_eq!(ours, stock, "{case:?}");
+    }
+    assert!(cases.len() > 1000, "{} cases", cases.len());
+}
+
+/// With token text asked for, each step also gives the token's own text as
+/// the stock decoder gives it for a log probability: decoded alone, lossy,
+/// and none for a hidden stop token. With and without special tokens.
+#[test]
+fn every_step_gives_the_token_text_of_the_frontend_decoder() {
+    let tokenizer = tokenizer();
+    let ids = reply(&tokenizer);
+    let mut compared = 0;
+    let mut replacement = 0;
+    for skip_special_tokens in [true, false] {
+        for case in cases(&ids, skip_special_tokens, true) {
+            let ours = run_ours(&tokenizer, &ids, &case);
+            let stock = run_stock(&tokenizer, &ids, &case);
+            assert_eq!(ours, stock, "{case:?}");
+            replacement += ours
+                .0
+                .iter()
+                .filter(|step| step.2.as_deref().is_some_and(|t| t.contains('\u{fffd}')))
+                .count();
+            compared += 1;
+        }
+    }
+    assert!(compared > 2000, "{compared} cases");
+    // The control: a byte token's own text is U+FFFD, kept as the stock
+    // decoder keeps it.
+    assert!(replacement > 0, "no byte token decoded alone");
+}
+
+/// The text of a top candidate: a complete decode with no U+FFFD, as the
+/// stock frontend fills a candidate's missing text, for every ID of the
+/// vocabulary.
+#[test]
+fn every_candidate_text_is_the_frontend_s() {
+    let tokenizer = tokenizer();
+    let mut missing = 0;
+    for skip_special_tokens in [true, false] {
+        for id in 0..32000 {
+            let ours = lossless_token_text(&**tokenizer, id, skip_special_tokens);
+            let stock = oracle::top_logprob_text(&tokenizer, id, skip_special_tokens);
+            assert_eq!(ours, stock, "id {id}, skip {skip_special_tokens}");
+            missing += usize::from(ours.is_none());
+        }
+    }
+    // The control: the byte tokens have no text.
+    assert!(missing >= 2 * 128, "{missing} candidates with no text");
 }
 
 /// After a stop, later tokens add no text, and the finish adds none.

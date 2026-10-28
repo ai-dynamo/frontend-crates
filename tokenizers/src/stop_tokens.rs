@@ -16,10 +16,11 @@
 //! frontend drops them.
 //!
 //! The frontend also decodes each token on its own, for its log
-//! probabilities. That costs a decode per token, so it is not here: a caller
-//! that needs it decodes the token itself.
+//! probabilities. That costs a decode per token, so a decoder does it only
+//! when built [`with_token_text`](StopTokenDecoder::with_token_text).
+//! [`lossless_token_text`] is the text the frontend gives a top candidate.
 
-use crate::{DecodeStream, Result, TokenIdType};
+use crate::{DecodeStream, Result, TokenIdType, traits};
 
 /// The stop-token IDs of one request, as the frontend's stop conditions
 /// carry them.
@@ -52,6 +53,11 @@ pub struct StopTokenStep {
     pub text: Option<String>,
     /// The stop token, when this token ends the reply.
     pub stop: Option<StopTokenTrigger>,
+    /// The token's own text, for its log probability: [`token_text`], or
+    /// the stream's text when that fails. `None` for a hidden stop token
+    /// that ends the reply, and when the decoder is not built
+    /// [`with_token_text`](StopTokenDecoder::with_token_text).
+    pub token: Option<String>,
 }
 
 /// A [`DecodeStream`] with the frontend decoder's stop-token rules.
@@ -62,6 +68,7 @@ pub struct StopTokenDecoder {
     visible: Vec<TokenIdType>,
     min_tokens: u32,
     no_stop_trim: bool,
+    token_text: bool,
     generated: u32,
     stopped: bool,
 }
@@ -92,9 +99,17 @@ impl StopTokenDecoder {
             visible,
             min_tokens,
             no_stop_trim,
+            token_text: false,
             generated: 0,
             stopped: false,
         }
+    }
+
+    /// The same decoder, which also gives each token's own text
+    /// ([`StopTokenStep::token`]): one more decode per token.
+    pub fn with_token_text(mut self) -> Self {
+        self.token_text = true;
+        self
     }
 
     /// Decode the next generated token.
@@ -121,11 +136,28 @@ impl StopTokenDecoder {
             return Ok(StopTokenStep {
                 text: self.stream.finish()?,
                 stop: Some(trigger),
+                token: None,
             });
         }
         let mut text = self.stream.step(id)?;
+        // Decoded alone: the stream's text can hold earlier tokens' bytes.
+        let token = self
+            .token_text
+            .then(|| {
+                token_text(
+                    self.stream.tokenizer().as_ref(),
+                    id,
+                    self.stream.skip_special_tokens(),
+                )
+                .or_else(|| text.clone())
+            })
+            .flatten();
         if below_min || !(hidden || visible) {
-            return Ok(StopTokenStep { text, stop: None });
+            return Ok(StopTokenStep {
+                text,
+                stop: None,
+                token,
+            });
         }
         self.stopped = true;
         if let Some(tail) = self.stream.finish()? {
@@ -141,6 +173,7 @@ impl StopTokenDecoder {
         Ok(StopTokenStep {
             text,
             stop: Some(trigger),
+            token,
         })
     }
 
@@ -167,4 +200,31 @@ impl StopTokenDecoder {
     pub fn is_stopped(&self) -> bool {
         self.stopped
     }
+}
+
+/// The text of token `id` decoded alone, as the frontend writes the chosen
+/// token in a log probability. A byte of a longer character decodes to
+/// U+FFFD, which is kept: the tokenizer gives no way to its own bytes.
+/// `None` when the decode fails.
+pub fn token_text(
+    tokenizer: &dyn traits::Tokenizer,
+    id: TokenIdType,
+    skip_special_tokens: bool,
+) -> Option<String> {
+    tokenizer
+        .decode(&[id], skip_special_tokens)
+        .ok()
+        .map(String::from)
+}
+
+/// The text of token `id` decoded alone, as the frontend writes a top
+/// candidate in a log probability: `None` when the decode fails, or is not
+/// whole text (it ends in a partial character or holds U+FFFD).
+pub fn lossless_token_text(
+    tokenizer: &dyn traits::Tokenizer,
+    id: TokenIdType,
+    skip_special_tokens: bool,
+) -> Option<String> {
+    let decoded = tokenizer.decode(&[id], skip_special_tokens).ok()?;
+    (decoded.is_complete() && !decoded.as_str().contains('\u{fffd}')).then(|| decoded.into())
 }
