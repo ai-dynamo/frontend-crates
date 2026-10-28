@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 
 
-SUITES = {"unified-golden": False, "render-golden": False, "adapter-golden": False, "recorded-capture": True}
+SUITES = {"unified-golden": False, "render-golden": False, "recorded-capture": True}
 
 
 def annotation(value):

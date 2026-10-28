@@ -820,8 +820,6 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
     use dynamo_parsers_v2::{ToolParseResult, create_tool_parser_for_family};
 
     let mut coverage = BTreeMap::<String, usize>::new();
-    let mut differences = Vec::new();
-    let mut checked = 0;
     for file in load_native_golden()
         .into_iter()
         .filter(|file| matches!(file.family.as_str(), "deepseek_v4" | "deepseek_v41"))
@@ -831,13 +829,7 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                 continue;
             }
             *coverage.entry(file.family.clone()).or_default() += 1;
-            let expected: Vec<_> = case
-                .golden
-                .into_iter()
-                .filter(|event| matches!(event, UnifiedEvent::ToolCall { .. }))
-                .collect();
             for (label, chunks) in splittings(&case.input) {
-                checked += 1;
                 let case_tools = common::unified_tools_for_schemas(case.tools.as_ref());
                 let native = events(&file.family, &chunks, &case.init, &case_tools).map(|events| {
                     events
@@ -882,18 +874,9 @@ fn deepseek_tool_adapter_matches_both_native_golden_corpora() {
                     "{} {id} {label}: tool adapter differs from native parser",
                     file.family
                 );
-                if actual.as_ref() != Ok(&expected) {
-                    differences.push(format!(
-                        "{} {id} {label}: golden={} actual={}",
-                        file.family,
-                        render(&Ok(expected.clone())),
-                        render(&actual)
-                    ));
-                }
             }
         }
     }
-    capture::report_comparison("adapter-golden", checked, &differences, false);
     for family in ["deepseek_v4", "deepseek_v41"] {
         assert!(
             coverage.get(family).copied().unwrap_or_default() > 0,

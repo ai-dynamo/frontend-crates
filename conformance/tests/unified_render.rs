@@ -1108,10 +1108,17 @@ struct InputCase {
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
     let root = common::ensure_unified_fixtures().join("unified");
-    validate_committed_dynamo_capture(&root, true);
+    let (checked, stale) = compare_committed_dynamo_capture(&root);
+    capture::report_comparison("recorded-capture", checked, &stale, true);
+    assert_dynamo_capture_matches(checked, &stale);
 }
 
-fn validate_committed_dynamo_capture(root: &std::path::Path, report: bool) {
+fn validate_committed_dynamo_capture(root: &std::path::Path) {
+    let (checked, stale) = compare_committed_dynamo_capture(root);
+    assert_dynamo_capture_matches(checked, &stale);
+}
+
+fn compare_committed_dynamo_capture(root: &std::path::Path) -> (usize, Vec<String>) {
     if !root.join("inputs").is_dir() {
         panic!(
             "no committed unified fixtures under {} — extract them first",
@@ -1123,14 +1130,6 @@ fn validate_committed_dynamo_capture(root: &std::path::Path, report: bool) {
     let capture_dir = common::latest_recorded_capture_dir(root, "dynamo_v2-")
         .expect("no committed dynamo_v2-<ver> capture dir");
 
-    validate_selected_dynamo_capture(root, &capture_dir, report);
-}
-
-fn validate_selected_dynamo_capture(
-    root: &std::path::Path,
-    capture_dir: &std::path::Path,
-    report: bool,
-) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
     let native_families: BTreeSet<String> = common::unified_families()
         .into_iter()
@@ -1271,9 +1270,10 @@ fn validate_selected_dynamo_capture(
         }
     }
 
-    if report {
-        capture::report_comparison("recorded-capture", checked, &stale, true);
-    }
+    (checked, stale)
+}
+
+fn assert_dynamo_capture_matches(checked: usize, stale: &[String]) {
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
@@ -1327,15 +1327,15 @@ fn plain_capture_records_reach_live_guard() {
     write(&base, "old", &captures["old"]);
     write(&base, "retained", &captures["retained"]);
     write(&base, "added", &captures["added"]);
-    validate_committed_dynamo_capture(&root, false);
+    validate_committed_dynamo_capture(&root);
 
     std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
-    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root, false)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     write(&base, "old", &captures["old"]);
     let mut wrong = captures["added"].clone();
     wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
     write(&base, "added", &wrong);
-    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root, false))
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("the live comparison must read the plain capture record");
     assert!(
         failure
@@ -1410,7 +1410,7 @@ fn current_plain_version_reaches_live_guard_and_binds_tools() {
     );
     write(&root.join("inputs"), "old", &old_input);
     write(&base, "old", &old_capture);
-    validate_committed_dynamo_capture(&root, false);
+    validate_committed_dynamo_capture(&root);
     let (new_input, new_capture) = make(
         "added",
         "<|tool_call>call:f{x:<|\"|>1<|\"|>}<tool_call|>",
@@ -1418,10 +1418,10 @@ fn current_plain_version_reaches_live_guard_and_binds_tools() {
     );
     write(&root.join("inputs"), "added", &new_input);
     write(&base, "added", &new_capture);
-    validate_committed_dynamo_capture(&root, false);
+    validate_committed_dynamo_capture(&root);
     std::fs::remove_file(root.join("inputs/gemma4/old.yaml")).unwrap();
     std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
-    validate_committed_dynamo_capture(&root, false);
+    validate_committed_dynamo_capture(&root);
     let mut wrong = new_capture.clone();
     let terminal = wrong["cases"]["added"]["chunks"]
         .as_array_mut()
@@ -1432,7 +1432,7 @@ fn current_plain_version_reaches_live_guard_and_binds_tools() {
         .expect("the captured call must contain a completion delta");
     terminal["complete"] = json!(false);
     write(&base, "added", &wrong);
-    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root, false))
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("changing only completion must fail the per-chunk comparison");
     assert!(
         failure
@@ -1443,12 +1443,12 @@ fn current_plain_version_reaches_live_guard_and_binds_tools() {
     let mut wrong = new_capture.clone();
     wrong["cases"]["added"]["capture_input"]["tools"] = json!([]);
     write(&base, "added", &wrong);
-    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root, false)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     write(&base, "added", &new_capture);
     let mut wrong_input = new_input;
     wrong_input["cases"]["added"]["tools"] = json!([]);
     write(&root.join("inputs"), "added", &wrong_input);
-    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root, false)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     std::fs::remove_dir_all(&root).unwrap();
 }
 
