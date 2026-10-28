@@ -791,14 +791,14 @@ body.transpose-mode .tab-panel.active .transpose-table { display: table; }
   vertical-align: bottom;
 }
 .transpose-table .tcol-model-line,
-.transpose-table .tcol-model-name,
+:is(.transpose-table, .comparison-matrix) .tcol-model-name,
 .transpose-table .tcol-model-family {
   writing-mode: sideways-lr;
   white-space: nowrap;
   display: inline-block;
   line-height: 1;
 }
-.transpose-table .tcol-model-name { font-weight: 600; }
+:is(.transpose-table, .comparison-matrix) .tcol-model-name { font-weight: 600; }
 /* No forced color: the cloned parser markup keeps its own styling (the parser-
    source link stays clickable, the parser-base text stays muted). */
 .transpose-table .tcol-model-family { font-size: 11px; font-family: ui-monospace, monospace; }
