@@ -102,23 +102,24 @@ export function mountComparison(panel, controller) {
     const entryFor = (row,column) => entriesByRow.get(row)?.get(column);
     const candidate = key => tab.candidates.find(c => c.key === key);
     const outcomes = (entry,key) => entry ? selectedCaptureOutcome({...entry.cell, variants: entry.leaves},key) : 'unsupported';
-    const countsLabel = (row,key) => {
-      const counts = captureCounts({entries: view.entries.filter(e => e.row === row)},key);
-      return html(candidate(key)?.label || key) + ': ' + Object.entries(statusLabels).filter(([s]) => counts[s]).map(([s,label]) => counts[s] + ' ' + html(label.toLowerCase())).join(', ') + '; ' + counts.total + ' cases';
-    };
     const heading = (tr,label,span=1) => { const th = document.createElement('th'); th.textContent = label; th.colSpan = span; tr.appendChild(th); return th; };
+    const rotatedHeading = (tr,label,span=1) => {
+      const th = heading(tr,'',span);
+      th.innerHTML = '<span class="tcol-model-name">' + html(label) + '</span>';
+      return th;
+    };
     const groupHeading = (tr,group,span=1) => {
       const th = heading(tr,'',span);
       th.className = 'matrix-category-heading';
       th.innerHTML = '<button type="button" data-group="' + html(group.key) + '" aria-pressed="' + state.groups.has(group.key)
-        + '" aria-label="Include ' + html(group.label) + '">' + html(group.label) + '</button>';
+        + '" title="' + html(group.label) + '" aria-label="Include ' + html(group.label) + '">' + html(group.label) + '</button>';
     };
     const caseHeading = (tr,column) => {
       const th = heading(tr, column.label); th.className = 'matrix-case-heading';
       const compact = column.display_number == null ? html(column.label) : window.__compactCaseLabelHtml(column);
-      th.innerHTML = '<span class="matrix-case-label" data-hover-hint="Click to show ' + html(column.label) + '">'
+      th.innerHTML = '<span class="matrix-case-label" data-hover-hint="Click to show ' + html(column.label) + '"><span class="matrix-case-text">'
         + (vertical ? html(column.label) + (column.display_number == null ? '' : ' (' + compact + ')') : compact)
-        + '</span><div class="ttip"></div>';
+        + '</span></span><div class="ttip"></div>';
       th.setAttribute('aria-label', column.case_id || column.label);
       th.dataset.ttipCenter = '1';
       window.__registerConformanceTooltip(th,window.__conformanceCaseTooltip(tab,column),null,JSON.stringify(['grammar',tab.id,column.case_id || column.sub]));
@@ -139,16 +140,15 @@ export function mountComparison(panel, controller) {
         window.__attachConformanceTooltip(td);
       }
     };
-    const summary = (tr,row) => { const td = tr.insertCell(); td.className = 'matrix-summary'; td.innerHTML = keys.map(k => '<span title="' + html(countsLabel(row,k)) + '">' + countsLabel(row,k) + '</span>').join(''); };
     if (vertical) {
       const top = thead.insertRow(); heading(top,'Case / model family');
       const sub = stacked ? thead.insertRow() : null;
       if (sub) heading(sub,'');
       for (const row of view.rows) {
-        heading(top,row.model_label || row.family,stacked ? keys.length : 1);
+        rotatedHeading(top,row.model_label || row.family,stacked ? keys.length : 1);
         if (stacked) for (const k of keys) {
           const item = candidate(k);
-          const th = heading(sub,[item?.impl, item?.version].filter(Boolean).join(' ') || k);
+          const th = rotatedHeading(sub,[item?.impl, item?.version].filter(Boolean).join(' ') || k);
           th.className = 'matrix-capture-heading';
           th.title = item?.label || k;
           th.setAttribute('aria-label', item?.label || k);
@@ -168,17 +168,27 @@ export function mountComparison(panel, controller) {
       const groups = thead.insertRow(); heading(groups,'Model family');
       const columns = tab.column_groups.map(group => ({group, columns: view.columns.filter(c => c.group_key === group.key)}));
       for (const {group,columns: cases} of columns) groupHeading(groups,group,Math.max(1,cases.length));
-      heading(groups,'Conformance counts'); const sub = thead.insertRow(); heading(sub,'Engine');
+      const sub = thead.insertRow(); heading(sub,'');
       for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) caseHeading(sub,c); else heading(sub,'—'); }
-      heading(sub,'Counts');
       const results = (tr,row,shown=keys) => {
         for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) result(tr,row,c,shown); else tr.insertCell().textContent = '—'; }
       };
       for (const row of view.rows) {
-        if (stacked) for (const k of keys) { const tr = tbody.insertRow(); heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); results(tr,row,[k]); summary(tr,row); }
-        else { const tr = tbody.insertRow(); heading(tr,row.model_label || row.family); results(tr,row); summary(tr,row); }
+        if (stacked) for (const k of keys) { const tr = tbody.insertRow(); heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); results(tr,row,[k]); }
+        else { const tr = tbody.insertRow(); heading(tr,row.model_label || row.family); results(tr,row); }
       }
     }
+    // Explicit tracks keep long headings and a wide viewport from stretching result cells.
+    const resultColumns = vertical ? view.rows.length * (stacked ? keys.length : 1) : thead.rows[1].cells.length - 1;
+    table.style.setProperty('--matrix-result-columns', resultColumns);
+    const tracks = document.createElement('colgroup');
+    const labelTrack = document.createElement('col'); labelTrack.className = 'matrix-label-column';
+    tracks.appendChild(labelTrack);
+    if (resultColumns) {
+      const resultTracks = document.createElement('col'); resultTracks.className = 'matrix-result-column'; resultTracks.span = resultColumns;
+      tracks.appendChild(resultTracks);
+    }
+    table.insertBefore(tracks,thead);
     scroll.replaceChildren(table);
     scroll.scrollTop = position.top; scroll.scrollLeft = position.left;
     controller.restorePopup(panel,pin);

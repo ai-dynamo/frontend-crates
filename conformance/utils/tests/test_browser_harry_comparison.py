@@ -18,6 +18,36 @@ def counts(driver):
     return driver.execute_script("return window.__conformanceComparison.counts")
 
 
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
+def test_matrix_columns_keep_minimal_width(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
+        _ready(driver, "tab-unified", reference=False)
+        if stacked:
+            _choose_engine(driver, 1, "sglang")
+            _ready(driver, "tab-unified", reference=False)
+            driver.find_element("css selector", "[data-layout='stacked']").click()
+        for width, label_width in [(2048, 220), (480, 150)]:
+            driver.set_window_size(width, 1000)
+            geometry = driver.execute_script("""
+                const table=document.querySelector('.comparison-matrix');
+                return {label:table.tHead.rows[0].cells[0].getBoundingClientRect().width,
+                  cells:[...table.querySelectorAll('.matrix-cell')].map(c=>c.getBoundingClientRect().width),
+                  header:table.tHead.getBoundingClientRect().height};
+            """)
+            assert abs(geometry["label"] - label_width) <= 1, geometry
+            assert geometry["cells"] and all(abs(w - 30) <= 1 for w in geometry["cells"]), geometry
+            if not vertical:
+                assert geometry["header"] <= 100, geometry
+            assert not driver.find_elements("css selector", ".matrix-summary")
+            assert "Conformance counts" not in driver.find_element("css selector", ".comparison-matrix").text
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize("width", [1600, 480])
 @pytest.mark.parametrize("captures", [1, 2])
 def test_long_case_hover_fits_matrix_scroller(published_viewer, width, captures):
