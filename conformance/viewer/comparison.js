@@ -54,15 +54,15 @@ export function mountComparison(panel, controller) {
     search: params.get(param('search')) || '', peerOnly: params.get(param('peer')) === '1',
     groups: null};
   const ui = document.createElement('div'); ui.className = 'comparison-ui';
-  ui.innerHTML = '<div class="comparison-toolbar"><span class="control-label">Layout</span><div class="segmented">'
-    + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div>'
+  ui.innerHTML = '<div class="comparison-toolbar"><div class="layout-control"><span class="control-label">Layout</span><div class="segmented">'
+    + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
     + '<span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
     + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div>'
     + '<label class="peer-filter"><input type="checkbox" data-peer-only> Only cases with peer data</label>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-legend">'
     + Object.entries(statusLabels).map(([s,l]) => '<span><i class="legend-swatch status-' + s + '"></i>' + l + '</span>').join('')
-    + '</div><div class="category-chips" aria-label="Case categories"></div><div class="comparison-matrix-scroll"></div>';
+    + '</div><div class="comparison-matrix-scroll"></div>';
   panel.appendChild(ui);
   const toolbar = ui.querySelector('.comparison-toolbar');
   toolbar.querySelector('[data-peer-only]').checked = state.peerOnly;
@@ -80,6 +80,8 @@ export function mountComparison(panel, controller) {
   };
   function draw() {
     if (!tab) return;
+    const scroll = ui.querySelector('.comparison-matrix-scroll');
+    const position = {top: scroll.scrollTop, left: scroll.scrollLeft};
     const pin = controller.disposePanel(ui);
     const vertical = document.body.classList.contains('transpose-mode');
     ui.classList.toggle('layout-vertical', vertical);
@@ -90,8 +92,9 @@ export function mountComparison(panel, controller) {
     const notice = ui.querySelector('.comparison-notice');
     try { view = comparisonView(tab,state); notice.hidden = true; }
     catch (error) { notice.textContent = error.message; notice.hidden = false; view = {entries: [],rows: [],columns: []}; }
-    ui.querySelector('.category-chips').innerHTML = tab.column_groups.map(g => '<button type="button" data-group="' + html(g.key) + '" aria-pressed="' + state.groups.has(g.key) + '">' + html(g.label) + '</button>').join('');
     const keys = panel._comparisonSelection.keys;
+    toolbar.querySelector('.layout-control').hidden = keys.length < 2;
+    const stacked = keys.length > 1 && state.layout === 'stacked';
     const entriesByRow = new Map(view.rows.map(row => [row,new Map(view.entries.filter(e => e.row === row).map(e => [e.column,e]))]));
     panel.querySelectorAll('.capture-slot').forEach((card, i) => {
       const key = card.querySelector('[data-slot-capture]')?.value;
@@ -112,9 +115,19 @@ export function mountComparison(panel, controller) {
       return html(candidate(key)?.label || key) + ': ' + Object.entries(statusLabels).filter(([s]) => counts[s]).map(([s,label]) => counts[s] + ' ' + html(label.toLowerCase())).join(', ') + '; ' + counts.total + ' cases';
     };
     const heading = (tr,label,span=1) => { const th = document.createElement('th'); th.textContent = label; th.colSpan = span; tr.appendChild(th); return th; };
+    const groupHeading = (tr,group,span=1) => {
+      const th = heading(tr,'',span);
+      th.className = 'matrix-category-heading';
+      th.innerHTML = '<button type="button" data-group="' + html(group.key) + '" aria-pressed="' + state.groups.has(group.key)
+        + '" aria-label="Include ' + html(group.label) + '">' + html(group.label) + '</button>';
+    };
     const caseHeading = (tr,column) => {
       const th = heading(tr, column.label); th.className = 'matrix-case-heading';
-      th.innerHTML = html(column.label) + (column.display_number == null ? '' : ' (' + window.__compactCaseLabelHtml(column) + ')') + '<div class="ttip"></div>';
+      const compact = column.display_number == null ? html(column.label) : window.__compactCaseLabelHtml(column);
+      th.innerHTML = '<span class="matrix-case-label" data-hover-hint="Click to show ' + html(column.label) + '">'
+        + (vertical ? html(column.label) + (column.display_number == null ? '' : ' (' + compact + ')') : compact)
+        + '</span><div class="ttip"></div>';
+      th.setAttribute('aria-label', column.case_id || column.label);
       th.dataset.ttipCenter = '1';
       window.__registerConformanceTooltip(th,window.__conformanceCaseTooltip(tab,column),null,JSON.stringify(['grammar',tab.id,column.case_id || column.sub]));
       window.__attachConformanceTooltip(th);
@@ -138,24 +151,37 @@ export function mountComparison(panel, controller) {
     if (vertical) {
       const top = thead.insertRow(), sub = thead.insertRow(); heading(top,'Case / model family'); heading(sub,'Conformance counts');
       for (const row of view.rows) {
-        heading(top,row.model_label || row.family,state.layout === 'stacked' ? Math.max(1,keys.length) : 1);
-        if (state.layout === 'stacked') for (const k of keys) heading(sub,countsLabel(row,k));
+        heading(top,row.model_label || row.family,stacked ? keys.length : 1);
+        if (stacked) for (const k of keys) heading(sub,countsLabel(row,k));
         else heading(sub,keys.map(k => countsLabel(row,k)).join('\n'));
       }
-      for (const column of view.columns) {
-        const tr = tbody.insertRow(); caseHeading(tr,column);
-        for (const row of view.rows) if (state.layout === 'stacked') for (const k of keys) result(tr,row,column,[k]); else result(tr,row,column);
+      for (const group of tab.column_groups) {
+        const category = tbody.insertRow(); category.className = 'matrix-category-row';
+        groupHeading(category,group);
+        const width = view.rows.length * (stacked ? keys.length : 1);
+        if (width) category.insertCell().colSpan = width;
+        for (const column of view.columns.filter(c => c.group_key === group.key)) {
+          const tr = tbody.insertRow(); caseHeading(tr,column);
+          for (const row of view.rows) if (stacked) for (const k of keys) result(tr,row,column,[k]); else result(tr,row,column);
+        }
       }
     } else {
       const groups = thead.insertRow(); heading(groups,'Model family');
-      for (const g of tab.column_groups) { const n = view.columns.filter(c => c.group_key === g.key).length; if (n) heading(groups,g.label,n); }
-      heading(groups,'Conformance counts'); const sub = thead.insertRow(); heading(sub,'Engine'); for (const c of view.columns) caseHeading(sub,c); heading(sub,'Counts');
+      const columns = tab.column_groups.map(group => ({group, columns: view.columns.filter(c => c.group_key === group.key)}));
+      for (const {group,columns: cases} of columns) groupHeading(groups,group,Math.max(1,cases.length));
+      heading(groups,'Conformance counts'); const sub = thead.insertRow(); heading(sub,'Engine');
+      for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) caseHeading(sub,c); else heading(sub,'—'); }
+      heading(sub,'Counts');
+      const results = (tr,row,shown=keys) => {
+        for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) result(tr,row,c,shown); else tr.insertCell().textContent = '—'; }
+      };
       for (const row of view.rows) {
-        if (state.layout === 'stacked') for (const k of keys) { const tr = tbody.insertRow(); heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); for (const c of view.columns) result(tr,row,c,[k]); summary(tr,row); }
-        else { const tr = tbody.insertRow(); heading(tr,row.model_label || row.family); for (const c of view.columns) result(tr,row,c); summary(tr,row); }
+        if (stacked) for (const k of keys) { const tr = tbody.insertRow(); heading(tr,(row.model_label || row.family) + ' / ' + candidate(k)?.label); results(tr,row,[k]); summary(tr,row); }
+        else { const tr = tbody.insertRow(); heading(tr,row.model_label || row.family); results(tr,row); summary(tr,row); }
       }
     }
-    ui.querySelector('.comparison-matrix-scroll').replaceChildren(table);
+    scroll.replaceChildren(table);
+    scroll.scrollTop = position.top; scroll.scrollLeft = position.left;
     controller.restorePopup(panel,pin);
     window.__conformanceComparison = {state,view,counts: Object.fromEntries(keys.map(k => [k,captureCounts(view,k)]))};
   }
@@ -170,9 +196,10 @@ export function mountComparison(panel, controller) {
     else return;
     draw(); persist();
   });
-  ui.querySelector('.category-chips').addEventListener('click', event => {
+  ui.querySelector('.comparison-matrix-scroll').addEventListener('click', event => {
     const group = event.target.closest('[data-group]')?.dataset.group; if (!group) return;
     if (!state.groups.delete(group)) state.groups.add(group); draw(); persist();
+    [...ui.querySelectorAll('[data-group]')].find(button => button.dataset.group === group)?.focus({preventScroll: true});
   });
   let detailed = document.body.classList.contains('view-details');
   new MutationObserver(() => {

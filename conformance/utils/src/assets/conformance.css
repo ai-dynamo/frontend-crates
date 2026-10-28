@@ -277,18 +277,20 @@ body.view-details td.cell.cmp-donly .cmp-marker { color: #9aa1a9; }
 .case-label-full { display: none; }
 .case-label-short { display: inline; }
 .case-label-placeholder { color: #8a8f98; font-size: 0.72em; }
-.case-sub a[data-hover-hint], .trow-case a[data-hover-hint] { position: relative; }
+.case-sub a[data-hover-hint], .trow-case a[data-hover-hint], .matrix-case-label[data-hover-hint] { position: relative; }
 th.case-sub:has(a[data-hover-hint]:hover), th.case-sub:has(a[data-hover-hint]:focus-visible),
-th.trow-case:has(a[data-hover-hint]:hover), th.trow-case:has(a[data-hover-hint]:focus-visible) { z-index: 2000; }
-.case-sub a[data-hover-hint]::after, .trow-case a[data-hover-hint]::after {
+th.trow-case:has(a[data-hover-hint]:hover), th.trow-case:has(a[data-hover-hint]:focus-visible),
+.matrix-case-heading:has([data-hover-hint]:hover), .matrix-case-heading:focus-visible { z-index: 2000; }
+.case-sub a[data-hover-hint]::after, .trow-case a[data-hover-hint]::after, .matrix-case-label[data-hover-hint]::after {
   content: attr(data-hover-hint); position: absolute; left: var(--case-hint-left, 0px); top: var(--case-hint-top, calc(100% + 24px)); z-index: 4000;
-  box-sizing: border-box; width: max-content; max-width: min(560px, calc(100vw - 64px)); padding: 5px 8px;
+  box-sizing: border-box; width: max-content; max-width: min(560px, calc(100vw - 64px), var(--case-hint-max-width, 560px)); padding: 5px 8px;
   border-radius: 5px; background: #1f2937; color: #e5e7eb; font: 12px/1.35 -apple-system, system-ui, sans-serif;
   text-align: left; white-space: normal; visibility: hidden; opacity: 0; pointer-events: none;
   transition: opacity 0s linear 650ms, visibility 0s linear 650ms;
 }
 .case-sub a[data-hover-hint]:hover::after, .case-sub a[data-hover-hint]:focus-visible::after,
-.trow-case a[data-hover-hint]:hover::after, .trow-case a[data-hover-hint]:focus-visible::after { visibility: visible; opacity: 1; }
+.trow-case a[data-hover-hint]:hover::after, .trow-case a[data-hover-hint]:focus-visible::after,
+.matrix-case-label[data-hover-hint]:hover::after, .matrix-case-heading:focus-visible .matrix-case-label[data-hover-hint]::after { visibility: visible; opacity: 1; }
 #tab-unified th.case-group .col-toggle-label,
 #tab-unified .transpose-table tr.section td { color: #596575; }
 body.transpose-mode .transpose-table .case-label-full { display: inline; }
