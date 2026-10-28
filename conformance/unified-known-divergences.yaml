@@ -9,6 +9,8 @@
 beam: {}
 gpt_oss: {}
 kimi_k3:
+  # TODO: Fix Kimi K3 5-tool_no_close (5-3) recovery: preserve the following
+  # response after an unclosed tool call or unterminated JSON string.
   UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message:
     golden:
       note: 'An unclosed tool call swallows the following response instead of resynchronizing at its header.'
@@ -19,11 +21,7 @@ kimi_k3:
       actual: ''
 muse_glimmer: {}
 gemma4: {}
-deepseek_v41:
-  UNIFIED.gpt_oss-invalid_tool_body_then_empty_call:
-    golden:
-      note: 'An invalid raw invocation body aborts parsing before the following complete empty call.'
-      actual: 'ERROR: native push: invalid DeepSeek V4.1 parameter header'
+deepseek_v41: {}
 
 glm47: {}
 deepseek_v4: {}

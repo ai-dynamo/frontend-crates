@@ -1505,7 +1505,7 @@ pub(crate) trait InvokeEmitter {
         tool_index: usize,
     ) -> anyhow::Result<Option<ToolCallDelta>>;
 
-    /// Whether an incomplete structured value may be held until a later invoke
+    /// Whether a malformed invocation may be held until a later invoke
     /// either recovers the stream or EOF confirms that the malformed call is final.
     fn defer_parse_error(&self, _invoke: &str, _error: &anyhow::Error) -> bool {
         false
@@ -2366,7 +2366,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         why = %format!("{}_incomplete_invoke_recovered", self.spec.family),
                         tool_index = deferred.tool_index,
                         dropped_bytes = deferred.bytes,
-                        "Dropped an incomplete invoke after a later call parsed successfully"
+                        "Dropped a malformed invoke after a later call parsed successfully"
                     );
                 }
                 Ok(Some(deltas))
