@@ -519,3 +519,38 @@ fn fastokens_checks_both_spellings_of_a_config_token_id() {
         );
     }
 }
+
+#[test]
+#[ignore = "F9: a promoted token still strips in its original raw matching pass"]
+fn a_promoted_normalized_strip_token_keeps_its_first_pass_hazard() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let json = tokenizer_json(
+        json!([
+            flagged(2, "\n", true, "normalized"),
+            added(3, "<sep>", false)
+        ]),
+        Value::Null,
+        Value::Null,
+        json!({"a": 0, "b": 1}),
+    );
+    let mut promoted = flagged(3, "<sep>", true, "normalized");
+    promoted["lstrip"] = json!(true);
+    let config = json!({"added_tokens_decoder": {"3": promoted}});
+    let path = dir.path().join("tokenizer.json");
+    std::fs::write(&path, json.to_string()).expect("write tokenizer");
+    std::fs::write(dir.path().join("tokenizer_config.json"), config.to_string())
+        .expect("write config");
+    let tokenizer: Arc<dyn Tokenizer> =
+        Arc::new(HuggingFaceTokenizer::from_file(path.to_str().expect("UTF-8")).expect("load"));
+    let (uncached, cached, _) = three_ways(
+        tokenizer,
+        vec!["\n".to_owned(), "<sep>".to_owned()],
+        "a\n<sep>b",
+    );
+    assert_eq!(
+        uncached,
+        [0, 3, 1],
+        "the raw match still strips the newline"
+    );
+    assert_eq!(cached, [uncached.clone(), uncached]);
+}
