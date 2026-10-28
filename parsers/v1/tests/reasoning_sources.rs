@@ -333,3 +333,28 @@ fn repeated_text_gets_the_offset_of_the_bytes_that_were_kept() {
         ]
     );
 }
+
+#[test]
+fn the_deferral_case_gets_exact_leaf_ranges() {
+    // The v1 reasoning stream can hold `" "` back and release it after `R`
+    // (force_nonempty_content), so stock order is `R`, then `" A"`. The leaf
+    // dates each byte; the stage keeps its own order and never sorts.
+    use SourceChannel::{Normal, Reasoning};
+    let (_, per_call) = run(
+        "basic",
+        false,
+        &[" ", "<think>", "R", "</think>", "A"],
+        true,
+    );
+    assert_eq!(
+        per_call,
+        vec![
+            vec![run_of(Normal, 0..1)],
+            vec![],
+            vec![run_of(Reasoning, 8..9)],
+            vec![],
+            vec![run_of(Normal, 17..18)],
+            vec![],
+        ]
+    );
+}

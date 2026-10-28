@@ -28,6 +28,12 @@ The crate import path is `dynamo_parsers` (crate name, unaffected by the directo
 
 The GLM47 parser preserves syntactically valid calls even when their names are absent from the supplied tools. Parsing does not authorize execution: every executor must validate each returned name against the tools offered in that request before dispatching it, including when using a broader global tool registry. Unknown calls have no matching request schema, so their arguments use the parser's schema-free coercion rules.
 
+### Source recording
+
+A caller that maps output text back to input tokens can ask where each returned byte came from. Call `record_sources()` on a `ReasoningParser` before the first chunk. After each streaming call, `take_sources(&mut out)` moves out one list of `SourceRun`s in input order, each tagged `Normal` or `Reasoning`. The input ranges of a channel's runs, read in order, equal that channel's text. `record_sources()` returns `false` when a parser cannot record. `BasicReasoningParser` records; the other parsers keep the default and return `false`. Batch parsing records nothing.
+
+With recording off, the output does not change. `sources::ChoiceSources` and `sources::SourceSlot` let a stream chunk type carry ranges per choice. The tool-call jail keeps ranges internally for `hermes`, `kimi_k2`, and `minimax_m3`. Its stream boundary does not expose them yet.
+
 ### Entry points
 
 The v1 batch entry points (in `src/tool_calling/parsers.rs`) that v2 does not mirror:
