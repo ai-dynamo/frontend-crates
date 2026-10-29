@@ -1299,7 +1299,12 @@ body.view-details .case-schema-indicator { display: inline; }
 :root[data-theme="dark"] #tab-unified table[data-parity-table] th.case-sub.case-group-start { border-left-color: var(--line-strong); }
 #tab-unified .transpose-table td.cell { border-left: 0; border-right: 0; }
 #tab-unified .matrix-segments { display: flex; gap: 1px; width: 27px; height: 25px; margin-inline: auto; overflow: hidden; border-radius: 4px; vertical-align: middle; }
-#tab-unified .matrix-status { display: block; flex: 1 1 0; min-width: 2px; height: 100%; }
+#tab-unified .matrix-status { display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 2px; height: 100%; }
+.matrix-status-marker { display: none; font: 10px/1 ui-monospace, monospace; color: #111827; }
+body.view-details .matrix-status-marker { display: inline-block; }
+.status-missing .matrix-status-marker, .status-unsupported .matrix-status-marker,
+.status-uncompared .matrix-status-marker { color: var(--ink); }
+.status-expected .matrix-status-marker { color: #fff; }
 #tab-unified .capture-legend { max-width: 1200px; line-height: 1.4; }
 #tab-unified .capture-legend ul { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0; list-style: none; }
 #tab-unified .capture-legend li { display: flex; align-items: center; gap: 6px; }

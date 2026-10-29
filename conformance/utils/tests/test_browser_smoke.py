@@ -723,17 +723,16 @@ def test_capture_legend_tracks_visible_statuses(driver):
         for enabled in (False, True):
             if detailed.is_selected() != enabled:
                 _click(detailed)
-            legend = driver.find_element(By.CSS_SELECTOR, "#tab-unified .capture-legend")
+            legend = driver.find_element(By.CSS_SELECTOR, "#tab-unified .comparison-legend")
             assert legend.is_displayed()
-            assert "One segment is an output capture from the parser when compared with golden output" in legend.text
+            assert legend.get_attribute("aria-label") == "Outcome colors"
             assert not driver.find_elements(By.CSS_SELECTOR, "#tab-unified .toolbar-desc")
             assert _script(driver, """
                 const panel = document.querySelector('#tab-unified');
-                const table = panel.querySelector('table[data-parity-table]');
-                const statuses = new Set([...table.querySelectorAll('td.cell .matrix-status')]
-                  .filter(segment => !segment.closest('.col-hidden,[hidden]'))
+                const table = panel.querySelector('[data-comparison-table]');
+                const statuses = new Set([...table.querySelectorAll('.matrix-cell .matrix-status')]
                   .map(segment => segment.className.split('status-')[1]));
-                const legend = new Set([...panel.querySelectorAll('[data-legend-status]')].map(item => item.dataset.legendStatus));
+                const legend = new Set([...panel.querySelectorAll('.comparison-legend [data-status]')].map(item => item.dataset.status));
                 return statuses.size > 0 && statuses.size === legend.size && [...statuses].every(status => legend.has(status));
             """)
     finally:

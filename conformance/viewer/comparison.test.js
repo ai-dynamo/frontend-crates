@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedCaptureOutcome } from './model.js';
 import { comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
+import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
     ...(status === 'error' ? {err: 1} : status === 'leak' ? {leak: 1} : ['missing', 'unsupported', 'blocked'].includes(status) ? {na: 1} : {})} },
@@ -15,6 +16,18 @@ const columns = leaves.map(c => ({sub: c.sub, label: c.sub, desc: 'case ' + c.su
 const tab = {rows: [{family: 'family', model_label: 'Model', cells: Object.fromEntries(leaves.map(c => [c.sub, c]))}], columns,
   column_groups: [{key: 'core', label: 'Core'}]};
 const state = {groups: new Set(['core']), search: '', focus: 'all'};
+test('Detailed markers distinguish every capture outcome without scores', () => {
+  const markers = {pass: '=', documented: 'Δ', diverge: '≠', error: '✗', leak: '↯', missing: '—',
+    unsupported: 'x', blocked: '#', expected: '!', uncompared: '?'};
+  assert.deepEqual(Object.keys(markers), Object.keys(statusLabels));
+  for (const [status, marker] of Object.entries(markers)) {
+    const segment = captureSegmentHtml(status, 'capture');
+    assert.ok(segment.includes('>' + marker + '</span>'), status);
+    assert.ok(segment.includes('capture: ' + statusLabels[status]), status);
+    assert.ok(!segment.includes('%'), status);
+  }
+  assert.ok(captureSegmentHtml('pass', '<capture>').includes('&lt;capture&gt;'));
+});
 test('each status is counted separately without scores', () => {
   const counts = captureCounts(comparisonView(tab, state), 'd');
   for (const status of Object.keys(statusLabels)) assert.equal(counts[status], 1, status);

@@ -21,6 +21,49 @@ def counts(driver):
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
+def test_detailed_toggle_shows_capture_markers(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1200, 900)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "sglang")
+        _ready(driver, "tab-unified", reference=False)
+        if stacked:
+            driver.find_element("css selector", "[data-layout='stacked']").click()
+        before = counts(driver)
+
+        def assert_markers(visible):
+            result = driver.execute_script("""
+                const table=document.querySelector('.comparison-matrix'), markers=[...table.querySelectorAll('.matrix-status-marker')];
+                const statuses=new Map();
+                for(const marker of markers)if(!statuses.has(marker.parentElement.className))statuses.set(marker.parentElement.className,marker);
+                return {count:markers.length, segments:table.querySelectorAll('.matrix-segments > i').length,
+                  samples:[...statuses.values()].map(marker=>({text:marker.textContent,visible:marker.getBoundingClientRect().width>0})),
+                  width:table.querySelector('.matrix-cell').getBoundingClientRect().width};
+            """)
+            assert result["count"] == result["segments"] > 0, result
+            assert all(sample["text"] and sample["visible"] == visible for sample in result["samples"]), result
+            assert abs(result["width"] - 30) <= 1, result
+            assert counts(driver) == before
+
+        driver.find_element("css selector", "[data-view-detailed]").click()
+        assert parse_qs(urlsplit(driver.current_url).query)["view"] == ["details"]
+        assert_markers(True)
+        driver.refresh()
+        _ready(driver, "tab-unified", reference=False)
+        assert driver.find_element("css selector", "[data-view-detailed]").is_selected()
+        assert_markers(True)
+        driver.find_element("css selector", "[data-view-detailed]").click()
+        assert "view" not in parse_qs(urlsplit(driver.current_url).query)
+        assert_markers(False)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
 def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked):
     server, _ = _server(root=published_viewer)
     driver = _driver()
