@@ -22,12 +22,15 @@ pub use super::common::{ReasoningEffort, ThinkingMode, tokens};
 #[derive(Clone, Copy)]
 pub(super) enum Encoding {
     V4(Option<ReasoningEffort>),
-    V41(u8),
+    V41 {
+        effort: u8,
+        add_generation_prompt: bool,
+    },
 }
 
 impl Encoding {
     fn is_v41(self) -> bool {
-        matches!(self, Self::V41(_))
+        matches!(self, Self::V41 { .. })
     }
 
     fn tag(self, v4: &'static str, v41: &'static str) -> &'static str {
@@ -39,7 +42,7 @@ impl Encoding {
             Self::V4(Some(ReasoningEffort::High)) => REASONING_EFFORT_HIGH.to_string(),
             Self::V4(Some(ReasoningEffort::Max)) => REASONING_EFFORT_MAX.to_string(),
             Self::V4(None) => String::new(),
-            Self::V41(effort) => format!(
+            Self::V41 { effort, .. } => format!(
                 "Reasoning Effort: {effort} (range 1-100, the higher the value, the more thorough the reasoning)\n\n"
             ),
         }
@@ -248,6 +251,19 @@ fn render_message(
         }
 
         other => anyhow::bail!("Unknown role: {}", other),
+    }
+
+    // The flag controls only the final generation prefix, never historical transitions.
+    if index + 1 == messages.len()
+        && matches!(
+            encoding,
+            Encoding::V41 {
+                add_generation_prompt: false,
+                ..
+            }
+        )
+    {
+        return Ok(());
     }
 
     // Early return if the next message is not assistant/latest_reminder — no transition appended.
