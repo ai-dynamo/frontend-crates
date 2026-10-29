@@ -1173,7 +1173,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers"
-version = "10.0.4"
+version = "10.2.3"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -1196,7 +1196,7 @@ dependencies = [
 
 [[package]]
 name = "dynamo-parsers-v2"
-version = "0.7.23"
+version = "0.8.9"
 dependencies = [
  "anyhow",
  "openai-harmony",
