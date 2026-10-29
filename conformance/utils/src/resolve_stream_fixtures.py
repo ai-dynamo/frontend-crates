@@ -43,6 +43,10 @@ def _merge_impl(base_doc, vdoc, impl):
         bc = bcases.get(cid)
         if bc is None:
             continue
+        if isinstance(bc.get("expected"), dict):
+            bc["expected"].pop(impl, None)
+        if impl in (vc.get("expected") or {}):
+            bc.setdefault("expected", {})[impl] = vc["expected"][impl]
         # For a case this version's doc lists, replace the impl's prior state entirely
         # (clear any lower-version chunks/unavailable before applying this version's)
         # rather than merging field-by-field: Dynamo v1 3.0.0 and v2 0.1.11 are different
