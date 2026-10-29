@@ -34,6 +34,7 @@ body { background: var(--page-bg); color: var(--ink); }
 .status-blocked { background: var(--ink-soft); }
 .status-uncompared { background: var(--panel-alt); box-shadow: inset 0 0 0 1px var(--ink-soft); }
 .comparison-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
+.comparison-toolbar .layout-control, .comparison-toolbar .tabs-right { align-self: flex-start; }
 .control-label { color: var(--ink-muted); font-size: 11px; text-transform: uppercase; }
 .layout-control { display: flex; align-items: center; gap: 10px; }
 .layout-control[hidden] { display: none; }
