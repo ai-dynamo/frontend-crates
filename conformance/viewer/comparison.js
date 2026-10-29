@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 import { isApplicableCell, selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
+import { captureSegmentHtml } from './presentation.js';
 
 export { captureStatusLabels as statusLabels } from './model.js';
 export const verticalDefault = params => !['0', 'false'].includes(params.get('vertical') ?? params.get('transpose'));
@@ -145,7 +146,7 @@ export function mountComparison(panel, controller) {
       const focused = state.focus === 'all' || (state.focus === 'disagreements'
         ? codes.includes('diverge') : codes.some(isProblemOutcome));
       td.classList.toggle('focus-dim',!focused);
-      td.innerHTML = '<span class="matrix-segments">' + shown.map(k => '<i class="status-' + outcomes(entry,k) + '"></i>').join('') + '</span><div class="ttip comparison-output"></div>';
+      td.innerHTML = '<span class="matrix-segments">' + shown.map(k => captureSegmentHtml(outcomes(entry,k),k)).join('') + '</span><div class="ttip comparison-output"></div>';
       td.setAttribute('role','button');
       td.setAttribute('aria-label',[row.model_label || row.family,column.label,...shown.map(k => (candidate(k)?.label || k) + ': ' + statusLabels[outcomes(entry,k)])].join('; '));
       if (entry?.cell.tooltip) {

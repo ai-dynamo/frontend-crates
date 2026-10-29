@@ -1,11 +1,17 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { escapeHtml, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, foldNullVariants, foldSchemaVariants, rankUnifiedColumns } from './model.js';
+import { escapeHtml, captureStatusLabels, captureStatusMarkers, tabCandidates, selectedUnifiedFamilies, unifiedDisplayFamilyPredicate, unifiedEvents, unifiedChunkDeltas, classifyUnified, canonicalUnifiedEvents, equivalenceEntries, foldNullVariants, foldSchemaVariants, rankUnifiedColumns } from './model.js';
 import { isMapping, hasField, getField, compareText, mappingEntries, mergeMappings, deleteField, sameValue } from './values.js';
 import { materializeUnifiedRecord, canonicalUnifiedLabel } from './resources.js';
 
 const esc = escapeHtml;
 const sourceHref = (path, link) => esc(link ? link(path) : `source:${path.replace(/\/$/, '')}`);
+
+export function captureSegmentHtml(status, key) {
+  return '<i class="matrix-status status-' + esc(status) + '" data-capture="' + esc(key)
+    + '" aria-label="' + esc(key + ': ' + captureStatusLabels[status]) + '"><span class="matrix-status-marker" aria-hidden="true">'
+    + esc(captureStatusMarkers[status]) + '</span></i>';
+}
 
 
 export function tabPresentation(spec, catalog, descriptors, link = null) {

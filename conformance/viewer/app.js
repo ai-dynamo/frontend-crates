@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { HttpResourceStore, gunzipSync, sha256, resourceMetrics, boundedGunzip } from './data.js';
 import { rawResource, FixtureResources } from './resources.js';
-import { buildTab, pageMetadata, tabPresentation, columnKeysFor, createSourceLink } from './presentation.js';
+import { buildTab, pageMetadata, tabPresentation, columnKeysFor, createSourceLink, captureSegmentHtml } from './presentation.js';
 import { tabCandidates, selectedCellOutcome, selectedCaptureOutcome, captureStatusLabels } from './model.js';
 import { mountComparison, verticalDefault } from './comparison.js';
 import { stringifyValue } from './values.js';
@@ -181,6 +181,7 @@ export function sourceCommitSha(metadata) {
 
 export async function startApp() {
   window.__conformanceSegmentLabels = captureStatusLabels;
+  window.__conformanceCaptureSegmentHtml = captureSegmentHtml;
   await import('../utils/src/assets/colorize.js');
   await import('../utils/src/assets/conformance_view.js');
   await import('../utils/src/assets/conformance.js');

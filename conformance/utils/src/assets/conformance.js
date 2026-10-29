@@ -186,11 +186,7 @@ window.initializeConformanceController = function (hooks = {}) {
     segments.replaceChildren();
     const labels = keys.map(key => {
       const status = window.__conformanceCaptureOutcome(data, key, 'golden');
-      const segment = document.createElement('i');
-      segment.className = 'matrix-status status-' + status;
-      segment.dataset.capture = key;
-      segment.setAttribute('aria-label', key + ': ' + segmentLabels[status]);
-      segments.appendChild(segment);
+      segments.insertAdjacentHTML('beforeend', window.__conformanceCaptureSegmentHtml(status, key));
       return key + ': ' + segmentLabels[status];
     });
     cell.setAttribute('aria-label', labels.join('; '));
