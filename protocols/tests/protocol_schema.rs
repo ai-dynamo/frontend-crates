@@ -308,7 +308,9 @@ fn token_logprobs_require_nullable_bytes_but_not_token_id() {
         &["/token_id"],
     );
     for bytes in [json!(null), json!([]), json!([97])] {
-        let token = json!({"token":"a","logprob":-0.5,"bytes":bytes,"top_logprobs":[]});
+        let token = json!({"token":"a","logprob":-0.5,"bytes":bytes,"top_logprobs":[
+            {"token":"a","token_id":115,"logprob":-0.5,"bytes":bytes}
+        ]});
         canonical::<ChatCompletionTokenLogprob>(token.clone());
         let logprobs = json!({"content":[token.clone()],"refusal":[token]});
         canonical::<CreateChatCompletionResponse>(json!({
@@ -320,4 +322,25 @@ fn token_logprobs_require_nullable_bytes_but_not_token_id() {
             "choices":[{"index":0,"delta":{},"logprobs":logprobs}]
         }));
     }
+}
+
+#[test]
+fn top_logprobs_use_local_candidate_schema() {
+    let doc = document();
+    let schemas = &doc["components"]["schemas"];
+    let token = &schemas[ChatCompletionTokenLogprob::name().as_ref()];
+    assert_eq!(
+        token["properties"]["top_logprobs"]["items"]["$ref"],
+        "#/components/schemas/dynamo_protocols.chat.TopLogprobs"
+    );
+    assert!(
+        schemas["dynamo_protocols.chat.TopLogprobs"]["properties"]
+            .get("token_id")
+            .is_some()
+    );
+    required_nullable_output::<ChatCompletionTokenLogprob>(
+        json!({"token":"a","logprob":-0.5,"top_logprobs":[{"token":"a","logprob":-0.5}]}),
+        &[("/top_logprobs/0", "bytes")],
+        &["/top_logprobs/0/token_id"],
+    );
 }

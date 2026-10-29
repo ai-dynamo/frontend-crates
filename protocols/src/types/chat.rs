@@ -419,11 +419,14 @@ pub struct ChatChoiceLogprobs {
 /// Different vocabulary IDs may render to the same token string. Retain IDs
 /// supplied by the backend without adding them to ordinary OpenAI responses.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::TopLogprobs))]
 pub struct TopLogprobs {
     pub token: String,
     pub logprob: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token_id: Option<u32>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
 }
 
@@ -442,7 +445,6 @@ pub struct ChatCompletionTokenLogprob {
     pub token_id: Option<u32>,
     #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
-    #[cfg_attr(feature = "protocol-schema", schema(value_type = Vec<crate::schema::TopLogprobs>))]
     pub top_logprobs: Vec<TopLogprobs>,
 }
 

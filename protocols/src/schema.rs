@@ -50,7 +50,6 @@ macro_rules! imports {
 imports!(
     FunctionType,
     ImageDetail,
-    TopLogprobs,
     ChatCompletionRequestMessageContentPartText,
     ChatCompletionRequestMessageContentPartAudio,
     ChatCompletionRequestSystemMessageContent,
