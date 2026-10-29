@@ -358,7 +358,10 @@ mod oracle {
     /// `effective_tools` (`lib/llm/src/preprocessor/tool_choice.rs:314`).
     /// ORACLE CHANGE: the moved `effective_tools` with the caller's validator for
     /// `validate::validated_effective_tools`, which calls dynamo's `validate_tools`.
-    /// An earlier move checked that pair against dynamo-llm.
+    /// It, and the moved `convert_tool_choice` and `requires_native_tool_call_format`
+    /// the oracle also calls, match dynamo `37f2f0a712` line for line apart from
+    /// visibility, that validator, and `..Default::default()` for fields dynamo sets
+    /// to `None`.
     pub fn effective_tools<F>(
         request: &CreateChatCompletionRequest,
         validate: F,
