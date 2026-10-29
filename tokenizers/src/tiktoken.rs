@@ -111,13 +111,13 @@ impl Encoder for TikTokenTokenizer {
     fn encode_segments(&self, segments: &[EncodeSegment<'_>]) -> Result<Encoding> {
         let mut token_ids = Vec::new();
         for segment in segments {
-            for piece in reference_pieces(segment.text) {
+            for_each_reference_piece(segment.text, |piece| {
                 if segment.allow_special {
                     token_ids.extend(self.bpe.encode_with_special_tokens(piece));
                 } else {
                     token_ids.extend(self.bpe.encode_ordinary(piece));
                 }
-            }
+            });
         }
         Ok(Encoding::Sp(token_ids))
     }
@@ -136,52 +136,52 @@ fn is_python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 
-/// The pieces the reference Kimi tokenizer (`TikTokenTokenizer._encode_text_piece` in the
-/// checkpoint's `tokenization_kimi.py`) encodes separately: `text` cut into chunks of
-/// [`MAX_ENCODE_CHARS`] characters, each split before any whitespace or non-whitespace
-/// run would exceed [`MAX_RUN_CHARS`] characters. BPE does not merge across these cuts,
-/// so encoding the text whole yields different ids whenever a cut applies.
-fn reference_pieces(text: &str) -> Vec<&str> {
+/// Calls `f`, in order, on the pieces the reference Kimi tokenizer
+/// (`TikTokenTokenizer._encode_text_piece` in the checkpoint's `tokenization_kimi.py`)
+/// encodes separately: `text` cut into chunks of [`MAX_ENCODE_CHARS`] characters, each
+/// split before any whitespace or non-whitespace run would exceed [`MAX_RUN_CHARS`]
+/// characters. BPE does not merge across these cuts, so encoding the text whole yields
+/// different ids whenever a cut applies.
+fn for_each_reference_piece<'a>(text: &'a str, mut f: impl FnMut(&'a str)) {
     // At most MAX_RUN_CHARS bytes means at most that many characters: no cut applies.
     if text.len() <= MAX_RUN_CHARS {
-        return vec![text];
+        f(text);
+        return;
     }
-    let mut pieces = Vec::new();
     let mut chunk_start = 0;
     let mut chunk_chars = 0;
-    let mut chunk_ends = Vec::new();
     for (index, _) in text.char_indices() {
         if chunk_chars == MAX_ENCODE_CHARS {
-            chunk_ends.push((chunk_start, index));
+            split_long_runs(&text[chunk_start..index], &mut f);
             chunk_start = index;
             chunk_chars = 0;
         }
         chunk_chars += 1;
     }
-    chunk_ends.push((chunk_start, text.len()));
+    split_long_runs(&text[chunk_start..], &mut f);
+}
 
-    for (start, end) in chunk_ends {
-        let chunk = &text[start..end];
-        let mut run_is_space = chunk.chars().next().is_some_and(is_python_space);
-        let mut run_len = 0;
-        let mut piece_start = 0;
-        for (index, c) in chunk.char_indices() {
-            let is_space = is_python_space(c);
-            if is_space != run_is_space {
-                run_is_space = is_space;
+/// Calls `f` on `chunk` split before any whitespace or non-whitespace run would exceed
+/// [`MAX_RUN_CHARS`] characters.
+fn split_long_runs<'a>(chunk: &'a str, f: &mut impl FnMut(&'a str)) {
+    let mut run_is_space = chunk.chars().next().is_some_and(is_python_space);
+    let mut run_len = 0;
+    let mut piece_start = 0;
+    for (index, c) in chunk.char_indices() {
+        let is_space = is_python_space(c);
+        if is_space != run_is_space {
+            run_is_space = is_space;
+            run_len = 1;
+        } else {
+            run_len += 1;
+            if run_len > MAX_RUN_CHARS {
+                f(&chunk[piece_start..index]);
+                piece_start = index;
                 run_len = 1;
-            } else {
-                run_len += 1;
-                if run_len > MAX_RUN_CHARS {
-                    pieces.push(&chunk[piece_start..index]);
-                    piece_start = index;
-                    run_len = 1;
-                }
             }
         }
-        pieces.push(&chunk[piece_start..]);
     }
-    pieces
+    f(&chunk[piece_start..]);
 }
 
 impl Decoder for TikTokenTokenizer {
@@ -990,12 +990,12 @@ mod tests {
         assert_eq!(decoded, marker);
     }
 
-    /// Character lengths of [`reference_pieces`], to compare with the Python reference.
+    /// Character lengths of [`for_each_reference_piece`]'s pieces, to compare with the
+    /// Python reference.
     fn piece_chars(text: &str) -> Vec<usize> {
-        reference_pieces(text)
-            .iter()
-            .map(|piece| piece.chars().count())
-            .collect()
+        let mut lengths = Vec::new();
+        for_each_reference_piece(text, |piece| lengths.push(piece.chars().count()));
+        lengths
     }
 
     #[test]
@@ -1015,10 +1015,12 @@ mod tests {
             piece_chars(&("x".repeat(25_000) + " " + &"y".repeat(25_001))),
             vec![50_001, 1]
         );
-        // Python's isspace counts U+001C..U+001F as whitespace.
+        // Python's isspace counts U+001C..U+001F as whitespace, so the separators start a
+        // new run; with `char::is_whitespace` this is one 30,000-character run, cut at
+        // 25,000.
         assert_eq!(
-            piece_chars(&("\u{1c}".repeat(30_000) + "b")),
-            vec![25_000, 5_001]
+            piece_chars(&("a".repeat(20_000) + &"\u{1c}".repeat(10_000))),
+            vec![30_000]
         );
         // Lengths are in characters, not bytes.
         assert_eq!(piece_chars(&"é".repeat(26_000)), vec![25_000, 1_000]);
