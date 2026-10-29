@@ -14,7 +14,17 @@ import fixtures
 import generate_conformance_table as table
 from fixture_corpus import load_corpus
 from impls import IMPL_KEYS
-from resolve_stream_fixtures import resolve_docs
+from resolve_stream_fixtures import resolve_docs, _merge_impl
+
+
+def test_assembled_jail_overlay_survives_resolution_and_is_replaced_by_chunks():
+    cid = "TOOLCALLING.streamv1.7-14"
+    base = {"cases": {cid: {"chunks": [{"delta_text": "input"}]}}}
+    observed = {"calls": [{"name": "echo", "arguments": {"text": "literal"}}], "normal_text": ""}
+    _merge_impl(base, {"cases": {cid: {"expected": {"dynamo_v1": observed}}}}, "dynamo_v1")
+    assert fixtures._derive_stream_expected(base["cases"][cid])["dynamo_v1"] == observed
+    _merge_impl(base, {"cases": {cid: {"chunks": [{"expected": []}]}}}, "dynamo_v1")
+    assert fixtures._derive_stream_expected(base["cases"][cid])["dynamo_v1"]["calls"] == []
 
 
 @pytest.fixture(autouse=True)
