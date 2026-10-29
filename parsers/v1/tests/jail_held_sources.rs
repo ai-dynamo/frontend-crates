@@ -155,10 +155,7 @@ async fn an_item_reports_the_text_released_after_it_in_the_same_input() {
     });
     let output = run(input).await;
     let at = |predicate: &dyn Fn(&SourcedChunk) -> bool| {
-        output
-            .iter()
-            .position(predicate)
-            .expect("item")
+        output.iter().position(predicate).expect("item")
     };
     let reasoning = at(&|item| text(item, "reasoning_content") == "r");
     let released = at(&|item| text(item, "content").contains("<tool"));

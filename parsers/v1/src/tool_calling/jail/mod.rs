@@ -219,11 +219,16 @@ fn hold_item_text<I: JailItem>(item: &mut I, held: &mut Vec<ChoiceSources>) {
 /// Stamp each of `items`, one input's output in order, with what the jail
 /// holds when it goes out: `held` after the input, and the text of the
 /// items after it, which was still held then.
+/// Allocates only while text is held: the first item's text is never added.
 fn stamp_held<I: JailItem>(items: &mut [I], mut held: Vec<ChoiceSources>) {
-    for item in items.iter_mut().rev() {
+    let Some((first, later)) = items.split_first_mut() else {
+        return;
+    };
+    for item in later.iter_mut().rev() {
         item.set_held(held.clone());
         hold_item_text(item, &mut held);
     }
+    first.set_held(held);
 }
 
 fn is_harmony_parser(parser: Option<&str>) -> bool {
@@ -2650,7 +2655,12 @@ impl JailedStream {
                                 drop_unsourced(&unsourced, emitted_response);
                             }
                             if recording {
-                                recorded.append(&mut responses);
+                                // The first group moves; later ones append.
+                                if recorded.is_empty() {
+                                    recorded = std::mem::take(&mut responses);
+                                } else {
+                                    recorded.append(&mut responses);
+                                }
                             }
                             for emitted_response in responses {
                                 yield emitted_response;
@@ -2669,7 +2679,12 @@ impl JailedStream {
                                 drop_unsourced(&unsourced, emitted_response);
                             }
                             if recording {
-                                recorded.append(&mut responses);
+                                // The first group moves; later ones append.
+                                if recorded.is_empty() {
+                                    recorded = std::mem::take(&mut responses);
+                                } else {
+                                    recorded.append(&mut responses);
+                                }
                             }
                             for emitted_response in responses {
                                 yield emitted_response;
@@ -2688,7 +2703,12 @@ impl JailedStream {
                                 drop_unsourced(&unsourced, emitted_response);
                             }
                             if recording {
-                                recorded.append(&mut responses);
+                                // The first group moves; later ones append.
+                                if recorded.is_empty() {
+                                    recorded = std::mem::take(&mut responses);
+                                } else {
+                                    recorded.append(&mut responses);
+                                }
                             }
                             for emitted_response in responses {
                                 yield emitted_response;
