@@ -511,6 +511,16 @@ fn compact_native_inputs_match_unified_at_every_utf8_split() {
             "<|open|>tools<|sep|><|open|>call tool=\"write_file\" index=\"1\"<|sep|><|open|>argument key=\"count\" type=\"number\"<|sep|>7<|close|>argument<|sep|><|open|>argument key=\"content\" type=\"string\"<|sep|>é\n\\\"<|close|>argument<|sep|> literal<|close|>argument<|sep|><|open|>argument key=\"count\" type=\"number\"<|sep|>8<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
             serde_json::json!({"count":8,"content":"é\n\\\"<|close|>argument<|sep|> literal"}),
         ),
+        (
+            "kimi_k3",
+            "<|open|>tools<|sep|><|open|>call tool=\"write_file\" index=\"1\"<|sep|><|open|>argument key=\"x\" type=\"object\"<|sep|>{\"inner\":\"<|close|>argument<|sep|><|open|>argument<|sep|>\"}<|close|>argument<|sep|><|open|>argument key=\"y\" type=\"string\"<|sep|>OK<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+            serde_json::json!({"x":{"inner":"<|close|>argument<|sep|><|open|>argument<|sep|>"},"y":"OK"}),
+        ),
+        (
+            "kimi_k3",
+            "<|open|>tools<|sep|><|open|>call tool=\"write_file\" index=\"1\"<|sep|><|open|>argument key=\"x\" type=\"array\"<|sep|>[\"<|close|>argument<|sep|><|open|>argument<|sep|>\"]<|close|>argument<|sep|><|open|>argument key=\"y\" type=\"string\"<|sep|>OK<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>",
+            serde_json::json!({"x":["<|close|>argument<|sep|><|open|>argument<|sep|>"],"y":"OK"}),
+        ),
     ];
     for (family, input, expected) in cases {
         for split in (0..=input.len()).filter(|at| input.is_char_boundary(*at)) {

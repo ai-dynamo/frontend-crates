@@ -183,10 +183,8 @@ struct NativeArgument {
     arg_type: String,
     start: usize,
     released: usize,
-    search: usize,
-    candidate: Option<TokenHit>,
+    close: ArgumentCloseScan,
     started: bool,
-    quoted: JsonStringState,
 }
 
 impl NativeArguments {
@@ -249,79 +247,19 @@ impl NativeArguments {
                     self.json_start = Some(self.cursor);
                     return progress.advance_json(&text[self.cursor..]);
                 }
+                let arg_type = attr_value(&attrs, "type").unwrap_or("string").to_string();
                 self.active = Some(NativeArgument {
                     key: attr_value(&attrs, "key").unwrap_or_default().to_string(),
-                    arg_type: attr_value(&attrs, "type").unwrap_or("string").to_string(),
+                    close: ArgumentCloseScan::new(self.cursor, arg_type != "string"),
+                    arg_type,
                     start: self.cursor,
                     released: self.cursor,
-                    search: self.cursor,
-                    candidate: None,
                     started: false,
-                    quoted: JsonStringState::default(),
                 });
             }
             let active = self.active.as_mut().expect("initialized above");
-            let mut confirmed = None;
-            loop {
-                if let Some(close) = active.candidate {
-                    Self::advance_whitespace(text, &mut active.search);
-                    let rest = &text[active.search..];
-                    // A complete close is still data until the next header or call boundary
-                    // resolves it. Partial structural suffixes have the same ownership.
-                    let unresolved = if let Some(open_len) = ARG_OPEN.prefix_len(rest) {
-                        if self.header.advance(&rest[open_len..], false).is_none() {
-                            break;
-                        }
-                        if let Some((_, len)) = parse_tag_header(rest, ARG_OPEN) {
-                            confirmed = Some((close, active.search + len));
-                            break;
-                        }
-                        false
-                    } else {
-                        rest.is_empty()
-                            || ALL_MARKERS
-                                .iter()
-                                .flat_map(|m| m.variants())
-                                .any(|marker| marker.starts_with(rest) || rest.starts_with(marker))
-                    };
-                    if unresolved {
-                        break;
-                    }
-                    active.candidate = None;
-                    self.header = KimiK3HeaderScan::new();
-                    active.search = close.end();
-                }
-                while active.search < text.len() {
-                    let tail = &text[active.search..];
-                    let ch = tail.chars().next().expect("non-empty value suffix");
-                    #[cfg(test)]
-                    crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
-                    if active.arg_type != "string" && active.quoted.advance(ch) {
-                        active.search += ch.len_utf8();
-                        continue;
-                    }
-                    if ARG_CLOSE.variants().any(|marker| marker.starts_with(tail)) {
-                        break;
-                    }
-                    if let Some((_, len)) = ARG_CLOSE.match_at(tail) {
-                        active.candidate = Some(TokenHit {
-                            at: active.search,
-                            len,
-                        });
-                        active.search += len;
-                        break;
-                    }
-                    active.search += ch.len_utf8();
-                }
-                if active.candidate.is_some() {
-                    continue;
-                }
-                break;
-            }
-            let end = confirmed.map_or_else(
-                || active.candidate.map_or(active.search, |hit| hit.at),
-                |(hit, _)| hit.at,
-            );
+            let confirmed = active.close.advance(text, false);
+            let end = confirmed.map_or_else(|| active.close.payload_end(), |hit| hit.at);
             if active.arg_type == "string" {
                 if !active.started {
                     output.push_str(if self.field_count == 0 { "{" } else { "," });
@@ -335,7 +273,7 @@ impl NativeArguments {
                     active.released = end;
                 }
             }
-            let Some((close, _next_header_end)) = confirmed else {
+            let Some(close) = confirmed else {
                 break;
             };
             if active.arg_type == "string" {
@@ -2323,7 +2261,24 @@ fn parse_call_body_ordered(body: &str, preserve_duplicates: bool) -> Option<Stri
         let value_start = header_end + sep_len;
         let key = attr_value(&attrs, "key").unwrap_or_default().to_string();
         let arg_type = attr_value(&attrs, "type").unwrap_or("string");
-        let (close_at, close_len) = structural_argument_close(&trimmed[value_start..])?;
+        let tail = &trimmed[value_start..];
+        let close = ArgumentCloseScan::new(0, arg_type != "string")
+            .advance(tail, true)
+            .or_else(|| {
+                // EOF recovery retains malformed typed JSON as a string; it cannot
+                // authorize provisional fragments while a quoted value is still open.
+                if arg_type == "string" {
+                    return None;
+                }
+                let close = ArgumentCloseScan::new(0, false).advance(tail, true)?;
+                tracing::warn!(
+                    why = "kimi_k3_unterminated_typed_json",
+                    recovered_bytes = close.at,
+                    "recovering malformed typed JSON at the argument boundary"
+                );
+                Some(close)
+            })?;
+        let (close_at, close_len) = (close.at, close.len);
         let value_end = value_start + close_at;
         let field_end = value_end + close_len;
         let value = encode_argument_value(arg_type, &trimmed[value_start..value_end]);
@@ -2350,94 +2305,144 @@ fn parse_call_body_ordered(body: &str, preserve_duplicates: bool) -> Option<Stri
     Some(output)
 }
 
-fn structural_argument_close(value_and_rest: &str) -> Option<(usize, usize)> {
-    #[derive(Clone, Copy)]
-    enum NextArgument {
-        None,
-        AfterClose(TokenHit),
-        Header(TokenHit, HeaderPhase),
-    }
+#[derive(Clone, Copy)]
+enum NextArgument {
+    None,
+    AfterClose(TokenHit),
+    Header(TokenHit, HeaderPhase),
+}
 
-    #[derive(Clone, Copy)]
-    enum HeaderPhase {
-        Whitespace,
-        Key,
-        Quote,
-        Value,
-    }
+#[derive(Clone, Copy)]
+enum HeaderPhase {
+    Whitespace,
+    Key,
+    Quote,
+    Value,
+}
 
-    let mut next_argument = NextArgument::None;
-    let mut cursor = 0;
-    while cursor < value_and_rest.len() {
-        let suffix = &value_and_rest[cursor..];
-        if let Some(close_len) = argument_close_len(suffix) {
-            count_argument_scan(close_len);
-            next_argument = NextArgument::AfterClose(TokenHit {
-                at: cursor,
-                len: close_len,
-            });
-            cursor += close_len;
-            continue;
+struct ArgumentCloseScan {
+    cursor: usize,
+    next_argument: NextArgument,
+    json_value: bool,
+    quoted: JsonStringState,
+}
+
+impl ArgumentCloseScan {
+    fn new(cursor: usize, json_value: bool) -> Self {
+        Self {
+            cursor,
+            next_argument: NextArgument::None,
+            json_value,
+            quoted: JsonStringState::default(),
         }
+    }
 
-        match next_argument {
-            NextArgument::AfterClose(close) => {
-                let ch = suffix.chars().next()?;
-                if ch.is_whitespace() {
-                    count_argument_scan(ch.len_utf8());
-                    cursor += ch.len_utf8();
-                    continue;
-                }
-                if let Some(open_len) = ARG_OPEN.prefix_len(suffix) {
-                    count_argument_scan(open_len);
-                    cursor += open_len;
-                    next_argument = NextArgument::Header(close, HeaderPhase::Whitespace);
-                    continue;
-                }
-                next_argument = NextArgument::None;
-            }
-            NextArgument::Header(close, phase) => {
-                if let Some(sep_len) = SEP_MARKER.prefix_len(suffix) {
-                    count_argument_scan(sep_len);
-                    if matches!(phase, HeaderPhase::Whitespace) {
-                        return Some((close.at, close.len));
-                    }
-                    next_argument = NextArgument::None;
-                    cursor += sep_len;
-                    continue;
-                }
+    fn payload_end(&self) -> usize {
+        match self.next_argument {
+            NextArgument::None => self.cursor,
+            NextArgument::AfterClose(close) | NextArgument::Header(close, _) => close.at,
+        }
+    }
 
-                let ch = suffix.chars().next()?;
-                let next_phase = match phase {
-                    HeaderPhase::Whitespace if ch.is_whitespace() => HeaderPhase::Whitespace,
-                    HeaderPhase::Whitespace if ch.is_alphanumeric() || ch == '_' => {
-                        HeaderPhase::Key
-                    }
-                    HeaderPhase::Key if ch.is_alphanumeric() || ch == '_' => HeaderPhase::Key,
-                    HeaderPhase::Key if ch == '=' => HeaderPhase::Quote,
-                    HeaderPhase::Quote if ch == '"' => HeaderPhase::Value,
-                    HeaderPhase::Value if ch == '"' => HeaderPhase::Whitespace,
-                    HeaderPhase::Value => HeaderPhase::Value,
-                    HeaderPhase::Whitespace | HeaderPhase::Key | HeaderPhase::Quote => {
-                        next_argument = NextArgument::None;
-                        continue;
-                    }
-                };
+    // NativeArguments and final normalization must agree before fragments commit.
+    // A non-string argument owns quoted JSON markers; raw strings use XTML framing.
+    fn advance(&mut self, text: &str, flush: bool) -> Option<TokenHit> {
+        while self.cursor < text.len() {
+            let suffix = &text[self.cursor..];
+            let ch = suffix.chars().next()?;
+            if matches!(self.next_argument, NextArgument::None)
+                && self.json_value
+                && self.quoted.advance(ch)
+            {
                 count_argument_scan(ch.len_utf8());
-                cursor += ch.len_utf8();
-                next_argument = NextArgument::Header(close, next_phase);
+                self.cursor += ch.len_utf8();
                 continue;
             }
-            NextArgument::None => {}
-        }
+            if !flush
+                && ARG_CLOSE
+                    .variants()
+                    .any(|marker| suffix.len() < marker.len() && marker.starts_with(suffix))
+            {
+                break;
+            }
+            if let Some(close_len) = argument_close_len(suffix) {
+                count_argument_scan(close_len);
+                self.next_argument = NextArgument::AfterClose(TokenHit {
+                    at: self.cursor,
+                    len: close_len,
+                });
+                self.cursor += close_len;
+                continue;
+            }
 
-        let ch = suffix.chars().next()?;
-        count_argument_scan(ch.len_utf8());
-        cursor += ch.len_utf8();
-    }
-    match next_argument {
-        NextArgument::AfterClose(close) => Some((close.at, close.len)),
-        NextArgument::None | NextArgument::Header(_, _) => None,
+            match self.next_argument {
+                NextArgument::AfterClose(close) => {
+                    if ch.is_whitespace() {
+                        count_argument_scan(ch.len_utf8());
+                        self.cursor += ch.len_utf8();
+                        continue;
+                    }
+                    if let Some(open_len) = ARG_OPEN.prefix_len(suffix) {
+                        count_argument_scan(open_len);
+                        self.cursor += open_len;
+                        self.next_argument = NextArgument::Header(close, HeaderPhase::Whitespace);
+                        continue;
+                    }
+                    if !flush
+                        && ALL_MARKERS
+                            .iter()
+                            .flat_map(|marker| marker.variants())
+                            .any(|marker| marker.starts_with(suffix) || suffix.starts_with(marker))
+                    {
+                        break;
+                    }
+                    self.next_argument = NextArgument::None;
+                }
+                NextArgument::Header(close, phase) => {
+                    if let Some(sep_len) = SEP_MARKER.prefix_len(suffix) {
+                        count_argument_scan(sep_len);
+                        if matches!(phase, HeaderPhase::Whitespace) {
+                            return Some(close);
+                        }
+                        self.next_argument = NextArgument::None;
+                        self.cursor += sep_len;
+                        continue;
+                    }
+                    if SEP_MARKER
+                        .variants()
+                        .any(|marker| marker.starts_with(suffix))
+                    {
+                        break;
+                    }
+                    let next_phase = match phase {
+                        HeaderPhase::Whitespace if ch.is_whitespace() => HeaderPhase::Whitespace,
+                        HeaderPhase::Whitespace if ch.is_alphanumeric() || ch == '_' => {
+                            HeaderPhase::Key
+                        }
+                        HeaderPhase::Key if ch.is_alphanumeric() || ch == '_' => HeaderPhase::Key,
+                        HeaderPhase::Key if ch == '=' => HeaderPhase::Quote,
+                        HeaderPhase::Quote if ch == '"' => HeaderPhase::Value,
+                        HeaderPhase::Value if ch == '"' => HeaderPhase::Whitespace,
+                        HeaderPhase::Value => HeaderPhase::Value,
+                        HeaderPhase::Whitespace | HeaderPhase::Key | HeaderPhase::Quote => {
+                            self.next_argument = NextArgument::None;
+                            continue;
+                        }
+                    };
+                    count_argument_scan(ch.len_utf8());
+                    self.cursor += ch.len_utf8();
+                    self.next_argument = NextArgument::Header(close, next_phase);
+                    continue;
+                }
+                NextArgument::None => {}
+            }
+            count_argument_scan(ch.len_utf8());
+            self.cursor += ch.len_utf8();
+        }
+        match self.next_argument {
+            NextArgument::AfterClose(close) if flush => Some(close),
+            _ => None,
+        }
     }
 }
 
@@ -2470,6 +2475,8 @@ std::thread_local! {
 }
 
 fn count_argument_scan(bytes: usize) {
+    #[cfg(test)]
+    crate::tool_calling::kimi_progress::count_work(2, bytes);
     #[cfg(test)]
     ARGUMENT_SCAN_BYTES.with(|scanned| scanned.set(scanned.get() + bytes));
     #[cfg(not(test))]

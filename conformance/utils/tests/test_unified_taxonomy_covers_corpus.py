@@ -464,6 +464,9 @@ def test_semantic_inventory_rejects_duplicates_and_reused_ids():
     changed = deepcopy(case)
     changed["input"] = "<other>x</other>"
     assert semantic_key(case) != semantic_key(changed)
+    changed = deepcopy(case)
+    changed["input_chunks"] = ["<call>", "x", "</call>"]
+    assert semantic_key(case) != semantic_key(changed)
     binding = {"purpose": "Retain a source-bound regression", "input_source": "inputs.tar.gz:family/case", "capture_source": "capture.tar.gz:family/case", "version": "1.0.0"}
     inventory = assert_unique_behaviour("sample", {"first": case, "retained": deepcopy(case)}, retained_archives={"retained": binding})
     assert inventory["exact_duplicates"] == [["first", "retained"]]
@@ -969,7 +972,7 @@ def test_deferred_case_ids_are_not_in_the_active_taxonomy():
     deferred = {"1-2", "5-5", "6-2", "32-6", "50-1", "50-2"} | {
         f"31-{number}" for number in range(31, 41)
     }
-    assert len(UNIFIED_TAX) == 239 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
+    assert len(UNIFIED_TAX) == 251 + len(CONFORMANCE_CASES) + len(PARALLEL_BOUNDARY_CASES) + len(V1_SPLIT_SCENARIOS) + len(G.DOTTED_NAME_SCENARIOS) + len(NUMERIC_VARIANTS) + 1
     assert not {f"UNIFIED.{case_id}" for case_id in deferred} & {
         numbered_id(scenario) for scenario in UNIFIED_TAX
     }
@@ -1712,7 +1715,9 @@ def _native_input_calls(family, raw, *, exact_numbers=False):
                 # Kimi K2 preserves a named malformed JSON call as empty arguments.
                 arguments = {}
         else:
-            pattern = r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)<\|close\|>\s*argument\s*<\|sep\|>'
+            pattern = (r'<\|open\|>\s*argument key="([^"]+)" type="([^"]+)"\s*<\|sep\|>(.*?)'
+                       r'<\|close\|>\s*argument\s*<\|sep\|>'
+                       r'(?=\s*(?:<\|open\|>\s*argument key="[^"]+" type="[^"]+"\s*<\|sep\|>|<\|close\|>\s*(?:call|tools)\s*<\|sep\|>|$))')
             for key, kind, value in re.findall(pattern, body, re.S):
                 arguments[key] = value if kind == "string" else json.loads(
                     value, parse_float=Decimal if exact_numbers else float
@@ -1861,6 +1866,8 @@ def _assert_input_carries_events(family: str, scenario: str, case: dict) -> None
     if scenario == "malformed_json_then_two_valid_calls":
         _assert_malformed_recovery(family, case)
         return
+    if scenario.startswith("kimi_native_"):
+        _assert_kimi_native_golden(scenario, case)
     raw = case["input"]
     tools = [event for event in case["golden"] if event["kind"] == "tool_call"]
     if tools:
@@ -2530,30 +2537,6 @@ def test_retired_harmony_eof_case_keeps_its_history_and_shared_contract():
     assert "UNIFIED.gpt_oss_truncated_tool_at_eof_is_dropped.gpt_oss" not in G.build_cases("gpt_oss")
 
 
-def _scenario_behaviour_key(case: dict) -> str:
-    # common::unified_capture::input_chunks tokenizes markers when no schedule is authored.
-    chunks = case.get("input_chunks", re.findall(r"<[^>]*(?:>|$)|[^<]+", case["input"]))
-    return json.dumps(
-        {
-            "input": case["input"],
-            "input_chunks": chunks,
-            "init": case["init"],
-            "golden": case["golden"],
-            "tools": case.get("tools"),
-        },
-        sort_keys=True,
-    )
-
-
-def test_delivery_schedule_distinguishes_streaming_scenarios() -> None:
-    case = {"input": "a<marker>b", "init": {}, "golden": []}
-    whole = {**case, "input_chunks": [case["input"]]}
-    split = {**case, "input_chunks": ["a", "<marker>", "b"]}
-    assert _scenario_behaviour_key(case) == _scenario_behaviour_key(split)
-    assert _scenario_behaviour_key(case) != _scenario_behaviour_key(whole)
-    assert _scenario_behaviour_key(split) == _scenario_behaviour_key(dict(split))
-
-
 def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
     if scenario == "kimi_native_incompatible_string_recovery":
         expected = [{"kind": "tool_call", "name": "write_file", "arguments": {}}]
@@ -2571,6 +2554,11 @@ def _assert_kimi_native_golden(scenario: str, case: dict) -> None:
     assert case["golden"] == expected, (scenario, "native Kimi golden differs from authored contract")
 
 
+@pytest.mark.parametrize("family,scenario", [
+    (family, name) for name in UNIFIED_TAX if name.startswith("kimi_native_")
+    for family in G.scenario_families(name)
+])
+@pytest.mark.parametrize("mutation", ["empty", "name", "arguments"])
 def test_kimi_native_oracle_rejects_changed_goldens(family, scenario, mutation):
     case = build_cases(family)[f"UNIFIED.{scenario}.{family}"]
     _assert_input_carries_events(family, scenario, case)

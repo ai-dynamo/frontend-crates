@@ -151,6 +151,7 @@ UNIFIED_TAX = {
     "kimi_native_incompatible_string_recovery": ("kimi", "17"),
     "kimi_native_incremental_interfield_whitespace": ("kimi", "18"),
     "kimi_native_rejected_next_header_progress": ("kimi", "19"),
+    "kimi_k3_typed_json_marker_payload": ("kimi", "20"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),

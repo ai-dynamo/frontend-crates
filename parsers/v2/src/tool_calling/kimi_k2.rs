@@ -33,7 +33,6 @@
 //! both buffered and provisional calls without rewriting previously released bytes;
 //! malformed calls without provisional output retain the batch parser's fallback.
 
-use crate::tool_calling::arguments::parsed_json_literal;
 use crate::tool_calling::scan::{
     BareRecoveryLatch, InvokeBoundary, InvokeBoundaryFactory, InvokeEmitter, InvokeLatch,
     WrappedBlockScanner, WrappedBlockSpec, json_value_end,
