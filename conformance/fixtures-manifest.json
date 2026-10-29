@@ -3,7 +3,7 @@
   "created_pt": "2026-10-26 20:24:32 America/Los_Angeles",
   "crates": {
     "dynamo-parsers": "10.2.2",
-    "dynamo-parsers-v2": "0.8.3"
+    "dynamo-parsers-v2": "0.8.8"
   },
   "peers": {
     "vllm": "0.26.0",

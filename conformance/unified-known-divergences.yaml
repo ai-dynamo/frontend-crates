@@ -20,13 +20,33 @@ kimi_k3:
 muse_glimmer: {}
 gemma4: {}
 deepseek_v41:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
+    golden:
+      note: The later parameter closer completes the malformed first invoke, emitting f with embedded DSML instead of get_weather.
+      actual: tool_call(f, {"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"})
+  UNIFIED.5-dsml_unterminated_parameter_then_empty_call:
+    golden:
+      note: The unterminated parameter loses the later parameterless call; V4.1 errors at finish.
+      actual: 'ERROR: native finish: incomplete DeepSeek V4.1 parameter'
+    stream_batch:
+      note: parse_complete reports the incomplete parameter through native push; streaming reports it at finish.
+      batch: 'ERROR: native push: incomplete DeepSeek V4.1 parameter'
+      stream: 'ERROR: native finish: incomplete DeepSeek V4.1 parameter'
   UNIFIED.gpt_oss-invalid_tool_body_then_empty_call:
     golden:
       note: 'An invalid raw invocation body aborts parsing before the following complete empty call.'
       actual: 'ERROR: native push: invalid DeepSeek V4.1 parameter header'
 
 glm47: {}
-deepseek_v4: {}
+deepseek_v4:
+  UNIFIED.5-dsml_unterminated_parameter_then_call:
+    golden:
+      note: The later parameter closer completes the malformed first invoke, emitting f with embedded DSML instead of get_weather.
+      actual: tool_call(f, {"x":"bad</｜DSML｜invoke><｜DSML｜invoke name=\"get_weather\"><｜DSML｜parameter name=\"city\" string=\"true\">Paris"})
+  UNIFIED.5-dsml_unterminated_parameter_then_empty_call:
+    golden:
+      note: The unterminated parameter loses the later parameterless call; V4 emits the malformed get_weather invoke.
+      actual: tool_call(get_weather, {})
 kimi_k2: {}
 nemotron_v3: {}
 qwen3: {}
