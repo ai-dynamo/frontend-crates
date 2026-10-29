@@ -339,6 +339,13 @@ impl std::fmt::Display for InvalidGuidedPayload {
 
 impl std::error::Error for InvalidGuidedPayload {}
 
+/// An immutable parser-owned checkpoint. Forks omit previously emitted output
+/// and keep independent generated state. Unsupported families/modes fall back
+/// to ordinary initialization instead of pretending to support continuation.
+pub trait UnifiedParserContinuation: Send {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
+}
+
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
 /// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
@@ -359,13 +366,6 @@ impl std::error::Error for InvalidGuidedPayload {}
 /// Splitting it this way is deliberate — a parser that silently dropped
 /// unrecognized calls would hide model misbehaviour that the caller needs to see —
 /// but it means "the parser produced a ToolCall" is not "this call is safe to run".
-/// An immutable parser-owned checkpoint. Forks omit previously emitted output
-/// and keep independent generated state. Unsupported families/modes fall back
-/// to ordinary initialization instead of pretending to support continuation.
-pub trait UnifiedParserContinuation: Send {
-    fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
-}
-
 pub trait UnifiedParser: Send {
     /// Freeze consumed state once, then fork independent continuations cheaply.
     /// A finished parser rejects checkpoints. None means the mode is unsupported.

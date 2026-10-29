@@ -43,3 +43,34 @@ pub use unified::{
     register_unified_parser, tool_arguments_raw, unregister_unified_parser,
     vendor_unified_families,
 };
+
+#[cfg(test)]
+mod feature_tests {
+    #[cfg(feature = "arbitrary-precision")]
+    #[test]
+    fn default_schema_values_preserve_large_fractions_and_exponents() {
+        let text = r#"{"const":9007199254740992.5,"enum":[1e9999]}"#;
+        let schema: serde_json::Value = serde_json::from_str(text).unwrap();
+        assert_eq!(schema["const"].to_string(), "9007199254740992.5");
+        assert_eq!(schema["enum"][0].to_string(), "1e+9999");
+    }
+
+    #[cfg(not(feature = "arbitrary-precision"))]
+    #[test]
+    fn compatibility_mode_keeps_generic_serde_numeric_visitors() {
+        #[derive(serde::Deserialize)]
+        #[serde(untagged)]
+        enum Number {
+            Integer(i64),
+            Float(f64),
+        }
+        assert!(matches!(
+            serde_json::from_str("42").unwrap(),
+            Number::Integer(42)
+        ));
+        match serde_json::from_str("0.7").unwrap() {
+            Number::Float(value) => assert_eq!(value, 0.7),
+            _ => panic!("fraction must reach a numeric visitor"),
+        }
+    }
+}
