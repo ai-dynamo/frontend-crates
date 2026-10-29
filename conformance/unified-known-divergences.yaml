@@ -6,13 +6,25 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-gemma4:
-  UNIFIED.malformed_json_then_two_valid_calls.gemma4:
+beam: {}
+gpt_oss: {}
+kimi_k3:
+  # TODO: Fix Kimi K3 5-tool_no_close (5-3) recovery: preserve the following
+  # response after an unclosed tool call or unterminated JSON string.
+  UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message:
     golden:
-      note: An unfinished native string consumes both later echo calls; parser fix is outside this capture change.
+      note: 'An unclosed tool call swallows the following response instead of resynchronizing at its header.'
       actual: ''
-deepseek_v41:
-  UNIFIED.malformed_json_then_two_valid_calls.deepseek_v41:
+  UNIFIED.gpt_oss_quoted_truncated_tool_then_final.kimi_k3:
     golden:
-      note: Malformed object parameter raises before either later echo call; parser fix is outside this capture change.
-      actual: 'ERROR: native push: EOF while parsing a string at line 1 column 16'
+      note: 'Preexisting Kimi K3 recovery gap: an unterminated raw JSON string causes EOF recovery to discard the later complete response message.'
+      actual: ''
+muse_glimmer: {}
+gemma4: {}
+deepseek_v41: {}
+
+glm47: {}
+deepseek_v4: {}
+kimi_k2: {}
+nemotron_v3: {}
+qwen3: {}

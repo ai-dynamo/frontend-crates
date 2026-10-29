@@ -195,6 +195,22 @@ pub trait MmFamilyProcessor: Send + Sync {
     /// probing only the modality-specific header.
     fn num_media_tokens(&self, media: &MediaMetadata) -> crate::Result<usize>;
 
+    /// Describe a prompt expansion from metadata alone, without constructing
+    /// tensors. Planning-only families can implement this independently of
+    /// `process_item`; families requiring decoded data keep the default error.
+    /// Counts passed to `apply_layout` must match the expansion's feature spans
+    /// (including model-generated boundary/separator embeddings when applicable).
+    fn layout_from_metadata(
+        &self,
+        input_ids: &[i32],
+        media: &[MediaMetadata],
+    ) -> crate::Result<TokenLayout> {
+        let _ = (input_ids, media);
+        Err(crate::MmError::unsupported(
+            "this family does not support metadata-only prompt layout",
+        ))
+    }
+
     /// Preprocess one decoded media item — the model's HF processor
     /// equivalent (resize/tile/normalize/patchify) — into tensors plus the
     /// geometry `layout`/`positions` will need.

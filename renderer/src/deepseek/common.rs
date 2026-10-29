@@ -520,7 +520,7 @@ pub(crate) fn inject_tools_and_response_format(
 ) -> Result<()> {
     let tools_json = req
         .tools()
-        .map(|t| serde_json::to_value(&t))
+        .map(|t| crate::python::template_json(&t))
         .transpose()
         .context("Failed to convert tools to JSON")?;
 
@@ -536,7 +536,7 @@ pub(crate) fn inject_tools_and_response_format(
 
     let response_format_json = req
         .response_format()
-        .map(|rf| serde_json::to_value(&rf))
+        .map(|rf| crate::python::template_json(&rf))
         .transpose()
         .context("Failed to convert response_format to JSON")?;
 

@@ -1,18 +1,23 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub(crate) mod arguments;
+pub mod beam_body;
+pub(crate) mod beam_py;
 pub mod debug;
 pub mod dsml;
 pub mod gemma4;
 pub mod glm47;
 pub mod harmony;
-mod harmony_grammar;
-mod harmony_recovery;
 pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m2;
 pub mod minimax_m3;
 pub mod muse_glimmer;
+// Spark has different recipient semantics but shares Glimmer's ATEM scanner.
+pub mod muse_spark;
+#[cfg(test)]
+mod numeric_tests;
 pub mod qwen3_coder;
 mod registry;
 /// Shared marker-scan core. Crate-visible because `crate::unified` builds on the

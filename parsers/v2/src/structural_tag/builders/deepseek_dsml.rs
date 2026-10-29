@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tool_calling::dsml;
+use crate::unified::deepseek_v41;
+
 use super::{StructuralTagBuilder, ToolCallGrammar, triggered_calls_format};
 use crate::structural_tag::policy::{
     ResolvedToolCallingPolicy, ToolCallingMode, resolve_tool_schema,
@@ -11,25 +14,69 @@ use crate::structural_tag::wire::{
 };
 
 pub(crate) static DEEPSEEK_DSML: StructuralTagBuilder =
-    StructuralTagBuilder::new(&DEEPSEEK_DSML_FORMAT);
+    StructuralTagBuilder::new(&DeepSeekDsmlFormat {
+        dialect: DsmlDialect::V4,
+    });
+pub(crate) static DEEPSEEK_DSML_V41: StructuralTagBuilder =
+    StructuralTagBuilder::new(&DeepSeekDsmlFormat {
+        dialect: DsmlDialect::V41,
+    });
 
-static DEEPSEEK_DSML_FORMAT: DeepSeekDsmlFormat = DeepSeekDsmlFormat;
+#[derive(Clone, Copy)]
+enum DsmlDialect {
+    V4,
+    V41,
+}
 
-struct DeepSeekDsmlFormat;
+struct DeepSeekDsmlFormat {
+    dialect: DsmlDialect,
+}
 
-const TRIGGER: &str = "<｜DSML｜tool_calls>";
-const TOOL_CALLS_PREFIX: &str = "\n\n";
-const TOOL_CALLS_BEGIN: &str = "<｜DSML｜tool_calls>\n";
-const TOOL_CALLS_END: &str = "</｜DSML｜tool_calls>";
-const BARE_INVOKE_BEGIN: &str = "<｜DSML｜invoke name=";
-const INVOKE_BEGIN_PREFIX: &str = "<｜DSML｜invoke name=\"";
-const INVOKE_BEGIN_SUFFIX: &str = "\">\n";
-const INVOKE_END: &str = "</｜DSML｜invoke>\n";
-const INVOKE_SEPARATOR: &str = "";
+const BARE_INVOKE_BEGIN: &str = dsml::INVOKE_START_PREFIX
+    .split_at(dsml::INVOKE_START_PREFIX.len() - 1)
+    .0;
+const V41_BARE_INVOKE_BEGIN: &str = deepseek_v41::INVOKE_START
+    .split_at(deepseek_v41::INVOKE_START.len() - 1)
+    .0;
 const REASONING_BEGIN: &str = "<think>";
 const REASONING_END: &str = "</think>";
 
 impl DeepSeekDsmlFormat {
+    fn block_start(&self) -> &'static str {
+        match self.dialect {
+            DsmlDialect::V4 => dsml::BLOCK_START,
+            DsmlDialect::V41 => deepseek_v41::BLOCK_START,
+        }
+    }
+
+    fn block_end(&self) -> &'static str {
+        match self.dialect {
+            DsmlDialect::V4 => dsml::BLOCK_END,
+            DsmlDialect::V41 => deepseek_v41::BLOCK_END,
+        }
+    }
+
+    fn invoke_start(&self) -> &'static str {
+        match self.dialect {
+            DsmlDialect::V4 => dsml::INVOKE_START_PREFIX,
+            DsmlDialect::V41 => deepseek_v41::INVOKE_START,
+        }
+    }
+
+    fn invoke_end(&self) -> &'static str {
+        match self.dialect {
+            DsmlDialect::V4 => dsml::INVOKE_END,
+            DsmlDialect::V41 => deepseek_v41::INVOKE_END,
+        }
+    }
+
+    fn argument_style(&self) -> JsonSchemaStyle {
+        match self.dialect {
+            DsmlDialect::V4 => JsonSchemaStyle::DeepseekXml,
+            DsmlDialect::V41 => JsonSchemaStyle::DeepseekV41Xml,
+        }
+    }
+
     fn tool_call_block(
         &self,
         policy: &ResolvedToolCallingPolicy<'_>,
@@ -39,25 +86,25 @@ impl DeepSeekDsmlFormat {
             .tools
             .iter()
             .map(|tool| TagFormat {
-                begin: [INVOKE_BEGIN_PREFIX, &tool.name, INVOKE_BEGIN_SUFFIX].concat(),
+                begin: [self.invoke_start(), &tool.name, "\">\n"].concat(),
                 content: Box::new(Format::JsonSchema(JsonSchemaFormat {
                     json_schema: resolve_tool_schema(tool, policy.schema_mode),
-                    style: JsonSchemaStyle::DeepseekXml,
+                    style: self.argument_style(),
                     any_order: tool_arguments_any_order,
                 })),
-                end: INVOKE_END.to_string(),
+                end: [self.invoke_end(), "\n"].concat(),
             })
             .collect();
 
         TagFormat {
-            begin: TOOL_CALLS_BEGIN.to_string(),
+            begin: [self.block_start(), "\n"].concat(),
             content: Box::new(Format::TagsWithSeparator(TagsWithSeparatorFormat {
                 tags: invoke_tags,
-                separator: INVOKE_SEPARATOR.to_string(),
+                separator: String::new(),
                 at_least_one: true,
                 stop_after_first: policy.stop_after_first(),
             })),
-            end: TOOL_CALLS_END.to_string(),
+            end: self.block_end().to_string(),
         }
     }
 }
@@ -72,7 +119,10 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
     }
 
     fn tool_call_excludes(&self) -> &'static [&'static str] {
-        &[TRIGGER, BARE_INVOKE_BEGIN]
+        match self.dialect {
+            DsmlDialect::V4 => &[dsml::BLOCK_START, BARE_INVOKE_BEGIN],
+            DsmlDialect::V41 => &[deepseek_v41::BLOCK_START, V41_BARE_INVOKE_BEGIN],
+        }
     }
 
     fn build_triggered_calls(
@@ -90,11 +140,11 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
         );
 
         let format = triggered_calls_format(
-            TRIGGER,
+            self.block_start(),
             vec![self.tool_call_block(policy, tool_arguments_any_order)],
             self.reasoning_begin(),
             self.reasoning_end(),
-            &[BARE_INVOKE_BEGIN],
+            &self.tool_call_excludes()[1..],
             exclude_special_tokens,
             policy,
         );
@@ -105,7 +155,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
         Ok(Format::Sequence(SequenceFormat {
             elements: vec![
                 Format::ConstString(ConstStringFormat {
-                    value: TOOL_CALLS_PREFIX.to_string(),
+                    value: dsml::BLOCK_SEPARATOR.to_string(),
                 }),
                 format,
             ],
@@ -118,7 +168,7 @@ impl ToolCallGrammar for DeepSeekDsmlFormat {
         tool_arguments_any_order: bool,
     ) -> anyhow::Result<Format> {
         let mut block = self.tool_call_block(policy, tool_arguments_any_order);
-        block.begin.insert_str(0, TOOL_CALLS_PREFIX);
+        block.begin.insert_str(0, dsml::BLOCK_SEPARATOR);
         Ok(Format::Tag(block))
     }
 }

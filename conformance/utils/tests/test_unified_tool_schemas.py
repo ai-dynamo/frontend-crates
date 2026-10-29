@@ -3,6 +3,8 @@
 
 import ast
 import copy
+import json
+from decimal import Decimal
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,7 +16,8 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 sys.path.insert(0, str(SRC))
 
 import gen_unified_golden as G
-from unified_tools import unified_tools
+from unified_tools import openai_tools, unified_tools
+from schema_cases import XML_COMPATIBILITY_CASES, schema_tools
 
 
 def _assert_value(value, schema):
@@ -83,17 +86,89 @@ def test_schema_guard_corpus_keywords(schema, valid, invalid):
 
 def _assert_golden_schemas(cases, tools):
     for case_id, case in cases.items():
+        scenario = case_id.removeprefix("UNIFIED.").rsplit(".", 1)[0]
+        custom_probe = next((probe for probe in XML_COMPATIBILITY_CASES
+                             if probe["schema"]["type"] == "custom" and probe["name"] == scenario), None)
+        if custom_probe is not None:
+            # These exact native compatibility requests deliberately use an invalid
+            # JSON Schema type. Preserve the strict schema oracle for every other case.
+            assert case_id.rsplit(".", 1)[1] in {"qwen3", "nemotron_v3"}
+            assert case["tools"] == schema_tools(custom_probe)
+            assert case["golden"] == [{"kind": "tool_call", "name": "schema_probe",
+                                       "arguments": {"value": {"a": 1}}}]
+            continue
         offered_tools = case.get("tools", tools)
         schemas = {tool["name"]: tool["parameters"] for tool in offered_tools}
         assert len(schemas) == len(offered_tools)
         for event in case["golden"]:
             if event["kind"] == "tool_call":
+                if not offered_tools:
+                    # Native lexical probes deliberately exercise unoffered calls.
+                    assert case_id.endswith(".gpt_oss") or (
+                        scenario in {
+                            "gpt_oss_multiple_unknown_and_empty_tools",
+                            "gpt_oss_control_marker_inside_argument_string",
+                            "gpt_oss_invalid_tool_body_then_empty_call",
+                            "gpt_oss_invalid_tool_body_then_valid_call",
+                            "gpt_oss_truncated_tool_resynchronizes_at_next_message",
+                            "gpt_oss_interrupted_reasoning_then_response",
+                        }
+                        and case["init"]["tool_output_mode"] == "Native"
+                    )
+                    continue
                 if case_id.startswith("UNIFIED.malformed_json_then_two_valid_calls.") and event["name"] == "bad":
-                    family = case_id.rsplit(".", 1)[1]
-                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer"}
+                    family = G.unified_grammar_family(case_id.rsplit(".", 1)[1])
+                    assert family in {"kimi_k2", "qwen3", "glm47", "deepseek_v4", "muse_glimmer", "muse_spark", "gpt_oss", "beam"}
                     assert event["arguments"] == ({} if family == "kimi_k2" else {"value": '{"x":"unfinished'})
                     continue
-                _assert_value(event["arguments"], schemas[event["name"]])
+                arguments = event["arguments"]
+                if isinstance(arguments, str):
+                    arguments = json.loads(arguments, parse_float=Decimal)
+                _assert_value(arguments, schemas[event["name"]])
+
+
+@pytest.mark.parametrize("family", ["qwen3", "gpt_oss"])
+def test_schema_free_text_does_not_imply_a_schema_free_tool_call(family):
+    case = {"tools": [], "golden": [
+        {"kind": "reasoning", "text": "analysis"},
+        {"kind": "text", "text": "response"},
+    ]}
+    cases = {f"UNIFIED.no_tools.{family}": case}
+    _assert_golden_schemas(cases, unified_tools())
+    case["golden"].append({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}})
+    if family == "gpt_oss":
+        _assert_golden_schemas(cases, unified_tools())
+    else:
+        with pytest.raises(AssertionError):
+            _assert_golden_schemas(cases, unified_tools())
+
+
+def test_schema_free_lexical_exception_requires_its_scenario_and_native_mode():
+    case_id = "UNIFIED.gpt_oss_multiple_unknown_and_empty_tools.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({"UNIFIED.tool_only.qwen3": case}, unified_tools())
+    case["init"]["tool_output_mode"] = "GuidedJson"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
+
+
+@pytest.mark.parametrize("mutation", ["arguments", "schema", "family"])
+def test_custom_compatibility_exclusion_rejects_changed_contracts(mutation):
+    case_id = "UNIFIED.xml_custom_type_single_quoted_object.qwen3"
+    case = copy.deepcopy(G.build_cases("qwen3")[case_id])
+    _assert_golden_schemas({case_id: case}, unified_tools())
+    with pytest.raises(AssertionError):
+        _assert_value(case["golden"][0]["arguments"], case["tools"][0]["parameters"])
+    if mutation == "arguments":
+        case["golden"][0]["arguments"]["value"] = "{'a':1}"
+    elif mutation == "schema":
+        case["tools"][0]["parameters"]["properties"]["value"] = {"type": "object"}
+    else:
+        case_id = case_id.removesuffix("qwen3") + "glm47"
+    with pytest.raises(AssertionError):
+        _assert_golden_schemas({case_id: case}, unified_tools())
 
 
 @pytest.mark.parametrize("family", G.FAMILIES)
@@ -101,12 +176,22 @@ def test_all_authored_successful_calls_match_offered_schemas(family):
     _assert_golden_schemas(G.build_cases(family), unified_tools())
 
 
-@pytest.mark.parametrize("family", G.FAMILIES)
+@pytest.mark.parametrize("family", sorted(G.UNIFIED_FAMILIES))
 def test_schema_guard_rejects_old_array_as_string_declaration(family):
     tools = unified_tools()
     next(tool for tool in tools if tool["name"] == "sum_values")["parameters"]["properties"]["values"] = {"type": "string"}
+    cases = G.build_cases(family)
+    for case in cases.values():
+        if not case.get("tools") and any(
+            event["kind"] == "tool_call" and event["name"] == "sum_values"
+            for event in case["golden"]
+        ):
+            case["tools"] = copy.deepcopy(tools)
+        for tool in case.get("tools", []):
+            if tool["name"] == "sum_values":
+                tool["parameters"]["properties"]["values"] = {"type": "string"}
     with pytest.raises(AssertionError):
-        _assert_golden_schemas(G.build_cases(family), tools)
+        _assert_golden_schemas(cases, tools)
 
 
 def test_schema_guard_rejects_old_numeric_string_successor():
@@ -143,15 +228,19 @@ def test_peer_request_schema_projection_matches_shared_definition(script):
     tree = ast.parse((SRC / script).read_text())
     assignments = [node for node in tree.body if isinstance(node, ast.Assign)
                    and any(isinstance(target, ast.Name) and target.id in {"TOOLS", "TOOL_SCHEMAS"} for target in node.targets)]
-    namespace = {"unified_tools": unified_tools, "Tool": SimpleNamespace, "Function": SimpleNamespace}
+    namespace = {
+        "unified_tools": unified_tools,
+        "openai_tools": openai_tools,
+        "Tool": SimpleNamespace,
+        "Function": SimpleNamespace,
+    }
     exec(compile(ast.Module(body=assignments, type_ignores=[]), script, "exec"), namespace)
-    projected = namespace["TOOLS"]
     if script == "capture_sglang_unified.py":
-        actual = [vars(tool.function) for tool in projected]
-        assert all(tool.type == "function" for tool in projected)
-    else:
-        actual = [tool["function"] for tool in projected]
-        assert all(tool["type"] == "function" for tool in projected)
+        assert namespace["TOOL_SCHEMAS"] == unified_tools()
+        return
+    projected = namespace["TOOLS"]
+    actual = [tool["function"] for tool in projected]
+    assert all(tool["type"] == "function" for tool in projected)
     assert actual == unified_tools()
 
 
@@ -173,8 +262,10 @@ def test_rust_harnesses_consume_the_shared_and_case_schema_owners():
     assert "unified_tool_schemas_for_case(case.tools.as_ref())" in render
     assert "unified_tool_schemas_for_case(tool_schema_json.as_ref())" in cross_version
     peer = (SRC / "capture_vllm_rust_unified.py").read_text()
-    assert 'serde_json::from_str(include_str!("unified_tools.json"))' in peer
-    assert '(crate / "src/unified_tools.json").write_bytes(SCHEMA_PATH.read_bytes())' in peer
+    assert "tools: Vec<Tool>" in peer
+    assert "make_parser(&case.family, &case.tools)" in peer
+    assert "supports_tools=True" in peer
+    assert "schema_bytes = SCHEMA_PATH.read_bytes()" in peer
 
 
 def test_recovery_successor_respects_string_schema():

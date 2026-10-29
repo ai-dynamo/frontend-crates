@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [10.2.2](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.1...dynamo-parsers-v10.2.2) - 2026-10-26
+
+### Bug fixes
+
+- *(parsers)* Strip a force-reasoning <think> that follows text in one chunk ([#477](https://github.com/ai-dynamo/frontend-crates/pull/477))
+
+## [10.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.2.0...dynamo-parsers-v10.2.1) - 2026-10-24
+
+### Bug fixes
+
+- *(parsers)* Accept whitespace between glm47 arg_key and arg_value ([#472](https://github.com/ai-dynamo/frontend-crates/pull/472))
+
+## [10.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.1.0...dynamo-parsers-v10.2.0) - 2026-10-23
+
+### Features
+
+- Add Muse Spark Open parsers and Chat/Responses tool support ([#450](https://github.com/ai-dynamo/frontend-crates/pull/450))
+
+## [10.1.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.7...dynamo-parsers-v10.1.0) - 2026-10-22
+
+### Features
+
+- *(parsers)* Share Kimi grammars and add v2 structural tags ([#349](https://github.com/ai-dynamo/frontend-crates/pull/349))
+
+## [10.0.7](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.6...dynamo-parsers-v10.0.7) - 2026-10-16
+
+### Bug fixes
+
+- *(parsers)* Consume DSML separators in v1/v2 and preserve streamed metadata ([#405](https://github.com/ai-dynamo/frontend-crates/pull/405))
+
+## [10.0.6](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.5...dynamo-parsers-v10.0.6) - 2026-10-16
+
+### Bug fixes
+
+- *(parsers)* Keep dotted tool names whole in the harmony parser ([#416](https://github.com/ai-dynamo/frontend-crates/pull/416))
+
+## [10.0.5](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.4...dynamo-parsers-v10.0.5) - 2026-10-15
+
+### Bug fixes
+
+- *(parsers)* Re-jail a complete start marker in trailing content ([#408](https://github.com/ai-dynamo/frontend-crates/pull/408))
+
+## [10.0.4](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.3...dynamo-parsers-v10.0.4) - 2026-10-15
+
+### Bug fixes
+
+- *(parsers)* Recover GPT-OSS streams after Harmony parse errors ([#409](https://github.com/ai-dynamo/frontend-crates/pull/409))
+
+## [10.0.3](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v10.0.2...dynamo-parsers-v10.0.3) - 2026-10-13
+
+### Bug fixes
+
+- *(parsers)* Stop jailing gpt-oss answers on short '<' prefixes and keep bare text after failed harmony parse ([#336](https://github.com/ai-dynamo/frontend-crates/pull/336))
+
+## [10.0.0] - 2026-10-08
+
+### Breaking changes
+
+- Use `dynamo-protocols` 8.0 for the protocol types exposed in the public API.
+  Consumers sharing those types must upgrade to protocols 8.x.
+
 ## [9.2.12](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-parsers-v9.2.11...dynamo-parsers-v9.2.12) - 2026-10-08
 
 ### Bug fixes

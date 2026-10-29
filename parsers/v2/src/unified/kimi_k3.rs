@@ -10,7 +10,10 @@
 
 use std::collections::HashMap;
 
+#[cfg(test)]
 use serde_json::Value;
+
+use crate::tool_calling::arguments::{parsed_json_literal, parsed_json_object};
 
 use crate::tool_calling::scan::{
     GuidedInvokePrefix, GuidedInvokePrefixContext, InvokeBoundary, InvokeBoundaryFactory,
@@ -20,7 +23,7 @@ use crate::tool_calling::scan::{
 use crate::tool_calling::traits::{Tool, ToolCallDelta};
 use crate::unified::{
     GuidedChannel, GuidedChannelState, GuidedGrammar, GuidedReasoning, GuidedRouted, NativeUnified,
-    UnifiedParser, UnifiedParserOutput, UnifiedParserStartingState,
+    UnifiedParser, UnifiedParserInit, UnifiedParserOutput, UnifiedParserStartingState,
 };
 
 const OPEN: &str = "<|open|>";
@@ -626,7 +629,7 @@ impl KimiK3CallBoundary {
                 return false;
             };
             let payload = &rest[..end];
-            serde_json::from_str::<Value>(payload).is_ok()
+            parsed_json_literal(payload).is_some()
                 && rest[end..].trim().is_empty()
                 && (self.context != CallBoundaryContext::Guided || guided_payload_starts(rest))
         })
@@ -659,9 +662,7 @@ impl KimiK3CallBoundary {
             let Some(end) = json_value_end(suffix) else {
                 continue;
             };
-            if serde_json::from_str::<Value>(&suffix[..end]).is_ok()
-                && suffix[end..].trim().is_empty()
-            {
+            if parsed_json_literal(&suffix[..end]).is_some() && suffix[end..].trim().is_empty() {
                 return Some(outer.end());
             }
         }
@@ -1012,7 +1013,7 @@ fn header_separator_is_partial(text: &str) -> bool {
 
 fn guided_payload_starts(text: &str) -> bool {
     let text = text.trim_start();
-    json_value_end(text).is_some_and(|end| serde_json::from_str::<Value>(&text[..end]).is_ok())
+    json_value_end(text).is_some_and(|end| parsed_json_literal(&text[..end]).is_some())
 }
 
 fn kimi_k3_call_boundary() -> Box<dyn InvokeBoundary> {
@@ -1692,16 +1693,20 @@ impl NativeUnified for KimiK3Native {
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_find_open,
-            find_close: guided_find_close,
-            find_turn_end: guided_find_turn_end,
+            find_close: |haystack, _, _| guided_find_close(haystack),
+            find_turn_end: |haystack, _, _| guided_find_turn_end(haystack),
             find_transition: guided_find_transition,
             find_stray: guided_find_stray,
             find_routing: guided_find_routing,
             holdback: guided_holdback,
             strip_text: guided_strip_text,
+            // Kimi does not need Spark's cleanup of narrated ATEM syntax.
+            reasoning_filter: None,
             competitors: GUIDED_COMPETITORS,
             close_markers: GUIDED_CLOSE_MARKERS,
             response_literal_markers: RESPONSE_LITERAL_MARKERS,
+            header_pending: None,
+            envelope_owned: false,
         }))
     }
 
@@ -1713,17 +1718,20 @@ impl NativeUnified for KimiK3Native {
                 .map(str::to_string)
                 .collect(),
             invoke_start: CALL_OPEN.canonical.to_string(),
+            invoke_start_alternates: Vec::new(),
             invoke_end: CALL_CLOSE.canonical.to_string(),
+            native_body_start: None,
             invoke_boundary_factory: Some(InvokeBoundaryFactory::custom(kimi_k3_call_boundary)),
             guided_prefix_policy: None,
             guided_prefix_factory: None,
         }
     }
 
-    fn apply_native_init(&mut self, starting_state: UnifiedParserStartingState) {
+    fn apply_native_init(&mut self, init: &UnifiedParserInit) -> anyhow::Result<()> {
         self.buffer.clear();
         self.reset_state();
-        self.restore_native_state(starting_state);
+        self.restore_native_state(init.starting_state);
+        Ok(())
     }
 
     fn restore_native_state(&mut self, starting_state: UnifiedParserStartingState) {
@@ -2071,9 +2079,7 @@ fn parse_call_body(body: &str) -> Option<String> {
             return None;
         }
         let raw = &trimmed[value_start..value_end];
-        let Value::Object(_) = serde_json::from_str::<Value>(raw).ok()? else {
-            return None;
-        };
+        parsed_json_object(raw)?;
         return Some(compact_json(raw));
     }
 
@@ -2275,7 +2281,7 @@ fn encode_argument_value(arg_type: &str, raw: &str) -> String {
     if arg_type == "string" {
         return serde_json::to_string(raw).expect("serializing a Rust string cannot fail");
     }
-    if serde_json::from_str::<Value>(raw).is_ok() {
+    if parsed_json_literal(raw).is_some() {
         compact_json(raw)
     } else {
         serde_json::to_string(raw).expect("serializing a Rust string cannot fail")

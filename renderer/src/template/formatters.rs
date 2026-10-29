@@ -3,8 +3,10 @@
 
 use std::sync::Arc;
 
+use super::minimax_m2::{adapt_minimax_m2_thinking_template_source, is_minimax_m2_template_source};
 use super::tokcfg::{
-    ChatTemplate, fromjson, python_formatter, python_string, raise_exception, strftime_now, tojson,
+    ChatTemplate, fromjson, python_formatter, python_methods, python_string, python_trim,
+    raise_exception, strftime_now, tojson,
 };
 use super::{ContextMixins, HfTokenizerConfigJsonFormatter, JinjaEnvironment, SystemNormalization};
 use either::Either;
@@ -525,14 +527,74 @@ fn adapt_gemma4_reasoning_template_source(source: &str) -> String {
         .replace(OLD_TOOL_LOOP_END, NEW_TOOL_LOOP_END)
 }
 
-fn normalize_chat_template_source(source: &str) -> String {
+pub(super) fn normalize_chat_template_source(source: &str) -> String {
     let source = normalize_jinja_syntax(source);
 
     if is_gemma4_reasoning_field_template_source(&source) {
         adapt_gemma4_reasoning_template_source(&source)
+    } else if is_minimax_m2_template_source(&source) {
+        adapt_minimax_m2_thinking_template_source(&source)
     } else {
         source
     }
+}
+
+/// Find a capability marker in executable Jinja, excluding prose, comments,
+/// quoted strings and raw blocks. MiniJinja's undeclared-variable analysis
+/// treats `set x = x | default(...)` as already assigned and misses this
+/// template's self-defaulting `deferred_render_mode` declaration.
+pub(super) fn template_references_variable(source: &str, variable: &str) -> bool {
+    let mut offset = 0;
+    while offset < source.len() {
+        let rest = &source[offset..];
+        if rest.starts_with("{#") {
+            let Some(end) = rest.find("#}") else {
+                return false;
+            };
+            offset += end + 2;
+        } else if rest.starts_with("{{") || rest.starts_with("{%") {
+            let block = rest.starts_with("{%");
+            let Some(end) = find_tag_end(source, offset + 2, if block { "%}" } else { "}}" })
+            else {
+                return false;
+            };
+            let code = &source[offset + 2..end - 2];
+            if block && is_jinja_block_name(code, "raw") {
+                let Some(raw_end) = find_raw_block_end(source, end) else {
+                    return false;
+                };
+                offset = raw_end;
+                continue;
+            }
+            let mut chars = code.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '\'' || ch == '"' {
+                    while let Some(next) = chars.next() {
+                        if next == '\\' {
+                            chars.next();
+                        } else if next == ch {
+                            break;
+                        }
+                    }
+                } else if ch.is_ascii_alphabetic() || ch == '_' {
+                    let mut identifier = String::from(ch);
+                    while chars
+                        .peek()
+                        .is_some_and(|next| next.is_ascii_alphanumeric() || *next == '_')
+                    {
+                        identifier.push(chars.next().unwrap());
+                    }
+                    if identifier == variable {
+                        return true;
+                    }
+                }
+            }
+            offset = end;
+        } else {
+            offset += rest.chars().next().unwrap().len_utf8();
+        }
+    }
+    false
 }
 
 impl JinjaEnvironment {
@@ -582,7 +644,8 @@ impl HfTokenizerConfigJsonFormatter {
 
         // add pycompat
         // todo: should we use this: minijinja_contrib::add_to_environment(&mut env);
-        env.set_unknown_method_callback(minijinja_contrib::pycompat::unknown_method_callback);
+        env.set_unknown_method_callback(python_methods);
+        env.add_filter("trim", python_trim);
 
         env.add_filter("tojson", tojson);
         env.add_filter("string", python_string);
@@ -722,6 +785,15 @@ impl HfTokenizerConfigJsonFormatter {
                 tool_use_template_handles_tool_calls_arguments_string,
             );
 
+        // Detect each variant once so rendering can safely fall back to flat tools.
+        let handles_native_tools = |name| {
+            env.get_template(name).ok().is_some_and(|template| {
+                template_references_variable(template.source(), "deferred_render_mode")
+            })
+        };
+        let default_template_handles_native_tools = handles_native_tools("default");
+        let tool_use_template_handles_native_tools = handles_native_tools("tool_use");
+
         Ok(HfTokenizerConfigJsonFormatter {
             env,
             config,
@@ -729,6 +801,8 @@ impl HfTokenizerConfigJsonFormatter {
             supports_add_generation_prompt: supports_add_generation_prompt.unwrap_or(false),
             requires_content_arrays,
             exclude_tools_when_tool_choice_none,
+            default_template_handles_native_tools,
+            tool_use_template_handles_native_tools,
             default_template_handles_reasoning,
             tool_use_template_handles_reasoning,
             default_template_requires_reasoning_string,
@@ -763,6 +837,32 @@ mod tests {
         let mut env = JinjaEnvironment::default().env();
         env.add_template_owned("default", src.to_string()).unwrap();
         env
+    }
+
+    #[test]
+    fn test_generation_tags_with_and_without_left_trim() {
+        for (source, expected) in [
+            ("A {% generation %} B {% endgeneration %} C", "A  B  C"),
+            (
+                "A \n{%- generation %}\n B \n{%- endgeneration %}\n C",
+                "A B C",
+            ),
+            ("A {%- generation %} B {% endgeneration %} C", "A B  C"),
+            ("A {% generation %} B {%- endgeneration %} C", "A  B C"),
+        ] {
+            let formatter = HfTokenizerConfigJsonFormatter::new(
+                serde_json::from_value(json!({"chat_template": source})).unwrap(),
+                ContextMixins::new(&[]),
+            )
+            .unwrap();
+            let rendered = formatter
+                .env
+                .get_template("default")
+                .unwrap()
+                .render(context! {})
+                .unwrap();
+            assert_eq!(rendered, expected, "source: {source:?}");
+        }
     }
 
     /// NVIDIA-Nemotron-Parse ships a pure pass-through chat template
@@ -943,6 +1043,79 @@ mod tests {
                 context! { v => json!({"a": 1e-6, "b": [1e16, 2]}) }
             ),
             "{\n  \"a\": 1e-06,\n  \"b\": [\n    1e+16,\n    2\n  ]\n}"
+        );
+    }
+
+    #[test]
+    fn test_string_methods_use_python_whitespace() {
+        let template = "[{{ s.strip() }}][{{ s | trim }}][{{ s.lstrip() }}][{{ s.rstrip() }}]\
+            [{{ s.split() | join(',') }}][{{ s.splitlines() | length }}]\
+            [{% if s.isspace() %}space{% endif %}][{% if ''.isspace() %}empty{% endif %}]\
+            [{{ s.strip(' ') }}][{{ s.split('n') | length }}]";
+        assert_eq!(
+            render_hf(template, context! { s => "\u{1c} answer \u{1f}" }),
+            "[answer][answer][answer \u{1f}][\u{1c} answer][answer][2][][]\
+             [\u{1c} answer \u{1f}][2]"
+        );
+    }
+
+    #[test]
+    fn test_strip_preserves_string_safety() {
+        for (method, expected) in [
+            ("strip", "<b> &|&lt;b&gt; &amp;"),
+            ("lstrip", "<b> & \u{1f}|&lt;b&gt; &amp; \u{1f}"),
+            ("rstrip", "\u{1c} <b> &|\u{1c} &lt;b&gt; &amp;"),
+        ] {
+            for args in ["", "none"] {
+                let template = format!(
+                    "{{{{ (s | safe).{method}({args}) | escape }}}}|\
+                     {{{{ s.{method}({args}) | escape }}}}"
+                );
+                assert_eq!(
+                    render_hf(&template, context! { s => "\u{1c} <b> & \u{1f}" }),
+                    expected,
+                    "{method}({args})"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_split_preserves_string_safety() {
+        for (args, expected) in [
+            ("", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, -1", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+            ("none, 1", "[<b>][& hi]|[&lt;b&gt;][&amp; hi]"),
+            ("none, 0", "[<b> & hi]|[&lt;b&gt; &amp; hi]"),
+            ("' '", "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"),
+        ] {
+            let template = format!(
+                "{{% for part in (s | safe).split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}|\
+                 {{% for part in s.split({args}) %}}[{{{{ part | escape }}}}]{{% endfor %}}"
+            );
+            assert_eq!(
+                render_hf(&template, context! { s => "<b> & hi" }),
+                expected,
+                "split({args})"
+            );
+        }
+        assert_eq!(
+            render_hf(
+                "{{ (s | safe).split()[0] | escape }}|{{ s.split()[0] | escape }}",
+                context! { s => "\u{1c}<b>\u{1f}hi" }
+            ),
+            "<b>|&lt;b&gt;"
+        );
+    }
+
+    #[test]
+    fn test_splitlines_preserves_string_safety() {
+        let template = "{% for part in (s | safe).splitlines() %}[{{ part | escape }}]{% endfor %}|\
+            {% for part in s.splitlines() %}[{{ part | escape }}]{% endfor %}";
+        assert_eq!(
+            render_hf(template, context! { s => "<b>\r\n&\u{2028}hi" }),
+            "[<b>][&][hi]|[&lt;b&gt;][&amp;][hi]"
         );
     }
 

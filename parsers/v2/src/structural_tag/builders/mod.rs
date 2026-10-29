@@ -1,13 +1,31 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub(crate) mod beam;
 mod deepseek_dsml;
 mod glm47;
+mod harmony;
+mod kimi;
+mod muse_spark;
 mod qwen3_coder;
 mod templated_tool_calls;
 
-pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
+pub(crate) use beam::BEAM;
+
+/// Grammars of families served only by a unified parser. They have no tool-calling
+/// registry entry, so `structural_tag_builder_for_family` resolves them here.
+pub(crate) fn unified_only_builder(family: &str) -> Option<&'static StructuralTagBuilder> {
+    match family {
+        "beam" => Some(&BEAM),
+        "deepseek_v41" => Some(&DEEPSEEK_DSML_V41),
+        _ => None,
+    }
+}
+pub(crate) use deepseek_dsml::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41};
 pub(crate) use glm47::GLM47;
+pub(crate) use harmony::HARMONY;
+pub(crate) use kimi::{KIMI_K2, KIMI_K3};
+pub(crate) use muse_spark::MUSE_SPARK;
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
 use serde_json::Value;
@@ -19,16 +37,53 @@ use super::wire::{
     AnyTextFormat, ConstStringFormat, Format, JsonSchemaFormat, JsonSchemaStyle, OrFormat,
     SequenceFormat, StructuralTag, TagFormat, TriggeredTagsFormat,
 };
-use super::{ReasoningBoundary, StructuralTagContext, StructuralTagOptions};
+use super::{PromptChannel, ReasoningBoundary, StructuralTagContext, StructuralTagOptions};
 
 /// Builds model-family structural tags while enforcing shared request policy.
 pub struct StructuralTagBuilder {
-    grammar: &'static dyn ToolCallGrammar,
+    grammar: Grammar,
+}
+
+/// How a family's grammar frames the model's output.
+enum Grammar {
+    /// Tool calls dispatched by a trigger inside otherwise free text, optionally after a
+    /// reasoning block ([`ToolCallGrammar`]).
+    Triggered(&'static dyn ToolCallGrammar),
+    /// The whole assistant turn, reasoning and answer included ([`TurnGrammar`]).
+    Turn(&'static dyn TurnGrammar),
 }
 
 impl StructuralTagBuilder {
     pub(super) const fn new(grammar: &'static dyn ToolCallGrammar) -> Self {
-        Self { grammar }
+        Self {
+            grammar: Grammar::Triggered(grammar),
+        }
+    }
+
+    pub(super) const fn turn(grammar: &'static dyn TurnGrammar) -> Self {
+        Self {
+            grammar: Grammar::Turn(grammar),
+        }
+    }
+
+    /// Whether this family's grammar frames every assistant turn (reasoning, calls and the
+    /// answer) rather than only triggered tool calls, so a consumer applies it to every
+    /// request regardless of its tool-call structural-tag policy.
+    pub fn constrains_every_turn(&self) -> bool {
+        matches!(self.grammar, Grammar::Turn(_))
+    }
+
+    /// Builds the tag for a turn whose prompt leaves the message at `channel`. A triggered
+    /// grammar ignores the channel and builds as [`Self::build`].
+    pub fn build_turn(
+        &self,
+        context: &StructuralTagContext<'_>,
+        channel: PromptChannel,
+    ) -> anyhow::Result<Option<Value>> {
+        match self.grammar {
+            Grammar::Turn(grammar) => grammar.build_turn(context, channel),
+            Grammar::Triggered(_) => self.build(context),
+        }
     }
 
     /// Returns `None` when this request needs no structural constraint.
@@ -36,53 +91,72 @@ impl StructuralTagBuilder {
         self.build_with_options(context, &StructuralTagOptions::default())
     }
 
-    /// Builds a structural tag with request-independent behavior overrides.
+    /// Builds a structural tag with request-independent behavior overrides. A turn grammar
+    /// has none of these knobs: it builds for a prompt at the message start.
     pub fn build_with_options(
         &self,
         context: &StructuralTagContext<'_>,
         options: &StructuralTagOptions,
     ) -> anyhow::Result<Option<Value>> {
-        let policy = match resolve_tool_calling(context)? {
-            ResolvedToolCalling::Disabled => {
-                return build_text_exclusion(self.grammar.tool_call_excludes())
-                    .map(|format| serialize(StructuralTag { format }))
-                    .transpose();
+        let grammar = match self.grammar {
+            Grammar::Turn(grammar) => {
+                return grammar.build_turn(context, PromptChannel::MessageStart);
             }
-            ResolvedToolCalling::Enabled(policy) => policy,
+            Grammar::Triggered(grammar) => grammar,
         };
-        if policy.tools.is_empty() {
-            return Ok(None);
-        }
+        // Family restrictions also apply when tool choice disables calls.
+        grammar.validate_options(options)?;
+        let policy = resolve_tool_calling(context)?;
         let exclude_special_tokens = options
             .exclude_special_tokens
-            .unwrap_or_else(|| self.grammar.default_exclude_special_tokens());
+            .unwrap_or_else(|| grammar.default_exclude_special_tokens());
 
-        let format = match (policy.mode, context.structured_output_schema) {
-            (ToolCallingMode::Auto, Some(schema)) => {
-                self.grammar.build_auto_with_structured_output(
-                    &policy,
-                    schema,
-                    options.tool_arguments_any_order,
-                )?
+        let format = match policy {
+            ResolvedToolCalling::Disabled => {
+                if let Some(schema) = context.structured_output_schema {
+                    grammar.build_structured_output(schema)
+                } else {
+                    let Some(format) = grammar.build_without_tools() else {
+                        return Ok(None);
+                    };
+                    // Native text envelopes must also close prompt-opened reasoning.
+                    format
+                }
             }
-            (ToolCallingMode::Auto, None) => self.grammar.build_triggered_calls(
-                &policy,
-                exclude_special_tokens,
-                options.tool_arguments_any_order,
-            )?,
-            (ToolCallingMode::Required, _) => self.grammar.build_triggered_calls(
-                &policy,
-                exclude_special_tokens,
-                options.tool_arguments_any_order,
-            )?,
-            (ToolCallingMode::Named, _) => self
-                .grammar
-                .build_tool_calls_only(&policy, options.tool_arguments_any_order)?,
+            ResolvedToolCalling::Enabled(policy) if policy.tools.is_empty() => {
+                let Some(schema) = context.structured_output_schema else {
+                    return Ok(None);
+                };
+                grammar.build_structured_output(schema)
+            }
+            ResolvedToolCalling::Enabled(policy) => {
+                match (policy.mode, context.structured_output_schema) {
+                    (ToolCallingMode::Auto, Some(schema)) => grammar
+                        .build_auto_with_structured_output(
+                            &policy,
+                            schema,
+                            options.tool_arguments_any_order,
+                        )?,
+                    (ToolCallingMode::Auto, None) => grammar.build_triggered_calls(
+                        &policy,
+                        exclude_special_tokens,
+                        options.tool_arguments_any_order,
+                    )?,
+                    (ToolCallingMode::Required, _) => grammar.build_triggered_calls(
+                        &policy,
+                        exclude_special_tokens,
+                        options.tool_arguments_any_order,
+                    )?,
+                    (ToolCallingMode::Named, _) => {
+                        grammar.build_tool_calls_only(&policy, options.tool_arguments_any_order)?
+                    }
+                }
+            }
         };
         let format = if options.reasoning_boundary == ReasoningBoundary::StructuralTag {
             wrap_reasoning_if_needed(
                 context.starts_in_reasoning,
-                self.grammar,
+                grammar,
                 exclude_special_tokens,
                 format,
             )?
@@ -94,6 +168,21 @@ impl StructuralTagBuilder {
 }
 
 pub(super) trait ToolCallGrammar: Send + Sync {
+    /// Native formats may reject options that only work with JSON-style calls.
+    fn validate_options(&self, _options: &StructuralTagOptions) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    /// Spark still needs its visible-message envelope when tool calls are disabled.
+    fn build_without_tools(&self) -> Option<Format> {
+        build_text_exclusion(self.tool_call_excludes())
+    }
+
+    /// Permit a reasoning message when the prompt leaves its header unopened.
+    fn optional_reasoning(&self) -> bool {
+        false
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str>;
 
     fn reasoning_end(&self) -> Option<&'static str>;
@@ -106,6 +195,14 @@ pub(super) trait ToolCallGrammar: Send + Sync {
 
     fn default_exclude_special_tokens(&self) -> bool {
         true
+    }
+
+    fn build_structured_output(&self, schema: &Value) -> Format {
+        Format::JsonSchema(JsonSchemaFormat {
+            json_schema: schema.clone(),
+            style: JsonSchemaStyle::Json,
+            any_order: false,
+        })
     }
 
     /// Builds trigger-dispatched tool calls for `auto` or `required` tool choice.
@@ -129,11 +226,7 @@ pub(super) trait ToolCallGrammar: Send + Sync {
         Ok(Format::Or(OrFormat {
             elements: vec![
                 self.build_tool_calls_only(policy, tool_arguments_any_order)?,
-                Format::JsonSchema(JsonSchemaFormat {
-                    json_schema: schema.clone(),
-                    style: JsonSchemaStyle::Json,
-                    any_order: false,
-                }),
+                self.build_structured_output(schema),
             ],
         }))
     }
@@ -149,6 +242,16 @@ pub(super) trait ToolCallGrammar: Send + Sync {
         policy: &ResolvedToolCallingPolicy<'_>,
         tool_arguments_any_order: bool,
     ) -> anyhow::Result<Format>;
+}
+
+/// A grammar that frames the whole assistant turn from the prompt's open channel.
+pub(super) trait TurnGrammar: Send + Sync {
+    /// Returns `None` when the request's turn cannot be held by this grammar.
+    fn build_turn(
+        &self,
+        context: &StructuralTagContext<'_>,
+        channel: PromptChannel,
+    ) -> anyhow::Result<Option<Value>>;
 }
 
 fn build_text_exclusion(excludes: &[&str]) -> Option<Format> {
@@ -211,11 +314,12 @@ fn reasoning_content(grammar: &dyn ToolCallGrammar, exclude_special_tokens: bool
 
 fn reasoning_tag(
     grammar: &dyn ToolCallGrammar,
+    begin: &str,
     reasoning_end: &str,
     exclude_special_tokens: bool,
 ) -> Format {
     Format::Tag(TagFormat {
-        begin: String::new(),
+        begin: begin.to_string(),
         content: Box::new(reasoning_content(grammar, exclude_special_tokens)),
         end: reasoning_end.to_string(),
     })
@@ -227,7 +331,7 @@ fn wrap_reasoning_if_needed(
     exclude_special_tokens: bool,
     suffix: Format,
 ) -> anyhow::Result<Format> {
-    if !starts_in_reasoning {
+    if !starts_in_reasoning && !grammar.optional_reasoning() {
         return Ok(suffix);
     }
 
@@ -235,8 +339,16 @@ fn wrap_reasoning_if_needed(
         .reasoning_end()
         .ok_or_else(|| anyhow::anyhow!("reasoning end tag is not configured for structural tag"))?;
 
+    let begin = if starts_in_reasoning {
+        ""
+    } else {
+        grammar
+            .reasoning_begin()
+            .ok_or_else(|| anyhow::anyhow!("reasoning begin tag is not configured"))?
+    };
     let mut elements = vec![reasoning_tag(
         grammar,
+        begin,
         reasoning_end,
         exclude_special_tokens,
     )];
@@ -244,6 +356,16 @@ fn wrap_reasoning_if_needed(
         elements.push(Format::ConstString(ConstStringFormat {
             value: grammar.reasoning_suffix().to_string(),
         }));
+    }
+    if !starts_in_reasoning {
+        elements = vec![Format::Or(OrFormat {
+            elements: vec![
+                Format::ConstString(ConstStringFormat {
+                    value: String::new(),
+                }),
+                Format::Sequence(SequenceFormat { elements }),
+            ],
+        })];
     }
     elements.push(suffix);
 

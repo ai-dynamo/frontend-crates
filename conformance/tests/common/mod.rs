@@ -15,9 +15,210 @@ pub mod known_toolcalling_chunking;
 pub mod known_unified_divergences;
 pub mod unified_capture;
 
+use std::collections::BTreeMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+pub fn canonical_argument_json(raw: &str) -> String {
+    match raw.as_bytes().first() {
+        Some(b'{') => {
+            let fields: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated object arguments");
+            let fields = fields
+                .into_iter()
+                .map(|(key, value)| {
+                    format!(
+                        "{}={}",
+                        serde_json::to_string(&key).expect("serialize object key"),
+                        canonical_argument_json(value.get()),
+                    )
+                })
+                .collect::<Vec<_>>();
+            format!("object:[{}]", fields.join(","))
+        }
+        Some(b'[') => {
+            let items: Vec<Box<serde_json::value::RawValue>> =
+                serde_json::from_str(raw).expect("validated array arguments");
+            let items = items
+                .iter()
+                .map(|item| canonical_argument_json(item.get()))
+                .collect::<Vec<_>>();
+            format!("array:[{}]", items.join(","))
+        }
+        Some(b'"') => {
+            let value: String = serde_json::from_str(raw).expect("validated string argument");
+            format!(
+                "string:{}",
+                serde_json::to_string(&value).expect("serialize string")
+            )
+        }
+        Some(b't') => "boolean:true".to_string(),
+        Some(b'f') => "boolean:false".to_string(),
+        Some(b'n') => "null".to_string(),
+        Some(b'-' | b'0'..=b'9') => canonical_argument_number(raw),
+        _ => unreachable!("RawValue only accepts JSON"),
+    }
+}
+
+fn canonical_argument_number(raw: &str) -> String {
+    let (negative, unsigned) = match raw.strip_prefix('-') {
+        Some(unsigned) => (true, unsigned),
+        None => (false, raw),
+    };
+    let (mantissa, exponent) = match unsigned.split_once(['e', 'E']) {
+        Some((mantissa, exponent)) => match exponent.parse::<i64>() {
+            Ok(exponent) => (mantissa, exponent),
+            Err(_) => return format!("number-token:{raw}"),
+        },
+        None => (unsigned, 0),
+    };
+    let (whole, fraction) = mantissa.split_once('.').unwrap_or((mantissa, ""));
+    let digits = format!("{whole}{fraction}");
+    let digits = digits.trim_start_matches('0');
+    if digits.is_empty() {
+        return "number:0".to_string();
+    }
+    let trailing_zeroes = digits.len() - digits.trim_end_matches('0').len();
+    let significant = digits.trim_end_matches('0');
+    let adjustment = match i64::try_from(trailing_zeroes)
+        .ok()
+        .zip(i64::try_from(fraction.len()).ok())
+        .and_then(|(trailing, fractional)| trailing.checked_sub(fractional))
+    {
+        Some(adjustment) => adjustment,
+        None => return format!("number-token:{raw}"),
+    };
+    let Some(exponent) = exponent.checked_add(adjustment) else {
+        return format!("number-token:{raw}");
+    };
+    format!(
+        "number:{}:{}:{exponent}",
+        if negative { "-" } else { "+" },
+        significant
+    )
+}
+
+pub fn json_values_equal<T: serde::Serialize>(left: &T, right: &T) -> bool {
+    let left = serde_json::to_string(left).expect("JSON comparison input");
+    let right = serde_json::to_string(right).expect("JSON comparison input");
+    canonical_argument_json(&left) == canonical_argument_json(&right)
+}
+
+#[derive(Debug)]
+pub struct EngineResult {
+    pub calls: Vec<(String, serde_json::Value)>,
+    pub normal_text: String,
+}
+
+impl PartialEq for EngineResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.normal_text == other.normal_text && json_values_equal(&self.calls, &other.calls)
+    }
+}
+
+impl Eq for EngineResult {}
+
+#[cfg(test)]
+mod json_comparison_tests {
+    #[test]
+    fn number_spelling_does_not_hide_value_type_or_order_changes() {
+        for (left, right, equal) in [
+            (r#"{"value":2.50}"#, r#"{"value":25e-1}"#, true),
+            (r#"{"value":42.0}"#, r#"{"value":42}"#, true),
+            (r#"{"value":2.5}"#, r#"{"value":"2.5"}"#, false),
+            (
+                r#"{"value":9007199254740992.5}"#,
+                r#"{"value":9007199254740992.0}"#,
+                false,
+            ),
+            (r#"{"value":1e-400}"#, r#"{"value":0}"#, false),
+            ("[1,2]", "[2,1]", false),
+        ] {
+            let left: Box<serde_json::value::RawValue> = serde_json::from_str(left).unwrap();
+            let right: Box<serde_json::value::RawValue> = serde_json::from_str(right).unwrap();
+            assert_eq!(super::json_values_equal(&left, &right), equal);
+        }
+    }
+}
+
+pub fn decoded_golden_arguments(arguments: &serde_json::Value) -> serde_json::Value {
+    match arguments {
+        serde_json::Value::String(raw) => {
+            serde_json::from_str(raw).expect("authored JSON arguments")
+        }
+        value => value.clone(),
+    }
+}
+
+pub fn json_to_yaml_value<T: serde::Serialize>(value: &T) -> serde_yaml::Value {
+    fn convert(value: &serde_json::value::RawValue) -> serde_yaml::Value {
+        let raw = value.get();
+        match raw.as_bytes().first() {
+            Some(b'n') => serde_yaml::Value::Null,
+            Some(b't') => serde_yaml::Value::Bool(true),
+            Some(b'f') => serde_yaml::Value::Bool(false),
+            Some(b'"') => serde_yaml::Value::String(serde_json::from_str(raw).unwrap()),
+            Some(b'[') => {
+                let values: Vec<Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Sequence(values.iter().map(|value| convert(value)).collect())
+            }
+            Some(b'{') => {
+                let values: BTreeMap<String, Box<serde_json::value::RawValue>> =
+                    serde_json::from_str(raw).unwrap();
+                serde_yaml::Value::Mapping(
+                    values
+                        .into_iter()
+                        .map(|(key, value)| (serde_yaml::Value::String(key), convert(&value)))
+                        .collect(),
+                )
+            }
+            Some(b'-' | b'0'..=b'9') => {
+                // YAML scalars use bounded numbers; preserve tokens whose value
+                // changes when that representation is serialized back to JSON.
+                let yaml = serde_yaml::from_str::<serde_yaml::Value>(raw)
+                    .ok()
+                    .filter(serde_yaml::Value::is_number)
+                    .or_else(|| {
+                        raw.parse::<f64>()
+                            .ok()
+                            .and_then(|value| serde_yaml::to_value(value).ok())
+                    });
+                if let Some(yaml) = yaml
+                    && let Ok(round_trip) = serde_json::to_string(&yaml)
+                    && canonical_argument_json(&round_trip) == canonical_argument_json(raw)
+                {
+                    return yaml;
+                }
+                serde_yaml::Value::String(raw.to_string())
+            }
+            _ => unreachable!("RawValue only accepts JSON"),
+        }
+    }
+
+    let raw = serde_json::value::to_raw_value(value).expect("value serializes as JSON");
+    convert(&raw)
+}
+
+pub fn unified_event_to_yaml_value<T: serde::Serialize>(event: &T) -> serde_yaml::Value {
+    let event = serde_json::value::to_raw_value(event).expect("event serializes as JSON");
+    if !event.get().starts_with('{') {
+        return json_to_yaml_value(&event);
+    }
+    let mut event: BTreeMap<String, Box<serde_json::value::RawValue>> =
+        serde_json::from_str(event.get()).expect("event object");
+    let tool_call = event.get("kind").is_some_and(|kind| {
+        serde_json::from_str::<String>(kind.get()).is_ok_and(|kind| kind == "tool_call")
+    });
+    if tool_call && let Some(arguments) = event.get_mut("arguments") {
+        // Preserve the whole JSON payload: YAML float scalars round decimals,
+        // and quoting individual numbers would change their argument types.
+        *arguments = serde_json::value::to_raw_value(&arguments.get())
+            .expect("tool arguments serialize as JSON text");
+    }
+    json_to_yaml_value(&event)
+}
 
 /// Copy the schema file with historical harnesses: tool registration and argument
 /// typing are request inputs, not parser-version differences.
@@ -88,6 +289,8 @@ pub fn ensure_fixtures() -> PathBuf {
             "/tmp/dynamo-conformance-extract.lock",
             "python3",
             script.to_str().expect("non-UTF-8 script path"),
+            "--legacy-only",
+            "--include-history",
         ])
         .output()
         .expect("flock/python3 not found — ensure python3 is in PATH");
@@ -122,8 +325,7 @@ pub fn ensure_fixtures() -> PathBuf {
     // snapshot later reads in the SAME test see, even though extraction
     // itself is now race-free (`fixtures_identity`-keyed, atomically
     // published). Resolving to the immutable identity dir once, up front,
-    // matches the same fix `_common.sh` already applies for the identical
-    // reason (see its `FIXTURES_SNAP` comment) — one shared pattern, not two.
+    // keeps every later read bound to the same extraction generation.
     let stdout = String::from_utf8(output.stdout).expect("extract_fixtures.py stdout is not UTF-8");
     match resolve_snap_dir(&stdout) {
         Ok(snap_dir) => snap_dir,
@@ -139,6 +341,45 @@ pub fn ensure_fixtures() -> PathBuf {
             String::from_utf8_lossy(&output.stderr)
         ),
     }
+}
+
+/// Native parser checks consume authored inputs and only their two selected captures.
+pub fn ensure_unified_fixtures() -> PathBuf {
+    if let Ok(root) = std::env::var("CONFORMANCE_FIXTURES_ROOT") {
+        return PathBuf::from(root);
+    }
+    static SELECTED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    SELECTED
+        .get_or_init(|| {
+            let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let root = std::env::temp_dir()
+                .join(format!("unified-selected-{}-{nonce}", std::process::id()));
+            let status = std::process::Command::new("python3")
+                .arg(manifest.join("utils/src/unified_history.py"))
+                .arg("--materialize")
+                .arg("--store")
+                .arg(manifest.join("fixtures-unified-v2"))
+                .arg("--output")
+                .arg(root.join("unified"))
+                .args([
+                    "--capture",
+                    "latest:dynamo_v2",
+                    "--capture",
+                    "latest:vllm_rust",
+                ])
+                .status()
+                .expect("python3 selected fixture materialization failed to start");
+            assert!(
+                status.success(),
+                "selected Unified fixture materialization failed"
+            );
+            root
+        })
+        .clone()
 }
 
 /// Pure parsing/validation of `ensure_fixtures`'s subprocess contract,
@@ -278,8 +519,11 @@ pub fn fixture_name(path: &Path) -> String {
         .to_string()
 }
 
-/// Fold prior family captures through the current parser release checkpoint.
-pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-0.7.19";
+/// Current stream fixtures carry their own release identities, independent of the build.
+pub const STREAM_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-latest-recorded";
+
+/// The retained batch-on-stream oracle predates the current stream captures.
+pub const BATCH_ON_STREAM_DYNAMO_V2_CAPTURE: &str = "dynamo_v2-0.7.24";
 
 // Consumers may reuse verified archives in tagless clones; producers still require tags.
 pub const UNIFIED_DYNAMO_V2_CURRENT_CAPTURE: &str = "dynamo_v2-current";
@@ -334,6 +578,13 @@ pub fn version_dirs_ascending(root: &Path, prefix: &str) -> Vec<PathBuf> {
     dirs.into_iter().map(|(_, p)| p).collect()
 }
 
+/// Consumer comparisons use recorded evidence, even when the parser build is newer.
+pub fn latest_recorded_capture_dir(root: &Path, prefix: &str) -> Option<PathBuf> {
+    version_dirs_ascending(root, prefix)
+        .into_iter()
+        .rfind(|path| !path.to_string_lossy().contains('+'))
+}
+
 /// The normal capture history plus one caller-selected current capture. `+tag`
 /// directories remain historical unless a test names the exact directory it needs.
 pub fn version_dirs_ascending_with_current(
@@ -344,151 +595,33 @@ pub fn version_dirs_ascending_with_current(
     version_dirs_with_identity_command(root, prefix, current_dir, dynamo_identity_command())
 }
 
-fn capture_provenance_inventory(
-    root: &Path,
-    prefix: &str,
-) -> serde_json::Map<String, serde_json::Value> {
-    let mut captures = serde_json::Map::new();
-    for entry in std::fs::read_dir(root).expect("read capture root") {
-        let path = entry.expect("read capture entry").path();
-        if !path.is_dir() {
-            continue;
-        }
-        let name = path
-            .file_name()
-            .unwrap()
-            .to_str()
-            .expect("capture directory name");
-        let Some(version) = name.strip_prefix(prefix) else {
-            continue;
-        };
-        if !version.as_bytes().first().is_some_and(u8::is_ascii_digit) {
-            continue;
-        }
-        for family in std::fs::read_dir(&path).expect("read capture families") {
-            let family = family.expect("read capture family").path();
-            if !family.is_dir() {
-                continue;
-            }
-            let family_name = family.file_name().unwrap().to_str().unwrap();
-            for file in std::fs::read_dir(&family).expect("read capture cases") {
-                let file = file.expect("read capture case").path();
-                if file.extension().is_none_or(|extension| extension != "yaml") {
-                    continue;
-                }
-                let doc: serde_yaml::Value =
-                    serde_yaml::from_slice(&std::fs::read(&file).expect("read capture YAML"))
-                        .unwrap_or_else(|error| panic!("{}: {error}", file.display()));
-                let provenance = serde_json::to_value(&doc["capture_provenance"])
-                    .expect("capture provenance JSON");
-                let layer = captures.entry(version.to_string()).or_insert_with(|| {
-                    serde_json::json!({
-                        "complete_snapshot": path.join("capture-snapshot.json").is_file(),
-                        "records": {},
-                    })
-                });
-                let records = layer["records"].as_object_mut().unwrap();
-                for key in doc["cases"]
-                    .as_mapping()
-                    .expect("capture cases mapping")
-                    .keys()
-                {
-                    let key = format!("{family_name}/{}", key.as_str().expect("capture case key"));
-                    if let Some(previous) = records.insert(key.clone(), provenance.clone()) {
-                        assert_eq!(
-                            previous, provenance,
-                            "conflicting capture provenance: {key}"
-                        );
-                    }
-                }
-            }
-        }
-    }
-    captures
-}
-
 fn version_dirs_with_identity_command(
     root: &Path,
     prefix: &str,
     current_dir: &str,
     mut command: std::process::Command,
 ) -> Vec<PathBuf> {
-    let resolved;
-    let current_dir = if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
-        let captures = capture_provenance_inventory(root, prefix);
-        let mut child = command
-            .args(["--select-capture", "--format", "label"])
-            .stdin(std::process::Stdio::piped())
+    let current_dir = if current_dir == STREAM_DYNAMO_V2_CURRENT_CAPTURE {
+        latest_recorded_capture_dir(root, prefix).expect("no recorded stream release capture")
+    } else if current_dir == UNIFIED_DYNAMO_V2_CURRENT_CAPTURE {
+        let output = command
+            .args(["--format", "label"])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
-            .spawn()
-            .expect("run Dynamo capture selector");
-        child
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(&serde_json::to_vec(&captures).unwrap())
-            .expect("write capture provenance to selector");
-        let output = child
-            .wait_with_output()
-            .expect("wait for Dynamo capture selector");
+            .output()
+            .expect("run Dynamo capture version reader");
         assert!(
             output.status.success(),
-            "Dynamo capture selection failed: {}",
+            "Dynamo capture version lookup failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
         let label = String::from_utf8(output.stdout).expect("capture label UTF-8");
-        resolved = format!("{prefix}{}", label.trim());
-        &resolved
+        let resolved = format!("{prefix}{}", label.trim());
+        root.join(resolved)
     } else {
-        current_dir
+        root.join(current_dir)
     };
-    let current = root.join(current_dir);
-    let current = if current.is_dir() || current_dir.contains("+source.") {
-        current
-    } else {
-        let patch_prefix = format!("{current_dir}.patch");
-        std::fs::read_dir(root)
-            .into_iter()
-            .flatten()
-            .flatten()
-            .map(|entry| entry.path())
-            .filter(|path| path.is_dir())
-            .filter_map(|path| {
-                let patch = path
-                    .file_name()?
-                    .to_str()?
-                    .strip_prefix(&patch_prefix)?
-                    .parse::<u64>()
-                    .ok()?;
-                Some((patch, path))
-            })
-            .max_by_key(|(patch, _)| *patch)
-            .map_or(current, |(_, path)| path)
-    };
-    let current = if current
-        .file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name.contains("+source."))
-    {
-        let output = capture_stimulus_command()
-            .arg("--select-source-snapshot")
-            .arg(&current)
-            .output()
-            .expect("select complete current source snapshot");
-        assert!(
-            output.status.success(),
-            "source snapshot selection failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        );
-        PathBuf::from(
-            String::from_utf8(output.stdout)
-                .expect("snapshot path UTF-8")
-                .trim(),
-        )
-    } else {
-        current
-    };
+    let current = current_dir;
     assert!(
         current.is_dir(),
         "expected current capture directory {}",
@@ -625,40 +758,6 @@ mod capture_selector_tests {
             "true"
         );
         assert_eq!(git(&clone, &["tag", "--list"]), "");
-        let patch_only = scratch.join("patch-only");
-        let historical = patch_only.join("dynamo_v2-0.5.3");
-        write_capture_with_record(
-            &historical,
-            &recorded,
-            serde_json::json!({
-                "assembled": [],
-                "capture_input": {
-                    "input": "probe",
-                    "init": {
-                        "starting_state": "None",
-                        "tool_output_mode": "Native",
-                        "named_tool": null
-                    },
-                    "finish_reason": "stop",
-                    "tools": [],
-                    "chunks": [{"delta_text": "probe"}, {"delta_text": "‹finish›"}]
-                }
-            }),
-        );
-        assert!(std::panic::catch_unwind(|| select(&patch_only, &repo, None)).is_err());
-        assert!(std::panic::catch_unwind(|| select(&patch_only, &clone, None)).is_err());
-        let release_patch2 = patch_only.join("dynamo_v2-0.6.0.patch2");
-        let release_patch10 = patch_only.join("dynamo_v2-0.6.0.patch10");
-        write_capture(&release_patch2, &recorded);
-        write_capture(&release_patch10, &recorded);
-        assert_eq!(
-            select(&patch_only, &repo, None).last(),
-            Some(&release_patch10)
-        );
-        assert_eq!(
-            select(&patch_only, &clone, None).last(),
-            Some(&release_patch10)
-        );
         let captures = scratch.join("unified");
         let release = captures.join("dynamo_v2-0.6.0");
         write_capture(&release, &recorded);
@@ -672,47 +771,20 @@ mod capture_selector_tests {
                 .status
                 .success()
         );
-        for override_label in ["current", "0.6.0"] {
-            assert!(
-                std::panic::catch_unwind(|| select(&captures, &clone, Some(override_label)))
-                    .is_err()
-            );
-        }
-        write_capture(&release, &serde_json::Value::Null);
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
-        write_capture(&release, &recorded);
-        let patch = captures.join("dynamo_v2-0.6.0.patch1");
-        let mut wrong = recorded.clone();
-        wrong["source_id"] = serde_json::json!("wrong source");
-        write_capture(&patch, &wrong);
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
-        write_capture(&patch, &recorded);
-        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
-
-        let output = checker(&clone).output().unwrap();
-        let current: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-        let qualified = captures.join(format!("dynamo_v2-{}", current["label"].as_str().unwrap()));
-        write_capture(&qualified, &current);
-        assert_eq!(select(&captures, &clone, None).last(), Some(&qualified));
         assert_eq!(
             select(&captures, &clone, Some("current")).last(),
-            Some(&qualified)
+            Some(&release)
         );
-        assert!(select(&captures, &clone, None).contains(&release));
+        assert_eq!(
+            select(&captures, &clone, Some("0.6.0")).last(),
+            Some(&release)
+        );
+        write_capture(&release, &serde_json::Value::Null);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
+        write_capture(&release, &recorded);
+        assert_eq!(select(&captures, &clone, None).last(), Some(&release));
 
-        let source_patch = qualified.with_file_name(format!(
-            "{}.patch10",
-            qualified.file_name().unwrap().to_str().unwrap()
-        ));
-        write_capture(&source_patch, &current);
-        std::fs::write(
-            source_patch.join("capture-snapshot.json"),
-            r#"{"schema_version":1,"records":["gemma4/probe.yaml"]}"#,
-        )
-        .unwrap();
-        assert_eq!(select(&captures, &clone, None).last(), Some(&source_patch));
-
-        let stream = captures.join(STREAM_DYNAMO_V2_CURRENT_CAPTURE);
+        let stream = captures.join("dynamo_v2-0.7.33");
         std::fs::create_dir_all(&stream).unwrap();
         let stream_dirs = version_dirs_with_identity_command(
             &captures,
@@ -721,8 +793,6 @@ mod capture_selector_tests {
             std::process::Command::new("this-command-must-not-run"),
         );
         assert_eq!(stream_dirs.last(), Some(&stream));
-        std::fs::write(clone.join("parsers/v2/src/lib.rs"), "pub fn changed() {}\n").unwrap();
-        assert!(std::panic::catch_unwind(|| select(&captures, &clone, None)).is_err());
     }
 }
 
@@ -759,6 +829,8 @@ pub struct UnifiedFamily {
     /// Has a native UnifiedParser, versus being driven through the v1/v2 split path.
     #[serde(default)]
     pub native: bool,
+    #[serde(default)]
+    pub scenario_profile: Option<String>,
     pub reasoning_parser: String,
     pub tool_parser: String,
     pub golden_spec: String,
@@ -798,6 +870,24 @@ pub fn unified_families() -> std::collections::BTreeMap<String, UnifiedFamily> {
     doc.unified
 }
 
+/// Scope a producer run without changing the shared corpus or its family registry.
+pub fn capture_families() -> Option<std::collections::BTreeSet<String>> {
+    let registered = unified_families();
+    let requested = std::env::var("CONFORMANCE_CAPTURE_FAMILIES").ok()?;
+    let selected: std::collections::BTreeSet<String> = requested
+        .split(',')
+        .map(|name| name.trim().to_string())
+        .collect();
+    assert!(!selected.is_empty(), "empty capture family selection");
+    for family in &selected {
+        assert!(
+            registered.contains_key(family),
+            "unknown capture family: {family}"
+        );
+    }
+    Some(selected)
+}
+
 /// One family, or a panic naming the manifest — a family reaching the harness without a
 /// declaration is a missing row, and saying so beats a generic "no parser mapping".
 pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
@@ -820,16 +910,149 @@ pub fn unified_family(corpus_name: &str) -> UnifiedFamily {
 /// parsed as `Native` because its input did not happen to start with `[`.
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize, PartialEq)]
 pub struct Init {
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub preserve_message_phases: bool,
     #[serde(default)]
     pub starting_state: String,
     #[serde(default)]
     pub tool_output_mode: String,
     #[serde(default)]
     pub named_tool: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structural_tag: Option<StructuralTagRequest>,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct StructuralTagRequest {
+    pub schema: serde_json::Value,
+    pub rejected: Vec<String>,
+}
+
+impl Init {
+    /// Report defaults as applied, retaining generation constraints in captures
+    /// and popups rather than silently presenting a parser-only request.
+    pub fn applied(&self) -> serde_json::Value {
+        let mut value = serde_json::json!({
+            "starting_state": if self.starting_state.is_empty() { "None" } else { &self.starting_state },
+            "tool_output_mode": if self.tool_output_mode.is_empty() { "Native" } else { &self.tool_output_mode },
+            "named_tool": self.named_tool,
+        });
+        if self.preserve_message_phases {
+            value["preserve_message_phases"] = serde_json::json!(true);
+        }
+        if let Some(request) = &self.structural_tag {
+            value["structural_tag"] =
+                serde_json::to_value(request).expect("structural-tag request");
+        }
+        value
+    }
 }
 
 #[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
 impl Init {
+    #[cfg(conformance_no_structural_tag)]
+    pub fn validate_capture(
+        &self,
+        _family: &str,
+        _tools: &[dynamo_parsers_v2::Tool],
+        _chunks: &[String],
+    ) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.structural_tag.is_none(),
+            "structural-tag API unavailable"
+        );
+        Ok(())
+    }
+
+    #[cfg(not(conformance_no_structural_tag))]
+    pub fn validate_capture(
+        &self,
+        family: &str,
+        tools: &[dynamo_parsers_v2::Tool],
+        chunks: &[String],
+    ) -> anyhow::Result<()> {
+        use dynamo_parsers_v2::structural_tag::{
+            StructuralTagContext, StructuralTagSchemaMode, StructuralTagToolChoice,
+        };
+        use std::io::Write;
+        let Some(request) = &self.structural_tag else {
+            return Ok(());
+        };
+        anyhow::ensure!(
+            !request.rejected.is_empty(),
+            "structural-tag request needs rejection probes"
+        );
+        let builder = dynamo_parsers_v2::structural_tag_builder_for_family(family)
+            .ok_or_else(|| anyhow::anyhow!("no structural-tag builder for {family}"))?;
+        let tag = builder
+            .build(&StructuralTagContext {
+                tool_choice: StructuralTagToolChoice::None,
+                tools,
+                parallel_tool_calls: None,
+                schema_mode: StructuralTagSchemaMode::Auto,
+                structured_output_schema: Some(&request.schema),
+                starts_in_reasoning: self.starting_state()
+                    == dynamo_parsers_v2::UnifiedParserStartingState::Reasoning,
+            })?
+            .ok_or_else(|| anyhow::anyhow!("response schema produced no structural tag"))?;
+        let stop_tokens: &[&str] = match family {
+            "gpt_oss" | "harmony" => &["<|return|>"],
+            _ => &[],
+        };
+        let script = std::env::var_os("CONFORMANCE_STRUCTURAL_TAG_CHECKER")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("utils/src/check_structural_tag.py")
+            });
+        let python =
+            std::env::var_os("CONFORMANCE_GRAMMAR_PYTHON").unwrap_or_else(|| "python3".into());
+        let mut child = std::process::Command::new(python)
+            .env_clear()
+            .envs(
+                [
+                    "PATH",
+                    "LD_LIBRARY_PATH",
+                    "DYLD_LIBRARY_PATH",
+                    "SystemRoot",
+                    "PYTHONOPTIMIZE",
+                    "TMPDIR",
+                    "TMP",
+                    "TEMP",
+                ]
+                .into_iter()
+                .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
+            )
+            .arg(script)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()?;
+        child
+            .stdin
+            .take()
+            .expect("piped verifier input")
+            .write_all(&serde_json::to_vec(&serde_json::json!({
+                "structural_tag": tag, "chunks": chunks, "rejected": request.rejected,
+                "stop_tokens": stop_tokens,
+            }))?)?;
+        let output = child.wait_with_output()?;
+        anyhow::ensure!(
+            output.status.success(),
+            "structural-tag verifier: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let receipt: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+        anyhow::ensure!(
+            receipt["engine"] == "xgrammar"
+                && receipt["version"]
+                    .as_str()
+                    .is_some_and(|version| !version.is_empty())
+                && receipt["checks"].as_u64().is_some_and(|n| n > 1),
+            "invalid structural-tag verifier receipt"
+        );
+        Ok(())
+    }
     /// An unknown value is a spec bug, not something to paper over with a default:
     /// silently falling back to `None`/`Native` is exactly the failure this replaced.
     pub fn starting_state(&self) -> dynamo_parsers_v2::UnifiedParserStartingState {
@@ -864,26 +1087,13 @@ impl Init {
         parser: &mut Box<dyn dynamo_parsers_v2::UnifiedParser>,
     ) -> anyhow::Result<()> {
         use dynamo_parsers_v2::{InvalidGuidedPayloadPolicy, UnifiedParserInit};
+        #[cfg(not(conformance_legacy_message_phases))]
+        parser.preserve_message_phases(self.preserve_message_phases);
         parser.initialize_request(UnifiedParserInit {
             starting_state: self.starting_state(),
             tool_output_mode: self.output_mode(),
             invalid_guided_payload: InvalidGuidedPayloadPolicy::RecoverAsText,
             ..UnifiedParserInit::default()
-        })
-    }
-
-    /// The config as APPLIED, not as written — an omitted field is reported as the
-    /// value the parser actually received, so what the popup shows and what the
-    /// parser ran under are the same object by construction.
-    pub fn applied(&self) -> serde_json::Value {
-        use dynamo_parsers_v2::UnifiedToolOutputMode as O;
-        serde_json::json!({
-            "starting_state": format!("{:?}", self.starting_state()),
-            "tool_output_mode": match self.output_mode() {
-                O::Native => "Native",
-                O::GuidedJson { .. } => "GuidedJson",
-            },
-            "named_tool": self.named_tool,
         })
     }
 }

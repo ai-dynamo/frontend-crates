@@ -1,16 +1,154 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use serde_json::Value;
+use serde_json::{Value, json};
 
-use crate::Tool;
+use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, GLM47, QWEN3_CODER};
+use super::builders::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, QWEN3_CODER};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
     StructuralTagToolChoice,
 };
+
+fn empty_qwen_tool() -> Tool {
+    Tool {
+        name: "get_server_time".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object", "properties": {}, "required": [], "additionalProperties": false
+        }),
+        // Dynamo normalizes an omitted strict field to true before calling v2.
+        strict: Some(true),
+    }
+}
+
+fn qwen_call_tag(tag: &Value) -> &Value {
+    let format = &tag["format"];
+    if format["type"] == "tag" {
+        format
+    } else {
+        &format["tags"][0]
+    }
+}
+
+#[test]
+fn qwen_empty_tool_has_exact_empty_body() {
+    for omit_required in [false, true] {
+        let mut tool = empty_qwen_tool();
+        if omit_required {
+            tool.parameters.as_object_mut().unwrap().remove("required");
+        }
+        for choice in [
+            StructuralTagToolChoice::Auto,
+            StructuralTagToolChoice::Named("get_server_time"),
+        ] {
+            let tag = QWEN3_CODER
+                .build_with_options(
+                    &StructuralTagContext {
+                        tool_choice: choice,
+                        tools: std::slice::from_ref(&tool),
+                        parallel_tool_calls: Some(false),
+                        schema_mode: StructuralTagSchemaMode::Auto,
+                        structured_output_schema: None,
+                        starts_in_reasoning: false,
+                    },
+                    &StructuralTagOptions {
+                        tool_arguments_any_order: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                qwen_call_tag(&tag)["content"],
+                json!({"type": "const_string", "value": ""}),
+                "{choice:?}, omit_required={omit_required}"
+            );
+        }
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_other_constraints() {
+    let mut tool = empty_qwen_tool();
+    for schema in [
+        json!({"type": "object", "properties": {"utc": {"type": "boolean"}}, "additionalProperties": false}),
+        json!({"type": "object", "properties": {}}),
+        json!({"type": "object", "properties": {}, "additionalProperties": true}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "minProperties": 1}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "$id": "https://example.com/tool"}),
+        json!({"type": "object", "properties": {}, "additionalProperties": false, "required": ["missing"]}),
+    ] {
+        tool.parameters = schema.clone();
+        let tag = QWEN3_CODER
+            .build_with_options(
+                &StructuralTagContext {
+                    tool_choice: StructuralTagToolChoice::Named("get_server_time"),
+                    tools: std::slice::from_ref(&tool),
+                    parallel_tool_calls: None,
+                    schema_mode: StructuralTagSchemaMode::Auto,
+                    structured_output_schema: None,
+                    starts_in_reasoning: false,
+                },
+                &StructuralTagOptions {
+                    tool_arguments_any_order: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            json!({"type": "json_schema", "json_schema": schema, "style": "qwen_xml", "any_order": true})
+        );
+    }
+}
+
+#[test]
+fn qwen_empty_tool_preserves_strict_policy_and_other_formats() {
+    let mut tool = empty_qwen_tool();
+    for (schema_mode, strict) in [
+        (StructuralTagSchemaMode::Auto, None),
+        (StructuralTagSchemaMode::Auto, Some(false)),
+        // Global strict overrides the tool's explicit opt-out.
+        (StructuralTagSchemaMode::Strict, Some(false)),
+    ] {
+        tool.strict = strict;
+        let tag = build(
+            &QWEN3_CODER,
+            StructuralTagToolChoice::Named("get_server_time"),
+            std::slice::from_ref(&tool),
+            None,
+            schema_mode,
+            false,
+        );
+        let expected = if schema_mode == StructuralTagSchemaMode::Strict {
+            json!({"type": "const_string", "value": ""})
+        } else {
+            json!({"type": "json_schema", "json_schema": true, "style": "qwen_xml"})
+        };
+        assert_eq!(
+            qwen_call_tag(&tag)["content"],
+            expected,
+            "{schema_mode:?}, strict={strict:?}"
+        );
+    }
+    tool.strict = Some(true);
+    let tag = build(
+        &GLM47,
+        StructuralTagToolChoice::Named("get_server_time"),
+        std::slice::from_ref(&tool),
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        tag["format"]["content"],
+        json!({"type": "json_schema", "json_schema": tool.parameters, "style": "glm_xml"})
+    );
+}
 
 fn build_with_structured_output(
     builder: &super::StructuralTagBuilder,
@@ -31,6 +169,254 @@ fn build_with_structured_output(
             starts_in_reasoning,
         },
     )
+}
+
+// Response-format requests have no tools in dynamo#16787; parser-output
+// fixtures cannot exercise the grammar that constrains generation beforehand.
+#[test]
+fn harmony_response_format_constrains_final_without_constraining_analysis() {
+    let schemas = [
+        json!({"type": "object"}),
+        json!({
+            "type": "object",
+            "properties": {
+                "location": {"type": "string", "enum": ["London", "New York"]},
+                "temperature": {"type": "number"},
+                "conditions": {"type": "string"}
+            },
+            "required": ["location", "temperature", "conditions"]
+        }),
+    ];
+    let offered_tools = tools();
+    for schema in schemas {
+        for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
+            for tools in [&[][..], &offered_tools[..]] {
+                for starts_in_reasoning in [false, true] {
+                    let actual = build_with_structured_output(
+                        &HARMONY,
+                        choice,
+                        tools,
+                        None,
+                        starts_in_reasoning,
+                        &schema,
+                    );
+                    let format = if starts_in_reasoning {
+                        post_reasoning_format(
+                            &actual["format"],
+                            "harmony",
+                            Some("<|start|>assistant"),
+                        )
+                    } else {
+                        &actual["format"]["elements"][1]
+                    };
+                    if choice == StructuralTagToolChoice::None || tools.is_empty() {
+                        assert_eq!(format["type"], "tag");
+                        assert_eq!(format["begin"], "<|channel|>final<|message|>");
+                        assert_eq!(format["end"], "");
+                        assert_eq!(
+                            format["content"],
+                            json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                        );
+                        continue;
+                    }
+                    assert_eq!(format["type"], "triggered_tags");
+                    assert_eq!(format["at_least_one"], false);
+                    assert!(
+                        format["triggers"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .any(|trigger| trigger == "<|channel|>final")
+                    );
+                    let tags = format["tags"].as_array().unwrap();
+                    let final_tag = tags
+                        .iter()
+                        .find(|tag| tag["begin"] == "<|channel|>final<|message|>")
+                        .unwrap();
+                    assert_eq!(final_tag["end"], "");
+                    assert_eq!(
+                        final_tag["content"],
+                        json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+                    );
+                    assert_eq!(
+                        tags.len(),
+                        if choice == StructuralTagToolChoice::Auto {
+                            tools.len() + 1
+                        } else {
+                            1
+                        }
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn harmony_structured_output_preserves_tool_policy_and_external_boundary() {
+    let tools = tools();
+    let schema = json!({"type": "object"});
+    for parallel in [None, Some(false), Some(true)] {
+        for choice in [
+            StructuralTagToolChoice::Required,
+            StructuralTagToolChoice::Named("get_weather"),
+        ] {
+            for starts_in_reasoning in [false, true] {
+                assert_eq!(
+                    build_with_structured_output(
+                        &HARMONY,
+                        choice,
+                        &tools,
+                        parallel,
+                        starts_in_reasoning,
+                        &schema
+                    ),
+                    build(
+                        &HARMONY,
+                        choice,
+                        &tools,
+                        parallel,
+                        StructuralTagSchemaMode::Auto,
+                        starts_in_reasoning
+                    ),
+                );
+            }
+        }
+        let context = StructuralTagContext {
+            tool_choice: StructuralTagToolChoice::Auto,
+            tools: &tools,
+            parallel_tool_calls: parallel,
+            schema_mode: StructuralTagSchemaMode::Strict,
+            structured_output_schema: Some(&schema),
+            starts_in_reasoning: true,
+        };
+        let tag = HARMONY
+            .build_with_options(
+                &context,
+                &StructuralTagOptions {
+                    reasoning_boundary: ReasoningBoundary::External,
+                    tool_arguments_any_order: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(tag["format"]["type"], "triggered_tags");
+        assert_eq!(tag["format"]["stop_after_first"], parallel == Some(false));
+        for tool_tag in tag["format"]["tags"].as_array().unwrap().iter().skip(1) {
+            assert_eq!(tool_tag["content"]["any_order"], true);
+        }
+        assert!(
+            tag["format"]["tags"][0]["content"]
+                .get("any_order")
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn schema_only_requests_keep_other_family_response_formats() {
+    let schema = json!({"type":"object"});
+    for builder in [&QWEN3_CODER, &DEEPSEEK_DSML, &DEEPSEEK_DSML_V41, &GLM47] {
+        for choice in [StructuralTagToolChoice::Auto, StructuralTagToolChoice::None] {
+            let actual = build_with_structured_output(builder, choice, &[], None, false, &schema);
+            assert_eq!(
+                actual["format"],
+                json!({"type":"json_schema", "json_schema":schema, "style":"json"})
+            );
+        }
+    }
+}
+
+#[test]
+fn harmony_response_schema_envelope_round_trips_without_marker_leakage() {
+    let schema = json!({"type": "object"});
+    let tag = build_with_structured_output(
+        &HARMONY,
+        StructuralTagToolChoice::None,
+        &[],
+        None,
+        false,
+        &schema,
+    );
+    let final_tag = &tag["format"]["elements"][1];
+    let body = r#"{"location":"London","temperature":12,"conditions":"cloudy"}"#;
+    // The engine supplies the stop marker after the grammar has completed.
+    let input = format!(
+        "{}checking météo🙂<|end|><|start|>assistant{}{}{}",
+        concat!("<|channel|>", "ana", "lysis<|message|>"),
+        final_tag["begin"].as_str().unwrap(),
+        body,
+        "<|return|>",
+    );
+    let expected = vec![
+        UnifiedEvent::Reasoning {
+            text: "checking météo🙂".to_string(),
+        },
+        UnifiedEvent::Text {
+            text: body.to_string(),
+        },
+    ];
+    for split in input
+        .char_indices()
+        .map(|(index, _)| index)
+        .chain(std::iter::once(input.len()))
+    {
+        let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+        parser.initialize(&[]).unwrap();
+        let mut actual = parser.push(&input[..split]).unwrap();
+        actual.extend(parser.push(&input[split..]).unwrap());
+        actual.extend(parser.finish().unwrap().events);
+        assert_eq!(assemble(&actual), expected, "split at {split}");
+    }
+}
+
+#[test]
+fn harmony_forced_calls_allow_optional_reasoning_before_stop_free_json() {
+    let tools = tools();
+    for choice in [
+        StructuralTagToolChoice::Required,
+        StructuralTagToolChoice::Named("get_weather"),
+    ] {
+        let actual = build(
+            &HARMONY,
+            choice,
+            &tools,
+            Some(false),
+            StructuralTagSchemaMode::Strict,
+            false,
+        );
+        let elements = actual["format"]["elements"].as_array().unwrap();
+        assert_eq!(elements[0]["type"], "or");
+        assert_eq!(
+            elements[0]["elements"][0],
+            json!({"type":"const_string","value":""})
+        );
+        let reasoning = &elements[0]["elements"][1]["elements"];
+        assert_eq!(reasoning[0]["begin"], "<|channel|>analysis<|message|>");
+        assert_eq!(reasoning[0]["end"], "<|end|>");
+        assert_eq!(reasoning[1]["value"], "<|start|>assistant");
+        let tags = if matches!(choice, StructuralTagToolChoice::Named(_)) {
+            assert_eq!(elements[1]["type"], "tag");
+            vec![&elements[1]]
+        } else {
+            assert_eq!(elements[1]["stop_after_first"], true);
+            elements[1]["tags"].as_array().unwrap().iter().collect()
+        };
+        assert!(tags.iter().all(|tag| tag["end"] == ""));
+        assert!(
+            tags.iter()
+                .all(|tag| tag["content"]["type"] == "json_schema")
+        );
+        assert_eq!(
+            tags.len(),
+            if matches!(choice, StructuralTagToolChoice::Required) {
+                2
+            } else {
+                1
+            }
+        );
+    }
 }
 
 fn call_sequence(format: &Value) -> &Value {
@@ -73,6 +459,13 @@ fn common_builder_closes_prompt_opened_reasoning_before_tool_output() {
             "deepseek_v4",
             &DEEPSEEK_DSML,
             "<｜DSML｜tool_calls>",
+            Some("\n\n"),
+            None,
+        ),
+        (
+            "deepseek_v41",
+            &DEEPSEEK_DSML_V41,
+            "<｜DSML｜ calls>",
             Some("\n\n"),
             None,
         ),
@@ -134,6 +527,7 @@ fn auto_closes_prompt_opened_reasoning_before_triggered_dispatch() {
     for (family, builder, tool_call_exclude, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, "<tool_call>", Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, "<｜DSML｜tool_calls>", None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, "<｜DSML｜ calls>", None),
         ("glm47", &GLM47, "<tool_call>", None),
     ] {
         let actual = build(
@@ -175,6 +569,7 @@ fn auto_with_structured_output_offers_tool_calls_only_or_schema_constrained_resp
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -211,6 +606,7 @@ fn auto_with_structured_output_honors_single_call_limit() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = build_with_structured_output(
@@ -235,6 +631,7 @@ fn auto_with_structured_output_closes_prompt_opened_reasoning_before_choice() {
     for (family, builder, reasoning_suffix) in [
         ("qwen3_coder", &QWEN3_CODER, Some("\n\n")),
         ("deepseek_v4", &DEEPSEEK_DSML, None),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41, None),
         ("glm47", &GLM47, None),
     ] {
         let actual = build_with_structured_output(
@@ -261,6 +658,7 @@ fn external_reasoning_boundary_builds_only_the_post_reasoning_suffix() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let actual = builder
@@ -333,6 +731,7 @@ fn required_and_named_choices_do_not_offer_final_response_branch() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         for tool_choice in [
@@ -352,6 +751,7 @@ fn auto_with_empty_tools_needs_no_structural_tag() {
     for (family, builder) in [
         ("qwen3_coder", &QWEN3_CODER),
         ("deepseek_v4", &DEEPSEEK_DSML),
+        ("deepseek_v41", &DEEPSEEK_DSML_V41),
         ("glm47", &GLM47),
     ] {
         let result = builder

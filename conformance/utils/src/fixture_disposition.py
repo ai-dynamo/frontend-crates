@@ -8,11 +8,12 @@ import re
 import tarfile
 from pathlib import Path, PurePosixPath
 
+from capture_versions import DYNAMO_VERSION_RE
+
 import unified_taxonomy
 from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
-DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
 
 
@@ -41,27 +42,26 @@ def capture_layer_sort_key(label: str) -> tuple[str, int]:
     return (match[1], int(match[2])) if match else (label, 0)
 
 
+TOOLCALLING_CASE_ALIASES = {
+    "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
+    "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
+}
+
+
 def canonical_toolcalling_case_key(case_id: str) -> str:
     """Align display IDs without rewriting immutable stream archives."""
-    return {
-        "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
-        "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
-    }.get(case_id, case_id)
+    return TOOLCALLING_CASE_ALIASES.get(case_id, case_id)
 
 
 def historical_unified_case_key(family: str, key: str) -> str:
     """Read historical archive IDs through the scenario-owned taxonomy aliases."""
     label = key.removeprefix("UNIFIED.")
-    if family == "gemma4":
-        label = {"31-29": "g4-1", "31-30": "g4-2"}.get(label, label)
-    return f"UNIFIED.{historical_case_label(label)}"
+    return f"UNIFIED.{historical_case_label(label, family=family)}"
 
 
 def canonical_unified_case_key(family: str, key: str, scenario: str | None = None) -> str:
     """Return the shared key for new and historical Unified fixture records."""
-    if scenario in unified_taxonomy.UNIFIED_TAX:
-        return unified_taxonomy.numbered_id(scenario)
-    return historical_unified_case_key(family, key)
+    return f"UNIFIED.{historical_case_label(key.removeprefix('UNIFIED.'), family=family, scenario=scenario)}"
 
 
 def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[dict, dict]:
@@ -85,6 +85,8 @@ def canonicalize_unified_inputs(records: dict[tuple[str, str], dict]) -> tuple[d
                     f"{previous}, {key}"
                 )
             scenario_keys[(family, scenario)] = key
+        if ident in canonical and canonical[ident] != record:
+            raise ValueError(f"conflicting Unified records for {ident}")
         canonical[ident] = record
         historical = historical_unified_case_key(family, key)
         aliases[(family, key)] = ident

@@ -15,6 +15,9 @@ use uuid::Uuid;
 
 use crate::error::OpenAIError;
 
+mod custom_tools;
+pub use custom_tools::*;
+
 // ---------------------------------------------------------------------------
 // Re-exports from upstream async-openai (unchanged types)
 // ---------------------------------------------------------------------------
@@ -31,11 +34,11 @@ pub use async_openai::types::chat::{
     ChatCompletionRequestMessageContentPartAudio, ChatCompletionRequestMessageContentPartRefusal,
     ChatCompletionRequestMessageContentPartText, ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestSystemMessageContentPart, ChatCompletionResponseMessageAudio, Choice,
-    CompletionFinishReason, CompletionTokensDetails, CompletionUsage, FunctionObject,
-    FunctionObjectArgs, ImageDetail, InputAudio, InputAudioFormat, Logprobs, PredictionContent,
-    PredictionContentContent, Prompt, PromptTokensDetails, ResponseFormat,
-    ResponseFormatJsonSchema, Role, ServiceTier, WebSearchContextSize, WebSearchLocation,
-    WebSearchOptions, WebSearchUserLocation, WebSearchUserLocationType,
+    CompletionFinishReason, CompletionTokensDetails, CompletionUsage, ImageDetail, InputAudio,
+    InputAudioFormat, Logprobs, PredictionContent, PredictionContentContent, Prompt,
+    PromptTokensDetails, ResponseFormat, ResponseFormatJsonSchema, Role, ServiceTier,
+    WebSearchContextSize, WebSearchLocation, WebSearchOptions, WebSearchUserLocation,
+    WebSearchUserLocationType,
 };
 
 /// OpenAI stop configuration, with Dynamo's token-id stop extension.
@@ -51,6 +54,28 @@ pub enum Stop {
     String(String),
     StringArray(Vec<String>),
     TokenIdArray(Vec<u32>),
+}
+
+// Use anyOf because an empty array matches both array variants.
+#[cfg(feature = "protocol-schema")]
+impl utoipa::PartialSchema for Stop {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::Schema> {
+        utoipa::openapi::schema::AnyOfBuilder::new()
+            .description(Some(
+                "OpenAI stop configuration, with Dynamo's token-id stop extension.",
+            ))
+            .item(String::schema())
+            .item(Vec::<String>::schema())
+            .item(Vec::<u32>::schema())
+            .into()
+    }
+}
+
+#[cfg(feature = "protocol-schema")]
+impl utoipa::ToSchema for Stop {
+    fn name() -> std::borrow::Cow<'static, str> {
+        "dynamo_protocols.chat.Stop".into()
+    }
 }
 
 impl Stop {
@@ -108,9 +133,8 @@ impl From<async_openai::types::chat::StopConfiguration> for Stop {
 // Upstream renamed FinishReason (streaming) -- re-export
 pub use async_openai::types::chat::FinishReason;
 
-// Upstream uses FunctionType where we used ChatCompletionToolType.
-// Re-export both names for compatibility.
-pub use async_openai::types::chat::FunctionType;
+// Keep the historical alias while accepting both OpenAI tool-call kinds.
+pub type FunctionType = ChatCompletionToolType;
 
 /// Reasoning effort values accepted by OpenAI-compatible clients.
 ///
@@ -119,6 +143,8 @@ pub use async_openai::types::chat::FunctionType;
 /// wire-compatible with upstream values and include `max`.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ReasoningEffort))]
 pub enum ReasoningEffort {
     None,
     Minimal,
@@ -220,6 +246,8 @@ where
 /// JSON object (`{"key": "value"}`); both are normalised to a JSON string
 /// on deserialisation so callers always see the canonical form.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::FunctionCall))]
 pub struct FunctionCall {
     pub name: String,
     #[serde(deserialize_with = "deserialize_arguments")]
@@ -230,6 +258,8 @@ pub struct FunctionCall {
 /// Continuation chunks carry only `arguments`; `name` is omitted rather
 /// than serialized as `null`, matching OpenAI output.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::FunctionCallStream))]
 pub struct FunctionCallStream {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -247,6 +277,8 @@ pub struct FunctionCallStream {
 /// `function` field references our local [`FunctionCallStream`] with the
 /// flexible `arguments` deserialiser.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionMessageToolCallChunk))]
 pub struct ChatCompletionMessageToolCallChunk {
     pub index: u32,
     /// Only `index` is required by the spec; `id`, `type`, and `function`
@@ -257,6 +289,8 @@ pub struct ChatCompletionMessageToolCallChunk {
     pub r#type: Option<FunctionType>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub function: Option<FunctionCallStream>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub custom: Option<CustomToolCallStream>,
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +311,8 @@ pub struct ChatCompletionMessageToolCallChunk {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestMessageContentPartImage))]
 pub struct ChatCompletionRequestMessageContentPartImage {
     #[builder(default)]
     #[serde(default, deserialize_with = "deserialize_optional_media")]
@@ -297,8 +333,11 @@ pub struct ChatCompletionRequestMessageContentPartImage {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ImageUrl))]
 pub struct ImageUrl {
     pub url: Url,
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ImageDetail>))]
     pub detail: Option<ImageDetail>,
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -313,7 +352,10 @@ pub struct ImageUrl {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestToolMessageContentPart))]
 pub enum ChatCompletionRequestToolMessageContentPart {
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartText))]
     Text(ChatCompletionRequestMessageContentPartText),
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
@@ -323,6 +365,8 @@ pub enum ChatCompletionRequestToolMessageContentPart {
 /// Tool message content, extended to preserve media observations.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestToolMessageContent))]
 pub enum ChatCompletionRequestToolMessageContent {
     Text(String),
     Array(Vec<ChatCompletionRequestToolMessageContentPart>),
@@ -353,14 +397,20 @@ impl From<String> for ChatCompletionRequestToolMessageContent {
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestToolMessage))]
 pub struct ChatCompletionRequestToolMessage {
     pub content: ChatCompletionRequestToolMessageContent,
     pub tool_call_id: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatChoiceLogprobs))]
 pub struct ChatChoiceLogprobs {
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub content: Option<Vec<ChatCompletionTokenLogprob>>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub refusal: Option<Vec<ChatCompletionTokenLogprob>>,
 }
 
@@ -383,48 +433,55 @@ pub struct TopLogprobs {
 /// vocabulary ID. Keeping this optional preserves the upstream OpenAI shape
 /// when token IDs are unavailable.
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionTokenLogprob))]
 pub struct ChatCompletionTokenLogprob {
     pub token: String,
     pub logprob: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub token_id: Option<u32>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub bytes: Option<Vec<u8>>,
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Vec<crate::schema::TopLogprobs>))]
     pub top_logprobs: Vec<TopLogprobs>,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionToolType))]
 pub enum ChatCompletionToolType {
     #[default]
     Function,
+    Custom,
 }
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::FunctionName))]
 pub struct FunctionName {
     pub name: String,
 }
 
-#[derive(Clone, Serialize, Default, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct ChatCompletionNamedToolChoice {
     pub r#type: ChatCompletionToolType,
+    /// Common selected name; serialization chooses `function` or `custom`.
     pub function: FunctionName,
 }
 
-fn default_function_type() -> FunctionType {
-    FunctionType::Function
-}
-
-/// Tool call kept locally to preserve `type: "function"` in unary request/response payloads.
+/// Tool call kept locally for function and custom unary request/response payloads.
 ///
 /// Differs from upstream: `type` is serialized by default and also defaults to
 /// `function` when omitted during deserialization, preserving compatibility with
 /// both Dynamo's historical wire format and upstream spec-compliant inputs.
-#[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ChatCompletionMessageToolCall {
     pub id: String,
-    #[serde(default = "default_function_type")]
     pub r#type: FunctionType,
+    /// Function-oriented internal view; custom calls wrap their text in `input`.
     pub function: FunctionCall,
+    pub custom: Option<CustomToolCall>,
 }
 
 /// Tool choice enum kept locally because upstream changed variant names.
@@ -439,16 +496,129 @@ pub enum ChatCompletionToolChoiceOption {
     Named(ChatCompletionNamedToolChoice),
 }
 
+// utoipa's derive does not honor per-variant serde(untagged). The named
+// choice is an object directly, not {"Named": {...}}.
+#[cfg(feature = "protocol-schema")]
+impl utoipa::PartialSchema for ChatCompletionToolChoiceOption {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::Schema> {
+        use utoipa::openapi::schema::{AnyOfBuilder, ObjectBuilder, Type};
+        AnyOfBuilder::new()
+            .item(
+                ObjectBuilder::new()
+                    .schema_type(Type::String)
+                    .enum_values(Some(["none", "auto", "required"])),
+            )
+            .item(ChatCompletionNamedToolChoice::schema())
+            .into()
+    }
+}
+
+#[cfg(feature = "protocol-schema")]
+impl utoipa::ToSchema for ChatCompletionToolChoiceOption {
+    fn name() -> std::borrow::Cow<'static, str> {
+        "dynamo_protocols.chat.ChatCompletionToolChoiceOption".into()
+    }
+
+    fn schemas(schemas: &mut Vec<(String, utoipa::openapi::RefOr<utoipa::openapi::Schema>)>) {
+        ChatCompletionNamedToolChoice::schemas(schemas);
+    }
+}
+
+/// Chat function definition with the vLLM/SGLang deferred-rendering extension.
+/// Keep this local because the SDK type drops `defer_loading` before rendering.
 #[derive(Clone, Serialize, Default, Debug, Builder, Deserialize, PartialEq)]
-#[builder(name = "ChatCompletionToolArgs")]
+#[builder(name = "FunctionObjectArgs")]
 #[builder(pattern = "mutable")]
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::FunctionObject))]
+pub struct FunctionObject {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub parameters: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub strict: Option<bool>,
+    /// Passed to the chat template; discovery and tool execution remain external.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub defer_loading: Option<bool>,
+}
+
+#[derive(Clone, Default, Debug, Builder, PartialEq)]
+#[builder(name = "ChatCompletionToolArgs")]
+#[builder(pattern = "mutable")]
+#[builder(setter(into, strip_option), default)]
+#[builder(derive(Debug))]
+#[builder(build_fn(name = "build_inner", private, error = "OpenAIError"))]
 pub struct ChatCompletionTool {
     #[builder(default = "ChatCompletionToolType::Function")]
     pub r#type: ChatCompletionToolType,
     pub function: FunctionObject,
+    pub custom: Option<ChatCompletionCustomTool>,
+    /// Wrapper-level alias used when `function.defer_loading` is unset,
+    /// including tools constructed or modified directly in Rust.
+    pub defer_loading: Option<bool>,
+}
+
+impl Serialize for ChatCompletionTool {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if self.r#type == ChatCompletionToolType::Custom {
+            use serde::ser::{Error, SerializeStruct};
+            let custom = self
+                .custom
+                .as_ref()
+                .ok_or_else(|| S::Error::custom("custom tool requires custom definition"))?;
+            let mut value = serializer.serialize_struct("ChatCompletionTool", 2)?;
+            value.serialize_field("type", "custom")?;
+            value.serialize_field("custom", custom)?;
+            return value.end();
+        }
+        #[derive(Serialize)]
+        struct FunctionWithDeferral<'a> {
+            #[serde(flatten)]
+            function: &'a FunctionObject,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            defer_loading: Option<bool>,
+        }
+        #[derive(Serialize)]
+        struct Wire<'a> {
+            r#type: &'a ChatCompletionToolType,
+            function: FunctionWithDeferral<'a>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            defer_loading: Option<bool>,
+        }
+        // Apply the alias at serialization too, without cloning schemas or
+        // mutating the registry. A present function flag must not be emitted twice.
+        Wire {
+            r#type: &self.r#type,
+            function: FunctionWithDeferral {
+                function: &self.function,
+                defer_loading: self
+                    .defer_loading
+                    .filter(|_| self.function.defer_loading.is_none()),
+            },
+            defer_loading: self.defer_loading,
+        }
+        .serialize(serializer)
+    }
+}
+
+impl ChatCompletionTool {
+    fn normalize_defer_loading(&mut self) {
+        // Match both engines: an explicit function-level false wins over the alias.
+        self.function.defer_loading = self.function.defer_loading.or(self.defer_loading);
+    }
+}
+
+impl ChatCompletionToolArgs {
+    pub fn build(&self) -> Result<ChatCompletionTool, OpenAIError> {
+        let mut tool = self.build_inner()?;
+        tool.normalize_defer_loading();
+        Ok(tool)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -463,6 +633,8 @@ pub struct ChatCompletionTool {
 /// - `IntArray`: matched stop token IDs reported as a sequence
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::StopReason))]
 pub enum StopReason {
     String(String),
     Int(i64),
@@ -480,6 +652,8 @@ pub enum StopReason {
 /// `segments[tool_calls.len()]` is any trailing reasoning after the last tool call.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(untagged)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ReasoningContent))]
 pub enum ReasoningContent {
     /// Flat string -- single reasoning block or legacy backward-compat form.
     Text(String),
@@ -515,29 +689,39 @@ impl ReasoningContent {
 
 /// Response content part for text in assistant messages
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseContentPartText))]
 pub struct ChatCompletionResponseContentPartText {
     pub text: String,
 }
 
 /// Response content part for image URLs in assistant messages
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseContentPartImageUrl))]
 pub struct ChatCompletionResponseContentPartImageUrl {
     pub image_url: ImageUrlResponse,
 }
 
 /// Response content part for video URLs in assistant messages
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseContentPartVideoUrl))]
 pub struct ChatCompletionResponseContentPartVideoUrl {
     pub video_url: VideoUrlResponse,
 }
 
 /// Response content part for audio URLs in assistant messages
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseContentPartAudioUrl))]
 pub struct ChatCompletionResponseContentPartAudioUrl {
     pub audio_url: AudioUrlResponse,
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ImageUrlResponse))]
 pub struct ImageUrlResponse {
     pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -545,11 +729,15 @@ pub struct ImageUrlResponse {
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::VideoUrlResponse))]
 pub struct VideoUrlResponse {
     pub url: String,
 }
 
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::AudioUrlResponse))]
 pub struct AudioUrlResponse {
     pub url: String,
 }
@@ -557,6 +745,8 @@ pub struct AudioUrlResponse {
 /// Content parts for assistant responses supporting multiple modalities
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseContentPart))]
 pub enum ChatCompletionResponseContentPart {
     Text(ChatCompletionResponseContentPartText),
     ImageUrl(ChatCompletionResponseContentPartImageUrl),
@@ -571,6 +761,8 @@ pub enum ChatCompletionResponseContentPart {
 /// like vLLM that can return non-text content.
 #[derive(Clone, Serialize, Debug, Deserialize, PartialEq)]
 #[serde(untagged)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionMessageContent))]
 pub enum ChatCompletionMessageContent {
     /// Simple text content (backward compatible)
     Text(String),
@@ -586,8 +778,11 @@ pub enum ChatCompletionMessageContent {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::VideoUrl))]
 pub struct VideoUrl {
     pub url: Url,
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ImageDetail>))]
     pub detail: Option<ImageDetail>,
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -600,6 +795,8 @@ pub struct VideoUrl {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestMessageContentPartVideo))]
 pub struct ChatCompletionRequestMessageContentPartVideo {
     #[builder(default)]
     #[serde(default, deserialize_with = "deserialize_optional_media")]
@@ -616,6 +813,8 @@ pub struct ChatCompletionRequestMessageContentPartVideo {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::AudioUrl))]
 pub struct AudioUrl {
     pub url: Url,
     #[deprecated(note = "use the content-part `uuid` field for vLLM cache identities")]
@@ -629,6 +828,8 @@ pub struct AudioUrl {
 #[builder(setter(into, strip_option))]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestMessageContentPartAudioUrl))]
 pub struct ChatCompletionRequestMessageContentPartAudioUrl {
     #[builder(default)]
     #[serde(default, deserialize_with = "deserialize_optional_media")]
@@ -644,6 +845,8 @@ pub struct ChatCompletionRequestMessageContentPartAudioUrl {
 /// User message content -- references our extended content part enum.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestUserMessageContent))]
 pub enum ChatCompletionRequestUserMessageContent {
     Text(String),
     Array(Vec<ChatCompletionRequestUserMessageContentPart>),
@@ -655,6 +858,8 @@ pub enum ChatCompletionRequestUserMessageContent {
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestUserMessage))]
 pub struct ChatCompletionRequestUserMessage {
     pub content: ChatCompletionRequestUserMessageContent,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -695,11 +900,15 @@ impl From<Vec<ChatCompletionRequestUserMessageContentPart>>
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestUserMessageContentPart))]
 pub enum ChatCompletionRequestUserMessageContentPart {
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartText))]
     Text(ChatCompletionRequestMessageContentPartText),
     ImageUrl(ChatCompletionRequestMessageContentPartImage),
     VideoUrl(ChatCompletionRequestMessageContentPartVideo),
     AudioUrl(ChatCompletionRequestMessageContentPartAudioUrl),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestMessageContentPartAudio))]
     InputAudio(ChatCompletionRequestMessageContentPartAudio),
 }
 
@@ -727,7 +936,10 @@ pub enum ChatCompletionRequestUserMessageContentPart {
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestSystemMessage))]
 pub struct ChatCompletionRequestSystemMessage {
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestSystemMessageContent))]
     pub content: ChatCompletionRequestSystemMessageContent,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -811,8 +1023,11 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestSystemMessage {
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestAssistantMessage))]
 pub struct ChatCompletionRequestAssistantMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ChatCompletionRequestAssistantMessageContent>))]
     pub content: Option<ChatCompletionRequestAssistantMessageContent>,
     /// Reasoning content from a previous assistant turn.
     /// Accept both `reasoning_content` (DeepSeek /
@@ -826,6 +1041,7 @@ pub struct ChatCompletionRequestAssistantMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ChatCompletionRequestAssistantMessageAudio>))]
     pub audio: Option<ChatCompletionRequestAssistantMessageAudio>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ChatCompletionMessageToolCall>>,
@@ -849,12 +1065,16 @@ pub struct ChatCompletionRequestAssistantMessage {
 #[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(tag = "role")]
 #[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionRequestMessage))]
 pub enum ChatCompletionRequestMessage {
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestDeveloperMessage))]
     Developer(ChatCompletionRequestDeveloperMessage),
     System(ChatCompletionRequestSystemMessage),
     User(ChatCompletionRequestUserMessage),
     Assistant(ChatCompletionRequestAssistantMessage),
     Tool(ChatCompletionRequestToolMessage),
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestFunctionMessage))]
     Function(ChatCompletionRequestFunctionMessage),
 }
 
@@ -972,22 +1192,28 @@ pub type ServiceTierResponse = ServiceTier;
 /// - `content`: `Option<ChatCompletionMessageContent>` (multimodal) instead of `Option<String>`
 /// - `reasoning_content`: model reasoning output (DeepSeek-R1, QwQ)
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionResponseMessage))]
 pub struct ChatCompletionResponseMessage {
     /// Always serialized (as `null` when None) so clients can rely on the
     /// `content` key being present alongside `reasoning_content` or
     /// `tool_calls`. Matches the upstream OpenAI API shape (DGH-651).
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub content: Option<ChatCompletionMessageContent>,
     /// Always serialized (as `null` when None): the spec marks `refusal` as
     /// required-and-nullable, and OpenAI emits `"refusal": null` on every
     /// non-refusal response.
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub refusal: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ChatCompletionMessageToolCall>>,
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::Role))]
     pub role: Role,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[deprecated]
     pub function_call: Option<FunctionCall>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ChatCompletionResponseMessageAudio>))]
     pub audio: Option<ChatCompletionResponseMessageAudio>,
     /// Reasoning content produced by the model (DeepSeek-R1, QwQ).
     /// Accepts either `reasoning_content` (DeepSeek / SGLang / TRT-LLM
@@ -1011,6 +1237,8 @@ where
 /// Extends upstream `ChatCompletionStreamOptions` with:
 /// - `continuous_usage_stats`: emit usage in every chunk, not just the final one
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionStreamOptions))]
 pub struct ChatCompletionStreamOptions {
     #[serde(default, deserialize_with = "deserialize_null_as_false")]
     pub include_usage: bool,
@@ -1032,6 +1260,8 @@ pub struct ChatCompletionStreamOptions {
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
 #[builder(build_fn(error = "OpenAIError"))]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CreateChatCompletionRequest))]
 pub struct CreateChatCompletionRequest {
     pub messages: Vec<ChatCompletionRequestMessage>,
     pub model: String,
@@ -1060,18 +1290,23 @@ pub struct CreateChatCompletionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub n: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<Vec<crate::schema::ResponseModalities>>))]
     pub modalities: Option<Vec<async_openai::types::chat::ResponseModalities>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::PredictionContent>))]
     pub prediction: Option<PredictionContent>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ChatCompletionAudio>))]
     pub audio: Option<ChatCompletionAudio>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presence_penalty: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ResponseFormat>))]
     pub response_format: Option<ResponseFormat>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub seed: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ServiceTier>))]
     pub service_tier: Option<ServiceTier>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stop: Option<Stop>,
@@ -1103,11 +1338,14 @@ pub struct CreateChatCompletionRequest {
     pub prompt_cache_key: Option<String>,
     #[deprecated]
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ChatCompletionFunctionCall>))]
     pub function_call: Option<ChatCompletionFunctionCall>,
     #[deprecated]
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<Vec<crate::schema::ChatCompletionFunctions>>))]
     pub functions: Option<Vec<ChatCompletionFunctions>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::WebSearchOptions>))]
     pub web_search_options: Option<WebSearchOptions>,
 }
 
@@ -1180,10 +1418,15 @@ pub fn dynamic_tool_name(tool: &serde_json::Value) -> Option<&str> {
 ///
 /// Uses our `ChatCompletionResponseMessage` (multimodal content + reasoning).
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatChoice))]
 pub struct ChatChoice {
     pub index: u32,
     pub message: ChatCompletionResponseMessage,
+    // These keys are always serialized, including explicit nulls.
+    #[cfg_attr(feature = "protocol-schema", schema(required, value_type = Option<crate::schema::FinishReason>))]
     pub finish_reason: Option<FinishReason>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub logprobs: Option<ChatChoiceLogprobs>,
 }
 
@@ -1267,12 +1510,15 @@ where
 /// OpenAI output. `choices[].finish_reason` and `choices[].logprobs` stay
 /// always-present: the spec marks them required (nullable for `logprobs`).
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CreateChatCompletionResponse))]
 pub struct CreateChatCompletionResponse {
     pub id: String,
     pub choices: Vec<ChatChoice>,
     pub created: u32,
     pub model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ServiceTier>))]
     pub service_tier: Option<ServiceTierResponse>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_fingerprint: Option<String>,
@@ -1281,6 +1527,7 @@ pub struct CreateChatCompletionResponse {
         skip_serializing_if = "Option::is_none",
         serialize_with = "serialize_usage_omitting_absent"
     )]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::CompletionUsage>))]
     pub usage: Option<CompletionUsage>,
 }
 
@@ -1293,6 +1540,8 @@ pub type ChatCompletionResponseStream =
 /// - `content`: `Option<ChatCompletionMessageContent>` (multimodal) instead of `Option<String>`
 /// - `reasoning_content`: streaming reasoning tokens (DeepSeek-R1, QwQ)
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionStreamResponseDelta))]
 pub struct ChatCompletionStreamResponseDelta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub content: Option<ChatCompletionMessageContent>,
@@ -1301,6 +1550,7 @@ pub struct ChatCompletionStreamResponseDelta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ChatCompletionMessageToolCallChunk>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::Role>))]
     pub role: Option<Role>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub refusal: Option<String>,
@@ -1314,6 +1564,8 @@ pub struct ChatCompletionStreamResponseDelta {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatCompletionStreamResponseDeltaFunctionCall))]
 pub struct ChatCompletionStreamResponseDeltaFunctionCall {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -1327,10 +1579,15 @@ pub struct ChatCompletionStreamResponseDeltaFunctionCall {
 
 /// Streaming chat choice.
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::ChatChoiceStream))]
 pub struct ChatChoiceStream {
     pub index: u32,
     pub delta: ChatCompletionStreamResponseDelta,
+    // These keys are always serialized, including explicit nulls.
+    #[cfg_attr(feature = "protocol-schema", schema(required, value_type = Option<crate::schema::FinishReason>))]
     pub finish_reason: Option<FinishReason>,
+    #[cfg_attr(feature = "protocol-schema", schema(required))]
     pub logprobs: Option<ChatChoiceLogprobs>,
 }
 
@@ -1342,12 +1599,15 @@ pub struct ChatChoiceStream {
 /// chunk before the final one; callers needing that exact shape must
 /// inject the key at the HTTP boundary.
 #[derive(Debug, Deserialize, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "protocol-schema", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "protocol-schema", schema(as = dynamo_protocols::chat::CreateChatCompletionStreamResponse))]
 pub struct CreateChatCompletionStreamResponse {
     pub id: String,
     pub choices: Vec<ChatChoiceStream>,
     pub created: u32,
     pub model: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::ServiceTier>))]
     pub service_tier: Option<ServiceTierResponse>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system_fingerprint: Option<String>,
@@ -1356,6 +1616,7 @@ pub struct CreateChatCompletionStreamResponse {
         skip_serializing_if = "Option::is_none",
         serialize_with = "serialize_usage_omitting_absent"
     )]
+    #[cfg_attr(feature = "protocol-schema", schema(value_type = Option<crate::schema::CompletionUsage>))]
     pub usage: Option<CompletionUsage>,
 }
 
@@ -1492,6 +1753,7 @@ mod tests {
     #[test]
     fn tool_call_serializes_type_for_wire_compat() {
         let tool_call = ChatCompletionMessageToolCall {
+            custom: None,
             id: "call_123".into(),
             r#type: FunctionType::Function,
             function: FunctionCall {
@@ -2084,6 +2346,7 @@ mod tests {
     #[test]
     fn stream_tool_call_continuation_chunk_omits_absent_fields() {
         let chunk = ChatCompletionMessageToolCallChunk {
+            custom: None,
             index: 0,
             id: None,
             r#type: None,

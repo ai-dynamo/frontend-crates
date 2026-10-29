@@ -1,5 +1,9 @@
 # Reasoning Parser Corner Cases
 
+A case or rendered column that is applicable to only one parser family must NEVER appear in a generic section. Put it in a named family-specific section, preserve published IDs, and evaluate every registered family before deciding applicability. Missing captures remain missing evidence.
+
+Harmony channel/recipient probes `batch.3.c` through `batch.3.f` appear under `Single Family Test: GPT-OSS`; other registered reasoning grammars do not encode Harmony roles. Inkling generation-primer and nontext-placeholder probes `batch.7` and `batch.7.a` appear under `Single Family Test: Inkling`. Tool-start termination (`batch.3.b`) and incomplete-prefix preservation (`stream.3.d`) remain generic because other families can express those behaviors, even where their captures are missing.
+
 > **End-to-end test cases.** A separate, non-hermetic suite (real worker, real model) exists outside this repo; see `conformance/README.md` -> "End-to-end test cases". Its per-case cross-reference is maintained only in `UNIFIED_CASES.md`; the cases in THIS doc are not yet mapped to it.
 
 
@@ -310,12 +314,9 @@ fn test_unclosed_think_tag_no_longer_swallows_tool_call() { ... }
 
 ---
 
-## Adding a new reasoning parser: target complete coverage
+## Historical reasoning coverage inventory
 
-The current fixture PR is seed coverage: it establishes the YAML
-contract, provenance, and representative cases, but it does not claim
-that every family already has the complete taxonomy below. Before a
-parser family is considered complete, add:
+New reasoning parser cases use `UNIFIED.*`; follow `UNIFIED_CASES.md` for family-native reasoning, text preservation, reasoning/tool boundaries, malformed recovery, EOF, and explicit chunk schedules. The checklist below describes the retained historical taxonomy and does not instruct new archive capture jobs.
 
 1. `REASONING.batch.1.*` — no reasoning content: plain text, empty
    input, whitespace, and null / missing upstream content.
