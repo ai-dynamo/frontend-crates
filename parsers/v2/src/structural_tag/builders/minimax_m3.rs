@@ -183,7 +183,7 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
         );
         anyhow::ensure!(
             !native_union_children_ambiguous(root, schema),
-            "native tags cannot type unions with several object or array alternatives"
+            "native tags cannot distinguish ambiguous object or array alternatives"
         );
         for keyword in ["additionalProperties", "unevaluatedProperties"] {
             anyhow::ensure!(

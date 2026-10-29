@@ -653,6 +653,116 @@ fn guided_native_headers_and_bodies_preserve_channel_ownership() {
 }
 
 #[test]
+fn referenced_scalar_constraints_preserve_types_at_every_split() {
+    let definitions = json!({
+        "Count":{"type":"integer"},
+        "Alias":{"$ref":"#/$defs/Count","maximum":10},
+        "Number":{"type":"number"},
+        "Boolean":{"type":"boolean"},
+        "Nullable":{"type":["integer","null"]},
+        "Text":{"type":"string","enum":["auto"]},
+        "String":{"type":"string"},
+        "Cycle":{"$ref":"#/$defs/Cycle","minimum":1}
+    });
+    for (value_schema, raw, want) in [
+        (json!({"$ref":"#/$defs/Count"}), "2", json!(2)),
+        (json!({"$ref":"#/$defs/Count","minimum":1}), "2", json!(2)),
+        (json!({"$ref":"#/$defs/Alias","minimum":1}), "2", json!(2)),
+        (
+            json!({"$ref":"#/$defs/Number","minimum":1}),
+            "2.5",
+            json!(2.5),
+        ),
+        (
+            json!({"$ref":"#/$defs/Boolean","enum":[true]}),
+            "true",
+            json!(true),
+        ),
+        (
+            json!({"$ref":"#/$defs/Nullable","minimum":1}),
+            "null",
+            Value::Null,
+        ),
+        (
+            json!({"$ref":"#/$defs/Nullable","type":"integer"}),
+            "null",
+            json!("null"),
+        ),
+        (
+            json!({"$ref":"#/$defs/Count","type":"string"}),
+            "2",
+            json!("2"),
+        ),
+        (
+            json!({"$ref":"#/$defs/String","minLength":1}),
+            "002",
+            json!("002"),
+        ),
+        (
+            json!({"$ref":"#/$defs/String","minLength":1}),
+            "]<]minimax[>[</invoke>",
+            json!("]<]minimax[>[</invoke>"),
+        ),
+        (
+            json!({"$ref":"#/$defs/missing","minimum":1}),
+            "2",
+            json!("2"),
+        ),
+        (json!({"$ref":"#/$defs/Cycle","minimum":1}), "2", json!("2")),
+        (
+            json!({"anyOf":[{"$ref":"#/$defs/Text","minLength":1},{"type":"integer"}]}),
+            "42",
+            json!(42),
+        ),
+        (
+            json!({"anyOf":[{"$ref":"#/$defs/Text","minLength":1},{"type":"integer"}]}),
+            "auto",
+            json!("auto"),
+        ),
+    ] {
+        let schema =
+            json!({"type":"object","$defs":definitions,"properties":{"value":value_schema}});
+        assert_splits(
+            &call(&format!("]<]minimax[>[<value>{raw}]<]minimax[>[</value>")),
+            schema,
+            UnifiedParserInit::default(),
+            &[expected(json!({"value":want}))],
+        );
+    }
+}
+
+#[test]
+fn guided_object_array_unions_preserve_empty_container_identity() {
+    for keyword in ["anyOf", "oneOf"] {
+        let schema = json!({"type":"object","properties":{"value":{keyword:[
+            {"type":"object","properties":{"n":{"type":"integer"}},"required":["n"],"additionalProperties":false},
+            {"type":"array","items":{"type":"integer"}}
+        ]}},"required":["value"],"additionalProperties":false});
+        for value in [json!([]), json!([1]), json!({"n":1})] {
+            for named in [false, true] {
+                let arguments = json!({"value":value});
+                let input = if named {
+                    arguments.to_string()
+                } else {
+                    json!([{"name":"record","arguments":arguments}]).to_string()
+                };
+                assert_splits(
+                    &input,
+                    schema.clone(),
+                    UnifiedParserInit {
+                        tool_output_mode: UnifiedToolOutputMode::GuidedJson {
+                            named_tool: named.then(|| "record".to_string()),
+                        },
+                        ..Default::default()
+                    },
+                    &[expected(arguments)],
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn scalar_types_intersect_sibling_and_allof_constraints() {
     for value_schema in [
         json!({"type":"integer","anyOf":[{"type":"integer"},{"type":"string"}]}),
@@ -748,6 +858,26 @@ fn native_eligible_nested_children_keep_json_types() {
     let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
     for (value, body, want) in [
         (
+            json!({"$ref":"#/$defs/Count","minimum":1}),
+            "]<]minimax[>[<value>2]<]minimax[>[</value>",
+            json!({"value":2}),
+        ),
+        (
+            json!({"$ref":"#/$defs/Alias","minimum":1}),
+            "]<]minimax[>[<value>2]<]minimax[>[</value>",
+            json!({"value":2}),
+        ),
+        (
+            json!({"type":"object","properties":{},"additionalProperties":false}),
+            "]<]minimax[>[<value>]<]minimax[>[</value>",
+            json!({"value":{}}),
+        ),
+        (
+            json!({"type":"array","items":{"type":"integer"}}),
+            "]<]minimax[>[<value>]<]minimax[>[</value>",
+            json!({"value":[]}),
+        ),
+        (
             json!({"anyOf":[{"type":"object","properties":{"n":{"type":"integer"}}},{"type":"null"}]}),
             "]<]minimax[>[<value>]<]minimax[>[<n>1]<]minimax[>[</n>]<]minimax[>[</value>",
             json!({"value":{"n":1}}),
@@ -773,7 +903,8 @@ fn native_eligible_nested_children_keep_json_types() {
             json!({"value":2}),
         ),
     ] {
-        let schema = json!({"type":"object","properties":{"value":value},"required":["value"],"additionalProperties":false});
+        let schema = json!({"type":"object","properties":{"value":value},"required":["value"],"additionalProperties":false,
+            "$defs":{"Count":{"type":"integer"},"Alias":{"$ref":"#/$defs/Count","maximum":10}}});
         let mut native = tools(schema.clone());
         native[0].strict = Some(true);
         let tag = builder.build(&StructuralTagContext {

@@ -106,29 +106,29 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
         ),
         (
             json!({"anyOf":[object("n", "integer"), object("m", "boolean")]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"oneOf":[object("n", "integer"), object("m", "boolean")]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"anyOf":[{"type":"array","items":{"type":"integer"}},{"type":"array","items":{"type":"boolean"}}]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         // One object beside one array collides when the object has an `item`
         // property: `{"item": v}` and `[v]` render as the same `<item>` tag.
         (
             json!({"anyOf":[object("item", "integer"), {"type":"array","items":{"type":"boolean"}}]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"oneOf":[{"type":"array","items":{"type":"boolean"}}, object("item", "integer")]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"anyOf":[object("item", "integer"), {"type":"array","items":{"type":"integer"}}]}),
-            Some("several object or array alternatives"),
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"type":"integer","if":{"minimum":1},"then":{"maximum":5}}),
@@ -145,7 +145,7 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
         (json!({"type":"array","items":{"type":"integer"}}), None),
         (
             json!({"anyOf":[object("n", "integer"), {"type":"array","items":{"type":"boolean"}}]}),
-            None,
+            Some("ambiguous object or array alternatives"),
         ),
         (
             json!({"anyOf":[object("item", "integer"), {"type":"null"}]}),
@@ -171,6 +171,49 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
                 assert!(error.to_string().contains(reason), "{schema}: {error}");
             }
             None => assert!(result.is_ok(), "{schema}: {result:?}"),
+        }
+    }
+}
+
+#[test]
+fn mixed_object_array_unions_require_json_fallback() {
+    let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
+    let object = json!({"type":"object","properties":{"n":{"type":"integer"}},"required":["n"],"additionalProperties":false});
+    let array = json!({"type":"array","items":{"type":"integer"}});
+    let mut schemas = vec![
+        json!({"type":["object","array"],"properties":{"n":{"type":"integer"}},"items":{"type":"integer"},"additionalProperties":false}),
+    ];
+    for keyword in ["anyOf", "oneOf"] {
+        for branches in [
+            [object.clone(), array.clone()],
+            [array.clone(), object.clone()],
+        ] {
+            schemas.push(json!({keyword:branches}));
+        }
+    }
+    for schema in schemas {
+        for referenced in [false, true] {
+            let mut tools = tools();
+            tools[0].parameters["$defs"] = json!({"Value":schema});
+            tools[0].parameters["properties"]["count"] = if referenced {
+                json!({"$ref":"#/$defs/Value"})
+            } else {
+                schema.clone()
+            };
+            let before = tools[0].parameters.clone();
+            let result = builder.build(&StructuralTagContext {
+                tool_choice: StructuralTagToolChoice::Required,
+                tools: &tools,
+                parallel_tool_calls: None,
+                schema_mode: StructuralTagSchemaMode::Auto,
+                structured_output_schema: None,
+                starts_in_reasoning: false,
+            });
+            assert!(
+                result.is_err(),
+                "empty object/array identity requires JSON: {schema}"
+            );
+            assert_eq!(tools[0].parameters, before);
         }
     }
 }
@@ -385,15 +428,25 @@ fn structural_tag_policy_matrix() {
         ]}));
     // Eligibility must agree with the actual compiler, including definitions
     // reached through references and declarations that are never used.
-    for referenced in [false, true] {
+    for (label, schema) in [
+        ("inline", json!({"type":"integer"})),
+        ("reference", json!({"$ref":"#/$defs/count"})),
+        (
+            "reference-with-bound",
+            json!({"$ref":"#/$defs/count","minimum":1}),
+        ),
+        (
+            "reference-chain-with-bound",
+            json!({"$ref":"#/$defs/alias","minimum":1}),
+        ),
+    ] {
         let mut tools = tools.clone();
         tools[0].parameters["$defs"] = json!({
             "count":{"type":"integer"},
+            "alias":{"$ref":"#/$defs/count","maximum":10},
             "unused":{"type":"string"}
         });
-        if referenced {
-            tools[0].parameters["properties"]["count"] = json!({"$ref":"#/$defs/count"});
-        }
+        tools[0].parameters["properties"]["count"] = schema;
         let tag = builder
             .build(&StructuralTagContext {
                 tool_choice: StructuralTagToolChoice::Required,
@@ -405,10 +458,8 @@ fn structural_tag_policy_matrix() {
             })
             .unwrap()
             .unwrap();
-        cases.push(
-            json!({"case":format!("definitions/referenced={referenced}"), "tag":tag,
-            "accepted":[one], "rejected":[block(&invoke("record", "wrong"))]}),
-        );
+        cases.push(json!({"case":format!("definitions/{label}"), "tag":tag,
+            "accepted":[one], "rejected":[block(&invoke("record", "wrong"))]}));
     }
     // Eligibility must agree with the compiler on the constrained-node rule as
     // well: every schema the walk declines as unconstrained must fail to compile,
