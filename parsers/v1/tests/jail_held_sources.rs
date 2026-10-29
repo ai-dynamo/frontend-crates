@@ -206,3 +206,42 @@ async fn a_jail_that_does_not_record_reports_nothing() {
         "{unrecorded:#?}"
     );
 }
+
+#[tokio::test]
+#[ignore = "F1: held exposes local offsets after a caller source gap"]
+async fn review_f1_a_source_gap_does_not_invent_held_input_ranges() {
+    let mut input = reply();
+    for item in &mut input {
+        for source in item.sources.as_mut().unwrap() {
+            for range in source.content.iter_mut().chain(&mut source.reasoning) {
+                range.start += 100;
+                range.end += 100;
+            }
+        }
+    }
+    let control = run(input.clone()).await;
+    let reasoning = control
+        .iter()
+        .find(|item| text(item, "reasoning_content") == "r")
+        .unwrap();
+    assert_eq!(reasoning.held, Some(sources(vec![101..106], vec![])));
+
+    input[1].sources = None;
+    let output = run(input).await;
+    let reasoning = output
+        .iter()
+        .find(|item| text(item, "reasoning_content") == "r")
+        .unwrap();
+    assert_eq!(reasoning.sources, Some(vec![]));
+    assert!(
+        reasoning
+            .held
+            .as_ref()
+            .unwrap()
+            .iter()
+            .flat_map(|entry| entry.content.iter().chain(&entry.reasoning))
+            .all(|range| range.start >= 100),
+        "held reports ranges outside the caller's input: {:?}",
+        reasoning.held
+    );
+}
