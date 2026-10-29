@@ -374,6 +374,7 @@ struct JailCompletionProgress {
     pending_end_marker: Option<usize>,
     pending_parse: Option<ParsedToolCalls>,
     json: JsonCompletionProgress,
+    minimax: MinimaxCompletionProgress,
 }
 
 impl JailCompletionProgress {
@@ -382,6 +383,67 @@ impl JailCompletionProgress {
         self.pending_end_marker = None;
         self.pending_parse = None;
         self.json.reset();
+        self.minimax = MinimaxCompletionProgress::default();
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct MinimaxCompletionProgress {
+    cursor: usize,
+    in_parameter: bool,
+    in_header: bool,
+}
+
+impl MinimaxCompletionProgress {
+    fn end_marker(&mut self, text: &str, markers: &[String]) -> Option<usize> {
+        const OPEN: &str = "<parameter name=";
+        const CLOSE: &str = "</parameter>";
+        let mut positions = vec![None; markers.len()];
+        while self.cursor < text.len() {
+            let tail = &text[self.cursor..];
+            if self.in_header {
+                if let Some(end) = tail.find('>') {
+                    self.cursor += end + 1;
+                    self.in_header = false;
+                    self.in_parameter = true;
+                } else {
+                    self.cursor = text.len();
+                    break;
+                }
+            } else if self.in_parameter {
+                if let Some(end) = tail.find(CLOSE) {
+                    self.cursor += end + CLOSE.len();
+                    self.in_parameter = false;
+                } else {
+                    self.cursor += tail.len().saturating_sub(CLOSE.len() - 1);
+                    while !text.is_char_boundary(self.cursor) {
+                        self.cursor -= 1;
+                    }
+                    break;
+                }
+            } else if tail.starts_with(OPEN) {
+                self.cursor += OPEN.len();
+                self.in_header = true;
+            } else {
+                for (index, marker) in markers.iter().enumerate() {
+                    if !marker.is_empty()
+                        && tail.starts_with(marker.as_str())
+                        && positions[index].is_none()
+                    {
+                        positions[index] = Some(self.cursor + marker.len());
+                    }
+                }
+                if OPEN.starts_with(tail)
+                    || markers
+                        .iter()
+                        .any(|marker| !marker.is_empty() && marker.starts_with(tail))
+                {
+                    break;
+                }
+                self.cursor += tail.chars().next().unwrap().len_utf8();
+            }
+        }
+        positions.into_iter().flatten().next()
     }
 }
 
@@ -2031,6 +2093,14 @@ impl JailedStream {
             return Some(end_pos);
         }
 
+        if self.tool_call_parser.as_deref() == Some("minimax_m2") {
+            let found = progress
+                .minimax
+                .end_marker(accumulated_content, &self.jail_end_sequences);
+            progress.pending_end_marker = found;
+            return found;
+        }
+
         let max_marker_len = self
             .jail_end_sequences
             .iter()
@@ -2055,14 +2125,6 @@ impl JailedStream {
             .filter(|seq| !seq.is_empty())
             .find_map(|seq| {
                 let position = accumulated_content[search_start..].find(seq)? + search_start;
-                // MiniMax parameter bodies contain literal XML-looking text.
-                // A marker inside one must not release the jail before the
-                // batch parser has received the complete parameter.
-                let position = if self.tool_call_parser.as_deref() == Some("minimax_m2") {
-                    super::xml::minimax_delimiter(accumulated_content, seq)?
-                } else {
-                    position
-                };
                 Some(position + seq.len())
             })
             .inspect(|end_pos| progress.pending_end_marker = Some(*end_pos));
@@ -3219,6 +3281,27 @@ where
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn minimax_completion_keeps_incremental_parameter_progress() {
+        let mut progress = super::MinimaxCompletionProgress::default();
+        let markers = vec!["</invoke>".to_string()];
+        let mut text = "<invoke name=\"echo\"><parameter name=\"text\">".to_string();
+        for _ in 0..4096 {
+            text.push_str("</invoke>");
+            assert_eq!(progress.end_marker(&text, &markers), None);
+            assert!(text.len() - progress.cursor <= "</parameter>".len());
+        }
+        for ch in "</parameter></invoke>".chars() {
+            text.push(ch);
+            let found = progress.end_marker(&text, &markers);
+            assert_eq!(
+                found,
+                text.ends_with("</parameter></invoke>")
+                    .then_some(text.len())
+            );
+        }
+    }
+
     use super::*;
     use futures::stream;
 

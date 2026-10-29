@@ -178,7 +178,7 @@ impl XmlParserConfig {
     pub fn is_bare_function_mode(&self, chunk: &str) -> bool {
         self.backoff_when_no_wrapper
             && if self.tool_call_start_token == "<minimax:tool_call>" {
-                super::xml::minimax_delimiter(chunk, &self.tool_call_start_token).is_none()
+                super::xml::minimax_wrapper_start(chunk).is_none()
             } else {
                 !chunk.contains(self.tool_call_start_token.as_str())
             }

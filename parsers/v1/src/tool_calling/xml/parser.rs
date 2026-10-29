@@ -49,8 +49,36 @@ pub(crate) fn minimax_delimiter(text: &str, delimiter: &str) -> Option<usize> {
     }
 }
 
+/// Wrapper classification starts outside an invoke; prose parameters cannot own a wrapper.
+pub(crate) fn minimax_wrapper_start(text: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut in_invoke = false;
+    while cursor < text.len() {
+        let tail = &text[cursor..];
+        if tail.starts_with("<minimax:tool_call>") {
+            return Some(cursor);
+        }
+        if in_invoke && tail.starts_with("<parameter name=") {
+            let value = tail.find('>')? + 1;
+            cursor += value + tail[value..].find("</parameter>")? + "</parameter>".len();
+            continue;
+        }
+        if tail.starts_with("<invoke name=") {
+            in_invoke = true;
+        }
+        if tail.starts_with("</invoke>") {
+            in_invoke = false;
+        }
+        cursor += tail.chars().next()?.len_utf8();
+    }
+    None
+}
+
 fn xml_delimiter(text: &str, delimiter: &str, config: &XmlParserConfig) -> Option<usize> {
     if config.tool_call_start_token == "<minimax:tool_call>" {
+        if delimiter == config.tool_call_start_token {
+            return minimax_wrapper_start(text);
+        }
         minimax_delimiter(text, delimiter)
     } else {
         text.find(delimiter)
@@ -873,6 +901,23 @@ fn html_unescape(s: &str) -> String {
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[test]
+    fn minimax_prose_parameter_does_not_hide_real_wrapper() {
+        let input = concat!(
+            "Use <parameter name=\"example\"> and <invoke name=\"not_a_tool\"> for examples. ",
+            "<minimax:tool_call><invoke name=\"echo\"><parameter name=\"text\">ok</parameter></invoke></minimax:tool_call>"
+        );
+        let config = minimax_m2_config();
+        assert!(!config.is_bare_function_mode(input));
+        let (calls, _) = try_tool_call_parse_xml(input, &config, None).unwrap();
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].function.name, "echo");
+        assert_eq!(
+            serde_json::from_str::<Value>(&calls[0].function.arguments).unwrap(),
+            serde_json::json!({"text":"ok"})
+        );
+    }
 
     #[test]
     fn minimax_preserves_literal_parameters_and_jail_boundaries() {

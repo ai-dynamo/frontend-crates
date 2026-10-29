@@ -50,8 +50,36 @@ pub(crate) fn minimax_delimiter(text: &str, delimiter: &str) -> Option<usize> {
     }
 }
 
+/// Wrapper classification starts outside an invoke; prose parameters cannot own a wrapper.
+pub(crate) fn minimax_wrapper_start(text: &str) -> Option<usize> {
+    let mut cursor = 0;
+    let mut in_invoke = false;
+    while cursor < text.len() {
+        let tail = &text[cursor..];
+        if tail.starts_with("<minimax:tool_call>") {
+            return Some(cursor);
+        }
+        if in_invoke && tail.starts_with("<parameter name=") {
+            let value = tail.find('>')? + 1;
+            cursor += value + tail[value..].find("</parameter>")? + "</parameter>".len();
+            continue;
+        }
+        if tail.starts_with("<invoke name=") {
+            in_invoke = true;
+        }
+        if tail.starts_with("</invoke>") {
+            in_invoke = false;
+        }
+        cursor += tail.chars().next()?.len_utf8();
+    }
+    None
+}
+
 fn xml_delimiter(text: &str, delimiter: &str, config: &XmlParserConfig) -> Option<usize> {
     if config.tool_call_start_token == "<minimax:tool_call>" {
+        if delimiter == config.tool_call_start_token {
+            return minimax_wrapper_start(text);
+        }
         minimax_delimiter(text, delimiter)
     } else {
         text.find(delimiter)
