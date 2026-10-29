@@ -60,8 +60,9 @@ def test_required_rust_job_publishes_executed_comparisons_even_after_failure():
     ("success", 0, True), ("before-tests", 23, False), ("oracle-setup", 23, False), ("during-tests", 23, True),
     ("after-tests", 23, True), ("during-tests-missing", 23, True),
     ("missing", 1, True), ("golden", 0, True), ("recorded", 1, True),
+    ("managed-grammar", 0, True), ("grammar-setup", 23, False), ("grammar-deps", 23, False),
 ])
-def test_rust_ci_retains_real_receipts_only_after_tests_start(tmp_path, monkeypatch, fault, code, started):
+def test_rust_ci_retains_real_receipts_only_after_tests_start(tmp_path, fault, code, started):
     root = Path(__file__).resolve().parents[3]
     commands = tmp_path / "commands"
     commands.mkdir()
@@ -78,12 +79,25 @@ def test_rust_ci_retains_real_receipts_only_after_tests_start(tmp_path, monkeypa
             trace.write(json.dumps({{"tool": tool, "args": args, "optimized": os.environ.get("PYTHONOPTIMIZE"),
                                     "golden_root": os.environ.get("CONFORMANCE_GOLDEN_ROOT")}}) + "\\n")
         if tool == "python3":
+            if args[:2] == ["-m", "venv"]:
+                if fault == "grammar-setup":
+                    sys.exit(23)
+                scripts = Path(args[2]) / "bin"
+                scripts.mkdir(parents=True, exist_ok=True)
+                pip = scripts / "pip"
+                pip.write_text(Path(__file__).read_text())
+                pip.chmod(0o755)
+                sys.exit(0)
             if args[0].endswith("gen_unified_golden.py"):
                 if fault == "oracle-setup":
                     sys.exit(23)
-                Path(args[args.index("--output") + 1], "prepared").touch()
+                output = Path(args[args.index("--output") + 1])
+                output.mkdir(parents=True, exist_ok=True)
+                (output / "prepared").touch()
                 sys.exit(0)
             os.execv(sys.executable, [sys.executable, *args])
+        if tool == "pip" and fault == "grammar-deps":
+            sys.exit(23)
         if tool == "cargo":
             if args[:2] == ["nextest", "run"]:
                 assert Path(os.environ["CONFORMANCE_GOLDEN_ROOT"], "prepared").is_file()
@@ -104,24 +118,28 @@ def test_rust_ci_retains_real_receipts_only_after_tests_start(tmp_path, monkeypa
         path = commands / name
         path.write_text(stub)
         path.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{commands}{os.pathsep}{os.environ['PATH']}")
-    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
-    monkeypatch.setenv("CONFORMANCE_GRAMMAR_PYTHON", sys.executable)
-    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "outputs"))
-    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(tmp_path / "summary"))
-    monkeypatch.setenv("RUST_CI_FAULT", fault)
-    monkeypatch.setenv("RUST_CI_TRACE", str(tmp_path / "trace"))
-    monkeypatch.delenv("GITHUB_SHA", raising=False)
-    monkeypatch.delenv("CONFORMANCE_CANDIDATE_TREE", raising=False)
-    result = subprocess.run([str(root / "ci/rust.sh")], capture_output=True, text=True)
-    assert result.returncode == code, result.stdout + result.stderr
+    environment = {
+        "PATH": f"{commands}{os.pathsep}{os.defpath}", "RUNNER_TEMP": str(tmp_path),
+        "GITHUB_OUTPUT": str(tmp_path / "outputs"), "GITHUB_STEP_SUMMARY": str(tmp_path / "summary"),
+        "RUST_CI_FAULT": fault, "RUST_CI_TRACE": str(tmp_path / "trace"),
+    }
+    if fault not in {"managed-grammar", "grammar-setup", "grammar-deps"}:
+        environment["CONFORMANCE_GRAMMAR_PYTHON"] = sys.executable
+    for _ in range(2 if fault == "managed-grammar" else 1):
+        result = subprocess.run([str(root / "ci/rust.sh")], capture_output=True, text=True, env=environment)
+        assert result.returncode == code, result.stdout + result.stderr
     assert ("Capture verification" in (tmp_path / "summary").read_text()) == started
     outputs = tmp_path / "outputs"
     assert outputs.exists() == started
+    if fault == "managed-grammar":
+        trace = list(map(json.loads, (tmp_path / "trace").read_text().splitlines()))
+        virtualenvs = [Path(item["args"][2]) for item in trace if item["args"][:2] == ["-m", "venv"]]
+        assert len(virtualenvs) == len(set(virtualenvs)) == 2
+        assert all(path.parent.parent == tmp_path for path in virtualenvs)
     if started:
-        directory = Path(outputs.read_text().removeprefix("capture_report_directory=").strip())
+        directory = Path(outputs.read_text().splitlines()[-1].removeprefix("capture_report_directory="))
         assert directory.is_dir()
-        assert directory.parent == tmp_path
+        assert directory.parent.parent == tmp_path
     else:
         assert "Missing executed comparison" not in result.stdout
     if fault == "golden":

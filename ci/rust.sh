@@ -9,9 +9,9 @@ fi
 [[ $# == 0 ]] || exit 2
 cd "$(dirname "$0")/.."
 
-runtime="${RUNNER_TEMP:-$(mktemp -d "${TMPDIR:-/tmp}/rust-ci.XXXXXX")}"
-export CONFORMANCE_CAPTURE_REPORT_DIR
-CONFORMANCE_CAPTURE_REPORT_DIR=$(mktemp -d "$runtime/capture-verification.XXXXXX")
+runtime=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/rust-ci.XXXXXX")
+export CONFORMANCE_CAPTURE_REPORT_DIR="$runtime/capture-verification"
+mkdir "$CONFORMANCE_CAPTURE_REPORT_DIR"
 tests_started=false
 
 run() {
@@ -46,9 +46,8 @@ fi
 run 'Unused dependencies' cargo machete
 run 'Dependency policy' cargo deny --all-features check bans licenses
 run 'Formatting' cargo fmt --all -- --check
-golden_root=$(mktemp -d "$runtime/unified-golden.XXXXXX")
-run 'Authored oracle preparation' python3 conformance/utils/src/gen_unified_golden.py --output "$golden_root"
-export CONFORMANCE_GOLDEN_ROOT="$golden_root"
+export CONFORMANCE_GOLDEN_ROOT="$runtime/unified-golden"
+run 'Authored oracle preparation' python3 conformance/utils/src/gen_unified_golden.py --output "$CONFORMANCE_GOLDEN_ROOT"
 if [[ -z "${CONFORMANCE_GRAMMAR_PYTHON:-}" ]]; then
   run 'Grammar environment' python3 -m venv "$runtime/structural-tag-venv"
   run 'Grammar dependencies' "$runtime/structural-tag-venv/bin/pip" install --no-deps -r conformance/utils/structural-tag-requirements.in
