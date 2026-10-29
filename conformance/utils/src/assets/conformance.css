@@ -1174,6 +1174,9 @@ body.cmp-loading .cmp-loading-note { display: block; position: fixed; top: 8px; 
 /* Case-description glossary: the ID column is an identifier (mono, inherited from the
  * `table` base), the description beside it is a sentence and reads as one. */
 table.glossary td.gloss-desc { font-family: -apple-system, system-ui, sans-serif; }
+.case-descriptions table.glossary { width: 100%; }
+.case-descriptions table.glossary td.sub { width: 40%; white-space: normal; overflow-wrap: anywhere; }
+.case-descriptions table.glossary td.gloss-desc { overflow-wrap: anywhere; }
 
 .case-schema-indicator { display: none; margin-left: 0.25em; color: #8a8f98; font: 0.72em ui-monospace, monospace; }
 body.view-details .case-schema-indicator { display: inline; }
@@ -1299,12 +1302,7 @@ body.view-details .case-schema-indicator { display: inline; }
 :root[data-theme="dark"] #tab-unified table[data-parity-table] th.case-sub.case-group-start { border-left-color: var(--line-strong); }
 #tab-unified .transpose-table td.cell { border-left: 0; border-right: 0; }
 #tab-unified .matrix-segments { display: flex; gap: 1px; width: 27px; height: 25px; margin-inline: auto; overflow: hidden; border-radius: 4px; vertical-align: middle; }
-#tab-unified .matrix-status { display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 2px; height: 100%; }
-.matrix-status-marker { display: none; font: 10px/1 ui-monospace, monospace; color: #111827; }
-body.view-details .matrix-status-marker { display: inline-block; }
-.status-missing .matrix-status-marker, .status-unsupported .matrix-status-marker,
-.status-uncompared .matrix-status-marker { color: var(--ink); }
-.status-expected .matrix-status-marker { color: #fff; }
+#tab-unified .matrix-status { display: block; flex: 1 1 0; min-width: 2px; height: 100%; }
 #tab-unified .capture-legend { max-width: 1200px; line-height: 1.4; }
 #tab-unified .capture-legend ul { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 0; list-style: none; }
 #tab-unified .capture-legend li { display: flex; align-items: center; gap: 6px; }

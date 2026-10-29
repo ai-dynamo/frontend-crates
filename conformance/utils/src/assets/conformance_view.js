@@ -1269,7 +1269,7 @@
     var sid = tab.case_section_id || tab.mode || '';
     var prefix = tab.case_prefix || '';
     const columns = new Map((tab.columns || []).map(column => [column.label, column]));
-    var h = '<div class="details-only"><h2 id="case-descriptions-' + escapeAttr(sid) + '">'
+    var h = '<div class="case-descriptions details-only"><h2 id="case-descriptions-' + escapeAttr(sid) + '">'
       + 'Case descriptions</h2><p>Full case definitions: <a href="'
       + escapeAttr(tab.case_docs_href || '') + '">' + escapeHtml(tab.case_docs_label || '')
       + '</a>.</p><table class="glossary"><tbody>';

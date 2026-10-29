@@ -268,7 +268,9 @@ export function mountComparison(panel, controller) {
     tab = model;
     if (!state.groups) state.groups = new Set(params.has(param('groups')) ? (params.get(param('groups')) || '').split(',') : tab.column_groups.map(g => g.key));
     panel.append(ui);
-    for (const child of [...panel.children]) if (!child.matches('.cmpctl,.capture-slots,.comparison-ui,.load-status')) child.remove();
+    const descriptions = panel.querySelector(':scope > .case-descriptions');
+    if (descriptions) panel.append(descriptions);
+    for (const child of [...panel.children]) if (!child.matches('.cmpctl,.capture-slots,.comparison-ui,.case-descriptions,.load-status')) child.remove();
     draw();
   }};
 }

@@ -21,7 +21,7 @@ def counts(driver):
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
-def test_detailed_toggle_shows_capture_markers(published_viewer, vertical, stacked):
+def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, vertical, stacked):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
@@ -33,31 +33,46 @@ def test_detailed_toggle_shows_capture_markers(published_viewer, vertical, stack
         if stacked:
             driver.find_element("css selector", "[data-layout='stacked']").click()
         before = counts(driver)
+        expected = driver.execute_script("""
+            const model=window.__conformanceModel, pair=model.glossary.flatMap(group=>group.rows).find(pair=>pair[1]);
+            const column=model.columns.find(column=>column.label===pair[0]);
+            return {name:column?.case_id || model.case_prefix+pair[0],description:pair[1]};
+        """)
 
-        def assert_markers(visible):
+        def assert_details(visible):
+            sections = driver.find_elements("css selector", ".case-descriptions")
+            assert len(sections) == 1
+            section = sections[0]
+            assert section.is_displayed() == visible
+            assert expected["name"] in section.get_attribute("textContent")
+            assert expected["description"] in section.get_attribute("textContent")
             result = driver.execute_script("""
-                const table=document.querySelector('.comparison-matrix'), markers=[...table.querySelectorAll('.matrix-status-marker')];
-                const statuses=new Map();
-                for(const marker of markers)if(!statuses.has(marker.parentElement.className))statuses.set(marker.parentElement.className,marker);
-                return {count:markers.length, segments:table.querySelectorAll('.matrix-segments > i').length,
-                  samples:[...statuses.values()].map(marker=>({text:marker.textContent,visible:marker.getBoundingClientRect().width>0})),
+                const table=document.querySelector('.comparison-matrix'), segments=[...table.querySelectorAll('.matrix-segments > i')];
+                return {segments:segments.length, addedContent:segments.some(segment=>segment.childElementCount || segment.textContent.trim()),
+                  after:Boolean(table.compareDocumentPosition(document.querySelector('.case-descriptions'))&Node.DOCUMENT_POSITION_FOLLOWING),
                   width:table.querySelector('.matrix-cell').getBoundingClientRect().width};
             """)
-            assert result["count"] == result["segments"] > 0, result
-            assert all(sample["text"] and sample["visible"] == visible for sample in result["samples"]), result
+            assert result["segments"] > 0 and not result["addedContent"], result
+            assert result["after"], result
             assert abs(result["width"] - 30) <= 1, result
             assert counts(driver) == before
 
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert parse_qs(urlsplit(driver.current_url).query)["view"] == ["details"]
-        assert_markers(True)
+        assert_details(True)
+        driver.set_window_size(480, 900)
+        assert driver.execute_script("""
+            const table=document.querySelector('.case-descriptions .glossary'), rect=table.getBoundingClientRect();
+            return rect.left>=0 && rect.right<=innerWidth && table.scrollWidth<=table.clientWidth+1;
+        """)
+        driver.set_window_size(1200, 900)
         driver.refresh()
         _ready(driver, "tab-unified", reference=False)
         assert driver.find_element("css selector", "[data-view-detailed]").is_selected()
-        assert_markers(True)
+        assert_details(True)
         driver.find_element("css selector", "[data-view-detailed]").click()
         assert "view" not in parse_qs(urlsplit(driver.current_url).query)
-        assert_markers(False)
+        assert_details(False)
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
