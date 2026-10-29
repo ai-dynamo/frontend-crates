@@ -104,6 +104,17 @@ pub(crate) trait JailItem: Send + 'static {
 
     /// The item's sources, `None` when it carries none.
     fn sources_mut(&mut self) -> Option<&mut Vec<ChoiceSources>>;
+
+    /// Record what the jail still holds when the item goes out. Only an
+    /// item that reports it keeps it.
+    #[inline]
+    fn set_held(&mut self, _held: Vec<ChoiceSources>) {}
+
+    /// Take the report [`set_held`](Self::set_held) recorded.
+    #[inline]
+    fn take_held(&mut self) -> Option<Vec<ChoiceSources>> {
+        None
+    }
 }
 
 impl JailItem for Annotated<CreateChatCompletionStreamResponse> {
@@ -154,12 +165,64 @@ impl JailItem for SourcedChunk {
 
     #[inline]
     fn from_parts((chunk, sources): SourcedItem) -> Self {
-        SourcedChunk { chunk, sources }
+        SourcedChunk {
+            chunk,
+            sources,
+            held: None,
+        }
     }
 
     #[inline]
     fn sources_mut(&mut self) -> Option<&mut Vec<ChoiceSources>> {
         self.sources.as_mut()
+    }
+
+    #[inline]
+    fn set_held(&mut self, held: Vec<ChoiceSources>) {
+        self.held = Some(held);
+    }
+
+    #[inline]
+    fn take_held(&mut self) -> Option<Vec<ChoiceSources>> {
+        self.held.take()
+    }
+}
+
+/// Add `item`'s text ranges to `held`, the text still to come when an earlier
+/// item went out.
+fn hold_item_text<I: JailItem>(item: &mut I, held: &mut Vec<ChoiceSources>) {
+    let Some(sources) = item.sources_mut() else {
+        return;
+    };
+    for source in sources.iter() {
+        if source.content.is_empty() && source.reasoning.is_empty() {
+            continue;
+        }
+        let at = match held.iter().position(|entry| entry.index == source.index) {
+            Some(at) => at,
+            None => {
+                held.push(ChoiceSources {
+                    index: source.index,
+                    ..ChoiceSources::default()
+                });
+                held.len() - 1
+            }
+        };
+        let entry = &mut held[at];
+        entry.content.extend(source.content.iter().cloned());
+        entry.content.sort_unstable_by_key(|range| range.start);
+        entry.reasoning.extend(source.reasoning.iter().cloned());
+        entry.reasoning.sort_unstable_by_key(|range| range.start);
+    }
+}
+
+/// Stamp each of `items`, one input's output in order, with what the jail
+/// holds when it goes out: `held` after the input, and the text of the
+/// items after it, which was still held then.
+fn stamp_held<I: JailItem>(items: &mut [I], mut held: Vec<ChoiceSources>) {
+    for item in items.iter_mut().rev() {
+        item.set_held(held.clone());
+        hold_item_text(item, &mut held);
     }
 }
 
@@ -2108,6 +2171,35 @@ impl ChoiceJailStateCollection {
         Self { states: Vec::new() }
     }
 
+    /// The input ranges of the text each recording choice still holds, with
+    /// no entry for a choice that holds none. Allocates only while text is
+    /// held.
+    fn held(&self) -> Vec<ChoiceSources> {
+        let mut held = Vec::new();
+        for state in &self.states {
+            let content: Vec<_> = [
+                &state.accumulated_spans,
+                &state.partial_spans,
+                &state.terminal_suffix_spans,
+            ]
+            .into_iter()
+            .flat_map(|spans| spans.ranges().iter().cloned())
+            .collect();
+            let reasoning = state.pending_reasoning_spans.ranges();
+            if content.is_empty() && reasoning.is_empty() {
+                continue;
+            }
+            let mut content = content;
+            content.sort_unstable_by_key(|range| range.start);
+            held.push(ChoiceSources {
+                index: state.index,
+                content,
+                reasoning: reasoning.to_vec(),
+            });
+        }
+        held
+    }
+
     /// Get or create state for a choice index
     fn get_or_create_state(
         &mut self,
@@ -2331,7 +2423,11 @@ impl JailedStream {
                     if chat_response.choices.is_empty() {
                         // No choices processed (e.g., usage-only chunk)
                         // Pass through as-is to preserve usage and other metadata
-                        yield I::from_parts((response, recording.then(Vec::new)));
+                        let mut item = I::from_parts((response, recording.then(Vec::new)));
+                        if recording {
+                            item.set_held(choice_states.held());
+                        }
+                        yield item;
                         continue;
                     }
 
@@ -2543,11 +2639,20 @@ impl JailedStream {
                         // normalizer assigns `finish_reason` to the last emission, so this bucket
                         // order must stay aligned or terminal ownership must move after bucketing.
                         // Emit pass-through prefixes before parsed tool calls.
+                        // While recording, the items of one input go out together,
+                        // so each can report the text that a later one releases.
+                        // The stock path yields each group as it is built.
+                        let mut recorded: Vec<I> = Vec::new();
                         if !passthrough_emissions.is_empty() {
                             let current_metadata = (response.id.clone(), response.event.clone(), response.comment.clone());
-                            let responses: Vec<I> = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
-                            for mut emitted_response in responses {
-                                drop_unsourced(&unsourced, &mut emitted_response);
+                            let mut responses: Vec<I> = self.emit_choice_emissions(passthrough_emissions, chat_response, current_metadata);
+                            for emitted_response in &mut responses {
+                                drop_unsourced(&unsourced, emitted_response);
+                            }
+                            if recording {
+                                recorded.append(&mut responses);
+                            }
+                            for emitted_response in responses {
                                 yield emitted_response;
                             }
                         }
@@ -2559,9 +2664,14 @@ impl JailedStream {
                                 last_annotated_event.clone(),
                                 last_annotated_comment.clone(),
                             );
-                            let responses: Vec<I> = self.emit_choice_emissions(tool_content_emissions, chat_response, preserved_metadata);
-                            for mut emitted_response in responses {
-                                drop_unsourced(&unsourced, &mut emitted_response);
+                            let mut responses: Vec<I> = self.emit_choice_emissions(tool_content_emissions, chat_response, preserved_metadata);
+                            for emitted_response in &mut responses {
+                                drop_unsourced(&unsourced, emitted_response);
+                            }
+                            if recording {
+                                recorded.append(&mut responses);
+                            }
+                            for emitted_response in responses {
                                 yield emitted_response;
                             }
                         }
@@ -2573,16 +2683,31 @@ impl JailedStream {
                                 last_annotated_event.clone(),
                                 last_annotated_comment.clone(),
                             );
-                            let responses: Vec<I> = self.emit_choice_emissions(trailing_emissions, chat_response, preserved_metadata);
-                            for mut emitted_response in responses {
-                                drop_unsourced(&unsourced, &mut emitted_response);
+                            let mut responses: Vec<I> = self.emit_choice_emissions(trailing_emissions, chat_response, preserved_metadata);
+                            for emitted_response in &mut responses {
+                                drop_unsourced(&unsourced, emitted_response);
+                            }
+                            if recording {
+                                recorded.append(&mut responses);
+                            }
+                            for emitted_response in responses {
+                                yield emitted_response;
+                            }
+                        }
+                        if recording {
+                            stamp_held(&mut recorded, choice_states.held());
+                            for emitted_response in recorded {
                                 yield emitted_response;
                             }
                         }
                     }
                 } else {
                     // No response data, pass through as-is
-                    yield I::from_parts((response, recording.then(Vec::new)));
+                    let mut item = I::from_parts((response, recording.then(Vec::new)));
+                    if recording {
+                        item.set_held(choice_states.held());
+                    }
+                    yield item;
                 }
             }
 
@@ -2612,9 +2737,14 @@ impl JailedStream {
                 };
 
                 let final_metadata = (last_annotated_id, last_annotated_event, last_annotated_comment);
-                let responses: Vec<I> = self.emit_choice_emissions(final_emissions, &dummy_response, final_metadata);
-                for mut emitted_response in responses {
-                    drop_unsourced(&unsourced, &mut emitted_response);
+                let mut responses: Vec<I> = self.emit_choice_emissions(final_emissions, &dummy_response, final_metadata);
+                for emitted_response in &mut responses {
+                    drop_unsourced(&unsourced, emitted_response);
+                }
+                if recording {
+                    stamp_held(&mut responses, choice_states.held());
+                }
+                for emitted_response in responses {
                     yield emitted_response;
                 }
             }
@@ -3481,7 +3611,8 @@ impl JailedStream {
             let mut synthesized: HashSet<u32> = HashSet::new();
 
             let mut unsourced: HashSet<u32> = HashSet::new();
-            while let Some(item) = input_stream.next().await {
+            while let Some(mut item) = input_stream.next().await {
+                let held = item.take_held();
                 let (mut response, sources) = item.into_parts();
                 // While recording, the jail gives every choice an entry unless
                 // its text has no source.
@@ -3558,7 +3689,7 @@ impl JailedStream {
                         .collect();
                     indices.sort_unstable();
                     for index in indices {
-                        yield I::from_parts((
+                        let mut added_item = I::from_parts((
                             stream_choice_chunk_from_template(
                                 template,
                                 index,
@@ -3568,11 +3699,20 @@ impl JailedStream {
                             ),
                             added(index, &unsourced),
                         ));
+                        // It goes out before the item: the same text is held.
+                        if let Some(held) = &held {
+                            added_item.set_held(held.clone());
+                        }
+                        yield added_item;
                         synthesized.insert(index);
                     }
                 }
 
-                yield I::from_parts((response, sources));
+                let mut item = I::from_parts((response, sources));
+                if let Some(held) = held {
+                    item.set_held(held);
+                }
+                yield item;
             }
 
             // Backstop: the stream ended without a finish_reason AND without an
@@ -3592,7 +3732,7 @@ impl JailedStream {
                     .collect();
                 indices.sort_unstable();
                 for index in indices {
-                    yield I::from_parts((
+                    let mut added_item = I::from_parts((
                         stream_choice_chunk_from_template(
                             &template,
                             index,
@@ -3602,6 +3742,11 @@ impl JailedStream {
                         ),
                         added(index, &unsourced),
                     ));
+                    // The stream ended: the jail holds nothing.
+                    if recording {
+                        added_item.set_held(Vec::new());
+                    }
+                    yield added_item;
                     synthesized.insert(index);
                 }
             }

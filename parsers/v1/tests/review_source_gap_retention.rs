@@ -47,6 +47,7 @@ static ALLOCATOR: Counting = Counting;
 
 fn item(text: &str, at: Option<usize>) -> SourcedChunk {
     SourcedChunk {
+        held: None,
         chunk: Annotated {
             data: Some(
                 serde_json::from_value(json!({

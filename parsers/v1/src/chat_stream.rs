@@ -109,10 +109,19 @@ impl SourceSlot for Annotated<CreateChatCompletionStreamResponse> {}
 /// any). On output, the stages write the ranges of the text they emit. A
 /// choice whose stage cannot record gets no entry, so the caller can tell that
 /// its text has no source.
+///
+/// `held` is what the tool-call jail still holds when the item goes out: for
+/// each choice that holds text, the input ranges of its held `content` and
+/// `reasoning_content`, with no entry for a choice that holds nothing. The
+/// jail sets it on every item of a recording stream, after its own text is
+/// out; it is `None` on input, from every other stage, and when the jail does
+/// not record. A caller that cuts text after the jail needs it: the jail can
+/// hold answer text while later reasoning passes.
 #[derive(Clone, Debug)]
 pub struct SourcedChunk {
     pub chunk: Annotated<CreateChatCompletionStreamResponse>,
     pub sources: Option<Vec<ChoiceSources>>,
+    pub held: Option<Vec<ChoiceSources>>,
 }
 
 impl SourceSlot for SourcedChunk {

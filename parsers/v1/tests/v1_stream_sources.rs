@@ -221,6 +221,7 @@ fn with_sources(input: &[Item]) -> Vec<SourcedChunk> {
                     .collect()
             });
             SourcedChunk {
+                held: None,
                 chunk: item.clone(),
                 sources: Some(sources),
             }
@@ -555,10 +556,12 @@ async fn review_f2_missing_ranges_remain_fail_closed() {
         );
         let input = vec![
             SourcedChunk {
+                held: None,
                 chunk: first,
                 sources: Some(vec![]),
             },
             SourcedChunk {
+                held: None,
                 chunk: second.clone(),
                 sources: Some(vec![ChoiceSources {
                     index: 0,
@@ -575,10 +578,12 @@ async fn review_f2_missing_ranges_remain_fail_closed() {
 
         let control = vec![
             SourcedChunk {
+                held: None,
                 chunk: to_item(&json!({"data": {"choices": [{"index": 0, "delta": {}}]}})),
                 sources: Some(vec![]),
             },
             SourcedChunk {
+                held: None,
                 chunk: second,
                 sources: Some(vec![ChoiceSources {
                     index: 0,
@@ -608,6 +613,7 @@ async fn review_f3_jail_dates_duplicate_choices_in_caller_offsets() {
         {"index": 0, "delta": {"content": "B"}}
     ]}}));
     let input = vec![SourcedChunk {
+        held: None,
         chunk,
         sources: Some(vec![
             ChoiceSources {
@@ -736,6 +742,7 @@ async fn review_f7_synthetic_jail_terminal_stays_unsourced() {
     let output = run_sourced(
         &stage,
         vec![SourcedChunk {
+            held: None,
             chunk: input,
             sources: Some(vec![]),
         }],
