@@ -29,6 +29,55 @@ use dynamo_parsers_v2::{
 };
 use serde::Deserialize;
 
+#[test]
+fn prepared_golden_rejects_partial_snapshots_and_yields_to_alternate_sources() {
+    assert!(common::prepared_unified_golden(None, false).is_none());
+    let root = std::env::temp_dir().join(format!(
+        "prepared-golden-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    assert!(common::prepared_unified_golden(Some(root.clone()), true).is_none());
+    assert!(
+        std::panic::catch_unwind(|| common::prepared_unified_golden(Some(root.clone()), false))
+            .is_err()
+    );
+    std::fs::create_dir_all(&root).unwrap();
+    assert!(
+        std::panic::catch_unwind(|| common::prepared_unified_golden(Some(root.clone()), false))
+            .is_err()
+    );
+    for family in common::unified_families().values() {
+        std::fs::write(root.join(&family.golden_spec), "prepared fixture").unwrap();
+    }
+    assert_eq!(
+        common::prepared_unified_golden(Some(root.clone()), false),
+        Some(root.clone())
+    );
+    assert!(common::prepared_unified_golden(Some(root.clone()), true).is_none());
+    let file = root.join(
+        &common::unified_families()
+            .values()
+            .next()
+            .unwrap()
+            .golden_spec,
+    );
+    std::fs::remove_file(&file).unwrap();
+    assert!(
+        std::panic::catch_unwind(|| common::prepared_unified_golden(Some(root.clone()), false))
+            .is_err()
+    );
+    std::fs::write(&file, "prepared fixture").unwrap();
+    assert!(
+        std::panic::catch_unwind(|| common::prepared_unified_golden(Some(file.clone()), false))
+            .is_err()
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[derive(Deserialize)]
 struct GoldenFile {
     #[serde(default)]

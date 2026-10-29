@@ -65,8 +65,8 @@ run 'Workspace tests' cargo nextest run --workspace --all-targets --locked
 run 'Optimized Python grammar' env PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
 # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
 if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
-  run 'Video dependencies' sudo apt-get update
-  run 'Video dependencies' sudo apt-get install -y --no-install-recommends libvpx9
+  run 'Refresh package index' sudo apt-get update
+  run 'Install video dependencies' sudo apt-get install -y --no-install-recommends libvpx9
 fi
 run 'Multimodal features' cargo test -p dynamo-multimodal --all-targets --all-features --locked
 run 'Parser recovery work bounds' cargo test --locked -p dynamo-parsers-v2 --features test-utils --test gemma4_native_recovery

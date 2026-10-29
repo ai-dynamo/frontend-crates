@@ -502,7 +502,10 @@ pub fn ensure_unified_golden() -> PathBuf {
     isolated
 }
 
-fn prepared_unified_golden(root: Option<PathBuf>, alternate_source: bool) -> Option<PathBuf> {
+pub(crate) fn prepared_unified_golden(
+    root: Option<PathBuf>,
+    alternate_source: bool,
+) -> Option<PathBuf> {
     if alternate_source {
         return None;
     }
@@ -517,54 +520,6 @@ fn prepared_unified_golden(root: Option<PathBuf>, alternate_source: bool) -> Opt
             );
         }
     })
-}
-
-#[cfg(test)]
-mod prepared_golden_tests {
-    use super::*;
-
-    #[test]
-    fn prepared_golden_rejects_partial_snapshots_and_yields_to_alternate_sources() {
-        assert!(prepared_unified_golden(None, false).is_none());
-        let root = std::env::temp_dir().join(format!(
-            "prepared-golden-{}-{}",
-            std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
-        ));
-        assert!(prepared_unified_golden(Some(root.clone()), true).is_none());
-        assert!(
-            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
-                .is_err()
-        );
-        std::fs::create_dir_all(&root).unwrap();
-        assert!(
-            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
-                .is_err()
-        );
-        for family in unified_families().values() {
-            std::fs::write(root.join(&family.golden_spec), "prepared fixture").unwrap();
-        }
-        assert_eq!(
-            prepared_unified_golden(Some(root.clone()), false),
-            Some(root.clone())
-        );
-        assert!(prepared_unified_golden(Some(root.clone()), true).is_none());
-        let file = root.join(&unified_families().values().next().unwrap().golden_spec);
-        std::fs::remove_file(&file).unwrap();
-        assert!(
-            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
-                .is_err()
-        );
-        std::fs::write(&file, "prepared fixture").unwrap();
-        assert!(
-            std::panic::catch_unwind(|| prepared_unified_golden(Some(file.clone()), false))
-                .is_err()
-        );
-        std::fs::remove_dir_all(root).unwrap();
-    }
 }
 
 /// Crate-relative display path for a fixture (for failure messages).
