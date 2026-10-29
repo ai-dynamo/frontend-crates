@@ -39,4 +39,4 @@ cargo test -p dynamo-chat-parsing
 
 `tests/unified_stream_parity.rs` does the same for the v2 stream adapter, with output recorded by `tests/data/unified_stream_recorder.rs`. dynamo-llm's unit tests for the adapter are in `src/unified_stream_tests.rs`.
 
-dynamo-llm's unit tests for `tool_choice` are in `src/tool_choice_tests.rs`.
+`tests/tool_choice_parity.rs` checks `tool_choice` against a copy of dynamo-llm's code, over generated tool lists, tool choices, and requests. dynamo-llm's unit tests for it are in `src/tool_choice_tests.rs`.
