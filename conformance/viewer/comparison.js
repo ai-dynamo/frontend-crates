@@ -8,6 +8,9 @@ const text = value => String(value ?? '').toLowerCase();
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
 const leavesOf = cell => cell?.variants ? cell.variants.flatMap(leavesOf) : cell ? [cell] : [];
 const familyOf = row => row.family || row.model_label || '';
+const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
+
+export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
 
 export function comparisonView(tab, state) {
   const query = text(state.search).trim();
@@ -139,8 +142,9 @@ export function mountComparison(panel, controller) {
     const result = (tr,row,column,shown=keys) => {
       const entry = entryFor(row,column), td = tr.insertCell(); td.className = 'matrix-cell';
       if (!entry) { td.classList.add('filtered-cell'); td.textContent = '—'; td.setAttribute('aria-label', 'Excluded by filters'); return td; }
-      const codes = keys.map(k => outcomes(entry,k));
-      const focused = state.focus === 'all' || (state.focus === 'disagreements' ? codes.includes('diverge') : codes.some(s => ['error','leak','expected','missing','blocked','unsupported','uncompared'].includes(s)));
+      const codes = shown.map(k => outcomes(entry,k));
+      const focused = state.focus === 'all' || (state.focus === 'disagreements'
+        ? codes.includes('diverge') : codes.some(isProblemOutcome));
       td.classList.toggle('focus-dim',!focused);
       td.innerHTML = '<span class="matrix-segments">' + shown.map(k => '<i class="status-' + outcomes(entry,k) + '"></i>').join('') + '</span><div class="ttip comparison-output"></div>';
       td.setAttribute('role','button');
