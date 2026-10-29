@@ -54,7 +54,7 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
             """)
             assert result["segments"] > 0 and not result["addedContent"], result
             assert result["after"], result
-            assert abs(result["width"] - 30) <= 1, result
+            assert abs(result["width"] - (42 if vertical else 30)) <= 1, result
             assert counts(driver) == before
 
         driver.find_element("css selector", "[data-view-detailed]").click()
@@ -121,7 +121,7 @@ def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked):
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
-def test_matrix_columns_keep_minimal_width(published_viewer, vertical, stacked):
+def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stacked):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
@@ -140,7 +140,7 @@ def test_matrix_columns_keep_minimal_width(published_viewer, vertical, stacked):
                   header:table.tHead.getBoundingClientRect().height};
             """)
             assert abs(geometry["label"] - label_width) <= 1, geometry
-            assert geometry["cells"] and all(abs(w - 30) <= 1 for w in geometry["cells"]), geometry
+            assert geometry["cells"] and all(abs(w - (42 if vertical else 30)) <= 1 for w in geometry["cells"]), geometry
             if not vertical:
                 assert geometry["header"] <= 100, geometry
             assert not driver.find_elements("css selector", ".matrix-summary")

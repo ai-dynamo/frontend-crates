@@ -53,6 +53,7 @@ body { background: var(--page-bg); color: var(--ink); }
 /* Use the page scrollport for both axes so sticky labels need no nested scroll box. */
 .comparison-matrix-scroll { overflow: visible; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-bg); }
 .comparison-matrix { --matrix-label-width: 220px; --matrix-cell-width: 30px; width: calc(var(--matrix-label-width) + var(--matrix-cell-width) * var(--matrix-result-columns)); table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11px; }
+.comparison-ui.layout-vertical .comparison-matrix { --matrix-cell-width: 42px; }
 .matrix-label-column { width: var(--matrix-label-width); }
 .matrix-result-column { width: var(--matrix-cell-width); }
 .comparison-matrix th,.comparison-matrix td { border: 0; border-bottom: 1px solid var(--line); padding: 4px; background: var(--panel-bg); }
