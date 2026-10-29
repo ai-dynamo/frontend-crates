@@ -9,6 +9,7 @@ from urllib.parse import urlsplit, parse_qs
 import pytest
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear_slot, _published_capture_index
@@ -16,6 +17,48 @@ from test_browser_viewer import _driver, _server, _ready, _choose_engine, _clear
 
 def counts(driver):
     return driver.execute_script("return window.__conformanceComparison.counts")
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
+def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(800, 600)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "sglang")
+        _ready(driver, "tab-unified", reference=False)
+        if stacked:
+            driver.find_element("css selector", "[data-layout='stacked']").click()
+        geometry = driver.execute_script("""
+            const wrapper=document.querySelector('.comparison-matrix-scroll');
+            wrapper.scrollIntoView({block:'start'});
+            wrapper.scrollTop=200;wrapper.scrollLeft=200;
+            return {x:wrapper.scrollLeft,y:wrapper.scrollTop};
+        """)
+        assert geometry["x"] == geometry["y"] == 0, geometry
+        before = driver.execute_script("return scrollY")
+        ActionChains(driver).scroll_from_origin(ScrollOrigin.from_viewport(400, 300), 0, 200).perform()
+        WebDriverWait(driver, 5).until(lambda page: page.execute_script("return scrollY>arguments[0]", before))
+        driver.execute_script("window.scrollBy(200,0)")
+        geometry = driver.execute_script("""
+            const table=document.querySelector('.comparison-matrix'), wrapper=table.parentElement;
+            const header=table.tHead.rows[0].cells[0].getBoundingClientRect();
+            const labels=[...table.tBodies[0].querySelectorAll('tr > th:first-child')]
+              .map(cell=>cell.getBoundingClientRect()).filter(rect=>rect.top>=header.bottom&&rect.bottom<innerHeight);
+            return {top:header.top,labels:labels.map(rect=>rect.left),x:scrollX,y:scrollY,
+              overflow:document.scrollingElement.scrollWidth>innerWidth,innerX:wrapper.scrollLeft,innerY:wrapper.scrollTop};
+        """)
+        assert abs(geometry["top"]) <= 1, geometry
+        assert geometry["labels"], geometry
+        if geometry["x"]:
+            assert all(abs(left) <= 1 for left in geometry["labels"]), geometry
+        assert bool(geometry["x"]) == geometry["overflow"], geometry
+        assert geometry["innerX"] == geometry["innerY"] == 0, geometry
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
 
 
 @pytest.mark.parametrize("vertical", [False, True])
@@ -108,7 +151,7 @@ def test_stacked_families_are_grouped_and_legend_matches_visible_colors(publishe
 
 @pytest.mark.parametrize("width", [1600, 480])
 @pytest.mark.parametrize("captures", [1, 2])
-def test_long_case_hover_fits_matrix_scroller(published_viewer, width, captures):
+def test_long_case_hover_fits_viewport(published_viewer, width, captures):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
@@ -131,10 +174,8 @@ def test_long_case_hover_fits_matrix_scroller(published_viewer, width, captures)
             "return getComputedStyle(arguments[0],'::after').opacity==='1'", label))
         geometry = driver.execute_script("""
             const a=arguments[0], r=a.getBoundingClientRect(), s=getComputedStyle(a,'::after');
-            const scroller=a.closest('.comparison-matrix-scroll'),clip=scroller.getBoundingClientRect();
             return {x:r.left+parseFloat(s.left),y:r.top+parseFloat(s.top),w:parseFloat(s.width),h:parseFloat(s.height),
-              left:Math.max(0,clip.left+scroller.clientLeft),right:Math.min(innerWidth,clip.left+scroller.clientLeft+scroller.clientWidth),
-              top:Math.max(0,clip.top+scroller.clientTop),bottom:Math.min(innerHeight,clip.top+scroller.clientTop+scroller.clientHeight)};
+              left:0,right:innerWidth,top:0,bottom:innerHeight};
         """, label)
         assert geometry['left'] <= geometry['x'] and geometry['x'] + geometry['w'] <= geometry['right'], geometry
         assert geometry['top'] <= geometry['y'] and geometry['y'] + geometry['h'] <= geometry['bottom'], geometry
@@ -186,12 +227,12 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             driver.find_element("css selector", selector).send_keys(Keys.SPACE)
             assert counts(driver) == before
             driver.set_window_size(1600, 500)
-            driver.execute_script("const s=document.querySelector('.comparison-matrix-scroll');s.scrollIntoView({block:'start'});s.scrollTop=200")
+            driver.execute_script("document.querySelector('.comparison-matrix-scroll').scrollIntoView({block:'start'});window.scrollBy(0,200)")
             WebDriverWait(driver, 5).until(lambda d: d.execute_script("""
                 const table=document.querySelector('[data-comparison-table]');
-                const scroller=table.parentElement, top=table.tHead.rows[0].cells[0].getBoundingClientRect();
-                if (!scroller.scrollTop) return false;
-                if (table.tHead.rows.length === 1) return Math.abs(top.top-(scroller.getBoundingClientRect().top+scroller.clientTop))<=1;
+                const top=table.tHead.rows[0].cells[0].getBoundingClientRect();
+                if (Math.abs(top.top)>1) return false;
+                if (table.tHead.rows.length === 1) return true;
                 const next=table.tHead.rows[1].cells[0].getBoundingClientRect();
                 return Math.abs(next.top-top.bottom)<=1;
             """))
@@ -212,10 +253,9 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
                 assert full in driver.execute_script("return getComputedStyle(arguments[0],'::after').content", label)
                 assert driver.execute_script("""
                     const a=arguments[0], r=a.getBoundingClientRect(), s=getComputedStyle(a,'::after');
-                    const box=a.closest('.comparison-matrix-scroll').getBoundingClientRect();
                     const x=r.left+parseFloat(s.left), y=r.top+parseFloat(s.top);
-                    return x>=Math.max(0,box.left) && x+parseFloat(s.width)<=Math.min(innerWidth,box.right)
-                      && y>=Math.max(0,box.top) && y+parseFloat(s.height)<=Math.min(innerHeight,box.bottom);
+                    return x>=0 && x+parseFloat(s.width)<=innerWidth
+                      && y>=0 && y+parseFloat(s.height)<=innerHeight;
                 """, label)
                 assert not driver.find_elements("css selector", ".ttip-pinned")
             header.send_keys(Keys.ENTER)

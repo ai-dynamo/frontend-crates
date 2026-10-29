@@ -81,7 +81,6 @@ export function mountComparison(panel, controller) {
   function draw() {
     if (!tab) return;
     const scroll = ui.querySelector('.comparison-matrix-scroll');
-    const position = {top: scroll.scrollTop, left: scroll.scrollLeft};
     const pin = controller.disposePanel(ui);
     const vertical = document.body.classList.contains('transpose-mode');
     ui.classList.toggle('layout-vertical', vertical);
@@ -241,7 +240,6 @@ export function mountComparison(panel, controller) {
     }
     table.insertBefore(tracks,thead);
     scroll.replaceChildren(table);
-    scroll.scrollTop = position.top; scroll.scrollLeft = position.left;
     controller.restorePopup(panel,pin);
     window.__conformanceComparison = {state,view,counts: Object.fromEntries(keys.map(k => [k,captureCounts(view,k)]))};
   }
