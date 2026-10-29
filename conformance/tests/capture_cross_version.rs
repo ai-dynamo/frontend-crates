@@ -45,9 +45,7 @@ use std::path::{Path, PathBuf};
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::create_tool_parser_for_family;
 #[cfg(not(conformance_split_only))]
-use dynamo_parsers_v2::{
-    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, assemble, create_unified_parser_for_family,
-};
+use dynamo_parsers_v2::{REGISTERED_UNIFIED_FAMILIES, create_unified_parser_for_family};
 use serde_json::{Value, json};
 
 mod common;
@@ -596,11 +594,6 @@ fn split_path_chunks_scheduled(
     Ok(rows)
 }
 
-#[cfg(not(conformance_split_only))]
-fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {
-    common::unified_event_to_yaml_value(ev)
-}
-
 /// Fold per-chunk deltas into assembled events, mirroring the page's `_assemble_stream`:
 /// consecutive same-kind text/reasoning runs concatenate, and a tool_call delta carrying
 /// a name opens a call while later nameless fragments append to its argument string.
@@ -741,7 +734,7 @@ fn native_capture(
         .iter()
         .map(|row| row.iter().map(delta_to_yaml).collect())
         .collect();
-    Ok((rows, assemble(&deltas).iter().map(ev_to_yaml).collect()))
+    Ok((rows, capture::assembled_native_capture(&deltas).0))
 }
 
 fn capture_case_with_chunks(
@@ -814,6 +807,32 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
         common::json_to_yaml_value(&json!({"kind": "text", "text": "It's 18C."})),
     ];
     assert_eq!(assembled, want);
+}
+
+#[cfg(all(
+    not(conformance_split_only),
+    not(conformance_legacy_indexed_assembly),
+    not(conformance_legacy_delta)
+))]
+#[test]
+fn native_capture_producer_preserves_raw_numeric_arguments() {
+    let raw = r#"{"fraction":9007199254740992.5,"tiny":1e-400,"huge":1e400}"#;
+    let input = format!(
+        "<｜DSML｜ calls><｜DSML｜ invoke name=\"inspect\"><｜DSML｜ parameter name=\"value\" string=\"false\">{raw}</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>"
+    );
+    let mut parser = create_unified_parser_for_family("deepseek_v41", &[]).unwrap();
+    let (_, events) =
+        native_capture(&mut parser, &chunk_input(&input), &common::Init::default()).unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["name"].as_str(), Some("inspect"));
+    let actual = events[0]["arguments"]
+        .as_str()
+        .expect("raw capture arguments");
+    let expected = format!(r#"{{"value":{raw}}}"#);
+    assert_eq!(
+        common::canonical_argument_json(actual),
+        common::canonical_argument_json(&expected)
+    );
 }
 
 #[test]
@@ -1150,9 +1169,21 @@ fn family_jobs_replay_terminal_tool_calls_without_accepting_chunk_metadata() {
         let record = &results["gemma4"][reason];
         assert!(record.get("unavailable").is_none(), "{reason}: {record}");
         let mut expected = case["golden"]["assembled"].clone();
-        for event in expected.as_array_mut().unwrap() {
-            if event["kind"] == "tool_call" && !event["arguments"].is_string() {
-                event["arguments"] = json!(serde_json::to_string(&event["arguments"]).unwrap());
+        for (index, event) in expected.as_array_mut().unwrap().iter_mut().enumerate() {
+            if event["kind"] == "tool_call" {
+                let expected_arguments = event["arguments"]
+                    .as_str()
+                    .map(str::to_owned)
+                    .unwrap_or_else(|| serde_json::to_string(&event["arguments"]).unwrap());
+                let actual_arguments = record["assembled"][index]["arguments"]
+                    .as_str()
+                    .expect("captured raw JSON arguments");
+                assert_eq!(
+                    common::canonical_argument_json(actual_arguments),
+                    common::canonical_argument_json(&expected_arguments),
+                    "{reason}: tool arguments"
+                );
+                event["arguments"] = json!(actual_arguments);
             }
         }
         assert_eq!(record["assembled"], expected);

@@ -23,9 +23,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
-use dynamo_parsers_v2::{
-    assemble_with_tool_indices, create_tool_parser_for_family, create_unified_parser_for_family,
-};
+use dynamo_parsers_v2::{create_tool_parser_for_family, create_unified_parser_for_family};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Value, json};
 
@@ -402,25 +400,10 @@ fn capture_native_case(
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
-    let raw_args = dynamo_parsers_v2::tool_arguments_raw(&deltas);
-    let assembled: Vec<Ev> = assemble_with_tool_indices(&deltas)
+    let (assembled, raw_args) = capture::assembled_native_capture(&deltas);
+    let assembled = assembled
         .into_iter()
-        .map(|(index, event)| {
-            if let (Some(index), dynamo_parsers_v2::UnifiedEvent::ToolCall { name, .. }) =
-                (index, &event)
-            {
-                let raw = raw_args
-                    .get(&index)
-                    .expect("assembled call has raw arguments");
-                if serde_json::value::RawValue::from_string(raw.clone()).is_ok() {
-                    return Ev::ToolCall {
-                        name: name.clone(),
-                        arguments: raw_arguments(raw),
-                    };
-                }
-            }
-            Ev::from(event)
-        })
+        .map(|event| serde_yaml::from_value(event).expect("shared native capture event"))
         .collect();
     let rows = chunks
         .iter()

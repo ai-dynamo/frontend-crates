@@ -132,6 +132,82 @@ pub fn native_capture(
     Ok(rows)
 }
 
+/// One raw argument projection for current capture production and report replay.
+#[cfg(not(conformance_split_only))]
+pub fn assembled_native_capture(
+    deltas: &[NativeEvent],
+) -> (
+    Vec<serde_yaml::Value>,
+    std::collections::BTreeMap<usize, String>,
+) {
+    #[cfg(any(conformance_legacy_indexed_assembly, conformance_legacy_delta))]
+    {
+        return (
+            dynamo_parsers_v2::assemble(deltas)
+                .iter()
+                .map(super::unified_event_to_yaml_value)
+                .collect(),
+            std::collections::BTreeMap::new(),
+        );
+    }
+    #[cfg(not(any(conformance_legacy_indexed_assembly, conformance_legacy_delta)))]
+    {
+        let raw = dynamo_parsers_v2::tool_arguments_raw(deltas);
+        let events = dynamo_parsers_v2::assemble_with_tool_indices(deltas)
+            .into_iter()
+            .map(|(index, event)| {
+                let mut yaml = super::unified_event_to_yaml_value(&event);
+                if let Some(index) = index {
+                    let arguments = raw.get(&index).expect("assembled call has raw arguments");
+                    if serde_json::value::RawValue::from_string(arguments.clone()).is_ok() {
+                        yaml["arguments"] = serde_yaml::Value::String(arguments.clone());
+                    }
+                }
+                yaml
+            })
+            .collect();
+        (events, raw)
+    }
+}
+
+#[cfg(all(
+    not(conformance_split_only),
+    not(conformance_legacy_indexed_assembly),
+    not(conformance_legacy_delta)
+))]
+#[test]
+fn native_assembly_keeps_raw_numbers_and_sparse_surviving_indices() {
+    let call = |tool_index, name: Option<&str>, arguments: &str, complete| {
+        NativeEvent::ToolCall(dynamo_parsers_v2::ToolCallDelta {
+            tool_index,
+            name: name.map(str::to_owned),
+            arguments: arguments.into(),
+            complete,
+        })
+    };
+    let raw = r#"{"fraction":9007199254740992.5,"tiny":1e-400,"huge":1e400}"#;
+    let (events, arguments) = assembled_native_capture(&[
+        call(2, Some("drop"), "{", false),
+        call(9, Some("inspect"), raw, true),
+        NativeEvent::Text("between".into()),
+        call(5, Some("other"), r#"{"n":9007199254740993}"#, true),
+        call(7, Some("malformed"), "{bad}", true),
+    ]);
+    assert_eq!(arguments.get(&9).map(String::as_str), Some(raw));
+    assert_eq!(events.len(), 4);
+    assert_eq!(events[0]["name"].as_str(), Some("inspect"));
+    assert_eq!(events[0]["arguments"].as_str(), Some(raw));
+    assert_eq!(events[1]["kind"].as_str(), Some("text"));
+    assert_eq!(events[1]["text"].as_str(), Some("between"));
+    assert_eq!(events[2]["name"].as_str(), Some("other"));
+    assert_eq!(
+        events[2]["arguments"].as_str(),
+        Some(r#"{"n":9007199254740993}"#)
+    );
+    assert_eq!(events[3]["name"].as_str(), Some("malformed"));
+    assert_eq!(events[3]["arguments"].as_str(), Some("{}"));
+}
+
 #[test]
 fn authored_and_recorded_schedules_preserve_utf8_and_empty_chunks() {
     let input = "<call>éCafé</call>";

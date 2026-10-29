@@ -80,6 +80,11 @@ def muse_guided_json_unsupported(source: Path) -> bool:
             and "muse_glimmer has no reasoning marker pair" in body)
 
 
+def native_assembly_cfg(lib: str) -> list[str]:
+    required = ("assemble_with_tool_indices", "tool_arguments_raw")
+    return [] if all(symbol in lib for symbol in required) else ["conformance_legacy_indexed_assembly"]
+
+
 def prepare(target: dict, work: Path, target_dir: Path) -> dict:
     work.mkdir(parents=True)
     source = crate_source(target, work) if target["source_kind"] == "crate" else retained_source(target, work)
@@ -89,7 +94,7 @@ def prepare(target: dict, work: Path, target_dir: Path) -> dict:
     lib = (source / "src/lib.rs").read_text()
     unified = source / "src/unified/mod.rs"
     tool_traits = source / "src/tool_calling/traits.rs"
-    flags = []
+    flags = native_assembly_cfg(lib)
     if muse_guided_json_unsupported(source):
         flags.append("conformance_muse_guided_unsupported")
     if "create_unified_parser_for_family" not in lib:

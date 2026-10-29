@@ -14,8 +14,24 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+import capture_dynamo_unified as unified_capture  # noqa: E402
 import capture_dynamo_unified_batch as capture  # noqa: E402
 from impls import batch_capture_label
+
+
+@pytest.mark.parametrize(
+    ("symbols", "legacy"),
+    [
+        ("", True),
+        ("pub use unified::tool_arguments_raw;", True),
+        ("pub use unified::assemble_with_tool_indices;", True),
+        ("pub use unified::{assemble_with_tool_indices, tool_arguments_raw};", False),
+    ],
+)
+def test_native_assembly_cfg_uses_available_source_capabilities(symbols: str, legacy: bool) -> None:
+    assert unified_capture.native_assembly_cfg(symbols) == (
+        ["conformance_legacy_indexed_assembly"] if legacy else []
+    )
 
 
 def test_probe_job_uses_registered_gpt_oss_pipeline_without_changing_request() -> None:
