@@ -919,3 +919,6 @@ async fn recorded_jail_rejects_changed_guided_streaming() {
         }
     }
 }
+
+#[path = "support/review_gpt_oss_pins.rs"]
+mod review_gpt_oss_pins;
