@@ -18,6 +18,8 @@
 //! - [`special_tokens`]: the `skip_special_tokens` default per parser.
 //! - [`stop_tokens`]: a tool-call end token that is a hidden EOS becomes a visible stop.
 //! - [`tools`]: the effective tools and the tool-parsing gate.
+//! - [`tool_choice`]: the grammar a forced `tool_choice` installs, and the guided-tool
+//!   constraint a request implies.
 //! - [`unified_stream`]: the v2 stream adapter. One unified parser per choice turns
 //!   raw model text into OpenAI reasoning, content, and tool-call chunks.
 //! - [`stream_item`]: the stream item the adapter reads, so Dynamo keeps its own
@@ -32,6 +34,7 @@ mod spans;
 pub mod special_tokens;
 pub mod stop_tokens;
 pub mod stream_item;
+pub mod tool_choice;
 pub mod tools;
 pub mod unified_stream;
 pub mod version;
