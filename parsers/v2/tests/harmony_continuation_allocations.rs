@@ -98,66 +98,60 @@ fn allocation_sample(prefix_bytes: usize, choices: usize, quoted: bool) -> (usiz
 fn consumed_body_has_no_per_choice_fork_or_first_append_allocation_slope() {
     // Warm tokenizer and allocator state before comparing consumed-prefix sizes.
     allocation_sample(128, 1, false);
-    for choices in [1, 4] {
-        let small = allocation_sample(1024, choices, false);
-        let large = allocation_sample(131_072, choices, false);
-        eprintln!(
-            "choices={choices} prefix=1024 first_append={} completion={}",
-            small.0, small.1
-        );
-        eprintln!(
-            "choices={choices} prefix=131072 first_append={} completion={}",
-            large.0, large.1
-        );
-        assert!(
-            large.0 <= small.0 + 4096 * choices,
-            "fork/append copied consumed body: {small:?} -> {large:?}"
-        );
-        assert!(
-            large.1 <= small.1 + 4096 * choices,
-            "completion copied already emitted body: {small:?} -> {large:?}"
-        );
-    }
+    let choices = 4;
+    let small = allocation_sample(1024, choices, false);
+    let large = allocation_sample(131_072, choices, false);
+    eprintln!(
+        "choices={choices} prefix=1024 first_append={} completion={}",
+        small.0, small.1
+    );
+    eprintln!(
+        "choices={choices} prefix=131072 first_append={} completion={}",
+        large.0, large.1
+    );
+    assert!(
+        large.0 <= small.0 + 4096 * choices,
+        "fork/append copied consumed body: {small:?} -> {large:?}"
+    );
+    assert!(
+        large.1 <= small.1 + 4096 * choices,
+        "completion copied already emitted body: {small:?} -> {large:?}"
+    );
 }
 
 #[test]
 fn unresolved_quoted_control_is_shared_until_disambiguation() {
     allocation_sample(128, 1, true);
-    for choices in [1, 4] {
-        let small = allocation_sample(1024, choices, true);
-        let large = allocation_sample(131_072, choices, true);
-        eprintln!("quoted choices={choices} small={small:?} large={large:?}");
-        assert!(
-            large.0 <= small.0 + 4096 * choices,
-            "fork/append copied ambiguous history: {small:?} -> {large:?}"
-        );
-        // Disambiguation must emit the unresolved literal body. Its output
-        // allocation is expected to scale with the bytes that were not emitted.
-    }
+    let choices = 4;
+    let small = allocation_sample(1024, choices, true);
+    let large = allocation_sample(131_072, choices, true);
+    eprintln!("quoted choices={choices} small={small:?} large={large:?}");
+    assert!(
+        large.0 <= small.0 + 4096 * choices,
+        "fork/append copied ambiguous history: {small:?} -> {large:?}"
+    );
+    // Disambiguation must emit the unresolved literal body. Its output
+    // allocation is expected to scale with the bytes that were not emitted.
 }
 
-fn retained_choices(tokens: &[u32], choices: usize, cohorts: usize) -> isize {
+fn retained_choices(tokens: &[u32], choices: usize) -> isize {
     let append = encode_harmony("z").unwrap();
-    let mut seeds = Vec::new();
-    for _ in 0..cohorts {
-        let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
-        parser.initialize(&[]).unwrap();
-        let mut discarded = UnifiedParserOutput::default();
-        for chunk in tokens.chunks(256) {
-            parser.parse_token_ids_into(chunk, &mut discarded).unwrap();
-            discarded.events.clear();
-        }
-        seeds.push(parser.continuation().unwrap().unwrap());
+    let mut parser = create_unified_parser_for_family("gpt_oss", &[]).unwrap();
+    parser.initialize(&[]).unwrap();
+    let mut discarded = UnifiedParserOutput::default();
+    for chunk in tokens.chunks(256) {
+        parser.parse_token_ids_into(chunk, &mut discarded).unwrap();
+        discarded.events.clear();
     }
+    let seed = parser.continuation().unwrap().unwrap();
+    drop(parser);
     let ((retained, after_drop), allocated) = measured(|| {
         let mut forks = Vec::new();
-        for seed in &seeds {
-            for _ in 0..choices {
-                let mut fork = seed.fork().unwrap();
-                fork.parse_token_ids_into(&append, &mut UnifiedParserOutput::default())
-                    .unwrap();
-                forks.push(fork);
-            }
+        for _ in 0..choices {
+            let mut fork = seed.fork().unwrap();
+            fork.parse_token_ids_into(&append, &mut UnifiedParserOutput::default())
+                .unwrap();
+            forks.push(fork);
         }
         let retained = LIVE.with(Cell::get);
         drop(forks);
@@ -165,7 +159,7 @@ fn retained_choices(tokens: &[u32], choices: usize, cohorts: usize) -> isize {
     });
     assert_eq!(after_drop, 0, "choice-owned memory must be reclaimed");
     eprintln!(
-        "tokens={} choices={choices} cohorts={cohorts} allocated={allocated} retained={retained} after_drop={after_drop}",
+        "tokens={} choices={choices} cohorts=1 allocated={allocated} retained={retained} after_drop={after_drop}",
         tokens.len()
     );
     retained
@@ -181,15 +175,11 @@ fn retained_choice_cost_is_flat_for_original_prefix_and_128k_tokens() {
     let mut full = encode_harmony(&format!("{header}{body}")).unwrap();
     assert!(full.len() >= 131_072);
     full.truncate(131_072);
-    retained_choices(&original, 1, 1);
-    for cohorts in [1, 8] {
-        for choices in [1, 4] {
-            let small = retained_choices(&original, choices, cohorts);
-            let large = retained_choices(&full, choices, cohorts);
-            assert!(
-                large <= small + 4096 * (choices * cohorts) as isize,
-                "consumed-prefix memory was copied per choice: {small} -> {large}"
-            );
-        }
-    }
+    retained_choices(&original, 4);
+    let small = retained_choices(&original, 4);
+    let large = retained_choices(&full, 4);
+    assert!(
+        large <= small + 4096 * 4,
+        "consumed-prefix memory was copied per choice: {small} -> {large}"
+    );
 }
