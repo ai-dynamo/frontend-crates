@@ -112,7 +112,8 @@ impl SourceSlot for Annotated<CreateChatCompletionStreamResponse> {}
 ///
 /// `held` is what the tool-call jail still holds when the item goes out: for
 /// each choice that holds text, the input ranges of its held `content` and
-/// `reasoning_content`, with no entry for a choice that holds nothing. The
+/// `reasoning_content`, with no entry for a choice that holds nothing, or
+/// whose text has no source (it has no `sources` entry either). The
 /// jail sets it on every item of a recording stream, after its own text is
 /// out; it is `None` on input, from every other stage, and when the jail does
 /// not record. A caller that cuts text after the jail needs it: the jail can

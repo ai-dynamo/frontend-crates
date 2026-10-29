@@ -5,7 +5,6 @@ use dynamo_parsers::tool_calling::jail::apply_tool_calling_jail;
 use futures::stream;
 
 #[test]
-#[ignore = "F2: the stock stream grows from 8728 to 9512 bytes"]
 fn review_f2_the_stock_stream_keeps_its_size_before_held_reports() {
     let output = apply_tool_calling_jail(
         Some("hermes".to_string()),

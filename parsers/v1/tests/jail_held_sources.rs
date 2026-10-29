@@ -208,7 +208,6 @@ async fn a_jail_that_does_not_record_reports_nothing() {
 }
 
 #[tokio::test]
-#[ignore = "F1: held exposes local offsets after a caller source gap"]
 async fn review_f1_a_source_gap_does_not_invent_held_input_ranges() {
     let mut input = reply();
     for item in &mut input {
