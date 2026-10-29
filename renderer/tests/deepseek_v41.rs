@@ -108,6 +108,30 @@ fn api_reasoning_effort_matches_the_reference_encoder() {
 }
 
 #[test]
+fn medium_effort_is_a_high_compatibility_alias() {
+    let high = render(json!({"reasoning_effort": "high"})).unwrap();
+    for fields in [
+        json!({"reasoning_effort": "medium"}),
+        json!({"chat_template_args": {"reasoning_effort": "medium"}}),
+        json!({"chat_template_kwargs": {"reasoning_effort": "medium"}}),
+        json!({
+            "reasoning_effort": "medium",
+            "chat_template_args": {"reasoning_effort": "low"}
+        }),
+    ] {
+        assert_eq!(render(fields.clone()).unwrap(), high, "{fields}");
+    }
+    assert_eq!(
+        render(json!({
+            "reasoning_effort": "low",
+            "chat_template_args": {"reasoning_effort": "medium"}
+        }))
+        .unwrap(),
+        render(json!({"reasoning_effort": "low"})).unwrap()
+    );
+}
+
+#[test]
 fn template_options_set_numeric_effort_and_disable_thinking() {
     for field in ["chat_template_args", "chat_template_kwargs"] {
         assert!(

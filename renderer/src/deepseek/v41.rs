@@ -351,12 +351,13 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                     75
                 }
                 Some("low") => 50,
-                Some("high") => 75,
+                // Compatibility alias for clients such as Codex Plan mode.
+                Some("medium" | "high") => 75,
                 Some("max") => 100,
                 _ => value
                     .as_u64()
                     .filter(|v| (1..=100).contains(v))
-                    .context("DeepSeek V4.1 reasoning effort must be low, high, max, none, or an integer within 1–100")?
+                    .context("DeepSeek V4.1 reasoning effort must be low, medium, high, max, none, or an integer within 1–100")?
                     as u8,
             },
         };
