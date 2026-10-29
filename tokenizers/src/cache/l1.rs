@@ -296,7 +296,7 @@ impl L1Cache {
         *hasher.finalize().as_bytes()
     }
 
-    fn insert(&self, hash: Blake3Hash, tokens: Arc<[TokenIdType]>) {
+    pub(super) fn insert(&self, hash: Blake3Hash, tokens: Arc<[TokenIdType]>) {
         self.cache.cache.insert(
             hash,
             CachedPrefix {
@@ -317,14 +317,8 @@ impl L1Cache {
         *hasher.finalize().as_bytes()
     }
 
-    /// Cached tokens of one renderer segment, if present.
-    pub(super) fn get_segment(&self, key: &Blake3Hash) -> Option<Arc<[TokenIdType]>> {
+    pub(super) fn get(&self, key: &Blake3Hash) -> Option<Arc<[TokenIdType]>> {
         self.cache.cache.get(key).map(|entry| entry.tokens)
-    }
-
-    /// Cache one renderer segment's tokens.
-    pub(super) fn insert_segment(&self, key: Blake3Hash, tokens: Arc<[TokenIdType]>) {
-        self.insert(key, tokens);
     }
 
     /// Count one lookup in the hit / miss counters and notify the observers.
@@ -379,10 +373,7 @@ impl L1Cache {
         let boundaries = self.boundaries(input);
 
         if boundaries.is_empty() {
-            self.misses.fetch_add(1, Ordering::Relaxed);
-            if let Some(cb) = &self.on_miss {
-                cb();
-            }
+            self.record_lookup(false);
             return PrefixLookup::Miss(Vec::new());
         }
 
@@ -390,10 +381,7 @@ impl L1Cache {
 
         for &(boundary_pos, hash_bytes) in prefix_hashes.iter().rev() {
             if let Some(entry) = self.cache.cache.get(&hash_bytes) {
-                self.hits.fetch_add(1, Ordering::Relaxed);
-                if let Some(cb) = &self.on_hit {
-                    cb();
-                }
+                self.record_lookup(true);
                 // Share cached tokens to avoid copying the prefix during lookup.
                 let &(deepest_boundary, deepest_hash) =
                     prefix_hashes.last().expect("prefix hashes is non-empty");
@@ -406,10 +394,7 @@ impl L1Cache {
             }
         }
 
-        self.misses.fetch_add(1, Ordering::Relaxed);
-        if let Some(cb) = &self.on_miss {
-            cb();
-        }
+        self.record_lookup(false);
         PrefixLookup::Miss(prefix_hashes)
     }
 

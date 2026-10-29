@@ -48,13 +48,14 @@
 //!   to the inner tokenizer with no lookup, no miss-counter bump, and no
 //!   insert attempt. A list whose members can overlap disables L1 identically.
 //! - `encode_segments` caches whole segments instead of prefixes: each segment of at
-//!   least [`MIN_CACHED_SEGMENT_BYTES`] bytes is keyed by its exact text and
-//!   `allow_special` flag (a key space disjoint from prefix keys), so every turn of a
-//!   multi-turn conversation re-encodes only its new segments. Flattening segments
-//!   for prefix matching would discard their special-token trust boundaries, and
-//!   segment caching never needs to: backends encode segments independently.
-//!   Segments are cached only while L1 is active (a non-empty, non-overlapping
-//!   special-token set), so an empty set still disables all caching.
+//!   least 128 bytes is keyed by its exact text and `allow_special` flag (a key space
+//!   disjoint from prefix keys), so every turn of a multi-turn conversation re-encodes
+//!   only its new segments. Flattening segments for prefix matching would discard their
+//!   special-token trust boundaries, and segment caching never needs to: backends
+//!   encode segments independently. Shorter segments (control markers) are encoded in
+//!   contiguous runs and never cached. Segments are cached only while L1 is active (a
+//!   non-empty, non-overlapping special-token set), so an empty set still disables all
+//!   caching.
 //! - `max_memory_bytes` — token-ID payload byte budget, excluding keys and metadata.
 //!   Moka shares admission and eviction via W-TinyLFU. Deferred maintenance makes the
 //!   capacity approximate; it is not a limit on total process memory.
@@ -85,7 +86,7 @@ use crate::{
 
 /// Smallest segment (in bytes) that [`CachedTokenizer::encode_segments`] caches.
 /// Shorter segments, such as control markers, encode faster than an entry pays off.
-pub const MIN_CACHED_SEGMENT_BYTES: usize = 128;
+const MIN_CACHED_SEGMENT_BYTES: usize = 128;
 
 /// Token-level cache usage for one successful encode.
 ///
@@ -319,14 +320,10 @@ impl Encoder for CachedTokenizer {
             return self.inner.encode_segments(segments);
         }
 
-        // Prefix entries index flattened string offsets, which would lose each
-        // segment's allow_special boundary, so segments are cached whole instead,
-        // keyed by (text, allow_special). Every cacheable backend encodes segments
-        // independently and concatenates the ids (post-processing runs only with
-        // add_special_tokens, which `validate_prefix_cache` rejects), so cached and
-        // fresh segment ids concatenate to exactly the uncached result. Short
-        // segments (control markers, small attributes) are not worth an entry: they
-        // are encoded in contiguous runs, one inner call per run.
+        // Exactness assumes the inner tokenizer applies no truncation or padding to
+        // the joined ids (HF `post_process` and fastokens `encode_segments` do,
+        // whatever `add_special_tokens` says). Prefix caching relies on the same
+        // assumption; Dynamo strips both from HF tokenizers at load.
         let mut ids: Vec<TokenIdType> = Vec::new();
         let mut cached_tokens = 0;
         let mut looked_up = false;
@@ -343,7 +340,7 @@ impl Encoder for CachedTokenizer {
             run_start = index + 1;
             looked_up = true;
             let key = self.l1.segment_key(segment.text, segment.allow_special);
-            if let Some(tokens) = self.l1.get_segment(&key) {
+            if let Some(tokens) = self.l1.get(&key) {
                 hit = true;
                 cached_tokens += tokens.len();
                 ids.extend_from_slice(&tokens);
@@ -351,7 +348,7 @@ impl Encoder for CachedTokenizer {
                 let encoding = self.inner.encode_segments(std::slice::from_ref(segment))?;
                 let tokens: Arc<[TokenIdType]> = encoding.token_ids().into();
                 ids.extend_from_slice(&tokens);
-                self.l1.insert_segment(key, tokens);
+                self.l1.insert(key, tokens);
             }
         }
         if run_start < segments.len() {
