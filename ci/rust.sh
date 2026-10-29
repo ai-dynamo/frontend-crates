@@ -55,6 +55,7 @@ if [[ -z "${CONFORMANCE_GRAMMAR_PYTHON:-}" ]]; then
 fi
 run 'Structural-tag contracts' cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
 
+run 'Workspace test build' cargo test --workspace --all-targets --locked --no-run
 # Publish receipts after test failures, but never when an earlier check skipped the tests.
 tests_started=true
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
@@ -63,8 +64,10 @@ fi
 run 'Workspace tests' cargo nextest run --workspace --all-targets --locked
 run 'Optimized Python grammar' env PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
 # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
-run 'Video dependencies' sudo apt-get update
-run 'Video dependencies' sudo apt-get install -y --no-install-recommends libvpx9
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+  run 'Video dependencies' sudo apt-get update
+  run 'Video dependencies' sudo apt-get install -y --no-install-recommends libvpx9
+fi
 run 'Multimodal features' cargo test -p dynamo-multimodal --all-targets --all-features --locked
 run 'Parser recovery work bounds' cargo test --locked -p dynamo-parsers-v2 --features test-utils --test gemma4_native_recovery
 # nextest excludes doctests, so they need their own invocation.
