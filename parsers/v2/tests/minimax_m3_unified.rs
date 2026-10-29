@@ -783,7 +783,6 @@ fn native_eligible_nested_children_keep_json_types() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         assert!(tag.is_ok(), "{schema} must stay native: {tag:?}");
         assert_splits(

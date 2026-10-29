@@ -75,7 +75,6 @@ fn native_eligibility_checks_constraints_and_referenced_schemas() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         assert_eq!(result.is_ok(), supported, "{schema}: {result:?}");
     }
@@ -165,7 +164,6 @@ fn nested_child_types_the_parser_cannot_recover_select_json_fallback() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         match declined {
             Some(reason) => {
@@ -238,7 +236,6 @@ fn annotation_only_schemas_select_json_fallback() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         assert_eq!(result.is_ok(), supported, "{schema}: {result:?}");
         if let Err(error) = result {
@@ -251,7 +248,7 @@ fn annotation_only_schemas_select_json_fallback() {
 }
 
 #[test]
-fn optional_reasoning_preserves_prefill_and_external_boundary() {
+fn external_reasoning_boundary_leaves_reasoning_to_backend() {
     let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
     let tools = tools();
     let mut context = StructuralTagContext {
@@ -261,22 +258,20 @@ fn optional_reasoning_preserves_prefill_and_external_boundary() {
         schema_mode: StructuralTagSchemaMode::Auto,
         structured_output_schema: None,
         starts_in_reasoning: true,
-        allow_unprefilled_reasoning: false,
     };
     let prefilled = builder.build(&context).unwrap();
-    context.allow_unprefilled_reasoning = true;
-    assert_eq!(builder.build(&context).unwrap(), prefilled);
-
-    context.starts_in_reasoning = false;
     let external = StructuralTagOptions {
         reasoning_boundary: ReasoningBoundary::External,
         ..Default::default()
     };
-    let optional = builder.build_with_options(&context, &external).unwrap();
-    context.allow_unprefilled_reasoning = false;
+    let backend_managed = builder.build_with_options(&context, &external).unwrap();
+    assert_ne!(backend_managed, prefilled);
+
+    context.starts_in_reasoning = false;
+    assert_eq!(builder.build(&context).unwrap(), backend_managed);
     assert_eq!(
         builder.build_with_options(&context, &external).unwrap(),
-        optional
+        backend_managed
     );
 }
 
@@ -300,7 +295,7 @@ fn structural_tag_policy_matrix() {
         ("none", StructuralTagToolChoice::None),
     ] {
         for parallel in [true, false] {
-            for (reasoning, optional) in [(true, false), (false, false), (false, true)] {
+            for reasoning in [true, false] {
                 let tag = builder
                     .build(&StructuralTagContext {
                         tool_choice: choice,
@@ -309,35 +304,21 @@ fn structural_tag_policy_matrix() {
                         schema_mode: StructuralTagSchemaMode::Auto,
                         structured_output_schema: None,
                         starts_in_reasoning: reasoning,
-                        allow_unprefilled_reasoning: optional,
                     })
                     .unwrap()
                     .unwrap();
-                let prefix = if reasoning && label != "none" {
-                    "Look.</mm:think>"
-                } else if optional && label != "none" {
-                    "<mm:think>Look.</mm:think>"
-                } else {
-                    ""
-                };
-                if optional && label != "none" {
-                    assert_eq!(tag["format"]["elements"][0]["type"], "or");
-                    assert_eq!(
-                        tag["format"]["elements"][0]["elements"][1]["elements"][0]["begin"],
-                        "<mm:think>"
-                    );
-                }
+                let prefix = if reasoning { "Look.</mm:think>" } else { "" };
                 let mut accepted = Vec::new();
                 let mut rejected = Vec::new();
                 if label == "none" {
-                    accepted.push("Just text.".to_string());
-                    rejected.push(one.clone());
+                    accepted.push(format!("{prefix}Just text."));
+                    rejected.push(format!("{prefix}{one}"));
+                    if reasoning {
+                        // A prompt-opened reasoning block must close before visible text.
+                        rejected.push("Just text.".to_string());
+                    }
                 } else {
                     accepted.push(format!("{prefix}{one}"));
-                    if optional {
-                        accepted.push(one.clone());
-                        rejected.push(block(&invoke("record", "wrong")));
-                    }
                     rejected.push(format!("{prefix}{}", block(&invoke("other", "2"))));
                     rejected.push(format!("{prefix}{}", block(&invoke("record", "wrong"))));
                     rejected.push(format!("{prefix}{}", block("")));
@@ -358,26 +339,18 @@ fn structural_tag_policy_matrix() {
                     if label == "auto" {
                         accepted.push(format!("{prefix}Just text."));
                         accepted.push(format!("{prefix}Let me check.{one}"));
-                        if optional {
-                            accepted.push("Just text.".to_string());
-                        }
                     } else {
                         rejected.push(format!("{prefix}Just text."));
                     }
                 }
-                let mode = if optional {
-                    "adaptive".to_string()
-                } else {
-                    reasoning.to_string()
-                };
                 cases.push(
-                    json!({"case":format!("{label}/parallel={parallel}/reasoning={mode}"),
+                    json!({"case":format!("{label}/parallel={parallel}/reasoning={reasoning}"),
                     "tag":tag,"accepted":accepted,"rejected":rejected}),
                 );
             }
         }
     }
-    assert_eq!(cases.len(), 24);
+    assert_eq!(cases.len(), 16);
     // Formatting bounds must not trim or cap whitespace within string values,
     // including nested objects and arrays.
     let literal = format!("  &amp; &#39; literal\n{} ", " ".repeat(1024));
@@ -399,7 +372,6 @@ fn structural_tag_policy_matrix() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         })
         .unwrap()
         .unwrap();
@@ -430,7 +402,6 @@ fn structural_tag_policy_matrix() {
                 schema_mode: StructuralTagSchemaMode::Auto,
                 structured_output_schema: None,
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             })
             .unwrap()
             .unwrap();
@@ -477,7 +448,6 @@ fn structural_tag_policy_matrix() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         match accepted {
             Some(value) => cases.push(json!({
@@ -515,7 +485,6 @@ fn unconstrained_native_schema_requests_explicit_fallback() {
                 schema_mode: StructuralTagSchemaMode::Auto,
                 structured_output_schema: None,
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             })
             .unwrap_err();
         assert!(error.to_string().contains("constrained tool schema"));
@@ -549,7 +518,6 @@ fn unsupported_native_schema_features_preserve_json_fallback() {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         });
         assert!(
             result.is_err(),
@@ -589,7 +557,6 @@ fn ambiguous_string_union_types_select_json_without_changing_the_schema() {
                 schema_mode: StructuralTagSchemaMode::Auto,
                 structured_output_schema: None,
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             });
             assert!(
                 result.is_err(),

@@ -462,7 +462,6 @@ mod tests {
                 schema_mode: StructuralTagSchemaMode::Auto,
                 structured_output_schema: None,
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             })
             .expect("tool-call ban should build");
 
@@ -481,7 +480,6 @@ mod tests {
                     schema_mode: StructuralTagSchemaMode::Auto,
                     structured_output_schema: None,
                     starts_in_reasoning: true,
-                    allow_unprefilled_reasoning: false,
                 },
                 &StructuralTagOptions {
                     exclude_special_tokens: Some(false),

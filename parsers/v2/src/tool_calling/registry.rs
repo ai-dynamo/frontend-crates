@@ -167,7 +167,6 @@ mod tests {
                     schema_mode: StructuralTagSchemaMode::Auto,
                     structured_output_schema: None,
                     starts_in_reasoning: false,
-                    allow_unprefilled_reasoning: false,
                 })
                 .unwrap_or_else(|error| panic!("{family} should build: {error}"))
                 .unwrap_or_else(|| panic!("{family} should need a structural tag"));

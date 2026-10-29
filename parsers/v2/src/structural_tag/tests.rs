@@ -53,7 +53,6 @@ fn qwen_empty_tool_has_exact_empty_body() {
                         schema_mode: StructuralTagSchemaMode::Auto,
                         structured_output_schema: None,
                         starts_in_reasoning: false,
-                        allow_unprefilled_reasoning: false,
                     },
                     &StructuralTagOptions {
                         tool_arguments_any_order: true,
@@ -92,7 +91,6 @@ fn qwen_empty_tool_preserves_other_constraints() {
                     schema_mode: StructuralTagSchemaMode::Auto,
                     structured_output_schema: None,
                     starts_in_reasoning: false,
-                    allow_unprefilled_reasoning: false,
                 },
                 &StructuralTagOptions {
                     tool_arguments_any_order: true,
@@ -169,7 +167,6 @@ fn build_with_structured_output(
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: Some(schema),
             starts_in_reasoning,
-            allow_unprefilled_reasoning: false,
         },
     )
 }
@@ -673,7 +670,6 @@ fn external_reasoning_boundary_builds_only_the_post_reasoning_suffix() {
                     schema_mode: StructuralTagSchemaMode::Auto,
                     structured_output_schema: None,
                     starts_in_reasoning: true,
-                    allow_unprefilled_reasoning: false,
                 },
                 &StructuralTagOptions {
                     reasoning_boundary: ReasoningBoundary::External,
@@ -704,7 +700,6 @@ fn any_order_override_applies_only_to_tool_arguments() {
                 schema_mode: StructuralTagSchemaMode::Strict,
                 structured_output_schema: Some(&schema),
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             },
             &StructuralTagOptions {
                 tool_arguments_any_order: true,
@@ -767,7 +762,6 @@ fn auto_with_empty_tools_needs_no_structural_tag() {
                 schema_mode: StructuralTagSchemaMode::Auto,
                 structured_output_schema: None,
                 starts_in_reasoning: false,
-                allow_unprefilled_reasoning: false,
             })
             .unwrap_or_else(|error| panic!("{family} should build: {error}"));
 
@@ -822,7 +816,6 @@ fn invalid_required_and_named_requests_fail() {
         schema_mode: StructuralTagSchemaMode::Auto,
         structured_output_schema: None,
         starts_in_reasoning: false,
-        allow_unprefilled_reasoning: false,
     };
     assert!(QWEN3_CODER.build(&required).is_err());
 
@@ -834,7 +827,6 @@ fn invalid_required_and_named_requests_fail() {
         schema_mode: StructuralTagSchemaMode::Auto,
         structured_output_schema: None,
         starts_in_reasoning: false,
-        allow_unprefilled_reasoning: false,
     };
     assert!(QWEN3_CODER.build(&named).is_err());
 }

@@ -136,7 +136,6 @@ mod tests {
             schema_mode: StructuralTagSchemaMode::Auto,
             structured_output_schema: None,
             starts_in_reasoning: false,
-            allow_unprefilled_reasoning: false,
         };
 
         let ResolvedToolCalling::Enabled(required) =
