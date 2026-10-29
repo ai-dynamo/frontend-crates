@@ -27,8 +27,8 @@
     },
     {
       "path": "toolcalling/fixtures-batch-on-stream-v1.tar.gz",
-      "sha256": "0ffa026ff6d6440ffc1ee3f30055d8a5c6ac8466b267250c713e90b0e2d9fadc",
-      "size": 28621
+      "sha256": "a025c85eb9cb3f063e9dec1c128aa00d64792f85f5cb0233bcb6230c69d3550f",
+      "size": 28596
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.1.tar.gz",
@@ -39,6 +39,11 @@
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.0.4.tar.gz",
       "sha256": "3fee7d6106c5251daa6c5ce6d51d04e673a6c4abc3b91eae56918ba331c18682",
       "size": 2258
+    },
+    {
+      "path": "toolcalling/fixtures-batch-v1/dynamo_v1-10.2.3.tar.gz",
+      "sha256": "dda85e249e36f32b358b633dc8af3b250a8ee608e0a508bb4f180a4de7608ed0",
+      "size": 2116
     },
     {
       "path": "toolcalling/fixtures-batch-v1/dynamo_v1-3.0.0.tar.gz",
@@ -154,6 +159,11 @@
       "path": "toolcalling/fixtures-stream-v1/dynamo_v1-10.0.4.tar.gz",
       "sha256": "cd6c54e56d0768b52833b6f22aa6c3605b7f9e672b69be36b6b714827e898686",
       "size": 2356
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v1-10.2.3.tar.gz",
+      "sha256": "a31667fcebf319ea5bdf30c554094dc8b745f957538b439c518d97278ad97866",
+      "size": 2323
     },
     {
       "path": "toolcalling/fixtures-stream-v1/dynamo_v1-3.0.0.tar.gz",
@@ -334,6 +344,11 @@
       "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.7.9.tar.gz",
       "sha256": "b31434ae0c5a2995020035afb99a2f11a0535f2fb907e31e272e826d6aba814b",
       "size": 16964
+    },
+    {
+      "path": "toolcalling/fixtures-stream-v1/dynamo_v2-0.8.9.tar.gz",
+      "sha256": "66639265f8309cf6f6a1b3fb428cee4a2158dea8a3824123387a99a9fe452acd",
+      "size": 3411
     },
     {
       "path": "toolcalling/fixtures-stream-v1/inputs.tar.gz",
