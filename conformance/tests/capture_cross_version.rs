@@ -33,6 +33,7 @@
 //! Builds predating UnifiedParser instead use `--cfg conformance_split_only`.
 //! Builds without ToolCallDelta::complete also require `--cfg conformance_legacy_terminal`.
 //! Builds without the reasoning-aware structural-tag API use `--cfg conformance_no_structural_tag`.
+//! Builds without message-phase events use `--cfg conformance_legacy_message_phases`.
 //!
 //! No-op unless `XVER_INPUTS` is set, so it costs nothing in a normal test run.
 
@@ -44,7 +45,9 @@ use std::path::{Path, PathBuf};
 use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::create_tool_parser_for_family;
 #[cfg(not(conformance_split_only))]
-use dynamo_parsers_v2::{UnifiedEvent, assemble, create_unified_parser_for_family};
+use dynamo_parsers_v2::{
+    REGISTERED_UNIFIED_FAMILIES, UnifiedEvent, assemble, create_unified_parser_for_family,
+};
 use serde_json::{Value, json};
 
 mod common;
@@ -53,15 +56,40 @@ use common::unified_tools as tools;
 
 type Captured = (Vec<Vec<serde_yaml::Value>>, Vec<serde_yaml::Value>);
 
+fn requested_chunks(
+    value: &serde_yaml::Value,
+    family: &str,
+    case_id: &str,
+) -> Option<Vec<capture::InputChunk>> {
+    let has_numeric_delta = value.as_sequence().is_some_and(|rows| {
+        rows.iter().any(|row| {
+            row.as_mapping()
+                .and_then(|mapping| mapping.get(serde_yaml::Value::String("delta_text".into())))
+                .is_some_and(|delta| matches!(delta, serde_yaml::Value::Number(_)))
+        })
+    });
+    if has_numeric_delta {
+        eprintln!("[xver] {family}/{case_id}: numeric YAML delta_text; deriving chunks from input");
+        return None;
+    }
+    Some(
+        serde_yaml::from_value(value.clone())
+            .unwrap_or_else(|error| panic!("requested chunks for {family}/{case_id}: {error}")),
+    )
+}
+
+#[test]
+fn numeric_yaml_chunk_text_uses_input_schedule() {
+    let chunks: serde_yaml::Value = serde_yaml::from_str("- delta_text: 4.2e1").unwrap();
+    assert!(requested_chunks(&chunks, "deepseek_v4", "numeric_exponent").is_none());
+}
+
 fn capture_record(
     result: Result<Captured, CaptureFailure>,
     init: &common::Init,
 ) -> serde_yaml::Value {
     let mut record = serde_yaml::Mapping::new();
-    record.insert(
-        "init".into(),
-        serde_yaml::to_value(init).expect("case init"),
-    );
+    record.insert("init".into(), common::json_to_yaml_value(init));
     match result {
         Ok((rows, assembled)) => {
             record.insert("assembled".into(), serde_yaml::Value::Sequence(assembled));
@@ -92,9 +120,12 @@ fn requires_request_init(init: &common::Init) -> bool {
         || init.structural_tag.is_some()
 }
 
-fn unavailable_init(init: &common::Init, native: bool) -> bool {
+fn unavailable_init(init: &common::Init, native: bool, family: &str) -> bool {
     requires_request_init(init)
         && (!native || cfg!(any(conformance_legacy_init, conformance_split_only)))
+        || cfg!(conformance_muse_guided_unsupported)
+            && family == "muse_glimmer"
+            && init.tool_output_mode == "GuidedJson"
 }
 
 #[cfg(not(any(conformance_legacy_init, conformance_split_only)))]
@@ -119,17 +150,29 @@ fn apply_init(
 
 #[test]
 fn capture_request_init_availability() {
+    let guided = common::Init {
+        tool_output_mode: "GuidedJson".into(),
+        ..Default::default()
+    };
+    assert_eq!(
+        unavailable_init(&guided, true, "muse_glimmer"),
+        cfg!(any(
+            conformance_muse_guided_unsupported,
+            conformance_legacy_init,
+            conformance_split_only
+        ))
+    );
     for init in [
         common::Init::default(),
         common::Init {
             starting_state: "None".into(),
             tool_output_mode: "Native".into(),
             named_tool: None,
-            structural_tag: None,
+            ..Default::default()
         },
     ] {
-        assert!(!unavailable_init(&init, false));
-        assert!(!unavailable_init(&init, true));
+        assert!(!unavailable_init(&init, false, "gemma4"));
+        assert!(!unavailable_init(&init, true, "gemma4"));
     }
     for init in [
         common::Init {
@@ -149,9 +192,9 @@ fn capture_request_init_availability() {
             ..Default::default()
         },
     ] {
-        assert!(unavailable_init(&init, false));
+        assert!(unavailable_init(&init, false, "gemma4"));
         assert_eq!(
-            unavailable_init(&init, true),
+            unavailable_init(&init, true, "gemma4"),
             cfg!(any(conformance_legacy_init, conformance_split_only))
         );
     }
@@ -254,7 +297,7 @@ fn capture_producer_records_init_and_identity() {
         } else {
             let expected = match key {
                 "guided" => {
-                    json!([{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}])
+                    json!([{"kind":"tool_call", "name":"get_weather", "arguments":r#"{"city":"Paris"}"#}])
                 }
                 "reasoning" => {
                     json!([{"kind":"reasoning", "text":"hidden"}, {"kind":"text", "text":"visible"}])
@@ -472,20 +515,57 @@ fn capture_marks_legacy_terminal_metadata_unavailable() {
     }
 }
 
-/// The SPLIT path: v1 reasoning over the whole stream, then the v2 tool parser on the
-/// leftover. This is what Dynamo still serves for families with no native unified
-/// parser, and what `unified_render::dynamo_chunks` records for them — so a
-/// cross-version capture has to reproduce it or those rows come out empty and the
-/// table reads "this build produced nothing" for gemma4/kimi_k2.
-fn split_path_chunks_with_parsers(
+fn native_family_registered(family: &str) -> bool {
+    #[cfg(not(conformance_split_only))]
+    {
+        REGISTERED_UNIFIED_FAMILIES.contains(&family)
+    }
+    #[cfg(conformance_split_only)]
+    {
+        let _ = family;
+        false
+    }
+}
+
+fn family_registered(family: &str) -> bool {
+    native_family_registered(family)
+        || parsers_for(family).is_some_and(|(reason, tool)| {
+            tool_family_registered(&tool)
+                && dynamo_parsers::reasoning::get_available_reasoning_parsers()
+                    .contains(&reason.as_str())
+        })
+}
+
+fn tool_family_registered(family: &str) -> bool {
+    #[cfg(not(conformance_legacy_registry))]
+    {
+        dynamo_parsers_v2::REGISTERED_FAMILIES.contains(&family)
+    }
+    #[cfg(conformance_legacy_registry)]
+    {
+        let names: Vec<String> =
+            serde_json::from_str(&std::env::var("XVER_TOOL_FAMILIES").expect("artifact registry"))
+                .expect("registry JSON");
+        names.iter().any(|name| name == family)
+    }
+}
+
+fn split_path_chunks_scheduled(
     reasoning_name: &str,
     tool_family: &str,
     chunks: &[String],
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<Vec<Vec<Value>>, CaptureFailure> {
+    if !tool_family_registered(tool_family)
+        || !dynamo_parsers::reasoning::get_available_reasoning_parsers().contains(&reasoning_name)
+    {
+        return Err(CaptureFailure::Unavailable(format!(
+            "no registered split pipeline {reasoning_name} + {tool_family}"
+        )));
+    }
     let mut rp = ReasoningParserType::get_reasoning_parser_from_name(reasoning_name);
     let mut tp = create_tool_parser_for_family(tool_family, tool_schemas).map_err(|error| {
-        CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
+        CaptureFailure::Error(format!("registered split parser {tool_family}: {error:#}"))
     })?;
 
     let mut rows = Vec::new();
@@ -518,7 +598,7 @@ fn split_path_chunks_with_parsers(
 
 #[cfg(not(conformance_split_only))]
 fn ev_to_yaml(ev: &UnifiedEvent) -> serde_yaml::Value {
-    serde_yaml::to_value(ev).expect("event serializes")
+    common::unified_event_to_yaml_value(ev)
 }
 
 /// Fold per-chunk deltas into assembled events, mirroring the page's `_assemble_stream`:
@@ -581,7 +661,7 @@ fn fold_chunks(rows: &[Vec<Value>]) -> Vec<serde_yaml::Value> {
         }
     }
     out.into_iter()
-        .map(|v| serde_yaml::to_value(v).expect("event"))
+        .map(|v| common::unified_event_to_yaml_value(&v))
         .collect()
 }
 
@@ -607,7 +687,7 @@ fn split_path_capture_with_schedule(
     chunks: &[String],
     tool_schemas: &[dynamo_parsers_v2::Tool],
 ) -> Result<(Vec<Vec<Value>>, Vec<serde_yaml::Value>), CaptureFailure> {
-    let rows = split_path_chunks_with_parsers(reasoning_name, tool_family, chunks, tool_schemas)?;
+    let rows = split_path_chunks_scheduled(reasoning_name, tool_family, chunks, tool_schemas)?;
 
     // The split serving path assembles reasoning over the WHOLE input before it
     // streams the leftover through the tool parser. Its raw chunk evidence comes
@@ -623,7 +703,7 @@ fn split_path_capture_with_schedule(
         })]);
     }
     let mut tp = create_tool_parser_for_family(tool_family, tool_schemas).map_err(|error| {
-        CaptureFailure::Unavailable(format!("split parser {tool_family}: {error:#}"))
+        CaptureFailure::Error(format!("registered split parser {tool_family}: {error:#}"))
     })?;
     for ch in split.normal_text.chars() {
         let mut buf = [0u8; 4];
@@ -679,9 +759,9 @@ fn capture_case_with_chunks(
                     "this build has no reasoning-aware structural-tag request API".into(),
                 ));
             }
-            if unavailable_init(init, true) {
+            if unavailable_init(init, true, family) {
                 return Err(CaptureFailure::Unavailable(
-                    "this build has no request initialization API".into(),
+                    "this build cannot apply the requested initialization".into(),
                 ));
             }
             #[cfg(not(conformance_legacy_init))]
@@ -691,6 +771,11 @@ fn capture_case_with_chunks(
             )?;
             return native_capture(&mut parser, chunks, init);
         }
+        Err(error) if REGISTERED_UNIFIED_FAMILIES.contains(&family) => {
+            return Err(CaptureFailure::Error(format!(
+                "registered native parser construction: {error:#}"
+            )));
+        }
         Err(error) => format!("{error:#}"),
     };
     #[cfg(conformance_split_only)]
@@ -698,7 +783,7 @@ fn capture_case_with_chunks(
     let (reasoning, tool) = parsers_for(family).ok_or_else(|| {
         CaptureFailure::Unavailable(format!("no parser for {family}: {native_error}"))
     })?;
-    if unavailable_init(init, false) {
+    if unavailable_init(init, false, family) {
         return Err(CaptureFailure::Unavailable(
             "split capture cannot apply the requested initialization".into(),
         ));
@@ -709,7 +794,7 @@ fn capture_case_with_chunks(
         .into_iter()
         .map(|row| {
             row.into_iter()
-                .map(|value| serde_yaml::to_value(value).expect("delta"))
+                .map(|value| common::json_to_yaml_value(&value))
                 .collect()
         })
         .collect();
@@ -722,23 +807,58 @@ fn split_capture_assembles_reasoning_over_the_whole_input() {
     let (_, assembled) =
         split_path_capture_with_parsers("gemma4", "gemma4", input, &tools()).expect("split path");
     let want = vec![
-        serde_yaml::to_value(json!({"kind": "reasoning", "text": "Look it up.Now answer."}))
-            .expect("reasoning"),
-        serde_yaml::to_value(
-            json!({"kind": "tool_call", "name": "get_weather", "arguments": {"city": "Paris"}}),
-        )
-        .expect("tool call"),
-        serde_yaml::to_value(json!({"kind": "text", "text": "It's 18C."})).expect("text"),
+        common::json_to_yaml_value(&json!({"kind": "reasoning", "text": "Look it up.Now answer."})),
+        common::json_to_yaml_value(
+            &json!({"kind": "tool_call", "name": "get_weather", "arguments": r#"{"city":"Paris"}"#}),
+        ),
+        common::json_to_yaml_value(&json!({"kind": "text", "text": "It's 18C."})),
     ];
     assert_eq!(assembled, want);
+}
+
+#[test]
+fn json_to_yaml_preserves_large_integers_and_yaml_incompatible_floats() {
+    let value: Value = serde_json::from_str(r#"{"value":9007199254740993,"tiny":1e-400}"#).unwrap();
+    let yaml = common::json_to_yaml_value(&value);
+    assert_eq!(yaml["value"].as_u64(), Some(9_007_199_254_740_993));
+    assert_eq!(yaml["tiny"].as_str(), Some("1e-400"));
+    for raw in ["0e1", "0.0e-400"] {
+        let value: Value = serde_json::from_str(raw).unwrap();
+        assert!(common::json_to_yaml_value(&value).is_number());
+    }
+}
+
+#[test]
+fn captured_event_arguments_round_trip_without_yaml_number_conversion() {
+    for raw in [
+        r#"{"fraction":9007199254740992.5,"tiny":1e-400,"huge":1e400}"#,
+        r#"{"values":[9007199254740993,-9007199254740993],"text":"3.5"}"#,
+        "null",
+        r#""null""#,
+        r#""[1]""#,
+    ] {
+        let arguments: Value = serde_json::from_str(raw).unwrap();
+        let event = json!({"kind": "tool_call", "name": "inspect", "arguments": arguments});
+        let yaml = common::unified_event_to_yaml_value(&event);
+        let captured = yaml["arguments"].as_str().expect("raw JSON arguments");
+        assert_eq!(serde_json::from_str::<Value>(captured).unwrap(), arguments);
+    }
 }
 
 /// Per-chunk rows record RAW deltas, not assembled events — `arguments` stays the
 /// literal fragment the parser emitted. Mirrors `unified_render::unified_delta_json`.
 /// (Assembling per chunk instead produces a mapping and makes every case look changed.)
-#[cfg(not(conformance_split_only))]
+#[cfg(all(not(conformance_split_only), not(conformance_legacy_delta)))]
 fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value {
     let v = match d {
+        #[cfg(not(conformance_legacy_message_phases))]
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            serde_json::json!({"kind":"message_start","phase":phase})
+        }
+        #[cfg(not(conformance_legacy_message_phases))]
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => {
+            serde_json::json!({"kind":"message_end"})
+        }
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             serde_json::json!({"kind": "reasoning", "text": text})
         }
@@ -747,7 +867,19 @@ fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedParserEvent) -> serde_yaml::Value
         }
         dynamo_parsers_v2::UnifiedParserEvent::ToolCall(c) => tool_delta_json(c),
     };
-    serde_yaml::to_value(v).expect("delta serializes")
+    common::json_to_yaml_value(&v)
+}
+
+#[cfg(all(not(conformance_split_only), conformance_legacy_delta))]
+fn delta_to_yaml(d: &dynamo_parsers_v2::UnifiedDelta) -> serde_yaml::Value {
+    let value = match d {
+        dynamo_parsers_v2::UnifiedDelta::Reasoning { text } => {
+            json!({"kind": "reasoning", "text": text})
+        }
+        dynamo_parsers_v2::UnifiedDelta::Text { text } => json!({"kind": "text", "text": text}),
+        dynamo_parsers_v2::UnifiedDelta::ToolCall(call) => tool_delta_json(call),
+    };
+    serde_yaml::to_value(value).expect("delta")
 }
 
 #[test]
@@ -768,7 +900,7 @@ fn capture_rejects_missing_or_malformed_input_fields() {
         (
             6,
             "cases: {probe: {input: text, chunks: []}}",
-            "recorded schedule requires finish",
+            "authored input_chunks must reproduce input",
         ),
         (
             7,
@@ -883,9 +1015,9 @@ fn capture_this_build_against_the_current_corpus() {
                     .map(|value| serde_json::to_value(value).expect("case tools schema JSON"));
                 let tool_schema_json =
                     common::unified_tool_schemas_for_case(tool_schema_json.as_ref());
-                let recorded: Option<Vec<capture::InputChunk>> = cdoc
+                let recorded = cdoc
                     .get("chunks")
-                    .map(|value| serde_yaml::from_value(value.clone()).expect("requested chunks"));
+                    .and_then(|value| requested_chunks(value, &family, &cid));
                 let schedule = capture::replay_chunks(input, recorded.as_deref());
                 let mut record = capture_record(
                     capture_case_with_chunks(&family, input, &schedule, &init, &tool_schemas),
@@ -903,7 +1035,7 @@ fn capture_this_build_against_the_current_corpus() {
                 });
                 record.as_mapping_mut().unwrap().insert(
                     "capture_input".into(),
-                    serde_yaml::to_value(stimulus).unwrap(),
+                    common::json_to_yaml_value(&stimulus),
                 );
                 cases.insert(cid, record);
             }
@@ -922,7 +1054,7 @@ fn capture_this_build_against_the_current_corpus() {
             doc.insert("captured_with".into(), serde_yaml::Value::Mapping(cw));
             doc.insert(
                 "capture_provenance".into(),
-                serde_yaml::to_value(&provenance).expect("provenance"),
+                common::json_to_yaml_value(&provenance),
             );
             doc.insert("cases".into(), serde_yaml::Value::Mapping(one));
             std::fs::write(
@@ -941,4 +1073,168 @@ fn capture_this_build_against_the_current_corpus() {
         provenance,
         "capture source changed during the run"
     );
+}
+
+#[test]
+fn family_jobs_replay_terminal_tool_calls_without_accepting_chunk_metadata() {
+    let document: Value = serde_yaml::from_str(
+        &std::fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("fixtures-unified-v2/families/gemma4/inputs_and_golden.yaml"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let case = document["cases"]
+        .as_object()
+        .unwrap()
+        .values()
+        .find(|case| case["scenario"] == "guided_json_bare_tool_header_recovers_inside_a_thought")
+        .unwrap();
+    let request = &case["request"];
+    assert_eq!(request["finish_reason"], "tool_calls");
+    let mut cases = Vec::new();
+    for reason in ["stop", "length", "tool_calls", "unknown"] {
+        let mut request = request.clone();
+        request["finish_reason"] = json!(reason);
+        cases.push(json!({"id":reason,"request":request}));
+    }
+    for field in ["token_ids", "finish_reason"] {
+        let mut request = request.clone();
+        request["chunks"][0][field] = if field == "token_ids" {
+            json!([1])
+        } else {
+            json!("tool_calls")
+        };
+        cases.push(json!({"id":field,"request":request}));
+    }
+    let scratch = std::env::temp_dir().join(format!("dynamo-terminal-jobs-{}", std::process::id()));
+    std::fs::create_dir_all(&scratch).unwrap();
+    let jobs = scratch.join("jobs.json");
+    let output = scratch.join("results.json");
+    std::fs::write(
+        &jobs,
+        serde_json::to_vec(&json!([{"family":"gemma4","cases":cases}])).unwrap(),
+    )
+    .unwrap();
+    let result = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "capture_family_jobs", "--nocapture"])
+        .env("XVER_JOBS", jobs)
+        .env("XVER_JSON_OUTPUT", &output)
+        .env(
+            "XVER_FAMILIES",
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("utils/src/parser_families.yaml"),
+        )
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let results: Value = serde_json::from_slice(&std::fs::read(output).unwrap()).unwrap();
+    for reason in ["stop", "length", "tool_calls"] {
+        let record = &results["gemma4"][reason];
+        assert!(record.get("unavailable").is_none(), "{reason}: {record}");
+        let mut expected = case["golden"]["assembled"].clone();
+        for event in expected.as_array_mut().unwrap() {
+            if event["kind"] == "tool_call" && !event["arguments"].is_string() {
+                event["arguments"] = json!(serde_json::to_string(&event["arguments"]).unwrap());
+            }
+        }
+        assert_eq!(record["assembled"], expected);
+        assert_eq!(record["chunks"], results["gemma4"]["stop"]["chunks"]);
+        let mut expected_request = request.clone();
+        expected_request["finish_reason"] = json!(reason);
+        assert_eq!(record["capture_input"], expected_request);
+    }
+    for reason in ["unknown", "token_ids", "finish_reason"] {
+        assert_eq!(
+            results["gemma4"][reason]["capture_observation"]["unavailable"]["code"],
+            "unsupported_request_mode"
+        );
+    }
+}
+
+#[test]
+fn capture_family_jobs() {
+    let Ok(job_path) = std::env::var("XVER_JOBS") else {
+        return;
+    };
+    let jobs: Vec<Value> =
+        serde_json::from_slice(&std::fs::read(job_path).expect("jobs")).expect("job JSON");
+    let mut families = serde_json::Map::new();
+    for job in jobs {
+        let family = job["family"].as_str().expect("family");
+        let mut results = serde_json::Map::new();
+        for case in job["cases"].as_array().expect("cases") {
+            let request = &case["request"];
+            let input = request["input"].as_str().expect("input");
+            let mut recorded = Vec::new();
+            let mut supported = true;
+            for row in request["chunks"].as_array().expect("chunks") {
+                if row
+                    .as_object()
+                    .expect("chunk")
+                    .keys()
+                    .any(|key| key != "delta_text")
+                {
+                    supported = false;
+                }
+                recorded.push(capture::InputChunk {
+                    delta_text: row["delta_text"].as_str().expect("chunk text").to_owned(),
+                });
+            }
+            let chunks = capture::replay_chunks(input, Some(&recorded));
+            let init: common::Init = serde_json::from_value(request["init"].clone()).expect("init");
+            let schemas = common::unified_tools_for_schemas(Some(&request["tools"]));
+            let result = if !supported
+                || !matches!(
+                    request["finish_reason"].as_str(),
+                    Some("stop" | "length" | "tool_calls")
+                ) {
+                Err(CaptureFailure::Unavailable(
+                    "this text adapter cannot replay token or per-chunk finish metadata".into(),
+                ))
+            } else {
+                match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    capture_case_with_chunks(family, input, &chunks, &init, &schemas)
+                })) {
+                    Ok(result) => result,
+                    Err(_) => Err(CaptureFailure::Error("registered parser panicked".into())),
+                }
+            };
+            let mut record = serde_json::to_value(capture_record(result, &init)).expect("record");
+            record["parser_path"] = json!(if native_family_registered(family) {
+                "unified"
+            } else {
+                "split"
+            });
+            if let Some(detail) = record
+                .get("unavailable")
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+            {
+                record["capture_observation"] = json!({"unavailable": {
+                    "code": if family_registered(family) { "unsupported_request_mode" } else { "unsupported_family" }, "detail": detail,
+                }});
+            }
+            record["capture_input"] = request.clone();
+            assert!(
+                results
+                    .insert(case["id"].as_str().expect("id").to_owned(), record)
+                    .is_none()
+            );
+        }
+        assert!(
+            families
+                .insert(family.to_owned(), Value::Object(results))
+                .is_none()
+        );
+    }
+    std::fs::write(
+        std::env::var("XVER_JSON_OUTPUT").expect("output"),
+        serde_json::to_vec(&families).expect("output JSON"),
+    )
+    .expect("write output");
 }

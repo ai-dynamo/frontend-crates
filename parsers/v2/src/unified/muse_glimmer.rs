@@ -37,6 +37,8 @@ use crate::tool_calling::muse_glimmer::{
     GUIDED_CLOSE_MARKERS, GUIDED_COMPETITORS, GUIDED_CONTROL_MARKERS, MuseChannelScanner,
     guided_content_header, guided_header_holdback, guided_reasoning_close, guided_reasoning_open,
     guided_routing_header, guided_stray_header, guided_strip_text, guided_turn_end, muse_scanner,
+    muse_spark_guided_content_header, muse_spark_guided_header_holdback,
+    muse_spark_guided_reasoning_filter, muse_spark_guided_stray_header,
 };
 use crate::tool_calling::traits::{Result, Tool};
 use crate::unified::{
@@ -46,7 +48,8 @@ use crate::unified::{
     count_guided_prefix_bytes,
 };
 
-const INVOKE_START: &str = "<atem:invoke name=\"";
+// Share the exact ATEM opener with Spark's guided grammar to avoid format drift.
+pub(crate) const INVOKE_START: &str = "<atem:invoke name=\"";
 const INVOKE_END: &str = "</atem:invoke>";
 
 fn guided_invoke_prefix(context: GuidedPrefixContext<'_>) -> GuidedPrefix {
@@ -130,6 +133,10 @@ impl GuidedPrefixScanner for MuseGuidedPrefix {
 }
 
 impl NativeUnified for MuseChannelScanner {
+    fn preserve_message_phases(&mut self, enabled: bool) {
+        self.set_message_phases(enabled);
+    }
+
     fn preserve_special_tokens(&self) -> bool {
         true
     }
@@ -140,6 +147,25 @@ impl NativeUnified for MuseChannelScanner {
     /// prefilled thought and guided tool output are both honourable. Returning
     /// `None` here would silently reinstate the refusal this replaced.
     fn guided_reasoning(&self) -> Option<GuidedReasoning> {
+        // The shared scanner needs Spark's recipient/filter hooks on guided turns too.
+        if self.commentary_is_content() {
+            return Some(GuidedReasoning::Channel(GuidedChannel {
+                find_open: guided_reasoning_open,
+                find_close: |haystack, _, _| guided_reasoning_close(haystack),
+                find_turn_end: |haystack, _, _| guided_turn_end(haystack),
+                find_stray: muse_spark_guided_stray_header,
+                find_routing: guided_routing_header,
+                find_transition: muse_spark_guided_content_header,
+                holdback: muse_spark_guided_header_holdback,
+                strip_text: guided_strip_text,
+                reasoning_filter: Some(muse_spark_guided_reasoning_filter),
+                competitors: &GUIDED_COMPETITORS,
+                close_markers: &GUIDED_CLOSE_MARKERS,
+                response_literal_markers: &[],
+                header_pending: None,
+                envelope_owned: false,
+            }));
+        }
         Some(GuidedReasoning::Channel(GuidedChannel {
             find_open: guided_reasoning_open,
             find_close: |haystack, _, _| guided_reasoning_close(haystack),
@@ -149,6 +175,7 @@ impl NativeUnified for MuseChannelScanner {
             find_transition: guided_content_header,
             holdback: guided_header_holdback,
             strip_text: guided_strip_text,
+            reasoning_filter: None,
             competitors: &GUIDED_COMPETITORS,
             close_markers: &GUIDED_CLOSE_MARKERS,
             response_literal_markers: &[],
@@ -221,6 +248,8 @@ fn push_event(output: &mut UnifiedParserOutput, event: UnifiedParserEvent) {
         UnifiedParserEvent::Text(text) => output.push_text(text),
         UnifiedParserEvent::Reasoning(text) => output.push_reasoning(text),
         UnifiedParserEvent::ToolCall(call) => output.push_call(call),
+        // Boundaries must survive aggregation for independent Responses message lifecycles.
+        boundary => output.events.push(boundary),
     }
 }
 
@@ -842,23 +871,13 @@ mod tests {
     }
 
     #[test]
-    fn an_integer_argument_past_u64_loses_precision_like_the_v1_parser() {
-        // `decode_value` types a parameter with `serde_json::from_str`, which has no
-        // arbitrary-precision path: an integer literal above `u64::MAX` becomes an
-        // `f64`, so `18446744073709551617` serializes back as `1.8446744073709552e19`.
-        // SGLang's `muse` detector keeps the digits exactly, so this is a real parity
-        // gap — but it is the v1 muse parser's behaviour byte for byte, NOT something
-        // the unified port introduced, and no corpus case carries such a value. Pin it
-        // so closing the gap is a deliberate change to BOTH generations at once
-        // (`raw_number_literal` in `parsers/v1/src/tool_calling/xml/parsed_value.rs`
-        // is the pattern the XML families already use), rather than a silent drift.
+    fn integer_arguments_past_u64_keep_their_exact_value() {
         let big = "<|start|>assistant to=f<|message|><atem:invoke name=\"f\">\
                    <atem:parameter name=\"n\">18446744073709551617</atem:parameter>\
                    </atem:invoke><|eom|>";
-        assert_eq!(
-            events(&[big]),
-            vec![call("f", serde_json::json!({"n": 1.8446744073709552e19}))]
-        );
+        let expected: serde_json::Value =
+            serde_json::from_str(r#"{"n":18446744073709551617}"#).unwrap();
+        assert_eq!(events(&[big]), vec![call("f", expected)]);
         // Everything inside i64 is exact, including past f64's contiguous range.
         let exact = big.replace("18446744073709551617", "9007199254740993");
         assert_eq!(
@@ -1065,7 +1084,9 @@ mod tests {
             for event in &out {
                 let payload = match event {
                     UnifiedEvent::Reasoning { text } | UnifiedEvent::Text { text } => text.clone(),
-                    UnifiedEvent::ToolCall { .. } => continue,
+                    UnifiedEvent::ToolCall { .. }
+                    | UnifiedEvent::MessageStart { .. }
+                    | UnifiedEvent::MessageEnd => continue,
                 };
                 for m in markers {
                     assert!(

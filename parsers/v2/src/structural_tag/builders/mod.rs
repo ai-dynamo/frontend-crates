@@ -6,6 +6,7 @@ mod deepseek_dsml;
 mod glm47;
 mod harmony;
 mod kimi;
+mod muse_spark;
 mod qwen3_coder;
 mod templated_tool_calls;
 
@@ -23,6 +24,7 @@ pub(crate) use deepseek_dsml::DEEPSEEK_DSML;
 pub(crate) use glm47::GLM47;
 pub(crate) use harmony::HARMONY;
 pub(crate) use kimi::{KIMI_K2, KIMI_K3};
+pub(crate) use muse_spark::MUSE_SPARK;
 pub(crate) use qwen3_coder::QWEN3_CODER;
 
 use serde_json::Value;
@@ -101,6 +103,8 @@ impl StructuralTagBuilder {
             }
             Grammar::Triggered(grammar) => grammar,
         };
+        // Family restrictions also apply when tool choice disables calls.
+        grammar.validate_options(options)?;
         let policy = resolve_tool_calling(context)?;
         let exclude_special_tokens = options
             .exclude_special_tokens
@@ -111,9 +115,11 @@ impl StructuralTagBuilder {
                 if let Some(schema) = context.structured_output_schema {
                     grammar.build_structured_output(schema)
                 } else {
-                    return build_text_exclusion(grammar.tool_call_excludes())
-                        .map(|format| serialize(StructuralTag { format }))
-                        .transpose();
+                    let Some(format) = grammar.build_without_tools() else {
+                        return Ok(None);
+                    };
+                    // Native text envelopes must also close prompt-opened reasoning.
+                    format
                 }
             }
             ResolvedToolCalling::Enabled(policy) if policy.tools.is_empty() => {
@@ -161,6 +167,21 @@ impl StructuralTagBuilder {
 }
 
 pub(super) trait ToolCallGrammar: Send + Sync {
+    /// Native formats may reject options that only work with JSON-style calls.
+    fn validate_options(&self, _options: &StructuralTagOptions) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    /// Spark still needs its visible-message envelope when tool calls are disabled.
+    fn build_without_tools(&self) -> Option<Format> {
+        build_text_exclusion(self.tool_call_excludes())
+    }
+
+    /// Permit a reasoning message when the prompt leaves its header unopened.
+    fn optional_reasoning(&self) -> bool {
+        false
+    }
+
     fn reasoning_begin(&self) -> Option<&'static str>;
 
     fn reasoning_end(&self) -> Option<&'static str>;
@@ -292,11 +313,12 @@ fn reasoning_content(grammar: &dyn ToolCallGrammar, exclude_special_tokens: bool
 
 fn reasoning_tag(
     grammar: &dyn ToolCallGrammar,
+    begin: &str,
     reasoning_end: &str,
     exclude_special_tokens: bool,
 ) -> Format {
     Format::Tag(TagFormat {
-        begin: String::new(),
+        begin: begin.to_string(),
         content: Box::new(reasoning_content(grammar, exclude_special_tokens)),
         end: reasoning_end.to_string(),
     })
@@ -308,7 +330,7 @@ fn wrap_reasoning_if_needed(
     exclude_special_tokens: bool,
     suffix: Format,
 ) -> anyhow::Result<Format> {
-    if !starts_in_reasoning {
+    if !starts_in_reasoning && !grammar.optional_reasoning() {
         return Ok(suffix);
     }
 
@@ -316,8 +338,16 @@ fn wrap_reasoning_if_needed(
         .reasoning_end()
         .ok_or_else(|| anyhow::anyhow!("reasoning end tag is not configured for structural tag"))?;
 
+    let begin = if starts_in_reasoning {
+        ""
+    } else {
+        grammar
+            .reasoning_begin()
+            .ok_or_else(|| anyhow::anyhow!("reasoning begin tag is not configured"))?
+    };
     let mut elements = vec![reasoning_tag(
         grammar,
+        begin,
         reasoning_end,
         exclude_special_tokens,
     )];
@@ -325,6 +355,16 @@ fn wrap_reasoning_if_needed(
         elements.push(Format::ConstString(ConstStringFormat {
             value: grammar.reasoning_suffix().to_string(),
         }));
+    }
+    if !starts_in_reasoning {
+        elements = vec![Format::Or(OrFormat {
+            elements: vec![
+                Format::ConstString(ConstStringFormat {
+                    value: String::new(),
+                }),
+                Format::Sequence(SequenceFormat { elements }),
+            ],
+        })];
     }
     elements.push(suffix);
 

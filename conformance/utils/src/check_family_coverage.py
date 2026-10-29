@@ -21,7 +21,7 @@ Checks, per family:
   * every registry family declares its grammar tokens in the `markers:` section
     of parser_families.yaml, each declared token is matched by the leak detector
     (markers._TOOL_CALL_MARKUP_RE) and renders non-orphan in the popup colorizer
-    (tables.markup) — the two registries nobody knew existed in PR #120.
+    (src/assets/colorize.js) — the two registries nobody knew existed in PR #120.
 
 Reasoning suites are checked when the family has a reasoning fixtures dir, or
 always with --expect-reasoning (use when the PR adds a reasoning parser).
@@ -31,6 +31,7 @@ never fail the run; they are the backfill work list.
 """
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -44,7 +45,7 @@ sys.path.insert(0, str(HERE))
 # HERE (conformance/utils/src) is on sys.path above, which is where tables/ lives.
 
 import markers as markers_mod  # noqa: E402
-from tables import markup  # noqa: E402
+from fixture_snapshot import fixture_snapshot_root
 from fixture_disposition import canonical_toolcalling_case_key  # noqa: E402
 
 TAXONOMY_PATH = HERE.parents[1] / "case-taxonomy.yaml"
@@ -64,27 +65,11 @@ _TODO_MARKER = "not yet authored"
 
 
 def resolve_fixtures_root() -> Path:
-    """The manifest-pinned snapshot dir. Runs extract_fixtures.py (instant on cache
-    hit) and reads the snapshot path it prints — NEVER the shared
-    `<cache>/toolcalling` symlink, which sibling checkouts pinning other snapshots
-    race to repoint mid-run (see conformance/README "Invariants"). An exported
-    CONFORMANCE_FIXTURES_ROOT (set by _common.sh) wins."""
-    env = os.environ.get("CONFORMANCE_FIXTURES_ROOT")
-    if env:
-        root = Path(env)
-        if not (root / "toolcalling").is_dir():
-            sys.exit(f"fixtures root {root} has no toolcalling/ dir")
-        return root
-    proc = subprocess.run(
-        [sys.executable, str(HERE / "extract_fixtures.py")],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    snap = Path(proc.stdout.strip().splitlines()[-1])
-    if not (snap / "toolcalling").is_dir():
-        sys.exit(f"extract_fixtures.py returned an unusable snapshot dir: {snap}")
-    return snap
+    """Use the shared immutable legacy snapshot without expanding Unified history."""
+    root = fixture_snapshot_root()
+    if not (root / "toolcalling").is_dir():
+        sys.exit(f"fixtures root {root} has no toolcalling/ dir")
+    return root
 
 
 class Report:
@@ -269,20 +254,17 @@ def check_markers(report: Report, registry: dict, family: str) -> None:
                 " detector (markers._TOOL_CALL_MARKUP_RE) — a leak of this token would"
                 " render as a clean green cell"
             )
-    for open_tok, close_tok in pairs:
-        html = markup.colorize_markup(f"{open_tok}x{close_tok}", family=family)
-        if "tt-orphan" in html:
-            report.fail(
-                f"{family} markers: pair {open_tok!r}/{close_tok!r} renders as tt-orphan in"
-                " the popup colorizer — register/classify it in src/tables/markup.py"
-            )
-    for token in singletons:
-        html = markup.colorize_markup(str(token), family=family)
-        if "tt-orphan" in html:
-            report.fail(
-                f"{family} markers: singleton {token!r} renders as tt-orphan in the popup"
-                " colorizer — register/classify it in src/tables/markup.py"
-            )
+    environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL") if key in os.environ}
+    result = subprocess.run(
+        ["node", str(HERE.parents[1] / "viewer" / "qualification.js"), "markers"],
+        input=json.dumps({"family": family, "markers": registry.get("markers") or {}}),
+        text=True,
+        capture_output=True,
+        check=True,
+        env=environment,
+    )
+    for reason in json.loads(result.stdout):
+        report.fail(f"{family} markers: {reason} in the popup colorizer — register/classify it in src/assets/colorize.js")
 
 
 def main() -> int:

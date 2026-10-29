@@ -1,0 +1,239 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.8.1
+    git_commit: b55b6d90e91ce9a29e1cdb792522ca2c9d95d8ba
+    source_sha256: 75c2dd634500465e3c4153a3387d6174f75dbff66cf980f1e4ae8a1a37c5ce31
+document:
+  mode: unified
+changes:
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 67c1596410ab2fb2b2cf7f94ce811363c57408658b1f635182aef2fda5e2908a
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: abd87670c935a8c941d1914683a8671be9edfbb95afb0e2b5808609a4ae8f672
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 8dbf7c490f0d93aa7e8b5c5ba88b634ab3f114b4b00f81d3acdfa4a48ebef3ba
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_interrupted_reasoning_then_response:
+    case_key: UNIFIED.gpt_oss-interrupted_reasoning_then_response
+    stimulus:
+      ref: current
+      semantic_sha256: 0e7ce5749c968a6e6ea27cf68eb9a728a66b452cd1c68f92fd25f91cc3bff545
+    observation:
+      value:
+        assembled:
+        - kind: reasoning
+          text: checking
+        - kind: text
+          text: done
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: reasoning
+            text: checking
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: done
+        - expected: []
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 1595c19deba4d2603b8160e5b3773d34151ec06114466927cab13c5e13036d4f
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":2}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    case_key: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    stimulus:
+      ref: current
+      semantic_sha256: 137d4dc711e6b750c18c8152e4db8a15bc0117860ae58c5ea14f69ad094b436c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments:
+            q: unfinished
+        - kind: text
+          text: recovered
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"q":"unfinished"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: recovered
+        - expected: []
+        - expected: []
+metadata_changes: {}
+document_overrides: {}

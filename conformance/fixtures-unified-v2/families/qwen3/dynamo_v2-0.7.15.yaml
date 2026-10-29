@@ -7,26 +7,15 @@ provenance:
 document:
   mode: unified
 changes:
-  guided_json_native_parameter_string_before_payload:
+  arg_json_null_ref:
     observation:
       value:
         assembled:
-        - kind: text
-          text: <think>literal</think>
         - kind: tool_call
           name: get_weather
           arguments:
-            city: Paris
+            city: null
         chunks:
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: literal
-        - expected:
-          - kind: text
-            text: </think>
         - expected: []
         - expected: []
         - expected: []
@@ -35,57 +24,20 @@ changes:
         - expected:
           - kind: tool_call
             name: get_weather
-            arguments: '{"city": "Paris"}'
+            arguments: '{"city":null}'
             complete: true
         - expected: []
-  guided_json_noncall_before_native_array_before_payload:
+        - expected: []
+  arg_null_mixed_labels:
     observation:
       value:
         assembled:
-        - kind: text
-          text: '{}<think>literal</think>'
         - kind: tool_call
-          name: get_weather
+          name: set_labels
           arguments:
-            city: Paris
-        chunks:
-        - expected:
-          - kind: text
-            text: '{}'
-        - expected:
-          - kind: text
-            text: <think>
-        - expected:
-          - kind: text
-            text: literal
-        - expected:
-          - kind: text
-            text: </think>
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
-            complete: true
-        - expected: []
-  guided_quoted_reasoning_closer_named:
-    absent: true
-  guided_quoted_reasoning_closer_required:
-    absent: true
-  guided_response_native_wrapper_whitespace_before_prose:
-    observation:
-      value:
-        assembled:
-        - kind: text
-          text: 'ok then '
-        - kind: tool_call
-          name: get_weather
-          arguments:
-            city: Paris
+            label: null
+            note: null
+            literal: 'null'
         chunks:
         - expected: []
         - expected: []
@@ -98,39 +50,19 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
         - expected:
-          - kind: text
-            text: 'ok then '
           - kind: tool_call
-            name: get_weather
-            arguments: '{"city": "Paris"}'
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
             complete: true
         - expected: []
-  guided_response_quoted_control_braces_named:
-    absent: true
-  guided_response_quoted_control_braces_required:
-    absent: true
-  native_quoted_control_in_reasoning:
-    absent: true
-  native_quoted_control_in_response:
-    absent: true
-  native_quoted_control_then_call:
-    absent: true
-  native_quoted_incomplete_header:
-    absent: true
-  native_single_quote_contraction_reasoning:
-    absent: true
-  native_single_quote_contraction_response:
-    absent: true
-  native_single_quoted_word_control:
-    absent: true
-  native_unmatched_quote_then_call:
-    absent: true
-  structured_response_after_reasoning:
-    observation:
-      error:
-        code: legacy_unclassified
-        detail: 'structural tag: no structural-tag builder for qwen3'
+        - expected: []
+        - expected: []
   dotted_name_minimal:
     observation:
       value:
@@ -277,7 +209,205 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  guided_json_native_parameter_string_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: <think>literal</think>
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_json_noncall_before_native_array_before_payload:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: '{}<think>literal</think>'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected:
+          - kind: text
+            text: '{}'
+        - expected:
+          - kind: text
+            text: <think>
+        - expected:
+          - kind: text
+            text: literal
+        - expected:
+          - kind: text
+            text: </think>
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_quoted_reasoning_closer_named:
+    absent: true
+  guided_quoted_reasoning_closer_required:
+    absent: true
+  guided_response_native_wrapper_whitespace_before_prose:
+    observation:
+      value:
+        assembled:
+        - kind: text
+          text: 'ok then '
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: text
+            text: 'ok then '
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "Paris"}'
+            complete: true
+        - expected: []
+  guided_response_quoted_control_braces_named:
+    absent: true
+  guided_response_quoted_control_braces_required:
+    absent: true
+  native_quoted_control_in_reasoning:
+    absent: true
+  native_quoted_control_in_response:
+    absent: true
+  native_quoted_control_then_call:
+    absent: true
+  native_quoted_incomplete_header:
+    absent: true
+  native_single_quote_contraction_reasoning:
+    absent: true
+  native_single_quote_contraction_response:
+    absent: true
+  native_single_quoted_word_control:
+    absent: true
+  native_unmatched_quote_then_call:
+    absent: true
+  structured_response_after_reasoning:
+    observation:
+      error:
+        code: legacy_unclassified
+        detail: 'structural tag: no structural-tag builder for qwen3'
 metadata_changes:
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   guided_json_native_parameter_string_before_payload:
     init:
       starting_state: Response
@@ -337,26 +467,6 @@ metadata_changes:
 
 
           {"location":"London","temperature":12,"conditions":"cloudy","analysis":"leaked"}'
-  dotted_name_minimal:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_mixed_punctuation:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_multiple_segments:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_shared_prefix:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
 document_overrides:
   adjacent_calls_partial_header:
     capture_provenance:

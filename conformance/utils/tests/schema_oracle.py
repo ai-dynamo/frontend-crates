@@ -3,12 +3,13 @@
 """Independent value validator for the schema keywords authored by this corpus."""
 
 import re
+from decimal import Decimal
 from urllib.parse import unquote
 
 
 def _json_equal(left: object, right: object) -> bool:
     """JSON numbers compare mathematically; booleans never compare as numbers."""
-    if type(left) in (int, float) and type(right) in (int, float):
+    if type(left) in (int, float, Decimal) and type(right) in (int, float, Decimal):
         return left == right
     if type(left) is not type(right):
         return False
@@ -75,8 +76,8 @@ def matches_schema(
     if nullable and kinds:
         kinds = kinds + ["null"]
     types = {"string": isinstance(value, str), "null": value is None,
-             "number": type(value) in (int, float),
-             "integer": type(value) is int or (type(value) is float and value.is_integer()),
+             "number": type(value) in (int, float, Decimal),
+             "integer": type(value) is int or (type(value) is float and value.is_integer()) or (type(value) is Decimal and value == value.to_integral_value()),
              "boolean": type(value) is bool,
              "object": isinstance(value, dict), "array": isinstance(value, list)}
     # Reject unknown types even when another union member matches the value.

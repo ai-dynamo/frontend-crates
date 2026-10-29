@@ -558,7 +558,7 @@ fn all_starting_channels_keep_long_field_progress_and_argument_order() {
             "gemma4" => "<channel|>",
             "gpt_oss" => "<|end|>",
             "kimi_k3" => "<|close|>think<|sep|>",
-            "muse_glimmer" => "<|eom|>",
+            "muse_glimmer" | "muse_spark" => "<|eom|>",
             _ => "</think>",
         };
         for named in [false, true] {

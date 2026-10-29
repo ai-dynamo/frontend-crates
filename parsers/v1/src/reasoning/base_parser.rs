@@ -454,6 +454,30 @@ impl ReasoningParser for BasicReasoningParser {
                 continue;
             }
 
+            // With force_reasoning, a coalesced chunk can carry the model-emitted
+            // start tag after other text (e.g. "\n<think>"). Token-sized chunks
+            // strip it at position 0 above; strip it here too so the result does
+            // not depend on chunking. The prefix stays buffered as reasoning.
+            if !self.stripped_think_start
+                && self._in_reasoning
+                && let Some(start_pos) = current_text.find(self.think_start_token.as_str())
+                && current_text
+                    .find(self.think_end_token.as_str())
+                    .is_none_or(|end| start_pos < end)
+                && earliest_marker_offset(&current_text, &self.tool_start_tokens)
+                    .is_none_or(|tool| start_pos < tool)
+            {
+                let after_start = start_pos + self.think_start_token.len();
+                self._buffer = format!(
+                    "{}{}",
+                    &current_text[..start_pos],
+                    &current_text[after_start..]
+                );
+                self.stripped_think_start = true;
+                self.recover_tool_start_without_opener = false;
+                continue;
+            }
+
             // Buffer is a prefix of the start token (e.g., "<thi" for "<think>") — wait
             // for more data before deciding whether to strip it or emit as reasoning.
             // Only applies when force_reasoning=true and we haven't stripped the tag yet.
@@ -1015,6 +1039,30 @@ mod tests {
             "literal <think> must be stripped, not absorbed; got {:?}",
             result.reasoning_text
         );
+    }
+
+    #[test]
+    fn test_force_reasoning_streaming_strips_think_after_prefix_in_one_chunk() {
+        let run = |chunks: &[&str]| {
+            let mut parser = BasicReasoningParser::new(
+                "<think>".to_string(),
+                "</think>".to_string(),
+                true,
+                true,
+            );
+            let (mut reasoning, mut normal) = (String::new(), String::new());
+            for chunk in chunks {
+                let r = parser.parse_reasoning_streaming_incremental(chunk, &[]);
+                reasoning += &r.reasoning_text;
+                normal += &r.normal_text;
+            }
+            let r = parser.finish_reasoning_stream();
+            (reasoning + &r.reasoning_text, normal + &r.normal_text)
+        };
+        let tokens = run(&["\n", "<think>", "reason", "</think>", "answer"]);
+        assert_eq!(tokens, ("\nreason".to_string(), "answer".to_string()));
+        assert_eq!(run(&["\n<think>reason</think>answer"]), tokens);
+        assert_eq!(run(&["\n<think>rea", "son</think>answer"]), tokens);
     }
 
     #[test]

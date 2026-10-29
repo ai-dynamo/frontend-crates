@@ -2,24 +2,24 @@ provenance:
   status: captured
   origin:
     crate_version: 0.7.35
-    git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
-    source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
+    git_commit: a09678a37667321486a3e95e1989a7f9c3d3f366
+    source_sha256: 10150cea0aedff83a22c55603670f892da02065c0a44e5794a0f96a615f3d7a9
 document:
   mode: unified
 changes:
-  dsml_unterminated_parameter_then_call:
-    case_key: UNIFIED.5-dsml_unterminated_parameter_then_call
-    stimulus:
-      ref: current
-      semantic_sha256: ee3ceb1ca25cb683bca603efb861f4f094f36e182d84e23d8fb75a1c06ac70c5
+  arg_null_mixed_labels:
     observation:
       value:
         assembled:
         - kind: tool_call
-          name: f
+          name: set_labels
           arguments:
-            x: bad</｜DSML｜ invoke><｜DSML｜ invoke name="get_weather"><｜DSML｜ parameter name="city" string="true">Paris
+            label: null
+            note: null
+            literal: 'null'
         chunks:
+        - expected: []
+        - expected: []
         - expected: []
         - expected: []
         - expected: []
@@ -31,37 +31,166 @@ changes:
         - expected: []
         - expected:
           - kind: tool_call
-            name: f
-            arguments: '{"x":"bad</｜DSML｜ invoke><｜DSML｜ invoke name=\"get_weather\"><｜DSML｜ parameter name=\"city\" string=\"true\">Paris"}'
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
             complete: true
         - expected: []
         - expected: []
-  dsml_unterminated_parameter_then_empty_call:
-    case_key: UNIFIED.5-dsml_unterminated_parameter_then_empty_call
-    stimulus:
-      ref: current
-      semantic_sha256: 3e78ad38e16c8233cb84130271599597818d244dbf95e72ee0e7a7e85d27ea50
+  deepseek_v41_json_invocation_body:
     observation:
-      error:
-        code: legacy_unclassified
-        detail: 'native finish: incomplete DeepSeek V4.1 parameter'
+      value:
+        assembled:
+        - kind: tool_call
+          name: inspect
+          arguments:
+            value: ' café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; "x"
+
+              '
+            nested:
+              values:
+              - true
+              - 42
+              - -1250
+        - kind: tool_call
+          name: done
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: inspect
+            arguments: '{"value":" café 🐈 </｜DSML｜ invoke> </｜DSML｜ calls> &amp; \"x\"\n","nested":{"values":[true,42,-1250]}}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: done
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+  glm_ref_encoded_targets:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            space: 42
+            utf8_plus: 42
+            pointer: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"space":42,"utf8_plus":42,"pointer":42}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_json_looking_strings:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            object_text: '{"x":1}'
+            array_text: '[1,2]'
+            quoted_text: '"hello"'
+            inline_text: '{"x":1}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"object_text":"{\"x\":1}","array_text":"[1,2]","quoted_text":"\"hello\"","inline_text":"{\"x\":1}"}'
+            complete: true
+        - expected: []
+        - expected: []
+  glm_ref_scalar_types:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: capture_payload
+          arguments:
+            count: 42
+            ratio: 3.5
+            flag: true
+            narrowed: 42
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: capture_payload
+            arguments: '{"count":42,"ratio":3.5,"flag":true,"narrowed":42}'
+            complete: true
+        - expected: []
+        - expected: []
 metadata_changes: {}
 document_overrides:
-  dsml_unterminated_parameter_then_call:
+  xml_string_type_double_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.7.35
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
-        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null
-  dsml_unterminated_parameter_then_empty_call:
+  xml_string_type_single_quoted_object:
     capture_provenance:
       captured_with:
-        dynamo_v2: 0.7.35
+        dynamo_v2: 0.7.33
       capture_origin:
-        crate_version: 0.7.35
-        source_sha256: 4b920a319e6dbc7e4716ad969c46398c94f387dd37677ea8561428ba0f04d8f9
-        git_commit: 2c39c26856c539dfafc01251a7e45be80b4486cd
+        crate_version: 0.7.33
+        source_sha256: eb7a848dc9da04e85b13fa6c21d7808e85dd3eefdc0d695ace7467a80604a723
+        git_commit: 6fd0436133858c44de7a1d58a3867dbd2a1eb9bd
       inherited_from: null

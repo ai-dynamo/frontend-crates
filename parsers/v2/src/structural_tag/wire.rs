@@ -7,6 +7,8 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use serde_json::Value;
 
+pub(crate) use dynamo_structural_tag::format::RegexFormat;
+
 #[derive(Debug, Clone)]
 pub(crate) struct StructuralTag {
     pub format: Format,
@@ -36,6 +38,8 @@ pub(crate) enum Format {
     AnyText(AnyTextFormat),
     AnyTokens(dynamo_structural_tag::format::AnyTokensFormat),
     Or(OrFormat),
+    // Native ATEM needs repeated call messages with bounded cardinality.
+    Repeat(RepeatFormat),
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -114,6 +118,15 @@ pub(crate) struct AnyTextFormat {
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct OrFormat {
     pub elements: Vec<Format>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct RepeatFormat {
+    pub content: Box<Format>,
+    // Bound repetition to enforce required calls and single-call choices.
+    pub min: usize,
+    /// XGrammar uses -1 for an unbounded upper limit.
+    pub max: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]

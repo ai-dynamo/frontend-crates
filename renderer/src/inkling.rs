@@ -127,7 +127,7 @@ impl OAIPromptFormatter for InklingFormatter {
 }
 
 fn json_value(value: Value) -> Result<JsonValue> {
-    serde_json::to_value(value).context("convert minijinja value to JSON")
+    crate::python::template_json(value).context("convert minijinja value to JSON")
 }
 
 fn collect_tools(messages: &[JsonValue], request_tools: &JsonValue) -> Result<Vec<JsonValue>> {

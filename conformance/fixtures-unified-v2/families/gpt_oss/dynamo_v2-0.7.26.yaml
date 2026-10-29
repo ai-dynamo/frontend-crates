@@ -27,6 +27,54 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: 50f147a3c869fd14fc6b7fa33f0f577a93d124dd3521d3384a18f01844c0e1ff
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": null}'
+            complete: true
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label": null, "note": null, "literal": "null"}'
+            complete: true
+        - expected: []
   arg_string_null:
     stimulus:
       ref: current
@@ -39,6 +87,29 @@ changes:
     stimulus:
       ref: current
       semantic_sha256: fefd853178bd61fc0bc63692951e49e9916c1dc23bab5f618cc16a2113227144
+  arg_string_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city": "null"}'
+            complete: true
+        - expected: []
   arg_string_null_sibling_anyof:
     stimulus:
       ref: current
@@ -649,10 +720,25 @@ metadata_changes:
   arg_json_null_const: {}
   arg_json_null_nullable: {}
   arg_json_null_oneof: {}
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string_pr424: {}
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_string_null: {}
   arg_string_null_const: {}
   arg_string_null_enum: {}
+  arg_string_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_string_null_sibling_anyof: {}
   arg_string_null_sibling_oneof: {}
   arg_string_null_union: {}

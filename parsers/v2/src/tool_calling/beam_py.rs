@@ -92,6 +92,13 @@ fn trim_c_space(s: &str) -> &str {
     s.trim_matches(|c: char| c.is_ascii() && is_c_space(c as u8))
 }
 
+// Python numeric conversion rejects ASCII record separators even though str.strip
+// removes them. Exact decimal conversion must use the same boundary as int/float.
+pub(crate) fn numeric_text(s: &str) -> Option<String> {
+    let ascii = transform_decimal_and_space(s)?;
+    Some(trim_c_space(&ascii).to_string())
+}
+
 /// An exact Python integer, kept as its canonical decimal digits.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PyInt {
@@ -208,6 +215,7 @@ pub(crate) enum PyValue {
     Bool(bool),
     Int(PyInt),
     Float(f64),
+    RawNumber(String),
     Str(String),
     List(Vec<PyValue>),
     Dict(PyDict),
@@ -221,6 +229,11 @@ impl PyValue {
             PyValue::Bool(b) => *b,
             PyValue::Int(i) => !i.is_zero(),
             PyValue::Float(f) => *f != 0.0,
+            PyValue::RawNumber(number) => number.split(['e', 'E']).next().is_some_and(|mantissa| {
+                mantissa
+                    .bytes()
+                    .any(|byte| byte.is_ascii_digit() && byte != b'0')
+            }),
             PyValue::Str(s) => !s.is_empty(),
             PyValue::List(l) => !l.is_empty(),
             PyValue::Dict(d) => !d.is_empty(),
@@ -277,6 +290,7 @@ fn dump_into(value: &PyValue, out: &mut String) {
         PyValue::Bool(false) => out.push_str("false"),
         PyValue::Int(i) => write!(out, "{i}").unwrap(),
         PyValue::Float(f) => out.push_str(&float_json(*f)),
+        PyValue::RawNumber(number) => out.push_str(number),
         PyValue::Str(s) => dump_str(s, out),
         PyValue::List(items) => {
             out.push('[');
@@ -374,8 +388,8 @@ pub(crate) fn float_repr(f: f64) -> String {
 
 /// `int(s)` in base 10.
 pub(crate) fn parse_int(s: &str) -> Option<PyInt> {
-    let ascii = transform_decimal_and_space(s)?;
-    let body = trim_c_space(&ascii);
+    let numeric = numeric_text(s)?;
+    let body = numeric.as_str();
     let (negative, digits) = match body.as_bytes().first()? {
         b'-' => (true, &body[1..]),
         b'+' => (false, &body[1..]),
@@ -408,8 +422,8 @@ fn strip_digit_underscores(s: &str) -> Option<String> {
 
 /// `float(s)`.
 pub(crate) fn parse_float(s: &str) -> Option<f64> {
-    let ascii = transform_decimal_and_space(s)?;
-    let body = trim_c_space(&ascii);
+    let numeric = numeric_text(s)?;
+    let body = numeric.as_str();
     let clean = if body.contains('_') {
         let bytes = body.as_bytes();
         let mut out = String::with_capacity(body.len());
@@ -703,8 +717,7 @@ impl JsonReader<'_> {
         let text = &self.s[start..i];
         self.pos = i;
         if is_float {
-            let value: f64 = text.parse().ok()?;
-            value.is_finite().then_some(PyValue::Float(value))
+            Some(PyValue::RawNumber(text.to_string()))
         } else {
             parse_int(text).map(PyValue::Int)
         }

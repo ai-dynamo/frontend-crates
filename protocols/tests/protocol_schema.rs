@@ -103,7 +103,8 @@ fn unannotated_dependency_types_are_explicit_import_slots() {
         }
     }
     assert!(schemas.contains_key("async_openai.Prompt"));
-    assert!(schemas.contains_key("async_openai.FunctionObject"));
+    let function = &schemas[FunctionObject::name().as_ref()];
+    assert!(function["properties"].get("defer_loading").is_some());
 }
 
 #[test]
@@ -114,12 +115,35 @@ fn named_and_string_tool_choices_have_no_variant_wrapper() {
         json!("auto"),
         json!("required"),
         json!({"type":"function","function":{"name":"lookup"}}),
+        json!({"type":"custom","custom":{"name":"run_python"}}),
     ] {
         assert!(schema.is_valid(&value), "{value}");
         canonical::<ChatCompletionToolChoiceOption>(value);
     }
     assert!(!schema.is_valid(&json!({"Named":{"type":"function","function":{"name":"lookup"}}})));
     assert!(!schema.is_valid(&json!("invalid")));
+}
+
+#[test]
+fn custom_chat_tools_calls_and_streams_match_the_generated_schema() {
+    canonical::<CreateChatCompletionRequest>(json!({
+        "model":"test","messages":[{"role":"assistant","tool_calls":[{
+            "type":"custom","id":"c1","custom":{"name":"run_python","input":"print(2 + 3)"}
+        }]}], "tools":[{"type":"custom","custom":{"name":"run_python","format":{"type":"text"}}}],
+        "tool_choice":{"type":"custom","custom":{"name":"run_python"}}
+    }));
+    canonical::<CreateChatCompletionResponse>(json!({
+        "id":"chat-1","object":"chat.completion","created":1,"model":"test",
+        "choices":[{"index":0,"message":{"role":"assistant","tool_calls":[{
+            "id":"c1","type":"custom","custom":{"name":"run_python","input":"print(2 + 3)"}
+        }]},"finish_reason":"tool_calls","logprobs":null}]
+    }));
+    canonical::<CreateChatCompletionStreamResponse>(json!({
+        "id":"chat-1","object":"chat.completion.chunk","created":1,"model":"test",
+        "choices":[{"index":0,"delta":{"tool_calls":[{
+            "index":0,"id":"c1","type":"custom","custom":{"name":"run_python","input":"print("}
+        }]},"finish_reason":null,"logprobs":null}]
+    }));
 }
 
 #[test]

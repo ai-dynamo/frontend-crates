@@ -7,6 +7,35 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            a: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            b: '2'
+        chunks:
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"a":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"b":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
   arg_marker_in_string:
     case_key: UNIFIED.7-2
     stimulus:
@@ -135,6 +164,42 @@ changes:
             arguments: '{"city":"Paris"}'
             complete: true
         - expected: []
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: 446323d014299bace36cebdd9e895c3540c039768549bdb33c78dc2a55527ec7
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 63bf2b6529fc53152570fbc259713a7ef79ec6df7ef21296b70f2573be8d6857
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: ac767d6120d8e565454bc8f3a5ccd9815aacd9521ad6769ac5881c11ca3fcbd9
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: f16041b82dea3c25067b172971adcabdcc184248702302674deafd37d9e903db
+    observation:
+      unavailable:
+        code: source_unavailable
+        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
   empty_args:
     case_key: UNIFIED.6-1
     stimulus:
@@ -187,6 +252,15 @@ changes:
             name: run
             arguments: '{"cmd":"before </tool_call><tool_call>get_weather</tool_call> after"}'
             complete: true
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 0c791eae45f7d5976e07d4db5216d0e69cdc9b8af2609a1a27a65a3847341768
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.0 source could not be recovered with its recorded identity e7b9c2c22901e73914056f5ab8c4c5438191d088a445ae577a5e680870fa3e1d; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30-6
     stimulus:
@@ -2295,6 +2369,44 @@ changes:
         - expected:
           - kind: text
             text: After.
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: f
+          arguments:
+            x: '1'
+        - kind: tool_call
+          name: g
+          arguments:
+            x: '2'
+        - kind: tool_call
+          name: h
+          arguments:
+            x: '3'
+        chunks:
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: f
+            arguments: '{"x":"1"}'
+            complete: true
+        - expected:
+          - kind: tool_call
+            name: g
+            arguments: '{"x":"2"}'
+            complete: true
+          - kind: tool_call
+            name: h
+            arguments: '{"x":"3"}'
+            complete: true
+        - expected: []
+        - expected: []
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4-1
     stimulus:
@@ -2682,110 +2794,12 @@ changes:
         - expected:
           - kind: text
             text: done
-  adjacent_calls_partial_header:
-    case_key: UNIFIED.2-adjacent_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: 4f053eeac46e11a87197be4e4c11eb54fd19b9b11b1ba1881ecce5e73e176ff2
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            a: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            b: '2'
-        chunks:
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"a":"1"}'
-            complete: true
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"b":"2"}'
-            complete: true
-        - expected: []
-        - expected: []
-  three_calls_partial_header:
-    case_key: UNIFIED.2-three_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: a14da43adef5fadfdf886a9c8187d12e06cf9988491fa0cd7b401eb52cbf8a15
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: f
-          arguments:
-            x: '1'
-        - kind: tool_call
-          name: g
-          arguments:
-            x: '2'
-        - kind: tool_call
-          name: h
-          arguments:
-            x: '3'
-        chunks:
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: f
-            arguments: '{"x":"1"}'
-            complete: true
-        - expected:
-          - kind: tool_call
-            name: g
-            arguments: '{"x":"2"}'
-            complete: true
-          - kind: tool_call
-            name: h
-            arguments: '{"x":"3"}'
-            complete: true
-        - expected: []
-        - expected: []
-  dotted_name_minimal:
-    case_key: UNIFIED.1-dotted_name_minimal
-    stimulus:
-      ref: current
-      semantic_sha256: 446323d014299bace36cebdd9e895c3540c039768549bdb33c78dc2a55527ec7
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_mixed_punctuation:
-    case_key: UNIFIED.1-dotted_name_mixed_punctuation
-    stimulus:
-      ref: current
-      semantic_sha256: 63bf2b6529fc53152570fbc259713a7ef79ec6df7ef21296b70f2573be8d6857
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_multiple_segments:
-    case_key: UNIFIED.1-dotted_name_multiple_segments
-    stimulus:
-      ref: current
-      semantic_sha256: ac767d6120d8e565454bc8f3a5ccd9815aacd9521ad6769ac5881c11ca3fcbd9
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
-  dotted_name_shared_prefix:
-    case_key: UNIFIED.2-dotted_name_shared_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: f16041b82dea3c25067b172971adcabdcc184248702302674deafd37d9e903db
-    observation:
-      unavailable:
-        code: source_unavailable
-        detail: Recorded producer source fingerprint cannot be reconstructed from its retained commit or release tag.
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   guided_quoted_reasoning_closer_named:
     init:
       starting_state: Reasoning
@@ -2846,17 +2860,51 @@ metadata_changes:
       starting_state: Response
       tool_output_mode: Native
       named_tool: null
-  adjacent_calls_partial_header:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
   three_calls_partial_header:
     init:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin:
+        crate_version: 0.7.0
+        git_commit: 23bdc23bca16bb14974303ae73fd97d19b0be84d
+        source_sha256: 9e22d4a9a504f85f8d589e67fcc6f0516e74cc1722468c8b1fa31c7cd4d510e8
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.0
+      capture_origin: null
+      inherited_from: null
   guided_json_native_parameter_array_before_payload:
     capture_provenance:
       captured_with:
@@ -2893,15 +2941,6 @@ document_overrides:
         dynamo_v2: 0.7.0
       capture_origin: null
       inherited_from: null
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.0
-      capture_origin:
-        crate_version: 0.7.0
-        git_commit: 23bdc23bca16bb14974303ae73fd97d19b0be84d
-        source_sha256: 9e22d4a9a504f85f8d589e67fcc6f0516e74cc1722468c8b1fa31c7cd4d510e8
-      inherited_from: null
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -2910,28 +2949,4 @@ document_overrides:
         crate_version: 0.7.0
         git_commit: 23bdc23bca16bb14974303ae73fd97d19b0be84d
         source_sha256: 9e22d4a9a504f85f8d589e67fcc6f0516e74cc1722468c8b1fa31c7cd4d510e8
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.0
-      capture_origin: null
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.0
-      capture_origin: null
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.0
-      capture_origin: null
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.7.0
-      capture_origin: null
       inherited_from: null

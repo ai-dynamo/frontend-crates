@@ -7,6 +7,62 @@ provenance:
 document:
   mode: unified
 changes:
+  arg_json_null_ref:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            complete: true
+        - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
   dotted_name_minimal:
     observation:
       value:
@@ -153,7 +209,56 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: '2'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":"2"}'
+            complete: true
+        - expected: []
+        - expected: []
+        - expected: []
 metadata_changes:
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   dotted_name_minimal:
     init:
       starting_state: None
@@ -170,6 +275,11 @@ metadata_changes:
       tool_output_mode: Native
       named_tool: null
   dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     init:
       starting_state: None
       tool_output_mode: Native

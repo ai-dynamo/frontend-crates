@@ -26,17 +26,13 @@ use dynamo_parsers::{ReasoningParser, ReasoningParserType};
 use dynamo_parsers_v2::{
     assemble, create_tool_parser_for_family, create_unified_parser_for_family,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{Value, json};
 
 mod common;
 use common::unified_capture::{self as capture, chunk_input};
 
-use common::{
-    Init,
-    known_unified_divergences::{self as divergences, Check, Expected},
-    unified_tools as tools,
-};
+use common::{Init, unified_tools as tools};
 
 #[derive(Deserialize)]
 struct GoldenFile {
@@ -72,9 +68,13 @@ struct Expect {
 }
 
 /// A unified event. PartialEq drives the golden comparison.
-#[derive(Deserialize, serde::Serialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, serde::Serialize, Clone, Debug)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 enum Ev {
+    MessageStart {
+        phase: String,
+    },
+    MessageEnd,
     Reasoning {
         text: String,
     },
@@ -83,17 +83,96 @@ enum Ev {
     },
     ToolCall {
         name: String,
-        #[serde(default)]
-        arguments: Value,
+        #[serde(default = "default_raw_arguments")]
+        arguments: ArgumentJson,
     },
+}
+
+impl PartialEq for Ev {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::MessageStart { phase: left }, Self::MessageStart { phase: right }) => {
+                left == right
+            }
+            (Self::MessageEnd, Self::MessageEnd) => true,
+            (Self::Reasoning { text: left }, Self::Reasoning { text: right })
+            | (Self::Text { text: left }, Self::Text { text: right }) => left == right,
+            (
+                Self::ToolCall {
+                    name: left_name,
+                    arguments: left_arguments,
+                },
+                Self::ToolCall {
+                    name: right_name,
+                    arguments: right_arguments,
+                },
+            ) => left_name == right_name && left_arguments == right_arguments,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct ArgumentJson(String);
+
+impl PartialEq for ArgumentJson {
+    fn eq(&self, other: &Self) -> bool {
+        common::canonical_argument_json(&self.0) == common::canonical_argument_json(&other.0)
+    }
+}
+
+impl Serialize for ArgumentJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // YAML numbers pass through binary64 in the Python capture pipeline.
+        // Keep the complete JSON argument text so nested decimals stay exact.
+        serializer.serialize_str(&self.0)
+    }
+}
+
+impl<'de> Deserialize<'de> for ArgumentJson {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let raw = match value {
+            serde_json::Value::String(encoded) => {
+                if serde_json::value::RawValue::from_string(encoded.clone()).is_ok() {
+                    encoded
+                } else {
+                    serde_json::to_string(&encoded).map_err(serde::de::Error::custom)?
+                }
+            }
+            value => serde_json::to_string(&value).map_err(serde::de::Error::custom)?,
+        };
+        serde_json::value::RawValue::from_string(raw.clone()).map_err(serde::de::Error::custom)?;
+        Ok(Self(raw))
+    }
+}
+
+fn default_raw_arguments() -> ArgumentJson {
+    ArgumentJson("{}".to_string())
+}
+
+fn raw_arguments(raw: &str) -> ArgumentJson {
+    serde_json::value::RawValue::from_string(raw.to_string())
+        .unwrap_or_else(|error| panic!("tool arguments must be valid JSON ({raw:?}): {error}"));
+    ArgumentJson(raw.to_string())
 }
 
 impl Ev {
     fn render(&self) -> String {
         match self {
+            Ev::MessageStart { phase } => format!("message_start({phase})"),
+            Ev::MessageEnd => "message_end".into(),
             Ev::Reasoning { text } => format!("reasoning({text:?})"),
             Ev::Text { text } => format!("text({text:?})"),
-            Ev::ToolCall { name, arguments } => format!("tool_call({name}, {arguments})"),
+            Ev::ToolCall { name, arguments } => {
+                format!("tool_call({name}, {})", arguments.0)
+            }
         }
     }
 }
@@ -126,7 +205,7 @@ fn feed(
         let pos = *slots.entry(d.tool_index).or_insert_with(|| {
             out.push(Ev::ToolCall {
                 name: d.name.clone().unwrap_or_default(),
-                arguments: Value::Null,
+                arguments: raw_arguments("null"),
             });
             out.len() - 1
         });
@@ -146,17 +225,32 @@ fn feed(
 impl From<dynamo_parsers_v2::UnifiedEvent> for Ev {
     fn from(e: dynamo_parsers_v2::UnifiedEvent) -> Self {
         match e {
+            dynamo_parsers_v2::UnifiedEvent::MessageStart { phase } => Ev::MessageStart {
+                phase: serde_json::to_value(phase)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned(),
+            },
+            dynamo_parsers_v2::UnifiedEvent::MessageEnd => Ev::MessageEnd,
             dynamo_parsers_v2::UnifiedEvent::Reasoning { text } => Ev::Reasoning { text },
             dynamo_parsers_v2::UnifiedEvent::Text { text } => Ev::Text { text },
-            dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => {
-                Ev::ToolCall { name, arguments }
-            }
+            dynamo_parsers_v2::UnifiedEvent::ToolCall { name, arguments } => Ev::ToolCall {
+                name,
+                arguments: raw_arguments(
+                    &serde_json::to_string(&arguments).expect("serialize projected arguments"),
+                ),
+            },
         }
     }
 }
 
 fn unified_delta_json(d: &dynamo_parsers_v2::UnifiedParserEvent) -> Value {
     match d {
+        dynamo_parsers_v2::UnifiedParserEvent::MessageStart(phase) => {
+            json!({"kind":"message_start","phase":phase})
+        }
+        dynamo_parsers_v2::UnifiedParserEvent::MessageEnd => json!({"kind":"message_end"}),
         dynamo_parsers_v2::UnifiedParserEvent::Reasoning(text) => {
             json!({"kind": "reasoning", "text": text})
         }
@@ -233,13 +327,8 @@ fn tool_events_with_chunks<'a>(
 
     for (ti, pos) in &slots {
         let raw = raw_args.get(ti).map(String::as_str).unwrap_or("");
-        let val = if raw.trim().is_empty() {
-            json!({})
-        } else {
-            serde_json::from_str(raw).unwrap_or_else(|_| Value::String(raw.to_string()))
-        };
         if let Ev::ToolCall { arguments, .. } = &mut out[*pos] {
-            *arguments = val;
+            *arguments = raw_arguments(if raw.trim().is_empty() { "{}" } else { raw });
         }
     }
     out
@@ -296,12 +385,14 @@ fn dotted_harmony_split_matches_golden_at_every_boundary() {
     assert_eq!(checked, 4);
 }
 
+type NativeCapture = (Vec<Ev>, Vec<ChunkRow>, BTreeMap<usize, String>);
+
 fn capture_native_case(
     family: &str,
     chunks: &[String],
     init: &Init,
     tool_schemas: &[dynamo_parsers_v2::Tool],
-) -> Result<(Vec<Ev>, Vec<ChunkRow>), capture::CaptureFailure> {
+) -> Result<NativeCapture, capture::CaptureFailure> {
     let mut parser = create_unified_parser_for_family(family, tool_schemas)
         .unwrap_or_else(|e| panic!("create native parser {family}: {e}"));
     init.apply(&mut parser, family);
@@ -311,7 +402,8 @@ fn capture_native_case(
     )?;
     let rows = capture::native_capture(&mut parser, chunks)?;
     let deltas: Vec<_> = rows.iter().flatten().cloned().collect();
-    let assembled = assemble(&deltas).into_iter().map(Ev::from).collect();
+    let raw_args = dynamo_parsers_v2::tool_arguments_raw(&deltas);
+    let assembled: Vec<Ev> = assemble(&deltas).into_iter().map(Ev::from).collect();
     let rows = chunks
         .iter()
         .cloned()
@@ -322,7 +414,73 @@ fn capture_native_case(
             deltas: deltas.iter().map(unified_delta_json).collect(),
         })
         .collect();
-    Ok((assembled, rows))
+    Ok((assembled, rows, raw_args))
+}
+
+#[test]
+fn numeric_raw_arguments_match_authored_tokens_for_every_family() {
+    let dir = common::ensure_unified_golden();
+    let mut checked = 0usize;
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.extension().and_then(|extension| extension.to_str()) != Some("yaml") {
+            continue;
+        }
+        let file: GoldenFile = serde_yaml::from_str(&std::fs::read_to_string(&path).unwrap())
+            .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        for (id, case) in file.cases {
+            if !id
+                .strip_prefix("UNIFIED.")
+                .is_some_and(|scenario| scenario.starts_with("arg_numeric_"))
+            {
+                continue;
+            }
+            let schemas = common::unified_tools_for_schemas(case.tools.as_ref());
+            let chunks = capture::input_chunks(&case.input, case.input_chunks.as_deref());
+            let (_assembled, _rows, raw) =
+                capture_native_case(&file.family, &chunks, &case.init, &schemas)
+                    .unwrap_or_else(|error| panic!("{id}: {error:?}"));
+            let expected = if file.family == "beam"
+                && case.tools.as_ref().is_some_and(|tools| {
+                    tools
+                        .as_array()
+                        .and_then(|tools| tools.first())
+                        .and_then(|tool| tool.pointer("/parameters/properties/value/type"))
+                        .and_then(Value::as_array)
+                        .is_some_and(|types| {
+                            types.iter().any(|kind| kind.as_str() == Some("string"))
+                        })
+                }) {
+                // Beam chooses the schema-permitted string branch for this union; compare its
+                // exact spelling instead of the historical v1 numeric projection.
+                let raw = case
+                    .input
+                    .split_once(r#"<rfl:parameter name="value">"#)
+                    .and_then(|(_, value)| value.split_once("</rfl:parameter>"))
+                    .map(|(value, _)| value.trim())
+                    .unwrap_or_else(|| panic!("{id}: cannot recover authored numeric token"));
+                format!(r#"{{"value":{}}}"#, serde_json::to_string(raw).unwrap())
+            } else {
+                case.golden
+                    .iter()
+                    .find_map(|event| match event {
+                        Ev::ToolCall { arguments, .. } => Some(arguments.0.clone()),
+                        _ => None,
+                    })
+                    .unwrap_or_else(|| panic!("{id}: numeric case has no golden tool call"))
+            };
+            let actual = raw
+                .get(&0)
+                .unwrap_or_else(|| panic!("{id}: no raw tool arguments"));
+            assert_eq!(
+                common::canonical_argument_json(actual),
+                common::canonical_argument_json(&expected),
+                "{id}"
+            );
+            checked += 1;
+        }
+    }
+    assert!(checked > 0, "no authored numeric cases were checked");
 }
 
 /// One streaming chunk: the delta text fed, and the RAW per-chunk deltas Dynamo
@@ -415,6 +573,58 @@ fn finish_is_part_of_the_stream_schedule_even_when_it_emits_nothing() {
     );
 }
 
+#[test]
+fn nested_numeric_arguments_are_compared_without_binary64_rounding() {
+    let raw = r#"{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}"#;
+    let expected = vec![Ev::ToolCall {
+        name: "inspect".into(),
+        arguments: raw_arguments(raw),
+    }];
+    let yaml = format!("kind: tool_call\nname: inspect\narguments: '{raw}'\n");
+    let decoded: Ev = serde_yaml::from_str(&yaml).expect("decode raw numeric arguments");
+    let exact = vec![decoded];
+    let rounded = vec![Ev::ToolCall {
+        name: "inspect".into(),
+        arguments: raw_arguments(
+            r#"{"nested":{"fraction":9007199254740992.0,"tiny":0.0},"values":[9007199254740992,-9007199254740992]}"#,
+        ),
+    }];
+
+    assert_eq!(classify("qwen3", &expected, &exact), "MATCH");
+    assert_eq!(classify("qwen3", &expected, &rounded), "ARG_MISMATCH");
+    let serialized = serde_json::to_string(&exact).expect("serialize exact argument token");
+    assert!(serialized.contains("9007199254740992.5"));
+    assert!(serialized.contains("1e-400"));
+    assert!(serialized.contains("9007199254740993"));
+    let decoded_json: Vec<Ev> =
+        serde_json::from_str(&serialized).expect("decode captured arguments");
+    assert_eq!(decoded_json, exact);
+    let yaml = common::json_to_yaml_value(&exact);
+    let decoded_yaml: Vec<Ev> = serde_yaml::from_value(yaml).expect("decode packaged arguments");
+    assert_eq!(decoded_yaml, exact);
+    assert_eq!(
+        raw_arguments(r#"{"number":4.2e1,"text":"42"}"#),
+        raw_arguments(r#"{ "text":"42", "number":42.0 }"#)
+    );
+    assert_ne!(
+        raw_arguments(r#"{"number":42}"#),
+        raw_arguments(r#"{"number":"42"}"#)
+    );
+}
+
+#[test]
+fn yaml_numeric_arguments_keep_their_json_number_lexemes() {
+    let yaml = "kind: tool_call\nname: inspect\narguments:\n  fraction: 3.5\n  text: \"3.5\"\n";
+    let decoded: Ev = serde_yaml::from_str(yaml).expect("decode YAML numeric arguments");
+    assert_eq!(
+        decoded,
+        Ev::ToolCall {
+            name: "inspect".into(),
+            arguments: raw_arguments(r#"{"fraction":3.5,"text":"3.5"}"#),
+        }
+    );
+}
+
 /// Classify a Dynamo divergence from the golden.
 fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
     if golden == got {
@@ -443,7 +653,7 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
             .copied()
             .chain(family_leak.iter().map(String::as_str))
             .any(|m| text.contains(m)),
-        Ev::ToolCall { .. } => false,
+        Ev::ToolCall { .. } | Ev::MessageStart { .. } | Ev::MessageEnd => false,
     });
     if leaks {
         return "LEAK";
@@ -458,10 +668,10 @@ fn classify(family: &str, golden: &[Ev], got: &[Ev]) -> &'static str {
     }
     // Tool calls line up by name but an argument value differs (e.g. a string arg
     // truncated at a marker-looking substring) -> ARG_MISMATCH.
-    let calls = |evs: &[Ev]| -> Vec<(String, Value)> {
+    let calls = |evs: &[Ev]| -> Vec<(String, String)> {
         evs.iter()
             .filter_map(|e| match e {
-                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.clone())),
+                Ev::ToolCall { name, arguments } => Some((name.clone(), arguments.0.clone())),
                 _ => None,
             })
             .collect()
@@ -553,14 +763,12 @@ fn cell(
 #[test]
 fn render_unified_conformance_html() {
     let capture_provenance = common::dynamo_capture_provenance(None);
-    let known = divergences::load();
-    let mut observed_dynamo = std::collections::BTreeSet::new();
-    let mut parity_failures = Vec::new();
+    let mut golden_differences = Vec::new();
     // The vLLM column is LIVE, not an expectation. `capture_vllm_rust_unified.py`
     // records the `vllm-parser` crate against this same corpus; reading it here is
     // what makes the column evidence instead of a claim.
     let vllm_live: BTreeMap<(String, String), Vec<Ev>> = {
-        let froot = common::ensure_fixtures().join("unified");
+        let froot = common::ensure_unified_fixtures().join("unified");
         let mut m = BTreeMap::new();
         // Shards key by TAXONOMY id (`UNIFIED.30-guided_json_named_tool`); the golden keys by SCENARIO
         // (`UNIFIED.guided_json_named_tool.qwen3`). The inputs shard carries both, so
@@ -618,7 +826,7 @@ fn render_unified_conformance_html() {
     let mut dynamo_red = 0usize;
     let mut vllm_red = 0usize;
     let mut total = 0usize;
-    // Machine-readable feed for the CONFORMANCE_v2.html generator (Python reads this).
+    // Capture tooling consumes this feed; the viewer prefers resolved JSON even in a checkout.
     let mut json_cases: Vec<Value> = Vec::new();
 
     for file in &files {
@@ -641,7 +849,7 @@ fn render_unified_conformance_html() {
             let schedule = capture::input_chunks(&case.input, case.input_chunks.as_deref());
             let (got, captured_rows, error) =
                 match capture_native_case(&file.family, &schedule, &case.init, &case_tools) {
-                    Ok((got, rows)) => (got, rows, None),
+                    Ok((got, rows, _raw)) => (got, rows, None),
                     Err(capture::CaptureFailure::Error(error)) => {
                         (Vec::new(), Vec::new(), Some(error))
                     }
@@ -652,31 +860,20 @@ fn render_unified_conformance_html() {
             } else {
                 classify(&file.family, &case.golden, &got)
             };
+            let actual = error
+                .as_ref()
+                .map(|e| format!("ERROR: {e}"))
+                .unwrap_or_else(|| got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  "));
             if dclass != "MATCH" {
-                let actual = error
-                    .as_ref()
-                    .map(|e| format!("ERROR: {e}"))
-                    .unwrap_or_else(|| {
-                        got.iter().map(Ev::render).collect::<Vec<_>>().join("  |  ")
-                    });
-                match divergences::expected(&known, &file.family, id, Check::Golden) {
-                    Some(Expected::Golden(expected)) if actual == expected.actual => {
-                        observed_dynamo.insert((file.family.clone(), id.clone()));
-                    }
-                    Some(Expected::Golden(expected)) => parity_failures.push(format!(
-                        "{id}: known golden divergence changed\n expected: {}\n      got: {}",
-                        expected.actual, actual
-                    )),
-                    _ => parity_failures.push(format!(
-                        "{id}: unexpected golden divergence\n   golden: {}\n   actual: {}",
-                        case.golden
-                            .iter()
-                            .map(Ev::render)
-                            .collect::<Vec<_>>()
-                            .join("  |  "),
-                        actual
-                    )),
-                }
+                golden_differences.push(format!(
+                    "{id}: GOLDEN differs\n   golden: {}\n   actual: {}",
+                    case.golden
+                        .iter()
+                        .map(Ev::render)
+                        .collect::<Vec<_>>()
+                        .join("  |  "),
+                    actual
+                ));
             }
             eprintln!(
                 "{id:44} dynamo={dclass:6} :: {}",
@@ -821,7 +1018,7 @@ fn render_unified_conformance_html() {
         }
     }
 
-    // Machine-readable feed consumed by generate_conformance_table.py's Unified tab.
+    // Machine-readable capture feed consumed by explode_unified_fixtures.py.
     // YAML so it reads like the rest of the conformance fixture corpus. conformance/unified/
     // is the gitignored build tree — create it (a fresh checkout won't have it; the
     // committed data is the self-contained family and capture YAML under conformance/fixtures-unified-v2/).
@@ -838,7 +1035,7 @@ fn render_unified_conformance_html() {
         "note": "GOLDEN = authored oracle. dynamo = LIVE native UnifiedParser output. vllm = documented expectation when a live capture is unavailable.",
         "cases": json_cases,
     });
-    std::fs::write(&yaml_out, serde_yaml::to_string(&feed).unwrap()).unwrap();
+    std::fs::write(&yaml_out, serde_json::to_string_pretty(&feed).unwrap()).unwrap();
     eprintln!(
         "wrote {} ({total} cases, dynamo_red={dynamo_red}, vllm_red={vllm_red})",
         yaml_out.display()
@@ -849,21 +1046,7 @@ fn render_unified_conformance_html() {
     // and asserted elsewhere via the rendered legend), so this only needs to
     // pin Dynamo's own invariant.
     assert!(total >= 14, "expected the seed corpus");
-    parity_failures.extend(divergences::reconcile(
-        &known,
-        Check::Golden,
-        &observed_dynamo,
-    ));
-    assert_eq!(
-        dynamo_red,
-        observed_dynamo.len(),
-        "every red report cell must match one exact allowlisted golden divergence"
-    );
-    assert!(
-        parity_failures.is_empty(),
-        "unified report has unexpected or stale golden divergences:\n\n{}",
-        parity_failures.join("\n\n")
-    );
+    capture::report_comparison("render-golden", total, &golden_differences, false);
 }
 
 /// One committed `dynamo_v2-<ver>/<family>/<key>.yaml` capture.
@@ -924,31 +1107,29 @@ struct InputCase {
 /// This closes that gap: touch a parser, and the capture must be regenerated.
 #[test]
 fn committed_dynamo_capture_matches_the_live_parsers() {
-    let root = common::ensure_fixtures().join("unified");
-    validate_committed_dynamo_capture(&root);
+    let root = common::ensure_unified_fixtures().join("unified");
+    let (checked, stale) = compare_committed_dynamo_capture(&root);
+    capture::report_comparison("recorded-capture", checked, &stale, true);
+    assert_dynamo_capture_matches(checked, &stale);
 }
 
 fn validate_committed_dynamo_capture(root: &std::path::Path) {
+    let (checked, stale) = compare_committed_dynamo_capture(root);
+    assert_dynamo_capture_matches(checked, &stale);
+}
+
+fn compare_committed_dynamo_capture(root: &std::path::Path) -> (usize, Vec<String>) {
     if !root.join("inputs").is_dir() {
         panic!(
             "no committed unified fixtures under {} — extract them first",
             root.display()
         );
     }
-    // Select the parser identity before resolving its effective per-case owners.
-    // A release's sparse patches and a source's complete snapshot differ here.
-    let capture_dir = common::version_dirs_ascending_with_current(
-        root,
-        "dynamo_v2-",
-        common::UNIFIED_DYNAMO_V2_CURRENT_CAPTURE,
-    )
-    .pop()
-    .expect("no committed dynamo_v2-<ver> capture dir");
+    // Advancing the parser build does not relabel retained evidence. Compare the
+    // newest recorded snapshot with this build and reject changed live outputs.
+    let capture_dir = common::latest_recorded_capture_dir(root, "dynamo_v2-")
+        .expect("no committed dynamo_v2-<ver> capture dir");
 
-    validate_selected_dynamo_capture(root, &capture_dir);
-}
-
-fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::path::Path) {
     let input_dirs = shared_overlay_dirs(root, "inputs");
     let native_families: BTreeSet<String> = common::unified_families()
         .into_iter()
@@ -993,6 +1174,11 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
                 meta.retain(|(family, _), previous| {
                     family != &doc.family || previous.scenario != case.scenario
                 });
+                // v1_split scenarios have committed Dynamo v1 captures and are
+                // intentionally absent from the current Dynamo v2 capture.
+                if case.scenario.starts_with("v1_split_") {
+                    continue;
+                }
                 meta.insert((doc.family.clone(), key), case);
             }
         }
@@ -1037,7 +1223,7 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 
             let case_tools = common::unified_tools_for_schemas(tool_schemas.as_ref());
             let schedule = capture::replay_chunks(input, chunks.as_deref());
-            let (live_assembled, live_rows) =
+            let (live_assembled, live_rows, _raw) =
                 match capture_native_case(&doc.family, &schedule, init, &case_tools) {
                     Ok(value) => {
                         if committed.error.is_some() {
@@ -1084,14 +1270,17 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
         }
     }
 
+    (checked, stale)
+}
+
+fn assert_dynamo_capture_matches(checked: usize, stale: &[String]) {
     assert!(checked > 0, "no committed capture cases were compared");
     assert!(
         stale.is_empty(),
-        "{} of {checked} committed Dynamo capture cases are STALE — the HTML tab will \
-         show the old parser behavior. Regenerate:\n  \
-         cargo test -p dynamo-conformance-fixtures-v2 --test unified_render\n  \
-         python3 conformance/utils/src/explode_unified_fixtures.py\n  \
-         python3 conformance/utils/src/package_fixtures.py\n\n{}",
+        "{} of {checked} latest recorded Dynamo cases differ from the live parser. \
+         Verify the parser against authored inputs/GOLDEN and run latest parser tests. \
+         If the intended output changed, recapture the affected latest YAML; \
+         contributors do not recapture historical versions.\n\n{}",
         stale.len(),
         stale.join("\n\n"),
     );
@@ -1101,6 +1290,8 @@ fn validate_selected_dynamo_capture(root: &std::path::Path, capture_dir: &std::p
 fn plain_capture_records_reach_live_guard() {
     let root = std::env::temp_dir().join(format!("dynamo-plain-capture-{}", std::process::id()));
     let base = root.join("dynamo_v2-0.6.0");
+    std::fs::create_dir_all(root.join("dynamo_v2-0.5.0")).unwrap();
+    std::fs::create_dir_all(root.join("dynamo_v2-999.0.0+historical")).unwrap();
     let write = |directory: &std::path::Path, key: &str, doc: &Value| {
         std::fs::create_dir_all(directory.join("gemma4")).unwrap();
         std::fs::write(
@@ -1136,15 +1327,15 @@ fn plain_capture_records_reach_live_guard() {
     write(&base, "old", &captures["old"]);
     write(&base, "retained", &captures["retained"]);
     write(&base, "added", &captures["added"]);
-    validate_selected_dynamo_capture(&root, &base);
+    validate_committed_dynamo_capture(&root);
 
     std::fs::remove_file(base.join("gemma4/old.yaml")).unwrap();
-    assert!(std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base)).is_err());
+    assert!(std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root)).is_err());
     write(&base, "old", &captures["old"]);
     let mut wrong = captures["added"].clone();
     wrong["cases"]["added"]["assembled"] = json!([{"kind":"text","text":"wrong"}]);
     write(&base, "added", &wrong);
-    let failure = std::panic::catch_unwind(|| validate_selected_dynamo_capture(&root, &base))
+    let failure = std::panic::catch_unwind(|| validate_committed_dynamo_capture(&root))
         .expect_err("the live comparison must read the plain capture record");
     assert!(
         failure
@@ -1383,7 +1574,7 @@ print(g.emit_yaml("glm47"))
     let custom = common::unified_tools_for_schemas(case.tools.as_ref());
     let expected = vec![Ev::ToolCall {
         name: "f".into(),
-        arguments: json!({"x":42}),
+        arguments: raw_arguments(r#"{"x":42}"#),
     }];
     assert_eq!(
         dynamo_events_with_tools("glm47", input, &case.init, &custom),

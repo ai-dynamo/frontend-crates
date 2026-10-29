@@ -5,6 +5,39 @@ provenance:
 document:
   mode: unified
 changes:
+  adjacent_calls_partial_header:
+    case_key: UNIFIED.2-adjacent_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: 739b334e6a08767a96601a5a30a8c19f7a9aa36db2a0ebf97d13e1edd58d6ec1
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 6f7a39355abc9d48134c70b5f5c008f8f7e00c44f3c42ce078ed093bdf97e129
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: null
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":null}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
   arg_marker_in_string:
     case_key: UNIFIED.7.b
     stimulus:
@@ -28,6 +61,56 @@ changes:
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
         - expected: []
+        - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      ref: current
+      semantic_sha256: 7d00bac8332cb9ae5b13e47e97257e66bfc9ef584dab4652117c607fdc23ea00
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: set_labels
+          arguments:
+            label: null
+            note: null
+            literal: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: set_labels
+            arguments: '{"label":null,"note":null,"literal":"null"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  arg_string_null_ref:
+    case_key: UNIFIED.7-arg_string_null_ref
+    stimulus:
+      ref: current
+      semantic_sha256: 02b18a7ae14fed68ecf1b6a7fbd9af5c418d5d280994493af3e57b7b06c5d1ae
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: 'null'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"null"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
   arg_unicode:
     case_key: UNIFIED.7.a
@@ -110,6 +193,120 @@ changes:
             arguments: '{"city":"Paris"}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
+  dotted_name_minimal:
+    case_key: UNIFIED.1-dotted_name_minimal
+    stimulus:
+      ref: current
+      semantic_sha256: db4c05a50628bec3a687e6941cea198a253dea3ca1b7f4583fc200f7bd0395d5
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: a.b
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: a.b
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+  dotted_name_mixed_punctuation:
+    case_key: UNIFIED.1-dotted_name_mixed_punctuation
+    stimulus:
+      ref: current
+      semantic_sha256: 1e07f7a1d96342cdb9127431e80f3751021daf202f645ac2635655387d792d1c
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: my-tool.v2
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: my-tool.v2
+            arguments: '{"location":"Beijing"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+  dotted_name_multiple_segments:
+    case_key: UNIFIED.1-dotted_name_multiple_segments
+    stimulus:
+      ref: current
+      semantic_sha256: 424a3047fc7a78a125702bf2c0d828262ba9c87c0d9e7cf5de162a1ea7e61492
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.tools.weather
+          arguments:
+            location: Beijing
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.tools.weather
+            arguments: '{"location":"Beijing"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+  dotted_name_shared_prefix:
+    case_key: UNIFIED.2-dotted_name_shared_prefix
+    stimulus:
+      ref: current
+      semantic_sha256: df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: server.weather
+          arguments:
+            location: Beijing
+        - kind: tool_call
+          name: server.time
+          arguments:
+            timezone: Asia/Shanghai
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.weather
+            arguments: '{"location":"Beijing"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: server.time
+            arguments: '{"timezone":"Asia/Shanghai"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
   empty_args:
     case_key: UNIFIED.6.a
     stimulus:
@@ -130,6 +327,154 @@ changes:
           - kind: tool_call
             name: get_weather
             arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  gpt_oss_control_marker_inside_argument_string:
+    case_key: UNIFIED.gpt_oss-control_marker_inside_argument_string
+    stimulus:
+      ref: current
+      semantic_sha256: 1cfabc075ab2d4b0467dd533a7f8ec5e66ed8da31faf09f4f0831afb32fcb801
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: lookup
+          arguments: '{"markers": "<|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|>'
+        - kind: text
+          text: '"}'
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: lookup
+            arguments: '{"markers": "<|tool_calls_section_begin|><|tool_call_begin|><|tool_call_argument_begin|>'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected:
+          - kind: text
+            text: '"}'
+        - expected: []
+        - expected: []
+  gpt_oss_invalid_tool_body_then_empty_call:
+    case_key: UNIFIED.gpt_oss-invalid_tool_body_then_empty_call
+    stimulus:
+      ref: current
+      semantic_sha256: c291cf88c0365b583fa246bcce6dcd35a46a3ad825be47e5e7fb5563acbac532
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: not-json
+        - kind: tool_call
+          name: get_weather
+          arguments: {}
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: not-json
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  gpt_oss_invalid_tool_body_then_valid_call:
+    case_key: UNIFIED.gpt_oss-invalid_tool_body_then_valid_call
+    stimulus:
+      ref: current
+      semantic_sha256: 2ad8dcdae83c02289d0c2946b83dba6a7d4cb36405aafb86b5be94b004b3ab97
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: bad
+          arguments: '{"city":'
+        - kind: tool_call
+          name: get_weather
+          arguments:
+            city: Paris
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: bad
+            arguments: '{"city":'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: get_weather
+            arguments: '{"city":"Paris"}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: b20838bb6c7609f23326eebed27c8c74f987af841d4d524e49a5d130fcf44be7
+    observation:
+      value:
+        assembled:
+        - kind: tool_call
+          name: run
+          arguments: {}
+        - kind: tool_call
+          name: not_offered
+          arguments:
+            x: 2
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: run
+            arguments: '{}'
+            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - kind: tool_call
+            name: not_offered
+            arguments: '{"x":2}'
             terminal_metadata_unavailable: this build has no ToolCallDelta::complete
         - expected: []
   gpt_oss_tool_body_whitespace:
@@ -1741,6 +2086,15 @@ changes:
         - expected:
           - kind: text
             text: ' After.'
+  three_calls_partial_header:
+    case_key: UNIFIED.2-three_calls_partial_header
+    stimulus:
+      ref: current
+      semantic_sha256: f569310581f06138195def131cb640eec462b9a111d73ca2a98b9e4f17e1305a
+    observation:
+      unavailable:
+        code: legacy_unclassified
+        detail: legacy split capture cannot replay this authored schedule
   tool_block_never_closed_then_text:
     case_key: UNIFIED.4.a
     stimulus:
@@ -2059,140 +2413,28 @@ changes:
         - expected:
           - kind: text
             text: done
-  adjacent_calls_partial_header:
-    case_key: UNIFIED.2-adjacent_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: 739b334e6a08767a96601a5a30a8c19f7a9aa36db2a0ebf97d13e1edd58d6ec1
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: legacy split capture cannot replay this authored schedule
-  three_calls_partial_header:
-    case_key: UNIFIED.2-three_calls_partial_header
-    stimulus:
-      ref: current
-      semantic_sha256: f569310581f06138195def131cb640eec462b9a111d73ca2a98b9e4f17e1305a
-    observation:
-      unavailable:
-        code: legacy_unclassified
-        detail: legacy split capture cannot replay this authored schedule
-  dotted_name_minimal:
-    case_key: UNIFIED.1-dotted_name_minimal
-    stimulus:
-      ref: current
-      semantic_sha256: db4c05a50628bec3a687e6941cea198a253dea3ca1b7f4583fc200f7bd0395d5
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: a.b
-          arguments: {}
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: a.b
-            arguments: '{}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-  dotted_name_mixed_punctuation:
-    case_key: UNIFIED.1-dotted_name_mixed_punctuation
-    stimulus:
-      ref: current
-      semantic_sha256: 1e07f7a1d96342cdb9127431e80f3751021daf202f645ac2635655387d792d1c
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: my-tool.v2
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: my-tool.v2
-            arguments: '{"location":"Beijing"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-  dotted_name_multiple_segments:
-    case_key: UNIFIED.1-dotted_name_multiple_segments
-    stimulus:
-      ref: current
-      semantic_sha256: 424a3047fc7a78a125702bf2c0d828262ba9c87c0d9e7cf5de162a1ea7e61492
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.tools.weather
-          arguments:
-            location: Beijing
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.tools.weather
-            arguments: '{"location":"Beijing"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-  dotted_name_shared_prefix:
-    case_key: UNIFIED.2-dotted_name_shared_prefix
-    stimulus:
-      ref: current
-      semantic_sha256: df784e2eb4e767185a616184a14b0be16da0e39c21f593bd9c8746c0cae93ae3
-    observation:
-      value:
-        assembled:
-        - kind: tool_call
-          name: server.weather
-          arguments:
-            location: Beijing
-        - kind: tool_call
-          name: server.time
-          arguments:
-            timezone: Asia/Shanghai
-        chunks:
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.weather
-            arguments: '{"location":"Beijing"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected: []
-        - expected:
-          - kind: tool_call
-            name: server.time
-            arguments: '{"timezone":"Asia/Shanghai"}'
-            terminal_metadata_unavailable: this build has no ToolCallDelta::complete
-        - expected: []
-        - expected: []
 metadata_changes:
+  adjacent_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_json_null_ref:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   arg_marker_in_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_null_mixed_labels:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  arg_string_null_ref:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -2212,7 +2454,47 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  dotted_name_minimal:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_mixed_punctuation:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_multiple_segments:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  dotted_name_shared_prefix:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   empty_args:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_control_marker_inside_argument_string:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
+  gpt_oss_multiple_unknown_and_empty_tools:
     init:
       starting_state: None
       tool_output_mode: Native
@@ -2647,6 +2929,11 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
+  three_calls_partial_header:
+    init:
+      starting_state: None
+      tool_output_mode: Native
+      named_tool: null
   tool_block_never_closed_then_text:
     init:
       starting_state: None
@@ -2707,37 +2994,115 @@ metadata_changes:
       starting_state: None
       tool_output_mode: Native
       named_tool: null
-  adjacent_calls_partial_header:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  three_calls_partial_header:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_minimal:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_mixed_punctuation:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_multiple_segments:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
-  dotted_name_shared_prefix:
-    init:
-      starting_state: None
-      tool_output_mode: Native
-      named_tool: null
 document_overrides:
+  adjacent_calls_partial_header:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+      inherited_from: null
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  arg_string_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  dotted_name_minimal:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  dotted_name_mixed_punctuation:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  dotted_name_multiple_segments:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  dotted_name_shared_prefix:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  gpt_oss_control_marker_inside_argument_string:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_empty_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  gpt_oss_invalid_tool_body_then_valid_call:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.1.23
+      capture_origin:
+        crate_version: 0.1.23
+        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
+        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
+      inherited_from: null
   gpt_oss_tool_body_whitespace:
     capture_provenance:
       captured_with:
@@ -2802,15 +3167,6 @@ document_overrides:
     parser_path: split
   retired__51_b:
     parser_path: split
-  adjacent_calls_partial_header:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.1.23
-      capture_origin:
-        crate_version: 0.1.23
-        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-      inherited_from: null
   three_calls_partial_header:
     capture_provenance:
       captured_with:
@@ -2819,40 +3175,4 @@ document_overrides:
         crate_version: 0.1.23
         git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
         source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-      inherited_from: null
-  dotted_name_minimal:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.1.23
-      capture_origin:
-        crate_version: 0.1.23
-        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-      inherited_from: null
-  dotted_name_mixed_punctuation:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.1.23
-      capture_origin:
-        crate_version: 0.1.23
-        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-      inherited_from: null
-  dotted_name_multiple_segments:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.1.23
-      capture_origin:
-        crate_version: 0.1.23
-        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
-      inherited_from: null
-  dotted_name_shared_prefix:
-    capture_provenance:
-      captured_with:
-        dynamo_v2: 0.1.23
-      capture_origin:
-        crate_version: 0.1.23
-        source_sha256: 39556a0ed199e16432022d545345590ca1252c68d04fe9076db1df4cd2221878
-        git_commit: c8f61cc959371c0fea993b920e3a097e86c6d05b
       inherited_from: null

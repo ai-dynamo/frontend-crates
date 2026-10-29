@@ -14,6 +14,10 @@ changes:
         chunks:
         - expected: []
         - expected: []
+    case_key: UNIFIED.30.m
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_narrated_prefix_inside_reasoning:
     observation:
       value:
@@ -31,6 +35,10 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    case_key: UNIFIED.31-22
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_native_markup_only:
     observation:
       value:
@@ -53,6 +61,10 @@ changes:
             name: null
             arguments: '}'
         - expected: []
+    case_key: UNIFIED.31-23
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_schema_error_nameless_element_bare_opener:
     observation:
       value:
@@ -62,6 +74,10 @@ changes:
         chunks:
         - expected: []
         - expected: []
+    case_key: UNIFIED.31-20
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_schema_error_not_a_call_bare_opener:
     observation:
       value:
@@ -71,6 +87,10 @@ changes:
         chunks:
         - expected: []
         - expected: []
+    case_key: UNIFIED.31-17
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_stray_prefix_before_reasoning:
     observation:
       value:
@@ -88,6 +108,10 @@ changes:
         - expected:
           - kind: text
             text: '[{"name": "get_weather", "arguments": {"city": "Paris"}}]'
+    case_key: UNIFIED.31-21
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_syntax_error_bare_opener:
     observation:
       value:
@@ -97,6 +121,10 @@ changes:
         chunks:
         - expected: []
         - expected: []
+    case_key: UNIFIED.31-14
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   guided_json_unterminated_reasoning_then_wrapped_payload:
     observation:
       value:
@@ -111,6 +139,10 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+    case_key: UNIFIED.31-24
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
   two_adjacent_reason_spans:
     observation:
       value:
@@ -137,6 +169,10 @@ changes:
         - expected:
           - kind: text
             text: done
+    case_key: UNIFIED.10.e
+    stimulus:
+      unavailable:
+        code: original_request_not_retained
 metadata_changes:
   arg_json_null_anyof:
     vllm_capture_provenance:

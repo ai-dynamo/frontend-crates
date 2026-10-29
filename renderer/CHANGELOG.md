@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [8.2.1](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.2.0...dynamo-renderer-v8.2.1) - 2026-10-27
+
+### Bug fixes
+
+- Preserve numeric tool arguments across parsers ([#339](https://github.com/ai-dynamo/frontend-crates/pull/339))
+
+## [8.2.0](https://github.com/ai-dynamo/frontend-crates/compare/dynamo-renderer-v8.1.0...dynamo-renderer-v8.2.0) - 2026-10-23
+
+### Features
+
+- Add Muse Spark Open parsers and Chat/Responses tool support ([#450](https://github.com/ai-dynamo/frontend-crates/pull/450))
+
 ## [8.1.0] - 2026-10-13
 
 ### Added

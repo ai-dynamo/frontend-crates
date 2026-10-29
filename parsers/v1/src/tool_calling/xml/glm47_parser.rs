@@ -867,7 +867,7 @@ fn parse_tool_call_block(
     // (?s) enables dotall mode so (.*?) matches across newlines — required
     // because models often emit multi-line content in arg values.
     let pattern = format!(
-        r"(?s){}([^<]+){}{}(.*?){}",
+        r"(?s){}([^<]+){}\s*{}(.*?){}",
         arg_key_start_escaped, arg_key_end_escaped, arg_value_start_escaped, arg_value_end_escaped
     );
 
@@ -1576,6 +1576,25 @@ mod tests {
             args,
             serde_json::json!({"label": null, "note": null, "literal": "null"})
         );
+    }
+
+    #[test]
+    fn test_parse_newline_between_arg_tags() {
+        let config = get_test_config();
+        let message = "<tool_call>get_weather\n<arg_key>city</arg_key>\n<arg_value>Paris</arg_value>\n</tool_call>\n<tool_call>get_time\n<arg_key>city</arg_key>\n<arg_value>London</arg_value>\n</tool_call>";
+
+        let (calls, _) = try_tool_call_parse_glm47(message, &config, None).unwrap();
+
+        assert_eq!(calls.len(), 2);
+        for (call, (name, city)) in calls
+            .iter()
+            .zip([("get_weather", "Paris"), ("get_time", "London")])
+        {
+            assert_eq!(call.function.name, name);
+            let args: HashMap<String, Value> =
+                serde_json::from_str(&call.function.arguments).unwrap();
+            assert_eq!(args.get("city").unwrap().as_str().unwrap(), city);
+        }
     }
 
     #[test] // helper

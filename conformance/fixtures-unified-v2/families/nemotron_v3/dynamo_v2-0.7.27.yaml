@@ -137,6 +137,43 @@ changes:
             complete: true
         - expected: []
         - expected: []
+  arg_json_null_ref:
+    case_key: UNIFIED.7-arg_json_null_ref
+    stimulus:
+      inline:
+        input: </think><tool_call><function=get_weather><parameter=city>null</parameter></function></tool_call>
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            $defs:
+              City:
+                type:
+                - string
+                - 'null'
+            properties:
+              city:
+                $ref: '#/$defs/City'
+        chunks:
+        - delta_text: </think>
+        - delta_text: <tool_call>
+        - delta_text: <function=get_weather>
+        - delta_text: <parameter=city>
+        - delta_text: 'null'
+        - delta_text: </parameter>
+        - delta_text: </function>
+        - delta_text: </tool_call>
+        - delta_text: ‹finish›
+      semantic_sha256: d10486b1faab39b026867d5634e387f508a0497ae596290841c043e86200f036
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.27 source could not be recovered with its recorded identity c853718136a8432101a9bfd4a0bfeab39510d564502a93a8b1832a8de3244c10; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_marker_in_string:
     case_key: UNIFIED.7-arg_marker_in_string
     stimulus:
@@ -185,6 +222,106 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  arg_null_mixed_labels:
+    case_key: UNIFIED.7-arg_null_mixed_labels
+    stimulus:
+      inline:
+        input: '</think><tool_call>
+
+          <function=set_labels>
+
+          <parameter=label>
+
+          null
+
+          </parameter>
+
+          <parameter=note>
+
+          null
+
+          </parameter>
+
+          <parameter=literal>
+
+          null
+
+          </parameter>
+
+          </function>
+
+          </tool_call>'
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: set_labels
+          parameters:
+            type: object
+            properties:
+              label:
+                anyOf:
+                - type: string
+                - type: 'null'
+              note:
+                type:
+                - string
+                - 'null'
+              literal:
+                type: string
+        chunks:
+        - delta_text: </think>
+        - delta_text: <tool_call>
+        - delta_text: '
+
+            '
+        - delta_text: <function=set_labels>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=label>
+        - delta_text: '
+
+            null
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=note>
+        - delta_text: '
+
+            null
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: <parameter=literal>
+        - delta_text: '
+
+            null
+
+            '
+        - delta_text: </parameter>
+        - delta_text: '
+
+            '
+        - delta_text: </function>
+        - delta_text: '
+
+            '
+        - delta_text: </tool_call>
+        - delta_text: ‹finish›
+      semantic_sha256: da923691df771a00e171cc1e70a62e6c53acb0eefd317e8d83a473e6493f4fdd
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.27 source could not be recovered with its recorded identity c853718136a8432101a9bfd4a0bfeab39510d564502a93a8b1832a8de3244c10; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   arg_string_null:
     case_key: UNIFIED.7-arg_string_null
     stimulus:
@@ -887,6 +1024,15 @@ changes:
         - expected: []
         - expected: []
         - expected: []
+  gpt_oss_multiple_unknown_and_empty_tools:
+    case_key: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    stimulus:
+      ref: current
+      semantic_sha256: 70f13ea0972b3e2c2ef8487a9251e401ed47ae47c7f813255fe54c42d679e300
+    observation:
+      unavailable:
+        code: producer_source_unavailable
+        detail: Original parser 0.7.27 source could not be recovered with its recorded identity c853718136a8432101a9bfd4a0bfeab39510d564502a93a8b1832a8de3244c10; the release tag is absent or differs from the recorded producer. The parser was not executed, and no newer output was substituted.
   guided_json_after_reasoning:
     case_key: UNIFIED.30-guided_json_after_reasoning
     stimulus:
@@ -7682,4 +7828,22 @@ changes:
         - expected: []
         - expected: []
 metadata_changes: {}
-document_overrides: {}
+document_overrides:
+  arg_json_null_ref:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin: null
+      inherited_from: null
+  arg_null_mixed_labels:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin: null
+      inherited_from: null
+  gpt_oss_multiple_unknown_and_empty_tools:
+    capture_provenance:
+      captured_with:
+        dynamo_v2: 0.7.27
+      capture_origin: null
+      inherited_from: null

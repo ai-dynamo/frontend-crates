@@ -8,11 +8,12 @@ import re
 import tarfile
 from pathlib import Path, PurePosixPath
 
+from capture_versions import DYNAMO_VERSION_RE
+
 import unified_taxonomy
 from unified_taxonomy import historical_case_label
 
 CAPTURE_SNAPSHOT = "capture-snapshot.json"
-DYNAMO_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?")
 UNIFIED_HISTORY_PATH = "unified-history"
 
 
@@ -41,12 +42,15 @@ def capture_layer_sort_key(label: str) -> tuple[str, int]:
     return (match[1], int(match[2])) if match else (label, 0)
 
 
+TOOLCALLING_CASE_ALIASES = {
+    "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
+    "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
+}
+
+
 def canonical_toolcalling_case_key(case_id: str) -> str:
     """Align display IDs without rewriting immutable stream archives."""
-    return {
-        "TOOLCALLING.streamv1.7-1": "TOOLCALLING.streamv1.7-5",
-        "TOOLCALLING.streamv1.7-2": "TOOLCALLING.streamv1.7-4",
-    }.get(case_id, case_id)
+    return TOOLCALLING_CASE_ALIASES.get(case_id, case_id)
 
 
 def historical_unified_case_key(family: str, key: str) -> str:

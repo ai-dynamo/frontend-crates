@@ -82,7 +82,9 @@ pub fn may_be_fix_tool_schema(tools: serde_json::Value) -> Option<Value> {
             updated_tools.push(tool);
         }
     }
-    Some(Value::from_serialize(&updated_tools))
+    Some(crate::python::template_value(&serde_json::Value::Array(
+        updated_tools,
+    )))
 }
 
 /// Default media type conversions for multimodal content.
@@ -355,7 +357,7 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 
     fn messages(&self) -> Value {
-        let messages_json = serde_json::to_value(&self.messages).unwrap();
+        let messages_json = self.function_template_messages();
         Value::from_serialize(&messages_json)
     }
 
@@ -364,21 +366,22 @@ impl OAIChatLikeRequest for dynamo_protocols::types::CreateChatCompletionRequest
     }
 
     fn tools(&self) -> Option<Value> {
-        if self.tools.is_none() {
-            None
-        } else {
-            Some(may_be_fix_tool_schema(
-                serde_json::to_value(&self.tools).unwrap(),
-            )?)
-        }
+        let tools = self.tools.as_ref()?;
+        may_be_fix_tool_schema(
+            serde_json::to_value(
+                tools
+                    .iter()
+                    .map(|tool| tool.function_template_tool())
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap(),
+        )
     }
 
     fn tool_choice(&self) -> Option<Value> {
-        if self.tool_choice.is_none() {
-            None
-        } else {
-            Some(Value::from_serialize(&self.tool_choice))
-        }
+        self.tool_choice
+            .as_ref()
+            .map(|choice| Value::from_serialize(choice.function_template_choice()))
     }
 
     fn response_format(&self) -> Option<Value> {
@@ -511,6 +514,14 @@ fn normalize_system_messages(messages: &mut serde_json::Value, rules: SystemNorm
 }
 
 impl HfTokenizerConfigJsonFormatter {
+    fn template_handles_native_tools(&self, has_tools: bool) -> bool {
+        if has_tools {
+            self.tool_use_template_handles_native_tools
+        } else {
+            self.default_template_handles_native_tools
+        }
+    }
+
     fn render_with_token_policy(
         &self,
         req: &dyn OAIChatLikeRequest,
@@ -518,19 +529,22 @@ impl HfTokenizerConfigJsonFormatter {
     ) -> Result<crate::RenderedPrompt> {
         let mixins = Value::from_dyn_object(self.mixins.clone());
 
-        let tools = req.tools();
-        // Strip tools when tool_choice is "none" and the flag is enabled, so the model
-        // doesn't see tool definitions and generate raw XML tool calls in its response.
-        let tools = if self.exclude_tools_when_tool_choice_none {
-            match req.tool_choice() {
-                Some(ref tc) if tc.as_str() == Some("none") => None,
-                _ => tools,
-            }
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && req.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let flat_tools = if exclude { None } else { req.tools() };
+        // Base variant selection on flat tools so changing representations cannot change it.
+        let has_tools = flat_tools
+            .as_ref()
+            .and_then(|tools| tools.len())
+            .is_some_and(|len| len > 0);
+        // Gate the native Responses view on template support. Flat Chat tools
+        // already preserve their explicit defer flags, as vLLM and SGLang do.
+        // Reuse the catalog already converted above when selecting capabilities.
+        let tools = if !exclude && self.template_handles_native_tools(has_tools) {
+            req.template_tools().or(flat_tools)
         } else {
-            tools
+            flat_tools
         };
-        // has_tools should be true if tools is a non-empty array
-        let has_tools = tools.as_ref().and_then(|v| v.len()).is_some_and(|l| l > 0);
         let add_generation_prompt = req.should_add_generation_prompt();
 
         tracing::trace!(
@@ -614,7 +628,10 @@ impl HfTokenizerConfigJsonFormatter {
         {
             // Only template-owned markers are controls. Markers in message/tool
             // data must survive Jinja unchanged and encode as ordinary text.
-            let mut tool_json = tools.as_ref().map(serde_json::to_value).transpose()?;
+            let mut tool_json = tools
+                .as_ref()
+                .map(crate::python::template_json)
+                .transpose()?;
             let collision_source = format!(
                 "{messages_for_template}{tool_json:?}{:?}{}",
                 req.chat_template_args(),
@@ -626,13 +643,13 @@ impl HfTokenizerConfigJsonFormatter {
             shield_harmony_literals(&mut messages_for_template, &placeholder, &mut literals);
             if let Some(value) = &mut tool_json {
                 shield_harmony_literals(value, &placeholder, &mut literals);
-                tools = Some(Value::from_serialize(value));
+                tools = Some(crate::python::template_value(value));
             }
         }
 
         let ctx = context! {
-            messages => messages_for_template,
-            tools => tools,
+            messages => crate::python::template_value(&messages_for_template),
+            tools => tools.as_ref().map(crate::python::template_json).transpose()?.as_ref().map(crate::python::template_value),
             bos_token => self.config.bos_tok(),
             eos_token => self.config.eos_tok(),
             unk_token => self.config.unk_tok(),
@@ -642,7 +659,7 @@ impl HfTokenizerConfigJsonFormatter {
 
         // Merge any additional args into the context last so they take precedence
         let ctx = if let Some(args) = req.chat_template_args() {
-            let extra = Value::from_serialize(args);
+            let extra = crate::python::template_value(&serde_json::to_value(args)?);
             context! { ..ctx, ..extra }
         } else {
             ctx
@@ -717,6 +734,19 @@ fn shield_harmony_literals(
 }
 
 impl OAIPromptFormatter for HfTokenizerConfigJsonFormatter {
+    fn supports_native_tools(&self, request: &dyn OAIChatLikeRequest) -> bool {
+        // Match render's tool exclusion and variant choice before declaring support.
+        let exclude = self.exclude_tools_when_tool_choice_none
+            && request.tool_choice().as_ref().and_then(Value::as_str) == Some("none");
+        let has_tools = !exclude
+            && request
+                .tools()
+                .as_ref()
+                .and_then(|tools| tools.len())
+                .is_some_and(|len| len > 0);
+        self.template_handles_native_tools(has_tools)
+    }
+
     fn supports_add_generation_prompt(&self) -> bool {
         self.supports_add_generation_prompt
     }
@@ -2395,7 +2425,7 @@ NORMAL MODE
         let out = env
             .get_template("t")
             .unwrap()
-            .render(context! { messages => messages.as_array().unwrap() })
+            .render(context! { messages => crate::python::template_value(&messages) })
             .unwrap();
 
         // Should produce clean JSON without double-encoding, with Python
@@ -2428,7 +2458,7 @@ NORMAL MODE
         let out = env
             .get_template("t")
             .unwrap()
-            .render(context! { messages => messages.as_array().unwrap() })
+            .render(context! { messages => crate::python::template_value(&messages) })
             .unwrap();
 
         assert!(out == "a=1;b=x;" || out == "b=x;a=1;");

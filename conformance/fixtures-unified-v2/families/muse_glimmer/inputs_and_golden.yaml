@@ -18551,7 +18551,7 @@ cases:
   muse_unterminated_parameter_then_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_call
-    description: 'Muse: an unterminated parameter in the first invoke precedes a complete invoke with its own parameter. At EOF, drop the malformed invoke and preserve the later call''s name and arguments.'
+    description: 'Muse: a parameter owns invocation-shaped text until its closer. Preserve the complete outer argument instead of treating the embedded declared tool as a new call.'
     policy:
     - P2
     - I7
@@ -18627,13 +18627,13 @@ cases:
     golden:
       assembled:
       - kind: tool_call
-        name: get_weather
+        name: f
         arguments:
-          city: Paris
+          x: bad</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
   muse_unterminated_parameter_then_empty_call:
     lifecycle: active
     scenario: muse_unterminated_parameter_then_empty_call
-    description: 'Muse: an unterminated parameter in the first invoke precedes a complete parameterless invoke in the same tool channel. At EOF, drop only the malformed invoke and emit the later call.'
+    description: 'Muse: an unclosed parameter contains parameterless invocation-shaped text. At EOF discard the ambiguous outer invocation instead of guessing an executable nested call. This turn emits nothing.'
     policy:
     - P2
     display_id: UNIFIED.muse-unterminated_parameter_then_empty_call
@@ -18703,10 +18703,7 @@ cases:
       - delta_text: <|eot|>
       - delta_text: ‹finish›
     golden:
-      assembled:
-      - kind: tool_call
-        name: f
-        arguments: {}
+      assembled: []
   guided_json_native_parameter_string_before_payload:
     lifecycle: active
     scenario: guided_json_native_parameter_string_before_payload
@@ -19056,6 +19053,400 @@ cases:
       assembled:
       - kind: text
         text: Answer
+  muse_opaque_undeclared_invoke:
+    lifecycle: active
+    scenario: muse_opaque_undeclared_invoke
+    description: Muse arguments own invocation-shaped text naming an undeclared tool. A complete outer string must not become an undeclared call during recovery.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.muse-opaque_undeclared_invoke
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="rm_rf"><atem:parameter name="path">/</atem:parameter></atem:invoke><|eot|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=f
+      - delta_text: <|message|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: 'doc: '
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="rm_rf">
+      - delta_text: <atem:parameter name="path">
+      - delta_text: /
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: 'doc: </atem:invoke><atem:invoke name="rm_rf"><atem:parameter name="path">/'
+  muse_recovery_second_parameter:
+    lifecycle: active
+    scenario: muse_recovery_second_parameter
+    description: A later Muse parameter owns its bytes through its closer. Declared invocation-shaped content inside it must not be promoted to an executable call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.muse-recovery_second_parameter
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">done</atem:parameter><atem:parameter name="y">broken</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke><|eot|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=f
+      - delta_text: <|message|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: done
+      - delta_text: </atem:parameter>
+      - delta_text: <atem:parameter name="y">
+      - delta_text: broken
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: done
+          y: broken</atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris
+  muse_unterminated_reasoning_guided:
+    lifecycle: active
+    scenario: muse_unterminated_reasoning_guided
+    description: JSON-guided Muse reasoning strips an unterminated native invoke-start marker while preserving its following prose; this intentional guided/native distinction is chunk invariant.
+    policy:
+    - I5
+    display_id: UNIFIED.muse-unterminated_reasoning_guided
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=self<|message|>Maybe <atem:invoke name="x and more thought<|eom|>{"city":"Paris"}
+      init:
+        starting_state: None
+        tool_output_mode: GuidedJson
+        named_tool: get_weather
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: 'Maybe '
+      - delta_text: <atem:invoke name="x and more thought<|eom|>
+      - delta_text: '{"city":"Paris"}'
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Maybe x and more thought
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
+  muse_unterminated_reasoning_native:
+    lifecycle: active
+    scenario: muse_unterminated_reasoning_native
+    description: Native Muse reasoning preserves an unterminated invocation header as literal prose. Guided JSON treats the same native prefix as stray control syntax (see the paired guided case).
+    policy:
+    - I5
+    display_id: UNIFIED.muse-unterminated_reasoning_native
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=self<|message|>Maybe <atem:invoke name="x and more thought<|eom|><|start|>assistant to=user<|message|>Done.<|eot|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: 'Maybe '
+      - delta_text: <atem:invoke name="x and more thought<|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: Done.
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: Maybe <atem:invoke name="x and more thought
+      - kind: text
+        text: Done.
+  muse_opaque_declared_invoke:
+    lifecycle: active
+    scenario: muse_opaque_declared_invoke
+    description: Muse arguments own invocation-shaped text even when the embedded tool is declared. The complete outer argument remains data instead of dispatching the embedded call.
+    policy:
+    - I5
+    - I7
+    display_id: UNIFIED.muse-opaque_declared_invoke
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=f<|message|><atem:invoke name="f"><atem:parameter name="x">doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris</atem:parameter></atem:invoke><|eot|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      - name: f
+        parameters:
+          type: object
+          properties:
+            x:
+              type: string
+      - name: g
+        parameters:
+          type: object
+          properties:
+            y:
+              type: string
+      - name: run
+        parameters:
+          type: object
+          properties:
+            cmd:
+              type: string
+      - name: log
+        parameters:
+          type: object
+          properties:
+            note:
+              type: string
+      - name: sum_values
+        parameters:
+          type: object
+          properties:
+            values:
+              type: array
+              items:
+                type: number
+      - name: functions.
+        parameters:
+          type: object
+          properties: {}
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=f
+      - delta_text: <|message|>
+      - delta_text: <atem:invoke name="f">
+      - delta_text: <atem:parameter name="x">
+      - delta_text: 'doc: '
+      - delta_text: </atem:invoke>
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: <atem:parameter name="city">
+      - delta_text: Paris
+      - delta_text: </atem:parameter>
+      - delta_text: </atem:invoke>
+      - delta_text: <|eot|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: f
+        arguments:
+          x: 'doc: </atem:invoke><atem:invoke name="get_weather"><atem:parameter name="city">Paris'
   adjacent_calls_partial_header:
     lifecycle: active
     scenario: adjacent_calls_partial_header
@@ -19299,6 +19690,1171 @@ cases:
         name: schema_probe
         arguments:
           value: '{''a'':1}'
+  arg_null_mixed_labels:
+    lifecycle: active
+    scenario: arg_null_mixed_labels
+    description: 'set_labels has nullable label (anyOf), nullable note (type array), and non-nullable literal (string). Schema-directed values use bare null text; typed grammars use native null and string values. Expect {"label": null, "note": null, "literal": "null"}. This single capture is referenced by both 7-4 and 7-5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_null_mixed_labels
+    historical_ids:
+    - UNIFIED.7-4.mixed_labels
+    request:
+      input: '<|start|>assistant to=set_labels<|message|><atem:function_calls>
+
+        <atem:invoke name="set_labels">
+
+        <atem:parameter name="label">null</atem:parameter>
+
+        <atem:parameter name="note">null</atem:parameter>
+
+        <atem:parameter name="literal">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: set_labels
+        parameters:
+          type: object
+          properties:
+            label:
+              anyOf:
+              - type: string
+              - type: 'null'
+            note:
+              type:
+              - string
+              - 'null'
+            literal:
+              type: string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=set_labels
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="set_labels">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="label">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="note">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="literal">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: set_labels
+        arguments:
+          label: null
+          note: null
+          literal: 'null'
+  arg_numeric_14_const_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_const_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_const_decimal
+    historical_ids:
+    - UNIFIED.7-14.const_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">42.0</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '42.0'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+  arg_numeric_14_const_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_const_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_const_exponent
+    historical_ids:
+    - UNIFIED.7-14.const_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">4.2e1</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              const: 42
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 4.2e1
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+  arg_numeric_14_enum_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 42.0; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_enum_decimal
+    historical_ids:
+    - UNIFIED.7-14.enum_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">42.0</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '42.0'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.0}'
+  arg_numeric_14_enum_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_enum_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4.2e1; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_enum_exponent
+    historical_ids:
+    - UNIFIED.7-14.enum_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">4.2e1</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - 'null'
+              enum:
+              - 42
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 4.2e1
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4.2e1}'
+  arg_numeric_14_large_decimal:
+    lifecycle: active
+    scenario: arg_numeric_14_large_decimal
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9007199254740993.0; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_large_decimal
+    historical_ids:
+    - UNIFIED.7-14.large_decimal
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740993.0</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740993.0'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.0}'
+  arg_numeric_14_large_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_large_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 9.007199254740993e15; expected 9007199254740993.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_large_exponent
+    historical_ids:
+    - UNIFIED.7-14.large_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9.007199254740993e15</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 9.007199254740993e15
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.007199254740993e15}'
+  arg_numeric_14_negative:
+    lifecycle: active
+    scenario: arg_numeric_14_negative
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input -4.2E+1; expected -42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_negative
+    historical_ids:
+    - UNIFIED.7-14.negative
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">-4.2E+1</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '-4.2E+1'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-4.2E+1}'
+  arg_numeric_14_negative_exponent:
+    lifecycle: active
+    scenario: arg_numeric_14_negative_exponent
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 4200e-2; expected 42.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_negative_exponent
+    historical_ids:
+    - UNIFIED.7-14.negative_exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">4200e-2</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 4200e-2
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":4200e-2}'
+  arg_numeric_14_zero_underflow:
+    lifecycle: active
+    scenario: arg_numeric_14_zero_underflow
+    description: 'Integer-valued decimal/exponent fidelity: preserve mathematically integral numeric values, including large integers, negative exponents, and zero. Schema-directed grammars must permit an integer; already-typed grammars preserve native numbers. See numeric-failures.md. Input 0.0e-400; expected 0.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_14_zero_underflow
+    historical_ids:
+    - UNIFIED.7-14.zero_underflow
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">0.0e-400</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type:
+              - integer
+              - string
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '0.0e-400'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.0e-400}'
+  arg_numeric_15_exponent:
+    lifecycle: active
+    scenario: arg_numeric_15_exponent
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9.0071992547409925e15; expected 9.0071992547409925e15.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_exponent
+    historical_ids:
+    - UNIFIED.7-15.exponent
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9.0071992547409925e15</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: 9.0071992547409925e15
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9.0071992547409925e15}'
+  arg_numeric_15_negative:
+    lifecycle: active
+    scenario: arg_numeric_15_negative
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input -9007199254740992.5; expected -9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_negative
+    historical_ids:
+    - UNIFIED.7-15.negative
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">-9007199254740992.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '-9007199254740992.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":-9007199254740992.5}'
+  arg_numeric_15_ordinary:
+    lifecycle: active
+    scenario: arg_numeric_15_ordinary
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 42.5; expected 42.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_ordinary
+    historical_ids:
+    - UNIFIED.7-15.ordinary
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">42.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '42.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":42.5}'
+  arg_numeric_15_quarter:
+    lifecycle: active
+    scenario: arg_numeric_15_quarter
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.25; expected 9007199254740993.25.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_quarter
+    historical_ids:
+    - UNIFIED.7-15.quarter
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740993.25</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740993.25'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.25}'
+  arg_numeric_15_round_down:
+    lifecycle: active
+    scenario: arg_numeric_15_round_down
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740992.5; expected 9007199254740992.5.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_round_down
+    historical_ids:
+    - UNIFIED.7-15.round_down
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740992.5</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740992.5'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740992.5}'
+  arg_numeric_15_round_up:
+    lifecycle: active
+    scenario: arg_numeric_15_round_up
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 9007199254740993.1; expected 9007199254740993.1.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_round_up
+    historical_ids:
+    - UNIFIED.7-15.round_up
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">9007199254740993.1</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '9007199254740993.1'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":9007199254740993.1}'
+  arg_numeric_15_small:
+    lifecycle: active
+    scenario: arg_numeric_15_small
+    description: 'Fractional numeric preservation: native number syntax preserves ordinary fractions, upward/downward rounding boundaries, negative values, and exponent notation. See numeric-failures.md. Input 0.10000000000000000001; expected 0.10000000000000000001.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_15_small
+    historical_ids:
+    - UNIFIED.7-15.small
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="value">0.10000000000000000001</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            value:
+              type: number
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '0.10000000000000000001'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments: '{"value":0.10000000000000000001}'
+  arg_numeric_nested_exact:
+    lifecycle: active
+    scenario: arg_numeric_nested_exact
+    description: Nested objects and arrays preserve exact large integers, long decimals, and underflow-sized numbers.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_nested_exact
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=inspect<|message|><atem:function_calls>
+
+        <atem:invoke name="inspect">
+
+        <atem:parameter name="nested">{"fraction":9007199254740992.5,"tiny":1e-400}</atem:parameter>
+
+        <atem:parameter name="values">[9007199254740993,-9007199254740993]</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: inspect
+        parameters:
+          type: object
+          properties:
+            nested:
+              type: object
+              properties:
+                fraction:
+                  type: number
+                tiny:
+                  type: number
+            values:
+              type: array
+              items:
+                type: integer
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=inspect
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="inspect">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="nested">
+      - delta_text: '{"fraction":9007199254740992.5,"tiny":1e-400}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="values">
+      - delta_text: '[9007199254740993,-9007199254740993]'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: inspect
+        arguments: '{"nested":{"fraction":9007199254740992.5,"tiny":1e-400},"values":[9007199254740993,-9007199254740993]}'
   dotted_name_minimal:
     lifecycle: active
     scenario: dotted_name_minimal
@@ -19583,3 +21139,454 @@ cases:
         name: server.time
         arguments:
           timezone: Asia/Shanghai
+  arg_array_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_array_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_array_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=record<|message|><atem:function_calls>
+
+        <atem:invoke name="record">
+
+        <atem:parameter name="value">["é \\\" </atem:parameter>"]</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: array
+              items:
+                type: string
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=record
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="record">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '["é \\\" '
+      - delta_text: </atem:parameter>
+      - delta_text: '"]'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+          - é \" </atem:parameter>
+  arg_object_quoted_parameter_close:
+    lifecycle: active
+    scenario: arg_object_quoted_parameter_close
+    description: JSON container strings preserve a literal ATEM parameter closer. All native families carry the same data using their own argument encoding; Muse must not interpret the quoted closer as framing.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_object_quoted_parameter_close
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=record<|message|><atem:function_calls>
+
+        <atem:invoke name="record">
+
+        <atem:parameter name="value">{"s": "</atem:parameter>"}</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: record
+        parameters:
+          type: object
+          properties:
+            value:
+              type: object
+              properties:
+                s:
+                  type: string
+              required:
+              - s
+              additionalProperties: false
+          required:
+          - value
+          additionalProperties: false
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=record
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="record">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="value">
+      - delta_text: '{"s": "'
+      - delta_text: </atem:parameter>
+      - delta_text: '"}'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: record
+        arguments:
+          value:
+            s: </atem:parameter>
+  arg_json_null_ref:
+    lifecycle: active
+    scenario: arg_json_null_ref
+    description: 'The request tool schema permits JSON null. Bare parameter text `null` must produce JSON `null`; grammars with explicit types use native null syntax. Variants cover nullable type arrays, anyOf, oneOf, nullable, and const. Mixed-field probes also assert that non-nullable fields remain strings. Refs #251, #268, #269. `city` uses a local $ref to the tool parameters root; resolving its nullable definition turns bare null text into JSON null.'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_json_null_ref
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">null</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type:
+              - string
+              - 'null'
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: 'null'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: null
+  arg_string_null_ref:
+    lifecycle: active
+    scenario: arg_string_null_ref
+    description: 'The request tool schema requires a string for the tested value. Bare parameter text `null` must remain JSON string `"null"`; grammars with explicit types use native string syntax. Variants cover non-nullable unions and intersecting sibling constraints. Mixed-field probes also assert that nullable fields become null. Refs #251, #268, #269. A local $ref resolves to a string-only definition; bare null text remains the string "null".'
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_string_null_ref
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=get_weather<|message|><atem:function_calls>
+
+        <atem:invoke name="get_weather">
+
+        <atem:parameter name="city">"null"</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          $defs:
+            City:
+              type: string
+          properties:
+            city:
+              $ref: '#/$defs/City'
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=get_weather
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="get_weather">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="city">
+      - delta_text: '"null"'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: 'null'
+  gpt_oss_interrupted_reasoning_then_response:
+    lifecycle: active
+    scenario: gpt_oss_interrupted_reasoning_then_response
+    description: An explicit native response header interrupts reasoning without its prior channel terminator. Preserve the reasoning and the following visible answer.
+    policy:
+    - I1
+    - I3
+    display_id: UNIFIED.gpt_oss-interrupted_reasoning_then_response
+    historical_ids: []
+    request:
+      input: <|start|>assistant to=self<|message|>checking<|start|>assistant to=user<|message|>done<|eom|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=self
+      - delta_text: <|message|>
+      - delta_text: checking
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: done
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: checking
+      - kind: text
+        text: done
+  gpt_oss_multiple_unknown_and_empty_tools:
+    lifecycle: active
+    scenario: gpt_oss_multiple_unknown_and_empty_tools
+    description: Multiple tool messages preserve order, empty arguments become an empty object, and the parser emits a tool name even when it is not in the offered schema.
+    policy:
+    - I6
+    - I7
+    display_id: UNIFIED.gpt_oss-multiple_unknown_and_empty_tools
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=run<|message|><atem:function_calls>
+
+        <atem:invoke name="run">
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|><|start|>assistant to=not_offered<|message|><atem:function_calls>
+
+        <atem:invoke name="not_offered">
+
+        <atem:parameter name="x">2</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=run
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="run">
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: <|start|>
+      - delta_text: assistant to=not_offered
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="not_offered">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="x">
+      - delta_text: '2'
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: run
+        arguments: {}
+      - kind: tool_call
+        name: not_offered
+        arguments:
+          x: 2
+  gpt_oss_truncated_tool_resynchronizes_at_next_message:
+    lifecycle: active
+    scenario: gpt_oss_truncated_tool_resynchronizes_at_next_message
+    description: A tool message omits its outer terminator before a visible-response header. Preserve the later content and each grammar's complete-call policy.
+    policy:
+    - I3
+    - I4
+    - I5
+    display_id: UNIFIED.gpt_oss-truncated_tool_resynchronizes_at_next_message
+    historical_ids: []
+    request:
+      input: '<|start|>assistant to=lookup<|message|><atem:function_calls>
+
+        <atem:invoke name="lookup">
+
+        <atem:parameter name="q">unfinished</atem:parameter>
+
+        </atem:invoke>
+
+        </atem:function_calls><|start|>assistant to=user<|message|>recovered<|eom|>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant to=lookup
+      - delta_text: <|message|>
+      - delta_text: <atem:function_calls>
+      - delta_text: '
+
+          '
+      - delta_text: <atem:invoke name="lookup">
+      - delta_text: '
+
+          '
+      - delta_text: <atem:parameter name="q">
+      - delta_text: unfinished
+      - delta_text: </atem:parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:invoke>
+      - delta_text: '
+
+          '
+      - delta_text: </atem:function_calls>
+      - delta_text: <|start|>
+      - delta_text: assistant to=user
+      - delta_text: <|message|>
+      - delta_text: recovered
+      - delta_text: <|eom|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: unfinished
+      - kind: text
+        text: recovered
