@@ -58,8 +58,8 @@ export function mountComparison(panel, controller) {
   const ui = document.createElement('div'); ui.className = 'comparison-ui';
   ui.innerHTML = '<div class="comparison-toolbar"><div class="layout-control"><span class="control-label">Layout</span><div class="segmented">'
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
-    + '<span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
-    + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div>'
+    + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
+    + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div></div>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-matrix-scroll"></div>'
     + '<div class="comparison-legend" aria-label="Outcome colors"></div>';
@@ -70,6 +70,7 @@ export function mountComparison(panel, controller) {
     viewActions.classList.remove('capture-slot-actions');
     toolbar.appendChild(viewActions);
   }
+  panel.querySelector('.capture-slots').appendChild(toolbar);
   toolbar.querySelector('[data-case-search]').value = state.search;
   let tab;
   const persist = () => {

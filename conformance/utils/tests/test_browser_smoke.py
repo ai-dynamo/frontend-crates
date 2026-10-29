@@ -1144,5 +1144,5 @@ def test_three_cards_and_toolbar_do_not_overlap(driver, viewer_url):
         const cards=[...document.querySelectorAll('.capture-slot')].map(e=>e.getBoundingClientRect());
         const toolbar=document.querySelector('.comparison-toolbar').getBoundingClientRect();
         return cards.every((a,i)=>cards.slice(i+1).every(b=>a.right<=b.left || b.right<=a.left || a.bottom<=b.top || b.bottom<=a.top))
-          && cards.every(a=>a.bottom<=toolbar.top);
+          && cards.every(a=>a.right<=toolbar.left || toolbar.right<=a.left || a.bottom<=toolbar.top || toolbar.bottom<=a.top);
     """)

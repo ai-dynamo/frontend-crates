@@ -345,7 +345,11 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert counts(driver) == after
         driver.set_window_size(480,850)
-        assert driver.execute_script("return document.documentElement.scrollWidth <= innerWidth + 1")
+        # The matrix scrolls with the page; the capture/menu header must still fit.
+        assert driver.execute_script("""
+            const header=document.querySelector('.capture-slots'), rect=header.getBoundingClientRect();
+            return rect.left>=0 && rect.right<=innerWidth && header.scrollWidth<=header.clientWidth+1;
+        """)
         for card in driver.find_elements("css selector", ".capture-slot"):
             assert card.rect["width"] <= 480
     finally:
@@ -378,7 +382,7 @@ def test_vertical_stacked_problems_focus_dims_uncaptured_outputs(published_viewe
         driver.quit(); server.shutdown(); server.server_close()
 
 
-def test_toolbar_shares_one_row_and_offline_notice_is_at_page_bottom(published_viewer):
+def test_capture_cards_and_menu_share_one_row_and_notice_stays_at_bottom(published_viewer):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
@@ -387,21 +391,40 @@ def test_toolbar_shares_one_row_and_offline_notice_is_at_page_bottom(published_v
         _ready(driver, "tab-unified", reference=False)
         _choose_engine(driver, 1, "sglang")
         _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 2, "vllm")
+        _ready(driver, "tab-unified", reference=False)
         notice = WebDriverWait(driver, 10).until(
             lambda d: d.find_element("css selector", ".publication-history-notice"))
-        geometry = driver.execute_script("""
-          const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};
-          const options=document.querySelector('.comparison-toolbar .tabs-right');
-          return {layout:rect('.comparison-toolbar .layout-control'), options:rect('.comparison-toolbar .tabs-right'),
-            search:rect('.comparison-toolbar [data-case-search]'), matrix:rect('.comparison-matrix-scroll'),
-            notice:rect('.publication-history-notice'),
-            optionsParent:options.parentElement.className, lastChild:document.querySelector('#viewer').lastElementChild.className};
-        """)
-        assert geometry["optionsParent"] == "comparison-toolbar", geometry
-        assert abs(geometry["layout"]["y"] - geometry["options"]["y"]) <= 1, geometry
-        assert geometry["layout"]["x"] < geometry["search"]["x"] < geometry["options"]["x"], geometry
-        assert geometry["notice"]["y"] > geometry["matrix"]["bottom"], geometry
-        assert geometry["lastChild"] == "capture-slots-notice publication-history-notice", geometry
+        before = counts(driver)
+        for width in (2048, 1600, 1024, 480):
+            driver.set_window_size(width, 1000)
+            for theme in ("light", "dark"):
+                driver.execute_script("document.documentElement.dataset.theme=arguments[0]", theme)
+                geometry = driver.execute_script("""
+                  const rect=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom}};
+                  const menu=document.querySelector('.comparison-toolbar'), cards=[...document.querySelectorAll('.capture-slot')];
+                  return {cards:cards.map(rect), menu:rect(menu),
+                    matrix:rect(document.querySelector('.comparison-matrix-scroll')),
+                    notice:rect(document.querySelector('.publication-history-notice')),
+                    overflow:[menu,...cards].some(node=>node.scrollWidth>node.clientWidth+1),
+                    optionsParent:menu.querySelector('.tabs-right').parentElement.className,
+                    lastChild:document.querySelector('#viewer').lastElementChild.className};
+                """)
+                cards, menu = geometry["cards"], geometry["menu"]
+                assert len(cards) == 3, geometry
+                assert geometry["optionsParent"] == "comparison-toolbar", geometry
+                assert not geometry["overflow"], geometry
+                if width > 900:
+                    assert all(abs(card["y"] - menu["y"]) <= 1 for card in cards), geometry
+                    assert all(cards[i]["right"] < cards[i + 1]["x"] for i in range(2)), geometry
+                    assert cards[-1]["right"] < menu["x"], geometry
+                else:
+                    assert menu["y"] >= max(card["bottom"] for card in cards), geometry
+                    if width <= 700:
+                        assert all(cards[i]["bottom"] < cards[i + 1]["y"] for i in range(2)), geometry
+                assert geometry["notice"]["y"] > geometry["matrix"]["bottom"], geometry
+                assert geometry["lastChild"] == "capture-slots-notice publication-history-notice", geometry
+                assert counts(driver) == before
         assert notice.text == "Latest results are available offline. Older results are not included here."
     finally:
         driver.quit(); server.shutdown(); server.server_close()

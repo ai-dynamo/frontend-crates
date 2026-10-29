@@ -769,8 +769,12 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
             assert driver.execute_script("return [arguments[0].scrollTop, arguments[0].scrollLeft]", popup) == popup_scroll_before
             assert driver.find_element("css selector", f"#tab-unified {table_selector}").is_displayed()
             assert driver.find_element("css selector", "#tab-unified .capture-slots").is_displayed()
-            slot_widths = driver.execute_script("return [...document.querySelectorAll('#tab-unified .capture-slot')].map(slot => slot.getBoundingClientRect().width)")
-            assert len(slot_widths) == 3 and min(slot_widths) > 300, slot_widths
+            assert driver.execute_script("""
+                const cards=[...document.querySelectorAll('#tab-unified .capture-slot')].map(slot=>slot.getBoundingClientRect());
+                const menu=document.querySelector('.comparison-toolbar').getBoundingClientRect();
+                return cards.length===3 && cards.every(card=>card.width>0 && card.right<menu.left && Math.abs(card.top-menu.top)<=1)
+                  && cards.slice(1).every((card,index)=>cards[index].right<card.left);
+            """)
             assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == ['dynamo']
             assert driver.execute_script("return [...arguments[0].querySelectorAll('.matrix-status')].map(node => node.dataset.capture)", cell) == ['dynamo']
             if state == "error":
