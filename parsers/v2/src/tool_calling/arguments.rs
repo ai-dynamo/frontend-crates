@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tool_calling::scan::JsonValueBoundary;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::SerializeMap;
 use serde::{Deserializer, Serialize};
@@ -205,8 +206,11 @@ pub(crate) fn parsed_json_literal(value: &str) -> Option<ParsedValue> {
 /// Locate a complete JSON prefix without converting numeric tokens to floats.
 pub(crate) fn parsed_json_prefix_end(value: &str) -> serde_json::Result<Option<usize>> {
     let mut values = serde_json::Deserializer::from_str(value).into_iter::<Box<RawValue>>();
-    let Some(raw) = values.next().transpose()? else {
-        return Ok(None);
+    let raw = match values.next().transpose() {
+        Ok(Some(raw)) => raw,
+        Ok(None) => return Ok(None),
+        Err(error) if error.is_eof() || incomplete_number_at_eof(value, &error) => return Ok(None),
+        Err(error) => return Err(error),
     };
     if parsed_json_literal(raw.get()).is_none() {
         return Err(serde::de::Error::custom("JSON nesting limit exceeded"));
@@ -242,11 +246,22 @@ fn parsed_json_literal_with_budget(value: &str, budget: usize) -> Option<ParsedV
     }
 }
 
-fn is_json_number(value: &str) -> bool {
+#[derive(Debug, PartialEq, Eq)]
+enum JsonNumberStatus {
+    Complete,
+    Incomplete,
+    Invalid,
+}
+
+fn json_number_status(value: &str) -> JsonNumberStatus {
+    use JsonNumberStatus::{Complete, Incomplete, Invalid};
     let bytes = value.as_bytes();
+    if bytes.is_empty() {
+        return Invalid;
+    }
     let mut cursor = usize::from(bytes.first() == Some(&b'-'));
     if cursor == bytes.len() {
-        return false;
+        return Incomplete;
     }
     match bytes[cursor] {
         b'0' => cursor += 1,
@@ -256,7 +271,7 @@ fn is_json_number(value: &str) -> bool {
                 cursor += 1;
             }
         }
-        _ => return false,
+        _ => return Invalid,
     }
     if bytes.get(cursor) == Some(&b'.') {
         cursor += 1;
@@ -265,7 +280,11 @@ fn is_json_number(value: &str) -> bool {
             cursor += 1;
         }
         if cursor == start {
-            return false;
+            return if cursor == bytes.len() {
+                Incomplete
+            } else {
+                Invalid
+            };
         }
     }
     if matches!(bytes.get(cursor), Some(b'e' | b'E')) {
@@ -278,10 +297,54 @@ fn is_json_number(value: &str) -> bool {
             cursor += 1;
         }
         if cursor == start {
-            return false;
+            return if cursor == bytes.len() {
+                Incomplete
+            } else {
+                Invalid
+            };
         }
     }
-    cursor == bytes.len()
+    if cursor == bytes.len() {
+        Complete
+    } else {
+        Invalid
+    }
+}
+
+fn is_json_number(value: &str) -> bool {
+    json_number_status(value) == JsonNumberStatus::Complete
+}
+
+fn incomplete_number_at_eof(value: &str, error: &serde_json::Error) -> bool {
+    let line = value.bytes().filter(|byte| *byte == b'\n').count() + 1;
+    let column = value.rsplit('\n').next().unwrap_or_default().len();
+    if !error.is_syntax() || error.line() != line || error.column() != column {
+        return false;
+    }
+    // Serde validated the prefix up to this EOF error. Reuse the number lexer
+    // only for its final token; earlier syntax failures stay malformed JSON.
+    let start = value
+        .as_bytes()
+        .iter()
+        .rposition(|byte| !matches!(byte, b'0'..=b'9' | b'-' | b'+' | b'.' | b'e' | b'E'))
+        .map_or(0, |at| at + 1);
+    if json_number_status(&value[start..]) != JsonNumberStatus::Incomplete {
+        return false;
+    }
+    let prefix = value[..start].trim_end();
+    let mut boundary = JsonValueBoundary::default();
+    for character in prefix.chars() {
+        boundary.advance(character);
+    }
+    if boundary.inside_string() {
+        return false;
+    }
+    match prefix.chars().next_back() {
+        None => true,
+        Some(':') => boundary.container_closer() == Some('}'),
+        Some('[' | ',') => boundary.container_closer() == Some(']'),
+        _ => false,
+    }
 }
 
 pub(crate) fn normalize_decimal_spelling(value: &str) -> Option<ParsedValue> {
@@ -457,7 +520,33 @@ mod tests {
             parsed_json_prefix_end(&format!("{payload} trailing")).unwrap(),
             Some(payload.len())
         );
-        assert!(parsed_json_prefix_end(r#"{"n":1e"#).is_err());
+        for token in ["-", "1.", "1e", "1e+", "1e-", "-0.5E+"] {
+            for prefix in [
+                r#"{"n":"#,
+                r#"{"huge":1e9999,"n":"#,
+                r#"{"é":"🙂","n":"#,
+                "[",
+                "[0,",
+                "\n  ",
+            ] {
+                assert_eq!(
+                    parsed_json_prefix_end(&format!("{prefix}{token}")).unwrap(),
+                    None
+                );
+            }
+        }
+        for value in [
+            r#"{"n":1eX"#,
+            r#"{"n":1e "#,
+            r#"{"n":01e"#,
+            r#"{"n":+"#,
+            r#"{1e"#,
+            "{ -",
+            r#"{"n":1,-"#,
+            "[1 -",
+        ] {
+            assert!(parsed_json_prefix_end(value).is_err(), "{value}");
+        }
         assert!(parsed_json_prefix_end(r#"{"n":invalid}"#).is_err());
         for depth in [126, 127, 128, 129] {
             let input = format!("{}1e9999{}", "[".repeat(depth), "]".repeat(depth));

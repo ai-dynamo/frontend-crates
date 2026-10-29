@@ -1071,6 +1071,10 @@ impl JsonValueBoundary {
         self.quoted.inside
     }
 
+    pub(crate) fn container_closer(&self) -> Option<char> {
+        self.closers.last().copied()
+    }
+
     /// True only on the character completing the first root value. JSON syntax
     /// validation remains with serde; matching bracket types cannot be repaired
     /// by a later suffix, and quoted delimiters never settle a structural boundary.

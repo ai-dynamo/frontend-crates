@@ -54,15 +54,19 @@ fn assert_native_raw_case(family: &str, input: &str, arguments: &str) {
             complete: true,
         }],
     };
+    assert_native_result(family, input, &tools, expected);
+}
+
+fn assert_native_result(family: &str, input: &str, tools: &[Tool], expected: ToolParseResult) {
     for chunks in deliveries(input) {
-        let mut parser = create_unified_parser_for_family(family, &tools).unwrap();
+        let mut parser = create_unified_parser_for_family(family, tools).unwrap();
         let mut events = Vec::new();
         for chunk in &chunks {
             events.extend(parser.push(chunk).unwrap());
         }
         events.extend(parser.finish().unwrap().events);
         assert_eq!(tool_result(events), expected, "{family}: {chunks:?}");
-        let mut parser = create_tool_parser_for_family(family, &tools).unwrap();
+        let mut parser = create_tool_parser_for_family(family, tools).unwrap();
         let mut output = ToolParseResult::default();
         for chunk in &chunks {
             output.append(parser.push(chunk).unwrap());
@@ -325,7 +329,7 @@ fn muse_numeric_payload_owns_embedded_closer_at_every_split() {
         &input,
         &format!(r#"{{"payload":{payload}}}"#),
     );
-    let malformed = r#"{"text":"</atem:parameter></atem:invoke>","n":invalid}"#;
+    let malformed = r#"{"n":1eX}"#;
     let input = input.replace(payload, malformed);
     let arguments = serde_json::to_string(&serde_json::json!({"payload":malformed})).unwrap();
     assert_native_raw_case("muse_glimmer", &input, &arguments);
@@ -338,4 +342,32 @@ fn glm_numeric_union_preserves_nonintegral_overflow_at_every_split() {
     let input =
         format!("<tool_call>echo<arg_key>n</arg_key><arg_value>{raw}</arg_value></tool_call>");
     assert_native_raw_case("glm47", &input, &format!(r#"{{"n":{raw}}}"#));
+}
+
+#[test]
+fn muse_malformed_json_recovers_before_two_valid_calls_at_every_split() {
+    let values = [
+        ("bad", r#"{"x":"unfinished"#),
+        ("echo", "é"),
+        ("echo", "Café"),
+    ];
+    let input = values.iter().map(|(name, value)| {
+        format!("<|start|>assistant to={name}<|message|><atem:function_calls>\n<atem:invoke name=\"{name}\">\n<atem:parameter name=\"value\">{value}</atem:parameter>\n</atem:invoke>\n</atem:function_calls><|eom|>")
+    }).collect::<String>();
+    let expected = ToolParseResult {
+        normal_text: String::new(),
+        calls: values
+            .iter()
+            .enumerate()
+            .map(|(tool_index, (name, value))| ToolCallDelta {
+                tool_index,
+                name: Some((*name).into()),
+                arguments: serde_json::to_string(&serde_json::json!({"value":value})).unwrap(),
+                complete: true,
+            })
+            .collect(),
+    };
+    for family in ["muse_glimmer", "muse_spark"] {
+        assert_native_result(family, &input, &[], expected.clone());
+    }
 }
