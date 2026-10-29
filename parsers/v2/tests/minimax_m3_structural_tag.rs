@@ -251,22 +251,6 @@ fn annotation_only_schemas_select_json_fallback() {
 }
 
 #[test]
-fn reasoning_gate_override_requires_explicit_family_support() {
-    for (family, expected) in [
-        ("minimax_m3", true),
-        ("qwen3_coder", false),
-        ("deepseek_v4", false),
-    ] {
-        let builder = structural_tag_builder_for_family(family).unwrap();
-        assert_eq!(
-            builder.supports_reasoning_gate_override(),
-            expected,
-            "{family}"
-        );
-    }
-}
-
-#[test]
 fn optional_reasoning_preserves_prefill_and_external_boundary() {
     let builder = structural_tag_builder_for_family("minimax_m3").unwrap();
     let tools = tools();

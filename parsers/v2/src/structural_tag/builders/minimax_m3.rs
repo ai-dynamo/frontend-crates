@@ -263,10 +263,6 @@ fn validate_native_schema(root: &Value) -> anyhow::Result<()> {
 }
 
 impl ToolCallGrammar for MiniMaxM3 {
-    fn supports_reasoning_gate_override(&self) -> bool {
-        true
-    }
-
     fn reasoning_begin(&self) -> Option<&'static str> {
         Some("<mm:think>")
     }
