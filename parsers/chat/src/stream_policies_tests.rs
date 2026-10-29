@@ -1068,3 +1068,83 @@ fn test_is_reasoning_disabled_by_request() {
     // reasoning-only non-streaming turn surface reasoning as content; verify
     // the aggregator half in test_move_reasoning_to_content_when_empty.
 }
+
+/// GPT-OSS cannot turn its reasoning off: with a thinking-off flag in the
+/// template arguments, the stream still sends the analysis as reasoning and
+/// the final channel as the answer, as dynamo `37f2f0a712`'s
+/// `request_disables_reasoning_with_family` does (`preprocessor.rs:7161`).
+#[tokio::test]
+async fn gpt_oss_keeps_its_analysis_as_reasoning_with_thinking_off_in_the_stream() {
+    let request: CreateChatCompletionRequest = serde_json::from_value(serde_json::json!({
+        "model": "gpt-oss", "messages": [{"role": "user", "content": "hi"}]
+    }))
+    .expect("request");
+    for args in [
+        None,
+        Some(serde_json::json!({"enable_thinking": false})),
+        Some(serde_json::json!({"thinking": false})),
+    ] {
+        let args: Option<HashMap<String, serde_json::Value>> =
+            args.map(|args| serde_json::from_value(args).expect("args"));
+        let view = ChatStreamRequest {
+            request: &request,
+            chat_template_args: args.as_ref(),
+            client_thinking_field: false,
+            explicit_guided_decoding: false,
+        };
+        assert!(!request_disables_reasoning_with_family(
+            &view,
+            Some("harmony"),
+            Some("gpt_oss"),
+            None,
+            Some("gpt_oss"),
+        ));
+        let mut chunk = chat_stream_chunk(0, Some(Role::Assistant));
+        let choice = &mut chunk.data.as_mut().unwrap().inner.choices[0];
+        choice.delta.content = Some(ChatCompletionMessageContent::Text(
+            "<|start|>assistant<|channel|>analysis<|message|>Private analysis.<|end|><|start|>assistant<|channel|>final<|message|>42<|return|>".to_string(),
+        ));
+        choice.finish_reason = Some(FinishReason::Stop);
+        let route = crate::route::tool_processing_route(
+            Some("harmony"),
+            Some("gpt_oss"),
+            &request,
+            crate::version::ParserVersion::Auto,
+        )
+        .expect("route");
+        let output: Vec<Item> = parse_chat_stream(
+            stream::iter([chunk]),
+            ChatStreamParsers {
+                tool_call_parser: Some("harmony"),
+                reasoning_parser: Some("gpt_oss"),
+            },
+            view,
+            ChatStreamPlan {
+                route,
+                guided_tool_constraint: GuidedToolConstraint::None,
+                prompt_reasoning: crate::prefill::PromptReasoningPrefill::from(false),
+                tool_definitions: Vec::new(),
+                parser_version: crate::version::ParserVersion::Auto,
+                guided_tool_streaming_disabled: false,
+            },
+            |stream, _| stream,
+        )
+        .collect()
+        .await;
+        let (mut content, mut reasoning) = (String::new(), String::new());
+        for choice in output
+            .iter()
+            .filter_map(|item| item.data.as_ref())
+            .flat_map(|chunk| &chunk.inner.choices)
+        {
+            if let Some(ChatCompletionMessageContent::Text(text)) = &choice.delta.content {
+                content.push_str(text);
+            }
+            if let Some(text) = &choice.delta.reasoning_content {
+                reasoning.push_str(text);
+            }
+        }
+        assert_eq!(content, "42", "args {args:?}");
+        assert_eq!(reasoning, "Private analysis.", "args {args:?}");
+    }
+}

@@ -44,6 +44,15 @@
 //! computed it. A record's name is the test that made the call. The capture
 //! code is `tests/data/stream_policies_capture.rs`.
 //!
+//! One change in dynamo since `45e30e07` is pinned by kind
+//! ([`gpt_oss_reasoning_kept`]): dynamo `37f2f0a712`
+//! (`lib/llm/src/preprocessor.rs:7161`) does not let a request turn GPT-OSS's
+//! reasoning off, because the model cannot. So with a thinking-off flag, a
+//! GPT-OSS `predicates` record answers `false` where the recording says `true`,
+//! and a GPT-OSS `stream` record sends the analysis as reasoning where the
+//! recording sent it as answer text. Exactly 12 `predicates` and 53 `stream`
+//! records differ that way, and no other record differs.
+//!
 //! Chunks leave out the fixed envelope (`id`, `object`, `created`, `model`)
 //! and null fields. dynamo's `llm_metrics` is written as its `chunk_tokens`
 //! value, and `prompt_logprobs` as its length. Generated tool-call IDs are
@@ -670,9 +679,87 @@ fn fixture_items_round_trip() {
     }
 }
 
+/// Whether the record is a GPT-OSS one: the parser pair's unified family is
+/// `gpt_oss`.
+fn is_gpt_oss(record: &Value) -> bool {
+    let (tool, reasoning) = parsers(record);
+    selected_family(tool, reasoning, version(record)) == Some("gpt_oss")
+}
+
+/// A GPT-OSS `predicates` record whose every mismatch is the reasoning-off rule
+/// with the family answering `false` where the recording said `true`: dynamo
+/// `37f2f0a712` keeps GPT-OSS reasoning on (`preprocessor.rs:7161`).
+fn gpt_oss_rule_kept(record: &Value, mismatches: &[String]) -> bool {
+    is_gpt_oss(record)
+        && !mismatches.is_empty()
+        && mismatches.iter().all(|mismatch| {
+            mismatch.starts_with("request_disables_reasoning_with_family(")
+                && mismatch.ends_with(", family): got false, dynamo true")
+        })
+}
+
+/// A choice's reasoning and answer text, and the rest of its output: its tool
+/// calls and finish reasons, in order.
+fn text_and_rest(output: &Value) -> (String, String, Vec<Value>) {
+    let (mut reasoning, mut content, mut rest) = (String::new(), String::new(), Vec::new());
+    for item in output.as_array().unwrap() {
+        for choice in item["data"]["choices"].as_array().into_iter().flatten() {
+            let delta = &choice["delta"];
+            reasoning.push_str(delta["reasoning_content"].as_str().unwrap_or_default());
+            content.push_str(delta["content"].as_str().unwrap_or_default());
+            if !delta["tool_calls"].is_null() {
+                rest.push(delta["tool_calls"].clone());
+            }
+            if !choice["finish_reason"].is_null() {
+                rest.push(choice["finish_reason"].clone());
+            }
+        }
+        if let Some(error) = item.get("error") {
+            rest.push(error.clone());
+        }
+    }
+    (reasoning, content, rest)
+}
+
+/// Whether the record's request turns thinking off in its template
+/// arguments: `enable_thinking: false` or `thinking_mode: disabled`.
+fn turns_thinking_off(record: &Value) -> bool {
+    let args = &record["request"]["chat_template_args"];
+    args["enable_thinking"] == json!(false) || args["thinking_mode"] == json!("disabled")
+}
+
+/// A GPT-OSS `stream` record, whose request turns thinking off, that differs
+/// from the recording only by keeping the analysis as reasoning: the recording
+/// has no reasoning, its answer text is our reasoning then our answer, and the
+/// tool calls and finish reasons are the same. With `force_nonempty_content`,
+/// the kept reasoning is also held back until an answer comes, so the chunks
+/// differ, and a reply of reasoning only ends as the same answer text; an
+/// answer of whitespace only counts as none, so the reasoning is sent in its
+/// place and the whitespace is dropped. dynamo `37f2f0a712` keeps GPT-OSS
+/// reasoning on (`preprocessor.rs:7161`); the recording is from `45e30e07`.
+fn gpt_oss_reasoning_kept(record: &Value, output: &Value) -> bool {
+    let (reasoning, content, rest) = text_and_rest(output);
+    let (recorded_reasoning, recorded_content, recorded_rest) = text_and_rest(&record["output"]);
+    let force_nonempty =
+        record["request"]["chat_template_args"]["force_nonempty_content"] == json!(true);
+    let same_text = recorded_content == format!("{reasoning}{content}")
+        || (force_nonempty
+            && reasoning.is_empty()
+            && recorded_content
+                .strip_prefix(content.as_str())
+                .is_some_and(|tail| !tail.is_empty() && tail.trim().is_empty()));
+    is_gpt_oss(record)
+        && turns_thinking_off(record)
+        && recorded_reasoning.is_empty()
+        && same_text
+        && rest == recorded_rest
+}
+
 #[tokio::test]
 async fn moved_stream_policies_match_dynamo_llm() {
     let mut checked = HashMap::<&str, usize>::new();
+    // The GPT-OSS records dynamo changed since the recording, by kind.
+    let mut kept = HashMap::<&str, usize>::new();
     let mut skipped = 0usize;
     let mut failures = Vec::new();
     let fixture = fixture();
@@ -681,7 +768,9 @@ async fn moved_stream_policies_match_dynamo_llm() {
         match record["kind"].as_str() {
             Some("predicates") => {
                 let mismatches = check_predicates(record);
-                if !mismatches.is_empty() {
+                if gpt_oss_rule_kept(record, &mismatches) {
+                    *kept.entry("predicates").or_default() += 1;
+                } else if !mismatches.is_empty() {
                     failures.push(format!("{name}: {}", mismatches.join("; ")));
                 }
                 *checked.entry("predicates").or_default() += 1;
@@ -694,6 +783,12 @@ async fn moved_stream_policies_match_dynamo_llm() {
                     continue;
                 }
                 match run_stream(record).await {
+                    Ok((output, _))
+                        if output != record["output"]
+                            && gpt_oss_reasoning_kept(record, &output) =>
+                    {
+                        *kept.entry("stream").or_default() += 1;
+                    }
                     Ok((output, with_roles)) => {
                         if output != record["output"] {
                             failures.push(format!(
@@ -722,7 +817,9 @@ async fn moved_stream_policies_match_dynamo_llm() {
             other => panic!("unknown record kind {other:?}"),
         }
     }
-    eprintln!("checked {checked:?}, skipped {skipped} refused requests");
+    eprintln!(
+        "checked {checked:?}, skipped {skipped} refused requests, kept GPT-OSS reasoning {kept:?}"
+    );
     assert!(checked["stream with jail"] > 0);
     assert!(
         failures.is_empty(),
@@ -735,6 +832,11 @@ async fn moved_stream_policies_match_dynamo_llm() {
             .cloned()
             .collect::<Vec<_>>()
             .join("\n")
+    );
+    assert_eq!(
+        kept,
+        HashMap::from([("predicates", 12), ("stream", 53)]),
+        "the GPT-OSS records dynamo changed since 45e30e07"
     );
 }
 

@@ -122,6 +122,8 @@ pub fn request_disables_reasoning_with_family(
     if let Some(family) = unified_family {
         let thinking = thinking_bool_from_args(chat_template_args.as_ref());
         return match family {
+            // GPT-OSS cannot disable reasoning; unsupported aliases must not expose it as answer text.
+            "gpt_oss" => false,
             "gemma4" => thinking != Some(true),
             "deepseek_v4" | "deepseek_v41" => {
                 !deepseek_renderer_reasoning_enabled(chat_template_args.as_ref(), true)

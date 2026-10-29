@@ -60,7 +60,6 @@ async fn gpt_oss_without_a_thinking_alias_keeps_analysis_separate() {
 }
 
 #[tokio::test]
-#[ignore = "the shared reasoning-off rule lacks dynamo main's gpt_oss arm, on the stream path too; fixed upstream"]
 async fn gpt_oss_options_keep_analysis_out_of_the_answer() {
     let (actual, options) = aggregate(Some(json!({"enable_thinking": false}))).await;
     let message = &actual.choices[0].message;
