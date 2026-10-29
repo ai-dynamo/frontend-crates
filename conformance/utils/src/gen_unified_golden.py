@@ -2823,7 +2823,7 @@ EDGE.append((
     "Native K3 with no prefilled state: a typed object field contains a quoted argument close and next-header marker, followed by a string field. One-character delivery must preserve the nested JSON and complete one call. Other families lack K3's typed XTML argument-boundary grammar; shared marker-in-string cases cover their native envelopes.",
     ["I3", "I5", "I7"], [{"kind": "tool_call", "name": "inspect", "arguments": KIMI_QUOTED_BOUNDARY_ARGUMENTS}],
     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
-    {"finish_reason": "stop", "input_chunks": {"kimi_k3": list(KIMI_QUOTED_BOUNDARY_INPUT)}},
+    {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": list(KIMI_QUOTED_BOUNDARY_INPUT)}},
     OnlyFamilies({"kimi_k3": (KIMI_QUOTED_BOUNDARY_INPUT, D("UNSUPPORTED", "Native typed K3 is measured by Dynamo captures."), M)}),
     [{"name": "inspect", "parameters": {"type": "object", "properties": {
         "x": {"type": "object", "properties": {"inner": {"type": "string"}}, "required": ["inner"]},

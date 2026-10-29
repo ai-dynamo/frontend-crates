@@ -21960,6 +21960,7 @@ cases:
       - delta_text: p
       - delta_text: '|'
       - delta_text: '>'
+      - delta_text: ‹finish›
     golden:
       assembled:
       - kind: tool_call
