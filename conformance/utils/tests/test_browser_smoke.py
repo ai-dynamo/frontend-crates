@@ -1081,16 +1081,22 @@ def test_matrix_labels_stay_visible_when_scrolled(driver, viewer_url, transposed
         if not toggled:
             pytest.skip("no transpose toggle on this page")
 
-    _script(driver, "const s=document.querySelector('.comparison-matrix-scroll');s.scrollIntoView({block:'start'});s.scrollTop=200;s.scrollLeft=500")
-    WebDriverWait(driver, 10).until(lambda page: page.execute_script("""
-        const t=document.querySelector('[data-comparison-table]'), s=t.parentElement;
-        const header=t.tHead.rows[0].cells[0], label=t.tBodies[0].rows[0].cells[0];
-        const h=header.getBoundingClientRect(), l=label.getBoundingClientRect(), r=s.getBoundingClientRect();
-        return getComputedStyle(header).position==='sticky' && getComputedStyle(label).position==='sticky'
-          && (s.scrollHeight<=s.clientHeight || s.scrollTop>0) && s.scrollLeft>0
-          && Math.abs(h.top-r.top)<=2 && Math.abs(l.left-r.left)<=2 && h.width>0 && l.width>0
-          && h.top>=0 && h.bottom<=innerHeight && l.left>=0 && l.left<innerWidth;
-    """))
+    size = driver.get_window_size()
+    try:
+        driver.set_window_size(480, 700)
+        _script(driver, "document.querySelector('.comparison-matrix-scroll').scrollIntoView({block:'start'});window.scrollBy(200,200)")
+        WebDriverWait(driver, 10).until(lambda page: page.execute_script("""
+            const t=document.querySelector('[data-comparison-table]'), s=t.parentElement;
+            const header=t.tHead.rows[0].cells[0], h=header.getBoundingClientRect();
+            const labels=[...t.tBodies[0].querySelectorAll('tr > th:first-child')]
+              .filter(cell=>{const r=cell.getBoundingClientRect();return r.top>=h.bottom&&r.bottom<innerHeight});
+            return getComputedStyle(header).position==='sticky' && labels.length>0
+              && labels.every(cell=>getComputedStyle(cell).position==='sticky'&&Math.abs(cell.getBoundingClientRect().left)<=1)
+              && s.scrollTop===0 && s.scrollLeft===0 && scrollY>0 && scrollX>0
+              && Math.abs(h.top)<=1 && h.width>0 && h.bottom<=innerHeight;
+        """))
+    finally:
+        driver.set_window_size(size["width"], size["height"])
 
 
 def test_popup_headings_include_compact_references(driver, viewer_url):

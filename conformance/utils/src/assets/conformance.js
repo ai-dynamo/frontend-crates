@@ -692,24 +692,18 @@ window.initializeConformanceController = function (hooks = {}) {
   function placeCaseHint(cell) {
     const anchor = cell.matches('[data-hover-hint]') ? cell : cell.querySelector('[data-hover-hint]');
     if (!anchor) return;
-    const scroller = anchor.closest('.comparison-matrix-scroll');
-    const rect = scroller?.getBoundingClientRect();
-    const clip = scroller ? {left: rect.left + scroller.clientLeft, top: rect.top + scroller.clientTop,
-      right: rect.left + scroller.clientLeft + scroller.clientWidth,
-      bottom: rect.top + scroller.clientTop + scroller.clientHeight} : null;
-    const left = clip ? Math.max(margin, clip.left + 8) : margin;
-    const right = clip ? Math.min(window.innerWidth - margin, clip.right - 8) : window.innerWidth - margin;
+    const left = margin;
+    const right = window.innerWidth - margin;
     anchor.style.setProperty('--case-hint-max-width', Math.max(0, right - left) + 'px');
     const hint = getComputedStyle(anchor, '::after');
     const width = parseFloat(hint.width);
     const height = parseFloat(hint.height);
     const box = anchor.getBoundingClientRect();
     anchor.style.setProperty('--case-hint-left', (boundedPopupLeft(box.left, width, left, right) - box.left) + 'px');
-    // Hints inside the matrix must fit its scroll clip as well as the viewport.
-    const top = clip ? Math.max(margin, clip.top + 8) : margin;
-    const bottom = clip ? Math.min(window.innerHeight - margin, clip.bottom - 8) : window.innerHeight - margin;
+    const top = margin;
+    const bottom = window.innerHeight - margin;
     const requested = box.top >= height + top + 12 ? box.top - height - 12 : box.bottom + 24;
-    anchor.style.setProperty('--case-hint-top', ((clip ? Math.max(top, Math.min(requested, bottom - height)) : requested) - box.top) + 'px');
+    anchor.style.setProperty('--case-hint-top', (Math.max(top, Math.min(requested, bottom - height)) - box.top) + 'px');
   }
 
   function place(cell) {
