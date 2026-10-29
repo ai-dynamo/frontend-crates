@@ -47,6 +47,7 @@ jobs:
         with:
           filters: |
             structural-tag:
+              - 'ci/**'
               - 'parsers/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
@@ -54,6 +55,7 @@ jobs:
               - 'conformance/utils/structural-tag-requirements.in'
               - '.github/workflows/ci.yml'
             conformance:
+              - 'ci/**'
               - 'conformance/**'
               - 'parsers/**'
               - '.gitattributes'
@@ -136,66 +138,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-workspace-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}-
 
-      - name: Check unused dependencies
-        run: cargo machete
-
-      - name: Check dependency policy
-        run: cargo deny --all-features check bans licenses
-
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-
-      - name: Install CPU structural-tag verifier
-        run: |
-          python3 -m venv /tmp/structural-tag-venv
-          /tmp/structural-tag-venv/bin/pip install --no-deps -r conformance/utils/structural-tag-requirements.in
-          echo "CONFORMANCE_GRAMMAR_PYTHON=/tmp/structural-tag-venv/bin/python" >> "$GITHUB_ENV"
-
-      - name: Execute structural-tag contracts with the pinned verifier
-        run: cargo test --locked -p dynamo-parsers-v2 --test structural_tag_xgrammar -- --ignored --nocapture
-
-      # nextest runs test binaries concurrently; doctests run separately below.
-      - name: Run tests
-        env:
-          CONFORMANCE_CAPTURE_REPORT_DIR: ${{ runner.temp }}/capture-verification
-        run: cargo nextest run --workspace --all-targets --locked
-
-      - name: Publish capture verification and GOLDEN warnings
-        if: ${{ always() }}
-        run: python3 conformance/utils/src/report_capture_verification.py --directory "$RUNNER_TEMP/capture-verification" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Rust checks
+        id: rust
+        run: ci/rust.sh
 
       - name: Retain executed capture comparisons
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.rust.outputs.capture_report_directory != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: capture-verification
-          path: ${{ runner.temp }}/capture-verification/*.json
+          path: ${{ steps.rust.outputs.capture_report_directory }}/*.json
           if-no-files-found: error
-
-      - name: Verify grammar checks under optimized Python
-        run: PYTHONOPTIMIZE=1 cargo test --workspace --locked --test unified_parity structural_response_case_checks_the_schema_before_parsing
-
-      # Video tests use libvpx for CPU decoding on runners without an NVIDIA GPU.
-      - name: Install libvpx
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libvpx9
-
-      - name: Run multimodal tests with all features
-        run: cargo test -p dynamo-multimodal --all-targets --all-features --locked
-
-      - name: Run parser recovery work-bound tests
-        run: cargo test --locked -p dynamo-parsers-v2 --features test-utils --test gemma4_native_recovery
-
-      - name: Run doctests
-        run: cargo test --workspace --doc --locked
-
-      - name: Run protocol schema tests
-        run: cargo test -p dynamo-protocols --features protocol-schema --locked
-
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-
-      - name: Verify crates are publishable
-        run: cargo publish --workspace --dry-run --locked
 
   # Validate the maintained conformance viewer and its source resources.
   # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in

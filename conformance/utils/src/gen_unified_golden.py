@@ -16,6 +16,7 @@ render -> explode -> package, exactly like every other conformance fixture shard
 
 Run:  python3 conformance/utils/src/gen_unified_golden.py
 """
+import argparse
 from functools import cache
 import json
 from copy import deepcopy
@@ -4392,13 +4393,14 @@ def emit_yaml(fam):
     return "\n".join(lines) + "\n"
 
 
-def main():
-    root = os.path.join(os.path.dirname(__file__), "..", "..", "unified", "golden_spec")
-    root = os.path.abspath(root)
-    os.makedirs(root, exist_ok=True)
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path, default=Path(__file__).resolve().parents[2] / "unified/golden_spec")
+    root = parser.parse_args(argv).output.resolve()
+    root.mkdir(parents=True, exist_ok=True)
     for fam in FAMILIES:
-        out = os.path.join(root, FAM_FILE[fam])
-        with open(out, "w") as fh:
+        out = root / FAM_FILE[fam]
+        with out.open("w", encoding="utf-8") as fh:
             fh.write(emit_yaml(fam))
         print(f"wrote {out} ({len(build_cases(fam))} cases)")
 

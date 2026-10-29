@@ -1777,7 +1777,7 @@ def test_history_request_rewrite_directs_contributors_to_latest_tests(tmp_path):
     document["cases"]["UNIFIED.1-1"]["input"] = "changed request"
     input_path.write_text(unified_history.dump_yaml(document), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Run latest parser tests.*repository administrator"):
+    with pytest.raises(ValueError, match="Run latest parser tests.*recapture the affected latest snapshot"):
         unified_history.sync_current_corpus(root, loose, complete_snapshot=True)
 
 

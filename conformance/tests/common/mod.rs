@@ -458,11 +458,19 @@ mod resolve_snap_dir_tests {
 /// scenario spec into the gitignored build tree (`conformance/unified/golden_spec/`)
 /// on demand, mirroring how [`ensure_fixtures`] shells out to `extract_fixtures.py`.
 /// The committed canonical family YAML is DERIVED from this via render -> explode
-/// -> package. Each test process copies the generated tree to its own immutable
+/// -> package. CI prepares one job-owned `CONFORMANCE_GOLDEN_ROOT` for all readers.
+/// Alternate-source subprocesses regenerate against their changed authored inputs.
+/// Otherwise each test process copies the generated tree to its own immutable
 /// directory while holding the lock, because the generator truncates files before
 /// rewriting them and another test binary may start as soon as the lock is released.
 /// Panics with the fix command if generation fails.
 pub fn ensure_unified_golden() -> PathBuf {
+    if let Some(root) = prepared_unified_golden(
+        std::env::var_os("CONFORMANCE_GOLDEN_ROOT").map(PathBuf::from),
+        std::env::var_os("FRONTEND_CRATES_ROOT").is_some(),
+    ) {
+        return root;
+    }
     let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let script = manifest.join("utils/src/gen_unified_golden.py");
     let generated = manifest.join("unified/golden_spec");
@@ -492,6 +500,71 @@ pub fn ensure_unified_golden() -> PathBuf {
         );
     }
     isolated
+}
+
+fn prepared_unified_golden(root: Option<PathBuf>, alternate_source: bool) -> Option<PathBuf> {
+    if alternate_source {
+        return None;
+    }
+    root.inspect(|root| {
+        assert!(root.is_dir(), "CONFORMANCE_GOLDEN_ROOT must be a directory");
+        for family in unified_families().values() {
+            let file = root.join(&family.golden_spec);
+            assert!(
+                file.is_file(),
+                "CONFORMANCE_GOLDEN_ROOT is missing {}",
+                file.display()
+            );
+        }
+    })
+}
+
+#[cfg(test)]
+mod prepared_golden_tests {
+    use super::*;
+
+    #[test]
+    fn prepared_golden_rejects_partial_snapshots_and_yields_to_alternate_sources() {
+        assert!(prepared_unified_golden(None, false).is_none());
+        let root = std::env::temp_dir().join(format!(
+            "prepared-golden-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        assert!(prepared_unified_golden(Some(root.clone()), true).is_none());
+        assert!(
+            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
+                .is_err()
+        );
+        std::fs::create_dir_all(&root).unwrap();
+        assert!(
+            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
+                .is_err()
+        );
+        for family in unified_families().values() {
+            std::fs::write(root.join(&family.golden_spec), "prepared fixture").unwrap();
+        }
+        assert_eq!(
+            prepared_unified_golden(Some(root.clone()), false),
+            Some(root.clone())
+        );
+        assert!(prepared_unified_golden(Some(root.clone()), true).is_none());
+        let file = root.join(&unified_families().values().next().unwrap().golden_spec);
+        std::fs::remove_file(&file).unwrap();
+        assert!(
+            std::panic::catch_unwind(|| prepared_unified_golden(Some(root.clone()), false))
+                .is_err()
+        );
+        std::fs::write(&file, "prepared fixture").unwrap();
+        assert!(
+            std::panic::catch_unwind(|| prepared_unified_golden(Some(file.clone()), false))
+                .is_err()
+        );
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }
 
 /// Crate-relative display path for a fixture (for failure messages).

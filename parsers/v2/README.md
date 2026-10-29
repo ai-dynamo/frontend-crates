@@ -212,13 +212,13 @@ Rules:
 
 New cases, capture jobs, and normal reports use `UNIFIED.*`. Register the family in `conformance/utils/src/parser_families.yaml`, author applicable family-native scenarios and independent GOLDEN expectations in `conformance/utils/src/gen_unified_golden.py`, and document their contracts in `conformance/utils/lib/parsers/UNIFIED_CASES.md`. Preserve published IDs and expectations. New IDs use `UNIFIED.<group>-<description>` through `conformance/utils/src/unified_taxonomy.py`; existing numeric IDs retain their aliases.
 
-Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests and generate the latest report; administrators update recorded captures through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
+Keep authored requests/GOLDEN in `conformance/fixtures-unified-v2/families/<family>/inputs_and_golden.yaml`. Latest parser tests read versionless recorded observations from `conformance/fixtures-unified-v2/families/<family>/<implementation>.yaml`. Contributors run latest tests, recapture affected latest snapshots through the [latest capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md), and generate the latest report.
 
 Retain `TOOLCALLING.*` archives as historical evidence. Latest-only generation does not read them or derive GOLDEN from recorded results.
 
 ## Historical Fixture Format
 
-Historical archives use several schemas. Preserve their implementation keys, request bindings, and producer provenance; never relabel `dynamo_v2` as `dynamo_rust` or rewrite old observations into a current schema. See [fixture storage](../../conformance/fixtures/README.md) and the administrator-owned [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
+Historical archives use several schemas. Preserve their implementation keys, request bindings, and producer provenance; never relabel `dynamo_v2` as `dynamo_rust` or rewrite old observations into a current schema. See [fixture storage](../../conformance/fixtures/README.md) and the [capture plan](../../docs/CONFORMANCE-LATEST-PLAN.md).
 
 ## Adding A Day-0 Tool-Calling Parser
 
@@ -233,7 +233,7 @@ In order:
 7. Add Rust unit tests for: one call, multiple calls, partial chunks, malformed recovery, `normal_text`, and EOF.
 8. Author applicable Unified inputs and independent GOLDEN (see "Which Fixture Do I Edit?"). Inspect every registered family for shared scenarios and explain grammar or request-mode exclusions. Preserve published IDs.
 9. Run the latest parser tests against the authored requests and independent GOLDEN, and fix parser mismatches.
-10. Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), inspect the affected family over HTTP, and explain any deliberate authored contract change. Repository administrators maintain recorded captures and historical backfills.
+10. Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report), inspect the affected family over HTTP, and explain any deliberate authored contract change. Recapture affected latest snapshots; historical backfills are separate reviewed changes.
 
 ### Unified parser validation
 
@@ -244,11 +244,11 @@ cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_render -- -
 cargo test --locked -p dynamo-conformance-fixtures-v2 --test unified_parity -- --nocapture
 ```
 
-Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations need administrator capture updates. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
+Generate the [latest report](../../conformance/README.md#generate-the-latest-or-history-report) and inspect affected inputs, initialization, chunks, GOLDEN, and observations over HTTP. Missing observations require recapturing the affected latest snapshots. Fix live mismatches or explain deliberate contract changes; never hide them with `reason:`, `unavailable:`, stale HTML, or unsupported GOLDEN edits.
 
 ## Which Fixture Do I Edit?
 
-Use the [fixture files](#fixture-files-to-add) above for new families and scenarios. Preserve authored requests and independent GOLDEN; historical backfills remain administrator work.
+Use the [fixture files](#fixture-files-to-add) above for new families and scenarios. Preserve authored requests and independent GOLDEN; historical backfills are separate reviewed changes.
 
 ### Retained historical fixture paths
 
@@ -271,7 +271,7 @@ For a new parser family, done means:
 
 - Rust parser unit tests and latest Dynamo fixture tests pass.
 - Applicable Unified scenarios have family-native authored inputs and independent GOLDEN. Grammar exclusions have explicit explanations, and the family's `markers:` are declared in `parser_families.yaml`.
-- The latest report is regenerated locally and affected cases are inspected for tool-call markup leaks, undeclared tokens, and mismatches against GOLDEN. Missing recorded observations are identified for an administrator capture update.
+- The latest report is regenerated locally and affected cases are inspected for tool-call markup leaks, undeclared tokens, and mismatches against GOLDEN. Missing recorded observations are recaptured in the same PR.
 - Case descriptions exist for every new scenario, and its stable ID is declared in the Unified taxonomy.
 
 ## Commands
@@ -294,7 +294,7 @@ Use the [current qualification instructions](../../conformance/README.md#current
 
 ## Reasoning Migration Status
 
-Unified already owns ordered reasoning, text, and tool events for its registered families. Retained v1 reasoning archives preserve their original implementation keys and observations; do not relabel them as new measurements. New scenarios use authored Unified inputs/GOLDEN and explicit recorded implementation results. Historical backfills remain administrator work.
+Unified already owns ordered reasoning, text, and tool events for its registered families. Retained v1 reasoning archives preserve their original implementation keys and observations; do not relabel them as new measurements. New scenarios use authored Unified inputs/GOLDEN and explicit recorded implementation results. Historical backfills are separate reviewed changes.
 
 ### Muse Spark Open structural tags
 

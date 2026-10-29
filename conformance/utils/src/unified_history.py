@@ -3079,8 +3079,8 @@ def _preserve_historical_stimulus(
 ) -> None:
     raise ValueError(
         f"Authored input {family_name}/{case_id} differs from the recorded request. "
-        "Run latest parser tests with the updated input; ask a repository administrator "
-        "to update the affected latest capture when a new measurement is needed."
+        "Run latest parser tests with the updated input; recapture the affected latest snapshot "
+        "when a new measurement is needed."
     )
 
 

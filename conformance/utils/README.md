@@ -19,6 +19,8 @@ The six Node suites cover values, data/transport, resources/request bindings, mo
 
 Structural-tag cases require the pinned CPU verifier from `structural-tag-requirements.in`. Set `CONFORMANCE_GRAMMAR_PYTHON` to its interpreter when it differs from `python3`. The CI shard commands remain in `check.sh ci`; collection receipts reject missing or duplicate assignments.
 
+`ci/rust.sh` owns the workspace Rust CI commands, so adding a check does not require editing workflow YAML. It prepares one job-local authored GOLDEN snapshot for parallel tests, retains comparison reports after test failures, and skips reporting when an earlier check prevented tests from running. Task durations appear in the job summary. The workflow owns runner setup, the compilation cache, and artifact upload.
+
 ## Generate and inspect the report
 
 Follow [the report guide](../README.md#generate-the-latest-or-history-report). Install the locked viewer build dependency and build the publisher:
@@ -47,7 +49,7 @@ Source catalogs and publication JSON are generated inputs and stay outside Git. 
 
 ## Capture and retained evidence
 
-Contributors edit parser code and independently authored inputs/GOLDEN, run latest tests, then generate and inspect the report. Capture changes use normal PR review. Current native Dynamo v2 capture execution warns on GOLDEN differences and fails on differences from recorded latest YAML, including per-chunk deltas and error outcomes. Request bindings, provenance, case coverage, and historical evidence integrity remain strict. A changed authored request never rewrites an older observation's request binding.
+Contributors edit parser code and independently authored inputs/GOLDEN, run latest tests, then generate and inspect the report. Capture changes use normal PR review. Current native Dynamo v2 capture execution warns on GOLDEN differences and fails on differences from recorded latest YAML, including per-chunk deltas and error outcomes. Request bindings, provenance, and case coverage are validated. Backfills, input/GOLDEN corrections, and regenerated captures use normal PR review; each observation must remain bound to the request and producer that produced it.
 
 Unified capture entrypoints are `src/capture_dynamo_versions.py`, `src/capture_peer_unified_versions.py`, and the engine-specific Unified adapters. Run their `--help` before use. Batch, stream, and jail-buffer identities remain distinct. Peer exceptions, unsupported APIs, missing source, and missing evidence remain explicit outcomes. The shared capture-stimulus owner validates request membership and normalized results; the peer adapter owns published-package compatibility.
 
