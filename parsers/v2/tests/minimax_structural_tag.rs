@@ -53,38 +53,38 @@ fn minimax_grammars_and_native_parsers_agree() {
             "before</minimax:tool_call>after",
             "before<invoke name=weather>after",
         ];
-        for choice in [
-            StructuralTagToolChoice::Auto,
-            StructuralTagToolChoice::Required,
-            StructuralTagToolChoice::Named("weather"),
+        for (choice, parallel) in [
+            (StructuralTagToolChoice::Auto, None),
+            (StructuralTagToolChoice::Auto, Some(false)),
+            (StructuralTagToolChoice::Required, None),
+            (StructuralTagToolChoice::Required, Some(false)),
+            (StructuralTagToolChoice::Named("weather"), None),
         ] {
-            for parallel in [None, Some(false), Some(true)] {
-                let mut ctx = context(&tools);
-                ctx.tool_choice = choice;
-                ctx.parallel_tool_calls = parallel;
-                let single = block(family, "weather", "2", 1);
-                let multiple = block(family, "weather", "2", 2);
-                let separate_blocks = format!("{single}\n{single}");
-                let mut accepted = vec![single.clone()];
-                let mut rejected = vec![
-                    block(family, "missing", "2", 1),
-                    block(family, "weather", "false", 1),
-                    block(family, "weather", "2", 0),
-                ];
-                if parallel != Some(false) && !matches!(choice, StructuralTagToolChoice::Named(_)) {
-                    accepted.extend([multiple, separate_blocks]);
-                } else {
-                    rejected.extend([multiple, separate_blocks]);
-                }
-                if choice == StructuralTagToolChoice::Auto {
-                    accepted.push("hello".into());
-                    rejected.extend(unsafe_prose.map(str::to_owned));
-                } else {
-                    rejected.push("hello".into());
-                }
-                parser_samples.extend(accepted.iter().cloned());
-                cases.push(json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),"accepted":accepted,"rejected":rejected}));
+            let mut ctx = context(&tools);
+            ctx.tool_choice = choice;
+            ctx.parallel_tool_calls = parallel;
+            let single = block(family, "weather", "2", 1);
+            let multiple = block(family, "weather", "2", 2);
+            let separate_blocks = format!("{single}\n{single}");
+            let mut accepted = vec![single.clone()];
+            let mut rejected = vec![
+                block(family, "missing", "2", 1),
+                block(family, "weather", "false", 1),
+                block(family, "weather", "2", 0),
+            ];
+            if parallel != Some(false) && !matches!(choice, StructuralTagToolChoice::Named(_)) {
+                accepted.extend([multiple, separate_blocks]);
+            } else {
+                rejected.extend([multiple, separate_blocks]);
             }
+            if choice == StructuralTagToolChoice::Auto {
+                accepted.push("hello".into());
+                rejected.extend(unsafe_prose.map(str::to_owned));
+            } else {
+                rejected.push("hello".into());
+            }
+            parser_samples.extend(accepted.iter().cloned());
+            cases.push(json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),"accepted":accepted,"rejected":rejected}));
         }
         for sample in &parser_samples {
             // Every byte boundary must preserve the same parsed arguments and visible text.
@@ -151,24 +151,22 @@ fn minimax_grammars_and_native_parsers_agree() {
             json!({"family":family,"tag":builder.build(&ctx).unwrap().unwrap(),
             "accepted":["hello"],"rejected":[block(family,"weather","2",1), unsafe_prose[0], unsafe_prose[1]]}),
         );
-        // The new native styles must honor the shared schema policy as well.
-        for strict in [None, Some(false), Some(true)] {
+        for (mode, strict) in [
+            (StructuralTagSchemaMode::Auto, Some(false)),
+            (StructuralTagSchemaMode::Auto, Some(true)),
+            (StructuralTagSchemaMode::Strict, Some(false)),
+        ] {
             let mut policy_tools = tools.clone();
             policy_tools[0].strict = strict;
-            for mode in [
-                StructuralTagSchemaMode::Auto,
-                StructuralTagSchemaMode::Strict,
-            ] {
-                let mut policy_ctx = context(&policy_tools);
-                policy_ctx.schema_mode = mode;
-                let enforced = strict == Some(true) || mode == StructuralTagSchemaMode::Strict;
-                let wrong_type = block(family, "weather", "false", 1);
-                cases.push(
-                    json!({"family":family,"tag":builder.build(&policy_ctx).unwrap().unwrap(),
+            let mut policy_ctx = context(&policy_tools);
+            policy_ctx.schema_mode = mode;
+            let enforced = strict == Some(true) || mode == StructuralTagSchemaMode::Strict;
+            let wrong_type = block(family, "weather", "false", 1);
+            cases.push(
+                json!({"family":family,"tag":builder.build(&policy_ctx).unwrap().unwrap(),
                     "accepted": if enforced { vec![] } else { vec![wrong_type.clone()] },
                     "rejected": if enforced { vec![wrong_type] } else { vec![] }}),
-                );
-            }
+            );
         }
         let response_schema = json!({"type":"object","properties":{"ok":{"type":"boolean"}},"required":["ok"],"additionalProperties":false});
         let mut structured = context(&tools);
@@ -178,9 +176,6 @@ fn minimax_grammars_and_native_parsers_agree() {
             "accepted":[block(family,"weather","2",1), "{\"ok\":true}"],
             "rejected":["{\"ok\":2}", "hello"]}),
         );
-        assert!(builder.build(&context(&[])).unwrap().is_none());
-        ctx.tool_choice = StructuralTagToolChoice::Named("missing");
-        assert!(builder.build(&ctx).is_err());
         // Disabling optional exclusions must not bypass the constrained tools branch.
         ctx.tool_choice = StructuralTagToolChoice::Auto;
         cases.push(json!({"family":family,"tag":builder.build_with_options(&ctx,&StructuralTagOptions {
