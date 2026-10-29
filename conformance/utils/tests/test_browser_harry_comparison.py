@@ -269,6 +269,32 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
         driver.quit(); server.shutdown(); server.server_close()
 
 
+def test_vertical_stacked_problems_focus_dims_uncaptured_outputs(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(1920, 1100)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&layout_tab-unified=stacked")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "dynamo")
+        _ready(driver, "tab-unified", reference=False)
+        driver.find_element("css selector", "[data-focus='problems']").click()
+        result = driver.execute_script("""
+            const statuses = ['documented','diverge','error','leak'];
+            const cells = [...document.querySelectorAll('.comparison-matrix .matrix-cell:not(.filtered-cell)')];
+            return cells.map(cell => {
+                const outcomes = [...cell.querySelectorAll('.matrix-segments > i')]
+                  .flatMap(node => [...node.classList].filter(name => name.startsWith('status-')).map(name => name.slice(7)));
+                return {outcomes, dimmed: cell.classList.contains('focus-dim'), hasProblem: outcomes.some(status => statuses.includes(status))};
+            });
+        """)
+        assert result
+        assert all(item["dimmed"] == (not item["hasProblem"]) for item in result), result
+        assert any("missing" in item["outcomes"] and item["dimmed"] for item in result)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 def test_toolbar_shares_one_row_and_offline_notice_is_at_page_bottom(published_viewer):
     server, _ = _server(root=published_viewer)
     driver = _driver()

@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedCaptureOutcome } from './model.js';
-import { comparisonView, captureCounts, statusLabels, verticalDefault } from './comparison.js';
+import { comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
     ...(status === 'error' ? {err: 1} : status === 'leak' ? {leak: 1} : ['missing', 'unsupported', 'blocked'].includes(status) ? {na: 1} : {})} },
@@ -21,6 +21,10 @@ test('each status is counted separately without scores', () => {
   assert.equal(counts.total, Object.keys(statusLabels).length);
   assert.equal(Object.hasOwn(counts, 'score'), false);
   assert.equal(captureCounts({entries: []}, 'd').total, 0);
+});
+test('Problems focus includes mismatches, parser errors, and leaks only', () => {
+  for (const status of ['documented', 'diverge', 'error', 'leak']) assert.equal(isProblemOutcome(status), true, status);
+  for (const status of ['expected', 'missing', 'unsupported', 'blocked', 'uncompared', 'pass']) assert.equal(isProblemOutcome(status), false, status);
 });
 test('filters and focus use the same applicable leaf inventory', () => {
   assert.deepEqual(captureCounts(comparisonView(tab, {...state, focus: 'problems'}), 'd'), captureCounts(comparisonView(tab, state), 'd'));
