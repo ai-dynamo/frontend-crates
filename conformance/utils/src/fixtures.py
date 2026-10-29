@@ -642,6 +642,7 @@ def _derive_stream_expected(case: dict, *, implementations=None) -> dict:
         if isinstance(raw_normal, dict):
             normal.update((impl, raw_normal[impl]) for impl in IMPL_KEYS if impl in raw_normal)
         chunks.append((_normalize_impl_mapping(chunk.get("expected") or {}), normal))
+    assembled = _normalize_impl_mapping(case.get("expected") or {})
     derived: dict = {}
     unavailable = _normalize_impl_mapping(unavailable)
     exception = _normalize_impl_mapping(exception)
@@ -661,6 +662,11 @@ def _derive_stream_expected(case: dict, *, implementations=None) -> dict:
             for expected, normal_text in chunks
         )
         if not has_chunk_data:
+            # Legacy jail+batch captures store their assembled observation at
+            # case level rather than as per-chunk deltas.
+            if impl in assembled:
+                derived[impl] = assembled[impl]
+                continue
             derived[impl] = {"unavailable": (
                 VLLM_RUST_UNAVAILABLE if impl == "vllm_rust"
                 else "No recorded capture for this case."

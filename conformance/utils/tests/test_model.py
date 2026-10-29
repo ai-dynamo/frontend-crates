@@ -515,6 +515,16 @@ def test_stream_unrecorded_capture_is_distinct_from_recorded_empty_output(impl):
     assert "unavailable" not in recorded[impl]
 
 
+def test_stream_legacy_jail_assembled_capture_is_visible_without_chunk_deltas():
+    observed = {"calls": [{"name": "echo", "arguments": {"text": "literal"}}], "normal_text": ""}
+    case = {"expected": {"dynamo_v1": observed}, "chunks": [{"delta_text": "input"}]}
+    result = table.fixtures._derive_stream_expected(case)
+    assert result["dynamo_v1"] == observed
+    assert "unavailable" in result["dynamo_v2"]
+    case["chunks"][0]["expected"] = {"dynamo_v1": []}
+    assert table.fixtures._derive_stream_expected(case)["dynamo_v1"]["calls"] == []
+
+
 @pytest.mark.parametrize("expected", [{}, {"dynamo_v1": {"calls": [], "normal_text": ""}}])
 def test_toolcalling_tooltip_omits_schema_without_a_baseline_result(expected):
     tools = [{"name": "weather", "parameters": {"type": "object", "properties": {
