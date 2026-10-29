@@ -4,7 +4,6 @@
 use super::*;
 
 #[tokio::test]
-#[ignore = "F1: GPT-OSS stream pin accepts analysis leaks, changed choice indexes, and missing usage"]
 async fn review_f1_gpt_oss_stream_pin_rejects_unrelated_changes() {
     let record = fixture()
         .into_iter()
@@ -69,7 +68,6 @@ async fn review_f1_gpt_oss_stream_pin_rejects_unrelated_changes() {
 }
 
 #[test]
-#[ignore = "F2: GPT-OSS rule pin accepts a missing default-mode correction while other mismatches remain"]
 fn review_f2_gpt_oss_rule_pin_rejects_a_reverted_default_case() {
     let record = fixture()
         .into_iter()

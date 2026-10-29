@@ -50,8 +50,10 @@
 //! reasoning off, because the model cannot. So with a thinking-off flag, a
 //! GPT-OSS `predicates` record answers `false` where the recording says `true`,
 //! and a GPT-OSS `stream` record sends the analysis as reasoning where the
-//! recording sent it as answer text. Exactly 12 `predicates` and 53 `stream`
-//! records differ that way, and no other record differs.
+//! recording sent it as answer text. Such a stream record must send exactly
+//! what dynamo recorded for its twin, the same input with no thinking flag
+//! ([`reasoning_on_twin`]). Exactly 12 `predicates` and 53 `stream` records
+//! differ that way, and no other record differs.
 //!
 //! Chunks leave out the fixed envelope (`id`, `object`, `created`, `model`)
 //! and null fields. dynamo's `llm_metrics` is written as its `chunk_tokens`
@@ -60,7 +62,7 @@
 
 use std::collections::HashMap;
 use std::io::Read;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use dynamo_chat_parsing::chat_stream::{
     ChatStreamParsers, ChatStreamPlan, JailRequest, PolicyStreamItem, parse_chat_stream,
@@ -686,39 +688,25 @@ fn is_gpt_oss(record: &Value) -> bool {
     selected_family(tool, reasoning, version(record)) == Some("gpt_oss")
 }
 
-/// A GPT-OSS `predicates` record whose every mismatch is the reasoning-off rule
-/// with the family answering `false` where the recording said `true`: dynamo
-/// `37f2f0a712` keeps GPT-OSS reasoning on (`preprocessor.rs:7161`).
+/// A GPT-OSS `predicates` record whose mismatches are exactly the reasoning-off
+/// rule answering `false`, with the family, for each default thinking mode that
+/// the recording answered `true`: dynamo `37f2f0a712` keeps GPT-OSS reasoning on
+/// (`preprocessor.rs:7161`) whatever the mode. Every such mode must differ, and
+/// nothing else may.
 fn gpt_oss_rule_kept(record: &Value, mismatches: &[String]) -> bool {
-    is_gpt_oss(record)
-        && !mismatches.is_empty()
-        && mismatches.iter().all(|mismatch| {
-            mismatch.starts_with("request_disables_reasoning_with_family(")
-                && mismatch.ends_with(", family): got false, dynamo true")
+    let expected: Vec<String> = record["request_disables_reasoning"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|entry| entry["with_family"] == json!(true))
+        .map(|entry| {
+            format!(
+                "request_disables_reasoning_with_family({:?}, family): got false, dynamo true",
+                entry["default_thinking_mode"].as_str()
+            )
         })
-}
-
-/// A choice's reasoning and answer text, and the rest of its output: its tool
-/// calls and finish reasons, in order.
-fn text_and_rest(output: &Value) -> (String, String, Vec<Value>) {
-    let (mut reasoning, mut content, mut rest) = (String::new(), String::new(), Vec::new());
-    for item in output.as_array().unwrap() {
-        for choice in item["data"]["choices"].as_array().into_iter().flatten() {
-            let delta = &choice["delta"];
-            reasoning.push_str(delta["reasoning_content"].as_str().unwrap_or_default());
-            content.push_str(delta["content"].as_str().unwrap_or_default());
-            if !delta["tool_calls"].is_null() {
-                rest.push(delta["tool_calls"].clone());
-            }
-            if !choice["finish_reason"].is_null() {
-                rest.push(choice["finish_reason"].clone());
-            }
-        }
-        if let Some(error) = item.get("error") {
-            rest.push(error.clone());
-        }
-    }
-    (reasoning, content, rest)
+        .collect();
+    is_gpt_oss(record) && !expected.is_empty() && mismatches == expected.as_slice()
 }
 
 /// Whether the record's request turns thinking off in its template
@@ -728,31 +716,65 @@ fn turns_thinking_off(record: &Value) -> bool {
     args["enable_thinking"] == json!(false) || args["thinking_mode"] == json!("disabled")
 }
 
-/// A GPT-OSS `stream` record, whose request turns thinking off, that differs
-/// from the recording only by keeping the analysis as reasoning: the recording
-/// has no reasoning, its answer text is our reasoning then our answer, and the
-/// tool calls and finish reasons are the same. With `force_nonempty_content`,
-/// the kept reasoning is also held back until an answer comes, so the chunks
-/// differ, and a reply of reasoning only ends as the same answer text; an
-/// answer of whitespace only counts as none, so the reasoning is sent in its
-/// place and the whitespace is dropped. dynamo `37f2f0a712` keeps GPT-OSS
-/// reasoning on (`preprocessor.rs:7161`); the recording is from `45e30e07`.
+/// The request shapes that turn thinking off, and the shape of their twin:
+/// the same request with no thinking flag.
+const THINKING_OFF_TWINS: [(&str, &str); 3] = [
+    ("thinking_off", "plain"),
+    ("thinking_mode_disabled", "plain"),
+    ("thinking_off_force_nonempty", "force_nonempty"),
+];
+
+/// The record's twin: the record with the same input and parser version
+/// whose request has no thinking flag. dynamo recorded it with GPT-OSS
+/// reasoning on.
+fn reasoning_on_twin(record: &Value) -> Option<&'static Value> {
+    static RECORDS: OnceLock<HashMap<(String, String), Value>> = OnceLock::new();
+    let records = RECORDS.get_or_init(|| {
+        fixture()
+            .into_iter()
+            .filter(|record| record["kind"] == "stream")
+            .map(|record| {
+                let key = (
+                    record["name"].as_str().unwrap().to_owned(),
+                    record["version"].to_string(),
+                );
+                (key, record)
+            })
+            .collect()
+    });
+    let mut parts: Vec<&str> = record["name"].as_str()?.split('/').collect();
+    let at = parts
+        .iter()
+        .position(|part| THINKING_OFF_TWINS.iter().any(|(off, _)| off == part))?;
+    let (_, on) = THINKING_OFF_TWINS
+        .iter()
+        .find(|(off, _)| *off == parts[at])?;
+    parts[at] = on;
+    records.get(&(parts.join("/"), record["version"].to_string()))
+}
+
+/// The reasoning and answer text of an output.
+fn text_and_rest(output: &Value) -> (String, String) {
+    let (mut reasoning, mut content) = (String::new(), String::new());
+    for item in output.as_array().unwrap() {
+        for choice in item["data"]["choices"].as_array().into_iter().flatten() {
+            let delta = &choice["delta"];
+            reasoning.push_str(delta["reasoning_content"].as_str().unwrap_or_default());
+            content.push_str(delta["content"].as_str().unwrap_or_default());
+        }
+    }
+    (reasoning, content)
+}
+
+/// A GPT-OSS `stream` record, whose request turns thinking off, whose output
+/// is exactly what dynamo recorded for its twin: the same input with no
+/// thinking flag, and so with reasoning on. dynamo `37f2f0a712` does not let
+/// the flag turn GPT-OSS reasoning off (`preprocessor.rs:7161`); the recording
+/// is from `45e30e07`, which did.
 fn gpt_oss_reasoning_kept(record: &Value, output: &Value) -> bool {
-    let (reasoning, content, rest) = text_and_rest(output);
-    let (recorded_reasoning, recorded_content, recorded_rest) = text_and_rest(&record["output"]);
-    let force_nonempty =
-        record["request"]["chat_template_args"]["force_nonempty_content"] == json!(true);
-    let same_text = recorded_content == format!("{reasoning}{content}")
-        || (force_nonempty
-            && reasoning.is_empty()
-            && recorded_content
-                .strip_prefix(content.as_str())
-                .is_some_and(|tail| !tail.is_empty() && tail.trim().is_empty()));
     is_gpt_oss(record)
         && turns_thinking_off(record)
-        && recorded_reasoning.is_empty()
-        && same_text
-        && rest == recorded_rest
+        && reasoning_on_twin(record).is_some_and(|twin| output == &twin["output"])
 }
 
 #[tokio::test]
@@ -783,9 +805,13 @@ async fn moved_stream_policies_match_dynamo_llm() {
                     continue;
                 }
                 match run_stream(record).await {
-                    Ok((output, _))
+                    Ok((output, with_roles))
                         if output != record["output"]
-                            && gpt_oss_reasoning_kept(record, &output) =>
+                            && gpt_oss_reasoning_kept(record, &output)
+                            && reasoning_on_twin(record).is_some_and(|twin| {
+                                twin.get("output_with_roles")
+                                    .is_none_or(|want| &with_roles == want)
+                            }) =>
                     {
                         *kept.entry("stream").or_default() += 1;
                     }
