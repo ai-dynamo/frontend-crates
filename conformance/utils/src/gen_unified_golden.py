@@ -51,6 +51,7 @@ GRAMMAR_NOTE = {
     "qwen3": "reasoning `<think>...</think>`, tool `<tool_call><function=NAME><parameter=KEY>VALUE</parameter></function></tool_call>`.",
     "kimi_k2": "reasoning `<think>...</think>`, tool section `<|tool_calls_section_begin|><|tool_call_begin|>functions.NAME:IDX<|tool_call_argument_begin|>{...}<|tool_call_end|><|tool_calls_section_end|>`.",
     "kimi_k3": "reasoning `<|open|>think<|sep|>...<|close|>think<|sep|>`, tool `<|open|>tools<|sep|><|open|>call tool=\"NAME\" index=\"IDX\"<|sep|><|open|>argument key=\"KEY\" type=\"string\"<|sep|>VALUE<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>`.",
+    "mistral": "reasoning `[THINK]...[/THINK]`, tool `[TOOL_CALLS]NAME[ARGS]{json}` repeated per call with no end marker (v11+; `[TOOL_CALLS]NAME{json}` is also accepted). Text or reasoning after a call's JSON is that call's leftover and is dropped.",
     "muse_glimmer": "recipient-routed messages `<|start|>assistant to=RCPT<|message|>...<|eom|>`: `self` is reasoning, `user` is visible content, any other recipient opens a tool channel whose body is ATEM XML `<atem:function_calls><atem:invoke name=\"NAME\"><atem:parameter name=\"KEY\">VALUE</atem:parameter></atem:invoke></atem:function_calls>`. `<|eom|>` closes a message with more to follow, `<|eot|>` ends the turn. Spec: https://huggingface.co/meta-models/Muse-Glimmer-30B.",
     "gpt_oss": "Harmony messages use `<|channel|>analysis<|message|>...<|end|>` for reasoning, `<|channel|>final<|message|>...<|return|>` for visible content, and `commentary to=functions.NAME <|constrain|>json<|message|>...<|call|>` for tool calls.",
 }
@@ -67,6 +68,8 @@ def r_reason(fam, text):
         return f"<|channel>thought\n{text}<channel|>"
     if fam == "muse_glimmer":
         return f"<|start|>assistant to=self<|message|>{text}<|eom|>"
+    if fam == "mistral":
+        return f"[THINK]{text}[/THINK]"
     return f"<think>{text}</think>"
 
 
@@ -217,6 +220,9 @@ def r_tool_arguments(fam, name, arguments, idx, raw_arguments=None):
         params = "".join(k3_argument(key, types[type(value)], raw[key])
                          for key, value in arguments.items())
         return k3_tools(k3_call(name, idx + 1, params))
+    if fam == "mistral":
+        # mistral-common writes the arguments with `json.dumps(..., ensure_ascii=False)`.
+        return f"[TOOL_CALLS]{name}[ARGS]{json.dumps(arguments, ensure_ascii=False)}"
     assert fam == "kimi_k2", fam
     args = json.dumps(arguments, ensure_ascii=False)
     return (f"<|tool_calls_section_begin|><|tool_call_begin|>functions.{name}:{idx}"
@@ -367,6 +373,57 @@ class OnlyFamilies(dict):
             raise ValueError(f"OnlyFamilies() names families that do not exist: {unknown}")
 
 
+# Families whose calls have no end marker. Only another call can follow a call: text
+# or reasoning after its JSON is that call's leftover and is dropped.
+CLOSERLESS_CALL_FAMILIES = {"mistral"}
+_CLOSERLESS_NOTE = (
+    "Mistral calls have no end marker, so text or reasoning after a call is that call's "
+    "leftover argument text and is dropped; `mistral-text_after_call_dropped` and "
+    "`mistral-reasoning_after_call_dropped` pin that."
+)
+_MISTRAL_THOUGHT_NOTE = (
+    "A Mistral call inside a thought ends the thought for good, because nothing after a "
+    "call can return to reasoning; `mistral-call_inside_reasoning_ends_thought` pins that."
+)
+_MISTRAL_QUOTE_NOTE = (
+    "Mistral markers are special tokens, so quotation cannot make one literal; "
+    "`mistral-quoted_marker_is_structural` pins that."
+)
+
+# Shared scenarios a family's grammar cannot express, and why. Clean scenarios are
+# excluded by `_call_is_followed` instead.
+GRAMMAR_EXCLUSIONS = {
+    "mistral": {
+        "tool_no_close": "Mistral calls have no close marker, so a complete body is the `tool_only` case.",
+        "tool_in_reason": _MISTRAL_THOUGHT_NOTE,
+        "tool_in_reason_with_text": _MISTRAL_THOUGHT_NOTE,
+        "reason_markup_in_arg_with_text": _CLOSERLESS_NOTE,
+        "native_quoted_control_in_response": _MISTRAL_QUOTE_NOTE,
+        "native_quoted_control_in_reasoning": _MISTRAL_QUOTE_NOTE,
+        "native_single_quoted_word_control": _MISTRAL_QUOTE_NOTE,
+        "native_single_quote_contraction_response": _MISTRAL_QUOTE_NOTE,
+        "native_single_quote_contraction_reasoning": _MISTRAL_QUOTE_NOTE,
+        "native_quoted_incomplete_header": _MISTRAL_QUOTE_NOTE,
+        "native_quoted_control_then_call": _MISTRAL_QUOTE_NOTE,
+    },
+}
+
+
+def _call_is_followed(segs):
+    """Whether text or reasoning follows a call in a clean scenario."""
+    kinds = [seg[0] for seg in segs]
+    return any(kind != "tool" for kind in kinds[kinds.index("tool") + 1:]) if "tool" in kinds else False
+
+
+def exclusion_note(fam, scenario):
+    """Why `fam`'s grammar cannot express `scenario`, or None when it can."""
+    note = GRAMMAR_EXCLUSIONS.get(fam, {}).get(scenario)
+    if note is not None or fam not in CLOSERLESS_CALL_FAMILIES:
+        return note
+    segs = next((spec[3] for spec in CLEAN if spec[0] == scenario), None)
+    return _CLOSERLESS_NOTE if segs is not None and _call_is_followed(segs) else None
+
+
 def every_family(input_text, vllm, dynamo, *rest):
     """One input for EVERY family.
 
@@ -446,6 +503,9 @@ def control_tokens(fam):
         return "<|channel|>analysis<|message|>", "<|end|>", "<|call|>", "<|call|>"
     if fam == "kimi_k3":
         return k3_open("think"), k3_close("think"), k3_open("tools"), k3_close("tools")
+    if fam == "mistral":
+        # No call closer exists; the stray `[ARGS]` separator stands in for one.
+        return "[THINK]", "[/THINK]", "[TOOL_CALLS]", "[ARGS]"
     reason_open, reason_close = r_reason(fam, "\x00").split("\x00")
     rendered = r_tool(fam, "NAMEX", "KEYX", "VALX", 0)
     tokens = re.findall(r"<[^<>]*>", rendered)
@@ -494,6 +554,7 @@ def guided_named_invoke_prefix(fam):
         "glm47": "<tool_call>get_weather",
         "kimi_k2": "<|tool_call_begin|>functions.get_weather:0",
         "kimi_k3": '<|open|>call tool="get_weather"',
+        "mistral": "[TOOL_CALLS]get_weather",
         "muse_glimmer": '<atem:invoke name="get_weather"',
         "qwen3": "<function=get_weather",
     }[fam]
@@ -567,6 +628,10 @@ V_MUSE = {
 # family earns. Carrying the caveat only on the cases that happened to need a
 # per-family verdict published the other 22 as if an engine had produced them.
 VLLM_UNCAPTURABLE = {
+    "mistral": {
+        "verdict": "match",
+        "note": "No vLLM capture is recorded for Mistral Unified yet (no peer tokenizer markers); unverified annotation",
+    },
     "muse_glimmer": V_MUSE,
     "gpt_oss": "GPT-OSS uses the split Harmony parser; the Unified parser does not capture this family.",
 }
@@ -712,6 +777,7 @@ _MIXED_CONTROL_STRINGS = {
             "kimi_k2": "<|tool_calls_section_begin|> <|tool_calls_section_end|> <|tool_call_end|>",
             "kimi_k3": k3_open("tools") + " " + k3_close("tools") + " " + k3_close("call"),
             "muse_glimmer": "<atem:function_calls> </atem:function_calls> </atem:invoke>",
+            "mistral": "[TOOL_CALLS] [ARGS] [CALL_ID]",
         }.items()
     },
 }
@@ -787,6 +853,9 @@ EDGE = [
         "muse_glimmer": ("<|start|>assistant to=self<|message|>ok<|eom|><|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n<atem:parameter name=\"city\">Par",
                          V_MUSE,
                          {"verdict": "match", "note": "P2: the invoke never reached its `</atem:invoke>` fence, so the call is dropped and its markup never leaks; the reasoning channel is kept"}),
+        "mistral": ('[THINK]ok[/THINK][TOOL_CALLS]get_weather[ARGS]{"city": "Par',
+                    D("ARG_MISMATCH", "upstream vLLM emits the truncated call with its unparsed argument prefix (`_extract_args_json` falls back to raw text); unverified, no capture recorded"),
+                    {"verdict": "match", "note": "P2: the unterminated JSON body is dropped and the reasoning kept"}),
      }),
 
     ("reason_unterminated",
@@ -808,6 +877,7 @@ EDGE = [
         "muse_glimmer": ("<|start|>assistant to=self<|message|>thinking but stream ends",
                          V_MUSE,
                          {"verdict": "match", "note": "the open `to=self` body is promoted as reasoning at finish, not dropped and not leaked as text"}),
+        "mistral": ("[THINK]thinking but stream ends", M, M),
      }),
 
     ("arg_marker_in_string",
@@ -844,6 +914,10 @@ EDGE = [
                          V_MUSE,
                          {"verdict": "match", "note": "the parameter value runs to its own `</atem:parameter>`, so the enclosing `</atem:function_calls>` inside it is data"},
                          "git log </atem:function_calls> --oneline"),
+        "mistral": (r_tool("mistral", "run", "cmd", "git log [TOOL_CALLS] --oneline", 0),
+                    D("ARG_MISMATCH", "upstream vLLM's text lexer matches `[TOOL_CALLS]` inside the JSON string and starts a new call; unverified, no capture recorded"),
+                    {"verdict": "match", "note": "a marker inside a JSON string is argument data"},
+                    "git log [TOOL_CALLS] --oneline"),
      }),
 
     ("orphan_close_after_prose",
@@ -869,6 +943,8 @@ EDGE = [
                           V_MUSE,
                           {"verdict": "match", "note": "an orphan terminator outside any routed message is stripped, never emitted as content"}),
          "deepseek_v41": ("I will check that. </｜DSML｜ calls>", M, M),
+         "mistral": ("I will check that. [/THINK]", M,
+                     {"verdict": "match", "note": "a stray `[/THINK]` is stripped and the prose remains visible"}),
       }),
 
     ("empty_args",
@@ -885,6 +961,7 @@ EDGE = [
                     M, M),
         "muse_glimmer": ("<|start|>assistant to=get_weather<|message|><atem:function_calls>\n<atem:invoke name=\"get_weather\">\n</atem:invoke>\n</atem:function_calls><|eom|>",
                          V_MUSE, M),
+        "mistral": ("[TOOL_CALLS]get_weather[ARGS]{}", M, M),
      }),
 
     ("tool_no_close",
@@ -948,6 +1025,9 @@ EDGE = [
                          V_MUSE,
                          {"verdict": "match", "note": "the header is resolved once, at the message boundary; inside an open tool body a quoted `to=self<|message|>` is argument data"},
                          "to=self<|message|>reconsider"),
+        "mistral": (r_tool("mistral", "log", "note", "[THINK]reconsider[/THINK]", 0), M,
+                    {"verdict": "match", "note": "reasoning markers inside a JSON string are argument data"},
+                    "[THINK]reconsider[/THINK]"),
      }),
 
     ("tool_in_reason",
@@ -1065,6 +1145,8 @@ EDGE = [
         "muse_glimmer": ("<|start|>assistant to=self<|message|>first<|eom|><|start|>assistant to=self<|message|>second<|eom|><|start|>assistant to=user<|message|>done<|eom|>",
                          V_MUSE,
                          {"verdict": "match", "note": "the newline is emitted between two ADJACENT `to=self` messages only, matching v1 and both engines' batch parsers"}),
+        "mistral": ("[THINK]first[/THINK][THINK]\nsecond[/THINK]done", M,
+                    {"verdict": "match", "note": "adjacent reasoning runs coalesce into one event (I8)"}),
      }),
 
     # --- Group 13: request-scoped modes (guided decoding, prefilled channels) ---
@@ -1295,6 +1377,7 @@ EDGE = [
         "kimi_k3": ("checking weather" + k3_close("think")
                     + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
                     M, M),
+        "mistral": ("checking weather[/THINK]" + r_tool("mistral", "get_weather", "city", "Paris", 0), M, M),
      }),
 
     ("prefilled_reasoning_then_text_then_tool",
@@ -1318,6 +1401,8 @@ EDGE = [
                     + r_text("kimi_k3", "Here's what I found: ")
                     + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
                     M, M),
+        "mistral": ("weighing options[/THINK]Here's what I found: "
+                    + r_tool("mistral", "get_weather", "city", "Paris", 0), M, M),
      }),
 
     ("prefilled_reasoning_then_text",
@@ -1339,6 +1424,7 @@ EDGE = [
         "kimi_k3": ("no tool needed" + k3_close("think")
                     + r_text("kimi_k3", "The answer is 42."),
                     M, M),
+        "mistral": ("no tool needed[/THINK]The answer is 42.", M, M),
      }),
 
     ("prefilled_reasoning_with_guided_json",
@@ -1371,6 +1457,8 @@ EDGE = [
         "kimi_k3": (r_reason("kimi_k3", "checking weather")
                     + r_tool("kimi_k3", "get_weather", "city", "London", 0),
                     M, M),
+        "mistral": (r_reason("mistral", "checking weather")
+                    + r_tool("mistral", "get_weather", "city", "London", 0), M, M),
      }),
 
 
@@ -1402,6 +1490,8 @@ EDGE = [
                         close=False),
                     M,
                     {"verdict": "match", "note": "P2: drop the partial call and keep prefilled K3 reasoning"}),
+        "mistral": ('analyzing data[/THINK][TOOL_CALLS]get_weather[ARGS]{"city": "Par', M,
+                    {"verdict": "match", "note": "P2: drop the unterminated JSON body and keep the prefilled reasoning"}),
      }),
 
 
@@ -1443,6 +1533,10 @@ EDGE = [
                     + r_tool("kimi_k3", "get_weather", "city", "Paris", 0),
                     M, M,
                     k3_channel("think", "literal") + " then a call"),
+        "mistral": ("[THINK]literal[/THINK] then a call" + r_tool("mistral", "get_weather", "city", "Paris", 0),
+                    M,
+                    {"verdict": "match", "note": "reasoning disabled, so the markers stay literal text"},
+                    "[THINK]literal[/THINK] then a call"),
      }),
 
     (
@@ -1853,7 +1947,10 @@ EDGE += [
      [],
      {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
      {"finish_reason": "stop"},
-     by_family(lambda fam: f"{control_tokens(fam)[2]}still thinking about it",
+     # A Mistral envelope closes only with its JSON body, so the open envelope is an
+     # open body; a bare name after `[TOOL_CALLS]` would be a complete zero-arg call.
+     by_family(lambda fam: '[TOOL_CALLS]get_weather[ARGS]{"city": "still thinking about it'
+               if fam == "mistral" else f"{control_tokens(fam)[2]}still thinking about it",
                D("UNSUPPORTED", "vLLM base case does not capture an unterminated envelope"),
                {"verdict": "match", "note": "P2: unterminated envelope drops its content"})),
 ]
@@ -2112,6 +2209,11 @@ def malformed_json_recovery(fam):
     elif fam == "gemma4":
         inp = '<|tool_call>call:bad{value:{x:<|"|>unfinished}}<tool_call|>'
         golden = following
+    elif fam == "mistral":
+        # The unclosed string swallows the later calls until EOF, where the body
+        # ends at the first marker it swallowed.
+        inp = f'[TOOL_CALLS]bad[ARGS]{{"value": {RECOVERY_RAW}'
+        golden = [{"kind": "tool_call", "name": "bad", "arguments": {}}] + following
     else:
         inp = r_tool(fam, "bad", "value", RECOVERY_RAW, 0)
         if fam in ("deepseek_v4", "deepseek_v41"):
@@ -2456,6 +2558,7 @@ _NATIVE_QUOTED_CONTROL = {
     "glm47": "<tool_call>",
     "kimi_k2": "<|tool_calls_section_begin|>",
     "kimi_k3": "<|open|>call",
+    "mistral": "[TOOL_CALLS]",
     "muse_glimmer": "<|start|>assistant to=get_weather<|message|>",
     "qwen3": "<tool_call>",
 }
@@ -2474,6 +2577,8 @@ def _native_quoted_control_cases():
     ):
         families = {}
         for family, marker in _NATIVE_QUOTED_CONTROL.items():
+            if exclusion_note(family, scenario):
+                continue
             if scenario == "native_single_quoted_word_control":
                 prose = f"The literal 'example {marker} marker' is part of the explanation."
             elif scenario.startswith("native_single_quote_contraction_"):
@@ -2644,10 +2749,100 @@ EDGE.append((
 ))
 
 
+# Mistral calls end at their JSON value and the block never closes, so these pin
+# what that grammar does where the shared scenarios cannot reach.
+_MISTRAL_INIT = {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None}
+_VLLM_MISTRAL_TEST = "upstream vLLM `tests/parser/mistral/test_tool_calls.py::{}`; no capture recorded"
+
+
+def _mistral_case(name, description, golden, raw, vllm, policy=()):
+    return (name, description, list(policy), golden, _MISTRAL_INIT, {"finish_reason": "stop"},
+            OnlyFamilies({"mistral": (raw, vllm, M)}))
+
+
+def _weather(city):
+    return {"kind": "tool_call", "name": "get_weather", "arguments": {"city": city}}
+
+
+EDGE += [
+    _mistral_case(
+        "mistral_text_after_call_dropped",
+        "Text after a call's JSON belongs to that call's arguments slot, because no marker ends a call. It is dropped, not shown as content (vllm-project/vllm#48975).",
+        [_weather("SF")],
+        '[TOOL_CALLS]get_weather[ARGS]{"city": "SF"}Estimating the weather...',
+        {"verdict": "match", "note": _VLLM_MISTRAL_TEST.format("test_extract_tool_calls[trailing_text_after_args_json]")}),
+    _mistral_case(
+        "mistral_reasoning_after_call_dropped",
+        "Reasoning markers after a call's JSON are leftover argument text too, so the thought and the answer after it are dropped. Contrast `11-2` (`reason_after_tool`), which other grammars can express.",
+        [_weather("Paris")],
+        '[TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}[THINK]Now answer.[/THINK]It\'s 18C.',
+        {"verdict": "match", "note": "upstream vLLM's grammar has no reasoning transition from TOOL_ARGS, so the markers stay argument text; unverified, no capture recorded"}),
+    _mistral_case(
+        "mistral_call_inside_reasoning_ends_thought",
+        "`[TOOL_CALLS]` inside a thought ends the thought for good: the call follows, and the rest of the thought and the answer are its leftover. Reasoning loses its trailing whitespace. Contrast `12-2` (`tool_in_reason`), where the thought resumes after the call's closer.",
+        [{"kind": "reasoning", "text": "I should check."}, _weather("Paris")],
+        '[THINK]I should check. [TOOL_CALLS]get_weather[ARGS]{"city": "Paris"} now answer[/THINK] Here you go.',
+        {"verdict": "match", "note": "upstream vLLM's REASONING + TOOL_CALLS transition ends reasoning; unverified, no capture recorded"}),
+    _mistral_case(
+        "mistral_brace_fallback_calls",
+        "Parallel calls in the fallback `[TOOL_CALLS]NAME{json}` form, where the `{` starts the arguments.",
+        [_weather("Paris"), _weather("Tokyo")],
+        '[TOOL_CALLS]get_weather{"city": "Paris"}[TOOL_CALLS]get_weather{"city": "Tokyo"}',
+        {"verdict": "match", "note": _VLLM_MISTRAL_TEST.format("test_extract_tool_calls[multiple_tool_calls]")}),
+    _mistral_case(
+        "mistral_call_id_stripped",
+        "The v11 `[CALL_ID]ID` between the name and `[ARGS]` is stripped, not kept in the name.",
+        [_weather("Paris")],
+        '[TOOL_CALLS]get_weather[CALL_ID]a1b2c3d4e[ARGS]{"city": "Paris"}',
+        D("NAME_MISMATCH", "upstream vLLM's Mistral grammar declares no `[CALL_ID]` terminal, so the id stays in the name; unverified, no capture recorded")),
+    _mistral_case(
+        "mistral_name_before_marker",
+        "A name written before `[TOOL_CALLS]` is content, and the call keeps an empty name so the malformed generation surfaces instead of disappearing.",
+        [{"kind": "text", "text": "bash"}, {"kind": "tool_call", "name": "", "arguments": {"command": "ls"}}],
+        'bash[TOOL_CALLS]{"command": "ls"}',
+        {"verdict": "match", "note": _VLLM_MISTRAL_TEST.format("test_extract_tool_calls_malformed_name_before_marker_emits_empty_name")}),
+    _mistral_case(
+        "mistral_name_without_arguments",
+        "A name with no `[ARGS]` or body is a call with empty arguments.",
+        [{"kind": "tool_call", "name": "get_weather", "arguments": {}}],
+        "[TOOL_CALLS]get_weather",
+        {"verdict": "match", "note": _VLLM_MISTRAL_TEST.format("test_extract_tool_calls_v11_without_args_skipped")},
+        ["P3"]),
+    _mistral_case(
+        "mistral_reasoning_trailing_whitespace_stripped",
+        "Reasoning loses its trailing whitespace when the thought ends.",
+        [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "The answer is 42."}],
+        "[THINK]checking  \n[/THINK]The answer is 42.",
+        {"verdict": "match", "note": "upstream vLLM `strip_trailing_reasoning_whitespace`; no capture recorded"}),
+    _mistral_case(
+        "mistral_duplicate_think_opener_stripped",
+        "A second `[THINK]` inside an open thought is stripped, and the thought continues.",
+        [{"kind": "reasoning", "text": "ab"}, {"kind": "text", "text": "c"}],
+        "[THINK]a[THINK]b[/THINK]c",
+        {"verdict": "match", "note": "upstream vLLM absorbs a duplicate THINK_START; no capture recorded"}),
+    _mistral_case(
+        "mistral_quoted_marker_is_structural",
+        "Markers are special tokens, so an odd quote in a thought cannot make `[/THINK]` literal or hold it until a later quote turns the answer into reasoning.",
+        [{"kind": "reasoning", "text": 'He said "hi'}, {"kind": "text", "text": 'The answer is "42".'}],
+        '[THINK]He said "hi[/THINK]The answer is "42".',
+        {"verdict": "match", "note": "upstream vLLM's lexer has no prose-quote rule; no capture recorded"},
+        ["I3"]),
+    _mistral_case(
+        "mistral_malformed_body_ends_at_next_call",
+        "A body that is not yet a JSON value ends at the next `[TOOL_CALLS]` outside a string. Its raw arguments do not parse, and the later call survives.",
+        [{"kind": "tool_call", "name": "run", "arguments": {}}, _weather("Paris")],
+        '[TOOL_CALLS]run[ARGS]{"cmd": [TOOL_CALLS]get_weather[ARGS]{"city": "Paris"}',
+        {"verdict": "match", "note": "upstream vLLM ends the call at the next TOOL_CALLS and keeps the raw arguments; unverified, no capture recorded"},
+        ["P2", "P3"]),
+]
+
+
 def build_cases(fam):
     """Every CLEAN + EDGE scenario for one family, keyed by case id."""
     cases = {}
     for name, desc, policy, segs, vllm, dynamo in CLEAN:
+        if exclusion_note(fam, name):
+            continue
         inp, state = (_deepseek_v41_input(segs) if fam == "deepseek_v41"
                       else (render_input(fam, segs), "None"))
         cid = f"UNIFIED.{name}.{fam}"
@@ -2703,6 +2898,10 @@ def _build_edge_cases(fam, specs):
         # "not applicable", which would hide missing coverage behind the same cell the
         # corpus uses for a real structural gap.
         if isinstance(per_fam, OnlyFamilies) and fam not in per_fam:
+            continue
+
+        # The family's grammar cannot express this scenario; the report says why.
+        if exclusion_note(fam, name):
             continue
 
         # These edge fixtures use raw family-specific markup. GPT-OSS's Harmony
@@ -2790,7 +2989,11 @@ def scenario_families(scenario):
     """
     for name, *_rest in CLEAN:
         if name == scenario:
-            return frozenset(FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
+            return frozenset(
+                family
+                for family in (FAMILIES if scenario in DEEPSEEK_V41_SCENARIOS else SHARED_FAMILIES)
+                if not exclusion_note(family, scenario)
+            )
     for edge_case in EDGE:
         name = edge_case[0]
         if name != scenario:
@@ -2803,7 +3006,7 @@ def scenario_families(scenario):
         init = edge_case[4] if len(edge_case) >= 6 else {}
         if (init or {}).get("tool_output_mode", "Native") != "Native":
             families.intersection_update(GUIDED_FAMILIES)
-        return frozenset(families)
+        return frozenset(family for family in families if not exclusion_note(family, scenario))
     raise KeyError(f"unknown unified scenario {scenario!r}")
 
 

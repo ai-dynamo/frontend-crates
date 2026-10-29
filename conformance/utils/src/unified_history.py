@@ -1868,6 +1868,11 @@ def _update_from_loose(
         for family_name in families:
             key = (family_name, implementation)
             history = store.histories.get(key)
+            family = store.families.get(family_name)
+            if history is None and family is not None and not family.path.exists():
+                # A family the current corpus just added starts its history here.
+                history = History(family, implementation, {}, family.path.parent, {})
+                store.histories[key] = history
             if history is None:
                 raise ValueError(f"no history file owns {capture_dir.name}/{family_name}")
             case_by_external = {}

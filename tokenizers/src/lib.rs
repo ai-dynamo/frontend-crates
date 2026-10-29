@@ -5,6 +5,7 @@ pub mod basetenkenizer;
 pub mod cache;
 pub mod fastokens;
 pub mod hf;
+pub mod tekken;
 pub mod tiktoken;
 
 // TODO: Add tokenizer benchmarks
@@ -25,6 +26,7 @@ pub use cache::{
 };
 pub use fastokens::{FastTikTokenTokenizer, FastTokenizer};
 pub use hf::HuggingFaceTokenizer;
+pub use tekken::TekkenTokenizer;
 pub use tiktoken::TikTokenTokenizer;
 pub use traits::DecodeResult;
 
@@ -420,6 +422,7 @@ where
 /// Create a tokenizer from a file path to a tokenizer file.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
 ///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
@@ -430,6 +433,7 @@ pub fn create_tokenizer_from_file(file_path: &str) -> Result<Arc<dyn traits::Tok
 /// Create a tokenizer from a file path to a tokenizer file with additional tokenizer option.
 /// The file extension is used to determine the tokenizer type.
 /// Supported file types are:
+/// - `tekken.json` / `tekken_*.json`: Mistral Tekken tokenizer
 /// - json: HuggingFace tokenizer
 /// - model, tiktoken: tiktoken BPE tokenizer (requires `config.json` with a supported
 ///   `model_type` in the same directory; currently: kimi, kimi_k2, kimi_k25, kimi_k3)
@@ -440,6 +444,11 @@ pub fn create_tokenizer_from_file_with_options(
     use traits::Tokenizer as _;
 
     let path = Path::new(file_path);
+    if TekkenTokenizer::is_tekken_file(path) {
+        let tokenizer = TekkenTokenizer::from_file(file_path)?.with_options(options);
+        return Ok(Arc::new(tokenizer));
+    }
+
     let extension = path
         .extension()
         .and_then(std::ffi::OsStr::to_str)

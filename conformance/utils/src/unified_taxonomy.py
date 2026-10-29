@@ -103,6 +103,14 @@ UNIFIED_TAX = {
     "kimi_k3_malformed_call_then_valid": ("kimi", "6"),
     "kimi_k3_raw_json_eof": ("kimi", "7"),
     "kimi_k3_guided_native_wrapper": ("kimi", "8"),
+    **{scenario: ("mistral", str(index)) for index, scenario in enumerate([
+        "mistral_text_after_call_dropped", "mistral_reasoning_after_call_dropped",
+        "mistral_call_inside_reasoning_ends_thought", "mistral_brace_fallback_calls",
+        "mistral_call_id_stripped", "mistral_name_before_marker",
+        "mistral_name_without_arguments", "mistral_reasoning_trailing_whitespace_stripped",
+        "mistral_duplicate_think_opener_stripped", "mistral_quoted_marker_is_structural",
+        "mistral_malformed_body_ends_at_next_call",
+    ], 1)},
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),
@@ -268,6 +276,7 @@ GROUP_DESCRIPTION_PREFIXES = {
     "kimi": ("kimi_k3_",),
     "gemma": ("gemma4_",),
     "glm5": ("glm47_",),
+    "mistral": ("mistral_",),
     "deepseek": ("deepseek_v41_",),
     "muse": ("muse_",),
     "dsml": ("dsml_",),

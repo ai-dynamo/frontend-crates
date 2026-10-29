@@ -2,7 +2,7 @@
 
 The unified parser is ONE state machine per stream that owns reasoning, visible content, and tool calls, and emits ONE ordered event list. The split path Dynamo still serves for most families runs the v1 reasoning parser over the whole stream first, then a v2 tool parser on the leftover — which cannot represent WHERE reasoning happened, so every thought is hoisted to the front and merged. See [`../../conformance/utils/lib/parsers/UNIFIED_CASES.md`](../../conformance/utils/lib/parsers/UNIFIED_CASES.md) for what that costs, case by case.
 
-This doc is for adding a family to the unified path. `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, and `qwen3` are on it today.
+This doc is for adding a family to the unified path. `deepseek_v4`, `gemma4`, `kimi_k2`, `kimi_k3`, `mistral`, `muse_glimmer`, and `qwen3` are on it today.
 
 ## What you get for free
 
@@ -88,7 +88,7 @@ Then add the family's inputs to `gen_unified_golden.py` and run the pipeline (se
 
 **Tier C — real new machinery.** `gemma4` is DONE, and what it needed is now shared. Its end marker can legitimately appear inside a `<|"|>`-delimited string value, so a plain `find` cuts the value (`I7`, case `7-2`); the same string rule makes `call:` ambiguous with the English word and lets a body be complete before its closer streams. All three are answered by one `InvokeScan` hook rather than a bespoke drain — see `tool_calling/gemma4.rs`. `harmony` is still Tier C and is not a marker scan at all: it routes by channel and depends on token IDs, and `UnifiedParser` has no `push_tokens`, so porting it means extending the trait, not adding a factory.
 
-**Not portable yet.** `granite`, `inkling`, `mistral`, `step3`, and `minimax_append_think` have v1 reasoning parsers but no v2 tool parser. `ScannerUnified` has no reasoning-only shape, so there is nothing to hang them on until a tool parser exists.
+**Not portable yet.** `granite`, `inkling`, `step3`, and `minimax_append_think` have v1 reasoning parsers but no v2 tool parser. `ScannerUnified` has no reasoning-only shape, so there is nothing to hang them on until a tool parser exists.
 
 ## The reasoning half is the easy half
 

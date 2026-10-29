@@ -20,6 +20,36 @@ fn tools() -> Vec<Tool> {
     }]
 }
 
+/// Families whose unified parser refuses guided tool output.
+/// `native_only_families_refuse_guided_output` checks each one, so the
+/// exclusion cannot hide a family that stopped honouring guided output.
+const NATIVE_ONLY_FAMILIES: &[&str] = &["mistral"];
+
+fn guided_families() -> impl Iterator<Item = &'static str> {
+    dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES
+        .iter()
+        .copied()
+        .filter(|family| !NATIVE_ONLY_FAMILIES.contains(family))
+}
+
+#[test]
+fn native_only_families_refuse_guided_output() {
+    for family in NATIVE_ONLY_FAMILIES {
+        for named in [false, true] {
+            let mut parser = create_unified_parser_for_family(family, &tools()).unwrap();
+            let refused = parser.initialize_request(UnifiedParserInit {
+                starting_state: UnifiedParserStartingState::Response,
+                tool_output_mode: mode(named),
+                ..Default::default()
+            });
+            assert!(
+                refused.is_err(),
+                "{family} named={named} accepted guided output"
+            );
+        }
+    }
+}
+
 fn mode(named: bool) -> UnifiedToolOutputMode {
     UnifiedToolOutputMode::GuidedJson {
         named_tool: named.then(|| "write_file".into()),
@@ -41,7 +71,7 @@ fn parts(named: bool) -> (&'static str, &'static str) {
 fn response_prefill_streams_long_argument_after_literal_marker() {
     // Corpus Init cannot select StreamBestEffort or assert pre-close deltas, so
     // the live request policy and its progress deadline need a Rust regression.
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             let (head, tail) = parts(named);
             for split in 0..=head.len() {
@@ -83,7 +113,7 @@ fn response_prefill_streams_long_argument_after_literal_marker() {
 
 #[test]
 fn response_prefill_buffering_contracts_keep_arguments_transactional() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             for policy in [
                 InvalidGuidedPayloadPolicy::RecoverAsText,
@@ -118,7 +148,7 @@ fn response_prefill_buffering_contracts_keep_arguments_transactional() {
 
 #[test]
 fn response_prefill_rejects_or_recovers_malformed_payload_without_dispatch() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             let raw = if named {
                 r#"{"path":"x","content":"unterminated"#
@@ -160,7 +190,7 @@ fn response_prefill_rejects_or_recovers_malformed_payload_without_dispatch() {
 
 #[test]
 fn response_prefill_skips_non_call_json_and_preserves_no_tool_prose() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for offered_tools in [tools(), Vec::new()] {
             for prose in [
                 r#"{"message":"ordinary JSON prose"}"#,
@@ -228,7 +258,7 @@ fn response_prefill_skips_non_call_json_and_preserves_no_tool_prose() {
 
 #[test]
 fn all_starting_channels_keep_long_field_progress_and_argument_order() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         let closer = match dynamo_parsers_v2::canonical_unified_family(family).unwrap() {
             "gemma4" => "<channel|>",
             "kimi_k3" => "<|close|>think<|sep|>",
@@ -365,7 +395,7 @@ fn visible_prose_preserves_quoted_native_markers_without_changing_routing() {
 
 #[test]
 fn reject_quoted_response_prefix_waits_for_payload_validation() {
-    for family in dynamo_parsers_v2::REGISTERED_UNIFIED_FAMILIES {
+    for family in guided_families() {
         for named in [false, true] {
             for quote in ['"', '\'', '`'] {
                 let prefix = format!("The literal {quote}<tool_call>{quote} marker. ");

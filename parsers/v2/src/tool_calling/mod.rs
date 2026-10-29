@@ -12,6 +12,8 @@ pub mod kimi_k2;
 pub mod kimi_k3;
 pub mod minimax_m2;
 pub mod minimax_m3;
+/// Mistral has no tool-only parser; the unified parser is its only entry point.
+pub(crate) mod mistral;
 pub mod muse_glimmer;
 pub mod qwen3_coder;
 mod registry;
