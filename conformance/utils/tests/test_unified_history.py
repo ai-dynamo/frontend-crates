@@ -14,6 +14,7 @@ import pytest
 import yaml
 import viewer_catalog
 import unified_history
+
 import unified_archives
 import migrate_capture_sources
 import publish_current_capture
@@ -24,6 +25,15 @@ from viewer_codec import encode_typed
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+
+def test_rust_equals_scalar_is_text_without_allowing_explicit_tags(tmp_path):
+    path = tmp_path / "capture.yaml"
+    for scalar in ("=", "'='"):
+        path.write_text(f"delta_text: {scalar}\n")
+        assert unified_history.load_yaml(path) == {"delta_text": "="}
+    path.write_text("delta_text: !!str =\n")
+    with pytest.raises(ValueError, match="YAML tags are not allowed"):
+        unified_history.load_yaml(path)
 
 @pytest.mark.parametrize("case_count", [1, 8])
 @pytest.mark.parametrize("derived", [False, True])

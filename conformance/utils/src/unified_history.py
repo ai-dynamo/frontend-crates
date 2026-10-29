@@ -124,6 +124,8 @@ def _construct_mapping(loader: StrictLoader, node, deep=False):
 
 
 StrictLoader.add_constructor(BaseResolver.DEFAULT_MAPPING_TAG, _construct_mapping)
+# serde_yaml emits a plain '=' string; explicit tags still fail in compose_node.
+StrictLoader.add_constructor("tag:yaml.org,2002:value", SafeConstructor.construct_yaml_str)
 
 
 def load_yaml(path: Path) -> dict:
