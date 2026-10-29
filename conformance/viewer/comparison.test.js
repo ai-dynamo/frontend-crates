@@ -16,13 +16,10 @@ const columns = leaves.map(c => ({sub: c.sub, label: c.sub, desc: 'case ' + c.su
 const tab = {rows: [{family: 'family', model_label: 'Model', cells: Object.fromEntries(leaves.map(c => [c.sub, c]))}], columns,
   column_groups: [{key: 'core', label: 'Core'}]};
 const state = {groups: new Set(['core']), search: '', focus: 'all'};
-test('Detailed markers distinguish every capture outcome without scores', () => {
-  const markers = {pass: '=', documented: 'Δ', diverge: '≠', error: '✗', leak: '↯', missing: '—',
-    unsupported: 'x', blocked: '#', expected: '!', uncompared: '?'};
-  assert.deepEqual(Object.keys(markers), Object.keys(statusLabels));
-  for (const [status, marker] of Object.entries(markers)) {
+test('Capture boxes stay empty and keep accessible outcome labels', () => {
+  for (const status of Object.keys(statusLabels)) {
     const segment = captureSegmentHtml(status, 'capture');
-    assert.ok(segment.includes('>' + marker + '</span>'), status);
+    assert.match(segment, /^<i [^>]+><\/i>$/, status);
     assert.ok(segment.includes('capture: ' + statusLabels[status]), status);
     assert.ok(!segment.includes('%'), status);
   }

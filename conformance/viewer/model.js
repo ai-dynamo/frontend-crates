@@ -5,8 +5,6 @@ import { canonicalArguments, sameValue, isMapping, mappingEntries, getField, has
 export const captureStatusLabels = {pass: 'Matches GOLDEN', documented: 'Documented differences', diverge: 'Disagreements',
   error: 'Parser errors', leak: 'Markup leaks', missing: 'Missing captures', unsupported: 'Unsupported cases',
   blocked: 'Blocked sources', expected: 'Expected errors', uncompared: 'GOLDEN unavailable'};
-export const captureStatusMarkers = {pass: '=', documented: 'Δ', diverge: '≠', error: '✗', leak: '↯',
-  missing: '—', unsupported: 'x', blocked: '#', expected: '!', uncompared: '?'};
 
 const has = hasField;
 const parserError = (value) => /parser not captured|parsing failed|parse error|panicked|exception|traceback/i.test(value);
