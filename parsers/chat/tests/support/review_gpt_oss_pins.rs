@@ -32,10 +32,10 @@ async fn review_f1_gpt_oss_stream_pin_rejects_unrelated_changes() {
     ] {
         let mut changed = output.clone();
         for item in changed.as_array_mut().unwrap() {
-            if mutation == "usage dropped" {
-                if let Some(data) = item.get_mut("data").and_then(Value::as_object_mut) {
-                    data.remove("usage");
-                }
+            if mutation == "usage dropped"
+                && let Some(data) = item.get_mut("data").and_then(Value::as_object_mut)
+            {
+                data.remove("usage");
             }
             for choice in item["data"]["choices"].as_array_mut().into_iter().flatten() {
                 if mutation == "choice index changed" {
