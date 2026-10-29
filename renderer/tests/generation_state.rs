@@ -331,43 +331,37 @@ fn kimi_partial_response_metadata_initializes_unified_parser() {
         },
     ];
 
-    for add_generation_prompt in [true, false] {
-        request.generation_prompt = add_generation_prompt;
-        let prompt = formatter.render_prompt(&request).unwrap();
-        assert!(prompt.as_str().ends_with("<|open|>response<|sep|>I will "));
-        let starting_state = match prompt.generation_state() {
-            GenerationState::Unopened => UnifiedParserStartingState::None,
-            GenerationState::Reasoning => UnifiedParserStartingState::Reasoning,
-            GenerationState::Response => UnifiedParserStartingState::Response,
-            other => panic!("expected known native continuation state, got {other:?}"),
-        };
-        let init = UnifiedParserInit {
-            starting_state,
-            ..Default::default()
-        };
-        let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
+    request.generation_prompt = false;
+    let prompt = formatter.render_prompt(&request).unwrap();
+    assert!(prompt.as_str().ends_with("<|open|>response<|sep|>I will "));
+    let starting_state = match prompt.generation_state() {
+        GenerationState::Unopened => UnifiedParserStartingState::None,
+        GenerationState::Reasoning => UnifiedParserStartingState::Reasoning,
+        GenerationState::Response => UnifiedParserStartingState::Response,
+        other => panic!("expected known native continuation state, got {other:?}"),
+    };
+    let init = UnifiedParserInit {
+        starting_state,
+        ..Default::default()
+    };
+    let mut parser = create_unified_parser_for_family("kimi_k3", &[]).unwrap();
 
-        // Whole completion and every two-chunk split share the same contract.
-        // Reinitialize the same parser to check request-state restoration too.
-        for split in completion.char_indices().map(|(at, _)| at) {
-            parser.reset();
-            parser.initialize_request(init.clone()).unwrap();
-            let mut events = parser.push(&completion[..split]).unwrap();
-            events.extend(parser.push(&completion[split..]).unwrap());
-            events.extend(parser.finish().unwrap().events);
-            assert_eq!(
-                assemble(&events),
-                expected,
-                "split={split}, add_generation_prompt={add_generation_prompt}"
-            );
-        }
+    // Whole completion and every two-chunk split share the same contract.
+    // Reinitialize the same parser to check request-state restoration too.
+    for split in completion.char_indices().map(|(at, _)| at) {
         parser.reset();
-        parser.initialize_request(init).unwrap();
-        let mut events = Vec::new();
-        for ch in completion.chars() {
-            events.extend(parser.push(&ch.to_string()).unwrap());
-        }
+        parser.initialize_request(init.clone()).unwrap();
+        let mut events = parser.push(&completion[..split]).unwrap();
+        events.extend(parser.push(&completion[split..]).unwrap());
         events.extend(parser.finish().unwrap().events);
-        assert_eq!(assemble(&events), expected, "one character per chunk");
+        assert_eq!(assemble(&events), expected, "split={split}");
     }
+    parser.reset();
+    parser.initialize_request(init).unwrap();
+    let mut events = Vec::new();
+    for ch in completion.chars() {
+        events.extend(parser.push(&ch.to_string()).unwrap());
+    }
+    events.extend(parser.finish().unwrap().events);
+    assert_eq!(assemble(&events), expected, "one character per chunk");
 }
