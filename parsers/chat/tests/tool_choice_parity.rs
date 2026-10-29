@@ -662,6 +662,8 @@ fn choices() -> Vec<Option<Value>> {
         Some(named(NAMES[0])),
         Some(named(NAMES[1])),
         Some(named("missing")),
+        // Names match exactly, not ignoring case.
+        Some(named("GET_WEATHER")),
     ]
 }
 
@@ -849,7 +851,13 @@ fn grammar_matches_dynamo_llm() {
             .iter()
             .map(|tool| tool.function.name.as_str())
             .collect();
-        for name in [None, Some(NAMES[0]), Some(NAMES[1]), Some("missing")] {
+        for name in [
+            None,
+            Some(NAMES[0]),
+            Some(NAMES[1]),
+            Some("missing"),
+            Some("GET_WEATHER"),
+        ] {
             for required in [false, true] {
                 let (got, want) = match (name, required) {
                     (None, false) => (
