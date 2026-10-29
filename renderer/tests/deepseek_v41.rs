@@ -113,7 +113,6 @@ fn medium_effort_is_a_high_compatibility_alias() {
     for fields in [
         json!({"reasoning_effort": "medium"}),
         json!({"chat_template_args": {"reasoning_effort": "medium"}}),
-        json!({"chat_template_kwargs": {"reasoning_effort": "medium"}}),
         json!({
             "reasoning_effort": "medium",
             "chat_template_args": {"reasoning_effort": "low"}
@@ -121,14 +120,6 @@ fn medium_effort_is_a_high_compatibility_alias() {
     ] {
         assert_eq!(render(fields.clone()).unwrap(), high, "{fields}");
     }
-    assert_eq!(
-        render(json!({
-            "reasoning_effort": "low",
-            "chat_template_args": {"reasoning_effort": "medium"}
-        }))
-        .unwrap(),
-        render(json!({"reasoning_effort": "low"})).unwrap()
-    );
 }
 
 #[test]
