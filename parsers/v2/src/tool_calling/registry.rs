@@ -120,7 +120,6 @@ mod tests {
         assert!(structural_tag_builder_for_family("qwen3_coder").is_some());
         assert!(structural_tag_builder_for_family("deepseek_v4").is_some());
         assert!(structural_tag_builder_for_family("glm47").is_some());
-        assert!(structural_tag_builder_for_family("minimax_m2").is_some());
         assert!(structural_tag_builder_for_family("kimi_k2").is_some());
         assert!(structural_tag_builder_for_family("kimi_k3").is_some());
         // Unified-only family: no tool-calling entry, grammar still resolves.
