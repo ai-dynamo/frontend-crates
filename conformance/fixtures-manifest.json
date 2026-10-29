@@ -387,23 +387,23 @@
     },
     {
       "path": "toolcalling/fixtures-stream-v1/vllm_rust-0.23.0.tar.gz",
-      "sha256": "96824d476512b65920455907129df125043f3f444bec6d6baf61ac02fedd6581",
-      "size": 13334
+      "sha256": "01394114677a68ee72920092bf6e1da7152a08df5f31c19af7947e44c39ae248",
+      "size": 13339
     },
     {
       "path": "toolcalling/fixtures-stream-v1/vllm_rust-0.24.0.tar.gz",
-      "sha256": "d88069580e7111c0dc13fb21ea5f1cce244f3505c23c2365f118c574c54e26ea",
-      "size": 3942
+      "sha256": "8adc23faee9382d9ac06b7329e8f84eee3fc4d43dab846518d33013ce29744b0",
+      "size": 3938
     },
     {
       "path": "toolcalling/fixtures-stream-v1/vllm_rust-0.25.1.tar.gz",
-      "sha256": "f586257a2f7ee365338b8eff9ab946f3d3682d41bf698ae33f17776105510b02",
-      "size": 4816
+      "sha256": "2bb7a1732c2a49f2aa01c100ea004a4a9de77bc9cfa294198ca154df2e69314c",
+      "size": 4812
     },
     {
       "path": "toolcalling/fixtures-stream-v1/vllm_rust-0.26.0.tar.gz",
-      "sha256": "caae26573414b82e154a6beca2831dba417044e0e1e96e19d6f01152cca3284f",
-      "size": 4820
+      "sha256": "4ae9b07963da2555ee7a94471f33cd6e29c81312e51fadbb27bd761c13c8a959",
+      "size": 4815
     },
     {
       "path": "unified-history",
