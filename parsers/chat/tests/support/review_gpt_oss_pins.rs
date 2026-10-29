@@ -67,3 +67,30 @@ async fn review_f1_gpt_oss_stream_pin_rejects_unrelated_changes() {
         "GPT-OSS stream pin accepted unrelated regressions: {accepted:?}"
     );
 }
+
+#[test]
+#[ignore = "F2: GPT-OSS rule pin accepts a missing default-mode correction while other mismatches remain"]
+fn review_f2_gpt_oss_rule_pin_rejects_a_reverted_default_case() {
+    let record = fixture()
+        .into_iter()
+        .find(|record| {
+            record["kind"] == "predicates"
+                && record["version"] == "auto"
+                && record["name"] == "harmony+gpt_oss/thinking_off"
+        })
+        .expect("GPT-OSS thinking-off predicate record");
+    let mut mismatches = check_predicates(&record);
+    assert_eq!(mismatches.len(), 4);
+    assert!(gpt_oss_rule_kept(&record, &mismatches));
+
+    // Returning the recorded true for this mode removes only its mismatch.
+    let reverted =
+        "request_disables_reasoning_with_family(Some(\"enabled\"), family): got false, dynamo true";
+    assert!(mismatches.iter().any(|mismatch| mismatch == reverted));
+    mismatches.retain(|mismatch| mismatch != reverted);
+    assert_eq!(mismatches.len(), 3);
+    assert!(
+        !gpt_oss_rule_kept(&record, &mismatches),
+        "GPT-OSS rule pin accepted reasoning disabled with default_thinking_mode=enabled and enable_thinking=false; the other three mode mismatches still pin the same record"
+    );
+}
