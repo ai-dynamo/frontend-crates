@@ -3063,7 +3063,8 @@ dependencies = [
 [[package]]
 name = "openai-harmony"
 version = "0.0.8"
-source = "git+https://github.com/keivenchang/harmony?rev=32530bcc10740588962216a3e7ce161fc9386306#32530bcc10740588962216a3e7ce161fc9386306"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e77e82af451fc95deeb728a40b84db8ee82d341e136c268de415123a560b9b72"
 dependencies = [
  "anyhow",
  "base64 0.22.1",

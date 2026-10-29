@@ -3,15 +3,16 @@
 
 //! Unified GPT-OSS parser over the incremental Harmony message reader.
 
+mod reader;
+
 use super::shared_input::SharedInput;
+use reader::DeltaReader;
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
 use openai_harmony::chat::Role;
-use openai_harmony::{
-    HarmonyEncoding, HarmonyEncodingName, StreamableParser, load_harmony_encoding,
-};
+use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
 
 use crate::tool_calling::arguments::{parsed_json_literal, raw_json_literal, valid_json_reader};
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
@@ -174,7 +175,7 @@ struct HarmonyRuntime {
     encoding: HarmonyEncoding,
     allow_implicit_channel_header: bool,
     legacy_tool_compatibility: bool,
-    parser: StreamableParser,
+    parser: DeltaReader,
     marker_ids: HashMap<u32, &'static str>,
     start_id: u32,
     message_id: u32,
@@ -236,7 +237,7 @@ impl HarmonyRuntime {
             marker_ids.insert(token_id(marker)?, *marker);
         }
         Ok(Self {
-            parser: StreamableParser::new(encoding.clone(), None)?.without_history(),
+            parser: DeltaReader::new(encoding.clone())?,
             allow_implicit_channel_header,
             legacy_tool_compatibility,
             start_id: token_id(START)?,
@@ -273,7 +274,7 @@ impl HarmonyRuntime {
                 // The legacy tool API only recognizes commentary calls. The
                 // native Unified parser accepts recipient routing on any channel.
                 return if self.legacy_tool_compatibility
-                    && self.parser.current_channel().as_deref() != Some("commentary")
+                    && self.parser.current_channel() != Some("commentary")
                 {
                     Route::Suppress
                 } else {
@@ -286,7 +287,7 @@ impl HarmonyRuntime {
                 return Route::Suppress;
             }
         }
-        match self.parser.current_channel().as_deref() {
+        match self.parser.current_channel() {
             Some("analysis") => Route::Reasoning,
             Some("commentary") if self.legacy_tool_compatibility => Route::Suppress,
             _ => Route::Text,
@@ -508,7 +509,7 @@ impl HarmonyRuntime {
                 recovered_tokens = 1,
                 "restarted Harmony parsing at a new message boundary"
             );
-            self.parser = StreamableParser::new(self.encoding.clone(), None)?.without_history();
+            self.parser = DeltaReader::new(self.encoding.clone())?;
             self.inside_message = true;
             self.in_body = false;
             self.route = None;
@@ -531,7 +532,7 @@ impl HarmonyRuntime {
                 self.finish_tool_call(&name, output);
             }
             tracing::warn!(why = "malformed_harmony_message", skipped_tokens = 1, error = %error, "discarded malformed Harmony input and resumed at the next message");
-            self.parser = StreamableParser::new(self.encoding.clone(), None)?.without_history();
+            self.parser = DeltaReader::new(self.encoding.clone())?;
             self.inside_message = false;
             self.in_body = false;
             self.route = None;
@@ -555,34 +556,33 @@ impl HarmonyRuntime {
             self.call_json = Default::default();
         }
 
-        if self.in_body {
-            let delta = self.parser.last_content_delta()?;
-            let completion = self.parser.last_completion_delta().map(str::to_owned);
-            if let Some(text) = &completion {
-                tracing::warn!(
-                    why = "harmony_boundary_text_recovery",
-                    recovered_bytes = text.len(),
-                    "recovered pending Harmony text at a message boundary"
-                );
-            }
-            for delta in delta.into_iter().chain(completion) {
-                match self.route.as_ref().unwrap_or(&Route::Suppress) {
-                    Route::Reasoning => output.push_reasoning(delta),
-                    Route::Text => output.push_text(delta),
-                    Route::Tool(_) => {
-                        self.advance_call_json(&delta);
-                        self.call_content.append(&delta);
-                        if let Some(cursor) = &mut self.call_cursor {
-                            let mut calls = Vec::new();
-                            cursor.advance_view(self.call_content.view(), &mut calls);
-                            for mut call in calls {
-                                call.tool_index = self.active_call_index;
-                                output.push_call(call);
-                            }
+        let skipped_items = self.parser.take_skipped_pending();
+        if skipped_items > 0 {
+            tracing::warn!(
+                why = "incomplete_harmony_utf8",
+                skipped_items,
+                "discarded undecoded Harmony token or byte fragments at a message boundary"
+            );
+        }
+        if self.in_body
+            && let Some(delta) = self.parser.last_content_delta().map(str::to_owned)
+        {
+            match self.route.as_ref().unwrap_or(&Route::Suppress) {
+                Route::Reasoning => output.push_reasoning(delta),
+                Route::Text => output.push_text(delta),
+                Route::Tool(_) => {
+                    self.advance_call_json(&delta);
+                    self.call_content.append(&delta);
+                    if let Some(cursor) = &mut self.call_cursor {
+                        let mut calls = Vec::new();
+                        cursor.advance_view(self.call_content.view(), &mut calls);
+                        for mut call in calls {
+                            call.tool_index = self.active_call_index;
+                            output.push_call(call);
                         }
                     }
-                    Route::Suppress => {}
                 }
+                Route::Suppress => {}
             }
         }
 
@@ -692,7 +692,7 @@ impl HarmonyRuntime {
             recovered_tokens = start.map_or(0, |at| tail.tokens.len() - at),
             "settled an ambiguous Harmony boundary after malformed JSON"
         );
-        self.parser = StreamableParser::new(self.encoding.clone(), None)?.without_history();
+        self.parser = DeltaReader::new(self.encoding.clone())?;
         self.inside_message = false;
         self.in_body = false;
         self.route = None;
@@ -792,25 +792,23 @@ impl HarmonyRuntime {
             tracing::warn!(why = "unterminated_harmony_header", error = %error,
                 "finalized Harmony input with an incomplete header");
         }
+        let skipped_items = self.parser.discard_pending();
+        if skipped_items > 0 {
+            tracing::warn!(
+                why = "incomplete_harmony_utf8",
+                skipped_items,
+                "discarded undecoded Harmony token or byte fragments at EOF"
+            );
+        }
         self.finished = true;
         Ok(())
     }
 
     fn recover_final_header(&self, output: &mut UnifiedParserOutput) -> Result<()> {
-        #[derive(serde::Deserialize)]
-        #[serde(tag = "state")]
-        enum State {
-            Header {
-                header_tokens: Vec<u32>,
-            },
-            #[serde(other)]
-            Other,
-        }
-        let State::Header { header_tokens } = serde_json::from_str(&self.parser.state_json()?)?
-        else {
+        let Some(header_tokens) = self.parser.header_tokens() else {
             return Ok(());
         };
-        let mut header_bytes = self.encoding.tokenizer().decode_bytes(&header_tokens)?;
+        let mut header_bytes = self.encoding.tokenizer().decode_bytes(header_tokens)?;
         let (header, _) = take_utf8_prefix(&mut header_bytes, &[]);
         // Only an undirected assistant final is safe to surface as visible text.
         let Some(mut text) = header.strip_prefix("assistant<|channel|>final") else {
@@ -1475,7 +1473,41 @@ mod tests {
     use crate::unified::{UnifiedEvent, UnifiedParserEvent, UnifiedParserExt};
 
     #[test]
-    fn continuation_boundary_preserves_partial_utf8_text_and_reasoning() {
+    fn incomplete_utf8_at_boundary_keeps_completed_tool_arguments() {
+        let encoding = harmony_encoding().unwrap();
+        let incomplete = (0..256u32)
+            .find(|id| encoding.tokenizer().decode_bytes([*id]).unwrap() == [0xf0])
+            .expect("the byte fallback vocabulary must contain a UTF-8 lead byte");
+        for legacy in [false, true] {
+            for marker in [HANDOFF, MESSAGE_END, TURN_END, ""] {
+                let mut parser = if legacy {
+                    gpt_oss_legacy_tool_adapter()
+                } else {
+                    gpt_oss_unified(&[])
+                };
+                parser.initialize(&[]).unwrap();
+                let mut input = encode_harmony(&format!(
+                    "{START}assistant to=functions.lookup{CHANNEL}commentary{MESSAGE}{{\"q\":\"ok\"}}"
+                ))
+                .unwrap();
+                input.push(incomplete);
+                input.extend(encode_harmony(marker).unwrap());
+                let mut events = parser.push_tokens(&input).unwrap();
+                events.extend(parser.finish().unwrap().events);
+                let completed = events.iter().filter(|event| {
+                    matches!(event, UnifiedParserEvent::ToolCall(call) if call.complete)
+                }).count();
+                assert_eq!(
+                    completed,
+                    usize::from(!marker.is_empty() && (!legacy || marker == HANDOFF)),
+                    "legacy={legacy}, marker={marker}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn continuation_boundary_matches_released_utf8_text_and_reasoning() {
         let encoding = harmony_encoding().unwrap();
         let tokens = encode_harmony("𐍈🙂").unwrap();
         for starting_state in [
@@ -1483,7 +1515,7 @@ mod tests {
             UnifiedParserStartingState::Response,
         ] {
             for split in 0..=tokens.len() {
-                for marker in [MESSAGE_END, TURN_END] {
+                for marker in [MESSAGE_END, TURN_END, HANDOFF, ""] {
                     let mut parser = gpt_oss_unified(&[]);
                     parser
                         .initialize_request(UnifiedParserInit {
@@ -1491,6 +1523,27 @@ mod tests {
                             ..Default::default()
                         })
                         .unwrap();
+                    let channel = if starting_state == UnifiedParserStartingState::Reasoning {
+                        "analysis"
+                    } else {
+                        "final"
+                    };
+                    let mut oracle =
+                        openai_harmony::StreamableParser::new(encoding.clone(), None).unwrap();
+                    let header =
+                        encode_harmony(&format!("{START}assistant{CHANNEL}{channel}{MESSAGE}"))
+                            .unwrap();
+                    let mut expected = String::new();
+                    for id in header
+                        .iter()
+                        .chain(&tokens[..split])
+                        .chain(encode_harmony(marker).unwrap().iter())
+                    {
+                        oracle.process(*id).unwrap();
+                        if let Some(delta) = oracle.last_content_delta().unwrap() {
+                            expected.push_str(&delta);
+                        }
+                    }
                     let before = parser.push_tokens(&tokens[..split]).unwrap();
                     let seed = parser.continuation().unwrap().unwrap();
                     for mut current in [parser, seed.fork().unwrap()] {
@@ -1517,8 +1570,7 @@ mod tests {
                                 _ => panic!("boundary recovery changed the output channel"),
                             })
                             .collect::<String>();
-                        let bytes = encoding.tokenizer().decode_bytes(&tokens[..split]).unwrap();
-                        assert_eq!(actual, String::from_utf8_lossy(&bytes));
+                        assert_eq!(actual, expected, "split={split}, marker={marker}");
                     }
                 }
             }
