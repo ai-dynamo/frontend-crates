@@ -156,6 +156,9 @@ UNIFIED_TAX = {
     "kimi_k3_json_missing_close_literal_response": ("kimi", "22"),
     "kimi_k3_json_marker_then_long_field": ("kimi", "23"),
     "kimi_k3_typed_response_then_call": ("kimi", "24"),
+    "kimi_k3_typed_response_argument_literal": ("kimi", "25"),
+    "kimi_k3_direct_typed_response_recovery": ("kimi", "26"),
+    "kimi_k3_direct_json_response_recovery": ("kimi", "27"),
     # Group 30 — Guided decoding: baseline and argument fidelity.
     "guided_json_named_tool": (30, "1"), "guided_json_required_tool": (30, "2"),
     "guided_json_two_calls": (30, "3"),

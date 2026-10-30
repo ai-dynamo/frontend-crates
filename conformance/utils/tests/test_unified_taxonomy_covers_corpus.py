@@ -586,6 +586,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 "guided_json_native_parameter_object_before_payload",
                 "guided_json_native_parameter_array_before_payload",
             })
+        if family == "kimi_k3":
+            extra.update({"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"})
         if family == "deepseek_v4":
             extra.add("guided_response_rejected_header_quote_ownership")
         if family == "deepseek_v41":
@@ -627,6 +629,8 @@ def test_response_state_uses_only_control_marker_contracts() -> None:
                 marker = "<think>"
             elif scenario in native_scenarios:
                 marker = G._NATIVE_QUOTED_CONTROL.get(G.unified_grammar_family(family), control_tokens(family)[2])
+            elif scenario in {"kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery"}:
+                marker = '<|open|>call tool="lookup"'
             elif scenario == "guided_response_rejected_header_quote_ownership":
                 marker = '<｜DSML｜invoke'
             elif scenario == "gemma4_guided_response_extra_body_opener":

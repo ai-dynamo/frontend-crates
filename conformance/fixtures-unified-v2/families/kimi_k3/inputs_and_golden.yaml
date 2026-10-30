@@ -22238,3 +22238,150 @@ cases:
         name: next
         arguments:
           n: 7
+  kimi_k3_typed_response_argument_literal:
+    lifecycle: active
+    scenario: kimi_k3_typed_response_argument_literal
+    description: Native K3 typed string contains an apparent argument close, response opener, and later literal argument opener. The original typed value owns the later close at EOF.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-typed_response_argument_literal
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><|open|>argument key="q" type="string"<|sep|>a<|close|>argument<|sep|><|open|>response<|sep|><|open|>argument key="x" type="string"<|sep|>z<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="lookup" index="1"<|sep|><
+      - delta_text: '|open|>argument key="q" type="string"<|sep|>a<|close|>argument<|'
+      - delta_text: sep|><|open|>response<|sep|><|open|>argument key="x" type="strin
+      - delta_text: g"<|sep|>z<|close|>argument<|sep|><|close|>call<|sep|><|close|>t
+      - delta_text: ools<|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: a<|close|>argument<|sep|><|open|>response<|sep|><|open|>argument key="x" type="string"<|sep|>z
+  kimi_k3_direct_typed_response_recovery:
+    lifecycle: active
+    scenario: kimi_k3_direct_typed_response_recovery
+    description: Native K3 starts in Response with a direct typed call missing its call close. Recover the call and consume the following response header without exposing XTML as visible text.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-direct_typed_response_recovery
+    historical_ids: []
+    request:
+      input: <|open|>call tool="lookup" index="1"<|sep|><|open|>argument key="q" type="string"<|sep|>first<|close|>argument<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: <|open|>call tool="lookup" index="1"<|sep|><|open|>argument key=
+      - delta_text: '"q" type="string"<|sep|>first<|close|>argument<|sep|><|open|>res'
+      - delta_text: ponse<|sep|>recovered<|close|>response<|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: first
+      - kind: text
+        text: recovered
+  kimi_k3_direct_json_response_recovery:
+    lifecycle: active
+    scenario: kimi_k3_direct_json_response_recovery
+    description: Native K3 starts in Response with a direct raw-JSON call missing its call close. Recover the object and consume the following response header without exposing XTML as visible text.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.kimi-direct_json_response_recovery
+    historical_ids: []
+    request:
+      input: <|open|>call tool="lookup" index="1"<|sep|><|open|>json type="object"<|sep|>{"q":"first"}<|close|>json<|sep|><|open|>response<|sep|>recovered<|close|>response<|sep|>
+      init:
+        starting_state: Response
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: lookup
+        parameters:
+          type: object
+          properties:
+            q:
+              type: string
+            content:
+              type: string
+          required:
+          - q
+      - name: next
+        parameters:
+          type: object
+          properties:
+            n:
+              type: integer
+          required:
+          - n
+      chunks:
+      - delta_text: <|open|>call tool="lookup" index="1"<|sep|><|open|>json type="ob
+      - delta_text: ject"<|sep|>{"q":"first"}<|close|>json<|sep|><|open|>response<|s
+      - delta_text: ep|>recovered<|close|>response<|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: lookup
+        arguments:
+          q: first
+      - kind: text
+        text: recovered

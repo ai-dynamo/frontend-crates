@@ -649,8 +649,29 @@ impl KimiK3CallBoundary {
                 consumed: call_close.end(),
             });
         }
-        if string_owner.is_some() && !flush {
-            return Some(CallBoundary::Pending);
+        if let Some(owner) = string_owner {
+            if !flush {
+                return Some(CallBoundary::Pending);
+            }
+            let limit = self
+                .complete_call_opens
+                .iter()
+                .chain(&self.literal_call_opens)
+                .copied()
+                .filter(|at| *at > response.at)
+                .min()
+                .unwrap_or(text.len());
+            // Lexical argument openers can themselves be string data. Resolve
+            // the retained owner with the same close scanner as normalization,
+            // without borrowing an argument close from a following call.
+            if let Some(close) = self.arg_closes.iter().rfind(|close| close.end() <= limit)
+                && let Some((_, len)) = parse_tag_header(&text[owner..], ARG_OPEN)
+                && ArgumentCloseScan::new(owner + len, false)
+                    .advance(&text[..close.end()], true)
+                    .is_some_and(|close| close.at > response.at)
+            {
+                return None;
+            }
         }
         // A later close of the same typed value makes this response literal.
         if self.body_kind == CallBodyKind::Arguments
@@ -675,8 +696,11 @@ impl KimiK3CallBoundary {
                 consumed: call_close.end(),
             });
         }
-        if let Some(body_end) = self.recovery_body_end(text, header_len, response.at) {
-            let recovered = self.recover_at(text, header_len, body_end);
+        if self
+            .recovery_body_end(text, header_len, response.at)
+            .is_some()
+        {
+            let recovered = self.recover_at(text, header_len, response.at);
             if recovered != CallBoundary::Malformed {
                 return Some(recovered);
             }
@@ -1528,6 +1552,16 @@ impl KimiK3Native {
         }
     }
 
+    fn consume_response_open(&mut self) -> bool {
+        if !self.consume(RESPONSE_OPEN) {
+            return false;
+        }
+        self.tools_open.clear();
+        self.tools_return_mode = None;
+        self.mode = Mode::Response;
+        true
+    }
+
     fn drain_idle(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
         if self.consume_assistant_message_open() {
             return true;
@@ -1536,8 +1570,7 @@ impl KimiK3Native {
             self.mode = Mode::Reasoning;
             return true;
         }
-        if self.consume(RESPONSE_OPEN) {
-            self.mode = Mode::Response;
+        if self.consume_response_open() {
             return true;
         }
         if self.consume_tools_open(Mode::Idle) {
@@ -1581,12 +1614,11 @@ impl KimiK3Native {
             self.mode = Mode::Idle;
             return true;
         }
-        if self.consume(RESPONSE_OPEN) {
+        if self.consume_response_open() {
             tracing::warn!(
                 why = "kimi_k3_elided_think_close",
                 "recovering Kimi K3 response channel without a think close"
             );
-            self.mode = Mode::Response;
             return true;
         }
         if self.consume_tools_open(Mode::Reasoning) {
@@ -1659,10 +1691,7 @@ impl KimiK3Native {
     }
 
     fn drain_tools(&mut self, flush: bool, output: &mut UnifiedParserOutput) -> bool {
-        if self.consume(RESPONSE_OPEN) {
-            self.tools_open.clear();
-            self.tools_return_mode = None;
-            self.mode = Mode::Response;
+        if self.consume_response_open() {
             return true;
         }
         if self.consume_call_open(Mode::Tools, flush, output) {
@@ -1697,6 +1726,7 @@ impl KimiK3Native {
                     "recovering delimiter-terminated Kimi K3 call before an outer boundary"
                 );
                 self.complete_call(body_end, body_end, output);
+                self.consume_response_open();
                 true
             }
             CallBoundary::Resync { at } => {
@@ -2793,6 +2823,102 @@ mod tests {
     };
 
     const SEP: &str = "<|sep|>";
+
+    #[test]
+    fn response_recovery_keeps_the_original_typed_string_owner() {
+        for header in [
+            "<|open|>argument key=\"x\" type=\"string\"<|sep|>",
+            "<|open|>argument key=\"x\" type=\"number\"<|sep|>",
+            "<|open|>argument key=\"x\"<|sep|>",
+            "<|open|>argument WHAT<|sep|>",
+            "",
+        ] {
+            let literal = format!(
+                "α{}{}{header}東京",
+                ARG_CLOSE.canonical, RESPONSE_OPEN.canonical,
+            );
+            for wrapped in [false, true] {
+                for closed in [false, true] {
+                    let wire = format!(
+                        "{}<|open|>call tool=\"lookup\" index=\"1\"{SEP}{}{}{}",
+                        if wrapped { TOOLS_OPEN.canonical } else { "" },
+                        arg("q", "string", &literal),
+                        if closed { CALL_CLOSE.canonical } else { "" },
+                        if wrapped && closed {
+                            TOOLS_CLOSE.canonical
+                        } else {
+                            ""
+                        },
+                    );
+                    for state in [
+                        UnifiedParserStartingState::None,
+                        UnifiedParserStartingState::Reasoning,
+                        UnifiedParserStartingState::Response,
+                    ] {
+                        assert_native_fragmentations_from_state(
+                            &wire,
+                            state,
+                            &[UnifiedEvent::ToolCall {
+                                name: "lookup".into(),
+                                arguments: serde_json::json!({"q":literal}),
+                            }],
+                        );
+                        let guided = format!(
+                            "{wire}{}",
+                            serde_json::json!({"name":"next","arguments":{"n":7}})
+                        );
+                        assert_guided_all_utf8_fragmentations(
+                            &guided,
+                            state,
+                            &[UnifiedEvent::ToolCall {
+                                name: "next".into(),
+                                arguments: serde_json::json!({"n":7}),
+                            }],
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn response_recovery_from_direct_calls_consumes_the_response_header() {
+        for body in [
+            format!("{}\n ", arg("q", "string", "first")),
+            arg("q", "string", "first"),
+            format!(
+                "<|open|>json type=\"object\"{SEP}{{\"q\":\"first\"}}{}",
+                JSON_CLOSE.canonical,
+            ),
+            format!("<|open|>json type=\"object\"{SEP}{{\"q\":\"first\"}}"),
+        ] {
+            let wire = format!(
+                "<|open|>call tool=\"lookup\" index=\"1\"{SEP}{body}{}recovered{}",
+                RESPONSE_OPEN.canonical, RESPONSE_CLOSE.canonical,
+            );
+            assert_native_fragmentations_from_state(
+                &wire,
+                UnifiedParserStartingState::Response,
+                &[
+                    UnifiedEvent::ToolCall {
+                        name: "lookup".into(),
+                        arguments: serde_json::json!({"q":"first"}),
+                    },
+                    UnifiedEvent::Text {
+                        text: "recovered".into(),
+                    },
+                ],
+            );
+        }
+        let literal = format!("before{}literal", RESPONSE_OPEN.canonical);
+        assert_native_fragmentations_from_state(
+            &literal,
+            UnifiedParserStartingState::Response,
+            &[UnifiedEvent::Text {
+                text: literal.clone(),
+            }],
+        );
+    }
 
     // Capture records can pin deltas, but cannot assert scanner work or retained ownership.
     #[test]

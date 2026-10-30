@@ -2880,11 +2880,27 @@ K3_RESPONSE_CASES = [
      + r_text("kimi_k3", "recovered") + r_tool_arguments("kimi_k3", "next", {"n": 7}, 1),
      [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}},
       {"kind": "text", "text": "recovered"}, {"kind": "tool_call", "name": "next", "arguments": {"n": 7}}]),
+    ("kimi_k3_typed_response_argument_literal",
+     "Native K3 typed string contains an apparent argument close, response opener, and later literal argument opener. The original typed value owns the later close at EOF.",
+     r_tool_arguments("kimi_k3", "lookup", {"q": "a" + k3_close("argument") + k3_open("response")
+                      + k3_argument("x", "string", "z").removesuffix(k3_close("argument"))}, 0),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "a" + k3_close("argument") + k3_open("response")
+                                                           + k3_argument("x", "string", "z").removesuffix(k3_close("argument"))}}]),
+    ("kimi_k3_direct_typed_response_recovery",
+     "Native K3 starts in Response with a direct typed call missing its call close. Recover the call and consume the following response header without exposing XTML as visible text.",
+     k3_call("lookup", 1, k3_argument("q", "string", "first"), close=False) + r_text("kimi_k3", "recovered"),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
+    ("kimi_k3_direct_json_response_recovery",
+     "Native K3 starts in Response with a direct raw-JSON call missing its call close. Recover the object and consume the following response header without exposing XTML as visible text.",
+     k3_call("lookup", 1, k3_json('{"q":"first"}'), close=False) + r_text("kimi_k3", "recovered"),
+     [{"kind": "tool_call", "name": "lookup", "arguments": {"q": "first"}}, {"kind": "text", "text": "recovered"}]),
 ]
 for scenario, description, native, golden in K3_RESPONSE_CASES:
     EDGE.append((
         scenario, description, ["I3", "I5", "I7"], golden,
-        {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+        {"starting_state": "Response" if scenario in {
+            "kimi_k3_direct_typed_response_recovery", "kimi_k3_direct_json_response_recovery",
+        } else "None", "tool_output_mode": "Native", "named_tool": None},
         {"finish_reason": "stop", "finish_step": True, "input_chunks": {"kimi_k3": [native[offset:offset + 64] for offset in range(0, len(native), 64)]}},
         OnlyFamilies({"kimi_k3": (native, D("UNSUPPORTED", "K3 XTML channel ownership is measured by Dynamo captures."), M)}),
         [{"name": "lookup", "parameters": {"type": "object", "properties": {

@@ -593,3 +593,7 @@ families retain their authored cases and captures. The existing
 the recovered native call. Separate M3 split tests cover early arguments,
 parallel indices, named-tool rejection, reset, and literal native headers
 inside JSON strings.
+
+The Kimi K3 response recovery follow-ups add published indices 25-27: `kimi-typed_response_argument_literal` preserves the original typed string when later XTML argument headers are literal data; `kimi-direct_typed_response_recovery` and `kimi-direct_json_response_recovery` recover direct calls entered from Response without exposing the response header. Structural whitespace before the recovered header is consumed with the call. These require K3 nested argument/JSON channels and its Response-prefilled direct-call routing; the other registered families retain their grammar-native marker and next-message cases.
+
+Known limitation: an unterminated typed string without an argument close, followed by a framed response, remains ambiguous and can yield no events at EOF. The unfinished-string recovery described above applies to the raw-JSON channel only. Complete typed strings retain marker-looking content as payload. A downstream Dynamo dependency update is separate from this unpublished parser fix.
