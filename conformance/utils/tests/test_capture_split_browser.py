@@ -81,7 +81,7 @@ def test_latest_html_alone_compares_and_downloads_without_external_data(publishe
             else:
                 key = policy["historical_control_aliases"].get(identity, identity)
             assert (key in visible_captures) == (candidate["version"] == newest), key
-        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
         cell.click()
         popup = WebDriverWait(driver, 15).until(lambda page: next((item for item in page.find_elements("css selector", ".ttip-pinned") if item.is_displayed()), None))
         assert "Golden output" in popup.text
@@ -105,7 +105,7 @@ def test_latest_html_alone_compares_and_downloads_without_external_data(publishe
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == 'false'
         assert not driver.find_elements('css selector', "option[value='dynamo@0.6.1']")
         assert driver.execute_script("return document.querySelectorAll('script[src],link[rel=stylesheet]').length") == 0
-        assert driver.execute_script("return [...document.querySelectorAll('#tab-unified td.cell')].every(cell=>!cell.dataset.fixture)")
+        assert driver.execute_script("return [...document.querySelectorAll('#tab-unified .matrix-cell')].every(cell=>!cell.dataset.fixture)")
         assert not driver.execute_script('return window.__conformanceError || null')
         assert driver.execute_script('return window.__externalRequests') == expected_external
         if server:
@@ -212,7 +212,7 @@ def test_history_json_loading_dims_page_until_success_or_failure(historical_publ
             return {modal: dialog.matches(':modal'), shade: getComputedStyle(dialog, '::backdrop').backgroundColor,
                 centered: Math.abs(box.x + box.width / 2 - document.documentElement.clientWidth / 2) < 2
                     && Math.abs(box.y + box.height / 2 - document.documentElement.clientHeight / 2) < 2,
-                cells: document.querySelectorAll('#tab-unified td.cell').length};
+                cells: document.querySelectorAll('#tab-unified .matrix-cell').length};
         """, dialog)
         assert geometry["modal"] and geometry["centered"]
         assert geometry["shade"] == "rgba(80, 80, 80, 0.5)"
@@ -231,7 +231,7 @@ def test_history_json_loading_dims_page_until_success_or_failure(historical_publ
         _ready(driver, "tab-unified")
         assert not dialog.is_displayed()
         assert driver.find_element("id", "viewer").get_attribute("data-history-available") == str(not missing).lower()
-        assert len(driver.find_elements("css selector", "#tab-unified td.cell")) == geometry["cells"]
+        assert len(driver.find_elements("css selector", "#tab-unified .matrix-cell")) == geometry["cells"]
     finally:
         gate[1].set()
         driver.quit()
@@ -340,7 +340,7 @@ def test_history_discovery_preserves_completed_table_selection_and_popup(histori
         settle(driver, "tab-unified")
         assert gate[0].wait(15)
         WebDriverWait(driver, 15).until(lambda page: page.execute_script("return window.__firstVisibleMatrix !== null"))
-        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
         # Programmatic popup state must survive discovery even while pointer input is blocked.
         driver.execute_script("arguments[0].click()", cell)
         WebDriverWait(driver, 15).until(lambda page: any(item.is_displayed() for item in page.find_elements("css selector", ".ttip-pinned")))
@@ -349,12 +349,12 @@ def test_history_discovery_preserves_completed_table_selection_and_popup(histori
             window.observeHistoryTransition = true;
             function observe() {
                 const panel = document.getElementById('tab-unified');
-                window.historyTransitionFrames.push({cells: panel.querySelectorAll('td.cell').length,
+                window.historyTransitionFrames.push({cells: panel.querySelectorAll('.matrix-cell').length,
                     popup: [...document.querySelectorAll('.ttip-pinned')].some(node => node.getBoundingClientRect().width > 0)});
                 if (window.observeHistoryTransition) requestAnimationFrame(observe);
             }
             requestAnimationFrame(observe);
-            return {cells: document.querySelectorAll('#tab-unified td.cell').length,
+            return {cells: document.querySelectorAll('#tab-unified .matrix-cell').length,
                     selection: document.getElementById('tab-unified')._comparisonSelection.keys,
                     popup: document.querySelector('.ttip-pinned').textContent,
                     initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions};
@@ -365,7 +365,7 @@ def test_history_discovery_preserves_completed_table_selection_and_popup(histori
             const done = arguments[arguments.length - 1];
             requestAnimationFrame(() => requestAnimationFrame(() => {
                 window.observeHistoryTransition = false;
-                done({cells: document.querySelectorAll('#tab-unified td.cell').length,
+                done({cells: document.querySelectorAll('#tab-unified .matrix-cell').length,
                     selection: document.getElementById('tab-unified')._comparisonSelection.keys,
                     popup: document.querySelector('.ttip-pinned').textContent,
                     initial: window.__firstVisibleMatrix, loading: window.__loadingMatrixInsertions});

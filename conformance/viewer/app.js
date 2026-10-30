@@ -326,9 +326,7 @@ async function initialize() {
       if (generation !== loader.generation) throw new Error('Obsolete fixture selection');
       await timedStartupPhase('resourcePreparation', () => reader.prepareUnified(descriptors.filter(item => selection.selected.includes(item.control.key))));
       if (generation !== loader.generation) throw new Error('Obsolete fixture selection');
-      const model = await timedStartupPhase('modelConstruction', () => buildTab(catalog, reader, tabId, { ...selection, sourceLink: path => `source:${path}` }));
-      model.peer_availability = catalog.metadata.peer_availability;
-      return model;
+      return timedStartupPhase('modelConstruction', () => buildTab(catalog, reader, tabId, { ...selection, sourceLink: path => `source:${path}` }));
     },
     state(tabId, state, error, selection) {
       if (error) window.__conformanceError = error.stack;

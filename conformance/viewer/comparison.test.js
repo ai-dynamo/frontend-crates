@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { selectedCaptureOutcome } from './model.js';
-import { comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
+import { selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
+import { comparisonView, captureCounts, isProblemOutcome, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
