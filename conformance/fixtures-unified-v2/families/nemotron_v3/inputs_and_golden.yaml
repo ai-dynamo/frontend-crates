@@ -21089,3 +21089,124 @@ cases:
         name: not_offered
         arguments:
           x: '2'
+  narrated_bare_invoke_in_unterminated_thought:
+    lifecycle: active
+    scenario: narrated_bare_invoke_in_unterminated_thought
+    description: 'ai-dynamo/dynamo#17663: a thought that never closes narrates the same bare `<function=…>` invoke three times, the shape of a model looping until `max_tokens`. A bare invoke header inside an open thought is narration on this grammar: its `<function=…>` and `</function>` markers are stripped and nothing dispatches. Treating each narration as a call returned 19 duplicate `tool_calls` from one looping thought.'
+    policy:
+    - I3
+    display_id: UNIFIED.qwen3-narrated_bare_invoke_in_unterminated_thought
+    historical_ids: []
+    request:
+      input: '</think><think>Plan: <function=queue_label_print_job>label_count=48</function> Done. Proceeds. <function=queue_label_print_job>label_count=48</function> matches. <function=queue_label_print_job>label_count=48</function>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: length
+      tools:
+      - name: queue_label_print_job
+        parameters:
+          type: object
+          properties:
+            label_count:
+              type: integer
+          required:
+          - label_count
+      chunks:
+      - delta_text: </think>
+      - delta_text: <think>
+      - delta_text: 'Plan: '
+      - delta_text: <function=queue_label_print_job>
+      - delta_text: label_count=48
+      - delta_text: </function>
+      - delta_text: ' Done. Proceeds. '
+      - delta_text: <function=queue_label_print_job>
+      - delta_text: label_count=48
+      - delta_text: </function>
+      - delta_text: ' matches. '
+      - delta_text: <function=queue_label_print_job>
+      - delta_text: label_count=48
+      - delta_text: </function>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: 'Plan: label_count=48 Done. Proceeds. label_count=48 matches. label_count=48'
+  narrated_bare_invoke_then_wrapped_call:
+    lifecycle: active
+    scenario: narrated_bare_invoke_then_wrapped_call
+    description: 'ai-dynamo/dynamo#17663: a bare invoke narrated inside a closed thought, then the real call arrives wrapped in `<tool_call>` after the thought closes. The narration''s markers are stripped from the thought and exactly one call dispatches, from the wrapped envelope. Contrast with `12-tool_in_reason`, where the envelope INSIDE the thought is wrapped and therefore structural.'
+    policy:
+    - I3
+    display_id: UNIFIED.qwen3-narrated_bare_invoke_then_wrapped_call
+    historical_ids: []
+    request:
+      input: '</think><think>plan <function=queue_label_print_job>label_count=48</function> more</think><tool_call>
+
+        <function=queue_label_print_job>
+
+        <parameter=label_count>
+
+        48
+
+        </parameter>
+
+        </function>
+
+        </tool_call>'
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: queue_label_print_job
+        parameters:
+          type: object
+          properties:
+            label_count:
+              type: integer
+          required:
+          - label_count
+      chunks:
+      - delta_text: </think>
+      - delta_text: <think>
+      - delta_text: 'plan '
+      - delta_text: <function=queue_label_print_job>
+      - delta_text: label_count=48
+      - delta_text: </function>
+      - delta_text: ' more'
+      - delta_text: </think>
+      - delta_text: <tool_call>
+      - delta_text: '
+
+          '
+      - delta_text: <function=queue_label_print_job>
+      - delta_text: '
+
+          '
+      - delta_text: <parameter=label_count>
+      - delta_text: '
+
+          48
+
+          '
+      - delta_text: </parameter>
+      - delta_text: '
+
+          '
+      - delta_text: </function>
+      - delta_text: '
+
+          '
+      - delta_text: </tool_call>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: reasoning
+        text: plan label_count=48 more
+      - kind: tool_call
+        name: queue_label_print_job
+        arguments:
+          label_count: 48

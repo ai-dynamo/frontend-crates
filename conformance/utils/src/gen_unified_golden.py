@@ -3128,6 +3128,55 @@ for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CA
         ) for family in TEMPLATE_FAMILIES}),
         {family: [{"name": "capture_payload", "parameters": parameters}] for family in TEMPLATE_FAMILIES},
     ))
+# ai-dynamo/dynamo#17663: Qwen's template wraps every real call in `<tool_call>`, so a
+# BARE `<function=…>` header inside an open thought is the model narrating a call, not
+# making one. The scanner strips the narrated header and its `</function>` (I3) and
+# leaves the thought open; a wrapped envelope inside a thought keeps the structural
+# reading of `12-tool_in_reason`. Qwen3-specific: the other wrapper families keep the
+# structural reading for a bare invoke inside a thought. The narrated body is plain prose
+# (the model describing the arguments), so only the invoke markers disappear from the thought.
+_NARRATED_INVOKE_TOOLS = [{"name": "queue_label_print_job", "parameters": {
+    "type": "object",
+    "properties": {"label_count": {"type": "integer"}},
+    "required": ["label_count"],
+}}]
+_NARRATED_INVOKE = "<function=queue_label_print_job>label_count=48</function>"
+_NARRATED_INVOKE_NARRATION = "label_count=48"
+_NARRATED_INVOKE_PEER = D("UNSUPPORTED", "No peer capture recorded for this Qwen3-specific regression.")
+EDGE += [
+    ("narrated_bare_invoke_in_unterminated_thought",
+     "ai-dynamo/dynamo#17663: a thought that never closes narrates the same bare `<function=…>` invoke "
+     "three times, the shape of a model looping until `max_tokens`. A bare invoke header inside an open "
+     "thought is narration on this grammar: its `<function=…>` and `</function>` markers are stripped and "
+     "nothing dispatches. Treating each narration as a call returned 19 duplicate `tool_calls` from one "
+     "looping thought.",
+     ["I3"],
+     [{"kind": "reasoning", "text": "Plan: " + _NARRATED_INVOKE_NARRATION + " Done. Proceeds. "
+       + _NARRATED_INVOKE_NARRATION + " matches. " + _NARRATED_INVOKE_NARRATION}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "length"},
+     OnlyFamilies({"qwen3": (
+         "<think>Plan: " + _NARRATED_INVOKE + " Done. Proceeds. " + _NARRATED_INVOKE + " matches. " + _NARRATED_INVOKE,
+         _NARRATED_INVOKE_PEER, M,
+     )}),
+     {"qwen3": _NARRATED_INVOKE_TOOLS}),
+    ("narrated_bare_invoke_then_wrapped_call",
+     "ai-dynamo/dynamo#17663: a bare invoke narrated inside a closed thought, then the real call arrives "
+     "wrapped in `<tool_call>` after the thought closes. The narration's markers are stripped from the "
+     "thought and exactly one call dispatches, from the wrapped envelope. Contrast with `12-tool_in_reason`, "
+     "where the envelope INSIDE the thought is wrapped and therefore structural.",
+     ["I3"],
+     [{"kind": "reasoning", "text": "plan " + _NARRATED_INVOKE_NARRATION + " more"},
+      {"kind": "tool_call", "name": "queue_label_print_job", "arguments": {"label_count": 48}}],
+     {"starting_state": "None", "tool_output_mode": "Native", "named_tool": None},
+     {"finish_reason": "stop"},
+     OnlyFamilies({"qwen3": (
+         "<think>plan " + _NARRATED_INVOKE + " more</think>"
+         + r_tool_arguments("qwen3", "queue_label_print_job", {"label_count": 48}, 0),
+         _NARRATED_INVOKE_PEER, M,
+     )}),
+     {"qwen3": _NARRATED_INVOKE_TOOLS}),
+]
 for scenario, value, value_schema in (
     ("arg_object_quoted_parameter_close", {"s": "</atem:parameter>"},
      {"type": "object", "properties": {"s": {"type": "string"}},

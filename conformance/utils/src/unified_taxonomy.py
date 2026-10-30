@@ -216,6 +216,9 @@ UNIFIED_TAX = {
     "guided_json_native_parameter_object_before_payload": (35, "6"),
     "guided_json_native_parameter_array_before_payload": (35, "7"),
     "qwen3_guided_reasoning_opener_inside_native_header": ("qwen3", "3"),
+    # ai-dynamo/dynamo#17663: a bare invoke inside a thought is narration on the Qwen grammar.
+    "narrated_bare_invoke_in_unterminated_thought": ("qwen3", "4"),
+    "narrated_bare_invoke_then_wrapped_call": ("qwen3", "5"),
     "muse_glimmer_guided_message_end_inside_native_header": ("muse", "5"),
     "deepseek_v4_guided_reasoning_opener_inside_native_body": ("deepseek_v4", "1"),
     "gemma4_guided_reasoning_opener_after_call_prefix": ("gemma", "3"),
