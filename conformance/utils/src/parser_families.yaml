@@ -319,7 +319,6 @@ unified:
     vllm_tokenizer_markers: ["<mm:think>", "</mm:think>", "]<]minimax[>["]
     registry: minimax_m3
     native: true
-    scenario_profile: native
     reasoning_grammar: minimax_m3
     reasoning_parser: minimax_m3
     tool_parser: minimax_m3

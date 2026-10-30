@@ -48,6 +48,10 @@ impl ToolParser for MiniMaxM3ToolStreamParser {
 mod tests {
     use super::*;
 
+    const NS: &str = "]<]minimax[>[";
+    const BLOCK_START: &str = "]<]minimax[>[<tool_call>";
+    const BLOCK_END: &str = "]<]minimax[>[</tool_call>";
+
     fn weather_tools() -> Vec<Tool> {
         vec![Tool {
             name: "get_weather".to_string(),

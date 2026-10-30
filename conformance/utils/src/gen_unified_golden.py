@@ -2191,7 +2191,7 @@ for _shape, _body in (
         _prefix, _visible = _guided_response_markup(_family, "self")
         _native_json_inputs[_family] = (
             _prefix.removesuffix(GUIDED_ONE_CALL)
-            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0)
+            + r_tool_arguments(_family, "f", {"x": json.loads(_body)}, 0, {"x": _body} if _family == "minimax_m3" else None)
             + GUIDED_ONE_CALL,
             GUIDED_UNSUPPORTED, M, _visible,
         )
@@ -3885,7 +3885,7 @@ def _native_review_variants(scenario):
         for family in TEMPLATE_FAMILIES:
             if family == "gpt_oss":
                 continue
-            value = "2" if family in {"beam", "qwen3", "glm47"} else 2
+            value = "2" if family in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
             golden = [{"kind": "tool_call", "name": "run", "arguments": {}},
                       {"kind": "tool_call", "name": "not_offered", "arguments": {"x": value}}]
             variants[family] = (r_tool_arguments(family, "run", {}, 0)

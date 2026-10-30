@@ -22,6 +22,7 @@ impl HarmonyGrammar {
                 json_schema: schema.clone(),
                 style: JsonSchemaStyle::Json,
                 any_order: false,
+                max_whitespace_cnt: None,
             })),
             // The engine consumes the turn stop after the JSON grammar completes.
             end: String::new(),

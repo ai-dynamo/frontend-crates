@@ -814,6 +814,14 @@ fn registered_builders_have_no_trigger_exclusion_conflicts() {
         let Some(builder) = structural_tag_builder_for_family(family) else {
             continue;
         };
+        let mut family_tools = tools.clone();
+        if matches!(family, "minimax_m3" | "minimax-m3") {
+            // M3 declines non-ASCII enum literals for guided JSON fallback.
+            // Exercise trigger exclusions with a schema its native grammar accepts.
+            for tool in &mut family_tools {
+                tool.parameters["properties"]["city"]["enum"] = json!(["Paris", "London"]);
+            }
+        }
         for choice in [
             StructuralTagToolChoice::Auto,
             StructuralTagToolChoice::Required,
@@ -827,7 +835,7 @@ fn registered_builders_have_no_trigger_exclusion_conflicts() {
                         let result = builder.build_with_options(
                             &StructuralTagContext {
                                 tool_choice: choice,
-                                tools: &tools,
+                                tools: &family_tools,
                                 parallel_tool_calls: Some(true),
                                 schema_mode: StructuralTagSchemaMode::Auto,
                                 structured_output_schema: schema,

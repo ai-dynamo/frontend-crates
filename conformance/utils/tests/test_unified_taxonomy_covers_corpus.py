@@ -1516,7 +1516,7 @@ def _fixture_property_schema(parameters, key, root=None, references=()):
     return {}
 
 
-def _m3_input_calls(raw, tools):
+def _m3_input_calls(raw, tools, *, exact_numbers=False):
     """Read complete authored tags independently of the Rust recovery scanner.
 
     This intentionally handles fixture grammar only. A malformed or unfinished
@@ -1562,7 +1562,7 @@ def _m3_input_calls(raw, tools):
                 value = None
             elif not matches_schema(value, schema, root):
                 try:
-                    decoded = json.loads(value)
+                    decoded = json.loads(value, parse_float=Decimal if exact_numbers else float)
                 except json.JSONDecodeError:
                     pass
                 else:
@@ -1612,7 +1612,7 @@ def _native_input_calls(family, raw, tools=(), *, exact_numbers=False):
     empty-output EOF contract separate.
     """
     if family == "minimax_m3":
-        return _m3_input_calls(raw, tools)
+        return _m3_input_calls(raw, tools, exact_numbers=exact_numbers)
     if family == "glm47":
         calls = []
         cursor = 0
@@ -2175,7 +2175,7 @@ def _assert_cross_family_contract(corpus):
             events = (_assert_malformed_recovery(family, case) if scenario == "malformed_json_then_two_valid_calls"
                       else _logical_events(scenario, family, case["golden"]))
             if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
-                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47"} else 2
+                raw_value = "2" if G.unified_grammar_family(family) in {"beam", "qwen3", "glm47", "minimax_m3"} else 2
                 assert case["tools"] == []
                 assert events == [{"kind": "tool_call", "name": "run", "arguments": {}},
                                   {"kind": "tool_call", "name": "not_offered", "arguments": {"x": raw_value}}]

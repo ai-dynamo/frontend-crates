@@ -524,7 +524,7 @@ fn envelope_resolve(
         let payload = body.trim_start().starts_with(['{', '[']);
         if legal && !payload {
             let verdict = match factory {
-                Some(factory) => factory.create().channel_body(body, flush),
+                Some(ref factory) => factory.clone().create().channel_body(body, flush),
                 None if body.trim().is_empty() => BodyScan::Wait,
                 None => BodyScan::Malformed {
                     discard: 0,
@@ -2809,7 +2809,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             // walked with the recipient's own boundary — the one `envelope_idle` would
             // install for the real call — so prose ownership and the call agree about
             // where every parameter value ends.
-            let factory = self.spec.invoke_boundary_factory;
+            let factory = self.spec.invoke_boundary_factory.clone();
             let policy = self.policy;
             let emitter = &self.emitter;
             let boundary_for = |recipient: &str| emitter.channel_boundary(recipient);
@@ -2819,7 +2819,15 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                     markers.iter().copied(),
                     flush,
                     |text, at, flush| {
-                        envelope_tool_span(env, factory, policy, &boundary_for, text, at, flush)
+                        envelope_tool_span(
+                            env,
+                            factory.clone(),
+                            policy,
+                            &boundary_for,
+                            text,
+                            at,
+                            flush,
+                        )
                     },
                 )
             } else {

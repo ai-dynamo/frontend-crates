@@ -8,7 +8,7 @@ The golden corpus is authored by `conformance/utils/src/gen_unified_golden.py` (
 
 ## Single-family case review
 
-MiniMax M3 joins the existing shared native and guided corpus in 0.8.0.
+MiniMax M3 joins the existing shared native and guided corpus.
 Its argument-preservation and schema-coercion regressions are also exercised
 in `parsers/v2/tests/minimax_m3_unified.rs`, including every two-chunk split
 and one-character delivery. Those tests assert streaming progress before a
@@ -77,7 +77,7 @@ The parser recovers everything it can and NEVER drops valid text, leaks markup, 
 
 `MATCH` (green) · `ORDER` / `MERGE` / `LOSS` (the unification gap) · `LEAK` (markup in text, `↯`) · `ARG_MISMATCH` / `WHITESPACE` (version drift) · `ERROR` (engine hard-errored where the spec expects graceful output).
 
-The twelve native `UnifiedParser` families are `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, `minimax_m3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
+The thirteen native `UnifiedParser` families are `beam`, `deepseek_v4`, `deepseek_v41`, `qwen3`, `gemma4`, `glm47`, `kimi_k2`, `kimi_k3`, `muse_glimmer`, `nemotron_v3`, `muse_spark`, `minimax_m3`, and `gpt_oss`. GPT-OSS retains its historical Dynamo v1 reasoning + batch observations and now records ordered native v2 events.
 
 The dotted-name cases cover minimal, mixed-punctuation, multi-segment, and shared-prefix tool names. They apply to Beam, DeepSeek V4/V4.1, Gemma 4, GLM 4.7, GPT-OSS, Kimi K2/K3, Muse Glimmer, Muse Spark Open, Nemotron 3 Ultra, and Qwen3. New observations are recorded only for v2. GPT-OSS captures before v2 0.7.28 use v1 reasoning followed by the v2 Harmony tool parser and are labeled split; v2 0.7.28 and later use native UnifiedParser. The split Harmony path remains covered by whole-input and every-boundary comparisons against the same GOLDEN.
 

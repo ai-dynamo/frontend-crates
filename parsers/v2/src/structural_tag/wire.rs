@@ -187,6 +187,7 @@ pub(super) fn import_native(
                 native::JsonSchemaStyle::DeepseekXml => JsonSchemaStyle::DeepseekXml,
             },
             any_order,
+            max_whitespace_cnt: None,
         }),
         native::Format::AnyTokens(f) => Format::AnyTokens(f),
         native::Format::AnyText(f) => Format::AnyText(AnyTextFormat {
