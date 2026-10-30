@@ -149,6 +149,8 @@ jobs:
           name: capture-verification
           path: ${{ steps.rust.outputs.capture_report_directory }}/*.json
           if-no-files-found: error
+      - name: Run parser arbitrary-precision feature mode
+        run: cargo test --locked -p dynamo-parsers-v2 --features arbitrary-precision --lib --test harmony_continuation_allocations
 
   # Validate the maintained conformance viewer and its source resources.
   # Python + PyYAML/Selenium — no engines (vLLM/SGLang conformance runs in
