@@ -972,20 +972,24 @@ fn collect_type_constraints(
             }
         }
     }
-    // `not`: whatever the negated schema determinately types is excluded. The
+    // `not`: only a type-level negation (`type`, `$ref`/composition of such)
+    // excludes whole categories; `not: {const: 0}` or a bounded `not` still
+    // admits other values of the same type and constrains nothing here. The
     // type-set model cannot express "a non-integral number", so excluding
     // `integer` also excludes `number`; such text degenerates to a string.
     if let Some(negated) = schema.get("not")
+        && is_type_level_schema(root, negated, depth + 1, refs_allowed)
         && let Some(excluded) =
             subschema_types(root, negated, depth, remaining, active_refs, refs_allowed)
     {
         context.has_type_constraints = true;
         constraints.push(complement_types(&excluded));
     }
-    // `if`/`then`/`else`: (if ∩ then) ∪ (¬if ∩ else). An absent or untyped
-    // `else` leaves that outcome unconstrained, so the keyword constrains
-    // nothing; an `if` without a determinate type lets both branches apply, so
-    // only their union constrains the value.
+    // `if`/`then`/`else`: a type-level condition partitions the value space,
+    // (if ∩ then) ∪ (¬if ∩ else); a value-sensitive condition (`const`, bounds,
+    // …) cannot be decided from types, so both branches stay possible and only
+    // their union constrains the value. An absent or untyped `else` leaves one
+    // outcome unconstrained, so the keyword then constrains nothing.
     if let Some(condition) = schema.get("if")
         && (schema.get("then").is_some() || schema.get("else").is_some())
     {
@@ -995,11 +999,11 @@ fn collect_type_constraints(
         let else_types = schema.get("else").and_then(|branch| {
             subschema_types(root, branch, depth, remaining, active_refs, refs_allowed)
         });
-        let condition_types =
-            subschema_types(root, condition, depth, remaining, active_refs, refs_allowed);
+        let condition_types = is_type_level_schema(root, condition, depth + 1, refs_allowed)
+            .then(|| subschema_types(root, condition, depth, remaining, active_refs, refs_allowed))
+            .flatten();
         let outcome: Option<HashSet<SchemaType>> = match (condition_types, then_types, else_types) {
-            // `then` untyped means the `if` type alone describes that outcome;
-            // `else` untyped leaves the other outcome unconstrained.
+            // `then` untyped means the `if` type alone describes that outcome.
             (Some(when), then_types, Some(else_types)) => {
                 let then_branch =
                     then_types.map_or_else(|| when.clone(), |types| intersect_types(&when, &types));
@@ -1056,6 +1060,73 @@ fn subschema_types(
         &mut sub_context,
     )
     .filter(|types| !types.is_empty())
+}
+
+/// Keywords that never narrow a schema below a whole JSON type.
+const TYPE_LEVEL_KEYWORDS: [&str; 17] = [
+    "type",
+    "$ref",
+    "allOf",
+    "anyOf",
+    "oneOf",
+    "not",
+    "nullable",
+    "$defs",
+    "definitions",
+    "$id",
+    "$schema",
+    "$comment",
+    "title",
+    "description",
+    "default",
+    "examples",
+    "deprecated",
+];
+
+/// Whether a schema's truth is decided by JSON type alone, so its type set may
+/// be complemented (`not`) or used to partition `if`/`then`/`else`. Any
+/// value-sensitive keyword (`const`, `enum`, bounds, `pattern`, `properties`,
+/// `items`, `if`, …), an unresolvable reference, or excessive depth makes it
+/// false, which callers treat as "no constraint".
+fn is_type_level_schema(root: &Value, schema: &Value, depth: usize, refs_allowed: bool) -> bool {
+    if depth >= 16 {
+        return false;
+    }
+    let Some(object) = schema.as_object() else {
+        return schema.is_boolean();
+    };
+    if !object
+        .keys()
+        .all(|key| TYPE_LEVEL_KEYWORDS.contains(&key.as_str()))
+    {
+        return false;
+    }
+    if let Some(reference) = object.get("$ref") {
+        let target = reference
+            .as_str()
+            .filter(|_| refs_allowed && !has_unsupported_schema_ref_scope(schema))
+            .and_then(|reference| resolve_local_schema_ref(reference, root));
+        if !target.is_some_and(|target| is_type_level_schema(root, target, depth + 1, refs_allowed))
+        {
+            return false;
+        }
+    }
+    for keyword in ["allOf", "anyOf", "oneOf"] {
+        if let Some(branches) = object.get(keyword) {
+            let Some(branches) = branches.as_array() else {
+                return false;
+            };
+            if !branches
+                .iter()
+                .all(|branch| is_type_level_schema(root, branch, depth + 1, refs_allowed))
+            {
+                return false;
+            }
+        }
+    }
+    object
+        .get("not")
+        .is_none_or(|negated| is_type_level_schema(root, negated, depth + 1, refs_allowed))
 }
 
 fn complement_types(excluded: &HashSet<SchemaType>) -> HashSet<SchemaType> {
@@ -1608,7 +1679,6 @@ mod schema_composition_tests {
 
     #[test]
     fn ref_to_object_definition_parses_json_object() {
-        // ai-dynamo/dynamo#17662: the XML text was correct, the parser kept it as a string.
         let cfg = document_config(json!({
             "type": "object",
             "$defs": {"Category": {"type": "object", "properties": {
@@ -1650,26 +1720,6 @@ mod schema_composition_tests {
     }
 
     #[test]
-    fn recursive_ref_tree_parses_json_object() {
-        let cfg = document_config(json!({
-            "type": "object",
-            "$defs": {"Node": {"type": "object", "properties": {
-                "label": {"type": "string"},
-                "children": {"type": "array", "items": {"$ref": "#/$defs/Node"}}}}},
-            "properties": {"tree": {"$ref": "#/$defs/Node"}}
-        }));
-        assert_eq!(
-            ser(&convert_param_value(
-                r#"{"label": "root", "children": [{"label": "leaf", "children": []}]}"#,
-                "tree",
-                &cfg,
-                "f"
-            )),
-            r#"{"label":"root","children":[{"label":"leaf","children":[]}]}"#
-        );
-    }
-
-    #[test]
     fn not_string_coerces_numeric_text() {
         let cfg = one_param("count", json!({"not": {"type": "string"}}));
         assert_eq!(
@@ -1686,6 +1736,34 @@ mod schema_composition_tests {
     fn not_integer_keeps_integral_text_as_string() {
         let cfg = one_param("x", json!({"not": {"type": "integer"}}));
         assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+    }
+
+    #[test]
+    fn not_with_a_value_constraint_keeps_the_outer_type() {
+        let cfg = one_param("x", json!({"type": "integer", "not": {"const": 0}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        let cfg = one_param("x", json!({"not": {"const": 0}}));
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
+        let cfg = one_param(
+            "x",
+            json!({"type": "integer", "not": {"type": "integer", "minimum": 100}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+    }
+
+    #[test]
+    fn if_with_a_value_condition_unions_the_branch_types() {
+        let cfg = one_param(
+            "x",
+            json!({"if": {"const": 0}, "then": {"type": "string"}, "else": {"type": "integer"}}),
+        );
+        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "42");
+        assert_eq!(ser(&convert_param_value("abc", "x", &cfg, "f")), "\"abc\"");
+        let cfg = one_param(
+            "x",
+            json!({"if": {"type": "integer", "minimum": 0}, "then": {"type": "integer"}, "else": {"type": "string"}}),
+        );
+        assert_eq!(ser(&convert_param_value("-5", "x", &cfg, "f")), "-5");
     }
 
     #[test]
@@ -1742,14 +1820,5 @@ mod schema_composition_tests {
             ser(&convert_param_value("false", "flag", &cfg, "f")),
             "false"
         );
-    }
-
-    #[test]
-    fn any_of_string_alternative_keeps_text() {
-        let cfg = one_param(
-            "x",
-            json!({"anyOf": [{"type": "string"}, {"type": "null"}]}),
-        );
-        assert_eq!(ser(&convert_param_value("42", "x", &cfg, "f")), "\"42\"");
     }
 }

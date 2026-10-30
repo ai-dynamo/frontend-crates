@@ -3115,9 +3115,8 @@ _REFERENCE_CASES = (
         {"count": "42", "ratio": "3.5", "flag": "true", "narrowed": "42"},
         {"count": 42, "ratio": 3.5, "flag": True, "narrowed": 42},
     ),
-    # ai-dynamo/dynamo#17662: properties with no direct `type` key. The OpenRouter
-    # toolcall-schema-fuzz run against Dynamo 1.5.0/1.6.1 found ~570 of 573 failures
-    # were the XML parser leaving such arguments as strings.
+    # Properties with no direct `type` key: the argument type comes from `not`,
+    # `if`/`then`/`else`, `$ref`, a type array, or `allOf` (ai-dynamo/dynamo#17662).
     (
         "not_keyword_type_complement",
         'ai-dynamo/dynamo#17662: a `not` keyword constrains the argument to the complement of the negated type. Excluding string makes -2500 an integer; excluding integer keeps 42 a string.',
