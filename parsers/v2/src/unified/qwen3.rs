@@ -1336,11 +1336,8 @@ mod tests {
         );
     }
 
-    /// ai-dynamo/dynamo#17663. Qwen's template always wraps a call in
-    /// `<tool_call>`, so a BARE `<function=NAME>` inside an open thought is the
-    /// model narrating a call, not making one. The native scanner used to
-    /// recover a real call from every such quote: a thought that looped to
-    /// `max_tokens` quoted the same call 19 times and all 19 were dispatched.
+    /// Tools for the narrated-bare-invoke tests (ai-dynamo/dynamo#17663; the
+    /// rule lives at `WrappedBlockScanner::bare_invoke_in_reasoning_is_narration`).
     fn narration_tools() -> Vec<Tool> {
         vec![
             Tool {
@@ -1435,6 +1432,24 @@ mod tests {
                     reasoning("maybe x; yes: "),
                     call("run", serde_json::json!({"a": "1"})),
                     reasoning(" now answer"),
+                    text("Done."),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_terminator_inside_a_parameter_value_is_data() {
+        // Same ownership rule as a real invoke (`I7`): a `</function>` inside an
+        // open `<parameter>` value does not end the narrated invoke, so the
+        // value text survives and the real outer terminator is the one stripped.
+        let input = "<think><function=run><parameter=a>x</function>y</parameter></function> tail</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("<parameter=a>x</function>y</parameter> tail"),
                     text("Done."),
                 ],
                 "split at {cut}: {out:?}"

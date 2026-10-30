@@ -3128,13 +3128,8 @@ for scenario, description, parameters, raw_arguments, arguments in _REFERENCE_CA
         ) for family in TEMPLATE_FAMILIES}),
         {family: [{"name": "capture_payload", "parameters": parameters}] for family in TEMPLATE_FAMILIES},
     ))
-# ai-dynamo/dynamo#17663: Qwen's template wraps every real call in `<tool_call>`, so a
-# BARE `<function=…>` header inside an open thought is the model narrating a call, not
-# making one. The scanner strips the narrated header and its `</function>` (I3) and
-# leaves the thought open; a wrapped envelope inside a thought keeps the structural
-# reading of `12-tool_in_reason`. Qwen3-specific: the other wrapper families keep the
-# structural reading for a bare invoke inside a thought. The narrated body is plain prose
-# (the model describing the arguments), so only the invoke markers disappear from the thought.
+# Narrated bare invoke (ai-dynamo/dynamo#17663); the rule is documented at
+# `WrappedBlockScanner::bare_invoke_in_reasoning_is_narration` and in the scenarios below.
 _NARRATED_INVOKE_TOOLS = [{"name": "queue_label_print_job", "parameters": {
     "type": "object",
     "properties": {"label_count": {"type": "integer"}},

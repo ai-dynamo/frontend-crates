@@ -127,6 +127,11 @@ impl InvokeBoundary for QwenInvokeBoundary {
     fn resync(&mut self, _text: &str, _flush: bool, _tool_index: usize) -> Option<usize> {
         None
     }
+    /// Everything from the scan cursor on is still unclassified: a parameter
+    /// header without its `>`, or a split `</parameter>` / `</function>`.
+    fn unclassified_tail(&self, candidate: &str) -> usize {
+        candidate.len().saturating_sub(self.cursor)
+    }
     fn reset(&mut self) {
         *self = Self::default();
     }

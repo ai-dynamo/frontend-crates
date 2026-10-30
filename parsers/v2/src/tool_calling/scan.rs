@@ -1376,6 +1376,13 @@ pub(crate) trait InvokeBoundary: Send {
     }
     fn discard_prefix(&mut self, _bytes: usize) {}
     fn discard_unified_prefix(&mut self, _bytes: usize) {}
+    /// Trailing bytes of `candidate` that [`Self::end_append`] has not classified
+    /// yet (a split marker, a parameter header still arriving). A scanner that
+    /// streams the candidate out while scanning it (a narrated invoke inside a
+    /// thought) must hold these back, or the boundary loses the marker.
+    fn unclassified_tail(&self, _candidate: &str) -> usize {
+        0
+    }
     /// A recovery opener can accept malformed prose; quoting shields only grammar-owned headers.
     fn owns_prose_invoke(&self, text: &str, at: usize) -> bool {
         self.opens(text, at)
@@ -2073,6 +2080,17 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// its `invoke_end` is stripped too when it arrives (a bare `invoke_end`
     /// with no narrated header stays literal, as it does outside a thought).
     narrated_invoke_open: bool,
+    /// The family's invoke boundary over the narrated body, so the narrated
+    /// terminator honours the same ownership rule as a real invoke (an
+    /// `invoke_end` inside an open parameter value is data, not the close).
+    /// Fresh per narrated header; `None` when the family has no boundary.
+    narrated_boundary: Option<Box<dyn InvokeBoundary>>,
+    /// The narrated body as the boundary's candidate: every byte after the
+    /// stripped header, never drained, so the boundary's cursor stays valid
+    /// while the same bytes stream out of `buffer` as reasoning.
+    narrated_body: String,
+    /// How many of the current `buffer` bytes are already in `narrated_body`.
+    narrated_fed: usize,
     suppress_normal_text: bool,
     next_index: usize,
     pending_parse_error: Option<DeferredParseError>,
@@ -2126,6 +2144,9 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             accept_redundant_reasoning_start: false,
             resume_reasoning: false,
             narrated_invoke_open: false,
+            narrated_boundary: None,
+            narrated_body: String::new(),
+            narrated_fed: 0,
             suppress_normal_text: false,
             next_index: 0,
             pending_parse_error: None,
@@ -2379,7 +2400,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // Without this a reset mid-thought leaves "resume reasoning after the call"
         // armed, and the NEXT stream's first post-call answer is emitted as reasoning.
         self.resume_reasoning = false;
-        self.narrated_invoke_open = false;
+        self.clear_narration();
         self.suppress_normal_text = false;
         self.next_index = 0;
         self.pending_parse_error = None;
@@ -2408,6 +2429,26 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         if let Some(boundary) = self.invoke_boundary.as_mut() {
             boundary.discard_prefix(bytes);
         }
+        self.narrated_fed = self.narrated_fed.saturating_sub(bytes);
+    }
+
+    /// Forget a narrated bare invoke: its header was stripped and either its
+    /// terminator was stripped too, the thought ended, or the stream reset.
+    fn clear_narration(&mut self) {
+        self.narrated_invoke_open = false;
+        self.narrated_boundary = None;
+        self.narrated_body.clear();
+        self.narrated_fed = 0;
+    }
+
+    /// Bytes of the narrated body the family boundary has not classified yet;
+    /// they must not stream out of the thought before it has.
+    fn narrated_unclassified_tail(&self) -> usize {
+        self.narrated_boundary
+            .as_ref()
+            .map(|boundary| boundary.unclassified_tail(&self.narrated_body))
+            .unwrap_or(0)
+            .min(self.buffer.len())
     }
 
     fn clear_uncommitted_block(&mut self) {
@@ -2604,10 +2645,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
     /// `(position, Narrated { len, open })`. A header spans its opener through
     /// the first `>`; `len == 0` means the `>` has not streamed yet (wait).
     /// Once a header was stripped, the family's `invoke_end` is the narrated
-    /// terminator. `closer` bounds the header: a `>` past the thought's own
-    /// closer cannot complete it, so the bare opener alone is stripped.
+    /// terminator, located by the family's own invoke boundary so an
+    /// `invoke_end` inside an open parameter value stays data (`I7`), exactly
+    /// as for a real invoke. `closer` bounds the header: a `>` past the
+    /// thought's own closer cannot complete it, so the bare opener alone is
+    /// stripped.
     fn narrated_invoke_marker(
-        &self,
+        &mut self,
         closer: Option<usize>,
         flush: bool,
     ) -> Option<(usize, InReasoning)> {
@@ -2626,19 +2670,45 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             };
             (at, InReasoning::Narrated { len, open: true })
         });
-        let terminator = self
-            .narrated_invoke_open
-            .then(|| self.buffer.find(self.spec.invoke_end.as_str()))
-            .flatten()
-            .map(|at| {
+        let invoke_end = self.spec.invoke_end.len();
+        let terminator = if self.narrated_invoke_open {
+            let end = match self.narrated_boundary.as_mut() {
+                Some(boundary) => {
+                    // `narrated_body` holds every body byte seen so far; the
+                    // buffer bytes past `narrated_fed` arrived since.
+                    let fed = self.narrated_fed.min(self.buffer.len());
+                    self.narrated_body.push_str(&self.buffer[fed..]);
+                    self.narrated_fed = self.buffer.len();
+                    let fresh = self.buffer.len() - fed;
+                    let consumed = self.narrated_body.len() - self.buffer.len();
+                    let appended = &self.narrated_body[self.narrated_body.len() - fresh..];
+                    // Never the EOF fallback (`flush`): a real invoke may close
+                    // on an `invoke_end` inside an unclosed parameter value as
+                    // a last resort, but narration has nothing to recover — the
+                    // thought is promoted as-is — and the fallback could name
+                    // bytes that already streamed out, making the result depend
+                    // on chunking.
+                    boundary
+                        .end_append(&self.narrated_body, appended, false, 0)
+                        .and_then(|end| end.checked_sub(consumed))
+                }
+                None => self
+                    .buffer
+                    .find(self.spec.invoke_end.as_str())
+                    .map(|at| at + invoke_end),
+            };
+            end.filter(|end| *end >= invoke_end).map(|end| {
                 (
-                    at,
+                    end - invoke_end,
                     InReasoning::Narrated {
-                        len: self.spec.invoke_end.len(),
+                        len: invoke_end,
                         open: false,
                     },
                 )
-            });
+            })
+        } else {
+            None
+        };
         earliest([header, terminator])
     }
 
@@ -2696,6 +2766,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // complete, so its split prefix must not be shown either.
         let narrated = if self.in_reasoning && self.narrated_invoke_open {
             marker_prefix_suffix_len(&self.buffer, [self.spec.invoke_end.as_str()])
+                .max(self.narrated_unclassified_tail())
         } else {
             0
         };
@@ -2862,15 +2933,25 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
                         "stream stripped malformed markup inside a reasoning span"
                     );
                 }
-                InReasoning::Narrated { open, .. } => {
-                    self.narrated_invoke_open = open;
+                InReasoning::Narrated { open: true, .. } => {
+                    // The body that follows is scanned by a fresh family boundary
+                    // so its terminator is found under the real invoke's rules.
+                    self.narrated_invoke_open = true;
+                    self.narrated_boundary = self
+                        .spec
+                        .invoke_boundary_factory
+                        .clone()
+                        .map(InvokeBoundaryFactory::create);
+                    self.narrated_body.clear();
+                    self.narrated_fed = 0;
                     tracing::debug!(
                         why = %format!("{}_narrated_invoke_in_reasoning", self.spec.family),
                         "stream stripped a narrated bare invoke marker inside a reasoning span"
                     );
                 }
-                InReasoning::Close => self.narrated_invoke_open = false,
-                InReasoning::ToolOpen => {}
+                InReasoning::Narrated { open: false, .. }
+                | InReasoning::Close
+                | InReasoning::ToolOpen => self.clear_narration(),
             }
             return Ok(true);
         }
@@ -2890,7 +2971,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             // as reasoning — not dropped, and not leaked as visible text.
             self.in_reasoning = false;
             self.resume_reasoning = false;
-            self.narrated_invoke_open = false;
+            self.clear_narration();
             tracing::debug!(
                 why = %format!("{}_reasoning_open_at_eof", self.spec.family),
                 "stream promoted unterminated reasoning at EOF"
