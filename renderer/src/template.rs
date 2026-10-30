@@ -1,10 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2024-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashSet, sync::Arc};
 
 use anyhow::{Ok, Result};
 use minijinja::Environment;
@@ -124,17 +121,20 @@ pub enum ChatTemplateContentFormat {
     /// format does with its default `interleave_mm_strings=False`: one
     /// placeholder per media item first, then the text parts, all joined
     /// with `\n`.
-    String {
-        /// The model's placeholder for each modality (`image`, `video`,
-        /// `audio`), as vLLM's `get_placeholder_str` returns it. `{n}` is
-        /// replaced with the item's 1-based index among that modality's
-        /// items in the whole conversation. A modality without an entry, or
-        /// with an empty one, gets no placeholder.
-        media_placeholders: HashMap<String, String>,
-    },
+    String(MediaPlaceholders),
     /// Pass every message's content as a list of parts, as vLLM's `openai`
     /// format does.
     OpenAi,
+}
+
+/// The model's placeholder for each modality, as vLLM's `get_placeholder_str`
+/// returns it. `{n}` is replaced with the item's 1-based index among that
+/// modality's items in the whole conversation. An empty placeholder adds none.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct MediaPlaceholders {
+    pub image: String,
+    pub video: String,
+    pub audio: String,
 }
 
 impl PromptFormatter {
