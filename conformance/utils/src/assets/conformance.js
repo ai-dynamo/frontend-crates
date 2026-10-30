@@ -706,10 +706,10 @@ window.initializeConformanceController = function (hooks = {}) {
     const ttip = cell._ttip || cell.querySelector('.ttip');
     if (!ttip) return;
     visibleTooltips.add(ttip);
-    equalizeColumns(ttip);
     ttip.style.visibility = 'hidden';
     ttip.style.opacity = '0';
     ttip.classList.add('ttip-visible');
+    equalizeColumns(ttip);
     const isPortalled = ttip.parentNode === document.body;
     ttip.style.left = '0px';
     ttip.style.top = '0px';
@@ -724,19 +724,15 @@ window.initializeConformanceController = function (hooks = {}) {
     ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
     const cellRect = cell.getBoundingClientRect();
     if (cell.dataset.ttipClick === 'pin') {
-      ttip.style.maxWidth = Math.max(240, window.innerWidth - 2 * margin) + 'px';
-      const controls = cell.closest('#tab-unified')?.querySelector('.capture-slots');
-      const requestedTop = controls ? controls.getBoundingClientRect().bottom + margin : margin;
-      const resized = ttip.style.height && ttip.style.height !== 'auto';
-      const controlsBottom = resized
-        ? requestedTop
-        : Math.max(margin, Math.min(requestedTop, Math.max(margin, window.innerHeight - 160 - margin)));
-      const availableHeight = Math.max(160, window.innerHeight - controlsBottom - margin);
-      ttip.style.maxHeight = (resized ? window.innerHeight * .97 : availableHeight) + 'px';
+      const viewportWidth = document.documentElement.clientWidth;
+      const viewportHeight = document.documentElement.clientHeight;
+      const availableWidth = Math.max(0, viewportWidth - 2 * margin);
+      ttip.style.minWidth = Math.min(280, availableWidth) + 'px';
+      ttip.style.maxWidth = availableWidth + 'px';
+      ttip.style.maxHeight = Math.max(0, viewportHeight - 2 * margin) + 'px';
       const rect = ttip.getBoundingClientRect();
-      ttip.style.left = ((window.innerWidth - rect.width) / 2 + window.scrollX) + 'px';
-      const top = resized ? Math.min(controlsBottom, Math.max(margin, window.innerHeight - rect.height - margin)) : controlsBottom;
-      ttip.style.top = (top + window.scrollY) + 'px';
+      ttip.style.left = ((viewportWidth - rect.width) / 2 + window.scrollX) + 'px';
+      ttip.style.top = ((viewportHeight - rect.height) / 2 + window.scrollY) + 'px';
       ttip.style.visibility = '';
       ttip.style.opacity = '';
       return;
@@ -955,8 +951,8 @@ window.initializeConformanceController = function (hooks = {}) {
       clearTimers();
       if (window.__buildTooltip) window.__buildTooltip(cell);
       portalTooltip();
-      place(cell);
       ttip.classList.add('ttip-visible', 'ttip-pinned');
+      place(cell);
       isVisible = true;
       isActive = true;
       pinnedCell = cell;

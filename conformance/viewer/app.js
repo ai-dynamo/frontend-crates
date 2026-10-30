@@ -382,7 +382,7 @@ async function initialize() {
     if (!slotOwner) return;
     load(panel);
   }, { availableIdentities: historyAvailable ? null : embeddedIdentities });
-  comparison = mountComparison(panel, controller);
+  comparison = mountComparison(panel, controller, () => catalog.sources.unified.filter(item => item.kind === 'inputs-and-golden').map(item => item.family));
   const firstLoad = load(controller.activePanel());
   async function discoverOlderResults() {
     await firstLoad;
