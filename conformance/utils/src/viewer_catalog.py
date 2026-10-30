@@ -740,6 +740,8 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
         store_root = dataset_root / capture_sources.STORE
         inventory, documents, indexed = _native_catalog_document_index(store_root, generation=generation,
             conversion_context={"dataset": identity, "metadata": source_metadata})
+        for family, inputs in indexed["families"].items():
+            metadata["families"].setdefault(family, inputs)
         resources = _unified_records(dataset_root, store_root, inventory=inventory, document_index=documents)
         for resource in resources:
             resource.update(dataset=identity, dataset_root=prefix)
