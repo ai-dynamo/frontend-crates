@@ -34,18 +34,32 @@ fn resolve_cache_dir() -> PathBuf {
 }
 
 fn with_cache_lock_at<T>(cache_dir: &Path, load: impl FnOnce() -> Result<T>) -> Result<T> {
+    with_cache_lock_at_using(cache_dir, load, |lock_path| {
+        OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(lock_path)
+    })
+}
+
+fn with_cache_lock_at_using<T>(
+    cache_dir: &Path,
+    load: impl FnOnce() -> Result<T>,
+    open_lock_file: impl FnOnce(&Path) -> std::io::Result<std::fs::File>,
+) -> Result<T> {
     fs::create_dir_all(cache_dir)
         .with_context(|| format!("creating Harmony vocabulary cache directory {cache_dir:?}"))?;
     let lock_path = cache_dir.join("harmony-vocab.lock");
-    let lock_file = OpenOptions::new()
-        .create(true)
-        .truncate(false)
-        .read(true)
-        .write(true)
-        .open(&lock_path);
-    let lock_file = match lock_file {
+    let lock_file = match open_lock_file(&lock_path) {
         Ok(lock_file) => lock_file,
-        Err(error) if error.kind() == std::io::ErrorKind::PermissionDenied => {
+        Err(error)
+            if matches!(
+                error.kind(),
+                std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::ReadOnlyFilesystem
+            ) =>
+        {
             if lock_path.exists() {
                 // Existing read-only caches can still share an already-created lock file.
                 OpenOptions::new()
@@ -85,7 +99,7 @@ mod tests {
 
     use anyhow::Result;
 
-    use super::with_cache_lock_at;
+    use super::{with_cache_lock_at, with_cache_lock_at_using};
 
     struct ChildGuard(Child);
 
@@ -273,6 +287,23 @@ mod tests {
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
         assert_eq!(result?, "loaded");
         assert!(lock_path.exists());
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_filesystem_without_lock_file_can_load_existing_vocabulary() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+
+        let result = with_cache_lock_at_using(
+            &cache,
+            || Ok("loaded"),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
+
+        assert_eq!(result?, "loaded");
+        assert!(!cache.join("harmony-vocab.lock").exists());
         Ok(())
     }
 }
