@@ -249,11 +249,12 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
 
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
-def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked):
+@pytest.mark.parametrize("width", [800, 480])
+def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
     server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.set_window_size(800, 600)
+        driver.set_window_size(width, 600)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
         _ready(driver, "tab-unified", reference=False)
         _choose_engine(driver, 1, "sglang")
@@ -277,12 +278,13 @@ def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked):
             const labels=[...table.tBodies[0].querySelectorAll('tr > th:first-child')]
               .map(cell=>cell.getBoundingClientRect()).filter(rect=>rect.top>=header.bottom&&rect.bottom<innerHeight);
             return {top:header.top,labels:labels.map(rect=>rect.left),x:scrollX,y:scrollY,
-              overflow:document.scrollingElement.scrollWidth>innerWidth,innerX:wrapper.scrollLeft,innerY:wrapper.scrollTop};
+              labelLeft:Math.max(0,table.getBoundingClientRect().left),
+              overflow:document.scrollingElement.scrollWidth>document.documentElement.clientWidth,
+              innerX:wrapper.scrollLeft,innerY:wrapper.scrollTop};
         """)
         assert abs(geometry["top"]) <= 1, geometry
         assert geometry["labels"], geometry
-        if geometry["x"]:
-            assert all(abs(left) <= 1 for left in geometry["labels"]), geometry
+        assert all(abs(left - geometry["labelLeft"]) <= 1 for left in geometry["labels"]), geometry
         assert bool(geometry["x"]) == geometry["overflow"], geometry
         assert geometry["innerX"] == geometry["innerY"] == 0, geometry
     finally:
