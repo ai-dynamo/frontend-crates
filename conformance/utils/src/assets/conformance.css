@@ -663,6 +663,8 @@ th.case-sub .ttip { font-weight: 400; text-align: left; }
 .ttip-grammar td.grf .grfam { display: block; color: #64748b; font-weight: 400; font-size: 10px; }
 .ttip-grammar td.gri { color: #e5e7eb; }
 .ttip-grammar tr.gr-na td.gri { color: #94a3b8; font-style: italic; }
+.ttip-grammar .gr-variant-heading th { text-align: left; white-space: normal; padding: 10px 8px; border-top: 2px solid var(--line-strong); background: var(--panel-bg); color: var(--ink); }
+.ttip-grammar .gr-variant-heading .ttip-head-desc { display: block; font-weight: 400; }
 .ttip-grammar td.gro { color: #e5e7eb; border-left: 2px solid #64748b; }
 /* Chunk seam in the stream popup: the input column shows the JOINED stream (so
  * colors resolve across boundaries), which otherwise hides where each chunk ended. */

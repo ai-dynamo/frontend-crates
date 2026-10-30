@@ -11,6 +11,55 @@ from verify_publication_transport import materialize_embedded, runtime_catalog
 
 ROOT = Path(__file__).resolve().parents[3]
 
+
+def _run_view_javascript(script, input_value=None):
+    bootstrap = r"""
+const fs = require('fs');
+const vm = require('vm');
+const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
+  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
+vm.createContext(context);
+const source = fs.readFileSync(process.argv[1], 'utf8');
+"""
+    return subprocess.run(
+        ["node", "-e", bootstrap + script, str(ROOT / "conformance/utils/src/assets/conformance_view.js")],
+        input=json.dumps(input_value), text=True, capture_output=True, check=True,
+    ).stdout
+
+
+def test_column_popup_groups_variants_before_families():
+    script = r"""
+vm.runInContext(source.replace('function buildGrammarHtml(m) {',
+  'window.renderGrammar = buildGrammarHtml; function buildGrammarHtml(m) {'), context);
+const leaf = (family, sub, text) => ({sub, case_id: 'UNIFIED.' + sub,
+  tooltip: {head: sub + ' — UNIFIED.' + sub + ' — ' + family,
+    description: text === null ? 'Not applicable to ' + family : 'Description ' + sub,
+    input: text === null ? {kind: null} : {kind: 'text', text},
+    candidates: [{key: 'golden', block: {events: []}}]}});
+const row = (family, leaves) => ({family, cells: {standard: {case_id: 'UNIFIED.standard',
+  variants: leaves, tooltip: {variants: leaves.map(leaf => leaf.tooltip)}}}});
+const tab = {rows: [row('missing', [leaf('missing', 'recovery', null), leaf('missing', 'standard', null)]),
+  row('alpha', [leaf('alpha', 'recovery', 'a-r'), leaf('alpha', 'standard', 'a-s')]),
+  row('beta', [leaf('beta', 'standard', 'b-s'), leaf('beta', 'recovery', null)])]};
+const model = context.window.__conformanceCaseTooltip(tab, {sub: 'standard'});
+console.log(JSON.stringify({rows: model.grammar.map(row => [row.variantKey, row.label, row.text]),
+  html: context.window.renderGrammar(model)}));
+"""
+    rendered = json.loads(_run_view_javascript(script))
+    assert rendered["rows"] == [
+        ["standard", "missing", None], ["standard", "alpha", "a-s"], ["standard", "beta", "b-s"],
+        ["recovery", "missing", None], ["recovery", "alpha", "a-r"], ["recovery", "beta", None],
+    ]
+    assert rendered["html"].count('class="gr-variant-heading"') == 2
+    assert rendered["html"].count('scope="rowgroup"') == 2
+    assert 'data-variant="recovery"' in rendered["html"]
+    assert rendered["html"].count('Description standard') == 1
+    assert rendered["html"].count('Description recovery') == 1
+    for section in rendered["html"].split('class="gr-variant-heading"')[1:]:
+        assert 'Not applicable' not in section.split('</th>', 1)[0]
+    assert rendered["html"].count('Not applicable to missing') == 2
+
+
 def test_shared_javascript_matrix_contracts(published_viewer, tmp_path):
     catalog = tmp_path / "runtime-catalog.json"
     runtime = runtime_catalog(published_viewer)
@@ -44,20 +93,11 @@ def test_shared_javascript_matrix_contracts(published_viewer, tmp_path):
 ])
 def test_unavailable_popup_renders_detail_or_code(unavailable, reason):
     script = r"""
-const fs = require('fs');
-const vm = require('vm');
-const context = {window: {}, document: {cookie: '', documentElement: {setAttribute() {}},
-  querySelectorAll() {return [];}, addEventListener() {}, getElementById() {return null;}}};
-vm.createContext(context);
-const source = fs.readFileSync(process.argv[1], 'utf8');
 const marker = '// --- Output block rendering (mirrors _format_output_block_html) ------------';
 vm.runInContext(source.replace(marker, 'window.audit = {outputBlock};\n' + marker), context);
 const unavailable = JSON.parse(fs.readFileSync(0, 'utf8'));
 process.stdout.write(context.window.audit.outputBlock({unavailable}, 'gemma4', {}, []));
 """
-    rendered = subprocess.run(
-        ["node", "-e", script, str(ROOT / "conformance/utils/src/assets/conformance_view.js")],
-        input=json.dumps(unavailable), text=True, capture_output=True, check=True,
-    ).stdout
+    rendered = _run_view_javascript(script, unavailable)
     prefix = "" if isinstance(unavailable, dict) and unavailable.get("code") == "missing_capture" else "unavailable: "
     assert rendered == f'<span class="expl">{prefix}{reason}</span>'
