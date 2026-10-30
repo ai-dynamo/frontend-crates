@@ -69,9 +69,9 @@ fn with_cache_lock_at_using<T>(
                         format!("opening Harmony vocabulary lock file {lock_path:?}")
                     })?
             } else {
-                // Harmony verifies a cached vocabulary before using it; on a read-only cache
-                // directory its cache-miss write will fail without touching shared state.
-                return load();
+                // A mounted read-only cache cannot host the lock, so coordinate its callers
+                // through a persistent sidecar before Harmony checks or downloads the vocabulary.
+                open_read_only_cache_sidecar(cache_dir)?
             }
         }
         Err(error) => {
@@ -88,6 +88,55 @@ fn with_cache_lock_at_using<T>(
     result
 }
 
+fn open_read_only_cache_sidecar(cache_dir: &Path) -> Result<std::fs::File> {
+    let lock_path = read_only_cache_sidecar_path(cache_dir)?;
+    match OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(&lock_path)
+    {
+        Ok(lock_file) => Ok(lock_file),
+        Err(_) => {
+            let lock_dir = std::env::temp_dir().join("dynamo-harmony-locks");
+            fs::create_dir_all(&lock_dir)
+                .with_context(|| format!("creating Harmony lock directory {lock_dir:?}"))?;
+            let fallback_path = lock_dir.join(
+                lock_path
+                    .file_name()
+                    .context("Harmony sidecar lock path has no file name")?,
+            );
+            OpenOptions::new()
+                .create(true)
+                .truncate(false)
+                .read(true)
+                .write(true)
+                .open(&fallback_path)
+                .with_context(|| {
+                    format!("opening Harmony vocabulary sidecar lock {fallback_path:?}")
+                })
+        }
+    }
+}
+
+fn read_only_cache_sidecar_path(cache_dir: &Path) -> Result<PathBuf> {
+    let canonical_path = cache_dir
+        .canonicalize()
+        .with_context(|| format!("resolving Harmony vocabulary cache directory {cache_dir:?}"))?;
+    let mut path_hash = 0xcbf29ce484222325_u64;
+    for byte in canonical_path.to_string_lossy().as_bytes() {
+        path_hash ^= u64::from(*byte);
+        path_hash = path_hash.wrapping_mul(0x100000001b3);
+    }
+
+    let file_name = format!(".dynamo-harmony-{path_hash:016x}.lock");
+    let parent = canonical_path
+        .parent()
+        .context("Harmony cache directory has no parent")?;
+    Ok(parent.join(file_name))
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -99,7 +148,7 @@ mod tests {
 
     use anyhow::Result;
 
-    use super::{with_cache_lock_at, with_cache_lock_at_using};
+    use super::{read_only_cache_sidecar_path, with_cache_lock_at, with_cache_lock_at_using};
 
     struct ChildGuard(Child);
 
@@ -145,7 +194,12 @@ mod tests {
         }
     }
 
-    fn spawn_helper(mode: &str, cache_dir: &PathBuf, marker_dir: &PathBuf) -> ChildGuard {
+    fn spawn_helper(
+        mode: &str,
+        cache_dir: &PathBuf,
+        marker_dir: &PathBuf,
+        read_only_fs: bool,
+    ) -> ChildGuard {
         ChildGuard(
             Command::new(std::env::current_exe().unwrap())
                 .arg("--exact")
@@ -154,6 +208,10 @@ mod tests {
                 .env("DYNAMO_HARMONY_LOCK_TEST_MODE", mode)
                 .env("DYNAMO_HARMONY_LOCK_TEST_CACHE", cache_dir)
                 .env("DYNAMO_HARMONY_LOCK_TEST_MARKERS", marker_dir)
+                .env(
+                    "DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS",
+                    read_only_fs.to_string(),
+                )
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
                 .spawn()
@@ -175,7 +233,7 @@ mod tests {
                 if mode == "waiter" {
                     fs::write(marker_dir.join("waiter.attempting"), b"attempting").unwrap();
                 }
-                let result = with_cache_lock_at(&cache_dir, || {
+                let load = || {
                     fs::write(marker_dir.join(format!("{name}.entered")), b"entered")?;
                     if mode == "hold" {
                         let release = marker_dir.join("hold.release");
@@ -186,7 +244,16 @@ mod tests {
                         }
                     }
                     Ok(())
-                });
+                };
+                let result = if std::env::var("DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS")
+                    .is_ok_and(|value| value == "true")
+                {
+                    super::with_cache_lock_at_using(&cache_dir, load, |_| {
+                        Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem))
+                    })
+                } else {
+                    with_cache_lock_at(&cache_dir, load)
+                };
                 result.unwrap();
             }
             _ => panic!("unknown subprocess lock mode {mode}"),
@@ -196,33 +263,42 @@ mod tests {
     #[test]
     fn locks_are_exclusive_across_processes_and_independent_by_cache() -> Result<()> {
         let directory = tempfile::tempdir()?;
-        let markers = directory.path().join("markers");
-        let first_cache = directory.path().join("first");
-        let second_cache = directory.path().join("second");
-        fs::create_dir_all(&markers)?;
+        for read_only_fs in [false, true] {
+            let scenario = if read_only_fs { "sidecar" } else { "cache" };
+            let markers = directory.path().join(format!("{scenario}-markers"));
+            let first_cache = directory.path().join(format!("{scenario}-first"));
+            let second_cache = directory.path().join(format!("{scenario}-second"));
+            fs::create_dir_all(&markers)?;
 
-        let mut holder = spawn_helper("hold", &first_cache, &markers);
-        wait_for_file(&markers.join("hold.entered"));
+            let mut holder = spawn_helper("hold", &first_cache, &markers, read_only_fs);
+            wait_for_file(&markers.join("hold.entered"));
 
-        let mut other_cache = spawn_helper("other-cache", &second_cache, &markers);
-        wait_for_file(&markers.join("other-cache.entered"));
-        assert!(other_cache.wait()?.success());
+            let mut other_cache =
+                spawn_helper("other-cache", &second_cache, &markers, read_only_fs);
+            wait_for_file(&markers.join("other-cache.entered"));
+            assert!(other_cache.wait()?.success());
 
-        let mut waiter = spawn_helper("waiter", &first_cache, &markers);
-        wait_for_file(&markers.join("waiter.attempting"));
-        let waiter_status = waiter.try_wait()?;
-        assert!(
-            waiter_status.is_none(),
-            "same-cache process did not block on the held lock"
-        );
-        assert_file_stays_absent(&markers.join("waiter.entered"));
+            let mut waiter = spawn_helper("waiter", &first_cache, &markers, read_only_fs);
+            wait_for_file(&markers.join("waiter.attempting"));
+            let waiter_status = waiter.try_wait()?;
+            assert!(
+                waiter_status.is_none(),
+                "same-cache process did not block on the held {scenario} lock"
+            );
+            assert_file_stays_absent(&markers.join("waiter.entered"));
 
-        fs::write(markers.join("hold.release"), b"release")?;
-        assert!(holder.wait()?.success());
-        assert!(waiter.wait()?.success());
-        assert!(markers.join("waiter.entered").exists());
-        assert!(first_cache.join("harmony-vocab.lock").exists());
-        assert!(second_cache.join("harmony-vocab.lock").exists());
+            fs::write(markers.join("hold.release"), b"release")?;
+            assert!(holder.wait()?.success());
+            assert!(waiter.wait()?.success());
+            assert!(markers.join("waiter.entered").exists());
+            if read_only_fs {
+                assert!(read_only_cache_sidecar_path(&first_cache)?.exists());
+                assert!(read_only_cache_sidecar_path(&second_cache)?.exists());
+            } else {
+                assert!(first_cache.join("harmony-vocab.lock").exists());
+                assert!(second_cache.join("harmony-vocab.lock").exists());
+            }
+        }
         Ok(())
     }
 
@@ -237,7 +313,7 @@ mod tests {
         assert!(error.is_err());
         with_cache_lock_at(&cache, || Ok(()))?;
 
-        let mut holder = spawn_helper("hold", &cache, &markers);
+        let mut holder = spawn_helper("hold", &cache, &markers, false);
         wait_for_file(&markers.join("hold.entered"));
         holder.kill()?;
         assert!(!holder.wait()?.success());
@@ -266,6 +342,7 @@ mod tests {
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
         assert_eq!(result?, "loaded");
         assert!(!cache.join("harmony-vocab.lock").exists());
+        assert!(read_only_cache_sidecar_path(&cache)?.exists());
         Ok(())
     }
 
