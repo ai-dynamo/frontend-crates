@@ -5,7 +5,9 @@ use serde_json::{Value, json};
 
 use crate::{Tool, UnifiedEvent, UnifiedParserExt, assemble, create_unified_parser_for_family};
 
-use super::builders::{DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, QWEN3_CODER};
+use super::builders::{
+    DEEPSEEK_DSML, DEEPSEEK_DSML_V41, GLM47, HARMONY, KIMI_K2, KIMI_K3, QWEN3_CODER,
+};
 use super::test_support::{build, build_context, tools};
 use super::{
     ReasoningBoundary, StructuralTagContext, StructuralTagOptions, StructuralTagSchemaMode,
@@ -785,6 +787,102 @@ fn strict_schema_mode_enforces_non_strict_tool_schema() {
         actual["format"]["content"]["json_schema"],
         tools[0].parameters
     );
+}
+
+/// ai-dynamo/dynamo#17661: a JSON-pointer-escaped `$ref` target reaches the
+/// grammar backend in the literal spelling it resolves, on every builder.
+fn escaped_ref_tool() -> Tool {
+    Tool {
+        name: "select_model".to_string(),
+        description: None,
+        parameters: json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry~1Model~0v1%20name"}},
+            "$defs": {"registry/Model~v1 name": {"type": "string"}},
+            "required": ["model_name"],
+        }),
+        strict: Some(true),
+    }
+}
+
+#[test]
+fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
+    let tools = [escaped_ref_tool()];
+    let actual = build(
+        &QWEN3_CODER,
+        StructuralTagToolChoice::Named("select_model"),
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    );
+    assert_eq!(
+        actual["format"]["content"]["json_schema"],
+        json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry_Model_v1_name"}},
+            "$defs": {"registry_Model_v1_name": {"type": "string"}},
+            "required": ["model_name"],
+        })
+    );
+
+    // Builders that embed a JSON schema must carry the renamed definition and
+    // its reference; Kimi K3 resolves the reference into a typed XTML argument.
+    let canonical_ref = json!("#/$defs/registry_Model_v1_name");
+    for builder in [&GLM47, &DEEPSEEK_DSML, &HARMONY, &KIMI_K2] {
+        let tag = build(
+            builder,
+            StructuralTagToolChoice::Required,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+            false,
+        );
+        let schemas = embedded_json_schemas(&tag);
+        assert!(!schemas.is_empty(), "no json_schema in {tag}");
+        for schema in schemas {
+            assert_eq!(
+                schema["$defs"]["registry_Model_v1_name"],
+                json!({"type": "string"}),
+                "{tag}"
+            );
+            assert_eq!(
+                schema["properties"]["model_name"]["$ref"], canonical_ref,
+                "{tag}"
+            );
+        }
+        assert!(!tag.to_string().contains("registry~1Model"), "{tag}");
+    }
+    let k3 = build(
+        &KIMI_K3,
+        StructuralTagToolChoice::Required,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+        false,
+    )
+    .to_string();
+    assert!(k3.contains(r#"key=\"model_name\" type=\"string\""#), "{k3}");
+    assert!(!k3.contains("registry~1Model"), "{k3}");
+}
+
+/// Every `json_schema` value embedded anywhere in a structural tag.
+fn embedded_json_schemas(tag: &Value) -> Vec<&Value> {
+    let mut found = Vec::new();
+    let mut stack = vec![tag];
+    while let Some(node) = stack.pop() {
+        match node {
+            Value::Object(map) => {
+                if let Some(schema) = map.get("json_schema") {
+                    found.push(schema);
+                }
+                stack.extend(map.values());
+            }
+            Value::Array(items) => stack.extend(items),
+            _ => {}
+        }
+    }
+    found
 }
 
 #[test]

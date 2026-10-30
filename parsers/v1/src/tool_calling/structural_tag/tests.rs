@@ -548,6 +548,61 @@ fn schema_policy_treats_only_explicit_false_as_opt_out() {
     assert!(uses_declared_tool_schema(&tool, true));
 }
 
+/// ai-dynamo/dynamo#17661: a JSON-pointer-escaped `$ref` target reaches the
+/// grammar backend in the literal spelling it resolves, on every builder.
+fn escaped_ref_tool() -> ToolDefinition {
+    ToolDefinition {
+        name: "select_model".to_string(),
+        parameters: Some(json!({
+            "type": "object",
+            "properties": {"model_name": {"$ref": "#/$defs/registry~1Model~0v1%20name"}},
+            "$defs": {"registry/Model~v1 name": {"type": "string"}},
+            "required": ["model_name"],
+        })),
+        strict: Some(true),
+    }
+}
+
+#[test]
+fn escaped_local_ref_targets_are_canonicalized_in_every_builder() {
+    let tools = vec![escaped_ref_tool()];
+    let parsed = build_unwrap(
+        &builder(),
+        &ToolChoice::Required,
+        &tools,
+        None,
+        StructuralTagSchemaMode::Auto,
+    );
+    let schema = &parsed["format"]["tags"][0]["content"]["json_schema"];
+    assert_eq!(
+        schema["properties"]["model_name"]["$ref"],
+        "#/$defs/registry_Model_v1_name"
+    );
+    assert_eq!(
+        schema["$defs"],
+        json!({"registry_Model_v1_name": {"type": "string"}})
+    );
+
+    // Kimi K2 forwards the JSON schema; K3 resolves the reference into a typed
+    // XTML argument. Neither may carry the escaped spelling.
+    let kimi = |native: StructuralTagBuilder| {
+        build_unwrap(
+            &native,
+            &ToolChoice::Required,
+            &tools,
+            None,
+            StructuralTagSchemaMode::Auto,
+        )
+        .to_string()
+    };
+    let k2 = kimi(StructuralTagBuilder::KimiK2);
+    assert!(!k2.contains("registry~1Model"), "{k2}");
+    assert!(k2.contains("#/$defs/registry_Model_v1_name"), "{k2}");
+    let k3 = kimi(StructuralTagBuilder::KimiK3);
+    assert!(!k3.contains("registry~1Model"), "{k3}");
+    assert!(k3.contains(r#"key=\"model_name\" type=\"string\""#), "{k3}");
+}
+
 #[test]
 fn tool_call_ban_tag_bans_tokens() {
     let result = builder()

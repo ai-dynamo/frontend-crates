@@ -48,13 +48,15 @@ fn native_eligibility_checks_constraints_and_referenced_schemas() {
             json!({"$ref":"#/$defs/text","$defs":{"text":{"type":"string"}}}),
             false,
         ),
+        // Escaped targets are canonicalized before the builder sees them
+        // (`dynamo_structural_tag::schema`), so they resolve like plain ones.
         (
             json!({"$ref":"#/$defs/a~1b","$defs":{"a/b":{"type":"integer"}}}),
-            false,
+            true,
         ),
         (
             json!({"$ref":"#/$defs/%63ount","$defs":{"count":{"type":"integer"}}}),
-            false,
+            true,
         ),
         (json!({"$ref":"#"}), false),
         (
