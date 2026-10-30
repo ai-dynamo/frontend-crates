@@ -57,6 +57,41 @@ test('boolean filters count only matching underlying cases across model and case
     assert.equal(captureCounts(comparisonView(folded, {...state, search: query}), 'd').total, 4, query);
   }
 });
+test('model scope excludes model mentions in descriptions and composes with boolean search', () => {
+  for (const [query, models, cases, expected] of [
+    ['beam', ['glm47'], ['Beam and GLM use schema-directed parsing'], true],
+    ['model:beam', ['glm47'], ['Beam and GLM use schema-directed parsing'], false],
+    ['model:beam', ['beam'], ['single call'], true],
+    ['MODEL:Beam AND call', ['beam'], ['single call'], true],
+    ['model:beam AND call', ['beam'], ['reasoning'], false],
+    ['(model:beam OR model:qwen) AND call', ['qwen3'], ['single call'], true],
+    ['model:deep seek', ['deepseek_v4'], [], true],
+    ['model:"deep seek"', ['deepseek_v4'], [], false],
+    ['model:"deep seek"', ['Deep Seek'], [], true],
+    ['"model:beam"', ['glm47'], ['model:beam'], true],
+  ]) assert.equal(compileSearch(query)([...models, ...cases], models), expected, query);
+  for (const query of ['model:', 'model: AND call', 'model:"', 'model:""', 'model:(beam OR qwen)']) {
+    assert.throws(() => compileSearch(query), SyntaxError, query);
+  }
+  const scoped = {...tab, rows: [
+    {family: 'beam', cells: {pass: cell('pass')}},
+    {family: 'glm47', cells: {pass: cell('pass', 'pass', {tooltip: {description: 'Beam and GLM'}})}},
+  ]};
+  const view = comparisonView(scoped, {...state, search: 'model:beam'});
+  assert.deepEqual(view.rows.map(row => row.family), ['beam']);
+  assert.equal(captureCounts(view, 'd').total, 1);
+});
+test('section headings select applicable cases across models unless model scope narrows them', () => {
+  const grouped = {...tab, column_groups: [{key: 'core', label: 'TC Truncation / recovery'}], rows: [
+    {family: 'beam', cells: {pass: cell('pass')}},
+    {family: 'glm47', cells: {pass: cell('pass')}},
+  ]};
+  const view = comparisonView(grouped, {...state, search: 'TC Trun'});
+  assert.deepEqual(view.rows.map(row => row.family), ['beam', 'glm47']);
+  assert.equal(captureCounts(view, 'd').total, 2);
+  assert.deepEqual(comparisonView(grouped, {...state, search: 'model:beam AND "TC Trun"'}).rows.map(row => row.family), ['beam']);
+  assert.equal(comparisonView(grouped, {...state, search: 'model:"TC Trun"'}).rows.length, 0);
+});
 test('Capture boxes stay empty and keep accessible outcome labels', () => {
   for (const status of Object.keys(statusLabels)) {
     const segment = captureSegmentHtml(status, 'capture');
