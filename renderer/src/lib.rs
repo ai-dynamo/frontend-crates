@@ -42,7 +42,7 @@ mod python;
 mod template;
 
 pub use template::{
-    ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins,
+    ChatTemplate, ChatTemplateContentFormat, ChatTemplateValue, ContextMixins, MediaPlaceholders,
     deepseek_formatter_for, kimi_k3_formatter_for, may_be_fix_tool_schema, native_formatter_for,
 };
 
