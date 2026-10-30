@@ -6,17 +6,15 @@ use std::fmt::Debug;
 use crate::ParserResult;
 use crate::ReasoningParser;
 
+use dynamo_harmony::harmony_gpt_oss_encoding;
 use openai_harmony::StreamableParser;
 use openai_harmony::chat::{Content, Message, TextContent};
-use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, chat::Role, load_harmony_encoding};
+use openai_harmony::{HarmonyEncoding, chat::Role};
 use regex::Regex;
 
-///// Static initialization of harmony encoder to not affect performance every time a parser is created
-/// This is because load_harmony_encoding downloads some tiktoken files into a directory and we don't want to do this every time we create a parser.
+/// Harmony vocabulary initialization is shared across the v1 and v2 parser entry points.
 use std::sync::OnceLock;
 
-static GLOBAL_HARMONY_GPTOSS_ENCODING: OnceLock<Result<HarmonyEncoding, anyhow::Error>> =
-    OnceLock::new();
 static HARMONY_CALL_TOKEN_IDS: OnceLock<Vec<u32>> = OnceLock::new();
 static HARMONY_START_TOKEN_ID: OnceLock<Option<u32>> = OnceLock::new();
 static HARMONY_ANALYSIS_BLOCK_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -32,18 +30,7 @@ const HARMONY_SPECIAL_TOKENS: &[&str] = &[
 ];
 
 fn get_harmony_encoding() -> &'static Result<HarmonyEncoding, anyhow::Error> {
-    GLOBAL_HARMONY_GPTOSS_ENCODING.get_or_init(|| {
-        // load_harmony_encoding internally constructs a reqwest::blocking::Client,
-        // which builds and drops a Tokio Runtime. Dropping a Runtime from inside
-        // an async context (e.g. when this is called for the first time during
-        // an HTTP request handler) panics with "Cannot drop a runtime in a
-        // context where blocking is not allowed". Run the load on a fresh OS
-        // thread so the inner Runtime is dropped outside any async context.
-        // The init runs at most once per process via OnceLock.
-        std::thread::spawn(|| load_harmony_encoding(HarmonyEncodingName::HarmonyGptOss))
-            .join()
-            .unwrap_or_else(|_| Err(anyhow::anyhow!("harmony encoding loader thread panicked")))
-    })
+    harmony_gpt_oss_encoding()
 }
 
 pub struct GptOssReasoningParser {

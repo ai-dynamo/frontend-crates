@@ -1,0 +1,13 @@
+[package]
+name = "dynamo-harmony"
+version = "0.1.0"
+edition.workspace = true
+license = "Apache-2.0"
+description = "Shared Harmony vocabulary initialization for Dynamo parsers"
+
+[dependencies]
+anyhow.workspace = true
+openai-harmony.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

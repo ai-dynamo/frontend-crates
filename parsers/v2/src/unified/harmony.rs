@@ -11,8 +11,9 @@ use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::panic::{RefUnwindSafe, UnwindSafe};
 
+use dynamo_harmony::harmony_gpt_oss_encoding;
+use openai_harmony::HarmonyEncoding;
 use openai_harmony::chat::Role;
-use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
 
 use crate::tool_calling::arguments::{parsed_json_literal, raw_json_literal, valid_json_reader};
 use crate::tool_calling::traits::{Result, Tool, ToolCallDelta};
@@ -80,17 +81,8 @@ fn restore_guided_literals(text: &str) -> String {
     restored
 }
 
-static GLOBAL_HARMONY_ENCODING: std::sync::OnceLock<std::result::Result<HarmonyEncoding, String>> =
-    std::sync::OnceLock::new();
-
 fn harmony_encoding() -> Result<&'static HarmonyEncoding> {
-    GLOBAL_HARMONY_ENCODING
-        .get_or_init(|| {
-            std::thread::spawn(|| load_harmony_encoding(HarmonyEncodingName::HarmonyGptOss))
-                .join()
-                .unwrap_or_else(|_| Err(anyhow::anyhow!("Harmony encoding loader thread panicked")))
-                .map_err(|error| error.to_string())
-        })
+    harmony_gpt_oss_encoding()
         .as_ref()
         .map_err(|error| anyhow::anyhow!("Harmony encoding unavailable: {error}"))
 }
