@@ -265,6 +265,9 @@ fn decision_jev_structured_text_restricts_only_top_level_json_types() {
     }
 }
 
+// Nested objects are `serde_json::Map`s, which keep their order only with
+// serde_json's `preserve_order`.
+#[cfg(feature = "preserve_order")]
 #[test]
 fn decision_jev_nested_object_order_survives_standalone_protocol_round_trip() {
     let raw = r#"{"model":"m","state":{"z":1,"a":{"last":true,"first":null}},"questions":{"z":{"type":"choice","criteria":{"B":{"z":1,"a":2},"A":null}},"a":{"type":"score","criteria":[{"z":1,"a":2}]}}}"#;

@@ -98,6 +98,50 @@ fn chat_custom_tool_names_cannot_also_name_a_function() {
     );
 }
 
+/// A tool built in Rust may set only the wrapper's flag. Serialization
+/// writes it into the function too, and writes a function's own flag once.
+#[test]
+fn chat_tool_deferral_alias_applies_when_built_in_rust() {
+    use dynamo_protocols::types::{ChatCompletionTool, FunctionObject};
+    for (function_flag, tool_flag, expected) in [
+        (None, None, None),
+        (Some(true), None, Some(true)),
+        (None, Some(true), Some(true)),
+        (None, Some(false), Some(false)),
+        (Some(false), Some(true), Some(false)),
+    ] {
+        let tool = ChatCompletionTool {
+            function: FunctionObject {
+                name: "find_ticket".into(),
+                defer_loading: function_flag,
+                ..Default::default()
+            },
+            defer_loading: tool_flag,
+            ..Default::default()
+        };
+        let output = serde_json::to_value(&tool).unwrap();
+        let mut function = json!({"name": "find_ticket"});
+        if let Some(flag) = expected {
+            function["defer_loading"] = json!(flag);
+        }
+        let mut wire = json!({"type": "function", "function": function});
+        if let Some(flag) = tool_flag {
+            wire["defer_loading"] = json!(flag);
+        }
+        assert_eq!(
+            output, wire,
+            "function={function_flag:?}, wrapper={tool_flag:?}"
+        );
+        assert_eq!(
+            serde_json::to_string(&tool)
+                .unwrap()
+                .matches("defer_loading")
+                .count(),
+            usize::from(expected.is_some()) + usize::from(tool_flag.is_some()),
+        );
+    }
+}
+
 #[test]
 fn chat_tool_deferral_survives_request_round_trip() {
     for (function_flag, tool_flag, expected) in [

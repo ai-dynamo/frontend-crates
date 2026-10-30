@@ -16,6 +16,7 @@ use uuid::Uuid;
 use crate::error::OpenAIError;
 
 mod custom_tools;
+mod message_decode;
 pub use custom_tools::*;
 
 // ---------------------------------------------------------------------------
@@ -571,25 +572,35 @@ impl Serialize for ChatCompletionTool {
             defer_loading: Option<bool>,
         }
         #[derive(Serialize)]
-        struct Wire<'a> {
+        struct Wire<'a, F> {
             r#type: &'a ChatCompletionToolType,
-            function: FunctionWithDeferral<'a>,
+            function: F,
             #[serde(skip_serializing_if = "Option::is_none")]
             defer_loading: Option<bool>,
         }
         // Apply the alias at serialization too, without cloning schemas or
         // mutating the registry. A present function flag must not be emitted twice.
-        Wire {
-            r#type: &self.r#type,
-            function: FunctionWithDeferral {
+        // Flatten only when the alias applies: a flattened struct has no
+        // length, so a format such as MessagePack buffers it.
+        let r#type = &self.r#type;
+        let defer_loading = self.defer_loading;
+        match defer_loading.filter(|_| self.function.defer_loading.is_none()) {
+            None => Wire {
+                r#type,
                 function: &self.function,
-                defer_loading: self
-                    .defer_loading
-                    .filter(|_| self.function.defer_loading.is_none()),
-            },
-            defer_loading: self.defer_loading,
+                defer_loading,
+            }
+            .serialize(serializer),
+            alias => Wire {
+                r#type,
+                function: FunctionWithDeferral {
+                    function: &self.function,
+                    defer_loading: alias,
+                },
+                defer_loading,
+            }
+            .serialize(serializer),
         }
-        .serialize(serializer)
     }
 }
 
@@ -1048,7 +1059,8 @@ pub struct ChatCompletionRequestAssistantMessage {
 /// Deserialization rejects Kimi-specific fields on roles that cannot carry
 /// them (`tools` off `system`, `partial` off `assistant`) instead of letting
 /// serde's ignore-unknown-fields default drop them silently; Moonshot's
-/// negative tests expect a request error for these shapes.
+/// negative tests expect a request error for these shapes. It reads a message
+/// whose first key is `role` in one pass; see `message_decode.rs`.
 #[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(tag = "role")]
 #[serde(rename_all = "lowercase")]
@@ -1063,111 +1075,6 @@ pub enum ChatCompletionRequestMessage {
     Tool(ChatCompletionRequestToolMessage),
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestFunctionMessage))]
     Function(ChatCompletionRequestFunctionMessage),
-}
-
-impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        #[derive(Deserialize)]
-        struct ForbidToolsAndPartial<T> {
-            tools: Option<serde::de::IgnoredAny>,
-            partial: Option<serde::de::IgnoredAny>,
-            #[serde(flatten)]
-            message: T,
-        }
-
-        #[derive(Deserialize)]
-        struct ForbidTools<T> {
-            tools: Option<serde::de::IgnoredAny>,
-            #[serde(flatten)]
-            message: T,
-        }
-
-        #[derive(Deserialize)]
-        struct ForbidPartial<T> {
-            partial: Option<serde::de::IgnoredAny>,
-            #[serde(flatten)]
-            message: T,
-        }
-
-        #[derive(Deserialize)]
-        #[serde(tag = "role")]
-        #[serde(rename_all = "lowercase")]
-        enum Wire {
-            Developer(ForbidToolsAndPartial<ChatCompletionRequestDeveloperMessage>),
-            System(ForbidPartial<ChatCompletionRequestSystemMessage>),
-            User(ForbidToolsAndPartial<ChatCompletionRequestUserMessage>),
-            Assistant(ForbidTools<ChatCompletionRequestAssistantMessage>),
-            Tool(ForbidToolsAndPartial<ChatCompletionRequestToolMessage>),
-            Function(ForbidToolsAndPartial<ChatCompletionRequestFunctionMessage>),
-        }
-
-        fn reject_forbidden<E: Error>(
-            value: Option<serde::de::IgnoredAny>,
-            field: &str,
-            allowed_role: &str,
-            actual_role: &str,
-        ) -> Result<(), E> {
-            if value.is_some() {
-                return Err(E::custom(format!(
-                    "`{field}` is only accepted on {allowed_role} messages, not on role {actual_role}"
-                )));
-            }
-            Ok(())
-        }
-
-        let wire = Wire::deserialize(deserializer)?;
-        Ok(match wire {
-            Wire::Developer(ForbidToolsAndPartial {
-                tools,
-                partial,
-                message,
-            }) => {
-                reject_forbidden::<D::Error>(tools, "tools", "system", "developer")?;
-                reject_forbidden::<D::Error>(partial, "partial", "assistant", "developer")?;
-                ChatCompletionRequestMessage::Developer(message)
-            }
-            Wire::System(ForbidPartial { partial, message }) => {
-                reject_forbidden::<D::Error>(partial, "partial", "assistant", "system")?;
-                ChatCompletionRequestMessage::System(message)
-            }
-            Wire::User(ForbidToolsAndPartial {
-                tools,
-                partial,
-                message,
-            }) => {
-                reject_forbidden::<D::Error>(tools, "tools", "system", "user")?;
-                reject_forbidden::<D::Error>(partial, "partial", "assistant", "user")?;
-                ChatCompletionRequestMessage::User(message)
-            }
-            Wire::Assistant(ForbidTools { tools, message }) => {
-                reject_forbidden::<D::Error>(tools, "tools", "system", "assistant")?;
-                ChatCompletionRequestMessage::Assistant(message)
-            }
-            Wire::Tool(ForbidToolsAndPartial {
-                tools,
-                partial,
-                message,
-            }) => {
-                reject_forbidden::<D::Error>(tools, "tools", "system", "tool")?;
-                reject_forbidden::<D::Error>(partial, "partial", "assistant", "tool")?;
-                ChatCompletionRequestMessage::Tool(message)
-            }
-            Wire::Function(ForbidToolsAndPartial {
-                tools,
-                partial,
-                message,
-            }) => {
-                reject_forbidden::<D::Error>(tools, "tools", "system", "function")?;
-                reject_forbidden::<D::Error>(partial, "partial", "assistant", "function")?;
-                ChatCompletionRequestMessage::Function(message)
-            }
-        })
-    }
 }
 
 /// Backward-compatible name for the service tier reported in responses.

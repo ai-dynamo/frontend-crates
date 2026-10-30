@@ -12,6 +12,25 @@ Request/response types for OpenAI- and Anthropic-compatible inference servers. B
 - **Anthropic Messages** — fully owned (no upstream equivalent).
 - **Embeddings**, **Images** — re-exported.
 
+## Chat message decoding
+
+A chat message whose first key is `role` decodes in one pass, without a
+buffer. A value that no field of the message reads is skipped without being
+parsed, as serde skips unknown fields elsewhere in a request. So a number out
+of range or a lone surrogate escape in such a value is dropped, not refused.
+A message that puts another key first is buffered once and parsed in full.
+
+## JSON key order
+
+The `preserve_order` feature is on by default. It turns on serde_json's
+`preserve_order` for the whole build, so every `serde_json::Map` keeps the
+order of its keys. Each key lookup in a map then hashes the key.
+
+Build with `default-features = false` when nothing in the build needs key
+order. Then `serde_json::Map` sorts its keys. A tool call's `arguments` sent
+as an object is then written back as a string with sorted keys. Another
+crate in the build can still turn serde_json's feature on.
+
 ## Optional protocol schemas
 
 The `protocol-schema` feature is disabled by default. When enabled, it supplies utoipa 5 `ToSchema`

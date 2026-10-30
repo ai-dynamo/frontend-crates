@@ -22,6 +22,11 @@ keywords = ["llm", "genai", "inference", "openai", "anthropic"]
 include = ["src/**/*", "Cargo.toml", "README.md"]
 
 [features]
+default = ["preserve_order"]
+# Turns on serde_json's `preserve_order` for the whole build: every
+# `serde_json::Map` keeps insertion order, and every key lookup in it hashes.
+# Consumers that do not need key order can build with `default-features = false`.
+preserve_order = ["serde_json/preserve_order"]
 # Metadata only: no request deserialization or response serialization changes.
 protocol-schema = ["dep:utoipa"]
 utoipa = ["protocol-schema"]
@@ -42,7 +47,7 @@ async-openai = { workspace = true, features = [
 
 # Serialization
 serde = { workspace = true, features = ["derive", "rc"] }
-serde_json = { workspace = true, features = ["preserve_order"] }
+serde_json.workspace = true
 indexmap.workspace = true
 derive_builder.workspace = true
 
