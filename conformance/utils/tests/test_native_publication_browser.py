@@ -334,7 +334,7 @@ def test_corrupt_embedded_catalog_fails_without_network_fallback(published_viewe
         WebDriverWait(driver, 30).until(lambda page: page.find_elements('css selector', '#viewer .error'))
         assert 'Unsupported embedded data' in driver.find_element('css selector', '#viewer .error').text
         assert not any('/viewer-data/' in path or 'viewer-resolved-catalog' in path for path in requests)
-        assert not driver.find_elements('css selector', '#tab-unified td.cell')
+        assert not driver.find_elements('css selector', '#tab-unified .matrix-cell')
     finally:
         driver.quit()
         server.shutdown()
@@ -363,7 +363,7 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
         WebDriverWait(driver, 10).until(lambda page: page.find_elements('css selector', '.ttip-pinned .ttip-head'))
         generation = driver.execute_script('return window.__conformanceLoader.generation')
         gate[1].set()
-        _ready(driver, 'tab-unified', reference=False)
+        _ready(driver, 'tab-unified')
         assert driver.execute_script("return document.getElementById('viewer').dataset.historyAvailable") == 'true'
         assert driver.execute_script("return document.getElementById('tab-unified')._comparisonSelection.keys") == expected
         assert driver.execute_script('return window.__conformanceLoader.generation') > generation
@@ -376,7 +376,7 @@ def test_history_discovery_renders_first_and_preserves_selection(historical_publ
             assert driver.find_elements('css selector', '.ttip-pinned .ttip-head')
             missing = driver.execute_script("""return [...document.querySelectorAll('#tab-unified [data-ttip-id]')]
                 .filter(cell => !window.__conformanceTooltipModel(cell)
-                    || (cell.matches('td.cell') && !window.__conformanceCellModel(cell)))
+                    || (cell.matches('.matrix-cell') && !window.__conformanceCellModel(cell)))
                 .map(cell => cell.getAttribute('data-ttip-id'));""")
             assert missing == [], 'replacement and transposed tooltips must retain their registered models'
     finally:
@@ -393,7 +393,7 @@ def test_same_model_replacement_keeps_tooltips_and_retires_old_only_models(publi
         _ready(driver, 'tab-unified')
         driver.execute_script("""
             const panel = document.getElementById('tab-unified');
-            window.previousTooltipCell = panel.querySelector('td.cell[data-ttip-id]');
+            window.previousTooltipCell = panel.querySelector('.matrix-cell[data-ttip-id]');
             for (let index = 0; index < 2; index++) {
                 const commit = window.ConformanceView.prepareUpdate(panel, window.__conformanceModel, window.__CONFORMANCE_PAGE);
                 const pin = window.__conformanceController.disposePanel(panel);

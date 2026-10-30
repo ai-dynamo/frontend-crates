@@ -1,13 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
-import { isApplicableCell, selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
+import { escapeHtml, isApplicableCell, selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
 import { captureSegmentHtml } from './presentation.js';
 import { compileSearch, searchContext } from './search.js';
-export { compileSearch } from './search.js';
-
-export { captureStatusLabels as statusLabels } from './model.js';
 export const verticalDefault = params => !['0', 'false'].includes(params.get('vertical') ?? params.get('transpose'));
-const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+const html = value => escapeHtml(value ?? '');
 const leavesOf = cell => cell?.variants ? cell.variants.flatMap(leavesOf) : cell ? [cell] : [];
 const familyOf = row => row.family || row.model_label || '';
 const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
@@ -47,7 +44,7 @@ export function captureCounts(view, key) {
 function countMarkup(counts) {
   const present = Object.entries(statusLabels).filter(([s]) => counts[s] > 0);
   return '<div class="engine-status-bar" role="img" aria-label="' + html(present.map(([s,l]) => `${l}: ${counts[s]}`).join(', ')) + '">'
-    + Object.keys(statusLabels).filter(s => counts[s]).map(s => '<i class="status-' + s + '" style="flex-grow:' + counts[s] + '"></i>').join('') + '</div>'
+    + present.map(([s]) => '<i class="status-' + s + '" style="flex-grow:' + counts[s] + '"></i>').join('') + '</div>'
     + '<div class="engine-counts">' + present.map(([s,l]) => '<span data-count="' + s + '"><i class="legend-swatch status-' + s + '"></i>' + counts[s] + ' ' + html(l) + '</span>').join('') + '</div>';
 }
 

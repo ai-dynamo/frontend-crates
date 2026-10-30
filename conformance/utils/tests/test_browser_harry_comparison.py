@@ -24,7 +24,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         before = counts(driver)
         families = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
         folded = driver.execute_script("""
@@ -68,7 +68,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert counts(driver) == after
         search(query)
         driver.refresh()
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         assert counts(driver) == after
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == query
         driver.find_element("css selector", "[data-transpose-toggle]").click()
@@ -102,9 +102,9 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "sglang")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if stacked:
             driver.find_element("css selector", "[data-layout='stacked']").click()
         baseline = counts(driver)
@@ -177,7 +177,7 @@ def test_search_axes_categories_and_numbered_share_links(published_viewer, verti
         field.send_keys(Keys.ENTER)
         assert field.get_attribute("value") == f'beam ({case["id"]} OR nowhere)'
         driver.get(shared_url)
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         assert counts(driver) == expected
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == case["id"]
         search("999-999")
@@ -197,9 +197,9 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
     try:
         driver.set_window_size(1200, 900)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "sglang")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if stacked:
             driver.find_element("css selector", "[data-layout='stacked']").click()
         before = counts(driver)
@@ -237,7 +237,7 @@ def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, ver
         """)
         driver.set_window_size(1200, 900)
         driver.refresh()
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         assert driver.find_element("css selector", "[data-view-detailed]").is_selected()
         assert_details(True)
         driver.find_element("css selector", "[data-view-detailed]").click()
@@ -256,9 +256,9 @@ def test_matrix_uses_page_scrolling(published_viewer, vertical, stacked, width):
     try:
         driver.set_window_size(width, 600)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "sglang")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if stacked:
             driver.find_element("css selector", "[data-layout='stacked']").click()
         geometry = driver.execute_script("""
@@ -298,10 +298,10 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if stacked:
             _choose_engine(driver, 1, "sglang")
-            _ready(driver, "tab-unified", reference=False)
+            _ready(driver, "tab-unified")
             driver.find_element("css selector", "[data-layout='stacked']").click()
         for width, label_width in [(2048, 220), (480, 150)]:
             driver.set_window_size(width, 1000)
@@ -342,11 +342,11 @@ def test_stacked_families_are_grouped_and_legend_matches_visible_colors(publishe
     try:
         driver.set_window_size(1600, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified=stacked")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "sglang")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 2, "vllm")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
 
         def assert_groups_and_legend():
             result = driver.execute_script("""
@@ -401,10 +401,10 @@ def test_long_case_hover_fits_viewport(published_viewer, width, captures):
     try:
         driver.set_window_size(width, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=0")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if captures == 2:
             _choose_engine(driver, 1, "sglang")
-            _ready(driver, "tab-unified", reference=False)
+            _ready(driver, "tab-unified")
             driver.find_element("css selector", "[data-layout='stacked']").click()
         label = driver.execute_script("""
             const headers=[...document.querySelectorAll('.matrix-case-heading')];
@@ -435,12 +435,12 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
     try:
         driver.set_window_size(1600, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}&layout_tab-unified=stacked")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         if correction == "layout":
             assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
             before = counts(driver)
             _choose_engine(driver, 1, "sglang")
-            _ready(driver, "tab-unified", reference=False)
+            _ready(driver, "tab-unified")
             stacked = driver.find_element("css selector", "[data-layout='stacked']")
             assert stacked.is_displayed()
             assert stacked.text == ("Stacked columns" if vertical else "Stacked rows")
@@ -452,7 +452,7 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             driver.find_element("css selector", "[data-layout='split']").click()
             assert counts(driver)["dynamo"] == before["dynamo"]
             _clear_slot(driver, 1)
-            _ready(driver, "tab-unified", reference=False)
+            _ready(driver, "tab-unified")
             assert not driver.find_element("css selector", "[data-layout='stacked']").is_displayed()
         elif correction == "categories":
             assert not driver.find_elements("css selector", ".category-chips")
@@ -467,7 +467,7 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             reduced = counts(driver)
             assert reduced["dynamo"]["total"] < before["dynamo"]["total"]
             driver.refresh()
-            _ready(driver, "tab-unified", reference=False)
+            _ready(driver, "tab-unified")
             assert counts(driver) == reduced
             driver.find_element("css selector", ".comparison-categories summary").click()
             driver.find_element("css selector", selector).send_keys(Keys.SPACE)
@@ -525,7 +525,7 @@ def test_defaults_before_first_paint_and_shared_state(published_viewer, query, v
     try:
         driver.set_window_size(1600,1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/{query}")
-        _ready(driver, "tab-unified",reference=False)
+        _ready(driver, "tab-unified")
         assert driver.execute_script("return window.firstComparisonPaint") is vertical
         assert len(driver.find_elements("css selector", ".capture-slot")) == 3
         assert len(driver.find_elements("css selector", ".tabs .tab-button")) == 0
@@ -566,9 +566,9 @@ def test_vertical_stacked_problems_focus_dims_uncaptured_outputs(published_viewe
     try:
         driver.set_window_size(1920, 1100)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=1&layout_tab-unified=stacked")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "dynamo")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         driver.find_element("css selector", "[data-focus='problems']").click()
         result = driver.execute_script("""
             const statuses = ['documented','diverge','error','leak'];
@@ -592,11 +592,11 @@ def test_capture_cards_and_menu_share_one_row_and_notice_stays_at_bottom(publish
     try:
         driver.set_window_size(1600, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 1, "sglang")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         _choose_engine(driver, 2, "vllm")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         notice = WebDriverWait(driver, 10).until(
             lambda d: d.find_element("css selector", ".publication-history-notice"))
         before = counts(driver)
@@ -642,14 +642,14 @@ def test_matrix_keyboard_popup_and_reload(published_viewer, vertical, width):
     try:
         driver.set_window_size(width, 1000)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver,"tab-unified",reference=False)
+        _ready(driver,"tab-unified")
         cell = driver.find_element("css selector", ".comparison-matrix .matrix-cell[data-ttip-id]")
         cell.send_keys(Keys.ENTER)
         popup = WebDriverWait(driver,10).until(lambda d: d.find_element("css selector", ".comparison-output.ttip-pinned"))
         assert driver.execute_script("const r=arguments[0].getBoundingClientRect(); return Math.abs(r.left+r.width/2-document.documentElement.clientWidth/2)<=1 && Math.abs(r.top+r.height/2-document.documentElement.clientHeight/2)<=1", popup)
         assert popup.find_elements("css selector", ".golden-out-cap, [data-cand=golden]")
         assert parse_qs(urlsplit(driver.current_url).query)["popup"]
-        driver.refresh(); _ready(driver,"tab-unified",reference=False)
+        driver.refresh(); _ready(driver,"tab-unified")
         assert len(driver.find_elements("css selector", ".comparison-output.ttip-pinned")) == 1
         driver.find_element("tag name","body").send_keys(Keys.ESCAPE)
         assert not driver.find_elements("css selector", ".comparison-output.ttip-pinned")
@@ -666,7 +666,7 @@ def test_popup_centers_in_viewport_without_closed_schema_overflow(published_view
     try:
         driver.set_window_size(width, 1194)
         driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
-        _ready(driver, "tab-unified", reference=False)
+        _ready(driver, "tab-unified")
         baseline = driver.execute_script("return document.documentElement.scrollWidth")
         header = driver.execute_script("return [...document.querySelectorAll('.matrix-case-heading')].find(h=>h.getAttribute('aria-label')?.includes('arg_object_quoted_parameter_close'))")
         header.click()
@@ -702,7 +702,7 @@ def test_reference_url_same_engine_and_stale_request(historical_published_viewer
     driver = _driver()
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&slots_tab-unified=dynamo%2Cdynamo%400.7.18%2C&cmp_tab-unified=dynamo%2Cdynamo%400.7.18")
-        _ready(driver,"tab-unified",reference=False)
+        _ready(driver,"tab-unified")
         selected = driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified')).selected")
         assert selected == ["dynamo","dynamo@0.7.18"]
         assert "0.7.18" in driver.find_element("css selector","[data-slot-capture='1']").get_attribute("value")

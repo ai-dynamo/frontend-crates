@@ -920,7 +920,6 @@ pub fn snapshots_cached(
 
 pub fn projection(catalog: &Value) -> Result<Value> {
     let keys = [
-        "peer_availability",
         "selection_policy",
         "unavailable_categories",
         "implementations",

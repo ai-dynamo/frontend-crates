@@ -130,13 +130,9 @@ def _driver():
     return driver
 
 
-def _ready(driver, tab, *, reference=True):
+def _ready(driver, tab):
     # Race tests inspect the current matrix while an obsolete read is held.
     settle(driver, tab, history_ready=True, idle=False)
-    if reference:
-        # These retained tests exercise the detailed reference surface. The
-        # comparison matrix has its own default-state and interaction tests.
-        driver.execute_script("const details = document.querySelector('.legacy-report-details'); if (details && !details.open) details.querySelector('summary').click()")
 
 
 def _choose_engine(driver, slot: int, engine: str, *, programmatic=False):
@@ -167,8 +163,8 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         assert driver.title == 'Dynamo Parser Conformance Table'
         assert driver.find_element('css selector', '#viewer > h1').text.startswith('Parser Conformance')
         assert len(driver.find_element('css selector', '.source-commit').text) == 12
-        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-parity-table] td.cell")
-        family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified table[data-parity-table] td.model")}
+        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified table[data-comparison-table] .matrix-cell")
+        family_labels = {item.text for item in driver.find_elements("css selector", "#tab-unified .comparison-matrix tbody tr > th:first-child")}
         assert "deepseek_v4" in family_labels
         assert "deepseek_v3" not in family_labels
         assert "muse_glimmer" in family_labels
@@ -201,7 +197,7 @@ def test_browser_viewer_loads_default_slot_and_controls(published_viewer):
         driver.find_element("css selector", "[data-theme-toggle]").click()
         assert driver.find_element("tag name", "html").get_attribute("data-theme") == "dark"
         driver.find_element("css selector", "[data-transpose-toggle]").click()
-        cell = driver.find_element("css selector", "#tab-unified table[data-parity-table] td.cell[data-ttip-id]")
+        cell = driver.find_element("css selector", "#tab-unified table[data-comparison-table] .matrix-cell[data-ttip-id]")
         cell.click()
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-visible")))
         assert popup.text and "Golden output" in popup.text and 'Dynamo' in popup.text
@@ -238,15 +234,15 @@ def test_historical_reference_switch_recolors_matrix(historical_published_viewer
         select = driver.find_element('css selector', "[data-slot-capture='0']")
         def color_summary():
             return driver.execute_script("""
-                const counts = {equal: 0, different: 0, unavailable: 0};
-                for (const cell of document.querySelectorAll('#tab-unified table[data-parity-table] td.cell')) {
-                  if (cell.classList.contains('cmp-eq')) counts.equal++;
-                  if (cell.classList.contains('cmp-leak')) counts.different++;
-                  if (cell.classList.contains('cmp-na')) counts.unavailable++;
+                const counts = {};
+                for (const segment of document.querySelectorAll('#tab-unified [data-comparison-table] .matrix-status')) {
+                  const status = [...segment.classList].find(name => name.startsWith('status-'));
+                  counts[status] = (counts[status] || 0) + 1;
                 }
                 return counts;
             """)
         newest_reference = color_summary()
+        assert newest_reference, 'the comparison matrix has no status segments'
         Select(select).select_by_value('dynamo@0.6.1')
         _ready(driver, 'tab-unified')
         older_reference = color_summary()
@@ -325,7 +321,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
         assert command_details.is_displayed()
         assert provenance["command"] in command_details.text
         assert provenance["output"] in command_details.text
-        table = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-parity-table]")
+        table = driver.find_element(By.CSS_SELECTOR, "#tab-unified table[data-comparison-table]")
         command_layout = driver.execute_script("""
           const command = arguments[0], table = arguments[1];
           const style = getComputedStyle(command);
@@ -429,7 +425,7 @@ def test_published_viewer_loads_resolved_json_without_yaml_histories(historical_
             "dynamo", "dynamo_v1@10.0.7", "dynamo_v1_jail@10.0.7"]
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         WebDriverWait(driver, 10).until(lambda page: page.execute_script("return document.body.classList.contains('transpose-mode')"))
-        cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-parity-table] td.cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
+        cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified table[data-comparison-table] .matrix-cell[data-ttip-id]')].find(cell => cell.offsetWidth && cell.offsetHeight);")
         assert cell is not None
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
@@ -459,7 +455,7 @@ def test_browser_viewer_resolves_nested_http_prefix_and_legacy_empty_reference(p
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": ["dynamo"]}
         assert not any(path.endswith("viewer-catalog.json") for path in requests)
         assert driver.current_url.startswith(f"http://127.0.0.1:{server.server_port}/nested/")
-        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified td.cell.cmp-eq, #tab-unified td.cell.cmp-leak")
+        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified .matrix-cell .status-pass, #tab-unified .matrix-cell .status-leak")
         driver.refresh()
         _ready(driver, "tab-unified")
         assert driver.execute_script("return window.__conformanceController.selection(document.getElementById('tab-unified'))") == {"reference": None, "selected": ["dynamo"]}
@@ -509,71 +505,35 @@ def test_same_engine_slots_none_geometry_duplicate_prevention_and_reset(historic
 
 
 def test_empty_slot_and_delayed_case_hints(published_viewer):
-    server, _requests = _server(root=published_viewer)
+    server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified&transpose=0")
-        _ready(driver, "tab-unified")
-        none_slot = driver.find_element(By.CSS_SELECTOR, "#tab-unified .capture-slot:nth-child(2)")
-        assert none_slot.get_attribute("data-engine") == "none"
-        assert not none_slot.find_elements(By.CSS_SELECTOR, "[data-slot-capture]")
-        assert none_slot.find_element(By.CSS_SELECTOR, "[data-slot-engine]").text == "None"
-
-        group = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-group .col-toggle")
-        assert group.get_attribute("aria-label") == "Collapse TC Single call column"
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical=0")
+        _ready(driver, 'tab-unified')
+        none_slot = driver.find_element(By.CSS_SELECTOR, '.capture-slot:nth-child(2)')
+        assert none_slot.get_attribute('data-engine') == 'none'
+        assert not none_slot.find_elements(By.CSS_SELECTOR, '[data-slot-capture]')
+        header = driver.find_element(By.CSS_SELECTOR, '.matrix-case-heading[aria-label="UNIFIED.1-tool_only"]')
+        label = header.find_element(By.CSS_SELECTOR, '[data-hover-hint]')
+        full = driver.execute_script('return window.__conformanceTooltipModel(arguments[0]).popupCase.label', header)
         driver.execute_script("""
-          const element = arguments[0];
-          element.__tooltipShownAfter = null;
-          element.addEventListener('pointerenter', () => {
-            const started = performance.now();
-            const observer = new MutationObserver(() => {
-              if (element._ttip.classList.contains('ttip-visible')) {
-                element.__tooltipShownAfter = performance.now() - started;
-                observer.disconnect();
-              }
-            });
-            observer.observe(element._ttip, {attributes: true, attributeFilter: ['class']});
-          }, {once: true});
-        """, group)
-        ActionChains(driver).move_to_element(group).perform()
-        WebDriverWait(driver, 3).until(lambda page: page.execute_script(
-            "return arguments[0]._ttip.classList.contains('ttip-visible')", group))
-        shown_after = driver.execute_script("return arguments[0].__tooltipShownAfter", group)
-        assert shown_after >= 1000, f"column tooltip appeared after {shown_after} ms"
-
-        # The rich group popup can cover the next header. Finish that hover
-        # transaction before measuring the independent native case hint.
-        ActionChains(driver).move_to_element(driver.find_element(By.CSS_SELECTOR, '#viewer > h1')).perform()
-        WebDriverWait(driver, 3).until(lambda page: page.execute_script(
-            "return !arguments[0]._ttip.classList.contains('ttip-visible')", group))
-        case_label = driver.find_element(By.CSS_SELECTOR, "#tab-unified th.case-sub a[aria-label='UNIFIED.1-tool_only']")
-        full_label = case_label.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent")
-        assert full_label.startswith("1-")
-        driver.execute_script("""
-          const element = arguments[0];
-          element.__hintShownAfter = null;
-          element.addEventListener('pointerenter', () => {
-            const started = document.timeline.currentTime;
-            const check = () => {
-              if (getComputedStyle(element, '::after').visibility === 'visible') {
-                element.__hintShownAfter = document.timeline.currentTime - started;
-              } else requestAnimationFrame(check);
-            };
-            requestAnimationFrame(check);
-          }, {once: true});
-        """, case_label)
-        ActionChains(driver).move_to_element(case_label).perform()
-        WebDriverWait(driver, 2).until(lambda page: page.execute_script(
-            "return arguments[0].__hintShownAfter !== null", case_label))
-        shown_after = driver.execute_script("return arguments[0].__hintShownAfter", case_label)
-        assert driver.execute_script("return getComputedStyle(arguments[0], '::after').transitionDelay", case_label) == "0.65s, 0.65s"
-        assert shown_after >= 650, f"case hint appeared after {shown_after} ms"
-        hint = driver.execute_script("return getComputedStyle(arguments[0], '::after').content", case_label)
-        assert "Click to show" in hint and full_label in hint
-        assert not driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible")
+            arguments[0].addEventListener('pointerenter', event => {
+              const started=document.timeline.currentTime;
+              const check=()=>{
+                if(getComputedStyle(event.target,'::after').opacity==='1') event.target.hintDelay=document.timeline.currentTime-started;
+                else requestAnimationFrame(check);
+              };
+              requestAnimationFrame(check);
+            }, {once:true});
+        """, label)
+        ActionChains(driver).move_to_element(label).perform()
+        WebDriverWait(driver, 5).until(lambda page: page.execute_script('return arguments[0].hintDelay >= 650', label))
+        assert full in driver.execute_script("return getComputedStyle(arguments[0],'::after').content", label)
+        assert not driver.find_elements(By.CSS_SELECTOR, '.ttip-visible')
     finally:
         driver.quit()
         server.shutdown()
+        server.server_close()
 
 
 def test_delayed_previous_capture_cannot_repaint_current_matrix(historical_published_viewer):
@@ -615,10 +575,10 @@ def test_resource_failures_remain_transport_errors_and_retry(kind, transport_pub
         assert not driver.execute_script("return Boolean(window.__conformanceModel)")
         assert driver.find_element("css selector", "#tab-unified .capture-slots").is_displayed()
         assert driver.find_element("css selector", "#tab-unified [data-slot-open='0']").is_displayed()
-        assert not driver.find_element("css selector", "#tab-unified table[data-parity-table]").is_displayed()
+        assert not driver.find_elements("css selector", "#tab-unified table[data-comparison-table]")
         error.find_element("tag name", "button").click()
         _ready(driver, "tab-unified")
-        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified td.cell")
+        assert driver.execute_script("return Boolean(document.querySelector(arguments[0]))", "#tab-unified .matrix-cell")
     finally:
         driver.quit()
         server.shutdown()
@@ -638,7 +598,7 @@ def test_unified_controls_render_before_fixtures_and_detailed_view_stays_on_unif
             "css selector", "#tab-unified .capture-slot")] == ['dynamo', 'none', 'none']
         assert driver.find_element("css selector", "#tab-unified .capture-slots").is_displayed()
         assert driver.find_element("css selector", "#tab-unified [data-slot-open='0']").is_displayed()
-        assert not driver.find_element("css selector", "#tab-unified [data-parity-table]").is_displayed()
+        assert not driver.find_elements("css selector", "#tab-unified [data-comparison-table]")
         release.set()
         _ready(driver, "tab-unified")
         driver.find_element("css selector", "[data-view-detailed]").click()
@@ -719,7 +679,7 @@ def test_source_checkout_yaml_catalog_without_generated_snapshots(current_source
         assert driver.find_element("id", "viewer").get_attribute("data-catalog-revision") == catalog["revision"]
         assert driver.find_element("css selector", "#tab-unified [data-slot-capture='0']").get_attribute("value") == "dynamo"
         assert driver.execute_script("return window.__conformanceModel.rows.filter(row => !row.section).map(row => row.family)") == sorted(latest["native_unified_families"])
-        assert driver.find_element("css selector", "#tab-unified table[data-parity-table]:not([data-transpose-table])").is_displayed()
+        assert driver.find_element("css selector", "#tab-unified table[data-comparison-table]").is_displayed()
         audit = driver.execute_script("return window.sourceCheckoutWorkerAudit")
         assert audit["native"] and any(url.endswith("/conformance/viewer/development_worker.js") for url in audit["urls"])
         assert audit["yamlSent"] > 0 and audit["yamlReplies"] == audit["yamlSent"] and audit["snapshotSent"] == 0
@@ -745,15 +705,14 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&view=details&transpose={int(vertical)}")
         _ready(driver, "tab-unified")
-        table_selector = "table[data-parity-table]:not([data-transpose-table])"
-        cell = driver.find_element("css selector", f"#tab-unified {table_selector} td.cell[data-ttip-id]")
+        table_selector = "table[data-comparison-table]"
+        cell = driver.find_element("css selector", f"#tab-unified {table_selector} .matrix-cell[data-ttip-id]")
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
         driver.execute_script("arguments[0].style.width='640px'; arguments[0].style.height='320px';", popup)
         popup_scroll_before = driver.execute_script("arguments[0].scrollTop=100; arguments[0].scrollLeft=40; return [arguments[0].scrollTop, arguments[0].scrollLeft]", popup)
         assert popup_scroll_before[0] > 0
-        case_id = cell.get_attribute("data-case-id")
-        family = cell.get_attribute("data-family")
+        identity = driver.execute_script("const c=window.__conformanceCellModel(arguments[0]); return [c.case_id,c.family]", cell)
         _choose_engine(driver, 1, 'vllm')
         assert started.wait(20)
         scroll_before = None
@@ -787,12 +746,15 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
 
         assert_retained("loading")
         filter_key = driver.execute_script("""
-            const ownGroup = arguments[0].dataset.colHideGroup;
-            const button = [...document.querySelectorAll('[data-col-toggle]')].find(node => node.dataset.colToggle !== ownGroup);
+            const cell = window.__conformanceCellModel(arguments[0]);
+            const ownGroup = window.__conformanceModel.columns.find(column => column.sub === cell.sub).group_key;
+            const button = [...document.querySelectorAll('[data-category-options] [data-group]')].find(node => node.dataset.group !== ownGroup);
             button.click();
-            return button.dataset.colToggle;
+            return button.dataset.group;
         """, cell)
-        pressed = driver.find_element("css selector", f'[data-col-toggle="{filter_key}"]').get_attribute("aria-pressed")
+        popup = driver.find_element("css selector", ".ttip-pinned")
+        cell = driver.execute_script("return [...document.querySelectorAll('.matrix-cell')].find(cell => cell._ttip === arguments[0]);", popup)
+        pressed = driver.find_element("css selector", f'[data-category-options] [data-group="{filter_key}"]').get_attribute("aria-pressed")
         scroll_before = driver.execute_script("window.scrollTo(120, 120); return [window.scrollX, window.scrollY]")
         assert any(value > 0 for value in scroll_before), "retention must be checked away from the scroll origin"
         assert_retained("loading")
@@ -803,14 +765,13 @@ def test_selection_loading_and_failure_retain_results_and_popup(transport_publis
         driver.execute_script("arguments[0].click()", driver.find_element("css selector", "#tab-unified .load-status button"))
         _ready(driver, "tab-unified")
         restored = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
-        restored_cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified td.cell')].find(cell => cell._ttip === arguments[0]);", restored)
-        assert restored_cell.get_attribute("data-case-id") == case_id
-        assert restored_cell.get_attribute("data-family") == family
+        restored_cell = driver.execute_script("return [...document.querySelectorAll('#tab-unified .matrix-cell')].find(cell => cell._ttip === arguments[0]);", restored)
+        assert driver.execute_script("const c=window.__conformanceCellModel(arguments[0]); return [c.case_id,c.family]", restored_cell) == identity
         assert driver.execute_script("return [arguments[0].scrollTop, arguments[0].scrollLeft]", restored) == popup_scroll_before
         assert restored.value_of_css_property("width") == "640px"
         assert restored.value_of_css_property("height") == "320px"
         assert driver.execute_script("return window.__conformanceModel.id") == "tab-unified"
-        assert driver.find_element("css selector", f'[data-col-toggle="{filter_key}"]').get_attribute("aria-pressed") == pressed
+        assert driver.find_element("css selector", f'[data-category-options] [data-group="{filter_key}"]').get_attribute("aria-pressed") == pressed
         assert driver.execute_script("return document.body.classList.contains('transpose-mode')") == vertical
         assert driver.find_element("css selector", "[data-view-detailed]").get_property("checked") is True
         assert driver.execute_script("return document.body.classList.contains('view-details')")
@@ -908,7 +869,7 @@ def test_stale_selection_completion_keeps_latest_loading_notice(published_viewer
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&view=details")
         _ready(driver, "tab-unified")
-        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
         driver.execute_script("""
             const loader = window.__conformanceLoader;
             const original = loader.build;
@@ -997,7 +958,7 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result(pu
             assert all(key in shown for key in selected)
             missing = driver.execute_script("return window.__conformanceModel.rows.filter(row=>!row.section).flatMap(row=>Object.entries(row.cells).flatMap(([sub,cell])=>arguments[0].filter(key=>!Object.hasOwn(cell.cmp || {},key)).map(key=>[row.family,sub,key])))", selected)
             assert not missing, f"selected comparison keys missing from matrix cells: {missing[:12]}"
-            cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+            cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
             driver.execute_script("window.__buildTooltip(arguments[0]);", cell)
             rendered = driver.execute_script("return [...arguments[0].querySelectorAll('.ttip [data-cand]')].filter(node=>!node.classList.contains('col-hidden')).map(node=>node.dataset.cand)", cell)
             assert all(key in rendered for key in selected)
@@ -1017,8 +978,8 @@ def test_rapid_compare_selections_restore_url_and_ignore_late_same_tab_result(pu
 
 
 @pytest.mark.parametrize("tab,transpose,selector", [
-    ("tab-unified", False, "th.case-sub[data-ttip-id]"),
-    ("tab-unified", True, "th.case-sub[data-ttip-id]"),
+    ("tab-unified", False, "th.matrix-case-heading[data-ttip-id]"),
+    ("tab-unified", True, "th.matrix-case-heading[data-ttip-id]"),
 ])
 def test_grammar_header_pin_survives_asynchronous_model_refresh(tab, transpose, selector, published_viewer):
     server, _requests = _server(root=published_viewer)
@@ -1029,12 +990,7 @@ def test_grammar_header_pin_survives_asynchronous_model_refresh(tab, transpose, 
         popup_key = driver.execute_script("""
             const panel = document.getElementById(arguments[0]);
             const headers = [...panel.querySelectorAll(arguments[1])];
-            let header = headers.find(node => node.offsetWidth > 20 && node.offsetHeight > 10);
-            if (!header) {
-                const key = headers[0].dataset.colHideGroup || headers[0].closest('[data-col-hide-group]').dataset.colHideGroup;
-                [...panel.querySelectorAll('[data-col-toggle]')].find(button => button.dataset.colToggle === key).click();
-                header = headers.find(node => node.offsetWidth > 20 && node.offsetHeight > 10);
-            }
+            const header = headers.find(node => node.offsetWidth > 20 && node.offsetHeight > 10);
             if (!header) throw new Error('No interactable grammar header');
             header.scrollIntoView();
             window.__buildTooltip(header);
@@ -1067,7 +1023,7 @@ def test_reset_discards_popup_pin_during_retained_selection_load(published_viewe
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&view=details&transpose=0")
         _ready(driver, "tab-unified")
-        cell = driver.find_element("css selector", "#tab-unified td.cell[data-ttip-id]")
+        cell = driver.find_element("css selector", "#tab-unified .matrix-cell[data-ttip-id]")
         driver.execute_script("window.__buildTooltip(arguments[0]); arguments[0].dispatchEvent(new PointerEvent('pointerdown', {bubbles:true, pointerType:'touch'})); arguments[0].click();", cell)
         popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located(("css selector", ".ttip-pinned")))
         driver.execute_script("arguments[0].style.width='640px'; arguments[0].style.height='320px';", popup)
@@ -1161,8 +1117,8 @@ def test_legacy_column_selection_survives_async_mount_and_reload(columns, publis
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&base_tab-unified=&base_tab-reasoning-batch=&cols={columns}&transpose=0')
         _ready(driver, 'tab-unified')
-        buttons = driver.find_elements('css selector', '#tab-unified [data-col-toggle]')
-        assert all((button.get_attribute('aria-pressed') == 'true') == (button.get_attribute('data-col-toggle') == 'model') for button in buttons) if columns == 'model' else all(button.get_attribute('aria-pressed') == 'true' for button in buttons)
+        buttons = driver.find_elements('css selector', '[data-category-options] [data-group]')
+        assert buttons and all(button.get_attribute('aria-pressed') == 'true' for button in buttons)
         assert 'cols' not in dict(parse_qsl(urlsplit(driver.current_url).query))
         driver.refresh()
         _ready(driver, 'tab-unified')
@@ -1171,22 +1127,6 @@ def test_legacy_column_selection_survives_async_mount_and_reload(columns, publis
         server.shutdown()
 
 
-def test_unified_column_toggle_preserves_hide_precedence_and_reload(published_viewer):
-    server, _requests = _server(root=published_viewer)
-    driver = _driver()
-    try:
-        driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&base_tab-unified=&base_tab-reasoning-batch=&base_tab-reasoning-stream=&hide=batch_core&show=batch_core,stream_chunk_boundaries&transpose=0')
-        _ready(driver, 'tab-unified')
-        driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').click()
-        query = dict(parse_qsl(urlsplit(driver.current_url).query))
-        assert 'batch_core' not in query.get('hide', '').split(',')
-        assert driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').get_attribute('aria-pressed') == 'false'
-        driver.refresh()
-        _ready(driver, 'tab-unified')
-        assert driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').get_attribute('aria-pressed') == 'false'
-    finally:
-        driver.quit()
-        server.shutdown()
 
 
 @pytest.mark.parametrize('columns', ['', 'obsolete_unknown'])
@@ -1196,25 +1136,35 @@ def test_empty_or_unknown_legacy_columns_keep_defaults(columns, published_viewer
     try:
         driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&base_tab-unified=&cols={columns}&transpose=0')
         _ready(driver, 'tab-unified')
-        assert all(button.get_attribute('aria-pressed') == 'true' for button in driver.find_elements('css selector', '#tab-unified [data-col-toggle]'))
+        buttons = driver.find_elements('css selector', '[data-category-options] [data-group]')
+        assert buttons and all(button.get_attribute('aria-pressed') == 'true' for button in buttons)
     finally:
         driver.quit()
         server.shutdown()
 
 
-def test_collapsing_last_legacy_column_restores_no_visible_columns_on_reload(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_disabling_all_categories_restores_empty_matrix_on_reload(published_viewer):
+    server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.get(f'http://127.0.0.1:{server.server_port}/?tab=tab-unified&base_tab-unified=&cols=model&transpose=0')
+        driver.get(f'http://127.0.0.1:{server.server_port}/')
         _ready(driver, 'tab-unified')
-        driver.find_element('css selector', '#tab-unified [data-col-toggle=model]').click()
+        driver.find_element('css selector', '.comparison-categories summary').click()
+        for button in driver.find_elements('css selector', '[data-category-options] [data-group]'):
+            button.click()
+        assert driver.execute_script('return window.__conformanceComparison.counts.dynamo.total') == 0
         driver.refresh()
         _ready(driver, 'tab-unified')
-        assert all(button.get_attribute('aria-pressed') == 'false' for button in driver.find_elements('css selector', '#tab-unified [data-col-toggle]'))
+        assert not driver.find_elements('css selector', '.matrix-cell')
+        buttons = driver.find_elements('css selector', '[data-category-options] [data-group]')
+        assert buttons and all(button.get_attribute('aria-pressed') == 'false' for button in buttons)
+        driver.find_element('css selector', '.comparison-categories summary').click()
+        buttons[0].click()
+        assert driver.execute_script('return window.__conformanceComparison.counts.dynamo.total') > 0
     finally:
         driver.quit()
         server.shutdown()
+        server.server_close()
 
 
 def test_unified_slots_migrate_legacy_comparison_url_and_fit_mobile(historical_published_viewer):
@@ -1347,63 +1297,34 @@ def test_primary_v1_deep_link_preserves_available_capture(stale_capture, histori
         server.shutdown()
 
 
-def test_report_details_keep_legend_below_chart_and_generation_last(published_viewer):
-    server, _requests = _server(root=published_viewer)
+def test_detailed_keeps_legend_below_matrix_and_case_descriptions_last(published_viewer):
+    server, _ = _server(root=published_viewer)
     driver = _driver()
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
-        _ready(driver, "tab-unified")
-        command = "python3 /mnt/sda/keivenc/frontend-crates/artifacts/integrate_parallel_publication.py --candidate /mnt/sda/keivenc/frontend-crates/artifacts/parallel-publication-candidate-20261017 --output /home/keivenc/dev/frontend-crates/frontend-crates__403-resolved-json__publication-preview"
-        driver.execute_script("window.ConformanceView.updateGeneration(document.getElementById('viewer'), arguments[0])", {
-            "generated_on": "2026-10-17", "generated_revision": "a" * 40, "revision": "b" * 40,
-            "command": command,
-            "output": "/home/keivenc/dev/frontend-crates/frontend-crates__403-resolved-json__publication-preview",
-        })
-        generated = driver.find_element("css selector", ".generated")
-        assert generated.text == f"Generated on 2026-10-17 on commit {'a' * 12} (source links use commit {'b' * 12})"
-        assert generated.find_elements(By.TAG_NAME, "a")[0].get_attribute("href").endswith("a" * 40)
-        assert generated.find_elements(By.TAG_NAME, "a")[1].get_attribute("href").endswith("b" * 40)
-        details = driver.find_element("css selector", ".generated-command")
-        assert not details.is_displayed()
-        driver.find_element("css selector", "[data-view-detailed]").click()
-        assert details.is_displayed()
+        driver.get(f'http://127.0.0.1:{server.server_port}/')
+        _ready(driver, 'tab-unified')
+        descriptions = driver.find_element('css selector', '.case-descriptions')
+        assert not descriptions.is_displayed()
+        driver.find_element('css selector', '[data-view-detailed]').click()
+        assert descriptions.is_displayed()
+        assert not driver.find_elements('css selector', '.capture-legend, .legacy-report-details, .generation-instructions')
         for vertical in (False, True):
-            toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
+            toggle = driver.find_element('css selector', '[data-transpose-toggle]')
             if toggle.is_selected() != vertical:
                 toggle.click()
-            geometry = driver.execute_script("""
-                const panel = document.getElementById('tab-unified');
-                const instructions = panel.querySelector('.generation-instructions');
-                const command = panel.querySelector('.generated-command');
-                const table = panel.querySelector('table[data-parity-table]:not([data-transpose-table])');
-                const legend = panel.querySelector('.capture-legend');
-                return {text: command.textContent, overflow: command.scrollWidth - command.clientWidth,
-                    inInstructions: instructions.contains(command), last: instructions.parentElement.lastElementChild === instructions,
-                    next: table.nextElementSibling === legend || (!table.nextElementSibling.offsetHeight && table.nextElementSibling.nextElementSibling === legend),
-                    gap: legend.getBoundingClientRect().top - table.getBoundingClientRect().bottom,
-                    glossary: panel.querySelector('.glossary td.sub').textContent,
-                    firstId: table.querySelector('th.case-sub a, th.trow-case a').getAttribute('aria-label'),
-                    firstNumber: table.querySelector('th.case-sub a .case-label-short, th.trow-case a .case-label-short').textContent};
-            """, vertical)
-            assert command in geometry["text"]
-            assert geometry["inInstructions"] and geometry["last"], geometry
-            assert geometry["overflow"] <= 1, geometry
-            assert geometry["next"] and 0 <= geometry["gap"] < 40, geometry
-            assert geometry["glossary"].startswith(f"{geometry['firstId']} ({geometry['firstNumber']})"), geometry
-            header = driver.find_element(By.CSS_SELECTOR, "th.case-sub a")
-            driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'center'})", header)
-            ActionChains(driver).move_to_element(header).perform()
-            WebDriverWait(driver, 5).until(lambda page: page.execute_script(
-                "return getComputedStyle(arguments[0], '::after').visibility === 'visible'", header))
-            hint = driver.execute_script("""
-                const box = arguments[0].getBoundingClientRect(), style = getComputedStyle(arguments[0], '::after');
-                const top = box.top + parseFloat(style.top), height = parseFloat(style.height);
-                return {top, bottom: top + height, anchorTop: box.top, anchorBottom: box.bottom};
-            """, header)
-            assert hint["bottom"] <= hint["anchorTop"] - 12 or hint["top"] >= hint["anchorBottom"] + 24, hint
+            assert driver.execute_script("""
+                const panel=document.getElementById('tab-unified'), table=panel.querySelector('[data-comparison-table]');
+                const legend=panel.querySelector('.comparison-legend'), descriptions=panel.querySelector('.case-descriptions');
+                return legend.getBoundingClientRect().top >= table.getBoundingClientRect().bottom
+                  && descriptions.getBoundingClientRect().top >= legend.getBoundingClientRect().bottom
+                  && descriptions===panel.lastElementChild;
+            """)
+            first = driver.find_element('css selector', '.matrix-case-heading')
+            assert first.get_attribute('aria-label') in descriptions.text
     finally:
         driver.quit()
         server.shutdown()
+        server.server_close()
 
 
 @pytest.mark.parametrize("vertical", [False, True])
@@ -1414,14 +1335,14 @@ def test_popup_heading_uses_case_id_before_description(published_viewer, vertica
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose={int(vertical)}")
         _ready(driver, "tab-unified")
-        table = "table[data-parity-table]:not([data-transpose-table])"
-        header = "th.case-sub[data-ttip-id]"
-        tool_header = driver.find_element(By.CSS_SELECTOR, f"#tab-unified {header}:has(a[aria-label='UNIFIED.1-tool_only'])")
-        number = tool_header.find_element(By.CSS_SELECTOR, '.case-label-short').get_attribute('textContent')
+        table = "table[data-comparison-table]"
+        header = "th.matrix-case-heading[data-ttip-id]"
+        tool_header = driver.find_element(By.CSS_SELECTOR, f"#tab-unified {header}[aria-label='UNIFIED.1-tool_only']")
+        number = driver.execute_script("const c=window.__conformanceTooltipModel(arguments[0]).popupCase; return c.compact_prefix+'-'+c.display_number", tool_header)
         tool_cell = driver.execute_script("""
             return [...document.querySelectorAll(arguments[0])].find(node =>
                 window.__conformanceCellModel(node)?.sub === 'tool_only' && node.getBoundingClientRect().height);
-        """, f"#tab-unified {table} td.cell[data-ttip-id]")
+        """, f"#tab-unified {table} .matrix-cell[data-ttip-id]")
         assert tool_cell is not None
         for cell in [tool_header, tool_cell]:
             driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'end'})", cell)
@@ -1509,7 +1430,7 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                 driver.execute_script("document.documentElement.setAttribute('data-theme', arguments[0])", theme)
                 geometry = driver.execute_script("""
                   const table = document.querySelector(arguments[0]);
-                  const boxes = [...table.querySelectorAll('td.cell .matrix-segments')].filter(box => box.getBoundingClientRect().width);
+                  const boxes = [...table.querySelectorAll('.matrix-cell .matrix-segments')].filter(box => box.getBoundingClientRect().width);
                   const first = boxes[0], rect = first.getBoundingClientRect();
                   const next = boxes.find(box => { const r = box.getBoundingClientRect(); return Math.abs(r.top - rect.top) < 1 && r.left > rect.right; });
                   const statuses = new Map([...table.querySelectorAll('.matrix-status')]
@@ -1524,7 +1445,7 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
                   return {gap: next.getBoundingClientRect().left - rect.right,
                     width: rect.width, radius: getComputedStyle(first).borderRadius,
                     segments: first.children.length, styles, knownStatuses: Object.keys(window.__conformanceSegmentLabels)};
-                """, "#tab-unified table[data-parity-table]")
+                """, "#tab-unified table[data-comparison-table]")
                 # The 30px content cell plus 1px side padding leaves 5px around a 27px box.
                 assert geometry["gap"] >= 5, geometry
                 assert geometry["width"] == 27
@@ -1550,66 +1471,33 @@ def test_selected_capture_family_union_and_box_spacing(identities, historical_pu
         server.server_close()
 
 
-def test_checkout_generation_guidance_and_unclipped_case_names(current_source_view):
-    server, _requests = _server(root=current_source_view, missing_paths=("/conformance/viewer-publication.json",))
+def test_checkout_case_hints_fit_both_orientations_and_themes(current_source_view):
+    server, _ = _server(root=current_source_view, missing_paths=('/conformance/viewer-publication.json',))
     driver = _driver()
-    driver.set_window_size(1500, 1100)
     try:
-        driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified&transpose=0")
-        _ready(driver, "tab-unified")
-        assert not driver.find_element(By.CSS_SELECTOR, ".generated").is_displayed()
-        instructions = driver.find_element(By.CSS_SELECTOR, ".generation-instructions")
-        assert not instructions.is_displayed()
-        driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
-        assert instructions.is_displayed()
-        assert "python3 conformance/utils/src/viewer_catalog.py" in instructions.text
-        assert "cargo build --locked --release -p conformance-publisher" in instructions.text
-        assert "--output" in instructions.text and "--revision" in instructions.text
-        assert "--include-history" in instructions.text
-        assert "index.html" in instructions.text and "JSON" in instructions.text
-        assert driver.find_element(By.CSS_SELECTOR, ".capture-legend > p").text == (
-            "Legend: One segment is an output capture from the parser when compared with golden output")
-        assert driver.find_element(By.CSS_SELECTOR, '[data-legend-status="pass"]').text == "Matches GOLDEN"
-        for theme in ("light", "dark"):
-            driver.execute_script("document.documentElement.dataset.theme = arguments[0]", theme)
+        driver.set_window_size(1500, 1100)
+        driver.get(f'http://127.0.0.1:{server.server_port}/?vertical=0')
+        _ready(driver, 'tab-unified')
+        assert not driver.find_element('css selector', '.generated').is_displayed()
+        for theme in ('light', 'dark'):
+            driver.execute_script('document.documentElement.dataset.theme=arguments[0]', theme)
             for vertical in (False, True):
-                toggle = driver.find_element(By.CSS_SELECTOR, "[data-transpose-toggle]")
+                toggle = driver.find_element('css selector', '[data-transpose-toggle]')
                 if toggle.is_selected() != vertical:
                     toggle.click()
-                selector = "th.case-sub a"
-                headers = driver.find_elements(By.CSS_SELECTOR, selector)
-                targets = [next(element for element in headers
-                                if element.get_attribute("aria-label") == name)
-                           for name in ("UNIFIED.1-tool_only", "UNIFIED.2-two_calls")]
-                if not vertical:
-                    driver.execute_script("document.querySelector('.legacy-report-details table[data-parity-table]').scrollIntoView({block:'start',inline:'start'})")
-                    rightmost = driver.execute_script("""
-                        return [...document.querySelectorAll('th.case-sub a')].filter(a => {
-                            const r = a.getBoundingClientRect();
-                            return r.width && r.left > 0 && r.right < innerWidth && r.top >= 0 && r.bottom < innerHeight;
-                        }).sort((a, b) => b.getBoundingClientRect().right - a.getBoundingClientRect().right)[0];
-                    """)
-                    assert rightmost is not None
-                    targets.insert(0, rightmost)
-                for index, header in enumerate(targets):
-                    if vertical or index > 0:
-                        driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'center'})", header)
-                    ActionChains(driver).move_to_element(header).perform()
-                    WebDriverWait(driver, 5).until(lambda page: page.execute_script(
-                        "return getComputedStyle(arguments[0], '::after').visibility === 'visible'", header))
-                    geometry = driver.execute_script("""
-                        const a = arguments[0], hint = getComputedStyle(a, '::after');
-                        const box = a.getBoundingClientRect();
-                        return {overflow: getComputedStyle(a.closest('th')).overflow,
-                            content: hint.content, width: parseFloat(hint.width),
-                            left: box.left + parseFloat(hint.left),
-                            viewport: innerWidth, anchorWidth: box.width};
-                    """, header)
-                    assert geometry["overflow"] == "visible", geometry
-                    assert header.find_element(By.CSS_SELECTOR, ".case-label-full").get_attribute("textContent") in geometry["content"]
-                    assert geometry["width"] > geometry["anchorWidth"], geometry
-                    assert geometry["left"] + geometry["width"] <= geometry["viewport"], geometry
-                    assert not driver.find_elements(By.CSS_SELECTOR, ".ttip.ttip-visible")
+                for case_id in ('UNIFIED.1-tool_only', 'UNIFIED.2-two_calls'):
+                    header = driver.find_element('css selector', f'.matrix-case-heading[aria-label="{case_id}"]')
+                    label = header.find_element('css selector', '[data-hover-hint]')
+                    driver.execute_script('arguments[0].scrollIntoView({block:"center",inline:"center"})', header)
+                    ActionChains(driver).move_to_element(label).perform()
+                    WebDriverWait(driver, 5).until(lambda page: page.execute_script("return getComputedStyle(arguments[0],'::after').opacity==='1'", label))
+                    assert driver.execute_script("""
+                        const r=arguments[0].getBoundingClientRect(), css=getComputedStyle(arguments[0],'::after');
+                        const x=r.left+parseFloat(css.left);
+                        return css.content.includes(arguments[0].getAttribute('data-hover-hint'))
+                          && x>=0 && x+parseFloat(css.width)<=document.documentElement.clientWidth;
+                    """, label)
+                    assert not driver.find_elements('css selector', '.ttip-visible')
     finally:
         driver.quit()
         server.shutdown()
@@ -1628,7 +1516,8 @@ def test_missing_sidecar_keeps_source_identity_without_inventing_generation(publ
         assert generated.get_attribute("textContent") == ""
         driver.find_element(By.CSS_SELECTOR, "[data-view-detailed]").click()
         assert not driver.find_elements(By.CSS_SELECTOR, ".generated-command")
-        assert driver.find_element(By.CSS_SELECTOR, ".generation-instructions").is_displayed()
+        assert not driver.find_elements(By.CSS_SELECTOR, ".generation-instructions")
+        driver.find_element(By.CSS_SELECTOR, ".matrix-cell[data-ttip-id]").click()
         source = driver.find_element(By.CSS_SELECTOR, "a[href*='github.com/ai-dynamo/frontend-crates/blob/']")
         assert f"/{metadata['revision']}/" in source.get_attribute('href')
     finally:
@@ -1639,7 +1528,7 @@ def test_missing_sidecar_keeps_source_identity_without_inventing_generation(publ
 
 def _popup_for_scenario(driver, family, scenario):
     cell = driver.execute_script("""
-        return [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(node => {
+        return [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
             const model = window.__conformanceCellModel(node);
             return model?.family === arguments[0] && model.sub === arguments[1]
                 && node.getBoundingClientRect().height > 0;
@@ -1743,7 +1632,7 @@ def test_shared_parent_displays_missing_child_capture(historical_published_viewe
         driver.get(f"http://127.0.0.1:{server.server_port}/?{query}")
         _ready(driver, 'tab-unified')
         result = driver.execute_script("""
-            const host = [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(node => {
+            const host = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const cell = window.__conformanceCellModel(node);
                 return cell?.family === 'gpt_oss' && cell.sub === 'tool_in_reason'
                     && node.getBoundingClientRect().height > 0;
@@ -1771,7 +1660,7 @@ def test_structural_response_config_escapes_hostile_rejection_text(published_vie
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, 'tab-unified')
         driver.execute_script("""
-            const host = [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(node => {
+            const host = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const cell = window.__conformanceCellModel(node);
                 return cell?.family === 'gpt_oss' && cell.sub === 'structured_response_after_reasoning'
                     && node.getBoundingClientRect().height > 0;
@@ -1795,51 +1684,6 @@ def test_structural_response_config_escapes_hostile_rejection_text(published_vie
         server.shutdown()
 
 
-@pytest.mark.parametrize("viewport_width", [2400, 2300])
-def test_popup_close_over_column_control_preserves_dismissal(published_viewer, viewport_width):
-    server, _requests = _server(root=published_viewer)
-    driver = _driver()
-    try:
-        driver.set_window_size(viewport_width, 1200)
-        driver.get(f"http://127.0.0.1:{server.server_port}/index.html?tab=tab-unified")
-        _ready(driver, "tab-unified")
-        cell = driver.find_element(By.CSS_SELECTOR, '#tab-unified td.cell[data-ttip-id]')
-        cell.click()
-        popup = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, 'body > .ttip-pinned')))
-        close = popup.find_element(By.CSS_SELECTOR, '.ttip-close')
-        geometry = driver.execute_script("""
-            const close = arguments[0].getBoundingClientRect(), x = close.x + close.width / 2;
-            const control = [...document.querySelectorAll('.tab-panel.active [data-col-toggle]')].find(node => {
-                const r = node.getBoundingClientRect(); return r.width && r.height && r.left + r.width / 2 >= x;
-            });
-            if (!control) return null;
-            return {control};
-        """, close)
-        assert geometry is not None
-        driver.set_window_size(viewport_width, 500)
-        driver.execute_script("""
-            const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
-            window.scrollBy(r.x + r.width / 2 - c.x - c.width / 2, r.top - 32);
-            window.__conformanceController.refreshPopupLayout();
-        """, close, geometry["control"])
-        WebDriverWait(driver, 10).until(lambda browser: browser.execute_script("""
-            const c = arguments[0].getBoundingClientRect(), r = arguments[1].getBoundingClientRect();
-            const x = c.x + c.width / 2, y = c.y + c.height / 2;
-            return r.left < x && x < r.right && r.top < y && y < r.bottom
-                && arguments[0].contains(document.elementFromPoint(x, y));
-        """, close, geometry["control"]))
-        close.click()
-        WebDriverWait(driver, 10).until(EC.invisibility_of_element(popup))
-        assert driver.execute_script("return getComputedStyle(document.body, '::after').content") == 'none'
-        assert 'ttip-open' not in cell.get_attribute('class').split()
-        WebDriverWait(driver, 10).until(lambda browser: browser.execute_script(
-            "return arguments[0]._ttip.classList.contains('ttip-visible')", geometry["control"]))
-        assert not popup.is_displayed()
-        assert 'ttip-open' not in cell.get_attribute('class').split()
-    finally:
-        driver.quit()
-        server.shutdown()
-        server.server_close()
 
 
 def test_numeric_popup_preserves_exact_argument_text(published_viewer):
@@ -1856,13 +1700,8 @@ def _assert_numeric_argument_popup(site):
     try:
         driver.get(f"http://127.0.0.1:{server.server_port}/?tab=tab-unified")
         _ready(driver, "tab-unified")
-        labels = driver.execute_script("""
-            return [...document.querySelectorAll('#tab-unified th.case-sub .case-label-full')]
-                .map(node => node.textContent).filter(label => ['7-17','7-19','7-18'].includes(label));
-        """)
-        assert labels == ['7-17', '7-19', '7-18']
         scenario = driver.execute_script("""
-            const cell = [...document.querySelectorAll('#tab-unified td.cell[data-ttip-id]')].find(node => {
+            const cell = [...document.querySelectorAll('#tab-unified .matrix-cell[data-ttip-id]')].find(node => {
                 const model = window.__conformanceCellModel(node);
                 return model?.family === 'qwen3' && model.variants?.some(leaf => leaf.sub === 'arg_numeric_15_round_down');
             });

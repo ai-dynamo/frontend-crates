@@ -707,10 +707,6 @@ def _record_snapshot_metadata(records: dict) -> dict:
               or record.get("observation", {}).get("value", {}).get("parser_path")
               or record.get("document", {}).get("parser_path") for record in records.values()}
     return {"codes": {case: _snapshot_observation_code(record) for case, record in records.items()},
-            "recorded_cases": sorted(case for case, record in records.items()
-                                     if _snapshot_observation_code(record) is None
-                                     and "unavailable" not in _selected_snapshot_observation(record)
-                                     and any(state in _selected_snapshot_observation(record) for state in ("value", "error", "chunks", "assembled"))),
             "has_results": any(any(state in record["observation"] for state in ("value", "error"))
                                for record in records.values()),
             "native": "unified" in routes and "split" not in routes,
@@ -771,28 +767,10 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
     return result
 
 
-def _peer_availability(snapshot_metadata: dict) -> dict:
-    families = {}
-    for (family, implementation), snapshots in snapshot_metadata["snapshots"].items():
-        if not implementation.startswith(("sglang_", "vllm_")):
-            continue
-        cases = families.setdefault(family, set())
-        for snapshot in snapshots:
-            for case_id in snapshot["recorded_cases"]:
-                scenario = unified_taxonomy.scenario_for_label(case_id.removeprefix("UNIFIED."), family=family)
-                if scenario is not None:
-                    cases.add(scenario)
-    return {"schema": 1, "families": {family: sorted(cases) for family, cases in sorted(families.items())}}
-
-
-def _selected_snapshot_observation(value: dict) -> dict:
-    recapture = value.get("document", {}).get("record_metadata", {}).get("verified_recapture")
-    return value["observation"] if recapture is None else recapture["result"].get("capture_observation", recapture["result"])
-
-
 def _snapshot_observation_code(value: dict) -> str | None:
-    unavailable = _selected_snapshot_observation(value).get("unavailable", {})
-    return unavailable.get("code") if isinstance(unavailable, dict) else None
+    recapture = value.get("document", {}).get("record_metadata", {}).get("verified_recapture")
+    observation = value["observation"] if recapture is None else recapture["result"].get("capture_observation", {})
+    return observation.get("unavailable", {}).get("code")
 
 
 def _snapshot_code_summary(codes: dict, active_cases: list[str]) -> dict:
@@ -1037,7 +1015,7 @@ def build_catalog(
             "unified_history": unified_shard,
             "candidates": list(unique_candidates.values()),
         },
-        "metadata": {**source_metadata, "peer_availability": _peer_availability(snapshot_metadata)},
+        "metadata": source_metadata,
     }
     if datasets:
         catalog["sources"]["history_datasets"] = datasets
@@ -1054,7 +1032,7 @@ def build_catalog(
 
 def unified_projection(catalog: dict) -> dict:
     """Keep browser initialization independent of legacy archives and metadata."""
-    keys = ["peer_availability", "selection_policy", "unavailable_categories", "implementations", "dynamo_v2_producer", "unified_display", "unified_capture_policy", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
+    keys = ["selection_policy", "unavailable_categories", "implementations", "dynamo_v2_producer", "unified_display", "unified_capture_policy", "markers", "unified", "unified_presentation", "folds", "unified_taxonomy", "unified_aliases", "unified_leak_markers", "documentation", "peer_versions"]
     metadata = {key: catalog["metadata"][key] for key in keys if key in catalog["metadata"]}
     legacy_candidate_identities = {}
     for candidate in catalog["sources"].get("candidates", []):

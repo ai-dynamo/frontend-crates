@@ -5,14 +5,13 @@ const compact = value => lower(value).replace(/[^\p{L}\p{N}]/gu, '');
 const numericAlias = /^(?:UNIFIED\.)?\d+-\d+$/i;
 const unprefix = value => value.replace(/^UNIFIED\./i, '');
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const prefixMatch = (value, fields) => {
-  const pattern = new RegExp('(?:^|[^\\p{L}\\p{N}])' + escapeRegex(lower(value)), 'u');
+const wordMatch = (value, fields, quoted = false) => {
+  const pattern = new RegExp('(?:^|[^\\p{L}\\p{N}])' + escapeRegex(lower(value))
+    + (quoted ? '(?=$|[^\\p{L}\\p{N}])' : ''), 'u');
   return fields.some(field => pattern.test(lower(field)));
 };
-const phraseMatch = (value, fields) => {
-  const pattern = new RegExp('(?:^|[^\\p{L}\\p{N}])' + escapeRegex(lower(value)) + '(?=$|[^\\p{L}\\p{N}])', 'u');
-  return fields.some(field => pattern.test(lower(field)));
-};
+const matchesFamily = (value, fields, quoted) => quoted ? wordMatch(value, fields, true)
+  : Boolean(compact(value)) && fields.some(field => compact(field).startsWith(compact(value)));
 
 export function searchContext(tab, families = []) {
   const aliases = new Map();
@@ -43,8 +42,7 @@ function tokenize(query) {
 export function compileSearch(query = '', context = {families: [], aliases: new Map()}) {
   const tokens = tokenize(query), replacements = [], notices = [];
   const families = context.families || [];
-  const familyMatch = (value, quoted) => families.some(family => quoted ? phraseMatch(value, [family])
-    : Boolean(compact(value)) && compact(family).startsWith(compact(value)));
+  const familyMatch = (value, quoted) => matchesFamily(value, families, quoted);
   let position = 0;
   const peek = () => tokens[position]?.value.toUpperCase();
   const isBoundary = value => !value || ['AND', 'OR', '(', ')', '-'].includes(value) || /^(PARSER|MODEL|COL|DESCRIPTION):$/.test(value);
@@ -117,8 +115,8 @@ export function compileSearch(query = '', context = {families: [], aliases: new 
       const identity = value => lower(unprefix(String(value))).replace(/^\d+-/, '');
       return values.some(value => identity(value) === identity(node.value));
     }
-    return node.quoted ? phraseMatch(node.value, values) : node.scope === 'parser'
-      ? Boolean(compact(node.value)) && values.some(value => compact(value).startsWith(compact(node.value))) : prefixMatch(node.value, values);
+    return node.scope === 'parser' ? matchesFamily(node.value, values, node.quoted)
+      : wordMatch(node.value, values, node.quoted);
   };
   const match = (fields, models = [], descriptions = []) => evaluate(ast, fields.filter(value => value != null && !numericAlias.test(value)), models, descriptions);
   match.ast = ast;
