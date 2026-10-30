@@ -19,6 +19,57 @@ def counts(driver):
     return driver.execute_script("return window.__conformanceComparison.counts")
 
 
+def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/")
+        _ready(driver, "tab-unified", reference=False)
+        before = counts(driver)
+        folded = driver.execute_script("""
+            const model=window.__conformanceModel;
+            const column=model.columns.find(column=>column.desc&&model.rows.some(row=>row.cells[column.sub]?.variants));
+            return {description:column.desc,id:column.case_id};
+        """)
+
+        def search(value):
+            field = driver.find_element("css selector", "[data-case-search]")
+            field.send_keys(Keys.CONTROL, "a", Keys.NULL)
+            field.send_keys(value or Keys.BACKSPACE)
+            return field
+
+        search('"dotted_name_minimal"')
+        family = driver.execute_script("return window.__conformanceComparison.view.rows[0].family")
+        query = f'{family} AND ("dotted_name_minimal" OR __missing_case__)'
+        field = search(query)
+        after = counts(driver)
+        assert 0 < after["dynamo"]["total"] < before["dynamo"]["total"]
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == [family]
+        assert field.get_attribute("aria-invalid") == "false"
+        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [query]
+        field.send_keys(" AND (")
+        assert field.get_attribute("aria-invalid") == "true"
+        assert driver.find_element("css selector", ".comparison-search-error").is_displayed()
+        assert counts(driver) == after
+        search(query)
+        driver.refresh()
+        _ready(driver, "tab-unified", reference=False)
+        assert counts(driver) == after
+        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == query
+        driver.find_element("css selector", "[data-transpose-toggle]").click()
+        assert counts(driver) == after
+        for value in [json.dumps(folded["description"], ensure_ascii=False), folded["id"]]:
+            search(value)
+            assert counts(driver)["dynamo"]["total"] > 0
+        search('"__no_such_test__"')
+        assert counts(driver)["dynamo"]["total"] == 0
+        search("")
+        assert counts(driver) == before
+        assert not driver.find_element("css selector", ".comparison-search-error").is_displayed()
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
 @pytest.mark.parametrize("vertical", [False, True])
 @pytest.mark.parametrize("stacked", [False, True])
 def test_detailed_toggle_shows_test_names_and_descriptions(published_viewer, vertical, stacked):

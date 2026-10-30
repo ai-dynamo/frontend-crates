@@ -13,17 +13,53 @@ const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
 
 export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
 
-export function comparisonView(tab, state) {
-  const query = text(state.search).trim();
+export function compileSearch(query = '') {
+  const tokens = query.match(/"(?:\\.|[^"\\])*"|[()]|[^\s()"]+|"/g) || [];
+  let position = 0;
+  const peek = () => tokens[position]?.toUpperCase();
+  const term = () => {
+    if (peek() === '(') {
+      position++;
+      const match = expression('OR');
+      if (peek() !== ')') throw new SyntaxError('Close the parenthesis.');
+      position++;
+      return match;
+    }
+    const token = tokens[position];
+    if (!token || ['AND', 'OR', ')'].includes(peek())) throw new SyntaxError('Enter a term after the operator or opening parenthesis.');
+    if (token === '"') throw new SyntaxError('Close the quoted phrase.');
+    position++;
+    if (token.startsWith('"')) {
+      const phrase = text(token.slice(1, -1).replace(/\\(["\\])/g, '$1'));
+      if (!phrase) throw new SyntaxError('Enter text inside the quotes.');
+      return fields => fields.some(field => field.includes(phrase));
+    }
+    const words = [token];
+    while (position < tokens.length && !['AND', 'OR', '(', ')'].includes(peek()) && !tokens[position].startsWith('"')) words.push(tokens[position++]);
+    const phrase = text(words.join(' ')), compact = text(words.join(''));
+    return fields => fields.some(field => field.includes(phrase) || field.includes(compact));
+  };
+  const expression = operator => {
+    const next = operator === 'OR' ? () => expression('AND') : term;
+    const matches = [next()];
+    while (peek() === operator) { position++; matches.push(next()); }
+    return fields => operator === 'OR' ? matches.some(match => match(fields)) : matches.every(match => match(fields));
+  };
+  if (!tokens.length) return () => true;
+  const match = expression('OR');
+  if (position < tokens.length) throw new SyntaxError('Separate terms or groups with AND or OR.');
+  return fields => match(fields.map(text));
+}
+
+export function comparisonView(tab, state, matches = compileSearch(state.search)) {
   const entries = [];
   const seen = new Set();
   for (const row of tab.rows) {
-    const modelMatch = !query || text([row.family, row.model_label].join(' ')).includes(query);
     for (const column of tab.columns) {
       if (!state.groups.has(column.group_key)) continue;
-      const columnMatch = text([column.label, column.case_id, column.desc].join(' ')).includes(query);
       const selected = leavesOf(row.cells[column.sub]).filter(leaf => isApplicableCell(leaf)
-        && (modelMatch || columnMatch || text([leaf.sub, leaf.case_id, leaf.tooltip?.description].join(' ')).includes(query)));
+        && matches([row.family, row.model_label, column.label, column.case_id, column.desc,
+          leaf.sub, leaf.case_id, leaf.tooltip?.description]));
       if (selected.length) entries.push({row, column, leaves: selected, countedLeaves: selected.filter(leaf => {
         const key = JSON.stringify([row.family, leaf.sub || leaf.case_id]);
         if (seen.has(key)) return false;
@@ -60,7 +96,9 @@ export function mountComparison(panel, controller) {
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
     + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
     + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div></div>'
-    + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"></div>'
+    + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
+    + ' title=\'Use AND, OR, quotes and parentheses: deepseek AND (call OR "tool use"). deep seek matches deepseek or "deep seek".\''
+    + ' aria-describedby="' + panel.id + '-search-error"><span class="comparison-search-error" id="' + panel.id + '-search-error" role="status" hidden></span></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-matrix-scroll"></div>'
     + '<div class="comparison-legend" aria-label="Outcome colors"></div>';
   panel.appendChild(ui);
@@ -72,6 +110,7 @@ export function mountComparison(panel, controller) {
   }
   panel.querySelector('.capture-slots').appendChild(toolbar);
   toolbar.querySelector('[data-case-search]').value = state.search;
+  let search, matches = compileSearch('');
   let tab;
   const persist = () => {
     const url = new URL(location.href);
@@ -82,6 +121,13 @@ export function mountComparison(panel, controller) {
   };
   function draw() {
     if (!tab) return;
+    if (search !== state.search) {
+      search = state.search;
+      const error = toolbar.querySelector('.comparison-search-error');
+      try { matches = compileSearch(search); error.hidden = true; }
+      catch (failure) { error.textContent = failure.message + ' Showing the last valid filter.'; error.hidden = false; }
+      toolbar.querySelector('[data-case-search]').setAttribute('aria-invalid', String(!error.hidden));
+    }
     const scroll = ui.querySelector('.comparison-matrix-scroll');
     const pin = controller.disposePanel(ui);
     const vertical = document.body.classList.contains('transpose-mode');
@@ -91,7 +137,7 @@ export function mountComparison(panel, controller) {
     toolbar.querySelectorAll('[data-focus]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.focus === state.focus)));
     let view;
     const notice = ui.querySelector('.comparison-notice');
-    try { view = comparisonView(tab,state); notice.hidden = true; }
+    try { view = comparisonView(tab,state,matches); notice.hidden = true; }
     catch (error) { notice.textContent = error.message; notice.hidden = false; view = {entries: [],rows: [],columns: []}; }
     const keys = panel._comparisonSelection.keys;
     toolbar.querySelector('.layout-control').hidden = keys.length < 2;
