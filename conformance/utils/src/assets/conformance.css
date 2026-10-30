@@ -435,6 +435,8 @@ td.cell, td.parser { position: relative; }
 :is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:hover,
 :is([data-parity-table], [data-transpose-table]) [data-ttip-wired]:focus-within { z-index: 2000; }
 .ttip {
+    /* Closed popups must not enlarge the page when restored under a sticky header. */
+    display: none;
     visibility: hidden;
     opacity: 0;
     position: absolute;
@@ -471,6 +473,7 @@ td.cell, td.parser { position: relative; }
        is already held back 750ms, so it does not also need to fade in. */
 }
 .ttip-visible {
+    display: block;
     visibility: visible;
     opacity: 1;
 }

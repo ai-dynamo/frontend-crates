@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { selectedCaptureOutcome } from './model.js';
-import { compileSearch, comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
+import { comparisonView, captureCounts, isProblemOutcome, statusLabels, verticalDefault } from './comparison.js';
 import { captureSegmentHtml } from './presentation.js';
 const cell = (id, status = 'pass', extra = {}) => ({ kind: 'cell', sub: id, case_id: id, family: 'family', status: 'ok',
   cmp: { golden: {sig: 1}, d: {sig: status === 'diverge' || status === 'documented' ? 2 : 1,
@@ -16,81 +16,40 @@ const columns = leaves.map(c => ({sub: c.sub, label: c.sub, desc: 'case ' + c.su
 const tab = {rows: [{family: 'family', model_label: 'Model', cells: Object.fromEntries(leaves.map(c => [c.sub, c]))}], columns,
   column_groups: [{key: 'core', label: 'Core'}]};
 const state = {groups: new Set(['core']), search: '', focus: 'all'};
-test('search expressions support precedence, groups, phrases and whitespace shorthand', () => {
-  for (const [query, fields, expected] of [
-    ['', [], true],
-    ['deepseek AND (call OR blah)', ['DeepSeek', 'tool call'], true],
-    ['deepseek AND (call OR blah)', ['llama', 'tool call'], false],
-    ['deepseek AND (call OR blah)', ['deepseek', 'reasoning'], false],
-    ['deepseek OR llama AND call', ['deepseek'], true],
-    ['deepseek OR llama AND call', ['llama'], false],
-    ['(deepseek OR llama) AND call', ['deepseek'], false],
-    ['deepseek and ((call or blah))', ['DeepSeek', 'blah'], true],
-    ['deep seek', ['deepseek'], true],
-    ['deep seek', ['deep seek'], true],
-    ['deep seek', ['deep', 'seek'], false],
-    ['deep seek AND call', ['deepseek', 'call'], true],
-    ['deep seek AND call', ['deepseek'], false],
-    ['"deep seek"', ['deepseek'], false],
-    ['"deep seek"', ['DEEP SEEK'], true],
-    ['"AND"', ['and'], true],
-    ['"call (tool)"', ['call (tool)'], true],
-    ['"say \\"hi\\""', ['say "hi"'], true],
-    ['[a].*', ['[a].*'], true],
-    ['[a].*', ['anything'], false],
-  ]) assert.equal(compileSearch(query)(fields), expected, query);
-  for (const query of ['"', '"unterminated', '""', '()', '(call', 'call)', 'AND call', 'call OR', 'call AND OR blah', 'call (blah)', '"call" blah']) {
-    assert.throws(() => compileSearch(query), SyntaxError, query);
-  }
-});
-test('boolean filters count only matching underlying cases across model and case fields', () => {
-  const a = cell('a', 'pass', {tooltip: {description: 'single call'}});
-  const b = cell('b', 'leak', {tooltip: {description: 'reasoning'}});
-  const folded = {...tab, columns: [{sub: 'fold', label: 'group', case_id: 'folded_id', desc: 'Union alternatives', group_key: 'core'}, {sub: 'a', group_key: 'core'}],
-    rows: [{family: 'deepseek', cells: {fold: {variants: [a,b]}, a}}, {family: 'llama', cells: {fold: {variants: [a,b]}, a}}]};
-  const view = comparisonView(folded, {...state, search: 'deep seek AND (call OR nowhere)'});
-  assert.deepEqual(view.rows.map(row => row.family), ['deepseek']);
-  assert.equal(captureCounts(view, 'd').total, 1);
-  assert.equal(captureCounts(view, 'd').pass, 1);
-  assert.equal(captureCounts(view, 'd').leak, 0);
-  for (const query of ['"union alternatives"', 'folded_id']) {
-    assert.equal(captureCounts(comparisonView(folded, {...state, search: query}), 'd').total, 4, query);
-  }
-});
-test('model scope excludes model mentions in descriptions and composes with boolean search', () => {
-  for (const [query, models, cases, expected] of [
-    ['beam', ['glm47'], ['Beam and GLM use schema-directed parsing'], true],
-    ['model:beam', ['glm47'], ['Beam and GLM use schema-directed parsing'], false],
-    ['model:beam', ['beam'], ['single call'], true],
-    ['MODEL:Beam AND call', ['beam'], ['single call'], true],
-    ['model:beam AND call', ['beam'], ['reasoning'], false],
-    ['(model:beam OR model:qwen) AND call', ['qwen3'], ['single call'], true],
-    ['model:deep seek', ['deepseek_v4'], [], true],
-    ['model:"deep seek"', ['deepseek_v4'], [], false],
-    ['model:"deep seek"', ['Deep Seek'], [], true],
-    ['"model:beam"', ['glm47'], ['model:beam'], true],
-  ]) assert.equal(compileSearch(query)([...models, ...cases], models), expected, query);
-  for (const query of ['model:', 'model: AND call', 'model:"', 'model:""', 'model:(beam OR qwen)']) {
-    assert.throws(() => compileSearch(query), SyntaxError, query);
-  }
-  const scoped = {...tab, rows: [
-    {family: 'beam', cells: {pass: cell('pass')}},
-    {family: 'glm47', cells: {pass: cell('pass', 'pass', {tooltip: {description: 'Beam and GLM'}})}},
+test('scoped search keeps family mentions in descriptions out of bare family queries', () => {
+  const a = cell('a', 'pass', {tooltip: {description: 'Beam and GLM single call'}});
+  const scoped = {...tab, columns: [{sub: 'a', label: 'TC Truncation', group_key: 'core'}], rows: [
+    {family: 'beam', cells: {a}}, {family: 'glm47', cells: {a}},
   ]};
-  const view = comparisonView(scoped, {...state, search: 'model:beam'});
-  assert.deepEqual(view.rows.map(row => row.family), ['beam']);
-  assert.equal(captureCounts(view, 'd').total, 1);
+  for (const query of ['beam', 'parser:beam', 'model:beam', 'beam (TC OR nowhere)']) {
+    const view = comparisonView(scoped, {...state, search: query});
+    assert.deepEqual(view.rows.map(row => row.family), ['beam'], query);
+    assert.equal(captureCounts(view, 'd').total, 1);
+  }
+  assert.equal(comparisonView(scoped, {...state, search: 'description:Beam'}).rows.length, 2);
+  assert.equal(comparisonView(scoped, {...state, search: 'TC Trun'}).rows.length, 2);
 });
-test('section headings select applicable cases across models unless model scope narrows them', () => {
-  const grouped = {...tab, column_groups: [{key: 'core', label: 'TC Truncation / recovery'}], rows: [
-    {family: 'beam', cells: {pass: cell('pass')}},
-    {family: 'glm47', cells: {pass: cell('pass')}},
-  ]};
-  const view = comparisonView(grouped, {...state, search: 'TC Trun'});
-  assert.deepEqual(view.rows.map(row => row.family), ['beam', 'glm47']);
-  assert.equal(captureCounts(view, 'd').total, 2);
-  assert.deepEqual(comparisonView(grouped, {...state, search: 'model:beam AND "TC Trun"'}).rows.map(row => row.family), ['beam']);
-  assert.equal(comparisonView(grouped, {...state, search: 'model:"TC Trun"'}).rows.length, 0);
+test('Boolean cross-axis union counts each applicable leaf once including folded overlaps', () => {
+  const a = cell('tc'), b = cell('other', 'leak');
+  const folded = {...tab, columns: [
+    {sub: 'fold', label: 'Grouped cases', group_key: 'core'},
+    {sub: 'tc', label: 'TC', group_key: 'core'},
+    {sub: 'other', label: 'Other', group_key: 'core'},
+  ], rows: ['beam','glm47'].map(family => ({family, cells: {fold: {variants: [a,b]}, tc: a, other: b}}))};
+  for (const focus of ['all', 'disagreements', 'problems']) {
+    const view = comparisonView(folded, {...state, focus, search: 'beam OR TC'});
+    assert.equal(captureCounts(view, 'd').total, 3);
+    assert.equal(captureCounts(view, 'd').leak, 1);
+    assert.deepEqual(view.rows.map(row => row.family), ['beam','glm47']);
+  }
+});
+test('column searches retain all families even when their matching cases are inapplicable', () => {
+  const a = cell('a'), na = cell('a', 'pass', {status: 'na'});
+  const sparse = {...tab, columns: [{sub: 'a', label: 'TC Truncation', group_key: 'core'}],
+    rows: [{family: 'beam', cells: {a}}, {family: 'glm47', cells: {a: na}}]};
+  const view = comparisonView(sparse, {...state, search: 'TC Trun'});
+  assert.equal(view.rows.length, 2);
+  assert.equal(captureCounts(view, 'd').total, 1);
 });
 test('Capture boxes stay empty and keep accessible outcome labels', () => {
   for (const status of Object.keys(statusLabels)) {
@@ -115,7 +74,7 @@ test('Problems focus includes mismatches, parser errors, and leaks only', () => 
 test('filters and focus use the same applicable leaf inventory', () => {
   assert.deepEqual(captureCounts(comparisonView(tab, {...state, focus: 'problems'}), 'd'), captureCounts(comparisonView(tab, state), 'd'));
   assert.equal(captureCounts(comparisonView(tab, {...state, search: 'Model'}), 'd').total, leaves.length);
-  assert.equal(captureCounts(comparisonView(tab, {...state, search: 'case leak'}), 'd').leak, 1);
+  assert.equal(captureCounts(comparisonView(tab, {...state, search: 'description:case description:leak'}), 'd').leak, 1);
   assert.equal(captureCounts(comparisonView(tab, {...state, groups: new Set()}), 'd').total, 0);
 });
 test('folding deduplicates underlying cases per family and skips inapplicable leaves', () => {

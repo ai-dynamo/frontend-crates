@@ -42,14 +42,14 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         search("TC Trun")
         assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == families
         assert 0 < counts(driver)["dynamo"]["total"] < before["dynamo"]["total"]
-        search('model:beam AND "TC Trun"')
+        search('model:beam AND TC Trun')
         assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
         assert counts(driver)["dynamo"]["total"] > 0
         search("beam")
         unscoped = counts(driver)
         search("model:beam")
         assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
-        assert 0 < counts(driver)["dynamo"]["total"] < unscoped["dynamo"]["total"]
+        assert counts(driver) == unscoped
         search('model:"beam" AND call')
         assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == ["beam"]
         assert counts(driver)["dynamo"]["total"] > 0
@@ -62,7 +62,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == [family]
         assert field.get_attribute("aria-invalid") == "false"
         assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [query]
-        field.send_keys(" AND (")
+        field.send_keys(" (")
         assert field.get_attribute("aria-invalid") == "true"
         assert driver.find_element("css selector", ".comparison-search-error").is_displayed()
         assert counts(driver) == after
@@ -73,7 +73,7 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == query
         driver.find_element("css selector", "[data-transpose-toggle]").click()
         assert counts(driver) == after
-        for value in [json.dumps(folded["description"], ensure_ascii=False), folded["id"]]:
+        for value in ["description:" + json.dumps(folded["description"], ensure_ascii=False), folded["id"]]:
             search(value)
             assert counts(driver)["dynamo"]["total"] > 0
         search('"__no_such_test__"')
@@ -81,6 +81,110 @@ def test_boolean_search_filters_cases_counts_and_restores_urls(published_viewer)
         search("")
         assert counts(driver) == before
         assert not driver.find_element("css selector", ".comparison-search-error").is_displayed()
+        field = search("beam (TC)")
+        field.send_keys(Keys.HOME, *([Keys.ARROW_RIGHT] * 6), "Trun ")
+        assert field.get_attribute("value") == "beam (Trun TC)"
+        assert driver.execute_script("return arguments[0].selectionStart", field) == len("beam (Trun ")
+        field = search("beam TC ")
+        field.send_keys(Keys.HOME, "-")
+        assert field.get_attribute("value") == "-beam TC "
+        assert driver.execute_script("return arguments[0].selectionStart", field) == 1
+        search("")
+        assert counts(driver) == before
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("stacked", [False, True])
+def test_search_axes_categories_and_numbered_share_links(published_viewer, vertical, stacked):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
+        _ready(driver, "tab-unified", reference=False)
+        _choose_engine(driver, 1, "sglang")
+        _ready(driver, "tab-unified", reference=False)
+        if stacked:
+            driver.find_element("css selector", "[data-layout='stacked']").click()
+        baseline = counts(driver)
+        families = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
+
+        def search(value):
+            field = driver.find_element("css selector", "[data-case-search]")
+            field.send_keys(Keys.CONTROL, "a", Keys.NULL)
+            field.send_keys(value or Keys.BACKSPACE)
+            assert field.get_attribute("aria-invalid") == "false", value
+            return field
+
+        for query in ["guided decoding", '"guided decoding"', "TC Trun", "TC OR guided"]:
+            search(query)
+            actual = driver.execute_script("""
+                const {view}=window.__conformanceComparison, model=window.__conformanceModel;
+                return {families:view.rows.map(row=>row.family),
+                  groups:[...document.querySelectorAll('.comparison-matrix [data-group]')].map(b=>b.dataset.group),
+                  expected:[...new Set(view.columns.map(c=>c.group_key))],
+                  placeholders:[...document.querySelectorAll('.comparison-matrix thead th')].filter(th=>th.textContent==='—').length};
+            """)
+            assert actual["families"] == families, query
+            assert actual["groups"] == actual["expected"], query
+            assert not actual["placeholders"], query
+            assert 0 < counts(driver)["dynamo"]["total"] < baseline["dynamo"]["total"]
+        for query in ["beam", "parser:beam", "beam (guided decoding OR TC)", "beam -col:TC", "deep seek TC"]:
+            search(query)
+            shown = driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)")
+            assert shown and all(family.startswith("deepseek" if query.startswith("deep seek") else "beam") for family in shown), query
+            assert counts(driver)["dynamo"]["total"] > 0, query
+        search("beam OR TC")
+        assert driver.execute_script("return window.__conformanceComparison.view.rows.map(row=>row.family)") == families
+
+        search("TC Trun")
+        before = counts(driver)
+        group = driver.execute_script("return window.__conformanceComparison.view.columns[0].group_key")
+        driver.set_window_size(480, 900)
+        driver.find_element("css selector", ".comparison-categories summary").click()
+        assert driver.execute_script("const r=document.querySelector('[data-category-options]').getBoundingClientRect(); return r.left>=0 && r.right<=innerWidth")
+        toggle = driver.find_element("css selector", f'[data-category-options] [data-group="{group}"]')
+        toggle.click()
+        assert counts(driver)["dynamo"]["total"] == 0
+        assert toggle.get_attribute("aria-pressed") == "false"
+        toggle.click()
+        assert counts(driver) == before
+        driver.find_element("css selector", ".comparison-categories summary").click()
+
+        driver.set_window_size(1200, 900)
+        search("")
+        case = driver.execute_script("""
+            const column=window.__conformanceModel.columns.find(c=>c.display_number>=10 && /^\\d+$/.test(c.compact_prefix));
+            return {alias:column.compact_prefix+'-'+column.display_number,sub:column.sub,id:column.case_id.replace(/^UNIFIED\\./,'')};
+        """)
+        field = search(case["alias"])
+        assert field.get_attribute("value") == case["alias"]
+        assert parse_qs(urlsplit(driver.current_url).query)["search_tab-unified"] == [case["id"]]
+        field.send_keys(Keys.ENTER)
+        assert field.get_attribute("value") == case["id"]
+        expected = counts(driver)
+        assert expected["dynamo"]["total"] > 0
+        shared_url = driver.current_url
+        field = search('"' + case["alias"] + '"')
+        field.send_keys(Keys.TAB)
+        assert field.get_attribute("value") == '"' + case["id"] + '"'
+        assert counts(driver) == expected
+        field = search("beam (TC OR nowhere)")
+        field.send_keys(Keys.HOME, *([Keys.ARROW_RIGHT] * 6), Keys.SHIFT, Keys.ARROW_RIGHT, Keys.ARROW_RIGHT, Keys.NULL, case["alias"])
+        assert field.get_attribute("value") == f'beam ({case["alias"]} OR nowhere)'
+        assert driver.execute_script("return arguments[0].selectionStart", field) == len("beam (") + len(case["alias"])
+        field.send_keys(Keys.ENTER)
+        assert field.get_attribute("value") == f'beam ({case["id"]} OR nowhere)'
+        driver.get(shared_url)
+        _ready(driver, "tab-unified", reference=False)
+        assert counts(driver) == expected
+        assert driver.find_element("css selector", "[data-case-search]").get_attribute("value") == case["id"]
+        search("999-999")
+        assert counts(driver)["dynamo"]["total"] == 0
+        assert "not numbered" in driver.find_element("css selector", ".comparison-search-error").text
+        search("")
+        assert counts(driver) == baseline
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
@@ -211,6 +315,20 @@ def test_matrix_columns_use_orientation_spacing(published_viewer, vertical, stac
                 assert geometry["header"] <= 100, geometry
             assert not driver.find_elements("css selector", ".matrix-summary")
             assert "Conformance counts" not in driver.find_element("css selector", ".comparison-matrix").text
+            for theme in ["light", "dark"]:
+                offsets = driver.execute_script("""
+                    document.documentElement.dataset.theme=arguments[0];
+                    return [...document.querySelectorAll('.comparison-matrix .filtered-cell')].map(cell=>{
+                        const range=document.createRange(); range.selectNodeContents(cell);
+                        const glyph=range.getBoundingClientRect(), box=cell.getBoundingClientRect(), css=getComputedStyle(cell);
+                        const left=box.left+parseFloat(css.borderLeftWidth)+parseFloat(css.paddingLeft);
+                        const right=box.right-parseFloat(css.borderRightWidth)-parseFloat(css.paddingRight);
+                        const top=box.top+parseFloat(css.borderTopWidth)+parseFloat(css.paddingTop);
+                        const bottom=box.bottom-parseFloat(css.borderBottomWidth)-parseFloat(css.paddingBottom);
+                        return {x:(glyph.left+glyph.right-left-right)/2,y:(glyph.top+glyph.bottom-top-bottom)/2};
+                    });
+                """, theme)
+                assert offsets and all(abs(offset["x"]) <= 1 and abs(offset["y"]) <= 1 for offset in offsets), offsets[:5]
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 
@@ -341,15 +459,18 @@ def test_requested_matrix_corrections(published_viewer, vertical, correction):
             key = button.get_attribute("data-group")
             before = counts(driver)
             button.send_keys(Keys.SPACE)
-            selector = f"[data-comparison-table] [data-group='{key}']"
+            assert not driver.find_elements("css selector", f"[data-comparison-table] [data-group='{key}']")
+            selector = f"[data-category-options] [data-group='{key}']"
             assert driver.find_element("css selector", selector).get_attribute("aria-pressed") == "false"
             reduced = counts(driver)
             assert reduced["dynamo"]["total"] < before["dynamo"]["total"]
             driver.refresh()
             _ready(driver, "tab-unified", reference=False)
             assert counts(driver) == reduced
+            driver.find_element("css selector", ".comparison-categories summary").click()
             driver.find_element("css selector", selector).send_keys(Keys.SPACE)
             assert counts(driver) == before
+            driver.find_element("css selector", ".comparison-categories summary").click()
             driver.set_window_size(1600, 500)
             driver.execute_script("document.querySelector('.comparison-matrix-scroll').scrollIntoView({block:'start'});window.scrollBy(0,200)")
             WebDriverWait(driver, 5).until(lambda d: d.execute_script("""
@@ -523,7 +644,7 @@ def test_matrix_keyboard_popup_and_reload(published_viewer, vertical, width):
         cell = driver.find_element("css selector", ".comparison-matrix .matrix-cell[data-ttip-id]")
         cell.send_keys(Keys.ENTER)
         popup = WebDriverWait(driver,10).until(lambda d: d.find_element("css selector", ".comparison-output.ttip-pinned"))
-        assert driver.execute_script("const r=arguments[0].getBoundingClientRect(); return Math.abs(r.left+r.width/2-innerWidth/2)<=1", popup)
+        assert driver.execute_script("const r=arguments[0].getBoundingClientRect(); return Math.abs(r.left+r.width/2-document.documentElement.clientWidth/2)<=1 && Math.abs(r.top+r.height/2-document.documentElement.clientHeight/2)<=1", popup)
         assert popup.find_elements("css selector", ".golden-out-cap, [data-cand=golden]")
         assert parse_qs(urlsplit(driver.current_url).query)["popup"]
         driver.refresh(); _ready(driver,"tab-unified",reference=False)
@@ -531,6 +652,43 @@ def test_matrix_keyboard_popup_and_reload(published_viewer, vertical, width):
         driver.find_element("tag name","body").send_keys(Keys.ESCAPE)
         assert not driver.find_elements("css selector", ".comparison-output.ttip-pinned")
         assert "popup" not in parse_qs(urlsplit(driver.current_url).query)
+    finally:
+        driver.quit(); server.shutdown(); server.server_close()
+
+
+@pytest.mark.parametrize("vertical", [False, True])
+@pytest.mark.parametrize("width", [2048, 480])
+def test_popup_centers_in_viewport_without_closed_schema_overflow(published_viewer, vertical, width):
+    server, _ = _server(root=published_viewer)
+    driver = _driver()
+    try:
+        driver.set_window_size(width, 1194)
+        driver.get(f"http://127.0.0.1:{server.server_port}/?vertical={int(vertical)}")
+        _ready(driver, "tab-unified", reference=False)
+        baseline = driver.execute_script("return document.documentElement.scrollWidth")
+        header = driver.execute_script("return [...document.querySelectorAll('.matrix-case-heading')].find(h=>h.getAttribute('aria-label')?.includes('arg_object_quoted_parameter_close'))")
+        header.click()
+        driver.find_element("tag name", "body").send_keys(Keys.ESCAPE)
+        assert driver.execute_script("return document.documentElement.scrollWidth") == baseline
+        cell = driver.execute_script("return [...document.querySelectorAll('.matrix-cell[data-ttip-id]')].find(c=>c.getAttribute('aria-label').startsWith('qwen3; 6-empty_args;'))")
+        cell.click()
+        popup = driver.find_element("css selector", ".comparison-output.ttip-pinned")
+
+        def centered():
+            return driver.execute_script("""
+                const r=arguments[0].getBoundingClientRect(),width=document.documentElement.clientWidth,height=document.documentElement.clientHeight;
+                return Math.abs(r.left+r.width/2-width/2)<=1 && Math.abs(r.top+r.height/2-height/2)<=1
+                  && r.left>=31 && r.right<=width-31 && r.top>=31 && r.bottom<=height-31;
+            """, popup)
+
+        assert centered()
+        assert driver.execute_script("return document.documentElement.scrollWidth") == baseline
+        driver.execute_script("window.scrollBy(0,200)")
+        WebDriverWait(driver, 5).until(lambda _: centered())
+        driver.set_window_size(width, 800)
+        WebDriverWait(driver, 5).until(lambda _: centered())
+        driver.find_element("tag name", "body").send_keys(Keys.ESCAPE)
+        assert driver.execute_script("return document.documentElement.scrollWidth") == baseline
     finally:
         driver.quit(); server.shutdown(); server.server_close()
 

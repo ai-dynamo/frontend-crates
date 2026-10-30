@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import { isApplicableCell, selectedCaptureOutcome, captureStatusLabels as statusLabels } from './model.js';
 import { captureSegmentHtml } from './presentation.js';
+import { compileSearch, searchContext } from './search.js';
+export { compileSearch } from './search.js';
 
 export { captureStatusLabels as statusLabels } from './model.js';
 export const verticalDefault = params => !['0', 'false'].includes(params.get('vertical') ?? params.get('transpose'));
-const text = value => String(value ?? '').toLowerCase();
 const html = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
 const leavesOf = cell => cell?.variants ? cell.variants.flatMap(leavesOf) : cell ? [cell] : [];
 const familyOf = row => row.family || row.model_label || '';
@@ -13,58 +14,18 @@ const problemOutcomes = new Set(['documented', 'diverge', 'error', 'leak']);
 
 export const isProblemOutcome = outcome => problemOutcomes.has(outcome);
 
-export function compileSearch(query = '') {
-  const tokens = query.match(/model:|"(?:\\.|[^"\\])*"|[()]|[^\s()"]+|"/gi) || [];
-  let position = 0;
-  const peek = () => tokens[position]?.toUpperCase();
-  const term = () => {
-    if (peek() === '(') {
-      position++;
-      const match = expression('OR');
-      if (peek() !== ')') throw new SyntaxError('Close the parenthesis.');
-      position++;
-      return match;
-    }
-    const modelOnly = peek() === 'MODEL:';
-    if (modelOnly) position++;
-    const fieldsFor = fields => modelOnly ? fields.models : fields.all;
-    const token = tokens[position];
-    if (modelOnly && (!token || ['AND', 'OR', '(', ')', 'MODEL:'].includes(peek()))) throw new SyntaxError('Enter a model name after model:.');
-    if (!token || ['AND', 'OR', ')'].includes(peek())) throw new SyntaxError('Enter a term after the operator or opening parenthesis.');
-    if (token === '"') throw new SyntaxError('Close the quoted phrase.');
-    position++;
-    if (token.startsWith('"')) {
-      const phrase = text(token.slice(1, -1).replace(/\\(["\\])/g, '$1'));
-      if (!phrase) throw new SyntaxError('Enter text inside the quotes.');
-      return fields => fieldsFor(fields).some(field => field.includes(phrase));
-    }
-    const words = [token];
-    while (position < tokens.length && !['AND', 'OR', '(', ')', 'MODEL:'].includes(peek()) && !tokens[position].startsWith('"')) words.push(tokens[position++]);
-    const phrase = text(words.join(' ')), compact = text(words.join(''));
-    return fields => fieldsFor(fields).some(field => field.includes(phrase) || field.includes(compact));
-  };
-  const expression = operator => {
-    const next = operator === 'OR' ? () => expression('AND') : term;
-    const matches = [next()];
-    while (peek() === operator) { position++; matches.push(next()); }
-    return fields => operator === 'OR' ? matches.some(match => match(fields)) : matches.every(match => match(fields));
-  };
-  if (!tokens.length) return () => true;
-  const match = expression('OR');
-  if (position < tokens.length) throw new SyntaxError('Separate terms or groups with AND or OR.');
-  return (fields, models = []) => match({all: fields.map(text), models: models.map(text)});
-}
-
-export function comparisonView(tab, state, matches = compileSearch(state.search)) {
+export function comparisonView(tab, state, matches = compileSearch(state.search, searchContext(tab))) {
   const groupLabels = new Map(tab.column_groups.map(group => [group.key, group.label]));
-  const entries = [];
+  const entries = [], visibleRows = new Set(), visibleColumns = new Set();
   const seen = new Set();
   for (const row of tab.rows) {
     for (const column of tab.columns) {
       if (!state.groups.has(column.group_key)) continue;
-      const selected = leavesOf(row.cells[column.sub]).filter(leaf => isApplicableCell(leaf)
-        && matches([row.family, row.model_label, groupLabels.get(column.group_key), column.label, column.case_id, column.desc,
-          leaf.sub, leaf.case_id, leaf.tooltip?.description], [row.family, row.model_label]));
+      const matching = leavesOf(row.cells[column.sub]).filter(leaf => matches(
+        [groupLabels.get(column.group_key), column.label, column.case_id, column.sub, leaf.sub, leaf.case_id],
+        [row.family, row.model_label], [column.desc, leaf.tooltip?.description]));
+      if (matching.length) { visibleRows.add(row); visibleColumns.add(column); }
+      const selected = matching.filter(isApplicableCell);
       if (selected.length) entries.push({row, column, leaves: selected, countedLeaves: selected.filter(leaf => {
         const key = JSON.stringify([row.family, leaf.sub || leaf.case_id]);
         if (seen.has(key)) return false;
@@ -72,8 +33,8 @@ export function comparisonView(tab, state, matches = compileSearch(state.search)
       }), cell: row.cells[column.sub]});
     }
   }
-  return {entries, rows: tab.rows.filter(row => entries.some(e => e.row === row)),
-    columns: tab.columns.filter(column => entries.some(e => e.column === column))};
+  return {entries, rows: tab.rows.filter(row => visibleRows.has(row)),
+    columns: tab.columns.filter(column => visibleColumns.has(column))};
 }
 
 export function captureCounts(view, key) {
@@ -90,7 +51,7 @@ function countMarkup(counts) {
     + '<div class="engine-counts">' + present.map(([s,l]) => '<span data-count="' + s + '"><i class="legend-swatch status-' + s + '"></i>' + counts[s] + ' ' + html(l) + '</span>').join('') + '</div>';
 }
 
-export function mountComparison(panel, controller) {
+export function mountComparison(panel, controller, familyNames = () => []) {
   const params = new URLSearchParams(location.search);
   const param = name => name + '_' + panel.id;
   const state = {layout: params.get(param('layout')) === 'stacked' ? 'stacked' : 'split',
@@ -101,8 +62,9 @@ export function mountComparison(panel, controller) {
     + '<button type="button" data-layout="split">Split cells</button><button type="button" data-layout="stacked">Stacked columns</button></div></div>'
     + '<div class="focus-control"><span class="control-label">Focus</span><div class="segmented"><button type="button" data-focus="all">All</button>'
     + '<button type="button" data-focus="disagreements">Disagreements</button><button type="button" data-focus="problems">Problems</button></div></div>'
+    + '<details class="comparison-categories"><summary>Categories</summary><div data-category-options></div></details>'
     + '<input type="search" data-case-search placeholder="Filter models or cases..." aria-label="Filter models or cases"'
-    + ' title=\'Use model:beam for model names only. Combine with AND, OR, quotes and parentheses: model:deepseek AND (call OR "tool use"). deep seek matches deepseek or "deep seek".\''
+    + ' title=\'Spaces require all words. Use OR, quotes, -exclusions and parentheses: beam ("guided decoding" OR TC). Scopes: parser:, col:, description:. Case numbers expand to stable names in shared URLs.\''
     + ' aria-describedby="' + panel.id + '-search-error"><span class="comparison-search-error" id="' + panel.id + '-search-error" role="status" hidden></span></div>'
     + '<p class="comparison-notice" role="status" hidden></p><div class="comparison-matrix-scroll"></div>'
     + '<div class="comparison-legend" aria-label="Outcome colors"></div>';
@@ -115,11 +77,11 @@ export function mountComparison(panel, controller) {
   }
   panel.querySelector('.capture-slots').appendChild(toolbar);
   toolbar.querySelector('[data-case-search]').value = state.search;
-  let search, matches = compileSearch('');
+  let search, context, matches = compileSearch('');
   let tab;
   const persist = () => {
     const url = new URL(location.href);
-    for (const [key,value,defaultValue] of [['layout',state.layout,'split'],['focus',state.focus,'all'],['search',state.search,''],['groups',[...state.groups].join(','),tab.column_groups.map(g => g.key).join(',')]]) {
+    for (const [key,value,defaultValue] of [['layout',state.layout,'split'],['focus',state.focus,'all'],['search',matches.canonicalQuery,''],['groups',[...state.groups].join(','),tab.column_groups.map(g => g.key).join(',')]]) {
       if (value === defaultValue) url.searchParams.delete(param(key)); else url.searchParams.set(param(key),value);
     }
     history.replaceState(null, '', url);
@@ -129,9 +91,10 @@ export function mountComparison(panel, controller) {
     if (search !== state.search) {
       search = state.search;
       const error = toolbar.querySelector('.comparison-search-error');
-      try { matches = compileSearch(search); error.hidden = true; }
-      catch (failure) { error.textContent = failure.message + ' Showing the last valid filter.'; error.hidden = false; }
-      toolbar.querySelector('[data-case-search]').setAttribute('aria-invalid', String(!error.hidden));
+      let invalid = false;
+      try { matches = compileSearch(search, context); error.textContent = matches.notices.join(' '); error.hidden = !matches.notices.length; }
+      catch (failure) { invalid = true; error.textContent = failure.message + ' Showing the last valid filter.'; error.hidden = false; }
+      toolbar.querySelector('[data-case-search]').setAttribute('aria-invalid', String(invalid));
     }
     const scroll = ui.querySelector('.comparison-matrix-scroll');
     const pin = controller.disposePanel(ui);
@@ -193,7 +156,7 @@ export function mountComparison(panel, controller) {
     };
     const result = (tr,row,column,shown=keys) => {
       const entry = entryFor(row,column), td = tr.insertCell(); td.className = 'matrix-cell';
-      if (!entry) { td.classList.add('filtered-cell'); td.textContent = '—'; td.setAttribute('aria-label', 'Excluded by filters'); return td; }
+      if (!entry) { td.classList.add('filtered-cell'); td.textContent = '—'; td.setAttribute('aria-label', isApplicableCell(row.cells[column.sub]) ? 'Excluded by filters' : 'Not applicable to this family'); return td; }
       const codes = shown.map(k => outcomes(entry,k));
       const focused = state.focus === 'all' || (state.focus === 'disagreements'
         ? codes.includes('diverge') : codes.some(isProblemOutcome));
@@ -230,7 +193,7 @@ export function mountComparison(panel, controller) {
       } else for (const row of view.rows) {
         rotatedHeading(top,row.model_label || row.family);
       }
-      for (const group of tab.column_groups) {
+      for (const group of tab.column_groups.filter(group => view.columns.some(column => column.group_key === group.key))) {
         const category = tbody.insertRow(); category.className = 'matrix-category-row';
         groupHeading(category,group);
         if (stacked) {
@@ -257,12 +220,12 @@ export function mountComparison(panel, controller) {
       }
     } else {
       const groups = thead.insertRow(); heading(groups,'Model family');
-      const columns = tab.column_groups.map(group => ({group, columns: view.columns.filter(c => c.group_key === group.key)}));
-      for (const {group,columns: cases} of columns) groupHeading(groups,group,Math.max(1,cases.length));
+      const columns = tab.column_groups.map(group => ({group, columns: view.columns.filter(c => c.group_key === group.key)})).filter(item => item.columns.length);
+      for (const {group,columns: cases} of columns) groupHeading(groups,group,cases.length);
       const sub = thead.insertRow(); heading(sub,'');
-      for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) caseHeading(sub,c); else heading(sub,'—'); }
+      for (const {columns: cases} of columns) for (const c of cases) caseHeading(sub,c);
       const results = (tr,row,shown=keys) => {
-        for (const {columns: cases} of columns) { if (cases.length) for (const c of cases) result(tr,row,c,shown); else tr.insertCell().textContent = '—'; }
+        for (const {columns: cases} of columns) for (const c of cases) result(tr,row,c,shown);
       };
       if (stacked) for (const [groupIndex,family] of familyGroups.entries()) for (const row of family.rows) for (const [index,k] of keys.entries()) {
         const tr = tbody.insertRow(); tr.dataset.family = family.key;
@@ -294,9 +257,11 @@ export function mountComparison(panel, controller) {
     table.insertBefore(tracks,thead);
     scroll.replaceChildren(table);
     controller.restorePopup(panel,pin);
-    window.__conformanceComparison = {state,view,counts: Object.fromEntries(keys.map(k => [k,captureCounts(view,k)]))};
+    window.__conformanceComparison = {state,view,search: {ast: matches.ast, canonicalQuery: matches.canonicalQuery, context},counts: Object.fromEntries(keys.map(k => [k,captureCounts(view,k)]))};
   }
   toolbar.addEventListener('click', event => {
+    const group = event.target.closest('[data-group]')?.dataset.group;
+    if (group) { toggleGroup(group); return; }
     const button = event.target.closest('[data-layout],[data-focus]'); if (!button) return;
     if (button.dataset.layout) state.layout = button.dataset.layout; else state.focus = button.dataset.focus;
     draw(); persist();
@@ -305,10 +270,26 @@ export function mountComparison(panel, controller) {
     if (event.target.matches('[data-case-search]')) state.search = event.target.value;
     else return;
     draw(); persist();
+    if (searchField.selectionStart === state.search.length && searchField.selectionEnd === state.search.length
+      && /\s$|\)$/.test(state.search)) expandSearch();
   });
+  const searchField = toolbar.querySelector('[data-case-search]');
+  function expandSearch() {
+    if (searchField.getAttribute('aria-invalid') === 'true') return;
+    if (state.search === matches.canonicalQuery) return;
+    state.search = matches.canonicalQuery; searchField.value = state.search;
+    draw(); persist();
+  }
+  searchField.addEventListener('blur', expandSearch);
+  searchField.addEventListener('keydown', event => { if (event.key === 'Enter') expandSearch(); });
+  function toggleGroup(group) {
+    if (!state.groups.delete(group)) state.groups.add(group);
+    draw(); persist();
+    toolbar.querySelectorAll('[data-group]').forEach(button => button.setAttribute('aria-pressed', String(state.groups.has(button.dataset.group))));
+  }
   ui.querySelector('.comparison-matrix-scroll').addEventListener('click', event => {
     const group = event.target.closest('[data-group]')?.dataset.group; if (!group) return;
-    if (!state.groups.delete(group)) state.groups.add(group); draw(); persist();
+    toggleGroup(group);
     [...ui.querySelectorAll('[data-group]')].find(button => button.dataset.group === group)?.focus({preventScroll: true});
   });
   new MutationObserver(() => {
@@ -317,11 +298,15 @@ export function mountComparison(panel, controller) {
   }).observe(document.body,{attributes: true,attributeFilter: ['class']});
   return {update(model) {
     tab = model;
+    context = searchContext(tab, familyNames()); search = undefined;
     if (!state.groups) state.groups = new Set(params.has(param('groups')) ? (params.get(param('groups')) || '').split(',') : tab.column_groups.map(g => g.key));
+    const categories = toolbar.querySelector('[data-category-options]');
+    categories.innerHTML = tab.column_groups.map(group => '<button type="button" data-group="' + html(group.key)
+      + '" aria-pressed="' + state.groups.has(group.key) + '">' + html(group.label) + '</button>').join('');
     panel.append(ui);
     const descriptions = panel.querySelector(':scope > .case-descriptions');
     if (descriptions) panel.append(descriptions);
     for (const child of [...panel.children]) if (!child.matches('.cmpctl,.capture-slots,.comparison-ui,.case-descriptions,.load-status')) child.remove();
-    draw();
+    draw(); expandSearch();
   }};
 }
