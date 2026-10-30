@@ -18,6 +18,7 @@
 // at that point the jail-and-batch mechanism and this whole v1 crate are removed.
 
 pub mod annotated;
+mod boundary;
 mod guided_stream;
 use guided_stream::{GuidedDelta, GuidedStreamCursor};
 mod prefix_matcher;
@@ -53,6 +54,9 @@ use crate::tool_calling::{
 };
 
 pub use self::annotated::Annotated;
+pub use self::boundary::{
+    JailChoiceCountError, apply_jail_terminal_error_contract, validate_jail_nvext_choice_count,
+};
 use self::prefix_matcher::{MarkerMatcher, MatchResult};
 
 fn is_harmony_parser(parser: Option<&str>) -> bool {
