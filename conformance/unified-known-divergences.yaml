@@ -6,7 +6,17 @@
 # fails CI. Entries that stop diverging fail as stale and must be removed.
 # Schema: family -> case ID -> check -> note and exact observed output.
 
-beam: {}
+beam:
+  # TODO: Beam's typing resolves `$ref`/`allOf`/type arrays but not `not` or
+  # `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
+  UNIFIED.not_keyword_type_complement.beam:
+    golden:
+      note: 'FIXME (v2 defect): Beam typing ignores `not`; the negated-string integer stays the string "-2500".'
+      actual: 'tool_call capture_payload {"count": "-2500", "text": "42"}'
+  UNIFIED.conditional_schema_number_types.beam:
+    golden:
+      note: 'FIXME (v2 defect): Beam typing ignores `if`/`then`/`else`; both numbers stay strings.'
+      actual: 'tool_call capture_payload {"amount": "21.5", "retries": "37"}'
 gpt_oss: {}
 kimi_k3:
   # TODO: Fix Kimi K3 5-tool_no_close (5-3) recovery: preserve the following
@@ -23,8 +33,25 @@ muse_glimmer: {}
 gemma4: {}
 deepseek_v41: {}
 
-glm47: {}
+glm47:
+  # TODO: the GLM typer resolves `$ref`/`allOf`/unions but not `not` or
+  # `if`/`then`/`else` (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
+  UNIFIED.not_keyword_type_complement.glm47:
+    golden:
+      note: 'FIXME (v2 defect): GLM typing ignores `not`; the negated-string integer stays the string "-2500".'
+      actual: 'tool_call capture_payload {"count":"-2500","text":"42"}'
+  UNIFIED.conditional_schema_number_types.glm47:
+    golden:
+      note: 'FIXME (v2 defect): GLM typing ignores `if`/`then`/`else`; both numbers stay strings.'
+      actual: 'tool_call capture_payload {"amount":"21.5","retries":"37"}'
 deepseek_v4: {}
 kimi_k2: {}
 nemotron_v3: {}
 qwen3: {}
+minimax_m3:
+  # TODO: the MiniMax M3 typer resolves `not` but not `if`/`then`/`else`
+  # (ai-dynamo/dynamo#17662 fixed these for the XML parsers only).
+  UNIFIED.conditional_schema_number_types.minimax_m3:
+    golden:
+      note: 'FIXME (v2 defect): MiniMax M3 typing ignores `if`/`then`/`else`; both numbers stay strings.'
+      actual: 'tool_call capture_payload {"amount":"21.5","retries":"37"}'

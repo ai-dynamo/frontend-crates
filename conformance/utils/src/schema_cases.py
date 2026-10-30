@@ -95,6 +95,8 @@ def argument_section(scenario: str) -> str:
         return "text"
     if scenario.startswith("arg_"):
         return "nullable"
+    if scenario in {"not_keyword_type_complement", "conditional_schema_number_types"}:
+        return "union"
     return "reference"
 
 

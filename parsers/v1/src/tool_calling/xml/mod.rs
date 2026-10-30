@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod glm47_parser;
-pub(crate) use glm47_parser::resolve_local_schema_ref;
+pub(crate) use glm47_parser::{has_unsupported_schema_ref_scope, resolve_local_schema_ref};
 mod kimi_k2_parser;
 mod minimax_m3_parser;
 mod parsed_value;
