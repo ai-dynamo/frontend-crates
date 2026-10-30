@@ -185,6 +185,16 @@ pub(crate) fn raw_number_literal(value: &str) -> Option<ParsedValue> {
         .map(ParsedValue::RawNumber)
 }
 
+/// Validate segmented input without retaining a second copy of a consumed prefix.
+/// IgnoredAny uses serde_json's iterative value skipper, as RawValue does.
+pub(crate) fn valid_json_reader(reader: impl std::io::Read) -> bool {
+    let mut decoder = serde_json::Deserializer::from_reader(reader);
+    serde::Deserialize::deserialize(&mut decoder)
+        .map(|_: serde::de::IgnoredAny| ())
+        .and_then(|()| decoder.end())
+        .is_ok()
+}
+
 pub(crate) fn raw_json_literal(value: &str) -> Option<ParsedValue> {
     RawValue::from_string(value.to_string())
         .ok()
@@ -646,5 +656,40 @@ mod tests {
             .replace("\"EXP\"", "4.2e1")
         );
         assert!(parsed_json_literal(r#"{"value":NaN}"#).is_none());
+    }
+}
+
+#[cfg(test)]
+mod segmented_validation_tests {
+    use super::*;
+    use std::io::Read;
+
+    #[test]
+    fn segmented_validation_matches_raw_value_at_every_byte() {
+        let deep = format!("{}0{}", "[".repeat(512), "]".repeat(512));
+        for input in [
+            deep.as_str(),
+            r#"{"n":1e999999999,"s":"漢🙂\uD800"}"#,
+            r#"{"a":"ok\\\"","b":[true,false,null,-0.3e+12]}"#,
+            r#"{"x":01}"#,
+            r#"{"x":1.}"#,
+            r#"{"x":"\q"}"#,
+            "[1,]",
+            "{} []",
+            "true",
+            " 1e999999999 ",
+            "",
+            "[1",
+        ] {
+            let expected = raw_json_literal(input).is_some();
+            for split in 0..=input.len() {
+                let bytes = input.as_bytes();
+                assert_eq!(
+                    valid_json_reader(bytes[..split].chain(&bytes[split..])),
+                    expected,
+                    "input={input:?} split={split}"
+                );
+            }
+        }
     }
 }

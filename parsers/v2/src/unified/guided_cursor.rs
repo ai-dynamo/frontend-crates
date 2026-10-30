@@ -53,6 +53,7 @@
 //! text. Committing it early would be the same unwithdrawable mistake the required
 //! mode refuses to make.
 
+use super::shared_input::InputView;
 use crate::tool_calling::traits::ToolCallDelta;
 
 /// The two spellings a required-choice call may use for its argument object.
@@ -131,7 +132,7 @@ struct Element {
 }
 
 /// Forward-only lexer over one guided payload.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GuidedJsonCursor {
     /// Which payload shape is being lexed; fixed at construction by `tool_choice`.
     mode: Mode,
@@ -243,6 +244,14 @@ impl GuidedJsonCursor {
     /// cursor slices it from `scanned`, so the caller does not have to track which
     /// bytes it has already handed over.
     pub fn advance(&mut self, payload: &str, out: &mut Vec<ToolCallDelta>) {
+        self.advance_view(payload.into(), out);
+    }
+
+    pub(super) fn advance_view(
+        &mut self,
+        payload: InputView<'_, str>,
+        out: &mut Vec<ToolCallDelta>,
+    ) {
         if self.disabled || payload.len() <= self.scanned {
             // Truncation (a reset mid-stream) would make the retained offsets lie.
             // The caller resets the cursor with the payload; nothing to do here.
@@ -250,10 +259,9 @@ impl GuidedJsonCursor {
         }
 
         let mut cut = self.scanned;
-        for (relative, ch) in payload[self.scanned..].char_indices() {
+        for (at, ch) in payload.chars_from(self.scanned) {
             #[cfg(test)]
             crate::tool_calling::kimi_progress::count_work(2, ch.len_utf8());
-            let at = self.scanned + relative;
             cut = at + ch.len_utf8();
             self.step(payload, at, cut, ch, out);
             if self.disabled {
@@ -269,7 +277,7 @@ impl GuidedJsonCursor {
     /// triggered mid-advance still sees the bytes this character contributed.
     fn step(
         &mut self,
-        payload: &str,
+        payload: InputView<'_, str>,
         at: usize,
         cut: usize,
         ch: char,
@@ -389,7 +397,7 @@ impl GuidedJsonCursor {
     /// have exactly one implementation.
     fn step_named(
         &mut self,
-        payload: &str,
+        payload: InputView<'_, str>,
         at: usize,
         cut: usize,
         ch: char,
@@ -450,7 +458,7 @@ impl GuidedJsonCursor {
     }
 
     /// One character while inside a string literal.
-    fn step_in_string(&mut self, payload: &str, at: usize, ch: char) {
+    fn step_in_string(&mut self, payload: InputView<'_, str>, at: usize, ch: char) {
         if self.escaped {
             self.escaped = false;
             return;
@@ -466,11 +474,11 @@ impl GuidedJsonCursor {
     }
 
     /// A captured literal closed: it is either this element's key or its name.
-    fn close_literal(&mut self, payload: &str, end: usize) {
+    fn close_literal(&mut self, payload: InputView<'_, str>, end: usize) {
         let Some(start) = self.literal_start.take() else {
             return;
         };
-        let Ok(literal) = serde_json::from_str::<String>(&payload[start..=end]) else {
+        let Ok(literal) = serde_json::from_str::<String>(&payload.slice(start..end + 1)) else {
             return;
         };
         match self.slot {
@@ -528,7 +536,7 @@ impl GuidedJsonCursor {
 
     /// Release argument bytes the current element has accumulated since the last
     /// fragment.
-    fn flush(&mut self, payload: &str, cut: usize, out: &mut Vec<ToolCallDelta>) {
+    fn flush(&mut self, payload: InputView<'_, str>, cut: usize, out: &mut Vec<ToolCallDelta>) {
         if !self.element.committed {
             return;
         }
@@ -542,7 +550,7 @@ impl GuidedJsonCursor {
         if bound <= from {
             return;
         }
-        let fragment = payload[from..bound].to_string();
+        let fragment = payload.slice(from..bound).into_owned();
         self.element.released = bound - start;
         self.released_end = self.released_end.max(bound);
         if let Some(record) = self.committed.last_mut() {
@@ -628,6 +636,36 @@ mod tests {
             }
         }
         joined
+    }
+
+    #[test]
+    fn segmented_checkpoint_matches_contiguous_cursor_at_every_character() {
+        use super::super::shared_input::SharedInput;
+        let payload = r#"[{"na\u006de":"f漢","arguments":{"text":"🙂\\\"tail"}}]"#;
+        for split in payload
+            .char_indices()
+            .map(|(at, _)| at)
+            .chain([payload.len()])
+        {
+            let mut input = SharedInput::<str>::default();
+            input.append(&payload[..split]);
+            let mut cursor = GuidedJsonCursor::new();
+            let mut baseline = GuidedJsonCursor::new();
+            let mut actual = Vec::new();
+            let mut expected = Vec::new();
+            cursor.advance_view(input.view(), &mut actual);
+            baseline.advance(&payload[..split], &mut expected);
+            assert_eq!(actual, expected);
+            let mut fork = input.checkpoint();
+            let mut cursor = cursor.clone();
+            for (at, ch) in payload[split..].char_indices() {
+                fork.append(&ch.to_string());
+                cursor.advance_view(fork.view(), &mut actual);
+                baseline.advance(&payload[..split + at + ch.len_utf8()], &mut expected);
+                assert_eq!(actual, expected, "split={split} at={at}");
+                assert_eq!(cursor.released_end(), baseline.released_end());
+            }
+        }
     }
 
     #[test]

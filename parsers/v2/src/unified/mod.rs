@@ -61,6 +61,7 @@ pub mod minimax_m3;
 pub mod muse_glimmer;
 pub mod muse_spark;
 pub mod qwen3;
+mod shared_input;
 #[cfg(test)]
 mod streaming_checkpoints;
 
@@ -338,6 +339,13 @@ impl std::fmt::Display for InvalidGuidedPayload {
 
 impl std::error::Error for InvalidGuidedPayload {}
 
+/// An immutable parser-owned checkpoint. Forks omit previously emitted output
+/// and keep independent generated state. Unsupported families/modes fall back
+/// to ordinary initialization instead of pretending to support continuation.
+pub trait UnifiedParserContinuation: Send {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>>;
+}
+
 /// A parser that owns reasoning + content + tool calls for one stream.
 ///
 /// Streaming-first, like [`crate::ToolParser`]: [`Self::parse_into`] per decoded
@@ -359,6 +367,13 @@ impl std::error::Error for InvalidGuidedPayload {}
 /// unrecognized calls would hide model misbehaviour that the caller needs to see —
 /// but it means "the parser produced a ToolCall" is not "this call is safe to run".
 pub trait UnifiedParser: Send {
+    /// Freeze consumed state once, then fork independent continuations cheaply.
+    /// A finished parser rejects checkpoints. None means the mode is unsupported.
+    /// Unfinished headers and structural state can still determine fork cost.
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        Ok(None)
+    }
+
     /// Responses opts into message boundaries; existing consumers keep their event stream.
     fn preserve_message_phases(&mut self, _enabled: bool) {}
     /// Report which input representations this parser accepts.
@@ -1002,6 +1017,15 @@ pub(crate) enum GuidedPrefilledHeader {
 }
 
 pub(crate) trait NativeUnified {
+    fn checkpoint_native(&mut self) {}
+
+    fn fork_native(&self) -> Result<Option<Self>>
+    where
+        Self: Sized,
+    {
+        Ok(None)
+    }
+
     fn preserve_message_phases(&mut self, _enabled: bool) {}
 
     /// Whether decoding must preserve tokenizer special tokens for this grammar.
@@ -1349,7 +1373,52 @@ impl<N: NativeUnified> GuidedRouted<N> {
     }
 }
 
-impl<N: NativeUnified + Send> UnifiedParser for GuidedRouted<N> {
+struct NativeContinuation<N: NativeUnified> {
+    template: GuidedRouted<N>,
+}
+
+impl<N: NativeUnified + Send + 'static> UnifiedParserContinuation for NativeContinuation<N> {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>> {
+        self.template
+            .fork_native_routed()?
+            .map(|parser| Box::new(parser) as Box<dyn UnifiedParser>)
+            .ok_or_else(|| anyhow::anyhow!("native continuation is unavailable"))
+    }
+}
+
+impl<N: NativeUnified> GuidedRouted<N> {
+    fn fork_native_routed(&self) -> Result<Option<Self>> {
+        if self.finished {
+            anyhow::bail!("cannot checkpoint a finished unified parser");
+        }
+        if self.guided.is_some() {
+            return Ok(None);
+        }
+        let Some(native) = self.native.fork_native()? else {
+            return Ok(None);
+        };
+        let mut fork = Self::new(native);
+        fork.preserve_phases = self.preserve_phases;
+        fork.starting_state = self.starting_state;
+        fork.started = self.started;
+        Ok(Some(fork))
+    }
+}
+
+impl<N: NativeUnified + Send + 'static> UnifiedParser for GuidedRouted<N> {
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        if self.finished {
+            anyhow::bail!("cannot checkpoint a finished unified parser");
+        }
+        if self.guided.is_some() {
+            return Ok(None);
+        }
+        self.native.checkpoint_native();
+        Ok(self.fork_native_routed()?.map(|template| {
+            Box::new(NativeContinuation { template }) as Box<dyn UnifiedParserContinuation>
+        }))
+    }
+
     fn preserve_message_phases(&mut self, enabled: bool) {
         self.preserve_phases = enabled;
         self.native.preserve_message_phases(enabled);
@@ -6643,7 +6712,30 @@ impl DebugUnifiedParser {
     }
 }
 
+struct DebugContinuation {
+    family: String,
+    inner: Box<dyn UnifiedParserContinuation>,
+}
+
+impl UnifiedParserContinuation for DebugContinuation {
+    fn fork(&self) -> Result<Box<dyn UnifiedParser>> {
+        Ok(Box::new(DebugUnifiedParser {
+            family: self.family.clone(),
+            inner: self.inner.fork()?,
+        }))
+    }
+}
+
 impl UnifiedParser for DebugUnifiedParser {
+    fn continuation(&mut self) -> Result<Option<Box<dyn UnifiedParserContinuation>>> {
+        Ok(self.inner.continuation()?.map(|inner| {
+            Box::new(DebugContinuation {
+                family: self.family.clone(),
+                inner,
+            }) as Box<dyn UnifiedParserContinuation>
+        }))
+    }
+
     fn preserve_message_phases(&mut self, enabled: bool) {
         self.inner.preserve_message_phases(enabled);
     }
