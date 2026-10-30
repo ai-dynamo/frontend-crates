@@ -1,0 +1,84 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.0
+    source_sha256: 294d7f4e2877d210d47e60b9c50f6ed42762371fad3e082a1c3c49204d54a69b
+    git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
+document:
+  mode: unified
+changes:
+  tool_body_whitespace:
+    case_key: UNIFIED.1-tool_body_whitespace
+    stimulus:
+      inline:
+        input: "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{\"city\":\"Paris\"}<|call|>"
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools: []
+        chunks:
+        - delta_text: <|start|>
+        - delta_text: assistant
+        - delta_text: <|channel|>
+        - delta_text: 'commentary to=functions.get_weather '
+        - delta_text: <|constrain|>
+        - delta_text: json
+        - delta_text: <|message|>
+        - delta_text: " \n\t{\"city\":\"Paris\"}"
+        - delta_text: <|call|>
+        - delta_text: ‹finish›
+      semantic_sha256: 63903da5d22b28f0a82578695bdd05b48c9273fb193e86977914397348b3e64e
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city":"Paris"}'
+          kind: tool_call
+          name: get_weather
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: ''
+            complete: false
+            kind: tool_call
+            name: get_weather
+          - arguments: '{"'
+            complete: false
+            kind: tool_call
+            name: null
+          - arguments: city
+            complete: false
+            kind: tool_call
+            name: null
+          - arguments: '":"'
+            complete: false
+            kind: tool_call
+            name: null
+          - arguments: Paris
+            complete: false
+            kind: tool_call
+            name: null
+          - arguments: '"}'
+            complete: false
+            kind: tool_call
+            name: null
+        - expected:
+          - arguments: ''
+            complete: true
+            kind: tool_call
+            name: null
+        - expected: []
+metadata_changes:
+  tool_body_whitespace:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native

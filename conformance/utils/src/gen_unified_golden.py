@@ -3995,9 +3995,9 @@ EDGE.append(_structured_response_case())
 
 
 _GPT_OSS_REVIEW_CASES = (
-    ("gpt_oss_tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
-     '<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{"q":"x"}<|call|>',
-     [{"kind":"tool_call", "name":"lookup", "arguments":{"q":"x"}}]),
+    ("tool_body_whitespace", "A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.",
+     '<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{"city":"Paris"}<|call|>',
+     [{"kind":"tool_call", "name":"get_weather", "arguments":{"city":"Paris"}}]),
     ("gpt_oss_constrained_final_header", "Harmony final header has a content type and no recipient. The JSON body stays visible response content; it is not a routed tool message.",
      '<|start|>assistant<|channel|>final <|constrain|>json<|message|>{"a":1}<|return|>',
      [{"kind":"text", "text":'{"a":1}'}]),
@@ -4023,7 +4023,6 @@ def _dsml_json_tool(family, name, body):
 
 
 def _native_review_variants(scenario):
-    arguments = {"q": "x"}
     if scenario == "gpt_oss_multiple_unknown_and_empty_tools":
         variants = {}
         for family in TEMPLATE_FAMILIES:
@@ -4084,15 +4083,16 @@ def _native_review_variants(scenario):
         golden = [{"kind": "reasoning", "text": "checking"}, {"kind": "text", "text": "done"}]
         return {family: (r_reason(family, "checking").removesuffix(control_tokens(family)[1])
                          + r_text(family, "done"), golden, M) for family in ("beam", "muse_glimmer")}
-    if scenario == "gpt_oss_tool_body_whitespace":
-        golden = [{"kind": "tool_call", "name": "lookup", "arguments": arguments}]
+    if scenario == "tool_body_whitespace":
+        arguments = {"city": "Paris"}
+        golden = [{"kind": "tool_call", "name": "get_weather", "arguments": arguments}]
         return {
             "kimi_k2": (
-                r_tool_arguments("kimi_k2", "lookup", arguments, 0).replace(
+                r_tool_arguments("kimi_k2", "get_weather", arguments, 0).replace(
                     "<|tool_call_argument_begin|>", "<|tool_call_argument_begin|> \n\t", 1
                 ), golden, M,
             ),
-            "kimi_k3": (k3_raw_tool("lookup", ' \n\t{"q":"x"}'), golden, M),
+            "kimi_k3": (k3_raw_tool("get_weather", ' \n\t{"city":"Paris"}'), golden, M),
         }
     if scenario == "gpt_oss_quoted_truncated_tool_then_final":
         golden = [{"kind": "text", "text": "Answer"}]
@@ -4130,8 +4130,9 @@ for _name, _description, _input, _golden in _GPT_OSS_REVIEW_CASES:
     _inputs = OnlyFamilies({"gpt_oss": (_input, D("UNSUPPORTED", VLLM_UNCAPTURABLE["gpt_oss"]), M)})
     _inputs.update({family: (native_input, D("UNSUPPORTED", "No peer capture recorded."), dynamo, golden)
                     for family, (native_input, golden, dynamo) in _variants.items()})
-    _tools = {"gpt_oss": [], **{family: [{"name": "lookup", "parameters": {
-        "type": "object", "properties": {"q": {"type": "string"}},
+    _tool_name, _parameter = (("get_weather", "city") if _name == "tool_body_whitespace" else ("lookup", "q"))
+    _tools = {"gpt_oss": [], **{family: [{"name": _tool_name, "parameters": {
+        "type": "object", "properties": {_parameter: {"type": "string"}},
     }}] for family in _variants}}
     EDGE.append((
         _name, _description, ["I3", "I5", "I7"], _golden,

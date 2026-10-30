@@ -1,0 +1,90 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.0
+    source_sha256: 294d7f4e2877d210d47e60b9c50f6ed42762371fad3e082a1c3c49204d54a69b
+    git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
+document:
+  mode: unified
+changes:
+  tool_body_whitespace:
+    case_key: UNIFIED.1-tool_body_whitespace
+    stimulus:
+      inline:
+        input: "<|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|> \n\t{\"city\":\"Paris\"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        chunks:
+        - delta_text: <|open|>
+        - delta_text: tools
+        - delta_text: <|sep|>
+        - delta_text: <|open|>
+        - delta_text: call tool="get_weather" index="1"
+        - delta_text: <|sep|>
+        - delta_text: <|open|>
+        - delta_text: json type="object"
+        - delta_text: <|sep|>
+        - delta_text: " \n\t{\"city\":\"Paris\"}"
+        - delta_text: <|close|>
+        - delta_text: json
+        - delta_text: <|sep|>
+        - delta_text: <|close|>
+        - delta_text: call
+        - delta_text: <|sep|>
+        - delta_text: <|close|>
+        - delta_text: tools
+        - delta_text: <|sep|>
+        - delta_text: ‹finish›
+      semantic_sha256: ec0db8653be933d32df3f3a5a8530f76df371773dbd655e0ff6c8c0ab84a8443
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city":"Paris"}'
+          kind: tool_call
+          name: get_weather
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city":"Paris"}'
+            complete: false
+            kind: tool_call
+            name: get_weather
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: ''
+            complete: true
+            kind: tool_call
+            name: null
+        - expected: []
+metadata_changes:
+  tool_body_whitespace:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native

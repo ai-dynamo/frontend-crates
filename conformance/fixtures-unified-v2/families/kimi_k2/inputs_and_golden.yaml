@@ -13733,15 +13733,16 @@ cases:
         arguments:
           city: Paris
   gpt_oss_tool_body_whitespace:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_tool_body_whitespace
     description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
     policy:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-tool_body_whitespace
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-tool_body_whitespace
     request:
       input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.lookup:0<|tool_call_argument_begin|> \n\t{\"q\": \"x\"}<|tool_call_end|><|tool_calls_section_end|>"
       init:
@@ -13771,6 +13772,45 @@ cases:
         name: lookup
         arguments:
           q: x
+  tool_body_whitespace:
+    lifecycle: active
+    scenario: tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.1-tool_body_whitespace
+    historical_ids: []
+    request:
+      input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|> \n\t{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      chunks:
+      - delta_text: <|tool_calls_section_begin|>
+      - delta_text: <|tool_call_begin|>
+      - delta_text: functions.get_weather:0
+      - delta_text: <|tool_call_argument_begin|>
+      - delta_text: " \n\t{\"city\": \"Paris\"}"
+      - delta_text: <|tool_call_end|>
+      - delta_text: <|tool_calls_section_end|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   adjacent_calls_partial_header:
     lifecycle: active
     scenario: adjacent_calls_partial_header

@@ -710,10 +710,10 @@ async function checkRebaseContracts(tab, reader) {
   const toolSchemas = columns.get('tool_only').schemas;
   assert.equal(toolSchemas.length, 1);
   const schema = toolSchemas[0];
-  assert.deepEqual(schema.tools, [{ name: 'lookup', parameters: { type: 'object', properties: { q: { type: 'string' } } } }]);
+  assert.deepEqual(schema.tools, [{ name: 'get_weather', parameters: { type: 'object', properties: { city: { type: 'string' } } } }]);
   assert.deepEqual([...schema.families].sort(), ['kimi_k2', 'kimi_k3']);
   assert.equal(schema.cases.length, 1);
-  assert.equal(schema.cases[0].case_id, 'UNIFIED.gpt_oss-tool_body_whitespace');
+  assert.equal(schema.cases[0].case_id, 'UNIFIED.1-tool_body_whitespace');
   assert.equal(schema.cases[0].label, 'Leading JSON body whitespace');
   assert.deepEqual([...schema.cases[0].families].sort(), ['kimi_k2', 'kimi_k3']);
   assert.ok(columns.get('schema_declared_integer').schemas.length);

@@ -1,0 +1,66 @@
+provenance:
+  status: captured
+  origin:
+    crate_version: 0.9.0
+    source_sha256: 294d7f4e2877d210d47e60b9c50f6ed42762371fad3e082a1c3c49204d54a69b
+    git_commit: e9fb03035cda270fcd3e51f8cfb89f60b6a05d64
+document:
+  mode: unified
+changes:
+  tool_body_whitespace:
+    case_key: UNIFIED.1-tool_body_whitespace
+    stimulus:
+      inline:
+        input: "<|tool_calls_section_begin|><|tool_call_begin|>functions.get_weather:0<|tool_call_argument_begin|> \n\t{\"city\": \"Paris\"}<|tool_call_end|><|tool_calls_section_end|>"
+        init:
+          starting_state: None
+          tool_output_mode: Native
+          named_tool: null
+        finish_reason: stop
+        tools:
+        - name: get_weather
+          parameters:
+            type: object
+            properties:
+              city:
+                type: string
+        chunks:
+        - delta_text: <|tool_calls_section_begin|>
+        - delta_text: <|tool_call_begin|>
+        - delta_text: functions.get_weather:0
+        - delta_text: <|tool_call_argument_begin|>
+        - delta_text: " \n\t{\"city\": \"Paris\"}"
+        - delta_text: <|tool_call_end|>
+        - delta_text: <|tool_calls_section_end|>
+        - delta_text: ‹finish›
+      semantic_sha256: f7437618d3c75155981fc5928365bf43792d99cd211a97123d415adf53408ed6
+    observation:
+      value:
+        assembled:
+        - arguments: '{"city": "Paris"}'
+          kind: tool_call
+          name: get_weather
+        chunks:
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected: []
+        - expected:
+          - arguments: '{"city": "Paris"}'
+            complete: false
+            kind: tool_call
+            name: get_weather
+        - expected:
+          - arguments: ''
+            complete: true
+            kind: tool_call
+            name: null
+        - expected: []
+        - expected: []
+metadata_changes:
+  tool_body_whitespace:
+    parser_path: unified
+    init:
+      named_tool: null
+      starting_state: None
+      tool_output_mode: Native

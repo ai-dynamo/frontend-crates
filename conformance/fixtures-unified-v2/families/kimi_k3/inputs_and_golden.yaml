@@ -17096,15 +17096,16 @@ cases:
       - kind: text
         text: Answer
   gpt_oss_tool_body_whitespace:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_tool_body_whitespace
     description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
     policy:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-tool_body_whitespace
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-tool_body_whitespace
     request:
       input: "<|open|>tools<|sep|><|open|>call tool=\"lookup\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|> \n\t{\"q\":\"x\"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
       init:
@@ -17146,6 +17147,57 @@ cases:
         name: lookup
         arguments:
           q: x
+  tool_body_whitespace:
+    lifecycle: active
+    scenario: tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.1-tool_body_whitespace
+    historical_ids: []
+    request:
+      input: "<|open|>tools<|sep|><|open|>call tool=\"get_weather\" index=\"1\"<|sep|><|open|>json type=\"object\"<|sep|> \n\t{\"city\":\"Paris\"}<|close|>json<|sep|><|close|>call<|sep|><|close|>tools<|sep|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: get_weather
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+      chunks:
+      - delta_text: <|open|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: call tool="get_weather" index="1"
+      - delta_text: <|sep|>
+      - delta_text: <|open|>
+      - delta_text: json type="object"
+      - delta_text: <|sep|>
+      - delta_text: " \n\t{\"city\":\"Paris\"}"
+      - delta_text: <|close|>
+      - delta_text: json
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: call
+      - delta_text: <|sep|>
+      - delta_text: <|close|>
+      - delta_text: tools
+      - delta_text: <|sep|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   adjacent_calls_partial_header:
     lifecycle: active
     scenario: adjacent_calls_partial_header

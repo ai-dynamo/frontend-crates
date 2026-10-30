@@ -42,6 +42,7 @@ UNIFIED_TAX = {
 
     # Group 1 — Single call
     "tool_only": (1, "1"),
+    "tool_body_whitespace": (1, "7"),
     "dotted_name_minimal": (1, "3"),
     "dotted_name_mixed_punctuation": (1, "4"),
     "dotted_name_multiple_segments": (1, "5"),
@@ -413,7 +414,7 @@ UNIFIED_TAX["guided_response_native_wrapper_whitespace_before_prose"] = (35, "12
 
 
 # Historical requests remain separate executions, but share one semantic heading.
-RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped"})
+RETIRED_SCENARIOS = frozenset({"gpt_oss_truncated_tool_at_eof_is_dropped", "gpt_oss_tool_body_whitespace"})
 
 
 class CaseVariant(NamedTuple):
@@ -438,6 +439,7 @@ SHARED_CASE_VARIANTS = {
     "gpt_oss_invalid_tool_body_then_empty_call": CaseVariant("malformed_json_then_two_valid_calls", "Invalid text then empty call"),
     "gpt_oss_invalid_tool_body_then_valid_call": CaseVariant("malformed_json_then_two_valid_calls", "Truncated JSON then valid call"),
     "gpt_oss_tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
+    "tool_body_whitespace": CaseVariant("tool_only", "Leading JSON body whitespace"),
     "gpt_oss_quoted_truncated_tool_then_final": CaseVariant("tool_no_close", "Malformed argument then visible response"),
     "gpt_oss_quoted_message_header_literal": CaseVariant("arg_marker_in_string", "Quoted closer and response header"),
 }

@@ -9640,15 +9640,16 @@ cases:
       - kind: text
         text: Answer
   gpt_oss_tool_body_whitespace:
-    lifecycle: active
+    lifecycle: retired
     scenario: gpt_oss_tool_body_whitespace
     description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
     policy:
     - I3
     - I5
     - I7
-    display_id: UNIFIED.gpt_oss-tool_body_whitespace
-    historical_ids: []
+    display_id: null
+    historical_ids:
+    - UNIFIED.gpt_oss-tool_body_whitespace
     request:
       input: "<|start|>assistant<|channel|>commentary to=functions.lookup <|constrain|>json<|message|> \n\t{\"q\":\"x\"}<|call|>"
       init:
@@ -9674,6 +9675,41 @@ cases:
         name: lookup
         arguments:
           q: x
+  tool_body_whitespace:
+    lifecycle: active
+    scenario: tool_body_whitespace
+    description: A native JSON argument body begins with space, newline, and tab. Structural whitespace must not change cursor offsets or argument values.
+    policy:
+    - I3
+    - I5
+    - I7
+    display_id: UNIFIED.1-tool_body_whitespace
+    historical_ids: []
+    request:
+      input: "<|start|>assistant<|channel|>commentary to=functions.get_weather <|constrain|>json<|message|> \n\t{\"city\":\"Paris\"}<|call|>"
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools: []
+      chunks:
+      - delta_text: <|start|>
+      - delta_text: assistant
+      - delta_text: <|channel|>
+      - delta_text: 'commentary to=functions.get_weather '
+      - delta_text: <|constrain|>
+      - delta_text: json
+      - delta_text: <|message|>
+      - delta_text: " \n\t{\"city\":\"Paris\"}"
+      - delta_text: <|call|>
+      - delta_text: ‹finish›
+    golden:
+      assembled:
+      - kind: tool_call
+        name: get_weather
+        arguments:
+          city: Paris
   xml_string_type_double_quoted_object:
     lifecycle: active
     scenario: xml_string_type_double_quoted_object
