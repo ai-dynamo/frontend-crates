@@ -1336,6 +1336,126 @@ mod tests {
         );
     }
 
+    /// ai-dynamo/dynamo#17663. Qwen's template always wraps a call in
+    /// `<tool_call>`, so a BARE `<function=NAME>` inside an open thought is the
+    /// model narrating a call, not making one. The native scanner used to
+    /// recover a real call from every such quote: a thought that looped to
+    /// `max_tokens` quoted the same call 19 times and all 19 were dispatched.
+    fn narration_tools() -> Vec<Tool> {
+        vec![
+            Tool {
+                name: "queue_label_print_job".to_string(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "label_count": { "type": "integer", "multipleOf": 24 } }
+                }),
+                strict: None,
+            },
+            Tool {
+                name: "run".to_string(),
+                description: None,
+                parameters: serde_json::json!({
+                    "type": "object",
+                    "properties": { "a": { "type": "string" } }
+                }),
+                strict: None,
+            },
+        ]
+    }
+
+    fn at_every_split(input: &str, check: impl Fn(&[UnifiedEvent], usize)) {
+        for cut in 0..=input.len() {
+            if !input.is_char_boundary(cut) {
+                continue;
+            }
+            let out = events(&narration_tools(), &[&input[..cut], &input[cut..]]);
+            check(&out, cut);
+        }
+    }
+
+    #[test]
+    fn bare_invokes_quoted_inside_an_unclosed_thought_are_not_calls() {
+        const QUOTED: &str =
+            "<function=queue_label_print_job><parameter=label_count>48</parameter></function>";
+        let input = format!("<think>Plan: {QUOTED} Done. Proceeds. {QUOTED} matches. {QUOTED}");
+        // The invoke markers are stripped; `<parameter=` is ordinary text for the
+        // native scanner (pinned by `a_narrated_invoke_inside_a_thought_leaves_no_marker_behind`).
+        let narrated = "<parameter=label_count>48</parameter>";
+        let expected = format!("Plan: {narrated} Done. Proceeds. {narrated} matches. {narrated}");
+        at_every_split(&input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning(&expected)],
+                "a quoted call was promoted to a tool call, split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_bare_invoke_in_a_thought_leaves_the_real_wrapped_call_alone() {
+        let input = "<think>plan <function=run>x</function> more</think>\
+                     <tool_call><function=run><parameter=a>1</parameter></function></tool_call>";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("plan x more"),
+                    call("run", serde_json::json!({"a": "1"})),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_narrated_header_cut_by_the_thought_closer_strips_only_the_opener() {
+        // No `>` before `</think>`: the header can never complete inside the
+        // thought, so the bare opener alone is stripped and the thought closes.
+        let input = "<think>use <function=run</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning("use run"), text("Done.")],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_wrapped_call_inside_a_thought_is_still_extracted_after_a_narrated_one() {
+        // The wrapper keeps its structural reading (`I3`, `tool_in_reason`) even
+        // when the same thought first quoted the call bare.
+        let input = "<think>maybe <function=run>x</function>; yes: \
+                     <tool_call><function=run><parameter=a>1</parameter></function></tool_call> now answer</think>Done.";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[
+                    reasoning("maybe x; yes: "),
+                    call("run", serde_json::json!({"a": "1"})),
+                    reasoning(" now answer"),
+                    text("Done."),
+                ],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
+    #[test]
+    fn a_bare_invoke_terminator_without_a_narrated_header_stays_literal_in_a_thought() {
+        // Only a terminator that closes a narrated header is markup; a stray one
+        // is text on both paths (pinned above), and stays so.
+        let input = "<think>a</function>b</think>";
+        at_every_split(input, |out, cut| {
+            assert_eq!(
+                out,
+                &[reasoning("a</function>b")],
+                "split at {cut}: {out:?}"
+            );
+        });
+    }
+
     #[test]
     fn guided_strips_a_duplicate_reasoning_opener_inside_a_thought() {
         let out = guided_reasoning(&format!("<think>a<think>b</think>{GUIDED_CALL}"));

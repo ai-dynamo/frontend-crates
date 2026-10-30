@@ -57,6 +57,9 @@ fn spec() -> WrappedBlockSpec {
         invoke_boundary_factory: Some(InvokeBoundaryFactory::NativeOnly(|| {
             Box::new(QwenInvokeBoundary::default())
         })),
+        // The template always wraps a call in `<tool_call>`; a bare
+        // `<function=NAME>` inside an open thought is narration.
+        narrated_invoke_header_end: Some('>'),
     }
 }
 

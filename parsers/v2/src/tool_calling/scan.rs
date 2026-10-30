@@ -962,7 +962,9 @@ fn envelope_parse_channel(env: &ChannelEnvelope, text: &str) -> Option<usize> {
 ///
 /// * native here — the span's opener plus `orphan_markers` (`</tool_call>`),
 ///   because tool OPENERS are structural on this path and are handled separately
-///   as `InReasoning::ToolOpen`;
+///   as `InReasoning::ToolOpen` (a BARE invoke header is the exception for a
+///   wrapper family that sets `narrated_invoke_header_end`: it is narration,
+///   stripped as `InReasoning::Narrated`);
 /// * guided — `holdback_markers` plus the opener, because guided decoding delivers
 ///   the call as JSON, so tool markup inside a thought is narration to strip, not
 ///   structure to enter.
@@ -1468,6 +1470,14 @@ pub(crate) struct WrappedBlockSpec {
     /// differently for identical markup — the tool-only parser said `true` while the
     /// unified one inherited the trait default `false`.
     pub preserve_special_tokens: bool,
+    /// The byte that closes a BARE invoke header (`<function=NAME>` → `'>'`).
+    ///
+    /// Set only by wrapper families whose template never emits an invoke outside
+    /// its block: a bare header inside an open thought is then the model
+    /// NARRATING a call, so [`WrappedBlockScanner`] strips the header and its
+    /// `invoke_end` from the reasoning payload instead of recovering a call from
+    /// it (ai-dynamo/dynamo#17663). `None` keeps the structural reading.
+    pub narrated_invoke_header_end: Option<char>,
 }
 
 /// The reasoning channel a unified scanner also owns.
@@ -1954,6 +1964,10 @@ enum Marker {
 
 /// What the earliest marker inside an OPEN reasoning span means.
 enum InReasoning {
+    /// A bare invoke header or its terminator NARRATED inside the thought
+    /// (wrapper families only): stripped like stray markup, the thought stays
+    /// open. `open` is whether a header (true) or its terminator (false) was seen.
+    Narrated { len: usize, open: bool },
     /// The span's own closer — reasoning ends here.
     Close,
     /// A tool opener — suspend the thought, resume after the call closes.
@@ -2055,6 +2069,10 @@ pub(crate) struct WrappedBlockScanner<E: InvokeEmitter> {
     /// call closes. Without this the tail of the thought would surface as
     /// visible text instead of reasoning.
     resume_reasoning: bool,
+    /// A bare invoke header was stripped from the open thought as narration;
+    /// its `invoke_end` is stripped too when it arrives (a bare `invoke_end`
+    /// with no narrated header stays literal, as it does outside a thought).
+    narrated_invoke_open: bool,
     suppress_normal_text: bool,
     next_index: usize,
     pending_parse_error: Option<DeferredParseError>,
@@ -2107,6 +2125,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             in_reasoning: false,
             accept_redundant_reasoning_start: false,
             resume_reasoning: false,
+            narrated_invoke_open: false,
             suppress_normal_text: false,
             next_index: 0,
             pending_parse_error: None,
@@ -2360,6 +2379,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         // Without this a reset mid-thought leaves "resume reasoning after the call"
         // armed, and the NEXT stream's first post-call answer is emitted as reasoning.
         self.resume_reasoning = false;
+        self.narrated_invoke_open = false;
         self.suppress_normal_text = false;
         self.next_index = 0;
         self.pending_parse_error = None;
@@ -2562,6 +2582,66 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         Some((pos, self.opener_len_at(pos, flush)?))
     }
 
+    /// Whether a BARE invoke inside an open thought is narration, not a call.
+    ///
+    /// A wrapper family (`<tool_call>` around `<function=`) never places a real
+    /// call bare: its template always wraps the invoke, and a call emitted after
+    /// a forgotten reasoning closer still arrives wrapped — which is the opener
+    /// `drain_reasoning` keeps honouring (`I3`, `tool_in_reason`). Bare-invoke
+    /// recovery is a heuristic for malformed output OUTSIDE a thought; inside one
+    /// it promoted every call the model QUOTED while planning to a real
+    /// `tool_calls` entry (ai-dynamo/dynamo#17663: a thought that looped to
+    /// `max_tokens` quoted the same call 19 times and all 19 were dispatched).
+    /// Families whose block IS the invoke have no wrapper to tell the two apart
+    /// and keep the structural reading.
+    fn bare_invoke_in_reasoning_is_narration(&self) -> bool {
+        self.spec.narrated_invoke_header_end.is_some()
+            && !self.block_is_invoke()
+            && !self.spec.block_starts.is_empty()
+    }
+
+    /// The earliest narrated bare-invoke marker inside the open thought, as
+    /// `(position, Narrated { len, open })`. A header spans its opener through
+    /// the first `>`; `len == 0` means the `>` has not streamed yet (wait).
+    /// Once a header was stripped, the family's `invoke_end` is the narrated
+    /// terminator. `closer` bounds the header: a `>` past the thought's own
+    /// closer cannot complete it, so the bare opener alone is stripped.
+    fn narrated_invoke_marker(
+        &self,
+        closer: Option<usize>,
+        flush: bool,
+    ) -> Option<(usize, InReasoning)> {
+        let header_end = self.spec.narrated_invoke_header_end?;
+        let header = self.find_invoke_start(&self.buffer).map(|at| {
+            let limit = closer.unwrap_or(self.buffer.len());
+            let opener = self.spec.invoke_start.len();
+            let len = if limit <= at {
+                opener
+            } else {
+                match self.buffer[at + opener..limit].find(header_end) {
+                    Some(end) => opener + end + 1,
+                    None if closer.is_some() || flush => opener,
+                    None => 0,
+                }
+            };
+            (at, InReasoning::Narrated { len, open: true })
+        });
+        let terminator = self
+            .narrated_invoke_open
+            .then(|| self.buffer.find(self.spec.invoke_end.as_str()))
+            .flatten()
+            .map(|at| {
+                (
+                    at,
+                    InReasoning::Narrated {
+                        len: self.spec.invoke_end.len(),
+                        open: false,
+                    },
+                )
+            });
+        earliest([header, terminator])
+    }
+
     /// Position and length of the earliest malformed close outside a block.
     fn find_orphan_marker(&self) -> Option<(usize, usize)> {
         let regular = find_first(&self.buffer, &self.spec.orphan_markers);
@@ -2612,6 +2692,13 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .as_ref()
             .map(|boundary| boundary.bare_invoke_holdback(&self.buffer))
             .unwrap_or_default();
+        // A narrated invoke's terminator is stripped from the thought once it is
+        // complete, so its split prefix must not be shown either.
+        let narrated = if self.in_reasoning && self.narrated_invoke_open {
+            marker_prefix_suffix_len(&self.buffer, [self.spec.invoke_end.as_str()])
+        } else {
+            0
+        };
         let separator = self
             .tool_separator
             .as_ref()
@@ -2629,6 +2716,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             .max(self.pending_label_len())
             .max(invoke)
             .max(bare)
+            .max(narrated)
             .max(separator)
     }
 
@@ -2703,11 +2791,26 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         //    same rule the orphan handler applies outside reasoning, so being inside
         //    a thought cannot turn markup into content (`I3`). The closer is excluded
         //    from this set because it legitimately ends the span.
+        //  - for a WRAPPER family, a bare invoke header inside the thought is the
+        //    model narrating a call, not making one (see
+        //    [`Self::bare_invoke_in_reasoning_is_narration`]): its header and
+        //    terminator are stripped like stray markup and the thought stays open.
+        let narration = self.bare_invoke_in_reasoning_is_narration();
         let tool_open = find_first(&self.buffer, &self.spec.block_starts)
             .map(|(pos, _)| pos)
             .into_iter()
-            .chain(self.find_invoke_start(&self.buffer))
+            .chain(if narration {
+                None
+            } else {
+                self.find_invoke_start(&self.buffer)
+            })
             .min();
+        let closer = self.buffer.find(end);
+        let narrated = if narration {
+            self.narrated_invoke_marker(closer, flush)
+        } else {
+            None
+        };
         let duplicate_start = self
             .buffer
             .find(start)
@@ -2720,17 +2823,30 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
         );
 
         if let Some((at, what)) = earliest([
-            self.buffer.find(end).map(|pos| (pos, InReasoning::Close)),
+            closer.map(|pos| (pos, InReasoning::Close)),
             tool_open.map(|pos| (pos, InReasoning::ToolOpen)),
             stray.map(|(pos, len)| (pos, InReasoning::Stray(len))),
+            narrated,
         ]) {
+            // A narrated header whose `>` has not streamed yet: emit the thought
+            // before it and wait, so no header byte is shown and the complete
+            // header is stripped in one piece.
+            if let InReasoning::Narrated { len: 0, .. } = what {
+                if at > 0 {
+                    push_run(out, Kind::Reasoning, &self.buffer[..at]);
+                    self.prose
+                        .consume_recovery(&self.buffer[..at], &self.spec.invoke_start);
+                    self.consume_buffer_prefix(at);
+                }
+                return Ok(false);
+            }
             // One transition table: how many marker bytes to consume, and the state
             // the span is left in. ToolOpen consumes nothing — the block handler
             // still needs to see its own opener.
             let (consume, in_reasoning, resume) = match what {
                 InReasoning::Close => (end.len(), false, false),
                 InReasoning::ToolOpen => (0, false, true),
-                InReasoning::Stray(len) => (len, true, false),
+                InReasoning::Stray(len) | InReasoning::Narrated { len, .. } => (len, true, false),
             };
             push_run(out, Kind::Reasoning, &self.buffer[..at]);
             self.prose
@@ -2739,11 +2855,22 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             self.consume_buffer_prefix(at + consume);
             self.in_reasoning = in_reasoning;
             self.resume_reasoning = resume;
-            if matches!(what, InReasoning::Stray(_)) {
-                tracing::debug!(
-                    why = %format!("{}_stray_marker_in_reasoning", self.spec.family),
-                    "stream stripped malformed markup inside a reasoning span"
-                );
+            match what {
+                InReasoning::Stray(_) => {
+                    tracing::debug!(
+                        why = %format!("{}_stray_marker_in_reasoning", self.spec.family),
+                        "stream stripped malformed markup inside a reasoning span"
+                    );
+                }
+                InReasoning::Narrated { open, .. } => {
+                    self.narrated_invoke_open = open;
+                    tracing::debug!(
+                        why = %format!("{}_narrated_invoke_in_reasoning", self.spec.family),
+                        "stream stripped a narrated bare invoke marker inside a reasoning span"
+                    );
+                }
+                InReasoning::Close => self.narrated_invoke_open = false,
+                InReasoning::ToolOpen => {}
             }
             return Ok(true);
         }
@@ -2763,6 +2890,7 @@ impl<E: InvokeEmitter> WrappedBlockScanner<E> {
             // as reasoning — not dropped, and not leaked as visible text.
             self.in_reasoning = false;
             self.resume_reasoning = false;
+            self.narrated_invoke_open = false;
             tracing::debug!(
                 why = %format!("{}_reasoning_open_at_eof", self.spec.family),
                 "stream promoted unterminated reasoning at EOF"
@@ -3815,6 +3943,7 @@ pub(crate) mod test_support {
                 drop_invoke_crossing_block_end: false,
                 invoke_boundary_factory: None,
                 preserve_special_tokens: true,
+                narrated_invoke_header_end: None,
             },
             FailOnBoom,
         )
