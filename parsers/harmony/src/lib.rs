@@ -1,12 +1,18 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-use std::fs::{self, OpenOptions};
+use std::fs::{self, File, OpenOptions};
+use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
 use openai_harmony::{HarmonyEncoding, HarmonyEncodingName, load_harmony_encoding};
+use sha2::{Digest, Sha256};
+
+#[cfg(test)]
+const VOCAB_CACHE_KEY: &str = "fb374d419588a4632f3f557e76b4b70aebbca790";
+const VOCAB_SHA256: &str = "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d";
 
 static HARMONY_GPT_OSS_ENCODING: OnceLock<Result<HarmonyEncoding>> = OnceLock::new();
 
@@ -34,18 +40,14 @@ fn resolve_cache_dir() -> PathBuf {
 }
 
 fn with_cache_lock_at<T>(cache_dir: &Path, load: impl FnOnce() -> Result<T>) -> Result<T> {
-    with_cache_lock_at_using(cache_dir, load, |lock_path| {
-        OpenOptions::new()
-            .create(true)
-            .truncate(false)
-            .read(true)
-            .write(true)
-            .open(lock_path)
+    with_cache_lock_at_using(cache_dir, VOCAB_SHA256, load, |lock_path| {
+        open_lock_file(lock_path)
     })
 }
 
 fn with_cache_lock_at_using<T>(
     cache_dir: &Path,
+    expected_vocab_sha256: &str,
     load: impl FnOnce() -> Result<T>,
     open_lock_file: impl FnOnce(&Path) -> std::io::Result<std::fs::File>,
 ) -> Result<T> {
@@ -69,9 +71,8 @@ fn with_cache_lock_at_using<T>(
                         format!("opening Harmony vocabulary lock file {lock_path:?}")
                     })?
             } else {
-                // A mounted read-only cache cannot host the lock, so coordinate its callers
-                // through a persistent sidecar before Harmony checks or downloads the vocabulary.
-                open_read_only_cache_sidecar(cache_dir)?
+                // A verified cached vocabulary can serve as a stable lock inode on read-only mounts.
+                open_verified_vocab_lock(cache_dir, expected_vocab_sha256)?
             }
         }
         Err(error) => {
@@ -88,53 +89,59 @@ fn with_cache_lock_at_using<T>(
     result
 }
 
-fn open_read_only_cache_sidecar(cache_dir: &Path) -> Result<std::fs::File> {
-    let lock_path = read_only_cache_sidecar_path(cache_dir)?;
-    match OpenOptions::new()
+fn open_lock_file(lock_path: &Path) -> std::io::Result<File> {
+    OpenOptions::new()
         .create(true)
         .truncate(false)
         .read(true)
         .write(true)
-        .open(&lock_path)
-    {
-        Ok(lock_file) => Ok(lock_file),
-        Err(_) => {
-            let lock_dir = std::env::temp_dir().join("dynamo-harmony-locks");
-            fs::create_dir_all(&lock_dir)
-                .with_context(|| format!("creating Harmony lock directory {lock_dir:?}"))?;
-            let fallback_path = lock_dir.join(
-                lock_path
-                    .file_name()
-                    .context("Harmony sidecar lock path has no file name")?,
-            );
-            OpenOptions::new()
-                .create(true)
-                .truncate(false)
-                .read(true)
-                .write(true)
-                .open(&fallback_path)
-                .with_context(|| {
-                    format!("opening Harmony vocabulary sidecar lock {fallback_path:?}")
-                })
-        }
-    }
+        .open(lock_path)
 }
 
-fn read_only_cache_sidecar_path(cache_dir: &Path) -> Result<PathBuf> {
-    let canonical_path = cache_dir
-        .canonicalize()
-        .with_context(|| format!("resolving Harmony vocabulary cache directory {cache_dir:?}"))?;
-    let mut path_hash = 0xcbf29ce484222325_u64;
-    for byte in canonical_path.to_string_lossy().as_bytes() {
-        path_hash ^= u64::from(*byte);
-        path_hash = path_hash.wrapping_mul(0x100000001b3);
+fn open_verified_vocab_lock(cache_dir: &Path, expected_sha256: &str) -> Result<File> {
+    let explicit_vocab_path = std::env::var_os("TIKTOKEN_ENCODINGS_BASE")
+        .map(|base| PathBuf::from(base).join("o200k_base.tiktoken"));
+    let vocab_paths = if let Some(vocab_path) = explicit_vocab_path {
+        vec![vocab_path]
+    } else {
+        let entries = fs::read_dir(cache_dir)
+            .with_context(|| format!("listing Harmony vocabulary cache directory {cache_dir:?}"))?
+            .collect::<std::io::Result<Vec<_>>>()?;
+        let mut paths = Vec::new();
+        for entry in entries {
+            if entry.file_type()?.is_file() {
+                paths.push(entry.path());
+            }
+        }
+        paths.sort();
+        paths
+    };
+
+    for vocab_path in vocab_paths {
+        let Ok(mut vocab_file) = File::open(&vocab_path) else {
+            continue;
+        };
+        if !matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
+            continue;
+        }
+        vocab_file
+            .lock()
+            .with_context(|| format!("locking Harmony vocabulary cache file {vocab_path:?}"))?;
+        if matches_vocab_checksum(&mut vocab_file, expected_sha256)? {
+            return Ok(vocab_file);
+        }
     }
 
-    let file_name = format!(".dynamo-harmony-{path_hash:016x}.lock");
-    let parent = canonical_path
-        .parent()
-        .context("Harmony cache directory has no parent")?;
-    Ok(parent.join(file_name))
+    anyhow::bail!(
+        "no checksum-verified Harmony vocabulary file was found in cache directory {cache_dir:?}"
+    )
+}
+
+fn matches_vocab_checksum(vocab_file: &mut File, expected_sha256: &str) -> Result<bool> {
+    let mut bytes = Vec::new();
+    vocab_file.seek(SeekFrom::Start(0))?;
+    vocab_file.read_to_end(&mut bytes)?;
+    Ok(format!("{:x}", Sha256::digest(&bytes)) == expected_sha256)
 }
 
 #[cfg(test)]
@@ -148,7 +155,10 @@ mod tests {
 
     use anyhow::Result;
 
-    use super::{read_only_cache_sidecar_path, with_cache_lock_at, with_cache_lock_at_using};
+    use super::{VOCAB_CACHE_KEY, with_cache_lock_at, with_cache_lock_at_using};
+
+    const TEST_VOCAB_SHA256: &str =
+        "5d459a81205fa7ba34f57d3af8e41660c76527de1759589b487b96491f3d3793";
 
     struct ChildGuard(Child);
 
@@ -248,7 +258,7 @@ mod tests {
                 let result = if std::env::var("DYNAMO_HARMONY_LOCK_TEST_READ_ONLY_FS")
                     .is_ok_and(|value| value == "true")
                 {
-                    super::with_cache_lock_at_using(&cache_dir, load, |_| {
+                    super::with_cache_lock_at_using(&cache_dir, TEST_VOCAB_SHA256, load, |_| {
                         Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem))
                     })
                 } else {
@@ -264,11 +274,17 @@ mod tests {
     fn locks_are_exclusive_across_processes_and_independent_by_cache() -> Result<()> {
         let directory = tempfile::tempdir()?;
         for read_only_fs in [false, true] {
-            let scenario = if read_only_fs { "sidecar" } else { "cache" };
+            let scenario = if read_only_fs { "vocab-lock" } else { "cache" };
             let markers = directory.path().join(format!("{scenario}-markers"));
             let first_cache = directory.path().join(format!("{scenario}-first"));
             let second_cache = directory.path().join(format!("{scenario}-second"));
             fs::create_dir_all(&markers)?;
+            if read_only_fs {
+                fs::create_dir_all(&first_cache)?;
+                fs::create_dir_all(&second_cache)?;
+                fs::write(first_cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
+                fs::write(second_cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
+            }
 
             let mut holder = spawn_helper("hold", &first_cache, &markers, read_only_fs);
             wait_for_file(&markers.join("hold.entered"));
@@ -292,8 +308,8 @@ mod tests {
             assert!(waiter.wait()?.success());
             assert!(markers.join("waiter.entered").exists());
             if read_only_fs {
-                assert!(read_only_cache_sidecar_path(&first_cache)?.exists());
-                assert!(read_only_cache_sidecar_path(&second_cache)?.exists());
+                assert!(!first_cache.join("harmony-vocab.lock").exists());
+                assert!(!second_cache.join("harmony-vocab.lock").exists());
             } else {
                 assert!(first_cache.join("harmony-vocab.lock").exists());
                 assert!(second_cache.join("harmony-vocab.lock").exists());
@@ -324,6 +340,24 @@ mod tests {
             "OS did not release the lock after holder termination"
         );
         assert!(cache.join("harmony-vocab.lock").exists());
+
+        let read_only_cache = directory.path().join("read-only-cache");
+        fs::create_dir(&read_only_cache)?;
+        fs::write(read_only_cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
+        let mut holder = spawn_helper("hold", &read_only_cache, &markers, true);
+        wait_for_file(&markers.join("hold.entered"));
+        holder.kill()?;
+        assert!(!holder.wait()?.success());
+        let released = with_cache_lock_at_using(
+            &read_only_cache,
+            TEST_VOCAB_SHA256,
+            || Ok(()),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
+        assert!(
+            released.is_ok(),
+            "OS did not release the vocabulary lock after holder termination"
+        );
         Ok(())
     }
 
@@ -335,14 +369,19 @@ mod tests {
         let directory = tempfile::tempdir()?;
         let cache = directory.path().join("cache");
         fs::create_dir(&cache)?;
+        fs::write(cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
 
-        let result = with_cache_lock_at(&cache, || Ok("loaded"));
+        let result = with_cache_lock_at_using(
+            &cache,
+            TEST_VOCAB_SHA256,
+            || Ok("loaded"),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
 
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
         assert_eq!(result?, "loaded");
         assert!(!cache.join("harmony-vocab.lock").exists());
-        assert!(read_only_cache_sidecar_path(&cache)?.exists());
         Ok(())
     }
 
@@ -359,7 +398,12 @@ mod tests {
         fs::set_permissions(&lock_path, fs::Permissions::from_mode(0o444))?;
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o555))?;
 
-        let result = with_cache_lock_at(&cache, || Ok("loaded"));
+        let result = with_cache_lock_at_using(
+            &cache,
+            TEST_VOCAB_SHA256,
+            || Ok("loaded"),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
 
         fs::set_permissions(&cache, fs::Permissions::from_mode(0o755))?;
         assert_eq!(result?, "loaded");
@@ -373,13 +417,63 @@ mod tests {
         let cache = directory.path().join("cache");
         fs::create_dir(&cache)?;
 
+        fs::write(cache.join(VOCAB_CACHE_KEY), b"test vocabulary")?;
         let result = with_cache_lock_at_using(
             &cache,
+            TEST_VOCAB_SHA256,
             || Ok("loaded"),
             |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
         );
 
         assert_eq!(result?, "loaded");
+        assert!(!cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_cache_finds_a_custom_url_cache_entry() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        fs::write(
+            cache.join("custom-url-derived-cache-key"),
+            b"test vocabulary",
+        )?;
+        let result = with_cache_lock_at_using(
+            &cache,
+            TEST_VOCAB_SHA256,
+            || Ok("loaded"),
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
+
+        assert_eq!(result?, "loaded");
+        assert!(!cache.join("harmony-vocab.lock").exists());
+        Ok(())
+    }
+
+    #[test]
+    fn read_only_cache_without_a_verified_vocabulary_fails_closed() -> Result<()> {
+        let directory = tempfile::tempdir()?;
+        let cache = directory.path().join("cache");
+        fs::create_dir(&cache)?;
+        fs::write(cache.join(VOCAB_CACHE_KEY), b"partial vocabulary")?;
+        let mut loaded = false;
+
+        let result = with_cache_lock_at_using(
+            &cache,
+            TEST_VOCAB_SHA256,
+            || {
+                loaded = true;
+                Ok(())
+            },
+            |_| Err(io::Error::from(io::ErrorKind::ReadOnlyFilesystem)),
+        );
+
+        assert!(result.is_err());
+        assert!(
+            !loaded,
+            "loader ran without a lock on a verified vocabulary"
+        );
         assert!(!cache.join("harmony-vocab.lock").exists());
         Ok(())
     }
