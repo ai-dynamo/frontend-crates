@@ -46,6 +46,9 @@ def test_existing_family_job_is_stable_and_preserves_request_shape():
             "xml_string_type_double_quoted_object",
             "arg_object_quoted_parameter_close",
             "arg_array_quoted_parameter_close",
+            "arg_numeric_overflow_siblings_finite",
+            "arg_numeric_overflow_siblings_positive",
+            "arg_numeric_overflow_siblings_negative",
         )
     } <= {case["id"] for case in job["cases"]}
     assert [case["id"] for case in job["cases"]].count("UNIFIED.tool_only.gemma4") == 1
