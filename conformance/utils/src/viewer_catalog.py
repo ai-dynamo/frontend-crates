@@ -743,7 +743,8 @@ def _history_dataset_sources(root: Path, unified: list[dict], metadata: dict, so
         resources = _unified_records(dataset_root, store_root, inventory=inventory, document_index=documents)
         for resource in resources:
             resource.update(dataset=identity, dataset_root=prefix)
-            if resource["kind"] != "inputs-and-golden":
+            # Families absent from latest still need their original request and GOLDEN.
+            if resource["kind"] != "inputs-and-golden" or resource["path"] not in selected:
                 selected[resource["path"]] = resource
         # Native indexing uses the same pre-envelope conversion cache as final
         # assembly, resolving each dataset against its own authored evidence.

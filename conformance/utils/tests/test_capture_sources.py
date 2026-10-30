@@ -36,6 +36,43 @@ def pin_history(root):
     return {"schema": 1, "source_revision": "a" * 40, "inventory_sha256": sources.digest(data)}
 
 
+@pytest.mark.parametrize("compressed", [False, True])
+def test_retained_inventory_keeps_provenance_and_version_archives(tmp_path, compressed):
+    store = tmp_path / sources.STORE
+    family = store / "families/hermes"
+    family.mkdir(parents=True)
+    (family / "inputs_and_golden.yaml").write_bytes(b"cases: {}\n")
+    (family / "dynamo_v1.yaml").write_bytes(b"latest must stay separate\n")
+    if compressed:
+        archive = store / "versions/dynamo-1.0.0.tar.gz"
+        archive.parent.mkdir()
+        with tarfile.open(archive, "w:gz"):
+            pass
+        capture = archive
+    else:
+        capture = family / "dynamo_v1-1.0.0.yaml"
+        capture.write_bytes(b"execution: executions/receipt\n")
+    dependencies = [store / "executions/receipt.yaml", store / "receipts/proof.yaml"]
+    for path in dependencies:
+        path.parent.mkdir(exist_ok=True)
+        path.write_bytes(b"identity: retained\n")
+    (tmp_path / "conformance/fixtures-manifest.json").write_bytes(b"{}\n")
+    inventory = sources.retained_inventory(tmp_path)
+    paths = {row["path"] for row in inventory["files"]}
+    assert capture.relative_to(tmp_path).as_posix() in paths
+    assert all(path.relative_to(tmp_path).as_posix() in paths for path in dependencies)
+    assert (family / "dynamo_v1.yaml").relative_to(tmp_path).as_posix() not in paths
+
+
+def test_retained_inventory_requires_capture_evidence(tmp_path):
+    execution = tmp_path / sources.STORE / "executions/job-hash.yaml"
+    execution.parent.mkdir(parents=True)
+    execution.write_bytes(b"identity: retained\n")
+    (tmp_path / "conformance/fixtures-manifest.json").write_bytes(b"{}\n")
+    with pytest.raises(ValueError, match="no retained historical captures"):
+        sources.retained_inventory(tmp_path)
+
+
 def test_history_verifies_original_bytes_members_and_missing_versus_null(tmp_path):
     history = tmp_path / "history"
     history.mkdir()
