@@ -10,6 +10,7 @@ It renders HuggingFace `chat_template` jinja2 (via `minijinja` + `minijinja-cont
 - **Native DeepSeek formatters**: Rust formatters for V4.1 / V4 / V3.2 families (under `deepseek`).
 - **Native Inkling formatter**: exact text, image, audio, reasoning, and tool-use framing for `inkling_mm_model` (under `inkling`). Media blocks contain only the marker token; the backend multimodal processor expands per-patch or per-frame placeholders later.
 - **Native Kimi K3 formatter**: XTML rendering with explicit trusted-control and ordinary-text segment boundaries (under `kimi_k3`).
+- **Request rules**: the Dynamo frontend's rules around a render, such as thinking modes and `continue_final_message` (under `request_rules`).
 - **Bring-your-own request type**: implement `OAIChatLikeRequest` for any request type, or use the ready-made impl for `dynamo-protocols`' OpenAI chat request.
 - **Self-contained**: no async runtime or networking; segment-aware prompts interoperate with `dynamo-tokenizers`.
 
@@ -40,6 +41,17 @@ The V4.1 formatter supports text and image messages, tool history, mid-conversat
 Reasoning-effort names and the default follow the model's [Python reference encoder at revision `dba1be0a`](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash/blob/dba1be0a40aa45a94ad051997016db3960a90277/encoding/encoding.py#L444). Prompt fixtures pass explicit numeric effort to the low-level encoder. Image cases use the same fixture schema and include URL/data-URL inputs, mixed content, multiple turns and tool results. Their expected prompts were generated with the pinned reference encoder (SHA-256 `502bdaec8a3fd88ebc24c4721a7038fbe42f2063c664638127056107920035c1`). UUID-only image reuse is a Dynamo processor-cache extension tested separately.
 
 Prompt-format tests do not replace live image-fetch, transfer, cache and backend validation. The runtime must collect tool-result images in the same call order as their rendered placeholders.
+
+## Request rules
+
+`request_rules` holds the rules that the Dynamo frontend applies around a render. A frontend that uses them gives a client the same prompt as Dynamo.
+
+- `ThinkingRules::apply` rewrites `chat_template_args` so that `thinking`, `enable_thinking`, and `thinking_mode` agree. It applies the deployment's default mode and the MiniMax M3 rules.
+- `reject_unsupported_reasoning_effort` refuses `reasoning_effort: none` for GPT-OSS.
+- `render_chat_prompt` renders with `continue_final_message`, a raw prompt in place of the template, and tool-call argument normalization (`should_normalize_tool_call_arguments`). Every failure is a `PromptRenderError::InvalidRequest`.
+- `should_add_generation_prompt` turns off the generation prompt when `continue_final_message` is set.
+
+The rules take plain values for what a request carries beyond `OAIChatLikeRequest`, such as a top-level `thinking` field. `tests/request_rules_parity` checks them against a frozen copy of the Dynamo code.
 
 ## Relationship to other crates
 - `dynamo-protocols` — OpenAI/wire request types this crate renders from.
