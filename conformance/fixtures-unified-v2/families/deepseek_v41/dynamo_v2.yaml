@@ -1,4 +1,4 @@
-capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"054f862b735f5beba470f723dbf917786d721474c5d1ebebf18abd1bf6a33a44","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
+capture_selection: {"family":"deepseek_v41","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"17e68fb3781f3e6882a05885362bcdb8e47694ec7aa9d510c66e6cf1cded31b7","source":"conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
 document:
   mode: unified
 provenance:
@@ -22642,147 +22642,27 @@ records:
               type: object
             strict: false
         semantic_sha256: 5a72973d2510a851b4a54370cd55f30e031b3ef616ca55682c46604755d6cdb4
-schema_version: 2
-  arg_numeric_overflow_siblings_positive:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
-      stimulus:
-        semantic_sha256: 210722724348030a5193d10cc5139a1e34bef32d6bb2bc81f2bfd4368fc90a17
-        inline:
-          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":1e400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":1e400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.0.yaml
-  arg_object_quoted_parameter_close:
-  arg_numeric_overflow_siblings_negative:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
-      stimulus:
-        semantic_sha256: f16fa7fd36817ae8c67614aca86ccb946691a96aa39472076864f582bd473c5d
-        inline:
-          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":-1E+400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":-1E+400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.0.yaml
-  arg_numeric_overflow_siblings_positive:
   arg_numeric_overflow_siblings_finite:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
     value:
       case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
-      stimulus:
-        semantic_sha256: 2f21de3e9c10b9e9b664e1bbb851e7c19888fb7638659aa4eec11b2aef1caaa2
-        inline:
-          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
           init:
+            named_tool: null
             starting_state: None
             tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          parser_path: unified
       observation:
         value:
           assembled:
@@ -22796,21 +22676,141 @@ schema_version: 2
               kind: tool_call
               name: echo
           - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          finish_reason: stop
           init:
             named_tool: null
             starting_state: None
             tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.0.yaml
+          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1.5</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 2f21de3e9c10b9e9b664e1bbb851e7c19888fb7638659aa4eec11b2aef1caaa2
+  arg_numeric_overflow_siblings_positive:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 210722724348030a5193d10cc5139a1e34bef32d6bb2bc81f2bfd4368fc90a17
   arg_numeric_overflow_siblings_negative:
+    member: conformance/fixtures-unified-v2/families/deepseek_v41/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: f16fa7fd36817ae8c67614aca86ccb946691a96aa39472076864f582bd473c5d
+schema_version: 2

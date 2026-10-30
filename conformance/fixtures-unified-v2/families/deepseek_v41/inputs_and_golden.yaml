@@ -16023,75 +16023,6 @@ cases:
 
 
           '
-  arg_numeric_overflow_siblings_positive:
-    lifecycle: active
-    scenario: arg_numeric_overflow_siblings_positive
-    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_numeric_overflow_siblings_positive
-    historical_ids: []
-    request:
-      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: echo
-        parameters:
-          type: object
-          properties:
-            city:
-              type: string
-            value:
-              type: number
-          required:
-          - city
-          - value
-      chunks:
-      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    golden:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":1e400}'
-  arg_numeric_overflow_siblings_negative:
-  arg_numeric_overflow_siblings_negative:
-    lifecycle: active
-    scenario: arg_numeric_overflow_siblings_negative
-    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_numeric_overflow_siblings_negative
-    historical_ids: []
-    request:
-      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: echo
-        parameters:
-          type: object
-          properties:
-            city:
-              type: string
-            value:
-              type: number
-          required:
-          - city
-          - value
-      chunks:
-      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
-    golden:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":-1E+400}'
   arg_numeric_overflow_siblings_finite:
     lifecycle: active
     scenario: arg_numeric_overflow_siblings_finite
@@ -16127,3 +16058,70 @@ cases:
         name: echo
         arguments: '{"city":"Paris","value":1.5}'
   arg_numeric_overflow_siblings_positive:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_positive
+    description: Numeric token 1e400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_positive
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">1e400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1e400}'
+  arg_numeric_overflow_siblings_negative:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_negative
+    description: Numeric token -1E+400 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_negative
+    historical_ids: []
+    request:
+      input: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <｜DSML｜ calls><｜DSML｜ invoke name="echo"><｜DSML｜ parameter name="city" string="true">Paris</｜DSML｜ parameter><｜DSML｜ parameter name="value" string="false">-1E+400</｜DSML｜ parameter></｜DSML｜ invoke></｜DSML｜ calls>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":-1E+400}'

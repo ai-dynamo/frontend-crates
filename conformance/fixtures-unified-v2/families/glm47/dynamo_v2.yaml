@@ -1,4 +1,4 @@
-capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"2580ac3d025132de31a28b01893d049d3f1b4dca7f5833101ba367019cd8159b","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
+capture_selection: {"family":"glm47","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"d37034bb00c4331903a946d15de17a17d94abe166882232b475f63d387d971ca","source":"conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
 document:
   mode: unified
 provenance:
@@ -23300,147 +23300,27 @@ records:
               type: object
             strict: false
         semantic_sha256: f3b8d0d476f68c44f24080bde2224d37d5303951fdc2a8ca5418b15cf06a7d52
-schema_version: 2
-  arg_numeric_overflow_siblings_positive:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
-      stimulus:
-        semantic_sha256: 2bb5954210567ce4f5cc95ce00d38cefdbc45506643e29b1b42202306071e160
-        inline:
-          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1e400</arg_value></tool_call>
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1e400</arg_value></tool_call>
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":1e400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":1e400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.0.yaml
-  arg_object_quoted_parameter_close:
-  arg_numeric_overflow_siblings_negative:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
-      stimulus:
-        semantic_sha256: e5867c16302a137ae74fc8d34d4d96483937890d8eedd5dab07773f03866400b
-        inline:
-          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>-1E+400</arg_value></tool_call>
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>-1E+400</arg_value></tool_call>
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":-1E+400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":-1E+400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.0.yaml
-  arg_numeric_overflow_siblings_positive:
   arg_numeric_overflow_siblings_finite:
+    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
     value:
       case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
-      stimulus:
-        semantic_sha256: c80abbd6e796c9990767e62ee14e41ca531564e56ede9a598ef8ceb3db730cd9
-        inline:
-          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1.5</arg_value></tool_call>
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
           init:
+            named_tool: null
             starting_state: None
             tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1.5</arg_value></tool_call>
+          parser_path: unified
       observation:
         value:
           assembled:
@@ -23454,21 +23334,141 @@ schema_version: 2
               kind: tool_call
               name: echo
           - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1.5</arg_value></tool_call>
+          finish_reason: stop
           init:
             named_tool: null
             starting_state: None
             tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.0.yaml
+          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1.5</arg_value></tool_call>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: c80abbd6e796c9990767e62ee14e41ca531564e56ede9a598ef8ceb3db730cd9
+  arg_numeric_overflow_siblings_positive:
+    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1e400</arg_value></tool_call>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>1e400</arg_value></tool_call>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 2bb5954210567ce4f5cc95ce00d38cefdbc45506643e29b1b42202306071e160
   arg_numeric_overflow_siblings_negative:
+    member: conformance/fixtures-unified-v2/families/glm47/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>-1E+400</arg_value></tool_call>
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: <tool_call>echo<arg_key>city</arg_key><arg_value>Paris</arg_value><arg_key>value</arg_key><arg_value>-1E+400</arg_value></tool_call>
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: e5867c16302a137ae74fc8d34d4d96483937890d8eedd5dab07773f03866400b
+schema_version: 2

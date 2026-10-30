@@ -1,4 +1,4 @@
-capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"c4142ea8a44d8c50be703ff39d0380caae2f6e217777f3fa7c5e807575e57303","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
+capture_selection: {"family":"muse_glimmer","implementation":"dynamo_v2","lineage":[],"mode":"unified","payload_sha256":"934cfefd9ec7fd73b9023e435d3fc47a8324fa4a40f38627ab3b63aa8850159e","source":"conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.2.yaml","surface":"unified","version":"0.9.2"}
 document:
   mode: unified
 provenance:
@@ -31475,207 +31475,27 @@ records:
               type: object
             strict: false
         semantic_sha256: 57c037d9d1fe4e0b4538fefefd9f31356dbdbd3ad78dbbf9a8451c46a597896e
-schema_version: 2
-  arg_numeric_overflow_siblings_positive:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
-      stimulus:
-        semantic_sha256: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
-        inline:
-          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-            <atem:invoke name="echo">
-
-            <atem:parameter name="city">Paris</atem:parameter>
-
-            <atem:parameter name="value">1e400</atem:parameter>
-
-            </atem:invoke>
-
-            </atem:function_calls><|eom|>'
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-              <atem:invoke name="echo">
-
-              <atem:parameter name="city">Paris</atem:parameter>
-
-              <atem:parameter name="value">1e400</atem:parameter>
-
-              </atem:invoke>
-
-              </atem:function_calls><|eom|>'
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":1e400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":1e400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.0.yaml
-  arg_object_quoted_parameter_close:
-  arg_numeric_overflow_siblings_negative:
-    value:
-      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
-      stimulus:
-        semantic_sha256: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
-        inline:
-          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-            <atem:invoke name="echo">
-
-            <atem:parameter name="city">Paris</atem:parameter>
-
-            <atem:parameter name="value">-1E+400</atem:parameter>
-
-            </atem:invoke>
-
-            </atem:function_calls><|eom|>'
-          init:
-            starting_state: None
-            tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-              <atem:invoke name="echo">
-
-              <atem:parameter name="city">Paris</atem:parameter>
-
-              <atem:parameter name="value">-1E+400</atem:parameter>
-
-              </atem:invoke>
-
-              </atem:function_calls><|eom|>'
-      observation:
-        value:
-          assembled:
-          - arguments: '{"city":"Paris","value":-1E+400}'
-            kind: tool_call
-            name: echo
-          chunks:
-          - expected:
-            - arguments: '{"city":"Paris","value":-1E+400}'
-              complete: true
-              kind: tool_call
-              name: echo
-          - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
-          init:
-            named_tool: null
-            starting_state: None
-            tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.0.yaml
-  arg_numeric_overflow_siblings_positive:
   arg_numeric_overflow_siblings_finite:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
     value:
       case_key: UNIFIED.7-arg_numeric_overflow_siblings_finite
-      stimulus:
-        semantic_sha256: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
-        inline:
-          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-            <atem:invoke name="echo">
-
-            <atem:parameter name="city">Paris</atem:parameter>
-
-            <atem:parameter name="value">1.5</atem:parameter>
-
-            </atem:invoke>
-
-            </atem:function_calls><|eom|>'
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
           init:
+            named_tool: null
             starting_state: None
             tool_output_mode: Native
-            named_tool: null
-          finish_reason: stop
-          tools:
-          - name: echo
-            parameters:
-              type: object
-              properties:
-                city:
-                  type: string
-                value:
-                  type: number
-              required:
-              - city
-              - value
-          chunks:
-          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
-
-              <atem:invoke name="echo">
-
-              <atem:parameter name="city">Paris</atem:parameter>
-
-              <atem:parameter name="value">1.5</atem:parameter>
-
-              </atem:invoke>
-
-              </atem:function_calls><|eom|>'
+          parser_path: unified
       observation:
         value:
           assembled:
@@ -31689,21 +31509,201 @@ schema_version: 2
               kind: tool_call
               name: echo
           - expected: []
-      document:
-        mode: unified
-        captured_with:
-          dynamo_v2: 0.9.0
-        capture_origin:
-          crate_version: 0.9.0
-          source_sha256: 7d9490b8bb92411fdb061834631591d7ff070582edae8bd74894f1db6c8c6dcd
-          git_commit: d562791db05cd10856a4cbf05ae31d02d249e9dc
-          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
-          job_sha256: 48b1f049755aff43721d6930ede6d401b96ec6f082ec13785bb4b229b6644057
-        record_metadata:
-          parser_path: unified
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+              <atem:invoke name="echo">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              <atem:parameter name="value">1.5</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|>'
+          finish_reason: stop
           init:
             named_tool: null
             starting_state: None
             tool_output_mode: Native
-    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.0.yaml
+          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">1.5</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: c7bcba99b77ce1604723d2d23e00ef55217a9cb09d05c39304d5b26b3f9382e1
+  arg_numeric_overflow_siblings_positive:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_positive
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":1e400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":1e400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+              <atem:invoke name="echo">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              <atem:parameter name="value">1e400</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">1e400</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: d471258024476f545b34c316db4ef457c62245dfefbf6745608010d4b190133c
   arg_numeric_overflow_siblings_negative:
+    member: conformance/fixtures-unified-v2/families/muse_glimmer/dynamo_v2-0.9.2.yaml
+    suppress_inherited_from: true
+    value:
+      case_key: UNIFIED.7-arg_numeric_overflow_siblings_negative
+      document:
+        capture_origin:
+          adapter_sha256: 0367946deb6ec8b8bbf5405947170f59b6489be0035de52debdd00d381f3ea12
+          crate_version: 0.9.2
+          git_commit: c1821ffdd1137a73e10d9fd48834e070695fb4df
+          job_sha256: a209a2f4ed9038f333e8a13a399ffd8ca080ba046711973decac67c3f1344eb5
+          source_sha256: 38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        captured_with:
+          dynamo_v2: 0.9.2+source.38d3813f2399d9951a070dbe9ad210d31f88e044915954d0e6ff4932f8e7cc30
+        mode: unified
+        record_metadata:
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          parser_path: unified
+      observation:
+        value:
+          assembled:
+          - arguments: '{"city":"Paris","value":-1E+400}'
+            kind: tool_call
+            name: echo
+          chunks:
+          - expected:
+            - arguments: '{"city":"Paris","value":-1E+400}'
+              complete: true
+              kind: tool_call
+              name: echo
+          - expected: []
+      stimulus:
+        inline:
+          chunks:
+          - delta_text: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+              <atem:invoke name="echo">
+
+              <atem:parameter name="city">Paris</atem:parameter>
+
+              <atem:parameter name="value">-1E+400</atem:parameter>
+
+              </atem:invoke>
+
+              </atem:function_calls><|eom|>'
+          finish_reason: stop
+          init:
+            named_tool: null
+            starting_state: None
+            tool_output_mode: Native
+          input: '<|start|>assistant to=echo<|message|><atem:function_calls>
+
+            <atem:invoke name="echo">
+
+            <atem:parameter name="city">Paris</atem:parameter>
+
+            <atem:parameter name="value">-1E+400</atem:parameter>
+
+            </atem:invoke>
+
+            </atem:function_calls><|eom|>'
+          tools:
+          - name: echo
+            parameters:
+              properties:
+                city:
+                  type: string
+                value:
+                  type: number
+              required:
+              - city
+              - value
+              type: object
+        semantic_sha256: 81d5ceb323074860a255cb46ba323f39215658ecad6a8e0a60dae7ab7da2de6f
+schema_version: 2

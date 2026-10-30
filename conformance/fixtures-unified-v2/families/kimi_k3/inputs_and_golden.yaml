@@ -23044,6 +23044,40 @@ cases:
 
 
           '
+  arg_numeric_overflow_siblings_finite:
+    lifecycle: active
+    scenario: arg_numeric_overflow_siblings_finite
+    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
+    policy:
+    - I7
+    display_id: UNIFIED.7-arg_numeric_overflow_siblings_finite
+    historical_ids: []
+    request:
+      input: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+      init:
+        starting_state: None
+        tool_output_mode: Native
+        named_tool: null
+      finish_reason: stop
+      tools:
+      - name: echo
+        parameters:
+          type: object
+          properties:
+            city:
+              type: string
+            value:
+              type: number
+          required:
+          - city
+          - value
+      chunks:
+      - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
+    golden:
+      assembled:
+      - kind: tool_call
+        name: echo
+        arguments: '{"city":"Paris","value":1.5}'
   arg_numeric_overflow_siblings_positive:
     lifecycle: active
     scenario: arg_numeric_overflow_siblings_positive
@@ -23112,39 +23146,3 @@ cases:
       - kind: tool_call
         name: echo
         arguments: '{"city":"Paris","value":-1E+400}'
-  arg_numeric_overflow_siblings_positive:
-  arg_numeric_overflow_siblings_finite:
-    lifecycle: active
-    scenario: arg_numeric_overflow_siblings_finite
-    description: Numeric token 1.5 preserves the sibling city argument. Raw deltas retain the number; the default typed projection may stringify overflow but must not discard the object.
-    policy:
-    - I7
-    display_id: UNIFIED.7-arg_numeric_overflow_siblings_finite
-    historical_ids: []
-    request:
-      input: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-      init:
-        starting_state: None
-        tool_output_mode: Native
-        named_tool: null
-      finish_reason: stop
-      tools:
-      - name: echo
-        parameters:
-          type: object
-          properties:
-            city:
-              type: string
-            value:
-              type: number
-          required:
-          - city
-          - value
-      chunks:
-      - delta_text: <|open|>tools<|sep|><|open|>call tool="echo" index="1"<|sep|><|open|>argument key="city" type="string"<|sep|>Paris<|close|>argument<|sep|><|open|>argument key="value" type="number"<|sep|>1.5<|close|>argument<|sep|><|close|>call<|sep|><|close|>tools<|sep|>
-    golden:
-      assembled:
-      - kind: tool_call
-        name: echo
-        arguments: '{"city":"Paris","value":1.5}'
-  arg_numeric_overflow_siblings_negative:
