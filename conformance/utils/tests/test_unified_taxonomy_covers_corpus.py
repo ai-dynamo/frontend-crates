@@ -2658,7 +2658,7 @@ def test_retained_harmony_review_ids_cover_native_shared_variants(scenario, pare
             else:
                 assert '{"q":"abc<|close|>json<|sep|>' in case["input"]
                 assert '<|open|>response<|sep|>Answer<|close|>response<|sep|>' in case["input"]
-                assert case["expect"]["dynamo"]["class"] == "LOSS"
+                assert case["expect"]["dynamo"]["verdict"] == "match"
         else:
             event = case["golden"][0]
             assert event["name"] == "lookup"
