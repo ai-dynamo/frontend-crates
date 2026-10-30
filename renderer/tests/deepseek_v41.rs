@@ -91,8 +91,8 @@ fn render(fields: Value) -> anyhow::Result<String> {
 }
 
 #[test]
-fn api_reasoning_effort_matches_the_reference_encoder() {
-    for (effort, budget) in [("low", 50), ("high", 75), ("max", 100)] {
+fn api_reasoning_effort_matches_the_official_template() {
+    for (effort, budget) in [("low", 50), ("medium", 62), ("high", 75), ("max", 100)] {
         let output = render(json!({"reasoning_effort":effort})).unwrap();
         assert!(output.starts_with(&format!(
             "<｜begin▁of▁sentence｜><｜System｜>Reasoning Effort: {budget} "
@@ -105,21 +105,6 @@ fn api_reasoning_effort_matches_the_reference_encoder() {
         render(json!({"reasoning_effort":"none"})).unwrap(),
         "<｜begin▁of▁sentence｜><｜User｜>Hello<｜Assistant｜></think>"
     );
-}
-
-#[test]
-fn medium_effort_is_a_high_compatibility_alias() {
-    let high = render(json!({"reasoning_effort": "high"})).unwrap();
-    for fields in [
-        json!({"reasoning_effort": "medium"}),
-        json!({"chat_template_args": {"reasoning_effort": "medium"}}),
-        json!({
-            "reasoning_effort": "medium",
-            "chat_template_args": {"reasoning_effort": "low"}
-        }),
-    ] {
-        assert_eq!(render(fields.clone()).unwrap(), high, "{fields}");
-    }
 }
 
 #[test]
@@ -333,7 +318,7 @@ fn qualified_tool_names_remain_verbatim() {
 
 #[test]
 fn normalized_effort_uses_the_api_mapping() {
-    for (effort, budget) in [("low", 50), ("high", 75), ("max", 100)] {
+    for (effort, budget) in [("low", 50), ("medium", 62), ("high", 75), ("max", 100)] {
         assert!(
             render(json!({"chat_template_args": {"reasoning_effort": effort}}))
                 .unwrap()
@@ -341,12 +326,12 @@ fn normalized_effort_uses_the_api_mapping() {
         );
     }
     let output = render(json!({
-        "reasoning_effort": "low",
-        "chat_template_args": {"reasoning_effort": "max"}
+        "reasoning_effort": "medium",
+        "chat_template_args": {"reasoning_effort": "low"}
     }))
     .unwrap();
-    assert!(output.contains("Reasoning Effort: 50 "));
-    assert!(!output.contains("Reasoning Effort: 100 "));
+    assert!(output.contains("Reasoning Effort: 62 "));
+    assert!(!output.contains("Reasoning Effort: 50 "));
     let output = render(json!({"reasoning_effort": "none", "chat_template_args": {"reasoning_effort": "none", "thinking": false}})).unwrap();
     assert!(!output.contains("Reasoning Effort:"));
     assert!(output.ends_with("</think>"));

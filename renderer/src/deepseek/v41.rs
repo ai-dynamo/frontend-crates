@@ -351,8 +351,8 @@ impl crate::OAIPromptFormatter for DeepSeekV41Formatter {
                     75
                 }
                 Some("low") => 50,
-                // Compatibility alias for clients such as Codex Plan mode.
-                Some("medium" | "high") => 75,
+                Some("medium") => 62,
+                Some("high") => 75,
                 Some("max") => 100,
                 _ => value
                     .as_u64()
