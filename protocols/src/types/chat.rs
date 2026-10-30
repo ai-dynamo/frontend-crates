@@ -1072,6 +1072,9 @@ pub struct ChatCompletionRequestAssistantMessage {
 pub enum ChatCompletionRequestMessage {
     #[cfg_attr(feature = "protocol-schema", schema(value_type = crate::schema::ChatCompletionRequestDeveloperMessage))]
     Developer(ChatCompletionRequestDeveloperMessage),
+    /// MiniMax-M3's top-priority system prompt. Kept distinct from `System` so
+    /// chat templates see `role: "root"`; it cannot carry Kimi `tools`.
+    Root(ChatCompletionRequestSystemMessage),
     System(ChatCompletionRequestSystemMessage),
     User(ChatCompletionRequestUserMessage),
     Assistant(ChatCompletionRequestAssistantMessage),
@@ -1114,6 +1117,7 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
         #[serde(rename_all = "lowercase")]
         enum Wire {
             Developer(ForbidToolsAndPartial<ChatCompletionRequestDeveloperMessage>),
+            Root(ForbidToolsAndPartial<ChatCompletionRequestSystemMessage>),
             System(ForbidPartial<ChatCompletionRequestSystemMessage>),
             User(ForbidToolsAndPartial<ChatCompletionRequestUserMessage>),
             Assistant(ForbidTools<ChatCompletionRequestAssistantMessage>),
@@ -1145,6 +1149,15 @@ impl<'de> Deserialize<'de> for ChatCompletionRequestMessage {
                 reject_forbidden::<D::Error>(tools, "tools", "system", "developer")?;
                 reject_forbidden::<D::Error>(partial, "partial", "assistant", "developer")?;
                 ChatCompletionRequestMessage::Developer(message)
+            }
+            Wire::Root(ForbidToolsAndPartial {
+                tools,
+                partial,
+                message,
+            }) => {
+                reject_forbidden::<D::Error>(tools, "tools", "system", "root")?;
+                reject_forbidden::<D::Error>(partial, "partial", "assistant", "root")?;
+                ChatCompletionRequestMessage::Root(message)
             }
             Wire::System(ForbidPartial { partial, message }) => {
                 reject_forbidden::<D::Error>(partial, "partial", "assistant", "system")?;
@@ -2580,6 +2593,37 @@ mod tests {
     }
 
     #[test]
+    fn root_message_round_trips_with_its_role() {
+        for wire in [
+            serde_json::json!({"role": "root", "content": "You are a helpful assistant."}),
+            serde_json::json!({
+                "role": "root",
+                "content": [{"type": "text", "text": "You are a helpful assistant."}],
+                "name": "policy",
+            }),
+        ] {
+            let parsed: ChatCompletionRequestMessage =
+                serde_json::from_value(wire.clone()).unwrap();
+            assert!(
+                matches!(parsed, ChatCompletionRequestMessage::Root(_)),
+                "{wire}"
+            );
+            assert_eq!(serde_json::to_value(&parsed).unwrap(), wire);
+        }
+    }
+
+    #[test]
+    fn message_rejects_unknown_role() {
+        let error = serde_json::from_value::<ChatCompletionRequestMessage>(
+            serde_json::json!({"role": "admin", "content": "hi"}),
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("unknown variant `admin`"), "{error}");
+        assert!(error.contains("root"), "{error}");
+    }
+
+    #[test]
     fn message_rejects_tools_and_partial_on_wrong_roles() {
         let tools = serde_json::json!([{"name": "lookup"}]);
         for (label, message, needle) in [
@@ -2598,6 +2642,16 @@ mod tests {
                 "tools on developer",
                 serde_json::json!({"role": "developer", "content": "hi", "tools": tools}),
                 "`tools` is only accepted on system messages, not on role developer",
+            ),
+            (
+                "tools on root",
+                serde_json::json!({"role": "root", "content": "hi", "tools": tools}),
+                "`tools` is only accepted on system messages, not on role root",
+            ),
+            (
+                "partial on root",
+                serde_json::json!({"role": "root", "content": "hi", "partial": true}),
+                "`partial` is only accepted on assistant messages, not on role root",
             ),
             (
                 "partial on user",

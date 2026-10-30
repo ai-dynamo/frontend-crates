@@ -1059,6 +1059,33 @@ mod tests {
     }
 
     #[test]
+    fn root_role_reaches_the_template_verbatim() {
+        // MiniMax-M3's role mapping: root is the system prompt, a following
+        // system/developer turn becomes the developer prompt.
+        let f = formatter_for(concat!(
+            "{%- set ns = namespace(rest=messages, root=none, dev=none) -%}",
+            "{%- if ns.rest and ns.rest[0].role == 'root' -%}",
+            "{%- set ns.root = ns.rest[0].content -%}{%- set ns.rest = ns.rest[1:] -%}",
+            "{%- endif -%}",
+            "{%- if ns.rest and ns.rest[0].role in ['system', 'developer'] -%}",
+            "{%- set ns.dev = ns.rest[0].content -%}{%- set ns.rest = ns.rest[1:] -%}",
+            "{%- endif -%}",
+            "[system]{{ ns.root }}[developer]{{ ns.dev }}",
+            "{%- for m in ns.rest -%}[{{ m.role }}]{{ m.content }}{%- endfor -%}",
+        ));
+        let out = render_shape(
+            &f,
+            json!([
+                {"role": "root", "content": "R"},
+                {"role": "system", "content": "S"},
+                {"role": "user", "content": "U"},
+            ]),
+        )
+        .unwrap();
+        assert_eq!(out, "[system]R[developer]S[user]U");
+    }
+
+    #[test]
     fn strict_leading_template_demotes_mid_system_but_keeps_user_turns_apart() {
         let f = formatter_for(STRICT_LEADING_TMPL);
         assert!(f.default_system_normalization.demote_nonleading_system);
